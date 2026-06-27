@@ -220,21 +220,14 @@ export const Jubah: React.FC = () => {
                 Full Name <span className="text-danger">*</span>
               </label>
               <p className="text-[9px] text-slate-400 -mt-0.5">Use uppercase letters. Example: MUHAMMAD AMIRUDDIN BIN AHMAD</p>
-              <div className="relative group">
-                <div className="bg-slate-50 border border-slate-200 rounded-xl py-2.5 px-3 flex items-center pointer-events-none group-focus-within:border-blue-500 transition">
-                  <span className={`text-xs ${fullName ? 'font-bold text-slate-700' : 'font-normal text-slate-300'}`}>
-                    {fullName || 'FULL NAME AS PER IC'}
-                  </span>
-                </div>
-                <input
-                  type="text"
-                  value={fullName}
-                  onChange={e => setFullName(e.target.value.toUpperCase())}
-                  required
-                  className="absolute inset-0 w-full h-full rounded-xl bg-transparent focus:outline-none cursor-text"
-                  style={{ fontSize: '16px', color: 'transparent', caretColor: '#2563EB' }}
-                />
-              </div>
+              <input
+                type="text"
+                value={fullName}
+                onChange={e => setFullName(e.target.value.toUpperCase())}
+                placeholder="FULL NAME AS PER IC"
+                required
+                className="bg-slate-50 border border-slate-200 rounded-xl py-2.5 px-3 text-xs font-bold text-slate-700 focus:outline-none focus:border-blue-500 transition placeholder:font-normal placeholder:text-slate-300"
+              />
             </div>
 
             {/* IC Number */}
@@ -243,22 +236,16 @@ export const Jubah: React.FC = () => {
                 IC Number <span className="text-danger">*</span>
               </label>
               <p className="text-[9px] text-slate-400 -mt-0.5">Example: 980123456789 (Without ' - ')</p>
-              <div className="relative group">
-                <div className="bg-slate-50 border border-slate-200 rounded-xl py-2.5 px-3 flex items-center pointer-events-none group-focus-within:border-blue-500 transition">
-                  <span className={`text-xs ${icNumber ? 'font-bold text-slate-700' : 'font-normal text-slate-300'}`}>
-                    {icNumber || '980123456789'}
-                  </span>
-                </div>
-                <input
-                  type="text"
-                  value={icNumber}
-                  onChange={e => setIcNumber(e.target.value.replace(/\D/g, ''))}
-                  maxLength={12}
-                  required
-                  className="absolute inset-0 w-full h-full rounded-xl bg-transparent focus:outline-none cursor-text"
-                  style={{ fontSize: '16px', color: 'transparent', caretColor: '#2563EB' }}
-                />
-              </div>
+              <input
+                type="text"
+                inputMode="numeric"
+                value={icNumber}
+                onChange={e => setIcNumber(e.target.value.replace(/\D/g, ''))}
+                placeholder="980123456789"
+                maxLength={12}
+                required
+                className="bg-slate-50 border border-slate-200 rounded-xl py-2.5 px-3 text-xs font-bold text-slate-700 focus:outline-none focus:border-blue-500 transition placeholder:font-normal placeholder:text-slate-300"
+              />
             </div>
 
             {/* HP Number */}
@@ -267,22 +254,16 @@ export const Jubah: React.FC = () => {
                 HP Number <span className="text-danger">*</span>
               </label>
               <p className="text-[9px] text-slate-400 -mt-0.5">Example: 012345678 (Without ' - ') · Our runner will be in touch shortly.</p>
-              <div className="relative group">
-                <div className="bg-slate-50 border border-slate-200 rounded-xl py-2.5 px-3 flex items-center pointer-events-none group-focus-within:border-blue-500 transition">
-                  <span className={`text-xs ${hpNumber ? 'font-bold text-slate-700' : 'font-normal text-slate-300'}`}>
-                    {hpNumber || '01XXXXXXXXX'}
-                  </span>
-                </div>
-                <input
-                  type="text"
-                  value={hpNumber}
-                  onChange={e => setHpNumber(e.target.value.replace(/\D/g, ''))}
-                  maxLength={11}
-                  required
-                  className="absolute inset-0 w-full h-full rounded-xl bg-transparent focus:outline-none cursor-text"
-                  style={{ fontSize: '16px', color: 'transparent', caretColor: '#2563EB' }}
-                />
-              </div>
+              <input
+                type="text"
+                inputMode="numeric"
+                value={hpNumber}
+                onChange={e => setHpNumber(e.target.value.replace(/\D/g, ''))}
+                placeholder="01XXXXXXXXX"
+                maxLength={11}
+                required
+                className="bg-slate-50 border border-slate-200 rounded-xl py-2.5 px-3 text-xs font-bold text-slate-700 focus:outline-none focus:border-blue-500 transition placeholder:font-normal placeholder:text-slate-300"
+              />
             </div>
 
             {/* Matric ID */}
@@ -291,21 +272,14 @@ export const Jubah: React.FC = () => {
                 Matric ID <span className="text-danger">*</span>
               </label>
               <p className="text-[9px] text-slate-400 -mt-0.5">Use uppercase letters. Example: HB19021</p>
-              <div className="relative group">
-                <div className="bg-slate-50 border border-slate-200 rounded-xl py-2.5 px-3 flex items-center pointer-events-none group-focus-within:border-blue-500 transition">
-                  <span className={`text-xs ${matricId ? 'font-bold text-slate-700' : 'font-normal text-slate-300'}`}>
-                    {matricId || 'HB19021'}
-                  </span>
-                </div>
-                <input
-                  type="text"
-                  value={matricId}
-                  onChange={e => setMatricId(e.target.value.toUpperCase())}
-                  required
-                  className="absolute inset-0 w-full h-full rounded-xl bg-transparent focus:outline-none cursor-text"
-                  style={{ fontSize: '16px', color: 'transparent', caretColor: '#2563EB' }}
-                />
-              </div>
+              <input
+                type="text"
+                value={matricId}
+                onChange={e => setMatricId(e.target.value.toUpperCase())}
+                placeholder="HB19021"
+                required
+                className="bg-slate-50 border border-slate-200 rounded-xl py-2.5 px-3 text-xs font-bold text-slate-700 focus:outline-none focus:border-blue-500 transition placeholder:font-normal placeholder:text-slate-300"
+              />
             </div>
           </div>
 
