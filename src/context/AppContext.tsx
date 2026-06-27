@@ -138,7 +138,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [isPreviewMode, setIsPreviewMode] = useState(false);
   const [activeRole, setActiveRole] = useState<'admin' | 'driver' | null>(null);
 
-  const HISTORY_EXCLUDED: ActivePage[] = ['splash', 'login'];
+  const HISTORY_EXCLUDED: ActivePage[] = ['splash'];
   const HOME_PAGES: ActivePage[] = ['dashboard', 'driver-home', 'admin-home'];
 
   const setCurrentPage = (page: ActivePage) => {
