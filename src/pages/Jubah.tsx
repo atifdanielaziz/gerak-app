@@ -1,8 +1,9 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
-import { RotateCcw, Calendar, CheckCircle2, X, Upload, FileText, ShieldAlert, Download, ChevronDown } from 'lucide-react';
+import { RotateCcw, Calendar, CheckCircle2, X, Upload, FileText, ShieldAlert, Download, ChevronDown, User } from 'lucide-react';
 import { submitJubahToSheets } from '../lib/sheetsService';
 import { JubahLanding } from '../components/JubahLanding';
+import { supabase } from '../lib/supabase';
 
 const UNIVERSITIES = [
   'Universiti Malaysia Pahang Al-Sultan Abdullah (Pekan)',
@@ -48,9 +49,29 @@ export const Jubah: React.FC = () => {
   const icRef          = useRef<HTMLInputElement>(null);
   const paymentProofRef = useRef<HTMLInputElement>(null);
 
+  const [selectedRiderId,   setSelectedRiderId]   = useState('');
+  const [riders,            setRiders]            = useState<{ id: string; name: string }[]>([]);
+  const [ridersLoading,     setRidersLoading]     = useState(false);
+
   const [returnMethod, setReturnMethod] = useState<'self' | 'locker' | 'courier'>('self');
   const [returnDate, setReturnDate]     = useState('2026-06-15');
   const [returnTime, setReturnTime]     = useState('14:00');
+
+  // Fetch active riders whenever campus changes
+  useEffect(() => {
+    if (!university) { setRiders([]); setSelectedRiderId(''); return; }
+    const campus = university.includes('Pekan') ? 'Pekan' : 'Gambang';
+    setRidersLoading(true);
+    setSelectedRiderId('');
+    supabase
+      .from('profiles')
+      .select('id, name')
+      .eq('role', 'rider')
+      .eq('campus', campus)
+      .eq('status', 'active')
+      .order('name')
+      .then(({ data }) => { setRiders(data ?? []); setRidersLoading(false); });
+  }, [university]);
 
   const cost = paymentMode === 'postage' ? 90 : 70;
 
@@ -120,6 +141,7 @@ export const Jubah: React.FC = () => {
     e.preventDefault();
     if (!university) { alert('Please select your university.'); return; }
     if (!faculty) { alert('Please select your faculty.'); return; }
+    if (!selectedRiderId) { alert('Please select a rider.'); return; }
     if (!allFilesReady) { setFileError('Please upload all required documents.'); return; }
     if (!paymentProof) { setFileError('Please upload your proof of payment.'); return; }
     const combinedFileName = `${(fullName || 'combined').replace(/\s+/g, '_')}_combined.pdf`;
@@ -372,6 +394,44 @@ export const Jubah: React.FC = () => {
                 ))}
               </div>
             </div>
+          </div>
+
+          {/* ── RIDER SELECTION ── */}
+          <div className="bg-white border border-slate-100 rounded-3xl p-5 shadow-sm flex flex-col gap-4">
+            <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest flex items-center gap-1.5">
+              <User className="w-3.5 h-3.5" /> Select Rider
+            </h3>
+            <div className={`relative group ${!university ? 'opacity-50 pointer-events-none' : ''}`}>
+              <div className="bg-slate-50 border border-slate-200 rounded-xl py-2.5 px-3 flex items-center justify-between pointer-events-none group-focus-within:border-blue-500 transition">
+                <span className={`text-xs ${selectedRiderId ? 'font-bold text-slate-700' : 'font-normal text-slate-300'}`}>
+                  {ridersLoading
+                    ? 'Loading riders...'
+                    : selectedRiderId
+                      ? riders.find(r => r.id === selectedRiderId)?.name ?? 'Select a rider...'
+                      : university
+                        ? riders.length === 0 ? 'No riders available' : 'Select a rider...'
+                        : 'Select campus first'}
+                </span>
+                <ChevronDown className="w-3 h-3 text-slate-400 shrink-0" />
+              </div>
+              <select
+                value={selectedRiderId}
+                onChange={e => setSelectedRiderId(e.target.value)}
+                disabled={!university || ridersLoading || riders.length === 0}
+                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer disabled:cursor-not-allowed"
+                style={{ fontSize: '16px' }}
+              >
+                <option value="" disabled>Select a rider...</option>
+                {riders.map(r => (
+                  <option key={r.id} value={r.id}>{r.name}</option>
+                ))}
+              </select>
+            </div>
+            {university && !ridersLoading && riders.length === 0 && (
+              <p className="text-[10px] text-slate-400 font-semibold text-center -mt-2">
+                No active riders available for this campus at the moment.
+              </p>
+            )}
           </div>
 
           {/* ── SERVICE OPTION ── */}
