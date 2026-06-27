@@ -139,7 +139,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [activeRole, setActiveRole] = useState<'admin' | 'driver' | null>(null);
 
   const HISTORY_EXCLUDED: ActivePage[] = ['splash'];
-  const HOME_PAGES: ActivePage[] = ['dashboard', 'driver-home', 'admin-home'];
+  const HOME_PAGES: ActivePage[] = ['dashboard', 'driver-home', 'admin-home', 'login', 'profile', 'academic-calendar'];
 
   const setCurrentPage = (page: ActivePage) => {
     if (HOME_PAGES.includes(page)) {
@@ -262,6 +262,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (event === 'PASSWORD_RECOVERY') {
+        setPageHistory([]);
         _setCurrentPage('reset-password');
         return;
       }
