@@ -373,9 +373,11 @@ export const AdminHome: React.FC = () => {
   const [inviteCampus, setInviteCampus]     = useState<'Pekan' | 'Gambang'>(
     isSuperAdmin ? 'Gambang' : adminCampus
   );
-  const [inviteRole, setInviteRole]         = useState<'driver' | 'admin'>('driver');
+  const [inviteRole, setInviteRole]         = useState<'driver' | 'rider' | 'admin'>('driver');
   const [inviteCanDrive, setInviteCanDrive] = useState(true);
   const [inviteCanRent,  setInviteCanRent]  = useState(false);
+  const [inviteCanDaily, setInviteCanDaily] = useState(false);
+  const [inviteCanRobe,  setInviteCanRobe]  = useState(false);
   const [inviteSending, setInviteSending]   = useState(false);
   const [togglingCap, setTogglingCap]         = useState<string | null>(null);
   const [togglingCampus, setTogglingCampus]   = useState<string | null>(null);
@@ -564,19 +566,29 @@ export const AdminHome: React.FC = () => {
   const handleSendInvite = async () => {
     if (!inviteEmail.trim()) return;
     if (inviteRole === 'driver' && !inviteCanDrive && !inviteCanRent) { showToast('Select at least one capability.'); return; }
+    if (inviteRole === 'rider'  && !inviteCanDaily && !inviteCanRobe)  { showToast('Select at least one capability.'); return; }
     setInviteSending(true);
     const { data: { user: authUser } } = await supabase.auth.getUser();
     const { error } = await supabase.from('driver_invites').insert({
       email:      inviteEmail.trim().toLowerCase(),
       campus:     inviteCampus,
       role:       inviteRole,
-      can_drive:  inviteRole === 'admin' ? true : inviteCanDrive,
-      can_rent:   inviteRole === 'admin' ? true : inviteCanRent,
+      can_drive:  inviteRole === 'driver' ? inviteCanDrive : false,
+      can_rent:   inviteRole === 'driver' ? inviteCanRent  : false,
+      can_daily:  inviteRole === 'rider'  ? inviteCanDaily : false,
+      can_robe:   inviteRole === 'rider'  ? inviteCanRobe  : false,
       created_by: authUser?.id,
     });
     setInviteSending(false);
     if (error) showToast(error.message.includes('unique') ? 'This email already has a pending invite.' : error.message);
-    else { showToast('Invite added!'); setInviteEmail(''); setInviteRole('driver'); setInviteCanDrive(true); setInviteCanRent(false); loadInvites(); }
+    else {
+      showToast('Invite added!');
+      setInviteEmail('');
+      setInviteRole('driver');
+      setInviteCanDrive(true); setInviteCanRent(false);
+      setInviteCanDaily(false); setInviteCanRobe(false);
+      loadInvites();
+    }
   };
 
   const handleRevokeInvite = async (id: string) => {
@@ -932,14 +944,23 @@ export const AdminHome: React.FC = () => {
             <div>
               <p className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest mb-2">Role</p>
               <div className="flex bg-slate-50 border border-slate-200 rounded-2xl p-1 gap-1">
-                {(['driver', 'admin'] as const).map(r => (
-                  <button key={r} type="button" onClick={() => setInviteRole(r)}
+                {([
+                  { id: 'driver', label: '🚗 Driver', color: 'bg-primary text-white' },
+                  { id: 'rider',  label: '🛵 Rider',  color: 'bg-emerald-600 text-white' },
+                  { id: 'admin',  label: '⚙️ Admin',  color: 'bg-violet-600 text-white' },
+                ] as const).map(r => (
+                  <button key={r.id} type="button"
+                    onClick={() => {
+                      setInviteRole(r.id);
+                      setInviteCanDrive(r.id === 'driver');
+                      setInviteCanRent(false);
+                      setInviteCanDaily(false);
+                      setInviteCanRobe(false);
+                    }}
                     className={`flex-1 py-2 rounded-xl text-xs font-extrabold transition ${
-                      inviteRole === r
-                        ? r === 'admin' ? 'bg-violet-600 text-white shadow-sm' : 'bg-primary text-white shadow-sm'
-                        : 'text-slate-400'
+                      inviteRole === r.id ? r.color + ' shadow-sm' : 'text-slate-400'
                     }`}>
-                    {r === 'driver' ? '🚗 Driver' : '⚙️ Admin'}
+                    {r.label}
                   </button>
                 ))}
               </div>
@@ -987,26 +1008,43 @@ export const AdminHome: React.FC = () => {
               />
             </div>
 
-            {/* Capability toggles — driver only */}
+            {/* Capability toggles — driver */}
             {inviteRole === 'driver' && (
               <div>
                 <p className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest mb-2">Capabilities</p>
                 <div className="flex gap-2">
                   <button type="button" onClick={() => setInviteCanDrive(v => !v)}
                     className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl text-[10px] font-extrabold border transition active:scale-95 ${
-                      inviteCanDrive
-                        ? 'bg-primary/10 border-primary/30 text-primary'
-                        : 'bg-slate-50 border-slate-200 text-slate-400'
+                      inviteCanDrive ? 'bg-primary/10 border-primary/30 text-primary' : 'bg-slate-50 border-slate-200 text-slate-400'
                     }`}>
                     <Car className="w-3 h-3" /> Gerak Car {inviteCanDrive ? '✓' : '✗'}
                   </button>
                   <button type="button" onClick={() => setInviteCanRent(v => !v)}
                     className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl text-[10px] font-extrabold border transition active:scale-95 ${
-                      inviteCanRent
-                        ? 'bg-amber-50 border-amber-200 text-amber-700'
-                        : 'bg-slate-50 border-slate-200 text-slate-400'
+                      inviteCanRent ? 'bg-amber-50 border-amber-200 text-amber-700' : 'bg-slate-50 border-slate-200 text-slate-400'
                     }`}>
                     <KeyRound className="w-3 h-3" /> Rental {inviteCanRent ? '✓' : '✗'}
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Capability toggles — rider */}
+            {inviteRole === 'rider' && (
+              <div>
+                <p className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest mb-2">Capabilities</p>
+                <div className="flex gap-2">
+                  <button type="button" onClick={() => setInviteCanDaily(v => !v)}
+                    className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl text-[10px] font-extrabold border transition active:scale-95 ${
+                      inviteCanDaily ? 'bg-emerald-50 border-emerald-200 text-emerald-700' : 'bg-slate-50 border-slate-200 text-slate-400'
+                    }`}>
+                    🛵 Daily {inviteCanDaily ? '✓' : '✗'}
+                  </button>
+                  <button type="button" onClick={() => setInviteCanRobe(v => !v)}
+                    className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl text-[10px] font-extrabold border transition active:scale-95 ${
+                      inviteCanRobe ? 'bg-blue-50 border-blue-200 text-blue-700' : 'bg-slate-50 border-slate-200 text-slate-400'
+                    }`}>
+                    🎓 Robe {inviteCanRobe ? '✓' : '✗'}
                   </button>
                 </div>
               </div>
@@ -2034,7 +2072,7 @@ export const AdminHome: React.FC = () => {
           <div className="w-10 h-1 bg-slate-200 rounded-full mx-auto mb-5" />
 
           {/* Title */}
-          <h3 className="text-sm font-black text-slate-800 text-center mb-1">Confirm {inviteRole === 'admin' ? 'Admin' : 'Driver'} Invite</h3>
+          <h3 className="text-sm font-black text-slate-800 text-center mb-1">Confirm {inviteRole === 'admin' ? 'Admin' : inviteRole === 'rider' ? 'Rider' : 'Driver'} Invite</h3>
           <p className="text-[10px] text-slate-400 font-semibold text-center mb-5">
             Please review before sending.
           </p>
@@ -2043,9 +2081,9 @@ export const AdminHome: React.FC = () => {
           <div className="bg-slate-50 border border-slate-100 rounded-2xl overflow-hidden mb-5">
 
             {/* Header stripe */}
-            <div className={`px-4 py-3 flex items-center gap-2 ${inviteRole === 'admin' ? 'bg-violet-600' : 'bg-primary'}`}>
+            <div className={`px-4 py-3 flex items-center gap-2 ${inviteRole === 'admin' ? 'bg-violet-600' : inviteRole === 'rider' ? 'bg-emerald-600' : 'bg-primary'}`}>
               <Send className="w-3.5 h-3.5 text-white" />
-              <span className="text-white font-extrabold text-xs uppercase tracking-widest">{inviteRole === 'admin' ? 'Admin' : 'Driver'} Invite</span>
+              <span className="text-white font-extrabold text-xs uppercase tracking-widest">{inviteRole === 'admin' ? 'Admin' : inviteRole === 'rider' ? 'Rider' : 'Driver'} Invite</span>
             </div>
 
             {/* Details */}
@@ -2067,20 +2105,27 @@ export const AdminHome: React.FC = () => {
               <div className="flex items-start justify-between gap-2">
                 <p className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">Capabilities</p>
                 <div className="flex flex-col items-end gap-1.5">
-                  <span className={`flex items-center gap-1.5 text-[10px] font-extrabold px-2.5 py-1 rounded-full ${
-                    inviteCanDrive
-                      ? 'bg-primary/10 text-primary'
-                      : 'bg-slate-100 text-slate-400 line-through'
-                  }`}>
-                    <Car className="w-3 h-3" /> Gerak Car {inviteCanDrive ? '✓' : '✗'}
-                  </span>
-                  <span className={`flex items-center gap-1.5 text-[10px] font-extrabold px-2.5 py-1 rounded-full ${
-                    inviteCanRent
-                      ? 'bg-amber-50 text-amber-700'
-                      : 'bg-slate-100 text-slate-400 line-through'
-                  }`}>
-                    <KeyRound className="w-3 h-3" /> Gerak Rental {inviteCanRent ? '✓' : '✗'}
-                  </span>
+                  {inviteRole === 'driver' && (<>
+                    <span className={`flex items-center gap-1.5 text-[10px] font-extrabold px-2.5 py-1 rounded-full ${inviteCanDrive ? 'bg-primary/10 text-primary' : 'bg-slate-100 text-slate-400 line-through'}`}>
+                      <Car className="w-3 h-3" /> Gerak Car {inviteCanDrive ? '✓' : '✗'}
+                    </span>
+                    <span className={`flex items-center gap-1.5 text-[10px] font-extrabold px-2.5 py-1 rounded-full ${inviteCanRent ? 'bg-amber-50 text-amber-700' : 'bg-slate-100 text-slate-400 line-through'}`}>
+                      <KeyRound className="w-3 h-3" /> Gerak Rental {inviteCanRent ? '✓' : '✗'}
+                    </span>
+                  </>)}
+                  {inviteRole === 'rider' && (<>
+                    <span className={`flex items-center gap-1.5 text-[10px] font-extrabold px-2.5 py-1 rounded-full ${inviteCanDaily ? 'bg-emerald-50 text-emerald-700' : 'bg-slate-100 text-slate-400 line-through'}`}>
+                      🛵 Gerak Daily {inviteCanDaily ? '✓' : '✗'}
+                    </span>
+                    <span className={`flex items-center gap-1.5 text-[10px] font-extrabold px-2.5 py-1 rounded-full ${inviteCanRobe ? 'bg-blue-50 text-blue-700' : 'bg-slate-100 text-slate-400 line-through'}`}>
+                      🎓 Robe Convocation {inviteCanRobe ? '✓' : '✗'}
+                    </span>
+                  </>)}
+                  {inviteRole === 'admin' && (
+                    <span className="flex items-center gap-1.5 text-[10px] font-extrabold px-2.5 py-1 rounded-full bg-violet-50 text-violet-700">
+                      ⚙️ Full Access
+                    </span>
+                  )}
                 </div>
               </div>
             </div>
