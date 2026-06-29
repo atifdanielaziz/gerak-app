@@ -39,7 +39,7 @@ const STATUS_COLORS: Record<string, string> = {
 };
 
 type FilterStatus = 'all' | 'pending' | 'accepted' | 'in_progress' | 'completed' | 'cancelled';
-type AdminTab = 'orders' | 'drivers' | 'users' | 'banners' | 'receipts' | 'calendar' | 'routes';
+type AdminTab = 'orders' | 'drivers' | 'users' | 'banners' | 'receipts' | 'calendar' | 'routes' | 'verify';
 
 interface Announcement {
   id: string;
@@ -418,6 +418,14 @@ export const AdminHome: React.FC = () => {
   // Routes state
   const [routes, setRoutes]               = useState<Route[]>([]);
   const [routesLoading, setRoutesLoading] = useState(false);
+
+  // ── Verify tab state ──────────────────────────────────────────────────────
+  type VerifyDoc = { id: string; name: string; gerak_id: string; campus: string; role: string; ic_url: string | null; license_url: string | null; docs_status: string; docs_reject_reason: string | null };
+  const [verifyDocs,      setVerifyDocs]      = useState<VerifyDoc[]>([]);
+  const [verifyLoading,   setVerifyLoading]   = useState(false);
+  const [verifyFilter,    setVerifyFilter]    = useState<'driver' | 'rider'>('driver');
+  const [rejectingDoc,    setRejectingDoc]    = useState<string | null>(null);
+  const [rejectReason,    setRejectReason]    = useState('');
   const [showRouteForm, setShowRouteForm] = useState(false);
   const [editingRoute, setEditingRoute]   = useState<Route | null>(null);
   const [routePointA, setRoutePointA]     = useState('');
@@ -804,6 +812,35 @@ export const AdminHome: React.FC = () => {
   };
 
   // ── Routes helpers ──────────────────────────────────────────────────────────
+  const loadVerifyDocs = useCallback(async () => {
+    setVerifyLoading(true);
+    let q = supabase.from('profiles')
+      .select('id,name,gerak_id,campus,role,ic_url,license_url,docs_status,docs_reject_reason')
+      .eq('role', verifyFilter)
+      .order('docs_status').order('name');
+    if (!isSuperAdmin) q = q.eq('campus', adminCampus);
+    const { data } = await q;
+    setVerifyDocs((data as VerifyDoc[]) ?? []);
+    setVerifyLoading(false);
+  }, [verifyFilter, isSuperAdmin, adminCampus]);
+
+  useEffect(() => { if (activeTab === 'verify') loadVerifyDocs(); }, [activeTab, loadVerifyDocs]);
+
+  const handleApproveDoc = async (userId: string) => {
+    await supabase.rpc('approve_driver_docs', { p_user_id: userId });
+    showToast('Documents approved.');
+    loadVerifyDocs();
+  };
+
+  const handleRejectDoc = async (userId: string) => {
+    if (!rejectReason.trim()) { showToast('Please enter a rejection reason.'); return; }
+    await supabase.rpc('reject_driver_docs', { p_user_id: userId, p_reason: rejectReason.trim() });
+    showToast('Documents rejected.');
+    setRejectingDoc(null);
+    setRejectReason('');
+    loadVerifyDocs();
+  };
+
   const loadRoutes = useCallback(async () => {
     setRoutesLoading(true);
     const campus = isSuperAdmin ? campusView : adminCampus;
@@ -908,9 +945,10 @@ export const AdminHome: React.FC = () => {
         {/* Tab bar */}
       <div className="flex bg-white border border-slate-100 rounded-2xl p-1 gap-1 shadow-sm overflow-x-auto no-scrollbar">
         {([
-          { id: 'orders',   label: 'Orders',    icon: BarChart3,  superadminOnly: false },
-          { id: 'drivers',  label: 'Invite',    icon: Car,        superadminOnly: false },
-          { id: 'users',    label: 'Drivers',   icon: Users,      superadminOnly: false },
+          { id: 'orders',   label: 'Orders',    icon: BarChart3,       superadminOnly: false },
+          { id: 'drivers',  label: 'Invite',    icon: Car,             superadminOnly: false },
+          { id: 'users',    label: 'Drivers',   icon: Users,           superadminOnly: false },
+          { id: 'verify',   label: 'Verify',    icon: ShieldCheck,     superadminOnly: false },
           { id: 'banners',  label: 'Banners',   icon: Megaphone,       superadminOnly: false },
           { id: 'routes',   label: 'Routes',    icon: ArrowLeftRight,  superadminOnly: false },
           { id: 'receipts', label: 'Receipts',  icon: FileImage,       superadminOnly: true  },
@@ -1735,6 +1773,128 @@ export const AdminHome: React.FC = () => {
                 ))}
               </div>
             )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── VERIFY TAB ── */}
+      {activeTab === 'verify' && (
+        <div className="flex flex-col gap-4">
+
+          {/* Driver / Rider toggle */}
+          <div className="flex bg-white border border-slate-100 rounded-2xl p-1 gap-1 shadow-sm">
+            {(['driver', 'rider'] as const).map(r => (
+              <button key={r} onClick={() => setVerifyFilter(r)}
+                className={`flex-1 py-2 rounded-xl text-xs font-extrabold transition ${
+                  verifyFilter === r ? 'bg-primary text-white shadow-sm' : 'text-slate-400'
+                }`}>
+                {r === 'driver' ? '🚗 Drivers' : '🛵 Riders'}
+              </button>
+            ))}
+          </div>
+
+          {/* Doc list */}
+          <div className="bg-white border border-slate-100 rounded-3xl p-5 shadow-sm flex flex-col gap-3">
+            <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest flex items-center gap-1.5">
+              <ShieldCheck className="w-4 h-4" /> Document Verification
+            </h3>
+
+            <div className="overflow-y-auto no-scrollbar max-h-[520px] flex flex-col gap-3">
+            {verifyLoading ? (
+              <div className="flex justify-center py-8">
+                <span className="w-5 h-5 rounded-full border-2 border-slate-200 border-t-primary animate-spin" />
+              </div>
+            ) : verifyDocs.length === 0 ? (
+              <p className="text-xs text-slate-400 font-semibold text-center py-6">No {verifyFilter}s found.</p>
+            ) : verifyDocs.map(d => (
+              <div key={d.id} className="border border-slate-100 rounded-2xl p-4 flex flex-col gap-3">
+
+                {/* Header */}
+                <div className="flex items-start justify-between gap-2">
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs font-black text-slate-800 truncate">{d.name}</p>
+                    <p className="text-[10px] text-slate-400 font-semibold mt-0.5">{d.gerak_id} · UMPSA {d.campus}</p>
+                  </div>
+                  <span className={`text-[9px] font-extrabold px-2 py-1 rounded-full border shrink-0 ${
+                    d.docs_status === 'approved' ? 'bg-emerald-50 border-emerald-100 text-emerald-700' :
+                    d.docs_status === 'rejected' ? 'bg-red-50 border-red-100 text-red-600' :
+                    d.docs_status === 'pending'  ? 'bg-amber-50 border-amber-100 text-amber-700' :
+                    'bg-slate-50 border-slate-200 text-slate-400'
+                  }`}>
+                    {d.docs_status === 'approved' ? '✓ Approved' :
+                     d.docs_status === 'rejected' ? '✗ Rejected' :
+                     d.docs_status === 'pending'  ? '⏳ Pending' : 'Not Uploaded'}
+                  </span>
+                </div>
+
+                {/* Reject reason */}
+                {d.docs_status === 'rejected' && d.docs_reject_reason && (
+                  <p className="text-[10px] text-red-500 font-semibold bg-red-50 rounded-xl px-3 py-2">
+                    Reason: {d.docs_reject_reason}
+                  </p>
+                )}
+
+                {/* Document links */}
+                <div className="grid grid-cols-2 gap-2">
+                  <a href={d.ic_url ?? '#'} target="_blank" rel="noopener noreferrer"
+                    className={`flex items-center justify-center gap-1.5 py-2 rounded-xl text-[10px] font-extrabold border transition ${
+                      d.ic_url ? 'bg-blue-50 border-blue-100 text-blue-600 active:scale-95' : 'bg-slate-50 border-slate-200 text-slate-300 pointer-events-none'
+                    }`}>
+                    <ExternalLink className="w-3 h-3" /> IC (MyKad)
+                  </a>
+                  <a href={d.license_url ?? '#'} target="_blank" rel="noopener noreferrer"
+                    className={`flex items-center justify-center gap-1.5 py-2 rounded-xl text-[10px] font-extrabold border transition ${
+                      d.license_url ? 'bg-blue-50 border-blue-100 text-blue-600 active:scale-95' : 'bg-slate-50 border-slate-200 text-slate-300 pointer-events-none'
+                    }`}>
+                    <ExternalLink className="w-3 h-3" /> License
+                  </a>
+                </div>
+
+                {/* Reject reason input */}
+                {rejectingDoc === d.id && (
+                  <div className="flex flex-col gap-2">
+                    <input
+                      value={rejectReason}
+                      onChange={e => setRejectReason(e.target.value)}
+                      placeholder="Reason for rejection..."
+                      className="bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-semibold text-slate-700 focus:outline-none focus:border-primary transition"
+                    />
+                    <div className="flex gap-2">
+                      <button onClick={() => handleRejectDoc(d.id)}
+                        className="flex-1 bg-red-500 text-white text-[10px] font-extrabold py-2 rounded-xl active:scale-95 transition">
+                        Confirm Reject
+                      </button>
+                      <button onClick={() => { setRejectingDoc(null); setRejectReason(''); }}
+                        className="flex-1 bg-slate-100 text-slate-500 text-[10px] font-extrabold py-2 rounded-xl active:scale-95 transition">
+                        Cancel
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {/* Actions */}
+                {d.docs_status !== 'approved' && rejectingDoc !== d.id && (d.ic_url || d.license_url) && (
+                  <div className="flex gap-2">
+                    <button onClick={() => handleApproveDoc(d.id)}
+                      className="flex-1 flex items-center justify-center gap-1.5 bg-emerald-500 text-white text-[10px] font-extrabold py-2.5 rounded-xl active:scale-95 transition">
+                      <ShieldCheck className="w-3.5 h-3.5" /> Approve
+                    </button>
+                    <button onClick={() => { setRejectingDoc(d.id); setRejectReason(''); }}
+                      className="flex-1 flex items-center justify-center gap-1.5 bg-red-50 border border-red-100 text-red-500 text-[10px] font-extrabold py-2.5 rounded-xl active:scale-95 transition">
+                      <ShieldOff className="w-3.5 h-3.5" /> Reject
+                    </button>
+                  </div>
+                )}
+
+                {d.docs_status === 'approved' && (
+                  <button onClick={() => { setRejectingDoc(d.id); setRejectReason(''); }}
+                    className="w-full flex items-center justify-center gap-1.5 bg-slate-50 border border-slate-200 text-slate-400 text-[10px] font-extrabold py-2 rounded-xl active:scale-95 transition">
+                    <ShieldOff className="w-3 h-3" /> Revoke Approval
+                  </button>
+                )}
+              </div>
+            ))}
             </div>
           </div>
         </div>

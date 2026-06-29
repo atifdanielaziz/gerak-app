@@ -17,8 +17,9 @@ export const driverIsActive = (user: { role: string; feeReceiptVerified: boolean
 export const Profile: React.FC = () => {
   const { user, logout, updateProfile, refreshUserData, enterPreviewMode } = useApp();
 
-  const isDriver = user.role === 'driver';
+  const isDriver = user.role === 'driver' || user.role === 'rider';
   const isActive = driverIsActive(user);
+  const docsApproved = user.docsStatus === 'approved' || user.role === 'admin' || user.role === 'superadmin';
 
   const [editMode, setEditMode]         = useState(false);
   const [draftName, setDraftName]       = useState('');
@@ -312,7 +313,15 @@ export const Profile: React.FC = () => {
               {!editMode && <ChevronRight className="w-4 h-4 text-slate-300 shrink-0" />}
             </div>
 
-            {/* ── Monthly Fee Receipt ── */}
+            {/* ── Monthly Fee Receipt — Gate 2: only visible after Gate 1 (docs) approved ── */}
+            {!docsApproved ? (
+              <div className="flex items-center gap-3 py-4 border-b border-slate-100">
+                <ShieldOff className="w-4 h-4 text-slate-300 shrink-0" />
+                <p className="text-xs text-slate-400 font-semibold leading-relaxed">
+                  Monthly fee activation is available after your documents are verified by admin.
+                </p>
+              </div>
+            ) : (
             <div className="flex items-start justify-between py-4 border-b border-slate-100">
               <div className="flex-1 min-w-0 pr-3">
                 <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1 block">
@@ -441,6 +450,7 @@ export const Profile: React.FC = () => {
                   className="hidden" onChange={handleReceiptUpload} />
               </div>
             </div>
+            )}
           </>
         )}
 

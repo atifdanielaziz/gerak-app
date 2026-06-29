@@ -7,6 +7,7 @@ import {
   ListOrdered, XCircle, ShieldOff, KeyRound,
   ChevronLeft, ChevronRight, Settings, CalendarDays,
   Package, Ban, Unlock, Hash, X, TrendingUp,
+  Upload, FileImage, ShieldCheck, ShieldAlert,
 } from 'lucide-react';
 import { WaIcon, toWa } from '../lib/whatsapp';
 import { OrderReceiptSheet } from '../components/OrderReceiptSheet';
@@ -145,7 +146,7 @@ const MonthDrumPicker: React.FC<{ value: string; onChange: (m: string) => void }
 };
 
 export const DriverHome: React.FC = () => {
-  const { user, activeRole } = useApp();
+  const { user, activeRole, refreshUserData } = useApp();
   // Admin/superadmin who switched the pill to Driver should behave as a full driver
   const effectiveCanDrive = user.canDrive || activeRole === 'driver';
 
@@ -157,6 +158,9 @@ export const DriverHome: React.FC = () => {
   const [updating, setUpdating]             = useState(false);
   const [cancelSecsLeft, setCancelSecsLeft] = useState<number>(0);
   const [toast, setToast]                   = useState('');
+  const [uploadingDoc, setUploadingDoc]     = useState<'ic' | 'license' | null>(null);
+  const icDocRef                            = useRef<HTMLInputElement>(null);
+  const licenseDocRef                       = useRef<HTMLInputElement>(null);
   const [loading, setLoading]               = useState(true);
   const [newPing, setNewPing]               = useState(false);
   const prevPoolCount                       = useRef(0);
@@ -496,6 +500,128 @@ export const DriverHome: React.FC = () => {
 
   const fmt = (order: RideOrder) =>
     order.fare === 'TBC' ? 'TBC' : `RM ${(Number(order.fare) + order.night_charge).toFixed(2)}`;
+
+  // ── Document upload handler ──────────────────────────────────────────────────
+  const handleDocUpload = async (e: React.ChangeEvent<HTMLInputElement>, type: 'ic' | 'license') => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 10 * 1024 * 1024) { showToast('File too large. Max 10MB.'); return; }
+    setUploadingDoc(type);
+    const { data: { user: authUser } } = await supabase.auth.getUser();
+    if (!authUser) { setUploadingDoc(null); return; }
+    const ext  = file.name.split('.').pop() ?? 'jpg';
+    const path = `${authUser.id}/${type}.${ext}`;
+    const { error: upErr } = await supabase.storage.from('driver-documents').upload(path, file, { upsert: true });
+    if (upErr) { showToast('Upload failed. Please try again.'); setUploadingDoc(null); return; }
+    const { data: signed } = await supabase.storage.from('driver-documents').createSignedUrl(path, 60 * 60 * 24 * 365);
+    const url = signed?.signedUrl ?? '';
+    const col = type === 'ic' ? { ic_url: url } : { license_url: url };
+    await supabase.from('profiles').update({ ...col, docs_status: 'pending' }).eq('id', authUser.id);
+    setUploadingDoc(null);
+    if (e.target) e.target.value = '';
+    await refreshUserData();
+    showToast(type === 'ic' ? 'IC uploaded!' : 'License uploaded!');
+  };
+
+  // ── Gate 1: Document verification guard ──────────────────────────────────────
+  const isAdminRole = user.role === 'admin' || user.role === 'superadmin';
+
+  if (!isAdminRole && user.docsStatus !== 'approved') {
+    const bothUploaded = !!user.icUrl && !!user.licenseUrl;
+    return (
+      <div className="flex-grow bg-slate-50 overflow-y-auto no-scrollbar pb-6 px-4 flex flex-col gap-4 animate-fade-in">
+        <div className="mt-6 flex flex-col items-center text-center gap-2">
+          <div className={`w-16 h-16 rounded-full flex items-center justify-center border-2 ${
+            user.docsStatus === 'rejected' ? 'bg-red-50 border-red-100' :
+            user.docsStatus === 'pending'  ? 'bg-amber-50 border-amber-100' :
+            'bg-slate-50 border-slate-200'
+          }`}>
+            {user.docsStatus === 'rejected' ? <ShieldAlert className="w-7 h-7 text-red-400" /> :
+             user.docsStatus === 'pending'  ? <ShieldCheck className="w-7 h-7 text-amber-400" /> :
+             <ShieldCheck className="w-7 h-7 text-slate-300" />}
+          </div>
+          <p className="text-sm font-black text-slate-800">
+            {user.docsStatus === 'pending'  ? 'Documents Under Review' :
+             user.docsStatus === 'rejected' ? 'Documents Rejected' :
+             'Complete Verification'}
+          </p>
+          <p className="text-xs text-slate-400 font-semibold leading-relaxed max-w-xs">
+            {user.docsStatus === 'pending'  ? 'Your documents are being reviewed by admin. You will be notified once approved.' :
+             user.docsStatus === 'rejected' ? `Reason: ${user.docsRejectReason || 'Please re-upload correct documents.'}` :
+             'Upload your IC (MyKad) and Driving License to get verified as a Gerak Driver.'}
+          </p>
+        </div>
+
+        <div className="bg-white border border-slate-100 rounded-3xl p-5 shadow-sm flex flex-col gap-4">
+          <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest">Required Documents</h3>
+
+          {/* IC Upload */}
+          <div className="flex flex-col gap-2">
+            <label className="text-[10px] font-extrabold text-slate-500 uppercase tracking-wider">Identity Card (MyKad) *</label>
+            <input ref={icDocRef} type="file" accept="image/*,.pdf" className="hidden" onChange={e => handleDocUpload(e, 'ic')} />
+            {user.icUrl ? (
+              <div className="flex items-center justify-between bg-emerald-50 border border-emerald-100 rounded-2xl px-4 py-3">
+                <div className="flex items-center gap-2">
+                  <FileImage className="w-4 h-4 text-emerald-500" />
+                  <span className="text-xs font-extrabold text-emerald-700">IC Uploaded ✓</span>
+                </div>
+                <button onClick={() => icDocRef.current?.click()}
+                  className="text-[10px] font-extrabold text-slate-400 underline">
+                  {uploadingDoc === 'ic' ? 'Uploading…' : 'Replace'}
+                </button>
+              </div>
+            ) : (
+              <button onClick={() => icDocRef.current?.click()} disabled={uploadingDoc === 'ic'}
+                className="w-full border-2 border-dashed border-slate-200 rounded-2xl py-4 flex items-center justify-center gap-2 text-slate-400 hover:border-primary hover:text-primary transition active:scale-95">
+                {uploadingDoc === 'ic'
+                  ? <span className="w-4 h-4 rounded-full border-2 border-slate-300 border-t-primary animate-spin" />
+                  : <><Upload className="w-4 h-4" /><span className="text-xs font-bold">Upload IC (MyKad)</span></>}
+              </button>
+            )}
+          </div>
+
+          {/* License Upload */}
+          <div className="flex flex-col gap-2">
+            <label className="text-[10px] font-extrabold text-slate-500 uppercase tracking-wider">Driving License *</label>
+            <input ref={licenseDocRef} type="file" accept="image/*,.pdf" className="hidden" onChange={e => handleDocUpload(e, 'license')} />
+            {user.licenseUrl ? (
+              <div className="flex items-center justify-between bg-emerald-50 border border-emerald-100 rounded-2xl px-4 py-3">
+                <div className="flex items-center gap-2">
+                  <FileImage className="w-4 h-4 text-emerald-500" />
+                  <span className="text-xs font-extrabold text-emerald-700">License Uploaded ✓</span>
+                </div>
+                <button onClick={() => licenseDocRef.current?.click()}
+                  className="text-[10px] font-extrabold text-slate-400 underline">
+                  {uploadingDoc === 'license' ? 'Uploading…' : 'Replace'}
+                </button>
+              </div>
+            ) : (
+              <button onClick={() => licenseDocRef.current?.click()} disabled={uploadingDoc === 'license'}
+                className="w-full border-2 border-dashed border-slate-200 rounded-2xl py-4 flex items-center justify-center gap-2 text-slate-400 hover:border-primary hover:text-primary transition active:scale-95">
+                {uploadingDoc === 'license'
+                  ? <span className="w-4 h-4 rounded-full border-2 border-slate-300 border-t-primary animate-spin" />
+                  : <><Upload className="w-4 h-4" /><span className="text-xs font-bold">Upload Driving License</span></>}
+              </button>
+            )}
+          </div>
+
+          {bothUploaded && user.docsStatus === 'none' && (
+            <div className="bg-amber-50 border border-amber-100 rounded-2xl px-4 py-3 text-center">
+              <p className="text-xs font-extrabold text-amber-700">Documents submitted for review</p>
+              <p className="text-[10px] text-amber-500 font-semibold mt-0.5">Admin will verify your documents shortly.</p>
+            </div>
+          )}
+        </div>
+
+        <div className="bg-slate-50 border border-slate-100 rounded-2xl px-4 py-3">
+          <p className="text-[10px] text-slate-400 font-semibold text-center leading-relaxed">
+            Your Gerak ID: <span className="font-black text-slate-600">{user.gerakId}</span><br />
+            Documents are reviewed within 24 hours.
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   // ── Suspended guard ──────────────────────────────────────────────────────────
   if (user.status === 'inactive' && user.role !== 'superadmin') {
