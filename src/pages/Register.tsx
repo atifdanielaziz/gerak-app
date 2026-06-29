@@ -69,7 +69,7 @@ export const Register: React.FC = () => {
   };
 
   return (
-    <div className="flex-1 bg-slate-50 flex flex-col justify-between p-6 select-none animate-fade-in h-full">
+    <div className="flex-1 bg-slate-50 flex flex-col p-6 gap-4 select-none animate-fade-in h-full overflow-hidden">
 
       {/* Header */}
       <div className="flex flex-col items-center text-center mt-4">
@@ -86,9 +86,12 @@ export const Register: React.FC = () => {
         </p>
       </div>
 
-      {/* Form */}
-      <div className="w-full bg-white rounded-3xl p-5 border border-slate-100 shadow-md">
-        <form onSubmit={handleSubmit} className="flex flex-col gap-3">
+      {/* Form Card — flex-1 so it fills remaining space, fields scroll, button fixed */}
+      <div className="flex-1 w-full bg-white rounded-3xl border border-slate-100 shadow-md flex flex-col overflow-hidden min-h-0">
+
+        {/* Scrollable fields */}
+        <div className="flex-1 overflow-y-auto no-scrollbar px-5 pt-5 pb-2">
+        <form id="register-form" onSubmit={handleSubmit} className="flex flex-col gap-3">
 
           {/* University */}
           <div className="flex flex-col gap-1">
@@ -288,22 +291,26 @@ export const Register: React.FC = () => {
               {error}
             </div>
           )}
+        </form>
+        </div>
 
-          {/* Submit */}
+        {/* Fixed submit button at bottom of card */}
+        <div className="px-5 pb-5 pt-3 border-t border-slate-100 shrink-0">
           <button
             type="submit"
+            form="register-form"
             disabled={loading}
-            className="w-full bg-primary hover:bg-primary-hover active:scale-[0.99] disabled:bg-slate-200 text-white font-extrabold py-2.5 rounded-xl shadow-md transition flex items-center justify-center gap-2 mt-1.5"
+            className="w-full bg-primary hover:bg-primary-hover active:scale-[0.99] disabled:bg-slate-200 text-white font-extrabold py-2.5 rounded-xl shadow-md transition flex items-center justify-center gap-2"
           >
             {loading
               ? <span className="w-4 h-4 rounded-full border-2 border-white border-t-transparent animate-spin" />
               : <><span>Register Account</span><ArrowRight className="w-3.5 h-3.5" /></>}
           </button>
-        </form>
+        </div>
       </div>
 
-      {/* Footer */}
-      <div className="text-center mb-2">
+      {/* Footer — fixed outside card */}
+      <div className="text-center shrink-0">
         <span className="text-xs text-slate-400 font-semibold">Already registered? </span>
         <button onClick={() => setCurrentPage('login')}
           className="text-xs text-primary font-bold hover:underline active:scale-95 transition">
