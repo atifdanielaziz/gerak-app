@@ -22,12 +22,22 @@ export const Profile: React.FC = () => {
   const docsApproved = user.docsStatus === 'approved' || user.role === 'admin' || user.role === 'superadmin';
 
   const [editMode, setEditMode]         = useState(false);
-  const [draftName, setDraftName]       = useState('');
-  const [draftMatric, setDraftMatric]   = useState('');
-  const [draftEmail, setDraftEmail]     = useState('');
-  const [draftPhone, setDraftPhone]     = useState('');
-  const [draftVehicle, setDraftVehicle] = useState('');
-  const [draftPlate, setDraftPlate]     = useState('');
+  const [draftName, setDraftName]         = useState('');
+  const [draftMatric, setDraftMatric]     = useState('');
+  const [draftEmail, setDraftEmail]       = useState('');
+  const [draftPhone, setDraftPhone]       = useState('');
+  const [draftVehicle, setDraftVehicle]   = useState('');
+  const [draftPlate, setDraftPlate]       = useState('');
+  const [draftIcNumber, setDraftIcNumber] = useState('');
+
+  const requiresIc = ['driver', 'rider', 'admin', 'superadmin'].includes(user.role);
+
+  const formatIcNumber = (val: string) => {
+    const digits = val.replace(/\D/g, '').slice(0, 12);
+    if (digits.length <= 6) return digits;
+    if (digits.length <= 8) return `${digits.slice(0, 6)}-${digits.slice(6)}`;
+    return `${digits.slice(0, 6)}-${digits.slice(6, 8)}-${digits.slice(8)}`;
+  };
   const [saving, setSaving]             = useState(false);
   const [saveError, setSaveError]       = useState('');
   const [uploading, setUploading]       = useState(false);
@@ -42,6 +52,7 @@ export const Profile: React.FC = () => {
     setDraftPhone(user.phone);
     setDraftVehicle(user.vehicle);
     setDraftPlate(user.plateNumber);
+    setDraftIcNumber(user.icNumber ?? '');
     setSaveError('');
     setEditMode(true);
   };
@@ -50,6 +61,14 @@ export const Profile: React.FC = () => {
 
   const handleSave = async () => {
     setSaveError('');
+    if (!draftName.trim())   { setSaveError('Full name is required.'); return; }
+    if (!draftMatric.trim()) { setSaveError('Matric number is required.'); return; }
+    if (!draftPhone.trim())  { setSaveError('Mobile number is required.'); return; }
+    if (!draftEmail.trim())  { setSaveError('Email address is required.'); return; }
+    if (requiresIc) {
+      const digits = draftIcNumber.replace(/\D/g, '');
+      if (digits.length !== 12) { setSaveError('IC Number must be 12 digits (e.g. 012345-67-8910).'); return; }
+    }
     setSaving(true);
     const { error } = await updateProfile({
       name:        draftName.trim(),
@@ -58,6 +77,7 @@ export const Profile: React.FC = () => {
       phone:       draftPhone.trim(),
       vehicle:     draftVehicle.trim(),
       plateNumber: draftPlate.trim().toUpperCase(),
+      icNumber:    requiresIc ? draftIcNumber.trim() : undefined,
     });
     setSaving(false);
     if (error) { setSaveError(error); return; }
@@ -225,10 +245,12 @@ export const Profile: React.FC = () => {
       {/* ── PROFILE FIELDS ── */}
       <div className="px-5 mt-2">
 
-        {/* Full Name */}
+        {/* Full Name * */}
         <div className="flex items-center justify-between py-4 border-b border-slate-100">
           <div className="flex-1 min-w-0 pr-3">
-            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Full Name</span>
+            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
+              Full Name <span className="text-danger">*</span>
+            </span>
             {editMode ? (
               <input value={draftName} onChange={e => setDraftName(e.target.value.replace(/\b\w/g, c => c.toUpperCase()))}
                 className="mt-1 w-full bg-slate-50 border border-slate-200 rounded-xl py-2 px-3 text-sm font-medium text-slate-700 focus:outline-none focus:border-primary transition"
@@ -238,10 +260,12 @@ export const Profile: React.FC = () => {
           {!editMode && <ChevronRight className="w-4 h-4 text-slate-300 shrink-0" />}
         </div>
 
-        {/* Matric Number */}
+        {/* Matric Number * */}
         <div className="flex items-center justify-between py-4 border-b border-slate-100">
           <div className="flex-1 min-w-0 pr-3">
-            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Matric Number</span>
+            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
+              Matric Number <span className="text-danger">*</span>
+            </span>
             {editMode ? (
               <input value={draftMatric} onChange={e => setDraftMatric(e.target.value.toUpperCase())}
                 className="mt-1 w-full bg-slate-50 border border-slate-200 rounded-xl py-2 px-3 text-sm font-medium text-slate-700 focus:outline-none focus:border-primary transition"
@@ -251,10 +275,12 @@ export const Profile: React.FC = () => {
           {!editMode && <ChevronRight className="w-4 h-4 text-slate-300 shrink-0" />}
         </div>
 
-        {/* Mobile Number */}
+        {/* Mobile Number * */}
         <div className="flex items-center justify-between py-4 border-b border-slate-100">
           <div className="flex-1 min-w-0 pr-3">
-            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Mobile Number</span>
+            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
+              Mobile Number <span className="text-danger">*</span>
+            </span>
             {editMode ? (
               <input type="tel" value={draftPhone} onChange={e => setDraftPhone(e.target.value)}
                 className="mt-1 w-full bg-slate-50 border border-slate-200 rounded-xl py-2 px-3 text-sm font-medium text-slate-700 focus:outline-none focus:border-primary transition"
@@ -264,11 +290,13 @@ export const Profile: React.FC = () => {
           {!editMode && <ChevronRight className="w-4 h-4 text-slate-300 shrink-0" />}
         </div>
 
-        {/* Email */}
+        {/* Email Address * */}
         <div className="flex items-center justify-between py-4 border-b border-slate-100">
           <div className="flex-1 min-w-0 pr-3">
             <div className="flex items-center gap-2">
-              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Email Address</span>
+              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                Email Address <span className="text-danger">*</span>
+              </span>
               <span className="flex items-center gap-0.5 bg-emerald-500 text-white text-[8px] font-extrabold px-1.5 py-0.5 rounded-full shrink-0">
                 <CheckCircle2 className="w-2.5 h-2.5" /> VERIFIED
               </span>
@@ -281,6 +309,30 @@ export const Profile: React.FC = () => {
           </div>
           {!editMode && <ChevronRight className="w-4 h-4 text-slate-300 shrink-0" />}
         </div>
+
+        {/* IC Number * — required for driver/rider/admin/superadmin */}
+        {requiresIc && (
+          <div className="flex items-center justify-between py-4 border-b border-slate-100">
+            <div className="flex-1 min-w-0 pr-3">
+              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
+                IC Number <span className="text-danger">*</span>
+              </span>
+              {editMode ? (
+                <input
+                  value={draftIcNumber}
+                  onChange={e => setDraftIcNumber(formatIcNumber(e.target.value))}
+                  inputMode="numeric"
+                  className="mt-1 w-full bg-slate-50 border border-slate-200 rounded-xl py-2 px-3 text-sm font-medium text-slate-700 focus:outline-none focus:border-primary transition"
+                  placeholder="e.g. 012345-67-8910" />
+              ) : (
+                <span className="text-sm font-medium text-slate-700 mt-1 block">
+                  {user.icNumber || <span className="text-danger text-xs font-semibold">Not set — please update</span>}
+                </span>
+              )}
+            </div>
+            {!editMode && <ChevronRight className="w-4 h-4 text-slate-300 shrink-0" />}
+          </div>
+        )}
 
         {/* ── Driver-only fields ── */}
         {isDriver && (

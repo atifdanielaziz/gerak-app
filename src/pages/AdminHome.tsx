@@ -422,7 +422,7 @@ export const AdminHome: React.FC = () => {
   const [routesLoading, setRoutesLoading] = useState(false);
 
   // ── Verify tab state ──────────────────────────────────────────────────────
-  type VerifyDoc = { id: string; name: string; gerak_id: string; campus: string; role: string; ic_url: string | null; license_url: string | null; docs_status: string; docs_reject_reason: string | null };
+  type VerifyDoc = { id: string; name: string; gerak_id: string; campus: string; role: string; ic_number: string | null; ic_url: string | null; license_url: string | null; docs_status: string; docs_reject_reason: string | null };
   const [verifyDocs,      setVerifyDocs]      = useState<VerifyDoc[]>([]);
   const [verifyLoading,   setVerifyLoading]   = useState(false);
   const [verifyFilter,    setVerifyFilter]    = useState<'driver' | 'rider'>('driver');
@@ -830,7 +830,7 @@ export const AdminHome: React.FC = () => {
   const loadVerifyDocs = useCallback(async () => {
     setVerifyLoading(true);
     let q = supabase.from('profiles')
-      .select('id,name,gerak_id,campus,role,ic_url,license_url,docs_status,docs_reject_reason')
+      .select('id,name,gerak_id,campus,role,ic_number,ic_url,license_url,docs_status,docs_reject_reason')
       .eq('role', verifyFilter)
       .order('docs_status').order('name');
     if (!isSuperAdmin) q = q.eq('campus', adminCampus);
@@ -1855,6 +1855,12 @@ export const AdminHome: React.FC = () => {
                   <div className="flex-1 min-w-0">
                     <p className="text-xs font-black text-slate-800 truncate">{d.name}</p>
                     <p className="text-[10px] text-slate-400 font-semibold mt-0.5">{d.gerak_id} · UMPSA {d.campus}</p>
+                    {d.ic_number && (
+                      <p className="text-[10px] font-extrabold text-slate-500 mt-0.5">IC: {d.ic_number}</p>
+                    )}
+                    {!d.ic_number && (
+                      <p className="text-[10px] font-semibold text-amber-500 mt-0.5">IC number not set yet</p>
+                    )}
                   </div>
                   <span className={`text-[9px] font-extrabold px-2 py-1 rounded-full border shrink-0 ${
                     d.docs_status === 'approved' ? 'bg-emerald-50 border-emerald-100 text-emerald-700' :

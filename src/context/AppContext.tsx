@@ -39,6 +39,7 @@ export interface UserSession {
   feeReceiptRejectReason: string;
   canDrive: boolean;
   canRent: boolean;
+  icNumber: string;
   icUrl: string;
   licenseUrl: string;
   docsStatus: 'none' | 'pending' | 'approved' | 'rejected';
@@ -111,7 +112,7 @@ interface AppContextType {
   login: (email: string, password: string) => Promise<{ error: string | null }>;
   register: (name: string, matricNo: string, email: string, password: string, phone: string, university: string, campus: string) => Promise<{ error: string | null }>;
   logout: () => void;
-  updateProfile: (updates: { name?: string; matricNo?: string; email?: string; phone?: string; vehicle?: string; plateNumber?: string; feeReceiptUrl?: string }) => Promise<{ error: string | null }>;
+  updateProfile: (updates: { name?: string; matricNo?: string; email?: string; phone?: string; vehicle?: string; plateNumber?: string; icNumber?: string; feeReceiptUrl?: string }) => Promise<{ error: string | null }>;
   refreshUserData: () => Promise<void>;
 
   // Notifications
@@ -199,6 +200,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     feeReceiptRejectReason: '',
     canDrive: false,
     canRent:  false,
+    icNumber: '',
     icUrl: '',
     licenseUrl: '',
     docsStatus: 'none',
@@ -283,7 +285,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   }, []);
 
   const loadProfile = async (userId: string) => {
-    const { data } = await supabase.from('profiles').select('id,name,matric_no,email,phone,university,campus,gerak_id,role,status,vehicle,plate_number,fee_receipt_url,fee_receipt_verified,fee_receipt_amount,fee_receipt_date,fee_receipt_expiry,fee_receipt_reject_reason,can_drive,can_rent,ic_url,license_url,docs_status,docs_reject_reason').eq('id', userId).single();
+    const { data } = await supabase.from('profiles').select('id,name,matric_no,email,phone,university,campus,gerak_id,role,status,vehicle,plate_number,fee_receipt_url,fee_receipt_verified,fee_receipt_amount,fee_receipt_date,fee_receipt_expiry,fee_receipt_reject_reason,can_drive,can_rent,ic_number,ic_url,license_url,docs_status,docs_reject_reason').eq('id', userId).single();
     if (data) {
       const role = data.role ?? 'customer';
       setUser({
@@ -306,6 +308,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         feeReceiptRejectReason: data.fee_receipt_reject_reason ?? '',
         canDrive:               data.can_drive ?? (data.role === 'driver'),
         canRent:                data.can_rent  ?? false,
+        icNumber:               data.ic_number ?? '',
         icUrl:                  data.ic_url           ?? '',
         licenseUrl:             data.license_url      ?? '',
         docsStatus:             data.docs_status      ?? 'none',
@@ -378,7 +381,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const refreshUserData = async () => {
     const { data: { user: authUser } } = await supabase.auth.getUser();
     if (!authUser) return;
-    const { data } = await supabase.from('profiles').select('id,name,matric_no,email,phone,university,campus,gerak_id,role,status,vehicle,plate_number,fee_receipt_url,fee_receipt_verified,fee_receipt_amount,fee_receipt_date,fee_receipt_expiry,fee_receipt_reject_reason,can_drive,can_rent,ic_url,license_url,docs_status,docs_reject_reason').eq('id', authUser.id).single();
+    const { data } = await supabase.from('profiles').select('id,name,matric_no,email,phone,university,campus,gerak_id,role,status,vehicle,plate_number,fee_receipt_url,fee_receipt_verified,fee_receipt_amount,fee_receipt_date,fee_receipt_expiry,fee_receipt_reject_reason,can_drive,can_rent,ic_number,ic_url,license_url,docs_status,docs_reject_reason').eq('id', authUser.id).single();
     if (data) {
       setUser(prev => ({
         ...prev,
@@ -388,6 +391,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         feeReceiptDate:         data.fee_receipt_date          ?? '',
         feeReceiptExpiry:       data.fee_receipt_expiry        ?? '',
         feeReceiptRejectReason: data.fee_receipt_reject_reason ?? '',
+        icNumber:         data.ic_number         ?? '',
         icUrl:            data.ic_url            ?? '',
         licenseUrl:       data.license_url       ?? '',
         docsStatus:       data.docs_status       ?? 'none',
@@ -397,7 +401,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   };
 
-  const updateProfile = async (updates: { name?: string; matricNo?: string; email?: string; phone?: string; vehicle?: string; plateNumber?: string; feeReceiptUrl?: string }): Promise<{ error: string | null }> => {
+  const updateProfile = async (updates: { name?: string; matricNo?: string; email?: string; phone?: string; vehicle?: string; plateNumber?: string; icNumber?: string; feeReceiptUrl?: string }): Promise<{ error: string | null }> => {
     let { data: { user: authUser } } = await supabase.auth.getUser();
     if (!authUser) {
       const { data: refreshed } = await supabase.auth.refreshSession();
@@ -411,6 +415,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     if (updates.phone          !== undefined) row.phone           = updates.phone;
     if (updates.vehicle        !== undefined) row.vehicle         = updates.vehicle;
     if (updates.plateNumber    !== undefined) row.plate_number    = updates.plateNumber;
+    if (updates.icNumber       !== undefined) row.ic_number       = updates.icNumber;
 
     if (updates.feeReceiptUrl  !== undefined) row.fee_receipt_url = updates.feeReceiptUrl;
     const { error } = await supabase.from('profiles').update(row).eq('id', authUser.id);
@@ -450,7 +455,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setPageHistory([]);
     setActiveRole(null);
     setIsPreviewMode(false);
-    setUser({ name: '', matricNo: '', email: '', phone: '', university: '', campus: '', gerakId: '', role: 'customer', status: 'active', vehicle: '', plateNumber: '', feeReceiptUrl: '', feeReceiptVerified: false, feeReceiptAmount: '', feeReceiptDate: '', feeReceiptExpiry: '', feeReceiptRejectReason: '', canDrive: false, canRent: false, icUrl: '', licenseUrl: '', docsStatus: 'none', docsRejectReason: '', isLoggedIn: false });
+    setUser({ name: '', matricNo: '', email: '', phone: '', university: '', campus: '', gerakId: '', role: 'customer', status: 'active', vehicle: '', plateNumber: '', feeReceiptUrl: '', feeReceiptVerified: false, feeReceiptAmount: '', feeReceiptDate: '', feeReceiptExpiry: '', feeReceiptRejectReason: '', canDrive: false, canRent: false, icNumber: '', icUrl: '', licenseUrl: '', docsStatus: 'none', docsRejectReason: '', isLoggedIn: false });
     setActiveRide(null);
     setJubahBooking(null);
     _setCurrentPage('login');
