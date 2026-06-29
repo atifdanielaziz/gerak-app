@@ -19,6 +19,13 @@ export const BottomNav: React.FC = () => {
     { id: 'profile'           as ActivePage, label: 'Profile',   icon: UserCircle,     badge: false },
   ];
 
+  // Rider nav
+  const riderItems = [
+    { id: 'rider-home'        as ActivePage, label: 'Jobs',      icon: Briefcase,      badge: false },
+    { id: 'academic-calendar' as ActivePage, label: 'Calendar',  icon: CalendarDays,   badge: false },
+    { id: 'profile'           as ActivePage, label: 'Profile',   icon: UserCircle,     badge: false },
+  ];
+
   // Admin / superadmin nav
   const adminItems = [
     { id: 'admin-home'        as ActivePage, label: 'Dashboard', icon: LayoutDashboard, badge: false },
@@ -35,6 +42,7 @@ export const BottomNav: React.FC = () => {
 
   const items =
     role === 'driver'                          ? driverItems  :
+    role === 'rider'                           ? riderItems   :
     role === 'superadmin' || role === 'admin'  ? adminItems   :
     customerItems;
 

@@ -13,6 +13,7 @@ const Jubah            = lazy(() => import('./pages/Jubah').then(m => ({ default
 const Profile          = lazy(() => import('./pages/Profile').then(m => ({ default: m.Profile })));
 const NotificationsPage = lazy(() => import('./pages/NotificationsPage').then(m => ({ default: m.NotificationsPage })));
 const DriverHome       = lazy(() => import('./pages/DriverHome').then(m => ({ default: m.DriverHome })));
+const RiderHome        = lazy(() => import('./pages/RiderHome').then(m => ({ default: m.RiderHome })));
 const AdminHome        = lazy(() => import('./pages/AdminHome').then(m => ({ default: m.AdminHome })));
 const MyOrders         = lazy(() => import('./pages/MyOrders').then(m => ({ default: m.MyOrders })));
 const GerakRental      = lazy(() => import('./pages/GerakRental').then(m => ({ default: m.GerakRental })));
@@ -283,6 +284,8 @@ const AppContent: React.FC = () => {
         return <NotificationsPage />;
       case 'driver-home':
         return <DriverHome />;
+      case 'rider-home':
+        return <RiderHome />;
       case 'admin-home':
         return <AdminHome />;
       case 'my-orders':
