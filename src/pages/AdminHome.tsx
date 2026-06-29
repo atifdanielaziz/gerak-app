@@ -392,7 +392,7 @@ export const AdminHome: React.FC = () => {
   const [searchResult, setSearchResult]     = useState<ProfileUser | null | 'not_found'>(null);
   const [searching, setSearching]           = useState(false);
   const [pendingAction, setPendingAction]   = useState<PendingAction | null>(null);
-  const [staffFilter, setStaffFilter]       = useState<'all' | 'drivers' | 'admins'>('all');
+  const [staffFilter, setStaffFilter]       = useState<'all' | 'drivers' | 'riders' | 'admins'>('all');
   const [sheetUser, setSheetUser]           = useState<ProfileUser | null>(null);
 
   // Banners state
@@ -962,7 +962,7 @@ export const AdminHome: React.FC = () => {
         {([
           { id: 'orders',   label: 'Orders',    icon: BarChart3,       superadminOnly: false },
           { id: 'drivers',  label: 'Invite',    icon: Car,             superadminOnly: false },
-          { id: 'users',    label: 'Drivers',   icon: Users,           superadminOnly: false },
+          { id: 'users',    label: 'Staff',     icon: Users,           superadminOnly: false },
           { id: 'verify',   label: 'Verify',    icon: ShieldCheck,     superadminOnly: false },
           { id: 'banners',  label: 'Banners',   icon: Megaphone,       superadminOnly: false },
           { id: 'routes',   label: 'Routes',    icon: ArrowLeftRight,  superadminOnly: false },
@@ -1176,7 +1176,7 @@ export const AdminHome: React.FC = () => {
           {/* Driver search */}
           <div className="bg-white border border-slate-100 rounded-3xl p-5 shadow-sm flex flex-col gap-3">
             <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest flex items-center gap-1.5">
-              <AlertCircle className="w-4 h-4" /> Find Driver
+              <AlertCircle className="w-4 h-4" /> Find Staff
             </h3>
             <div className="flex gap-2">
               <input
@@ -1200,7 +1200,7 @@ export const AdminHome: React.FC = () => {
 
             {/* Search result */}
             {searchResult === 'not_found' && (
-              <p className="text-xs text-slate-400 font-semibold text-center py-2">No driver found with that Gerak ID.</p>
+              <p className="text-xs text-slate-400 font-semibold text-center py-2">No staff found with that Gerak ID.</p>
             )}
             {searchResult && searchResult !== 'not_found' && (
               <UserCard u={searchResult} canManage={canManage(searchResult.role, searchResult.id)}
@@ -1216,18 +1216,19 @@ export const AdminHome: React.FC = () => {
           {/* Admins & Drivers list */}
           <div className="bg-white border border-slate-100 rounded-3xl p-5 shadow-sm flex flex-col gap-3">
             <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest flex items-center gap-1.5">
-              <Users className="w-4 h-4" /> Admins &amp; Drivers
+              <Users className="w-4 h-4" /> Admins and Staff
             </h3>
 
-            {/* Filter toggle */}
-            <div className="flex bg-slate-50 border border-slate-200 rounded-2xl p-1 gap-1">
+            {/* Filter toggle — scrollable */}
+            <div className="flex bg-slate-50 border border-slate-200 rounded-2xl p-1 gap-1 overflow-x-auto no-scrollbar">
               {([
                 { id: 'all',     label: 'All' },
                 { id: 'drivers', label: '🚗 Drivers' },
+                { id: 'riders',  label: '🛵 Riders' },
                 { id: 'admins',  label: '⚙️ Admins' },
               ] as const).map(f => (
                 <button key={f.id} onClick={() => setStaffFilter(f.id)}
-                  className={`flex-1 py-1.5 rounded-xl text-[10px] font-extrabold transition ${
+                  className={`shrink-0 px-4 py-1.5 rounded-xl text-[10px] font-extrabold transition ${
                     staffFilter === f.id ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-400'
                   }`}>
                   {f.label}
@@ -1244,6 +1245,7 @@ export const AdminHome: React.FC = () => {
                 const filtered = profileUsers.filter(u =>
                   staffFilter === 'all'     ? true :
                   staffFilter === 'drivers' ? u.role === 'driver' :
+                  staffFilter === 'riders'  ? u.role === 'rider' :
                   ['admin', 'superadmin'].includes(u.role)
                 );
                 return filtered.length === 0
