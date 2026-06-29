@@ -69,7 +69,7 @@ export const Register: React.FC = () => {
   };
 
   return (
-    <div className="flex-1 bg-slate-50 flex flex-col p-6 gap-4 select-none animate-fade-in h-full overflow-hidden">
+    <div className="flex-1 bg-slate-50 flex flex-col p-6 gap-4 select-none animate-fade-in h-full overflow-hidden touch-pan-y">
 
       {/* Header */}
       <div className="flex flex-col items-center text-center mt-4">
@@ -90,8 +90,8 @@ export const Register: React.FC = () => {
       <div className="flex-1 w-full bg-white rounded-3xl border border-slate-100 shadow-md flex flex-col overflow-hidden min-h-0">
 
         {/* Scrollable fields */}
-        <div className="flex-1 overflow-y-auto no-scrollbar px-5 pt-5 pb-2">
-        <form id="register-form" onSubmit={handleSubmit} className="flex flex-col gap-3">
+        <div className="flex-1 overflow-y-auto overflow-x-hidden no-scrollbar px-5 pt-5 pb-2 overscroll-contain touch-pan-y w-full">
+        <form id="register-form" onSubmit={handleSubmit} className="flex flex-col gap-3 w-full">
 
           {/* University */}
           <div className="flex flex-col gap-1">
