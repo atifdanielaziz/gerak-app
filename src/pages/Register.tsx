@@ -40,10 +40,12 @@ export const Register: React.FC = () => {
   // Gerak ID preview
   useEffect(() => {
     if (!effectiveCampus) { setGerakId(''); return; }
-    const rpc = isDriver ? 'get_next_driver_gerak_id' : 'get_next_gerak_id';
+    const rpc = invite?.role === 'rider'
+      ? 'get_next_rider_gerak_id'
+      : isDriver ? 'get_next_driver_gerak_id' : 'get_next_gerak_id';
     supabase.rpc(rpc, { p_campus: effectiveCampus })
       .then(({ data }) => setGerakId(data ?? ''));
-  }, [effectiveCampus, isDriver]);
+  }, [effectiveCampus, isDriver, invite?.role]);
 
   const handleSubmit = async (e: React.SyntheticEvent) => {
     e.preventDefault();
@@ -218,8 +220,12 @@ export const Register: React.FC = () => {
                   <>
                     <Car className="w-4 h-4 shrink-0" />
                     <div>
-                      <p className="font-extrabold leading-tight">{invite!.role === 'admin' ? 'Pre-approved Admin' : 'Pre-approved Driver'}</p>
-                      <p className="text-[9px] font-semibold opacity-70 mt-0.5">UMPSA {invite!.campus} · {invite!.role === 'admin' ? 'Admin + Driver Account' : 'Driver Account'}</p>
+                      <p className="font-extrabold leading-tight">
+                        {invite!.role === 'admin' ? 'Pre-approved Admin' : invite!.role === 'rider' ? 'Pre-approved Rider' : 'Pre-approved Driver'}
+                      </p>
+                      <p className="text-[9px] font-semibold opacity-70 mt-0.5">
+                        UMPSA {invite!.campus} · {invite!.role === 'admin' ? 'Admin Account' : invite!.role === 'rider' ? 'Rider Account' : 'Driver Account'}
+                      </p>
                     </div>
                   </>
                 ) : (
