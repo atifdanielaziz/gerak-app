@@ -398,6 +398,8 @@ export const AdminHome: React.FC = () => {
   // Banners state
   const [announcements, setAnnouncements]       = useState<Announcement[]>([]);
   const [bannersLoading, setBannersLoading]     = useState(false);
+  const [jubahActive, setJubahActive]           = useState(false);
+  const [togglingJubah, setTogglingJubah]       = useState(false);
   const [showBannerForm, setShowBannerForm]     = useState(false);
   const [savingBanner, setSavingBanner]         = useState(false);
   const [bannerTag, setBannerTag]               = useState('📢 Announcement');
@@ -721,12 +723,25 @@ export const AdminHome: React.FC = () => {
   // ── Banner helpers ───────────────────────────────────────────────────────────
   const loadAnnouncements = useCallback(async () => {
     setBannersLoading(true);
-    const { data } = await supabase.from('announcements').select('*').order('sort_order').order('created_at', { ascending: false });
-    setAnnouncements(data ?? []);
+    const [{ data: ann }, { data: setting }] = await Promise.all([
+      supabase.from('announcements').select('*').order('sort_order').order('created_at', { ascending: false }),
+      supabase.from('app_settings').select('value').eq('key', 'jubah_active').single(),
+    ]);
+    setAnnouncements(ann ?? []);
+    if (setting) setJubahActive(setting.value === 'true');
     setBannersLoading(false);
   }, []);
 
   useEffect(() => { if (activeTab === 'banners') loadAnnouncements(); }, [activeTab, loadAnnouncements]);
+
+  const handleToggleJubah = async () => {
+    setTogglingJubah(true);
+    const newVal = (!jubahActive).toString();
+    await supabase.from('app_settings').update({ value: newVal }).eq('key', 'jubah_active');
+    setJubahActive(!jubahActive);
+    setTogglingJubah(false);
+    showToast(`Jubah delivery ${!jubahActive ? 'activated' : 'deactivated'}.`);
+  };
 
   const resetBannerForm = () => {
     setBannerTag('📢 Announcement'); setBannerTitle(''); setBannerSubtitle('');
@@ -1256,6 +1271,29 @@ export const AdminHome: React.FC = () => {
       {/* ── BANNERS TAB ── */}
       {activeTab === 'banners' && (
         <div className="flex flex-col gap-4">
+
+          {/* Jubah Period Toggle */}
+          <div className="bg-white border border-slate-100 rounded-3xl p-5 shadow-sm flex items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <div className={`w-10 h-10 rounded-2xl flex items-center justify-center ${jubahActive ? 'bg-blue-50' : 'bg-slate-100'}`}>
+                <span className="text-xl">🎓</span>
+              </div>
+              <div>
+                <p className="text-xs font-black text-slate-800">Jubah Delivery Period</p>
+                <p className="text-[10px] text-slate-400 font-semibold mt-0.5">
+                  {jubahActive ? 'Currently OPEN — students can book' : 'Currently CLOSED — booking disabled'}
+                </p>
+              </div>
+            </div>
+            <button onClick={handleToggleJubah} disabled={togglingJubah}
+              className={`shrink-0 px-4 py-2 rounded-xl text-xs font-extrabold border transition active:scale-95 disabled:opacity-50 ${
+                jubahActive
+                  ? 'bg-blue-50 border-blue-200 text-blue-700'
+                  : 'bg-slate-50 border-slate-200 text-slate-500'
+              }`}>
+              {togglingJubah ? '…' : jubahActive ? '🟢 ON' : '⚫ OFF'}
+            </button>
+          </div>
 
           {/* New Banner button */}
           {!showBannerForm && (

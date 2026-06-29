@@ -50,8 +50,19 @@ export const Dashboard: React.FC = () => {
   const { user, setCurrentPage, activeRide } = useApp();
   const [activeBanner, setActiveBanner] = useState(0);
   const [banners, setBanners] = useState<Banner[]>(FALLBACK_BANNERS);
+  const [jubahActive, setJubahActive] = useState(false);
   const touchStartX = useRef(0);
   const touchEndX   = useRef(0);
+
+  // Fetch Jubah period status
+  useEffect(() => {
+    supabase
+      .from('app_settings')
+      .select('value')
+      .eq('key', 'jubah_active')
+      .single()
+      .then(({ data }) => { if (data) setJubahActive(data.value === 'true'); });
+  }, []);
 
   // Fetch active announcements from Supabase; fall back to hardcoded if none
   useEffect(() => {
@@ -238,23 +249,30 @@ export const Dashboard: React.FC = () => {
 
         {/* B. Jubah Delivery Module */}
         <div
-          onClick={() => setCurrentPage('jubah')}
-          className="group relative bg-white border border-slate-100 rounded-3xl p-5 flex items-center justify-between cursor-pointer shadow-sm active:scale-[0.99] active:shadow-md transition duration-200"
+          onClick={() => jubahActive ? setCurrentPage('jubah') : null}
+          className={`group relative bg-white border border-slate-100 rounded-3xl p-5 flex items-center justify-between shadow-sm transition duration-200 ${
+            jubahActive ? 'cursor-pointer active:scale-[0.99] active:shadow-md' : 'opacity-40 cursor-not-allowed'
+          }`}
         >
-          <div className="absolute left-0 top-6 bottom-6 w-1 bg-blue-500 rounded-r-lg group-active:scale-y-110 transition duration-300" />
+          <div className={`absolute left-0 top-6 bottom-6 w-1 rounded-r-lg transition duration-300 ${jubahActive ? 'bg-blue-500 group-active:scale-y-110' : 'bg-slate-300'}`} />
 
           <div className="flex items-center gap-4 pl-1">
-            <div className="w-12 h-12 rounded-2xl bg-blue-50 text-blue-500 flex items-center justify-center group-active:bg-blue-500 group-active:text-white transition duration-300">
+            <div className={`w-12 h-12 rounded-2xl flex items-center justify-center transition duration-300 ${
+              jubahActive ? 'bg-blue-50 text-blue-500 group-active:bg-blue-500 group-active:text-white' : 'bg-slate-100 text-slate-300'
+            }`}>
               <GraduationCap className="w-6 h-6" />
             </div>
             <div>
-              <h4 className="text-base font-extrabold text-slate-800 m-0">Jubah Delivery</h4>
+              <div className="flex items-center gap-2">
+                <h4 className="text-base font-extrabold text-slate-800 m-0">Jubah Delivery</h4>
+                {!jubahActive && <span className="text-[9px] font-extrabold text-slate-400 bg-slate-100 px-2 py-0.5 rounded-full uppercase tracking-wider">Closed</span>}
+              </div>
               <p className="text-xs text-slate-400 font-medium mt-0.5">
-                Convocation robe size calculator, deliveries & returns.
+                {jubahActive ? 'Convocation robe size calculator, deliveries & returns.' : 'Service unavailable outside convocation period.'}
               </p>
             </div>
           </div>
-          <ArrowRight className="w-5 h-5 text-slate-300 group-active:text-blue-500 group-active:translate-x-1 transition" />
+          {jubahActive && <ArrowRight className="w-5 h-5 text-slate-300 group-active:text-blue-500 group-active:translate-x-1 transition" />}
         </div>
 
         {/* C. Gerak Daily Module */}
