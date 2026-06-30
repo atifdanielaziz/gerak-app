@@ -57,7 +57,7 @@ export const Jubah: React.FC = () => {
   const [returnDate, setReturnDate]     = useState('2026-06-15');
   const [returnTime, setReturnTime]     = useState('14:00');
 
-  // Fetch active riders whenever campus changes
+  // Fetch active riders whenever campus or service option (Pickup/Postage) changes
   useEffect(() => {
     if (!university) { setRiders([]); setSelectedRiderId(''); return; }
     const campus = university.includes('Pekan') ? 'Pekan' : 'Gambang';
@@ -69,9 +69,10 @@ export const Jubah: React.FC = () => {
       .eq('role', 'rider')
       .eq('campus', campus)
       .eq('status', 'active')
+      .eq('jubah_method', paymentMode)
       .order('name')
       .then(({ data }) => { setRiders(data ?? []); setRidersLoading(false); });
-  }, [university]);
+  }, [university, paymentMode]);
 
   const cost = paymentMode === 'postage' ? 90 : 70;
 
@@ -372,44 +373,6 @@ export const Jubah: React.FC = () => {
             </div>
           </div>
 
-          {/* ── RIDER SELECTION ── */}
-          <div className="bg-white border border-slate-100 rounded-3xl p-5 shadow-sm flex flex-col gap-4">
-            <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest flex items-center gap-1.5">
-              <User className="w-3.5 h-3.5" /> Select Rider
-            </h3>
-            <div className={`relative group ${!university ? 'opacity-50 pointer-events-none' : ''}`}>
-              <div className="bg-slate-50 border border-slate-200 rounded-xl py-2.5 px-3 flex items-center justify-between pointer-events-none group-focus-within:border-blue-500 transition">
-                <span className={`text-xs ${selectedRiderId ? 'font-bold text-slate-700' : 'font-normal text-slate-300'}`}>
-                  {ridersLoading
-                    ? 'Loading riders...'
-                    : selectedRiderId
-                      ? riders.find(r => r.id === selectedRiderId)?.name ?? 'Select a rider...'
-                      : university
-                        ? riders.length === 0 ? 'No riders available' : 'Select a rider...'
-                        : 'Select campus first'}
-                </span>
-                <ChevronDown className="w-3 h-3 text-slate-400 shrink-0" />
-              </div>
-              <select
-                value={selectedRiderId}
-                onChange={e => setSelectedRiderId(e.target.value)}
-                disabled={!university || ridersLoading || riders.length === 0}
-                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer disabled:cursor-not-allowed"
-                style={{ fontSize: '16px' }}
-              >
-                <option value="" disabled>Select a rider...</option>
-                {riders.map(r => (
-                  <option key={r.id} value={r.id}>{r.name}</option>
-                ))}
-              </select>
-            </div>
-            {university && !ridersLoading && riders.length === 0 && (
-              <p className="text-[10px] text-slate-400 font-semibold text-center -mt-2">
-                No active riders available for this campus at the moment.
-              </p>
-            )}
-          </div>
-
           {/* ── SERVICE OPTION ── */}
           <div className="bg-white border border-slate-100 rounded-3xl p-5 shadow-sm flex flex-col gap-3">
             <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest">Service Option</h3>
@@ -462,6 +425,44 @@ export const Jubah: React.FC = () => {
               </span>
             </div>
 
+          </div>
+
+          {/* ── RIDER SELECTION ── */}
+          <div className="bg-white border border-slate-100 rounded-3xl p-5 shadow-sm flex flex-col gap-4">
+            <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest flex items-center gap-1.5">
+              <User className="w-3.5 h-3.5" /> Select Rider
+            </h3>
+            <div className={`relative group ${!university ? 'opacity-50 pointer-events-none' : ''}`}>
+              <div className="bg-slate-50 border border-slate-200 rounded-xl py-2.5 px-3 flex items-center justify-between pointer-events-none group-focus-within:border-blue-500 transition">
+                <span className={`text-xs ${selectedRiderId ? 'font-bold text-slate-700' : 'font-normal text-slate-300'}`}>
+                  {ridersLoading
+                    ? 'Loading riders...'
+                    : selectedRiderId
+                      ? riders.find(r => r.id === selectedRiderId)?.name ?? 'Select a rider...'
+                      : university
+                        ? riders.length === 0 ? 'No riders available' : 'Select a rider...'
+                        : 'Select campus first'}
+                </span>
+                <ChevronDown className="w-3 h-3 text-slate-400 shrink-0" />
+              </div>
+              <select
+                value={selectedRiderId}
+                onChange={e => setSelectedRiderId(e.target.value)}
+                disabled={!university || ridersLoading || riders.length === 0}
+                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer disabled:cursor-not-allowed"
+                style={{ fontSize: '16px' }}
+              >
+                <option value="" disabled>Select a rider...</option>
+                {riders.map(r => (
+                  <option key={r.id} value={r.id}>{r.name}</option>
+                ))}
+              </select>
+            </div>
+            {university && !ridersLoading && riders.length === 0 && (
+              <p className="text-[10px] text-slate-400 font-semibold text-center -mt-2">
+                No {paymentMode === 'pickup' ? 'self-pickup' : 'postage'} riders available for this campus at the moment.
+              </p>
+            )}
           </div>
 
           {/* ── DOCUMENT UPLOAD ── */}
