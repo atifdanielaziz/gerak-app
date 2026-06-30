@@ -260,7 +260,7 @@ export const AcademicCalendar: React.FC = () => {
   const todayStr = toDateStr(new Date());
 
   return (
-    <div className="flex flex-col h-full bg-slate-50 overflow-y-auto no-scrollbar">
+    <div className="flex flex-col h-full bg-slate-50 overflow-y-auto no-scrollbar pb-24">
 
       {/* ── CALENDAR ── */}
       <div className="bg-white border-b border-slate-100 shadow-sm">

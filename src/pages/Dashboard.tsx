@@ -217,7 +217,7 @@ export const Dashboard: React.FC = () => {
       </div>
 
       {/* SCROLLABLE: Campus Modules */}
-      <div className="flex-1 overflow-y-auto no-scrollbar px-4 pb-6">
+      <div className="flex-1 overflow-y-auto no-scrollbar px-4 pb-24">
 
       {/* 4. Large Service Cards (Grid) */}
       <h3 className="text-xs font-black text-slate-400 tracking-widest mb-3 pl-1">

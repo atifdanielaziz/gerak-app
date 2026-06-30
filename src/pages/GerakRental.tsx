@@ -266,7 +266,7 @@ export const GerakRental: React.FC = () => {
   };
 
   return (
-    <div className="flex-grow bg-slate-50 overflow-y-auto no-scrollbar pb-6 flex flex-col animate-fade-in">
+    <div className="flex-grow bg-slate-50 overflow-y-auto no-scrollbar pb-24 flex flex-col animate-fade-in">
 
       {/* Toast */}
       {toast && (

@@ -271,7 +271,7 @@ export const MyOrders: React.FC = () => {
   };
 
   return (
-    <div className="flex-grow bg-slate-50/50 overflow-y-auto no-scrollbar pb-6 animate-fade-in">
+    <div className="flex-grow bg-slate-50/50 overflow-y-auto no-scrollbar pb-24 animate-fade-in">
 
       {/* Toast */}
       {toast && (

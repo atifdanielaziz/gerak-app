@@ -47,45 +47,49 @@ export const BottomNav: React.FC = () => {
     customerItems;
 
   return (
-    <nav
-      className="sticky bottom-0 z-40 bg-white/95 backdrop-blur-md border-t border-slate-100 px-2 pt-2 flex items-center justify-around shadow-[0_-4px_12px_rgba(0,0,0,0.03)]"
-      style={{ paddingBottom: 'calc(0.5rem + env(safe-area-inset-bottom))' }}
+    <div
+      className="shrink-0 bg-slate-50 px-4 pt-1"
+      style={{ paddingBottom: 'calc(0.625rem + env(safe-area-inset-bottom))' }}
     >
-      {items.map((item) => {
-        const Icon = item.icon;
-        const isActive = currentPage === item.id;
+      <nav
+        className="bg-white/95 backdrop-blur-md border border-slate-100 rounded-3xl px-2 py-1.5 flex items-center justify-around shadow-[0_4px_20px_rgba(0,0,0,0.08)]"
+      >
+        {items.map((item) => {
+          const Icon = item.icon;
+          const isActive = currentPage === item.id;
 
-        return (
-          <button
-            key={item.id}
-            onClick={() => setCurrentPage(item.id)}
-            className="relative flex flex-col items-center justify-center py-1 px-3 min-w-[64px] transition-all duration-300 rounded-2xl active:scale-90"
-            aria-label={item.label}
-          >
-            <div className={`p-1.5 rounded-xl transition-all duration-300 relative ${
-              isActive
-                ? 'bg-primary/10 text-primary scale-110'
-                : 'text-slate-400 hover:text-slate-600 hover:bg-slate-50'
-            }`}>
-              <Icon className="w-5 h-5" />
-              {item.badge && (
-                <>
-                  <span className="absolute top-0 right-0 w-2.5 h-2.5 bg-danger rounded-full border-2 border-white animate-ping" />
-                  <span className="absolute top-0 right-0 w-2.5 h-2.5 bg-danger rounded-full border-2 border-white" />
-                </>
+          return (
+            <button
+              key={item.id}
+              onClick={() => setCurrentPage(item.id)}
+              className="relative flex flex-col items-center justify-center py-1 px-3 min-w-[64px] transition-all duration-300 rounded-2xl active:scale-90"
+              aria-label={item.label}
+            >
+              <div className={`p-1 rounded-xl transition-all duration-300 relative ${
+                isActive
+                  ? 'bg-primary/10 text-primary scale-110'
+                  : 'text-slate-400 hover:text-slate-600 hover:bg-slate-50'
+              }`}>
+                <Icon className="w-4.5 h-4.5" />
+                {item.badge && (
+                  <>
+                    <span className="absolute top-0 right-0 w-2.5 h-2.5 bg-danger rounded-full border-2 border-white animate-ping" />
+                    <span className="absolute top-0 right-0 w-2.5 h-2.5 bg-danger rounded-full border-2 border-white" />
+                  </>
+                )}
+              </div>
+              <span className={`text-[9px] mt-0.5 font-bold transition-all duration-200 ${
+                isActive ? 'text-primary scale-105' : 'text-slate-400'
+              }`}>
+                {item.label}
+              </span>
+              {isActive && (
+                <span className="absolute bottom-0 w-4 h-0.75 bg-primary rounded-full animate-fade-in" />
               )}
-            </div>
-            <span className={`text-[10px] mt-1 font-bold transition-all duration-200 ${
-              isActive ? 'text-primary scale-105' : 'text-slate-400'
-            }`}>
-              {item.label}
-            </span>
-            {isActive && (
-              <span className="absolute bottom-0 w-4 h-0.75 bg-primary rounded-full animate-fade-in" />
-            )}
-          </button>
-        );
-      })}
-    </nav>
+            </button>
+          );
+        })}
+      </nav>
+    </div>
   );
 };

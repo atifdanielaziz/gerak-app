@@ -281,7 +281,7 @@ export const Transport: React.FC = () => {
 
   if (bookingDone) {
     return (
-      <div className="flex-grow bg-slate-50/50 overflow-y-auto no-scrollbar pb-6 px-4 animate-fade-in flex flex-col gap-4">
+      <div className="flex-grow bg-slate-50/50 overflow-y-auto no-scrollbar pb-24 px-4 animate-fade-in flex flex-col gap-4">
         <div className="mt-6 bg-white border border-slate-100 rounded-3xl p-6 shadow-sm flex flex-col gap-4">
           <div className="flex items-center gap-3">
             <div className="w-12 h-12 rounded-2xl bg-emerald-50 border border-emerald-100 flex items-center justify-center">
@@ -365,7 +365,7 @@ export const Transport: React.FC = () => {
   }
 
   return (
-    <div className="flex-grow bg-slate-50/50 overflow-y-auto no-scrollbar pb-6 animate-fade-in">
+    <div className="flex-grow bg-slate-50/50 overflow-y-auto no-scrollbar pb-24 animate-fade-in">
 
       {/* Campus toggle — superadmin only; customers see their fixed campus */}
       <div className="px-4 pt-4 flex flex-col gap-2">
