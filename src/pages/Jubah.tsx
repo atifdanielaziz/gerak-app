@@ -50,7 +50,7 @@ export const Jubah: React.FC = () => {
   const paymentProofRef = useRef<HTMLInputElement>(null);
 
   const [selectedRiderId,   setSelectedRiderId]   = useState('');
-  const [riders,            setRiders]            = useState<{ id: string; name: string }[]>([]);
+  const [riders,            setRiders]            = useState<{ id: string; name: string; jubah_drop_point: string | null }[]>([]);
   const [ridersLoading,     setRidersLoading]     = useState(false);
 
   const [returnMethod, setReturnMethod] = useState<'self' | 'locker' | 'courier'>('self');
@@ -458,6 +458,18 @@ export const Jubah: React.FC = () => {
               <p className="text-[10px] text-slate-400 font-semibold text-center -mt-2">
                 No {paymentMode === 'pickup' ? 'self-pickup' : 'postage'} riders available for this campus at the moment.
               </p>
+            )}
+
+            {/* Drop Point — read-only, set by admin for the selected rider */}
+            {selectedRiderId && paymentMode === 'pickup' && (
+              <div className="flex flex-col gap-1">
+                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Drop Point</label>
+                <div className="bg-slate-50 border border-slate-200 rounded-xl py-2.5 px-3">
+                  <span className="text-xs font-bold text-slate-700">
+                    {riders.find(r => r.id === selectedRiderId)?.jubah_drop_point || 'Not set yet — contact admin'}
+                  </span>
+                </div>
+              </div>
             )}
           </div>
 

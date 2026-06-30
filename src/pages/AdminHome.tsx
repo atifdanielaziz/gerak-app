@@ -238,7 +238,11 @@ const JubahRiderSheet: React.FC<{
   onDropPointChange: (v: string) => void;
   onSave: () => void;
   onClose: () => void;
-}> = ({ rider, method, dropPoint, saving, onMethodChange, onDropPointChange, onSave, onClose }) => (
+}> = ({ rider, method, dropPoint, saving, onMethodChange, onDropPointChange, onSave, onClose }) => {
+  const [isEditingDropPoint, setIsEditingDropPoint] = useState(!dropPoint);
+  const dropPointDisabled = method === 'postage' || !isEditingDropPoint;
+
+  return (
   <div
     className="fixed inset-0 z-50 flex items-end justify-center"
     style={{ background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(2px)' }}
@@ -309,13 +313,28 @@ const JubahRiderSheet: React.FC<{
           </div>
 
           <div className="flex flex-col gap-1.5">
-            <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Drop Point</label>
+            <div className="flex items-center justify-between">
+              <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Drop Point</label>
+              {method !== 'postage' && (
+                <button
+                  type="button"
+                  onClick={() => setIsEditingDropPoint(v => !v)}
+                  className={`flex items-center gap-1 text-[9px] font-extrabold px-2 py-0.5 rounded-full border transition active:scale-95 ${
+                    isEditingDropPoint
+                      ? 'bg-primary/10 border-primary/30 text-primary'
+                      : 'bg-slate-100 border-slate-200 text-slate-500'
+                  }`}
+                >
+                  <Pencil className="w-2.5 h-2.5" /> {isEditingDropPoint ? 'Editing' : 'Edit'}
+                </button>
+              )}
+            </div>
             <input
               type="text"
               value={dropPoint}
               onChange={e => onDropPointChange(e.target.value)}
               placeholder="e.g. UMP Gambang Counter"
-              disabled={method === 'postage'}
+              disabled={dropPointDisabled}
               style={{ fontSize: '12px' }}
               className="bg-slate-50 border border-slate-200 rounded-xl py-2.5 px-3 font-bold text-slate-700 focus:outline-none focus:border-primary transition placeholder:font-normal disabled:opacity-50 disabled:cursor-not-allowed"
             />
@@ -329,7 +348,7 @@ const JubahRiderSheet: React.FC<{
       {/* Save + Call/WA buttons — sticky footer, always reachable */}
       <div className="px-4 pt-3 pb-6 flex flex-col gap-3 shrink-0 border-t border-slate-100">
         <button
-          onClick={onSave}
+          onClick={() => { onSave(); setIsEditingDropPoint(false); }}
           disabled={saving || !method}
           className="w-full bg-primary text-white font-extrabold text-xs py-3.5 rounded-2xl shadow-md active:scale-[0.98] transition disabled:opacity-50 flex items-center justify-center gap-2"
         >
@@ -351,7 +370,8 @@ const JubahRiderSheet: React.FC<{
       </div>
     </div>
   </div>
-);
+  );
+};
 
 // ── Shared user card ────────────────────────────────────────────────────────
 const UserCard: React.FC<{
