@@ -145,7 +145,9 @@ export const Jubah: React.FC = () => {
     if (!allFilesReady) { setFileError('Please upload all required documents.'); return; }
     if (!paymentProof) { setFileError('Please upload your proof of payment.'); return; }
     const combinedFileName = `${(fullName || 'combined').replace(/\s+/g, '_')}_combined.pdf`;
-    bookJubah(fullName, icNumber, hpNumber, university, faculty, matricId, paymentMode, remark, combinedFileName);
+    const selectedRider = riders.find(r => r.id === selectedRiderId);
+    const bookingCampus = university.includes('Pekan') ? 'Pekan' : 'Gambang';
+    bookJubah(fullName, icNumber, hpNumber, university, faculty, matricId, paymentMode, remark, combinedFileName, selectedRiderId, selectedRider?.name, bookingCampus);
     submitJubahToSheets({ fullName, icNumber, hpNumber, university, faculty, matricId, paymentMode, remark, combinedFileName, cost });
   };
 

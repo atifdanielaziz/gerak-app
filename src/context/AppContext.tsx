@@ -130,7 +130,7 @@ interface AppContextType {
 
   // Jubah Delivery Module
   jubahBooking: JubahBooking | null;
-  bookJubah: (fullName: string, icNumber: string, hpNumber: string, university: string, faculty: string, matricId: string, paymentMode: 'pickup' | 'postage', remark: 'Master' | 'PHD' | 'Degree' | 'Diploma', combinedFileName: string) => void;
+  bookJubah: (fullName: string, icNumber: string, hpNumber: string, university: string, faculty: string, matricId: string, paymentMode: 'pickup' | 'postage', remark: 'Master' | 'PHD' | 'Degree' | 'Diploma', combinedFileName: string, riderId?: string, riderName?: string, campus?: 'Pekan' | 'Gambang') => void;
   scheduleReturn: (method: 'self' | 'locker' | 'courier', date: string, time: string) => void;
   cancelJubahBooking: () => void;
 }
@@ -588,10 +588,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     paymentMode: 'pickup' | 'postage',
     remark: 'Master' | 'PHD' | 'Degree' | 'Diploma',
     combinedFileName: string,
+    riderId?: string,
+    riderName?: string,
+    campus?: 'Pekan' | 'Gambang',
   ) => {
     const cost = paymentMode === 'postage' ? 80.00 : 55.00;
-
-
 
     const newBooking: JubahBooking = {
       fullName,
@@ -610,6 +611,29 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     setJubahBooking(newBooking);
     addNotification('Robe Booking Confirmed', `Booking for ${fullName} (${remark}) confirmed. Service fee: RM${cost.toFixed(2)}.`, 'jubah');
+
+    // Persist to Supabase for admin tracking + future guest tracking
+    if (campus) {
+      const reference = `JUB-${new Date().getFullYear()}-${Math.random().toString(36).slice(2, 6).toUpperCase()}`;
+      supabase.auth.getUser().then(({ data: { user: authUser } }) => {
+        supabase.from('jubah_bookings').insert({
+          reference,
+          customer_id: authUser?.id ?? null,
+          full_name:   fullName,
+          ic_number:   icNumber,
+          hp_number:   hpNumber,
+          matric_id:   matricId,
+          university,
+          campus,
+          faculty,
+          remark,
+          payment_mode: paymentMode,
+          cost,
+          rider_id:    riderId ?? null,
+          rider_name:  riderName ?? null,
+        });
+      });
+    }
 
     setTimeout(() => setJubahBooking(prev => prev ? { ...prev, status: 'cleaning' } : null), 15000);
     setTimeout(() => setJubahBooking(prev => prev ? { ...prev, status: 'packaging' } : null), 30000);
