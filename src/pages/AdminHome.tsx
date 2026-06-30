@@ -369,6 +369,7 @@ export const AdminHome: React.FC = () => {
   // Driver invites state
   const [invites, setInvites]               = useState<DriverInvite[]>([]);
   const [invitesLoading, setInvitesLoading] = useState(false);
+  const [inviteSearch, setInviteSearch]     = useState('');
   const [inviteEmail, setInviteEmail]       = useState('');
   const [inviteCampus, setInviteCampus]     = useState<'Pekan' | 'Gambang'>(
     isSuperAdmin ? 'Gambang' : adminCampus
@@ -1123,6 +1124,30 @@ export const AdminHome: React.FC = () => {
             </button>
           </div>
 
+          {/* Search */}
+          <div className="bg-white border border-slate-100 rounded-2xl p-3.5 shadow-sm flex flex-col gap-2">
+            <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1.5">
+              <AlertCircle className="w-3.5 h-3.5" /> Find Staff
+            </h3>
+            <div className="flex gap-2">
+              <input
+                type="email"
+                value={inviteSearch}
+                onChange={e => setInviteSearch(e.target.value)}
+                placeholder="Search by email"
+                style={{ fontSize: '12px' }}
+                className="flex-1 bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 font-bold text-slate-700 focus:outline-none focus:border-primary transition placeholder:font-normal"
+              />
+              <button
+                onClick={() => setInviteSearch('')}
+                disabled={!inviteSearch.trim()}
+                className="px-3.5 bg-primary text-white font-extrabold text-[11px] rounded-lg transition active:scale-95 disabled:opacity-50 flex items-center gap-1.5"
+              >
+                Clear
+              </button>
+            </div>
+          </div>
+
           {/* Invite list */}
           <div className="bg-white border border-slate-100 rounded-3xl p-5 shadow-sm flex flex-col gap-3">
             <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest flex items-center gap-1.5">
@@ -1133,11 +1158,13 @@ export const AdminHome: React.FC = () => {
               <div className="flex justify-center py-6">
                 <span className="w-5 h-5 rounded-full border-2 border-slate-200 border-t-primary animate-spin" />
               </div>
-            ) : invites.length === 0 ? (
-              <p className="text-xs text-slate-400 font-semibold text-center py-4">No invites yet</p>
+            ) : invites.filter(inv => !inviteSearch.trim() || inv.email.toLowerCase().includes(inviteSearch.toLowerCase())).length === 0 ? (
+              <p className="text-xs text-slate-400 font-semibold text-center py-4">
+                {inviteSearch.trim() ? 'No matching invites found' : 'No invites yet'}
+              </p>
             ) : (
               <div className="overflow-y-auto no-scrollbar max-h-[360px] flex flex-col gap-2">
-                {invites.map(inv => (
+                {invites.filter(inv => !inviteSearch.trim() || inv.email.toLowerCase().includes(inviteSearch.toLowerCase())).map(inv => (
                   <div key={inv.id} className={`flex items-center justify-between gap-3 px-3 py-2.5 rounded-2xl border ${
                     inv.used ? 'bg-emerald-50 border-emerald-100' : 'bg-white border-slate-100'
                   }`}>
