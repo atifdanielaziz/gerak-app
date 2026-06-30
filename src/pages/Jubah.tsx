@@ -22,7 +22,7 @@ const UNIVERSITY_FACULTIES: Record<string, string[]> = {
 const REMARKS = ['Master', 'PHD', 'Degree', 'Diploma'] as const;
 
 export const Jubah: React.FC = () => {
-  const { jubahBooking, bookJubah, scheduleReturn, cancelJubahBooking } = useApp();
+  const { user, jubahBooking, bookJubah, scheduleReturn, cancelJubahBooking, setCurrentPage } = useApp();
 
   const [landingUniversity, setLandingUniversity] = useState('');
 
@@ -58,19 +58,15 @@ export const Jubah: React.FC = () => {
   const [returnTime, setReturnTime]     = useState('14:00');
 
   // Fetch active riders whenever campus or service option (Pickup/Postage) changes
+  // Uses a public RPC (not a direct table query) so this also works for guest bookings
+  // — the profiles table itself is RLS-locked to authenticated users only.
   useEffect(() => {
     if (!university) { setRiders([]); setSelectedRiderId(''); return; }
     const campus = university.includes('Pekan') ? 'Pekan' : 'Gambang';
     setRidersLoading(true);
     setSelectedRiderId('');
     supabase
-      .from('profiles')
-      .select('id, name')
-      .eq('role', 'rider')
-      .eq('campus', campus)
-      .eq('status', 'active')
-      .eq('jubah_method', paymentMode)
-      .order('name')
+      .rpc('get_active_jubah_riders', { p_campus: campus, p_method: paymentMode })
       .then(({ data }) => { setRiders(data ?? []); setRidersLoading(false); });
   }, [university, paymentMode]);
 
@@ -639,6 +635,25 @@ export const Jubah: React.FC = () => {
       ) : (
         /* ── TRACKING & RETURN ── */
         <div className="flex flex-col gap-4">
+
+          {/* Reference Number — always shown, critical for guests */}
+          <div className="bg-blue-600 rounded-3xl p-5 shadow-md flex flex-col gap-1 text-center">
+            <span className="text-[9px] text-blue-100 font-extrabold uppercase tracking-widest">Your Reference Number</span>
+            <span className="text-2xl font-black text-white tracking-wider">{jubahBooking.reference}</span>
+            <p className="text-[10px] text-blue-100 font-semibold mt-1">
+              {user.isLoggedIn
+                ? 'You can also track this anytime from your order history.'
+                : 'Save this number or your phone number — you\'ll need it to track your delivery.'}
+            </p>
+            {!user.isLoggedIn && (
+              <button
+                onClick={() => setCurrentPage('track-jubah')}
+                className="mt-2 bg-white text-blue-600 font-extrabold text-xs py-2.5 rounded-2xl active:scale-95 transition"
+              >
+                Track My Order
+              </button>
+            )}
+          </div>
 
           {/* Booking Summary */}
           <div className="bg-white border border-slate-100 rounded-3xl p-5 shadow-sm flex flex-col gap-4">

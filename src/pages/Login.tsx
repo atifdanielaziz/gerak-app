@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
-import { Mail, Lock, Eye, EyeOff, ArrowRight } from 'lucide-react';
+import { supabase } from '../lib/supabase';
+import { Mail, Lock, Eye, EyeOff, ArrowRight, GraduationCap, PackageSearch } from 'lucide-react';
 
 export const Login: React.FC = () => {
   const { login, setCurrentPage } = useApp();
@@ -9,6 +10,12 @@ export const Login: React.FC = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading]       = useState(false);
   const [error, setError]           = useState('');
+  const [jubahActive, setJubahActive] = useState(false);
+
+  useEffect(() => {
+    supabase.from('app_settings').select('value').eq('key', 'jubah_active').single()
+      .then(({ data }) => { if (data) setJubahActive(data.value === 'true'); });
+  }, []);
 
   const handleSubmit = async (e: React.SyntheticEvent) => {
     e.preventDefault();
@@ -124,6 +131,24 @@ export const Login: React.FC = () => {
           </button>
         </form>
       </div>
+
+      {/* Guest access — Jubah Delivery */}
+      {jubahActive && (
+        <div className="w-full flex flex-col gap-2 -mt-2">
+          <button
+            onClick={() => setCurrentPage('jubah')}
+            className="w-full flex items-center justify-center gap-2 bg-blue-50 border border-blue-100 text-blue-600 font-extrabold text-xs py-3 rounded-2xl active:scale-[0.98] transition"
+          >
+            <GraduationCap className="w-4 h-4" /> Book Jubah Delivery as Guest
+          </button>
+          <button
+            onClick={() => setCurrentPage('track-jubah')}
+            className="w-full flex items-center justify-center gap-2 bg-slate-50 border border-slate-200 text-slate-500 font-extrabold text-xs py-3 rounded-2xl active:scale-[0.98] transition"
+          >
+            <PackageSearch className="w-4 h-4" /> Track My Jubah Order
+          </button>
+        </div>
+      )}
 
       {/* Footer links */}
       <div className="flex flex-col items-center gap-2 mb-4">

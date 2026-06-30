@@ -10,6 +10,11 @@ export const BottomNav: React.FC = () => {
     return null;
   }
 
+  // Guest mode (not logged in) — no role-based tabs to show
+  if (!user.isLoggedIn) {
+    return null;
+  }
+
   const role = isPreviewMode ? 'customer' : (activeRole === 'driver' ? 'driver' : user.role);
 
   // Driver nav

@@ -18,7 +18,8 @@ export type ActivePage =
   | 'gerak-rental'
   | 'academic-calendar'
   | 'forgot-password'
-  | 'reset-password';
+  | 'reset-password'
+  | 'track-jubah';
 
 export interface UserSession {
   name: string;
@@ -81,6 +82,7 @@ export interface RideBooking {
 }
 
 export interface JubahBooking {
+  reference: string;
   fullName: string;
   icNumber: string;
   hpNumber: string;
@@ -605,8 +607,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     campus?: 'Pekan' | 'Gambang',
   ) => {
     const cost = paymentMode === 'postage' ? 80.00 : 55.00;
+    const reference = `JUB-${new Date().getFullYear()}-${Math.random().toString(36).slice(2, 6).toUpperCase()}`;
 
     const newBooking: JubahBooking = {
+      reference,
       fullName,
       icNumber,
       hpNumber,
@@ -624,9 +628,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setJubahBooking(newBooking);
     addNotification('Robe Booking Confirmed', `Booking for ${fullName} (${remark}) confirmed. Service fee: RM${cost.toFixed(2)}.`, 'jubah');
 
-    // Persist to Supabase for admin tracking + future guest tracking
+    // Persist to Supabase for admin tracking + guest tracking
     if (campus) {
-      const reference = `JUB-${new Date().getFullYear()}-${Math.random().toString(36).slice(2, 6).toUpperCase()}`;
       supabase.auth.getUser().then(({ data: { user: authUser } }) => {
         supabase.from('jubah_bookings').insert({
           reference,
