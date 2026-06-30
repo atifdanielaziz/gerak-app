@@ -45,6 +45,7 @@ export interface UserSession {
   licenseUrl: string;
   docsStatus: 'none' | 'pending' | 'approved' | 'rejected';
   docsRejectReason: string;
+  receiptGateExempt: boolean;
   isLoggedIn: boolean;
 }
 
@@ -115,6 +116,7 @@ interface AppContextType {
   logout: () => void;
   updateProfile: (updates: { name?: string; matricNo?: string; email?: string; phone?: string; vehicle?: string; plateNumber?: string; icNumber?: string; feeReceiptUrl?: string }) => Promise<{ error: string | null }>;
   refreshUserData: () => Promise<void>;
+  receiptGateActive: boolean;
 
   // Notifications
   notifications: NotificationItem[];
@@ -181,6 +183,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Global receipt gate — fetched once on mount, controlled by superadmin
+  const [receiptGateActive, setReceiptGateActive] = useState(true);
+  useEffect(() => {
+    supabase.from('app_settings').select('value').eq('key', 'receipt_gate_active').single()
+      .then(({ data }) => { if (data) setReceiptGateActive(data.value === 'true'); });
+  }, []);
+
   const [user, setUser] = useState<UserSession>({
     name: '',
     matricNo: '',
@@ -206,6 +215,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     licenseUrl: '',
     docsStatus: 'none',
     docsRejectReason: '',
+    receiptGateExempt: false,
     isLoggedIn: false,
   });
 
@@ -286,7 +296,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   }, []);
 
   const loadProfile = async (userId: string) => {
-    const { data } = await supabase.from('profiles').select('id,name,matric_no,email,phone,university,campus,gerak_id,role,status,vehicle,plate_number,fee_receipt_url,fee_receipt_verified,fee_receipt_amount,fee_receipt_date,fee_receipt_expiry,fee_receipt_reject_reason,can_drive,can_rent,ic_number,ic_url,license_url,docs_status,docs_reject_reason').eq('id', userId).single();
+    const { data } = await supabase.from('profiles').select('id,name,matric_no,email,phone,university,campus,gerak_id,role,status,vehicle,plate_number,fee_receipt_url,fee_receipt_verified,fee_receipt_amount,fee_receipt_date,fee_receipt_expiry,fee_receipt_reject_reason,can_drive,can_rent,ic_number,ic_url,license_url,docs_status,docs_reject_reason,receipt_gate_exempt').eq('id', userId).single();
     if (data) {
       const role = data.role ?? 'customer';
       setUser({
@@ -314,6 +324,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         licenseUrl:             data.license_url      ?? '',
         docsStatus:             data.docs_status      ?? 'none',
         docsRejectReason:       data.docs_reject_reason ?? '',
+        receiptGateExempt:      data.receipt_gate_exempt ?? false,
         isLoggedIn:             true,
       });
       setPageHistory([]);
@@ -384,7 +395,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const refreshUserData = async () => {
     const { data: { user: authUser } } = await supabase.auth.getUser();
     if (!authUser) return;
-    const { data } = await supabase.from('profiles').select('id,name,matric_no,email,phone,university,campus,gerak_id,role,status,vehicle,plate_number,fee_receipt_url,fee_receipt_verified,fee_receipt_amount,fee_receipt_date,fee_receipt_expiry,fee_receipt_reject_reason,can_drive,can_rent,ic_number,ic_url,license_url,docs_status,docs_reject_reason').eq('id', authUser.id).single();
+    const { data } = await supabase.from('profiles').select('id,name,matric_no,email,phone,university,campus,gerak_id,role,status,vehicle,plate_number,fee_receipt_url,fee_receipt_verified,fee_receipt_amount,fee_receipt_date,fee_receipt_expiry,fee_receipt_reject_reason,can_drive,can_rent,ic_number,ic_url,license_url,docs_status,docs_reject_reason,receipt_gate_exempt').eq('id', authUser.id).single();
     if (data) {
       setUser(prev => ({
         ...prev,
@@ -399,6 +410,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         licenseUrl:       data.license_url       ?? '',
         docsStatus:       data.docs_status       ?? 'none',
         docsRejectReason: data.docs_reject_reason ?? '',
+        receiptGateExempt: data.receipt_gate_exempt ?? false,
         status:           data.status            ?? 'active',
       }));
     }
@@ -458,7 +470,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setPageHistory([]);
     setActiveRole(null);
     setIsPreviewMode(false);
-    setUser({ name: '', matricNo: '', email: '', phone: '', university: '', campus: '', gerakId: '', role: 'customer', status: 'active', vehicle: '', plateNumber: '', feeReceiptUrl: '', feeReceiptVerified: false, feeReceiptAmount: '', feeReceiptDate: '', feeReceiptExpiry: '', feeReceiptRejectReason: '', canDrive: false, canRent: false, icNumber: '', icUrl: '', licenseUrl: '', docsStatus: 'none', docsRejectReason: '', isLoggedIn: false });
+    setUser({ name: '', matricNo: '', email: '', phone: '', university: '', campus: '', gerakId: '', role: 'customer', status: 'active', vehicle: '', plateNumber: '', feeReceiptUrl: '', feeReceiptVerified: false, feeReceiptAmount: '', feeReceiptDate: '', feeReceiptExpiry: '', feeReceiptRejectReason: '', canDrive: false, canRent: false, icNumber: '', icUrl: '', licenseUrl: '', docsStatus: 'none', docsRejectReason: '', receiptGateExempt: false, isLoggedIn: false });
     setActiveRide(null);
     setJubahBooking(null);
     _setCurrentPage('login');
@@ -691,6 +703,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         logout,
         updateProfile,
         refreshUserData,
+        receiptGateActive,
         notifications,
         addNotification,
         markAllNotificationsRead,

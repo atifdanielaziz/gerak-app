@@ -10,7 +10,7 @@ import { driverIsActive } from './Profile';
 type RiderTab = 'daily' | 'jubah' | 'earnings';
 
 export const RiderHome: React.FC = () => {
-  const { user, refreshUserData } = useApp();
+  const { user, refreshUserData, receiptGateActive } = useApp();
 
   const [activeTab, setActiveTab]     = useState<RiderTab>('daily');
   const [toast, setToast]             = useState('');
@@ -21,7 +21,7 @@ export const RiderHome: React.FC = () => {
   const showToast = (msg: string) => { setToast(msg); setTimeout(() => setToast(''), 3000); };
 
   const isAdminRole = user.role === 'admin' || user.role === 'superadmin';
-  const isActive = driverIsActive({ ...user, role: 'driver' }) || isAdminRole;
+  const isActive = driverIsActive({ ...user, role: 'driver' }, receiptGateActive) || isAdminRole;
 
   // ── Document upload ───────────────────────────────────────────────────────
   const handleDocUpload = async (e: React.ChangeEvent<HTMLInputElement>, type: 'ic' | 'license') => {

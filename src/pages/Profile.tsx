@@ -7,18 +7,23 @@ import {
   ShieldCheck, ShieldOff, AlertTriangle, Clock, RefreshCw, Eye,
 } from 'lucide-react';
 
-/* Derive active status from verified + non-expired receipt */
-export const driverIsActive = (user: { role: string; feeReceiptVerified: boolean; feeReceiptExpiry: string }) =>
+/* Derive active status from verified + non-expired receipt, with gate bypass */
+export const driverIsActive = (
+  user: { role: string; feeReceiptVerified: boolean; feeReceiptExpiry: string; receiptGateExempt?: boolean },
+  gateActive: boolean = true,
+) =>
   user.role === 'driver' &&
-  user.feeReceiptVerified &&
-  !!user.feeReceiptExpiry &&
-  new Date(user.feeReceiptExpiry) > new Date();
+  (!gateActive || user.receiptGateExempt || (
+    user.feeReceiptVerified &&
+    !!user.feeReceiptExpiry &&
+    new Date(user.feeReceiptExpiry) > new Date()
+  ));
 
 export const Profile: React.FC = () => {
-  const { user, logout, updateProfile, refreshUserData, enterPreviewMode } = useApp();
+  const { user, logout, updateProfile, refreshUserData, enterPreviewMode, receiptGateActive } = useApp();
 
   const isDriver = user.role === 'driver' || user.role === 'rider';
-  const isActive = driverIsActive(user);
+  const isActive = driverIsActive(user, receiptGateActive);
   const docsApproved = user.docsStatus === 'approved' || user.role === 'admin' || user.role === 'superadmin';
 
   const [editMode, setEditMode]         = useState(false);

@@ -83,6 +83,7 @@ interface ProfileUser {
   can_rent?: boolean;
   can_daily?: boolean;
   can_robe?: boolean;
+  receipt_gate_exempt?: boolean;
 }
 
 interface DriverInvite {
@@ -356,8 +357,9 @@ const UserCard: React.FC<{
   onCapToggle?: (u: ProfileUser, canDrive: boolean, canRent: boolean) => void;
   onRiderCapToggle?: (u: ProfileUser, canDaily: boolean, canRobe: boolean) => void;
   onCampusChange?: (u: ProfileUser, campus: 'Pekan' | 'Gambang') => void;
+  onGateToggle?: (u: ProfileUser) => void;
   onViewProfile?: (u: ProfileUser) => void;
-}> = ({ u, canManage, togglingStatus, terminating, togglingCap, togglingCampus, onToggle, onTerminate, onCapToggle, onRiderCapToggle, onCampusChange, onViewProfile }) => (
+}> = ({ u, canManage, togglingStatus, terminating, togglingCap, togglingCampus, onToggle, onTerminate, onCapToggle, onRiderCapToggle, onCampusChange, onGateToggle, onViewProfile }) => (
   <div className={`rounded-2xl border p-4 flex flex-col gap-2.5 ${
     u.status === 'inactive' ? 'bg-red-50/50 border-red-100' : 'bg-white border-slate-100'
   }`}>
@@ -472,11 +474,26 @@ const UserCard: React.FC<{
     )}
 
     {canManage && (
-      <div className="flex gap-2">
+      <div className="flex gap-1.5">
+        {onGateToggle && (u.role === 'driver' || u.role === 'rider') && (
+          <button
+            onClick={() => onGateToggle(u)}
+            disabled={togglingCap === u.id}
+            className={`flex-1 min-w-0 font-extrabold text-[9px] py-1.5 px-1 rounded-xl border transition active:scale-95 disabled:opacity-40 flex items-center justify-center gap-0.5 ${
+              u.receipt_gate_exempt
+                ? 'bg-violet-50 border-violet-200 text-violet-700'
+                : 'bg-slate-50 border-slate-200 text-slate-400'
+            }`}
+          >
+            {togglingCap === u.id
+              ? <span className="w-3 h-3 rounded-full border border-current border-t-transparent animate-spin" />
+              : <>{u.receipt_gate_exempt ? 'Gate ✓' : 'Gate ✗'}</>}
+          </button>
+        )}
         <button
           onClick={() => onToggle(u)}
           disabled={togglingStatus === u.id}
-          className={`flex-1 font-extrabold text-[10px] py-2 rounded-xl transition active:scale-95 disabled:opacity-50 flex items-center justify-center ${
+          className={`flex-1 min-w-0 font-extrabold text-[9px] py-1.5 px-1 rounded-xl transition active:scale-95 disabled:opacity-50 flex items-center justify-center ${
             u.status === 'active'
               ? 'bg-amber-50 border border-amber-200 text-amber-700'
               : 'bg-emerald-50 border border-emerald-200 text-emerald-700'
@@ -489,11 +506,11 @@ const UserCard: React.FC<{
         <button
           onClick={() => onTerminate(u)}
           disabled={terminating === u.id}
-          className="flex-1 bg-red-50 border border-red-200 text-red-600 font-extrabold text-[10px] py-2 rounded-xl transition active:scale-95 disabled:opacity-50 flex items-center justify-center gap-1"
+          className="flex-1 min-w-0 bg-red-50 border border-red-200 text-red-600 font-extrabold text-[9px] py-1.5 px-1 rounded-xl transition active:scale-95 disabled:opacity-50 flex items-center justify-center gap-0.5"
         >
           {terminating === u.id
             ? <span className="w-3 h-3 rounded-full border border-red-400 border-t-transparent animate-spin" />
-            : <><Trash2 className="w-3 h-3" /> Terminate</>}
+            : <><Trash2 className="w-3 h-3 shrink-0" /> Terminate</>}
         </button>
       </div>
     )}
@@ -572,6 +589,8 @@ export const AdminHome: React.FC = () => {
   const [receiptFilter, setReceiptFilter]         = useState<'all' | 'verified' | 'pending' | 'rejected' | 'expired'>('all');
   const [receiptSearch, setReceiptSearch]         = useState('');
   const [receiptRoleFilter, setReceiptRoleFilter] = useState<'driver' | 'rider'>('driver');
+  const [receiptGateOn, setReceiptGateOn]         = useState(true);
+  const [togglingReceiptGate, setTogglingReceiptGate] = useState(false);
   const [approvingReceipt, setApprovingReceipt]   = useState<string | null>(null);
   const [rejectingReceipt, setRejectingReceipt]   = useState<string | null>(null);
 
@@ -856,6 +875,17 @@ export const AdminHome: React.FC = () => {
         });
       }
     }
+    const driverRiderIds = [...driverIds, ...riderIds];
+    if (driverRiderIds.length > 0) {
+      const { data: exempts } = await supabase
+        .from('profiles').select('id, receipt_gate_exempt').in('id', driverRiderIds);
+      if (exempts) {
+        exempts.forEach(c => {
+          const u = users.find(u => u.id === c.id);
+          if (u) { u.receipt_gate_exempt = c.receipt_gate_exempt; }
+        });
+      }
+    }
     setProfileUsers(users);
     setUsersLoading(false);
   }, [isSuperAdmin, adminCampus]);
@@ -890,6 +920,21 @@ export const AdminHome: React.FC = () => {
     if (error) showToast('Failed to update capabilities.');
     else {
       showToast(`${u.name}: ${canDaily ? 'Daily ✓' : 'Daily ✗'} · ${canRobe ? 'Robe ✓' : 'Robe ✗'}`);
+      loadUsers();
+    }
+  };
+
+  const handleToggleReceiptGateExempt = async (u: ProfileUser) => {
+    setTogglingCap(u.id);
+    const newExempt = !u.receipt_gate_exempt;
+    const { error } = await supabase.rpc('set_receipt_gate_exempt', {
+      p_user_id: u.id,
+      p_exempt:  newExempt,
+    });
+    setTogglingCap(null);
+    if (error) showToast('Failed to update gate exemption.');
+    else {
+      showToast(`${u.name}: Gate ${newExempt ? 'Exempted' : 'Enforced'}.`);
       loadUsers();
     }
   };
@@ -1020,16 +1065,29 @@ export const AdminHome: React.FC = () => {
   // ── Receipt review helpers ───────────────────────────────────────────────
   const loadReceipts = useCallback(async () => {
     setReceiptsLoading(true);
-    const { data } = await supabase
-      .from('profiles')
-      .select('id, name, gerak_id, campus, email, phone, status, fee_receipt_url, fee_receipt_verified, fee_receipt_amount, fee_receipt_date, fee_receipt_expiry, fee_receipt_reject_reason')
-      .eq('role', receiptRoleFilter)
-      .order('name');
+    const [{ data }, { data: setting }] = await Promise.all([
+      supabase
+        .from('profiles')
+        .select('id, name, gerak_id, campus, email, phone, status, fee_receipt_url, fee_receipt_verified, fee_receipt_amount, fee_receipt_date, fee_receipt_expiry, fee_receipt_reject_reason')
+        .eq('role', receiptRoleFilter)
+        .order('name'),
+      supabase.from('app_settings').select('value').eq('key', 'receipt_gate_active').single(),
+    ]);
     setDriverReceipts((data as DriverReceipt[]) ?? []);
+    if (setting) setReceiptGateOn(setting.value === 'true');
     setReceiptsLoading(false);
   }, [receiptRoleFilter]);
 
   useEffect(() => { if (activeTab === 'receipts') loadReceipts(); }, [activeTab, loadReceipts]);
+
+  const handleToggleReceiptGate = async () => {
+    setTogglingReceiptGate(true);
+    const newVal = (!receiptGateOn).toString();
+    await supabase.from('app_settings').update({ value: newVal }).eq('key', 'receipt_gate_active');
+    setReceiptGateOn(!receiptGateOn);
+    setTogglingReceiptGate(false);
+    showToast(`Receipt gate ${!receiptGateOn ? 'enabled' : 'disabled'}.`);
+  };
 
   const receiptStatus = (r: DriverReceipt): 'verified' | 'expired' | 'rejected' | 'pending' => {
     if (!r.fee_receipt_url) return 'pending';
@@ -1497,6 +1555,7 @@ export const AdminHome: React.FC = () => {
                 onCapToggle={user.role === 'superadmin' ? handleToggleCapability : undefined}
                 onRiderCapToggle={user.role === 'superadmin' ? handleToggleRiderCapability : undefined}
                 onCampusChange={user.role === 'superadmin' ? handleChangeCampus : undefined}
+                onGateToggle={user.role === 'superadmin' ? handleToggleReceiptGateExempt : undefined}
                 onViewProfile={setSheetUser} />
             )}
           </div>
@@ -1549,6 +1608,7 @@ export const AdminHome: React.FC = () => {
                           onCapToggle={user.role === 'superadmin' ? (u, canDrive, canRent) => setPendingAction({ type: 'toggle-cap', u, canDrive, canRent }) : undefined}
                           onRiderCapToggle={user.role === 'superadmin' ? (u, canDaily, canRobe) => setPendingAction({ type: 'toggle-rider-cap', u, canDaily, canRobe }) : undefined}
                           onCampusChange={user.role === 'superadmin' ? (u, campus) => setPendingAction({ type: 'campus', u, campus }) : undefined}
+                          onGateToggle={user.role === 'superadmin' ? handleToggleReceiptGateExempt : undefined}
                           onViewProfile={setSheetUser} />
                       ))}
                     </div>
@@ -2398,6 +2458,29 @@ export const AdminHome: React.FC = () => {
       {/* ── RECEIPTS TAB (superadmin only) ── */}
       {activeTab === 'receipts' && user.role === 'superadmin' && (
         <div className="flex flex-col gap-4">
+
+          {/* Master Receipt Gate Toggle — superadmin only */}
+          <div className="bg-white border border-slate-100 rounded-3xl p-5 shadow-sm flex items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <div className={`w-10 h-10 rounded-2xl flex items-center justify-center ${receiptGateOn ? 'bg-emerald-50' : 'bg-slate-100'}`}>
+                <ShieldCheck className={`w-5 h-5 ${receiptGateOn ? 'text-emerald-500' : 'text-slate-400'}`} />
+              </div>
+              <div>
+                <p className="text-xs font-black text-slate-800">Receipt Gate</p>
+                <p className="text-[10px] text-slate-400 font-semibold mt-0.5">
+                  {receiptGateOn ? 'ON — monthly receipt required to be active' : 'OFF — everyone bypasses the receipt requirement'}
+                </p>
+              </div>
+            </div>
+            <button onClick={handleToggleReceiptGate} disabled={togglingReceiptGate}
+              className={`shrink-0 px-4 py-2 rounded-xl text-xs font-extrabold border transition active:scale-95 disabled:opacity-50 ${
+                receiptGateOn
+                  ? 'bg-emerald-50 border-emerald-200 text-emerald-700'
+                  : 'bg-slate-50 border-slate-200 text-slate-500'
+              }`}>
+              {togglingReceiptGate ? '…' : receiptGateOn ? '🟢 ON' : '⚫ OFF'}
+            </button>
+          </div>
 
           {/* Driver / Rider toggle */}
           <div className="flex bg-white border border-slate-100 rounded-2xl p-1 gap-1 shadow-sm">

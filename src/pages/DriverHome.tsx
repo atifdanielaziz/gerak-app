@@ -146,7 +146,7 @@ const MonthDrumPicker: React.FC<{ value: string; onChange: (m: string) => void }
 };
 
 export const DriverHome: React.FC = () => {
-  const { user, activeRole, refreshUserData } = useApp();
+  const { user, activeRole, refreshUserData, receiptGateActive } = useApp();
   // Admin/superadmin who switched the pill to Driver should behave as a full driver
   const effectiveCanDrive = user.canDrive || activeRole === 'driver';
 
@@ -190,8 +190,10 @@ export const DriverHome: React.FC = () => {
     setTimeout(() => setToast(''), 3000);
   };
 
-  // Admins in driver mode bypass the receipt gate — they're trusted staff
+  // Admins in driver mode, gate-exempted drivers, or a globally-OFF gate all bypass the receipt check
   const isDriverActive = (user.role === 'admin' || user.role === 'superadmin')
+    || !receiptGateActive
+    || user.receiptGateExempt
     || (user.feeReceiptVerified && !!user.feeReceiptExpiry && new Date(user.feeReceiptExpiry) > new Date());
 
   // ── Rental helpers ────────────────────────────────────────────────────────
