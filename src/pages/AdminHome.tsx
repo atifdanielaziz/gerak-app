@@ -315,9 +315,13 @@ const JubahRiderSheet: React.FC<{
               value={dropPoint}
               onChange={e => onDropPointChange(e.target.value)}
               placeholder="e.g. UMP Gambang Counter"
+              disabled={method === 'postage'}
               style={{ fontSize: '12px' }}
-              className="bg-slate-50 border border-slate-200 rounded-xl py-2.5 px-3 font-bold text-slate-700 focus:outline-none focus:border-primary transition placeholder:font-normal"
+              className="bg-slate-50 border border-slate-200 rounded-xl py-2.5 px-3 font-bold text-slate-700 focus:outline-none focus:border-primary transition placeholder:font-normal disabled:opacity-50 disabled:cursor-not-allowed"
             />
+            {method === 'postage' && (
+              <p className="text-[9px] text-slate-400 font-semibold">Not applicable — robe is couriered, no physical drop point needed.</p>
+            )}
           </div>
         </div>
       </div>
@@ -1260,7 +1264,10 @@ export const AdminHome: React.FC = () => {
           method={jubahMethodDraft}
           dropPoint={jubahDropPointDraft}
           saving={savingJubahAssignment}
-          onMethodChange={setJubahMethodDraft}
+          onMethodChange={m => {
+            setJubahMethodDraft(m);
+            if (m === 'postage') setJubahDropPointDraft('-');
+          }}
           onDropPointChange={setJubahDropPointDraft}
           onSave={handleSaveJubahAssignment}
           onClose={() => setJubahSheetRider(null)}
