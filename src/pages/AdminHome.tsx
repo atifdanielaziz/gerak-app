@@ -130,7 +130,8 @@ type PendingAction =
   | { type: 'toggle-cap';    u: ProfileUser; canDrive: boolean; canRent: boolean }
   | { type: 'toggle-rider-cap'; u: ProfileUser; canDaily: boolean; canRobe: boolean }
   | { type: 'campus';        u: ProfileUser; campus: 'Pekan' | 'Gambang' }
-  | { type: 'toggle-role';   u: ProfileUser; newRole: 'driver' | 'admin' };
+  | { type: 'toggle-role';   u: ProfileUser; newRole: 'driver' | 'admin' }
+  | { type: 'toggle-gate-exempt'; u: ProfileUser };
 
 // ── Profile detail sheet ─────────────────────────────────────────────────────
 const ProfileSheet: React.FC<{ u: ProfileUser; onClose: () => void }> = ({ u, onClose }) => (
@@ -591,6 +592,7 @@ export const AdminHome: React.FC = () => {
   const [receiptRoleFilter, setReceiptRoleFilter] = useState<'driver' | 'rider'>('driver');
   const [receiptGateOn, setReceiptGateOn]         = useState(true);
   const [togglingReceiptGate, setTogglingReceiptGate] = useState(false);
+  const [showGateMasterConfirm, setShowGateMasterConfirm] = useState(false);
   const [approvingReceipt, setApprovingReceipt]   = useState<string | null>(null);
   const [rejectingReceipt, setRejectingReceipt]   = useState<string | null>(null);
 
@@ -968,6 +970,7 @@ export const AdminHome: React.FC = () => {
     else if (pendingAction.type === 'toggle-rider-cap') handleToggleRiderCapability(pendingAction.u, pendingAction.canDaily, pendingAction.canRobe);
     else if (pendingAction.type === 'campus')     handleChangeCampus(pendingAction.u, pendingAction.campus);
     else if (pendingAction.type === 'toggle-role') handleToggleRole(pendingAction.u, pendingAction.newRole);
+    else if (pendingAction.type === 'toggle-gate-exempt') handleToggleReceiptGateExempt(pendingAction.u);
     setPendingAction(null);
   };
 
@@ -1555,7 +1558,7 @@ export const AdminHome: React.FC = () => {
                 onCapToggle={user.role === 'superadmin' ? handleToggleCapability : undefined}
                 onRiderCapToggle={user.role === 'superadmin' ? handleToggleRiderCapability : undefined}
                 onCampusChange={user.role === 'superadmin' ? handleChangeCampus : undefined}
-                onGateToggle={user.role === 'superadmin' ? handleToggleReceiptGateExempt : undefined}
+                onGateToggle={user.role === 'superadmin' ? (u => setPendingAction({ type: 'toggle-gate-exempt', u })) : undefined}
                 onViewProfile={setSheetUser} />
             )}
           </div>
@@ -1608,7 +1611,7 @@ export const AdminHome: React.FC = () => {
                           onCapToggle={user.role === 'superadmin' ? (u, canDrive, canRent) => setPendingAction({ type: 'toggle-cap', u, canDrive, canRent }) : undefined}
                           onRiderCapToggle={user.role === 'superadmin' ? (u, canDaily, canRobe) => setPendingAction({ type: 'toggle-rider-cap', u, canDaily, canRobe }) : undefined}
                           onCampusChange={user.role === 'superadmin' ? (u, campus) => setPendingAction({ type: 'campus', u, campus }) : undefined}
-                          onGateToggle={user.role === 'superadmin' ? handleToggleReceiptGateExempt : undefined}
+                          onGateToggle={user.role === 'superadmin' ? (u => setPendingAction({ type: 'toggle-gate-exempt', u })) : undefined}
                           onViewProfile={setSheetUser} />
                       ))}
                     </div>
@@ -2472,7 +2475,7 @@ export const AdminHome: React.FC = () => {
                 </p>
               </div>
             </div>
-            <button onClick={handleToggleReceiptGate} disabled={togglingReceiptGate}
+            <button onClick={() => setShowGateMasterConfirm(true)} disabled={togglingReceiptGate}
               className={`shrink-0 px-4 py-2 rounded-xl text-xs font-extrabold border transition active:scale-95 disabled:opacity-50 ${
                 receiptGateOn
                   ? 'bg-emerald-50 border-emerald-200 text-emerald-700'
@@ -2789,6 +2792,7 @@ export const AdminHome: React.FC = () => {
         pendingAction.type === 'toggle-cap'    ? `Update capabilities for ${u.name}?` :
         pendingAction.type === 'toggle-rider-cap' ? `Update capabilities for ${u.name}?` :
         pendingAction.type === 'toggle-role'   ? (isRoleToAdmin ? `Promote ${u.name} to Admin?` : `Change ${u.name} to Driver?`) :
+        pendingAction.type === 'toggle-gate-exempt' ? (u.receipt_gate_exempt ? `Remove gate exemption for ${u.name}?` : `Exempt ${u.name} from receipt gate?`) :
         `Move ${u.name} to UMPSA ${(pendingAction as any).campus}?`;
 
       const desc =
@@ -2798,6 +2802,7 @@ export const AdminHome: React.FC = () => {
         pendingAction.type === 'toggle-cap'    ? 'Their service capabilities will be updated immediately.' :
         pendingAction.type === 'toggle-rider-cap' ? 'Their service capabilities will be updated immediately.' :
         pendingAction.type === 'toggle-role'   ? (isRoleToAdmin ? 'They will gain Admin panel access + full driving capabilities.' : 'They will lose Admin panel access and become a driver only.') :
+        pendingAction.type === 'toggle-gate-exempt' ? (u.receipt_gate_exempt ? 'They will need a valid monthly receipt again to stay active.' : 'They will bypass the monthly receipt requirement and stay active regardless.') :
         'Their campus assignment will change immediately.';
 
       return (
@@ -2833,6 +2838,44 @@ export const AdminHome: React.FC = () => {
         </div>
       );
     })()}
+
+    {/* ── Receipt Gate Master Confirmation Modal ── */}
+    {showGateMasterConfirm && (
+      <div className="fixed inset-0 z-50 bg-black/40 flex items-end justify-center"
+        onClick={() => setShowGateMasterConfirm(false)}>
+        <div className="w-full max-w-sm bg-white rounded-t-3xl p-6 pb-10 shadow-2xl animate-slide-up"
+          onClick={e => e.stopPropagation()}>
+          <div className="w-10 h-1 bg-slate-200 rounded-full mx-auto mb-5" />
+          <div className={`w-10 h-10 rounded-2xl mx-auto mb-3 flex items-center justify-center ${
+            receiptGateOn ? 'bg-amber-100' : 'bg-primary/10'
+          }`}>
+            {receiptGateOn
+              ? <span className="text-amber-600 font-black text-sm">✕</span>
+              : <span className="text-primary font-black text-sm">✓</span>}
+          </div>
+          <h3 className="text-sm font-black text-slate-800 text-center mb-1">
+            {receiptGateOn ? 'Turn OFF Receipt Gate?' : 'Turn ON Receipt Gate?'}
+          </h3>
+          <p className="text-[11px] text-slate-400 font-semibold text-center mb-6">
+            {receiptGateOn
+              ? 'Every driver and rider will bypass the monthly receipt requirement and stay active regardless of payment.'
+              : 'Drivers and riders will need a valid monthly receipt again to stay active.'}
+          </p>
+          <div className="flex gap-3">
+            <button onClick={() => setShowGateMasterConfirm(false)}
+              className="flex-1 bg-slate-100 text-slate-600 font-extrabold text-xs py-3 rounded-2xl transition active:scale-95">
+              Cancel
+            </button>
+            <button onClick={() => { handleToggleReceiptGate(); setShowGateMasterConfirm(false); }}
+              className={`flex-1 font-extrabold text-xs py-3 rounded-2xl transition active:scale-95 text-white ${
+                receiptGateOn ? 'bg-amber-500' : 'bg-primary'
+              }`}>
+              Yes, Confirm
+            </button>
+          </div>
+        </div>
+      </div>
+    )}
 
     {/* ── Invite Confirmation Modal ── */}
     {showInviteConfirm && (
