@@ -645,6 +645,7 @@ export const AdminHome: React.FC = () => {
   const [jubahBookings,      setJubahBookings]      = useState<JubahBookingRow[]>([]);
   const [jubahBookingsLoading, setJubahBookingsLoading] = useState(false);
   const [jubahSearch,        setJubahSearch]        = useState('');
+  const [jubahSubTab,        setJubahSubTab]        = useState<'customer' | 'rider'>('rider');
   const [jubahSheetRider,    setJubahSheetRider]    = useState<JubahRider | null>(null);
   const [jubahMethodDraft,   setJubahMethodDraft]   = useState<'pickup' | 'postage' | ''>('');
   const [jubahDropPointDraft, setJubahDropPointDraft] = useState('');
@@ -2350,7 +2351,7 @@ export const AdminHome: React.FC = () => {
       {activeTab === 'jubah' && (
         <div className="flex flex-col gap-4">
 
-          {/* Jubah Period Toggle */}
+          {/* Jubah Period Toggle — above sub-tabs */}
           <div className="bg-white border border-slate-100 rounded-3xl p-5 shadow-sm flex items-center justify-between gap-4">
             <div className="flex items-center gap-3">
               <div className={`w-10 h-10 rounded-2xl flex items-center justify-center ${jubahActive ? 'bg-blue-50' : 'bg-slate-100'}`}>
@@ -2365,135 +2366,185 @@ export const AdminHome: React.FC = () => {
             </div>
             <button onClick={handleToggleJubah} disabled={togglingJubah}
               className={`shrink-0 px-4 py-2 rounded-xl text-xs font-extrabold border transition active:scale-95 disabled:opacity-50 ${
-                jubahActive
-                  ? 'bg-blue-50 border-blue-200 text-blue-700'
-                  : 'bg-slate-50 border-slate-200 text-slate-500'
+                jubahActive ? 'bg-blue-50 border-blue-200 text-blue-700' : 'bg-slate-50 border-slate-200 text-slate-500'
               }`}>
               {togglingJubah ? '…' : jubahActive ? '🟢 ON' : '⚫ OFF'}
             </button>
           </div>
 
-          {/* Search */}
-          <div className="bg-white border border-slate-100 rounded-2xl p-3.5 shadow-sm flex flex-col gap-2">
-            <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1.5">
-              <AlertCircle className="w-3.5 h-3.5" /> Find Customer or Rider
-            </h3>
-            <div className="flex gap-2">
-              <input
-                type="text"
-                value={jubahSearch}
-                onChange={e => setJubahSearch(e.target.value)}
-                placeholder="Name, HP, Reference or Gerak ID"
-                style={{ fontSize: '12px' }}
-                className="flex-1 bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 font-bold text-slate-700 focus:outline-none focus:border-primary transition placeholder:font-normal"
-              />
-              <button
-                onClick={() => setJubahSearch('')}
-                disabled={!jubahSearch.trim()}
-                className="px-3.5 bg-primary text-white font-extrabold text-[11px] rounded-lg transition active:scale-95 disabled:opacity-50 flex items-center gap-1.5"
-              >
-                Clear
+          {/* Customer | Rider sub-tabs */}
+          <div className="flex bg-white border border-slate-100 rounded-2xl p-1 gap-1 shadow-sm">
+            {(['rider', 'customer'] as const).map(t => (
+              <button key={t} onClick={() => setJubahSubTab(t)}
+                className={`flex-1 py-2 rounded-xl text-xs font-extrabold transition ${
+                  jubahSubTab === t ? 'bg-primary text-white shadow-sm' : 'text-slate-400'
+                }`}>
+                {t === 'rider' ? '🛵 Rider' : '👤 Customer'}
               </button>
-            </div>
+            ))}
           </div>
 
-          {/* Rider details */}
-          <div className="bg-white border border-slate-100 rounded-3xl p-5 shadow-sm flex flex-col gap-3">
-            <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest flex items-center gap-1.5">
-              <GraduationCap className="w-4 h-4" /> Jubah Riders
-            </h3>
-            <div className="overflow-y-auto no-scrollbar max-h-[320px] flex flex-col gap-2">
-              {jubahRidersLoading ? (
-                <div className="flex justify-center py-8">
-                  <span className="w-5 h-5 rounded-full border-2 border-slate-200 border-t-primary animate-spin" />
-                </div>
-              ) : jubahRiders.filter(r => !jubahSearch.trim() || r.name.toLowerCase().includes(jubahSearch.toLowerCase()) || r.gerak_id.toLowerCase().includes(jubahSearch.toLowerCase())).length === 0 ? (
-                <p className="text-xs text-slate-400 font-semibold text-center py-6">No Jubah riders found.</p>
-              ) : jubahRiders.filter(r => !jubahSearch.trim() || r.name.toLowerCase().includes(jubahSearch.toLowerCase()) || r.gerak_id.toLowerCase().includes(jubahSearch.toLowerCase())).map(r => (
-                <button key={r.id} type="button"
-                  onClick={() => {
-                    setJubahSheetRider(r);
-                    setJubahMethodDraft((r.jubah_method as 'pickup' | 'postage') || '');
-                    setJubahDropPointDraft(r.jubah_drop_point || '');
-                  }}
-                  className="flex items-center justify-between gap-3 px-3 py-2.5 rounded-2xl border border-slate-100 bg-white active:opacity-70 transition text-left"
-                >
-                  <div className="flex-1 min-w-0">
-                    <p className="text-xs font-bold text-slate-700 truncate">{r.name}</p>
-                    <p className="text-[10px] text-slate-400 font-semibold mt-0.5">{r.gerak_id} · UMPSA {r.campus}</p>
-                  </div>
-                  <span className={`text-[9px] font-extrabold px-2 py-1 rounded-full border shrink-0 ${
-                    r.status === 'active' ? 'bg-emerald-50 border-emerald-100 text-emerald-700' : 'bg-slate-50 border-slate-200 text-slate-400'
-                  }`}>
-                    {r.status === 'active' ? 'Active' : 'Inactive'}
-                  </span>
-                </button>
-              ))}
-            </div>
-          </div>
+          {/* ── RIDER sub-tab ── */}
+          {jubahSubTab === 'rider' && (<>
 
-          {/* Customer directory */}
-          <div className="bg-white border border-slate-100 rounded-3xl p-5 shadow-sm flex flex-col gap-3">
-            <div className="flex items-center justify-between">
+            {/* Rider cards — click to open assignment sheet */}
+            <div className="bg-white border border-slate-100 rounded-3xl p-5 shadow-sm flex flex-col gap-3">
               <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest flex items-center gap-1.5">
-                <Users className="w-4 h-4" /> Customer Directory
+                <GraduationCap className="w-4 h-4" /> Jubah Riders
               </h3>
-              <button onClick={loadJubahData}
-                className="w-7 h-7 flex items-center justify-center rounded-xl bg-slate-50 border border-slate-100 text-slate-400 hover:text-primary transition active:scale-90">
-                <RefreshCw className="w-3.5 h-3.5" />
-              </button>
+              <div className="overflow-y-auto no-scrollbar max-h-[320px] flex flex-col gap-2">
+                {jubahRidersLoading ? (
+                  <div className="flex justify-center py-8">
+                    <span className="w-5 h-5 rounded-full border-2 border-slate-200 border-t-primary animate-spin" />
+                  </div>
+                ) : jubahRiders.length === 0 ? (
+                  <p className="text-xs text-slate-400 font-semibold text-center py-6">No Jubah riders found.</p>
+                ) : jubahRiders.map(r => (
+                  <button key={r.id} type="button"
+                    onClick={() => {
+                      setJubahSheetRider(r);
+                      setJubahMethodDraft((r.jubah_method as 'pickup' | 'postage') || '');
+                      setJubahDropPointDraft(r.jubah_drop_point || '');
+                    }}
+                    className="flex items-center justify-between gap-3 px-3 py-2.5 rounded-2xl border border-slate-100 bg-white active:opacity-70 transition text-left"
+                  >
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs font-bold text-slate-700 truncate">{r.name}</p>
+                      <p className="text-[10px] text-slate-400 font-semibold mt-0.5">{r.gerak_id} · UMPSA {r.campus}</p>
+                    </div>
+                    <span className={`text-[9px] font-extrabold px-2 py-1 rounded-full border shrink-0 ${
+                      r.status === 'active' ? 'bg-emerald-50 border-emerald-100 text-emerald-700' : 'bg-slate-50 border-slate-200 text-slate-400'
+                    }`}>
+                      {r.status === 'active' ? 'Active' : 'Inactive'}
+                    </span>
+                  </button>
+                ))}
+              </div>
             </div>
 
-            {jubahBookingsLoading ? (
-              <div className="flex justify-center py-8">
-                <span className="w-5 h-5 rounded-full border-2 border-slate-200 border-t-primary animate-spin" />
-              </div>
-            ) : jubahBookings.length === 0 ? (
-              <p className="text-xs text-slate-400 font-semibold text-center py-6">
-                No Jubah bookings yet. Customer bookings will appear here once submitted.
-              </p>
-            ) : (
-              <div className="overflow-y-auto overflow-x-auto no-scrollbar max-h-[420px]">
-                <table className="w-full text-left border-collapse">
-                  <thead className="sticky top-0 bg-white">
-                    <tr className="text-[9px] font-extrabold text-slate-400 uppercase tracking-wider border-b border-slate-100">
-                      <th className="py-2 pr-2 whitespace-nowrap">Reference</th>
-                      <th className="py-2 pr-2 whitespace-nowrap">Name</th>
-                      <th className="py-2 pr-2 whitespace-nowrap">HP</th>
-                      <th className="py-2 pr-2 whitespace-nowrap">Campus</th>
-                      <th className="py-2 pr-2 whitespace-nowrap">Rider</th>
-                      <th className="py-2 pr-2 whitespace-nowrap">Status</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {jubahBookings.filter(b =>
-                      !jubahSearch.trim() ||
-                      b.full_name.toLowerCase().includes(jubahSearch.toLowerCase()) ||
-                      b.hp_number.includes(jubahSearch) ||
-                      b.reference.toLowerCase().includes(jubahSearch.toLowerCase())
-                    ).map(b => (
-                      <tr key={b.id} className="border-b border-slate-50 text-[10px]">
-                        <td className="py-2 pr-2 font-mono font-bold text-primary whitespace-nowrap">{b.reference}</td>
-                        <td className="py-2 pr-2 font-bold text-slate-700 whitespace-nowrap">{b.full_name}</td>
-                        <td className="py-2 pr-2 text-slate-500 whitespace-nowrap">{b.hp_number}</td>
-                        <td className="py-2 pr-2 text-slate-500 whitespace-nowrap">{b.campus}</td>
-                        <td className="py-2 pr-2 text-slate-500 whitespace-nowrap">{b.rider_name ?? '—'}</td>
-                        <td className="py-2 pr-2 whitespace-nowrap">
-                          <span className={`text-[9px] font-extrabold px-2 py-0.5 rounded-full border ${
-                            b.status === 'delivered' ? 'bg-emerald-50 border-emerald-100 text-emerald-700' :
-                            b.status === 'cancelled' ? 'bg-red-50 border-red-100 text-red-600' :
-                            'bg-amber-50 border-amber-100 text-amber-700'
-                          }`}>
-                            {b.status.replace('_', ' ')}
-                          </span>
-                        </td>
+            {/* Rider directory table */}
+            {jubahRiders.length > 0 && (
+              <div className="bg-white border border-slate-100 rounded-3xl p-5 shadow-sm flex flex-col gap-3">
+                <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest flex items-center gap-1.5">
+                  <Users className="w-4 h-4" /> Representative Directory
+                </h3>
+                <div className="overflow-x-auto overflow-y-auto no-scrollbar max-h-[320px]">
+                  <table className="text-left border-collapse" style={{ minWidth: 520 }}>
+                    <thead className="sticky top-0 bg-white">
+                      <tr className="text-[9px] font-extrabold text-slate-400 uppercase tracking-wider border-b border-slate-100">
+                        <th className="py-2 pr-4 whitespace-nowrap">Method</th>
+                        <th className="py-2 pr-4 whitespace-nowrap">Representative Name</th>
+                        <th className="py-2 pr-4 whitespace-nowrap">I/C Number</th>
+                        <th className="py-2 whitespace-nowrap">H/P</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
+                    </thead>
+                    <tbody>
+                      {jubahRiders.map(r => (
+                        <tr key={r.id} className="border-b border-slate-50 text-[10px]">
+                          <td className="py-2.5 pr-4 text-slate-600 font-semibold align-top whitespace-nowrap">
+                            {r.jubah_drop_point || '—'}
+                          </td>
+                          <td className="py-2.5 pr-4 font-extrabold text-slate-800 align-top">{r.name}</td>
+                          <td className="py-2.5 pr-4 font-mono text-slate-700 align-top whitespace-nowrap">{r.ic_number || '—'}</td>
+                          <td className="py-2.5 text-slate-700 font-semibold align-top whitespace-nowrap">
+                            <div className="flex items-center gap-1.5">
+                              <span>{r.phone || '—'}</span>
+                              {r.phone && (
+                                <a href={`https://wa.me/${toWa(r.phone)}`} target="_blank" rel="noopener noreferrer"
+                                  onClick={e => e.stopPropagation()} className="text-[#25D366] active:scale-90 transition shrink-0">
+                                  <WaIcon className="w-3.5 h-3.5" />
+                                </a>
+                              )}
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
               </div>
             )}
-          </div>
+          </>)}
+
+          {/* ── CUSTOMER sub-tab ── */}
+          {jubahSubTab === 'customer' && (<>
+
+            {/* Search */}
+            <div className="bg-white border border-slate-100 rounded-2xl p-3.5 shadow-sm flex flex-col gap-2">
+              <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1.5">
+                <AlertCircle className="w-3.5 h-3.5" /> Find Customer
+              </h3>
+              <div className="flex gap-2">
+                <input type="text" value={jubahSearch} onChange={e => setJubahSearch(e.target.value)}
+                  placeholder="Name, HP or Reference"
+                  style={{ fontSize: '12px' }}
+                  className="flex-1 bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 font-bold text-slate-700 focus:outline-none focus:border-primary transition placeholder:font-normal"
+                />
+                <button onClick={() => setJubahSearch('')} disabled={!jubahSearch.trim()}
+                  className="px-3.5 bg-primary text-white font-extrabold text-[11px] rounded-lg transition active:scale-95 disabled:opacity-50">
+                  Clear
+                </button>
+              </div>
+            </div>
+
+            {/* Customer bookings directory */}
+            <div className="bg-white border border-slate-100 rounded-3xl p-5 shadow-sm flex flex-col gap-3">
+              <div className="flex items-center justify-between">
+                <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest flex items-center gap-1.5">
+                  <Users className="w-4 h-4" /> Customer Directory
+                </h3>
+                <button onClick={loadJubahData}
+                  className="w-7 h-7 flex items-center justify-center rounded-xl bg-slate-50 border border-slate-100 text-slate-400 hover:text-primary transition active:scale-90">
+                  <RefreshCw className="w-3.5 h-3.5" />
+                </button>
+              </div>
+              {jubahBookingsLoading ? (
+                <div className="flex justify-center py-8"><span className="w-5 h-5 rounded-full border-2 border-slate-200 border-t-primary animate-spin" /></div>
+              ) : jubahBookings.length === 0 ? (
+                <p className="text-xs text-slate-400 font-semibold text-center py-6">No Jubah bookings yet.</p>
+              ) : (
+                <div className="overflow-y-auto overflow-x-auto no-scrollbar max-h-[420px]">
+                  <table className="w-full text-left border-collapse">
+                    <thead className="sticky top-0 bg-white">
+                      <tr className="text-[9px] font-extrabold text-slate-400 uppercase tracking-wider border-b border-slate-100">
+                        <th className="py-2 pr-2 whitespace-nowrap">Reference</th>
+                        <th className="py-2 pr-2 whitespace-nowrap">Name</th>
+                        <th className="py-2 pr-2 whitespace-nowrap">HP</th>
+                        <th className="py-2 pr-2 whitespace-nowrap">Campus</th>
+                        <th className="py-2 pr-2 whitespace-nowrap">Rider</th>
+                        <th className="py-2 pr-2 whitespace-nowrap">Status</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {jubahBookings.filter(b =>
+                        !jubahSearch.trim() ||
+                        b.full_name.toLowerCase().includes(jubahSearch.toLowerCase()) ||
+                        b.hp_number.includes(jubahSearch) ||
+                        b.reference.toLowerCase().includes(jubahSearch.toLowerCase())
+                      ).map(b => (
+                        <tr key={b.id} className="border-b border-slate-50 text-[10px]">
+                          <td className="py-2 pr-2 font-mono font-bold text-primary whitespace-nowrap">{b.reference}</td>
+                          <td className="py-2 pr-2 font-bold text-slate-700 whitespace-nowrap">{b.full_name}</td>
+                          <td className="py-2 pr-2 text-slate-500 whitespace-nowrap">{b.hp_number}</td>
+                          <td className="py-2 pr-2 text-slate-500 whitespace-nowrap">{b.campus}</td>
+                          <td className="py-2 pr-2 text-slate-500 whitespace-nowrap">{b.rider_name ?? '—'}</td>
+                          <td className="py-2 pr-2 whitespace-nowrap">
+                            <span className={`text-[9px] font-extrabold px-2 py-0.5 rounded-full border ${
+                              b.status === 'delivered' ? 'bg-emerald-50 border-emerald-100 text-emerald-700' :
+                              b.status === 'cancelled' ? 'bg-red-50 border-red-100 text-red-600' :
+                              'bg-amber-50 border-amber-100 text-amber-700'
+                            }`}>
+                              {b.status.replace('_', ' ')}
+                            </span>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+          </>)}
         </div>
       )}
 

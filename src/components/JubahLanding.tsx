@@ -2,6 +2,16 @@ import React, { useState, useRef, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { useApp } from '../context/AppContext';
 import { ChevronRight, Upload, Image as ImageIcon } from 'lucide-react';
+import { WaIcon, toWa } from '../lib/whatsapp';
+
+type RiderDir = { id: string; name: string; jubah_drop_point: string | null; ic_number: string | null; phone: string | null };
+
+const maskIc = (ic: string | null) => {
+  if (!ic) return '—';
+  const digits = ic.replace(/\D/g, '');
+  if (digits.length < 6) return ic;
+  return `${digits.slice(0, 6)}-XX-XXXX`;
+};
 
 const UNIVERSITIES = [
   { key: 'umpsa', label: 'Universiti Malaysia Pahang Al-Sultan Abdullah (UMPSA)' },
@@ -25,6 +35,13 @@ export const JubahLanding: React.FC<Props> = ({ onProceed }) => {
   const [imgError, setImgError]         = useState<Record<string, boolean>>({});
   const [uploading, setUploading]       = useState(false);
   const uploadRef = useRef<HTMLInputElement>(null);
+  const [riderDir, setRiderDir]         = useState<RiderDir[]>([]);
+
+  // Campus mapping for the directory RPC
+  const CAMPUS_MAP: Record<string, string> = {
+    umpsa: '', // both Pekan and Gambang — or pass '' to get all
+    uitm: '', umk: '', uiam: '',
+  };
 
   // Load public URLs for all universities on mount
   useEffect(() => {
@@ -39,6 +56,9 @@ export const JubahLanding: React.FC<Props> = ({ onProceed }) => {
   const handleUniversityChange = (key: string) => {
     setSelectedKey(key);
     setImgError(prev => ({ ...prev, [key]: false }));
+    const campus = CAMPUS_MAP[key] ?? '';
+    supabase.rpc('get_jubah_riders_directory', { p_campus: campus })
+      .then(({ data }) => setRiderDir((data as RiderDir[]) ?? []));
   };
 
   const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -135,6 +155,59 @@ export const JubahLanding: React.FC<Props> = ({ onProceed }) => {
           </>
         )}
       </div>
+
+      {/* Rider Directory Table */}
+      {riderDir.length > 0 && (
+        <div className="bg-white border border-slate-100 rounded-3xl p-5 shadow-sm flex flex-col gap-3">
+          <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest">Our Representatives</h3>
+          <div className="overflow-x-auto overflow-y-auto no-scrollbar max-h-[280px]">
+            <table className="min-w-full border-collapse text-left" style={{ minWidth: 480 }}>
+              <thead className="sticky top-0 bg-white">
+                <tr className="text-[9px] font-extrabold text-slate-400 uppercase tracking-wider border-b border-slate-100">
+                  <th className="py-2 pr-4 whitespace-nowrap">Method</th>
+                  <th className="py-2 pr-4 whitespace-nowrap">Representative Name</th>
+                  <th className="py-2 pr-4 whitespace-nowrap">I/C Number</th>
+                  <th className="py-2 whitespace-nowrap">H/P</th>
+                </tr>
+              </thead>
+              <tbody>
+                {riderDir.map(r => (
+                  <tr key={r.id} className="border-b border-slate-50 text-[10px]">
+                    <td className="py-2.5 pr-4 text-slate-600 font-semibold align-top whitespace-nowrap">
+                      {r.jubah_drop_point || '—'}
+                    </td>
+                    <td className="py-2.5 pr-4 font-extrabold text-slate-800 align-top">
+                      {r.name}
+                    </td>
+                    <td className="py-2.5 pr-4 font-mono text-slate-500 align-top whitespace-nowrap">
+                      <span className="text-slate-800 font-semibold">{maskIc(r.ic_number)}</span>
+                    </td>
+                    <td className="py-2.5 font-semibold text-slate-700 align-top whitespace-nowrap">
+                      <div className="flex items-center gap-1.5">
+                        <span>{r.phone || '—'}</span>
+                        {r.phone && (
+                          <a
+                            href={`https://wa.me/${toWa(r.phone)}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            onClick={e => e.stopPropagation()}
+                            className="text-[#25D366] active:scale-90 transition shrink-0"
+                          >
+                            <WaIcon className="w-3.5 h-3.5" />
+                          </a>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <p className="text-[9px] text-slate-400 font-semibold">
+            💡 I/C numbers are partially masked. Tap the WhatsApp icon to contact the representative and confirm the full IC for physical registration.
+          </p>
+        </div>
+      )}
 
       {/* Spacer */}
       <div className="flex-1" />
