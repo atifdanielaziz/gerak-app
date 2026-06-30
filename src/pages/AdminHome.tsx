@@ -141,14 +141,14 @@ const ProfileSheet: React.FC<{ u: ProfileUser; onClose: () => void }> = ({ u, on
     onClick={onClose}
   >
     <div
-      className="w-full max-w-[480px] bg-white rounded-t-3xl shadow-2xl animate-slide-up"
+      className="w-full max-w-[480px] max-h-[85vh] bg-white rounded-t-3xl shadow-2xl animate-slide-up flex flex-col"
       onClick={e => e.stopPropagation()}
     >
-      <div className="flex justify-center pt-3 pb-1">
+      <div className="flex justify-center pt-3 pb-1 shrink-0">
         <div className="w-10 h-1 bg-slate-200 rounded-full" />
       </div>
 
-      <div className="flex items-center justify-between px-5 pt-2 pb-4">
+      <div className="flex items-center justify-between px-5 pt-2 pb-4 shrink-0">
         <p className="text-xs font-extrabold text-slate-400 uppercase tracking-widest">Profile</p>
         <button
           onClick={onClose}
@@ -158,61 +158,63 @@ const ProfileSheet: React.FC<{ u: ProfileUser; onClose: () => void }> = ({ u, on
         </button>
       </div>
 
-      {/* Avatar + name */}
-      <div className="flex flex-col items-center px-5 pb-4 gap-2">
-        <div className={`w-20 h-20 rounded-full flex items-center justify-center shadow-lg ${
-          u.role === 'superadmin' ? 'bg-violet-600 shadow-violet-200' :
-          u.role === 'admin'      ? 'bg-blue-600 shadow-blue-200' :
-                                    'bg-emerald-600 shadow-emerald-200'
-        }`}>
-          {u.role === 'driver'
-            ? <Car className="w-9 h-9 text-white" />
-            : <ShieldCheck className="w-9 h-9 text-white" />}
-        </div>
-        <div className="text-center mt-1">
-          <p className="text-xl font-black text-slate-800">{u.name}</p>
-          <span className={`inline-flex items-center gap-1 mt-1 text-[10px] font-extrabold px-2.5 py-1 rounded-full border ${
-            u.role === 'superadmin' ? 'bg-violet-50 border-violet-100 text-violet-600' :
-            u.role === 'admin'      ? 'bg-blue-50 border-blue-100 text-blue-600' :
-                                      'bg-emerald-50 border-emerald-100 text-emerald-600'
+      <div className="flex-1 min-h-0 overflow-y-auto no-scrollbar">
+        {/* Avatar + name */}
+        <div className="flex flex-col items-center px-5 pb-4 gap-2">
+          <div className={`w-20 h-20 rounded-full flex items-center justify-center shadow-lg ${
+            u.role === 'superadmin' ? 'bg-violet-600 shadow-violet-200' :
+            u.role === 'admin'      ? 'bg-blue-600 shadow-blue-200' :
+                                      'bg-emerald-600 shadow-emerald-200'
           }`}>
-            <ShieldCheck className="w-3 h-3" />
-            {u.role}
-          </span>
+            {u.role === 'driver'
+              ? <Car className="w-9 h-9 text-white" />
+              : <ShieldCheck className="w-9 h-9 text-white" />}
+          </div>
+          <div className="text-center mt-1">
+            <p className="text-xl font-black text-slate-800">{u.name}</p>
+            <span className={`inline-flex items-center gap-1 mt-1 text-[10px] font-extrabold px-2.5 py-1 rounded-full border ${
+              u.role === 'superadmin' ? 'bg-violet-50 border-violet-100 text-violet-600' :
+              u.role === 'admin'      ? 'bg-blue-50 border-blue-100 text-blue-600' :
+                                        'bg-emerald-50 border-emerald-100 text-emerald-600'
+            }`}>
+              <ShieldCheck className="w-3 h-3" />
+              {u.role}
+            </span>
+          </div>
+        </div>
+
+        {/* Receipt-style info block */}
+        <div className="mx-4 mb-4 bg-slate-50 border border-slate-100 rounded-2xl p-4 text-xs font-mono text-slate-700 space-y-1.5 leading-relaxed">
+          <p><span className="text-slate-400">Gerak ID:</span> <span className="text-emerald-600 font-bold">{u.gerak_id}</span></p>
+          <p><span className="text-slate-400">Campus:</span> UMPSA {u.campus}</p>
+          <p><span className="text-slate-400">Email:</span> {u.email}</p>
+          <p className="flex items-center gap-1.5 flex-wrap">
+            <span className="text-slate-400">Phone:</span>
+            <span>{u.phone || '—'}</span>
+            {u.phone && (
+              <a
+                href={`https://wa.me/${toWa(u.phone)}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={e => e.stopPropagation()}
+                className="text-[#25D366] active:scale-90 transition"
+                aria-label="WhatsApp"
+              >
+                <WaIcon className="w-3.5 h-3.5" />
+              </a>
+            )}
+          </p>
+          <p><span className="text-slate-400">Status:</span>{' '}
+            <span className={u.status === 'active' ? 'text-emerald-600 font-bold' : 'text-red-500 font-bold'}>
+              {u.status}
+            </span>
+          </p>
         </div>
       </div>
 
-      {/* Receipt-style info block */}
-      <div className="mx-4 mb-4 bg-slate-50 border border-slate-100 rounded-2xl p-4 text-xs font-mono text-slate-700 space-y-1.5 leading-relaxed">
-        <p><span className="text-slate-400">Gerak ID:</span> <span className="text-emerald-600 font-bold">{u.gerak_id}</span></p>
-        <p><span className="text-slate-400">Campus:</span> UMPSA {u.campus}</p>
-        <p><span className="text-slate-400">Email:</span> {u.email}</p>
-        <p className="flex items-center gap-1.5 flex-wrap">
-          <span className="text-slate-400">Phone:</span>
-          <span>{u.phone || '—'}</span>
-          {u.phone && (
-            <a
-              href={`https://wa.me/${toWa(u.phone)}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              onClick={e => e.stopPropagation()}
-              className="text-[#25D366] active:scale-90 transition"
-              aria-label="WhatsApp"
-            >
-              <WaIcon className="w-3.5 h-3.5" />
-            </a>
-          )}
-        </p>
-        <p><span className="text-slate-400">Status:</span>{' '}
-          <span className={u.status === 'active' ? 'text-emerald-600 font-bold' : 'text-red-500 font-bold'}>
-            {u.status}
-          </span>
-        </p>
-      </div>
-
-      {/* Call + WA buttons */}
+      {/* Call + WA buttons — sticky footer, always reachable */}
       {u.phone && (
-        <div className="px-4 pb-6 flex gap-3">
+        <div className="px-4 pt-3 pb-6 flex gap-3 shrink-0 border-t border-slate-100">
           <a
             href={`tel:${u.phone}`}
             className="flex-1 flex items-center justify-center gap-2 bg-slate-800 text-white font-extrabold text-xs py-3.5 rounded-2xl shadow-md active:scale-[0.98] transition"
@@ -243,14 +245,14 @@ const JubahRiderSheet: React.FC<{
     onClick={onClose}
   >
     <div
-      className="w-full max-w-[480px] bg-white rounded-t-3xl shadow-2xl animate-slide-up"
+      className="w-full max-w-[480px] max-h-[85vh] bg-white rounded-t-3xl shadow-2xl animate-slide-up flex flex-col"
       onClick={e => e.stopPropagation()}
     >
-      <div className="flex justify-center pt-3 pb-1">
+      <div className="flex justify-center pt-3 pb-1 shrink-0">
         <div className="w-10 h-1 bg-slate-200 rounded-full" />
       </div>
 
-      <div className="flex items-center justify-between px-5 pt-2 pb-4">
+      <div className="flex items-center justify-between px-5 pt-2 pb-4 shrink-0">
         <p className="text-xs font-extrabold text-slate-400 uppercase tracking-widest">Jubah Rider</p>
         <button
           onClick={onClose}
@@ -260,66 +262,68 @@ const JubahRiderSheet: React.FC<{
         </button>
       </div>
 
-      {/* Avatar + name */}
-      <div className="flex flex-col items-center px-5 pb-4 gap-2">
-        <div className="w-20 h-20 rounded-full flex items-center justify-center shadow-lg bg-blue-600 shadow-blue-200">
-          <GraduationCap className="w-9 h-9 text-white" />
-        </div>
-        <div className="text-center mt-1">
-          <p className="text-xl font-black text-slate-800">{rider.name}</p>
-          <span className="inline-flex items-center gap-1 mt-1 text-[10px] font-extrabold px-2.5 py-1 rounded-full border bg-blue-50 border-blue-100 text-blue-600">
-            <GraduationCap className="w-3 h-3" /> rider
-          </span>
-        </div>
-      </div>
-
-      {/* Info block */}
-      <div className="mx-4 mb-4 bg-slate-50 border border-slate-100 rounded-2xl p-4 text-xs font-mono text-slate-700 space-y-1.5 leading-relaxed">
-        <p><span className="text-slate-400">Gerak ID:</span> <span className="text-blue-600 font-bold">{rider.gerak_id}</span></p>
-        <p><span className="text-slate-400">Campus:</span> UMPSA {rider.campus}</p>
-        <p><span className="text-slate-400">IC Number:</span> {rider.ic_number || '—'}</p>
-        <p><span className="text-slate-400">H/P:</span> {rider.phone || '—'}</p>
-      </div>
-
-      {/* Method + Drop point */}
-      <div className="mx-4 mb-6 flex flex-col gap-3">
-        <div className="flex flex-col gap-1.5">
-          <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Method</label>
-          <div className="relative group">
-            <div className="bg-slate-50 border border-slate-200 rounded-xl py-2.5 px-3 flex items-center justify-between pointer-events-none group-focus-within:border-primary transition">
-              <span className={`text-xs ${method ? 'font-bold text-slate-700' : 'font-normal text-slate-300'}`}>
-                {method === 'pickup' ? 'Self Pickup' : method === 'postage' ? 'Pickup & Postage' : 'Select method...'}
-              </span>
-              <ChevronDown className="w-3 h-3 text-slate-400 shrink-0" />
-            </div>
-            <select
-              value={method}
-              onChange={e => onMethodChange(e.target.value as 'pickup' | 'postage')}
-              className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-              style={{ fontSize: '16px' }}
-            >
-              <option value="" disabled>Select method...</option>
-              <option value="pickup">Self Pickup</option>
-              <option value="postage">Pickup &amp; Postage</option>
-            </select>
+      <div className="flex-1 min-h-0 overflow-y-auto no-scrollbar">
+        {/* Avatar + name */}
+        <div className="flex flex-col items-center px-5 pb-4 gap-2">
+          <div className="w-20 h-20 rounded-full flex items-center justify-center shadow-lg bg-blue-600 shadow-blue-200">
+            <GraduationCap className="w-9 h-9 text-white" />
+          </div>
+          <div className="text-center mt-1">
+            <p className="text-xl font-black text-slate-800">{rider.name}</p>
+            <span className="inline-flex items-center gap-1 mt-1 text-[10px] font-extrabold px-2.5 py-1 rounded-full border bg-blue-50 border-blue-100 text-blue-600">
+              <GraduationCap className="w-3 h-3" /> rider
+            </span>
           </div>
         </div>
 
-        <div className="flex flex-col gap-1.5">
-          <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Drop Point</label>
-          <input
-            type="text"
-            value={dropPoint}
-            onChange={e => onDropPointChange(e.target.value)}
-            placeholder="e.g. UMP Gambang Counter"
-            style={{ fontSize: '12px' }}
-            className="bg-slate-50 border border-slate-200 rounded-xl py-2.5 px-3 font-bold text-slate-700 focus:outline-none focus:border-primary transition placeholder:font-normal"
-          />
+        {/* Info block */}
+        <div className="mx-4 mb-4 bg-slate-50 border border-slate-100 rounded-2xl p-4 text-xs font-mono text-slate-700 space-y-1.5 leading-relaxed">
+          <p><span className="text-slate-400">Gerak ID:</span> <span className="text-blue-600 font-bold">{rider.gerak_id}</span></p>
+          <p><span className="text-slate-400">Campus:</span> UMPSA {rider.campus}</p>
+          <p><span className="text-slate-400">IC Number:</span> {rider.ic_number || '—'}</p>
+          <p><span className="text-slate-400">H/P:</span> {rider.phone || '—'}</p>
+        </div>
+
+        {/* Method + Drop point */}
+        <div className="mx-4 mb-4 flex flex-col gap-3">
+          <div className="flex flex-col gap-1.5">
+            <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Method</label>
+            <div className="relative group">
+              <div className="bg-slate-50 border border-slate-200 rounded-xl py-2.5 px-3 flex items-center justify-between pointer-events-none group-focus-within:border-primary transition">
+                <span className={`text-xs ${method ? 'font-bold text-slate-700' : 'font-normal text-slate-300'}`}>
+                  {method === 'pickup' ? 'Self Pickup' : method === 'postage' ? 'Pickup & Postage' : 'Select method...'}
+                </span>
+                <ChevronDown className="w-3 h-3 text-slate-400 shrink-0" />
+              </div>
+              <select
+                value={method}
+                onChange={e => onMethodChange(e.target.value as 'pickup' | 'postage')}
+                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                style={{ fontSize: '16px' }}
+              >
+                <option value="" disabled>Select method...</option>
+                <option value="pickup">Self Pickup</option>
+                <option value="postage">Pickup &amp; Postage</option>
+              </select>
+            </div>
+          </div>
+
+          <div className="flex flex-col gap-1.5">
+            <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Drop Point</label>
+            <input
+              type="text"
+              value={dropPoint}
+              onChange={e => onDropPointChange(e.target.value)}
+              placeholder="e.g. UMP Gambang Counter"
+              style={{ fontSize: '12px' }}
+              className="bg-slate-50 border border-slate-200 rounded-xl py-2.5 px-3 font-bold text-slate-700 focus:outline-none focus:border-primary transition placeholder:font-normal"
+            />
+          </div>
         </div>
       </div>
 
-      {/* Save + Call/WA buttons */}
-      <div className="px-4 pb-6 flex flex-col gap-3">
+      {/* Save + Call/WA buttons — sticky footer, always reachable */}
+      <div className="px-4 pt-3 pb-6 flex flex-col gap-3 shrink-0 border-t border-slate-100">
         <button
           onClick={onSave}
           disabled={saving || !method}
@@ -2808,7 +2812,7 @@ export const AdminHome: React.FC = () => {
       return (
         <div className="fixed inset-0 z-50 bg-black/40 flex items-end justify-center"
           onClick={() => setPendingAction(null)}>
-          <div className="w-full max-w-sm bg-white rounded-t-3xl p-6 pb-10 shadow-2xl animate-slide-up"
+          <div className="w-full max-w-sm max-h-[85vh] overflow-y-auto no-scrollbar bg-white rounded-t-3xl p-6 pb-10 shadow-2xl animate-slide-up"
             onClick={e => e.stopPropagation()}>
             <div className="w-10 h-1 bg-slate-200 rounded-full mx-auto mb-5" />
             <div className={`w-10 h-10 rounded-2xl mx-auto mb-3 flex items-center justify-center ${
@@ -2843,7 +2847,7 @@ export const AdminHome: React.FC = () => {
     {showGateMasterConfirm && (
       <div className="fixed inset-0 z-50 bg-black/40 flex items-end justify-center"
         onClick={() => setShowGateMasterConfirm(false)}>
-        <div className="w-full max-w-sm bg-white rounded-t-3xl p-6 pb-10 shadow-2xl animate-slide-up"
+        <div className="w-full max-w-sm max-h-[85vh] overflow-y-auto no-scrollbar bg-white rounded-t-3xl p-6 pb-10 shadow-2xl animate-slide-up"
           onClick={e => e.stopPropagation()}>
           <div className="w-10 h-1 bg-slate-200 rounded-full mx-auto mb-5" />
           <div className={`w-10 h-10 rounded-2xl mx-auto mb-3 flex items-center justify-center ${
@@ -2884,7 +2888,7 @@ export const AdminHome: React.FC = () => {
         onClick={() => setShowInviteConfirm(false)}
       >
         <div
-          className="w-full max-w-sm bg-white rounded-t-3xl p-6 pb-10 shadow-2xl animate-slide-up"
+          className="w-full max-w-sm max-h-[85vh] overflow-y-auto no-scrollbar bg-white rounded-t-3xl p-6 pb-10 shadow-2xl animate-slide-up"
           onClick={e => e.stopPropagation()}
         >
           {/* Handle bar */}

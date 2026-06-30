@@ -65,16 +65,16 @@ const DriverSheet: React.FC<DriverSheetProps> = ({ order, onClose }) => (
   >
     {/* Sheet */}
     <div
-      className="w-full max-w-[480px] bg-white rounded-t-3xl shadow-2xl animate-slide-up"
+      className="w-full max-w-[480px] max-h-[85vh] bg-white rounded-t-3xl shadow-2xl animate-slide-up flex flex-col"
       onClick={e => e.stopPropagation()}
     >
       {/* Drag handle */}
-      <div className="flex justify-center pt-3 pb-1">
+      <div className="flex justify-center pt-3 pb-1 shrink-0">
         <div className="w-10 h-1 bg-slate-200 rounded-full" />
       </div>
 
       {/* Header */}
-      <div className="flex items-center justify-between px-5 pt-2 pb-4">
+      <div className="flex items-center justify-between px-5 pt-2 pb-4 shrink-0">
         <p className="text-xs font-extrabold text-slate-400 uppercase tracking-widest">Your Driver</p>
         <button
           onClick={onClose}
@@ -84,31 +84,33 @@ const DriverSheet: React.FC<DriverSheetProps> = ({ order, onClose }) => (
         </button>
       </div>
 
-      {/* Avatar + name */}
-      <div className="flex flex-col items-center px-5 pb-5 gap-2">
-        <div className="w-20 h-20 rounded-full bg-emerald-600 flex items-center justify-center shadow-lg shadow-emerald-200">
-          <Car className="w-9 h-9 text-white" />
+      <div className="flex-1 min-h-0 overflow-y-auto no-scrollbar">
+        {/* Avatar + name */}
+        <div className="flex flex-col items-center px-5 pb-5 gap-2">
+          <div className="w-20 h-20 rounded-full bg-emerald-600 flex items-center justify-center shadow-lg shadow-emerald-200">
+            <Car className="w-9 h-9 text-white" />
+          </div>
+          <div className="text-center mt-1">
+            <p className="text-xl font-black text-slate-800">{order.driver_name}</p>
+            <span className="inline-flex items-center gap-1 mt-1 bg-emerald-50 border border-emerald-100 text-emerald-600 text-[10px] font-extrabold px-2.5 py-1 rounded-full">
+              <ShieldCheck className="w-3 h-3" /> Verified Gerak Driver
+            </span>
+          </div>
         </div>
-        <div className="text-center mt-1">
-          <p className="text-xl font-black text-slate-800">{order.driver_name}</p>
-          <span className="inline-flex items-center gap-1 mt-1 bg-emerald-50 border border-emerald-100 text-emerald-600 text-[10px] font-extrabold px-2.5 py-1 rounded-full">
-            <ShieldCheck className="w-3 h-3" /> Verified Gerak Driver
-          </span>
+
+        {/* Info rows */}
+        <div className="mx-4 mb-4 bg-slate-50 border border-slate-100 rounded-2xl overflow-hidden divide-y divide-slate-100">
+          <InfoRow icon={<User className="w-4 h-4 text-slate-400" />}   label="Nama"         value={order.driver_name ?? '—'} />
+          <InfoRow icon={<IdCard className="w-4 h-4 text-slate-400" />} label="Driver ID"     value={order.driver_gerak_id ?? '—'} highlight />
+          <InfoRow icon={<Phone className="w-4 h-4 text-slate-400" />} label="Phone" value={order.driver_contact ?? '—'} />
+          <InfoRow icon={<Car className="w-4 h-4 text-slate-400" />}    label="Car Type"      value={order.driver_vehicle || '—'} />
+          <InfoRow icon={<Hash className="w-4 h-4 text-slate-400" />}   label="Plate Number"  value={order.driver_plate || '—'} mono />
         </div>
       </div>
 
-      {/* Info rows */}
-      <div className="mx-4 mb-4 bg-slate-50 border border-slate-100 rounded-2xl overflow-hidden divide-y divide-slate-100">
-        <InfoRow icon={<User className="w-4 h-4 text-slate-400" />}   label="Nama"         value={order.driver_name ?? '—'} />
-        <InfoRow icon={<IdCard className="w-4 h-4 text-slate-400" />} label="Driver ID"     value={order.driver_gerak_id ?? '—'} highlight />
-        <InfoRow icon={<Phone className="w-4 h-4 text-slate-400" />} label="Phone" value={order.driver_contact ?? '—'} />
-        <InfoRow icon={<Car className="w-4 h-4 text-slate-400" />}    label="Car Type"      value={order.driver_vehicle || '—'} />
-        <InfoRow icon={<Hash className="w-4 h-4 text-slate-400" />}   label="Plate Number"  value={order.driver_plate || '—'} mono />
-      </div>
-
-      {/* Call + WhatsApp */}
+      {/* Call + WhatsApp — sticky footer, always reachable */}
       {order.driver_contact && (
-        <div className="px-4 pb-6 flex gap-3">
+        <div className="px-4 pt-3 pb-6 flex gap-3 shrink-0 border-t border-slate-100">
           <a
             href={`tel:${order.driver_contact}`}
             className="flex-1 flex items-center justify-center gap-2 bg-slate-800 text-white font-extrabold text-xs py-3.5 rounded-2xl shadow-md active:scale-[0.98] transition"
