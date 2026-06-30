@@ -416,6 +416,7 @@ export const AdminHome: React.FC = () => {
   const [receiptsLoading, setReceiptsLoading]     = useState(false);
   const [receiptFilter, setReceiptFilter]         = useState<'all' | 'verified' | 'pending' | 'rejected' | 'expired'>('all');
   const [receiptSearch, setReceiptSearch]         = useState('');
+  const [receiptRoleFilter, setReceiptRoleFilter] = useState<'driver' | 'rider'>('driver');
   const [approvingReceipt, setApprovingReceipt]   = useState<string | null>(null);
   const [rejectingReceipt, setRejectingReceipt]   = useState<string | null>(null);
 
@@ -785,11 +786,11 @@ export const AdminHome: React.FC = () => {
     const { data } = await supabase
       .from('profiles')
       .select('id, name, gerak_id, campus, email, phone, status, fee_receipt_url, fee_receipt_verified, fee_receipt_amount, fee_receipt_date, fee_receipt_expiry, fee_receipt_reject_reason')
-      .eq('role', 'driver')
+      .eq('role', receiptRoleFilter)
       .order('name');
     setDriverReceipts((data as DriverReceipt[]) ?? []);
     setReceiptsLoading(false);
-  }, []);
+  }, [receiptRoleFilter]);
 
   useEffect(() => { if (activeTab === 'receipts') loadReceipts(); }, [activeTab, loadReceipts]);
 
@@ -2017,6 +2018,18 @@ export const AdminHome: React.FC = () => {
       {activeTab === 'receipts' && user.role === 'superadmin' && (
         <div className="flex flex-col gap-4">
 
+          {/* Driver / Rider toggle */}
+          <div className="flex bg-white border border-slate-100 rounded-2xl p-1 gap-1 shadow-sm">
+            {(['driver', 'rider'] as const).map(r => (
+              <button key={r} onClick={() => setReceiptRoleFilter(r)}
+                className={`flex-1 py-2 rounded-xl text-xs font-extrabold transition ${
+                  receiptRoleFilter === r ? 'bg-primary text-white shadow-sm' : 'text-slate-400'
+                }`}>
+                {r === 'driver' ? '🚗 Drivers' : '🛵 Riders'}
+              </button>
+            ))}
+          </div>
+
           {/* Summary cards */}
           <div className="grid grid-cols-4 gap-2">
             {(['all', 'verified', 'expired', 'pending'] as const).map(s => {
@@ -2045,7 +2058,7 @@ export const AdminHome: React.FC = () => {
           {/* Search */}
           <div className="bg-white border border-slate-100 rounded-2xl p-3.5 shadow-sm flex flex-col gap-2">
             <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1.5">
-              <AlertCircle className="w-3.5 h-3.5" /> Find Driver
+              <AlertCircle className="w-3.5 h-3.5" /> Find {receiptRoleFilter === 'driver' ? 'Driver' : 'Rider'}
             </h3>
             <div className="flex gap-2">
               <input
@@ -2070,7 +2083,7 @@ export const AdminHome: React.FC = () => {
           <div className="bg-white border border-slate-100 rounded-3xl p-5 shadow-sm flex flex-col gap-3">
             <div className="flex items-center justify-between">
               <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest flex items-center gap-1.5">
-                <FileImage className="w-4 h-4" /> Driver Receipts
+                <FileImage className="w-4 h-4" /> {receiptRoleFilter === 'driver' ? 'Driver' : 'Rider'} Receipts
               </h3>
               <button onClick={loadReceipts}
                 className="w-7 h-7 flex items-center justify-center rounded-xl bg-slate-50 border border-slate-100 text-slate-400 hover:text-primary transition active:scale-90">
@@ -2084,7 +2097,7 @@ export const AdminHome: React.FC = () => {
                 <span className="w-5 h-5 rounded-full border-2 border-slate-200 border-t-primary animate-spin" />
               </div>
             ) : filteredReceipts.length === 0 ? (
-              <p className="text-xs text-slate-400 font-semibold text-center py-6">No drivers found.</p>
+              <p className="text-xs text-slate-400 font-semibold text-center py-6">No {receiptRoleFilter}s found.</p>
             ) : (
               <div className="flex flex-col gap-2">
                 {filteredReceipts.map(r => {
