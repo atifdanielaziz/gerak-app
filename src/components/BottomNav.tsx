@@ -53,11 +53,11 @@ export const BottomNav: React.FC = () => {
 
   return (
     <div
-      className="shrink-0 bg-slate-50 px-4 pt-1"
+      className="absolute bottom-0 left-0 right-0 z-40 px-4 pt-1 pointer-events-none"
       style={{ paddingBottom: 'calc(0.625rem + env(safe-area-inset-bottom))' }}
     >
       <nav
-        className="bg-white/95 backdrop-blur-md border border-slate-100 rounded-3xl px-2 py-1.5 flex items-center justify-around shadow-[0_4px_20px_rgba(0,0,0,0.08)]"
+        className="bg-white/70 backdrop-blur-xl border border-white/40 rounded-3xl px-2 py-1.5 flex items-center justify-around shadow-[0_4px_24px_rgba(0,0,0,0.12)] pointer-events-auto"
       >
         {items.map((item) => {
           const Icon = item.icon;
