@@ -81,6 +81,8 @@ interface ProfileUser {
   phone: string;
   can_drive?: boolean;
   can_rent?: boolean;
+  can_daily?: boolean;
+  can_robe?: boolean;
 }
 
 interface DriverInvite {
@@ -125,6 +127,7 @@ type PendingAction =
   | { type: 'toggle-status'; u: ProfileUser }
   | { type: 'terminate';     u: ProfileUser }
   | { type: 'toggle-cap';    u: ProfileUser; canDrive: boolean; canRent: boolean }
+  | { type: 'toggle-rider-cap'; u: ProfileUser; canDaily: boolean; canRobe: boolean }
   | { type: 'campus';        u: ProfileUser; campus: 'Pekan' | 'Gambang' }
   | { type: 'toggle-role';   u: ProfileUser; newRole: 'driver' | 'admin' };
 
@@ -232,9 +235,10 @@ const UserCard: React.FC<{
   onToggle: (u: ProfileUser) => void;
   onTerminate: (u: ProfileUser) => void;
   onCapToggle?: (u: ProfileUser, canDrive: boolean, canRent: boolean) => void;
+  onRiderCapToggle?: (u: ProfileUser, canDaily: boolean, canRobe: boolean) => void;
   onCampusChange?: (u: ProfileUser, campus: 'Pekan' | 'Gambang') => void;
   onViewProfile?: (u: ProfileUser) => void;
-}> = ({ u, canManage, togglingStatus, terminating, togglingCap, togglingCampus, onToggle, onTerminate, onCapToggle, onCampusChange, onViewProfile }) => (
+}> = ({ u, canManage, togglingStatus, terminating, togglingCap, togglingCampus, onToggle, onTerminate, onCapToggle, onRiderCapToggle, onCampusChange, onViewProfile }) => (
   <div className={`rounded-2xl border p-4 flex flex-col gap-2.5 ${
     u.status === 'inactive' ? 'bg-red-50/50 border-red-100' : 'bg-white border-slate-100'
   }`}>
@@ -295,8 +299,40 @@ const UserCard: React.FC<{
       </div>
     )}
 
-    {/* Campus toggle — drivers only, superadmin only */}
-    {u.role === 'driver' && onCampusChange && (
+    {/* Capability toggles — riders only */}
+    {u.role === 'rider' && onRiderCapToggle && (
+      <div className="flex gap-2">
+        <button
+          onClick={() => onRiderCapToggle(u, !u.can_daily, u.can_robe ?? false)}
+          disabled={togglingCap === u.id}
+          className={`flex-1 flex items-center justify-center gap-1.5 font-extrabold text-[10px] py-2 rounded-xl border transition active:scale-95 disabled:opacity-40 ${
+            u.can_daily
+              ? 'bg-emerald-50 border-emerald-200 text-emerald-700'
+              : 'bg-slate-50 border-slate-200 text-slate-400'
+          }`}
+        >
+          {togglingCap === u.id
+            ? <span className="w-3 h-3 rounded-full border border-current border-t-transparent animate-spin" />
+            : <>🛵 {u.can_daily ? 'Daily ✓' : 'Daily ✗'}</>}
+        </button>
+        <button
+          onClick={() => onRiderCapToggle(u, u.can_daily ?? false, !u.can_robe)}
+          disabled={togglingCap === u.id}
+          className={`flex-1 flex items-center justify-center gap-1.5 font-extrabold text-[10px] py-2 rounded-xl border transition active:scale-95 disabled:opacity-40 ${
+            u.can_robe
+              ? 'bg-blue-50 border-blue-200 text-blue-700'
+              : 'bg-slate-50 border-slate-200 text-slate-400'
+          }`}
+        >
+          {togglingCap === u.id
+            ? <span className="w-3 h-3 rounded-full border border-current border-t-transparent animate-spin" />
+            : <>🎓 {u.can_robe ? 'Robe ✓' : 'Robe ✗'}</>}
+        </button>
+      </div>
+    )}
+
+    {/* Campus toggle — drivers and riders only, superadmin only */}
+    {(u.role === 'driver' || u.role === 'rider') && onCampusChange && (
       <div className="flex gap-2">
         {(['Gambang', 'Pekan'] as const).map(c => (
           <button key={c}
@@ -633,6 +669,17 @@ export const AdminHome: React.FC = () => {
         });
       }
     }
+    const riderIds = users.filter(u => u.role === 'rider').map(u => u.id);
+    if (riderIds.length > 0) {
+      const { data: caps } = await supabase
+        .from('profiles').select('id, can_daily, can_robe').in('id', riderIds);
+      if (caps) {
+        caps.forEach(c => {
+          const u = users.find(u => u.id === c.id);
+          if (u) { u.can_daily = c.can_daily; u.can_robe = c.can_robe; }
+        });
+      }
+    }
     setProfileUsers(users);
     setUsersLoading(false);
   }, [isSuperAdmin, adminCampus]);
@@ -650,6 +697,23 @@ export const AdminHome: React.FC = () => {
     if (error) showToast('Failed to update capabilities.');
     else {
       showToast(`${u.name}: ${canDrive ? 'Car ✓' : 'Car ✗'} · ${canRent ? 'Rental ✓' : 'Rental ✗'}`);
+      loadUsers();
+    }
+  };
+
+  const handleToggleRiderCapability = async (u: ProfileUser, canDaily: boolean, canRobe: boolean) => {
+    const { data: { user: authUser } } = await supabase.auth.getUser();
+    if (!authUser) { showToast('Session expired — please log in again.'); return; }
+    setTogglingCap(u.id);
+    const { error } = await supabase.rpc('set_rider_capabilities', {
+      p_user_id:  u.id,
+      p_can_daily: canDaily,
+      p_can_robe:  canRobe,
+    });
+    setTogglingCap(null);
+    if (error) showToast('Failed to update capabilities.');
+    else {
+      showToast(`${u.name}: ${canDaily ? 'Daily ✓' : 'Daily ✗'} · ${canRobe ? 'Robe ✓' : 'Robe ✗'}`);
       loadUsers();
     }
   };
@@ -680,6 +744,7 @@ export const AdminHome: React.FC = () => {
     if (pendingAction.type === 'toggle-status') handleToggleStatus(pendingAction.u);
     else if (pendingAction.type === 'terminate')  handleTerminate(pendingAction.u);
     else if (pendingAction.type === 'toggle-cap') handleToggleCapability(pendingAction.u, pendingAction.canDrive, pendingAction.canRent);
+    else if (pendingAction.type === 'toggle-rider-cap') handleToggleRiderCapability(pendingAction.u, pendingAction.canDaily, pendingAction.canRobe);
     else if (pendingAction.type === 'campus')     handleChangeCampus(pendingAction.u, pendingAction.campus);
     else if (pendingAction.type === 'toggle-role') handleToggleRole(pendingAction.u, pendingAction.newRole);
     setPendingAction(null);
@@ -1244,6 +1309,7 @@ export const AdminHome: React.FC = () => {
                 togglingCap={togglingCap} togglingCampus={togglingCampus}
                 onToggle={handleToggleStatus} onTerminate={handleTerminate}
                 onCapToggle={user.role === 'superadmin' ? handleToggleCapability : undefined}
+                onRiderCapToggle={user.role === 'superadmin' ? handleToggleRiderCapability : undefined}
                 onCampusChange={user.role === 'superadmin' ? handleChangeCampus : undefined}
                 onViewProfile={setSheetUser} />
             )}
@@ -1295,6 +1361,7 @@ export const AdminHome: React.FC = () => {
                           onToggle={u => setPendingAction({ type: 'toggle-status', u })}
                           onTerminate={u => setPendingAction({ type: 'terminate', u })}
                           onCapToggle={user.role === 'superadmin' ? (u, canDrive, canRent) => setPendingAction({ type: 'toggle-cap', u, canDrive, canRent }) : undefined}
+                          onRiderCapToggle={user.role === 'superadmin' ? (u, canDaily, canRobe) => setPendingAction({ type: 'toggle-rider-cap', u, canDaily, canRobe }) : undefined}
                           onCampusChange={user.role === 'superadmin' ? (u, campus) => setPendingAction({ type: 'campus', u, campus }) : undefined}
                           onViewProfile={setSheetUser} />
                       ))}
@@ -2323,6 +2390,7 @@ export const AdminHome: React.FC = () => {
         pendingAction.type === 'terminate'     ? `Terminate ${u.name}?` :
         pendingAction.type === 'toggle-status' ? (isStop ? `Suspend ${u.name}?` : `Reactivate ${u.name}?`) :
         pendingAction.type === 'toggle-cap'    ? `Update capabilities for ${u.name}?` :
+        pendingAction.type === 'toggle-rider-cap' ? `Update capabilities for ${u.name}?` :
         pendingAction.type === 'toggle-role'   ? (isRoleToAdmin ? `Promote ${u.name} to Admin?` : `Change ${u.name} to Driver?`) :
         `Move ${u.name} to UMPSA ${(pendingAction as any).campus}?`;
 
@@ -2331,6 +2399,7 @@ export const AdminHome: React.FC = () => {
         isStop       ? 'They will lose access to the app until reactivated.' :
         pendingAction.type === 'toggle-status' ? 'They will regain access to the app.' :
         pendingAction.type === 'toggle-cap'    ? 'Their service capabilities will be updated immediately.' :
+        pendingAction.type === 'toggle-rider-cap' ? 'Their service capabilities will be updated immediately.' :
         pendingAction.type === 'toggle-role'   ? (isRoleToAdmin ? 'They will gain Admin panel access + full driving capabilities.' : 'They will lose Admin panel access and become a driver only.') :
         'Their campus assignment will change immediately.';
 
