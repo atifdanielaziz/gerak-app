@@ -168,11 +168,17 @@ const fmtCountdown = (s: number) =>
 
 // ── Main page ─────────────────────────────────────────────────────────────────
 export const MyOrders: React.FC = () => {
-  const { user, addNotification, setCurrentPage } = useApp();
+  const { user, addNotification, setCurrentPage, setSheetOpen } = useApp();
   const [orders, setOrders]         = useState<RideOrder[]>([]);
   const [loading, setLoading]       = useState(true);
   const [toast, setToast]           = useState('');
   const [sheetOrder, setSheetOrder] = useState<RideOrder | null>(null);
+
+  // Report to AppContext whenever this sheet is open, so BottomNav hides itself.
+  useEffect(() => {
+    setSheetOpen(!!sheetOrder);
+    return () => setSheetOpen(false);
+  }, [sheetOrder, setSheetOpen]);
   const [cancellingId, setCancellingId] = useState<string | null>(null);
   const [, forceUpdate]             = useState(0);
   const prevStatuses                = useRef<Record<string, string>>({});

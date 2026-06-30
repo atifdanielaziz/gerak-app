@@ -146,7 +146,7 @@ const MonthDrumPicker: React.FC<{ value: string; onChange: (m: string) => void }
 };
 
 export const DriverHome: React.FC = () => {
-  const { user, activeRole, refreshUserData, receiptGateActive } = useApp();
+  const { user, activeRole, refreshUserData, receiptGateActive, setSheetOpen } = useApp();
   // Admin/superadmin who switched the pill to Driver should behave as a full driver
   const effectiveCanDrive = user.canDrive || activeRole === 'driver';
 
@@ -184,6 +184,13 @@ export const DriverHome: React.FC = () => {
     return `${n.getFullYear()}-${String(n.getMonth() + 1).padStart(2, '0')}`;
   });
   const [sheetOrder, setSheetOrder]                     = useState<RideOrder | null>(null);
+
+  // Report to AppContext whenever a sheet here is open, so BottomNav hides itself.
+  useEffect(() => {
+    const anyOpen = !!sheetOrder || !!rentalReceiptBk;
+    setSheetOpen(anyOpen);
+    return () => setSheetOpen(false);
+  }, [sheetOrder, rentalReceiptBk, setSheetOpen]);
 
   const showToast = (msg: string) => {
     setToast(msg);

@@ -4,7 +4,7 @@ import type { ActivePage } from '../context/AppContext';
 import { Home, UserCircle, Briefcase, LayoutDashboard, CalendarDays } from 'lucide-react';
 
 export const BottomNav: React.FC = () => {
-  const { currentPage, setCurrentPage, user, isPreviewMode, activeRole } = useApp();
+  const { currentPage, setCurrentPage, user, isPreviewMode, activeRole, isSheetOpen } = useApp();
 
   if (currentPage === 'splash' || currentPage === 'login' || currentPage === 'register' || currentPage === 'forgot-password' || currentPage === 'reset-password') {
     return null;
@@ -12,6 +12,11 @@ export const BottomNav: React.FC = () => {
 
   // Guest mode (not logged in) — no role-based tabs to show
   if (!user.isLoggedIn) {
+    return null;
+  }
+
+  // A bottom sheet/modal is open — hide so it never overlaps the sheet's content
+  if (isSheetOpen) {
     return null;
   }
 

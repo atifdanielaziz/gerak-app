@@ -523,7 +523,7 @@ const UserCard: React.FC<{
 );
 
 export const AdminHome: React.FC = () => {
-  const { user, setCurrentPage } = useApp();
+  const { user, setCurrentPage, setSheetOpen } = useApp();
 
   const isSuperAdmin = user.role === 'superadmin';
   const adminCampus = (
@@ -625,6 +625,14 @@ export const AdminHome: React.FC = () => {
   const [jubahMethodDraft,   setJubahMethodDraft]   = useState<'pickup' | 'postage' | ''>('');
   const [jubahDropPointDraft, setJubahDropPointDraft] = useState('');
   const [savingJubahAssignment, setSavingJubahAssignment] = useState(false);
+
+  // Report to AppContext whenever any bottom sheet/modal here is open,
+  // so BottomNav can hide itself and never overlap sheet content.
+  useEffect(() => {
+    const anyOpen = !!sheetUser || !!jubahSheetRider || !!pendingAction || showGateMasterConfirm || showInviteConfirm;
+    setSheetOpen(anyOpen);
+    return () => setSheetOpen(false);
+  }, [sheetUser, jubahSheetRider, pendingAction, showGateMasterConfirm, showInviteConfirm, setSheetOpen]);
 
   const handleSaveJubahAssignment = async () => {
     if (!jubahSheetRider) return;

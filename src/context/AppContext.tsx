@@ -119,6 +119,8 @@ interface AppContextType {
   updateProfile: (updates: { name?: string; matricNo?: string; email?: string; phone?: string; vehicle?: string; plateNumber?: string; icNumber?: string; feeReceiptUrl?: string }) => Promise<{ error: string | null }>;
   refreshUserData: () => Promise<void>;
   receiptGateActive: boolean;
+  isSheetOpen: boolean;
+  setSheetOpen: (open: boolean) => void;
 
   // Notifications
   notifications: NotificationItem[];
@@ -187,6 +189,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   // Global receipt gate — fetched once on mount, controlled by superadmin
   const [receiptGateActive, setReceiptGateActive] = useState(true);
+
+  // Shared "is any bottom sheet/modal open" flag — BottomNav hides itself
+  // while true, sidestepping any device-specific stacking-context quirks
+  // where a fixed-position sheet might not reliably paint above it.
+  const [isSheetOpen, setSheetOpen] = useState(false);
   useEffect(() => {
     supabase.from('app_settings').select('value').eq('key', 'receipt_gate_active').single()
       .then(({ data }) => { if (data) setReceiptGateActive(data.value === 'true'); });
@@ -707,6 +714,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         updateProfile,
         refreshUserData,
         receiptGateActive,
+        isSheetOpen,
+        setSheetOpen,
         notifications,
         addNotification,
         markAllNotificationsRead,
