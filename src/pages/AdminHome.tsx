@@ -414,6 +414,7 @@ export const AdminHome: React.FC = () => {
   const [driverReceipts, setDriverReceipts]       = useState<DriverReceipt[]>([]);
   const [receiptsLoading, setReceiptsLoading]     = useState(false);
   const [receiptFilter, setReceiptFilter]         = useState<'all' | 'verified' | 'pending' | 'rejected' | 'expired'>('all');
+  const [receiptSearch, setReceiptSearch]         = useState('');
   const [approvingReceipt, setApprovingReceipt]   = useState<string | null>(null);
   const [rejectingReceipt, setRejectingReceipt]   = useState<string | null>(null);
 
@@ -426,6 +427,7 @@ export const AdminHome: React.FC = () => {
   const [verifyDocs,      setVerifyDocs]      = useState<VerifyDoc[]>([]);
   const [verifyLoading,   setVerifyLoading]   = useState(false);
   const [verifyFilter,    setVerifyFilter]    = useState<'driver' | 'rider'>('driver');
+  const [verifySearch,    setVerifySearch]    = useState('');
   const [rejectingDoc,    setRejectingDoc]    = useState<string | null>(null);
   const [rejectReason,    setRejectReason]    = useState('');
   const [showRouteForm, setShowRouteForm] = useState(false);
@@ -798,9 +800,14 @@ export const AdminHome: React.FC = () => {
     return 'pending';
   };
 
-  const filteredReceipts = receiptFilter === 'all'
+  const filteredReceipts = (receiptFilter === 'all'
     ? driverReceipts
-    : driverReceipts.filter(r => receiptStatus(r) === receiptFilter);
+    : driverReceipts.filter(r => receiptStatus(r) === receiptFilter)
+  ).filter(r =>
+    !receiptSearch.trim() ||
+    r.name.toLowerCase().includes(receiptSearch.toLowerCase()) ||
+    r.gerak_id.toLowerCase().includes(receiptSearch.toLowerCase())
+  );
 
   const handleApproveReceipt = async (r: DriverReceipt) => {
     setApprovingReceipt(r.id);
@@ -1174,9 +1181,9 @@ export const AdminHome: React.FC = () => {
         <div className="flex flex-col gap-3">
 
           {/* Driver search */}
-          <div className="bg-white border border-slate-100 rounded-3xl p-5 shadow-sm flex flex-col gap-3">
-            <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest flex items-center gap-1.5">
-              <AlertCircle className="w-4 h-4" /> Find Staff
+          <div className="bg-white border border-slate-100 rounded-2xl p-3.5 shadow-sm flex flex-col gap-2">
+            <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1.5">
+              <AlertCircle className="w-3.5 h-3.5" /> Find Staff
             </h3>
             <div className="flex gap-2">
               <input
@@ -1185,15 +1192,16 @@ export const AdminHome: React.FC = () => {
                 onChange={e => { setSearchGerakId(e.target.value.toUpperCase()); setSearchResult(null); }}
                 onKeyDown={e => e.key === 'Enter' && handleSearchGerakId()}
                 placeholder="e.g. GDP0001"
-                className="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-xs font-bold text-slate-700 focus:outline-none focus:border-primary transition uppercase placeholder:normal-case placeholder:font-normal"
+                style={{ fontSize: '12px' }}
+                className="flex-1 bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 font-bold text-slate-700 focus:outline-none focus:border-primary transition uppercase placeholder:normal-case placeholder:font-normal"
               />
               <button
                 onClick={handleSearchGerakId}
                 disabled={searching || !searchGerakId.trim()}
-                className="px-4 bg-primary text-white font-extrabold text-xs rounded-xl transition active:scale-95 disabled:opacity-50 flex items-center gap-1.5"
+                className="px-3.5 bg-primary text-white font-extrabold text-[11px] rounded-lg transition active:scale-95 disabled:opacity-50 flex items-center gap-1.5"
               >
                 {searching
-                  ? <span className="w-4 h-4 rounded-full border-2 border-white border-t-transparent animate-spin" />
+                  ? <span className="w-3.5 h-3.5 rounded-full border-2 border-white border-t-transparent animate-spin" />
                   : 'Search'}
               </button>
             </div>
@@ -1834,6 +1842,30 @@ export const AdminHome: React.FC = () => {
             ))}
           </div>
 
+          {/* Search */}
+          <div className="bg-white border border-slate-100 rounded-2xl p-3.5 shadow-sm flex flex-col gap-2">
+            <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1.5">
+              <AlertCircle className="w-3.5 h-3.5" /> Find {verifyFilter === 'driver' ? 'Driver' : 'Rider'}
+            </h3>
+            <div className="flex gap-2">
+              <input
+                type="text"
+                value={verifySearch}
+                onChange={e => setVerifySearch(e.target.value)}
+                placeholder="Name or Gerak ID"
+                style={{ fontSize: '12px' }}
+                className="flex-1 bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 font-bold text-slate-700 focus:outline-none focus:border-primary transition placeholder:font-normal"
+              />
+              <button
+                onClick={() => setVerifySearch('')}
+                disabled={!verifySearch.trim()}
+                className="px-3.5 bg-primary text-white font-extrabold text-[11px] rounded-lg transition active:scale-95 disabled:opacity-50 flex items-center gap-1.5"
+              >
+                Clear
+              </button>
+            </div>
+          </div>
+
           {/* Doc list */}
           <div className="bg-white border border-slate-100 rounded-3xl p-5 shadow-sm flex flex-col gap-3">
             <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest flex items-center gap-1.5">
@@ -1845,9 +1877,17 @@ export const AdminHome: React.FC = () => {
               <div className="flex justify-center py-8">
                 <span className="w-5 h-5 rounded-full border-2 border-slate-200 border-t-primary animate-spin" />
               </div>
-            ) : verifyDocs.length === 0 ? (
+            ) : verifyDocs.filter(d =>
+                !verifySearch.trim() ||
+                d.name.toLowerCase().includes(verifySearch.toLowerCase()) ||
+                d.gerak_id.toLowerCase().includes(verifySearch.toLowerCase())
+              ).length === 0 ? (
               <p className="text-xs text-slate-400 font-semibold text-center py-6">No {verifyFilter}s found.</p>
-            ) : verifyDocs.map(d => (
+            ) : verifyDocs.filter(d =>
+                !verifySearch.trim() ||
+                d.name.toLowerCase().includes(verifySearch.toLowerCase()) ||
+                d.gerak_id.toLowerCase().includes(verifySearch.toLowerCase())
+              ).map(d => (
               <div key={d.id} className="border border-slate-100 rounded-2xl p-4 flex flex-col gap-3">
 
                 {/* Header */}
@@ -1973,6 +2013,30 @@ export const AdminHome: React.FC = () => {
                 </button>
               );
             })}
+          </div>
+
+          {/* Search */}
+          <div className="bg-white border border-slate-100 rounded-2xl p-3.5 shadow-sm flex flex-col gap-2">
+            <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1.5">
+              <AlertCircle className="w-3.5 h-3.5" /> Find Driver
+            </h3>
+            <div className="flex gap-2">
+              <input
+                type="text"
+                value={receiptSearch}
+                onChange={e => setReceiptSearch(e.target.value)}
+                placeholder="Name or Gerak ID"
+                style={{ fontSize: '12px' }}
+                className="flex-1 bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 font-bold text-slate-700 focus:outline-none focus:border-primary transition placeholder:font-normal"
+              />
+              <button
+                onClick={() => setReceiptSearch('')}
+                disabled={!receiptSearch.trim()}
+                className="px-3.5 bg-primary text-white font-extrabold text-[11px] rounded-lg transition active:scale-95 disabled:opacity-50 flex items-center gap-1.5"
+              >
+                Clear
+              </button>
+            </div>
           </div>
 
           {/* Receipt list */}
