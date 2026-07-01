@@ -15,6 +15,7 @@ export interface JubahSheetRow {
   remark: string;
   combinedFileName: string;
   cost: number;
+  deliveryAddress?: string;
 }
 
 export async function submitJubahToSheets(data: JubahSheetRow): Promise<void> {

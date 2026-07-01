@@ -136,7 +136,7 @@ interface AppContextType {
 
   // Jubah Delivery Module
   jubahBooking: JubahBooking | null;
-  bookJubah: (fullName: string, icNumber: string, hpNumber: string, university: string, faculty: string, matricId: string, paymentMode: 'pickup' | 'postage', remark: 'Master' | 'PHD' | 'Degree' | 'Diploma', combinedFileName: string, riderId?: string, riderName?: string, campus?: 'Pekan' | 'Gambang') => void;
+  bookJubah: (fullName: string, icNumber: string, hpNumber: string, university: string, faculty: string, matricId: string, paymentMode: 'pickup' | 'postage', remark: 'Master' | 'PHD' | 'Degree' | 'Diploma', combinedFileName: string, riderId?: string, riderName?: string, campus?: 'Pekan' | 'Gambang', deliveryAddress?: string) => void;
   scheduleReturn: (method: 'self' | 'locker' | 'courier', date: string, time: string) => void;
   cancelJubahBooking: () => void;
 }
@@ -612,6 +612,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     riderId?: string,
     riderName?: string,
     campus?: 'Pekan' | 'Gambang',
+    deliveryAddress?: string,
   ) => {
     const cost = paymentMode === 'postage' ? 80.00 : 55.00;
     const reference = `JUB-${new Date().getFullYear()}-${Math.random().toString(36).slice(2, 6).toUpperCase()}`;
@@ -651,8 +652,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           remark,
           payment_mode: paymentMode,
           cost,
-          rider_id:    riderId ?? null,
-          rider_name:  riderName ?? null,
+          rider_id:         riderId ?? null,
+          rider_name:       riderName ?? null,
+          delivery_address: deliveryAddress ?? null,
         });
       });
     }

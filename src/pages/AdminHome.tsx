@@ -645,7 +645,10 @@ export const AdminHome: React.FC = () => {
   const [jubahBookings,      setJubahBookings]      = useState<JubahBookingRow[]>([]);
   const [jubahBookingsLoading, setJubahBookingsLoading] = useState(false);
   const [jubahSearch,        setJubahSearch]        = useState('');
-  const [jubahSubTab,        setJubahSubTab]        = useState<'customer' | 'rider'>('rider');
+  const [jubahSubTab,        setJubahSubTab]        = useState<'customer' | 'rider' | 'price'>('rider');
+  type JubahPrice = { remark: string; payment_mode: string; price: number };
+  const [savingPrice,        setSavingPrice]        = useState<string | null>(null);
+  const [priceDrafts,        setPriceDrafts]        = useState<Record<string, string>>({});
   const [jubahSheetRider,    setJubahSheetRider]    = useState<JubahRider | null>(null);
   const [jubahMethodDraft,   setJubahMethodDraft]   = useState<'pickup' | 'postage' | ''>('');
   const [jubahDropPointDraft, setJubahDropPointDraft] = useState('');
@@ -658,6 +661,22 @@ export const AdminHome: React.FC = () => {
     setSheetOpen(anyOpen);
     return () => setSheetOpen(false);
   }, [sheetUser, jubahSheetRider, pendingAction, showGateMasterConfirm, showInviteConfirm, setSheetOpen]);
+
+  const handleSavePrice = async (remark: string, paymentMode: string) => {
+    const key = `${remark}_${paymentMode}`;
+    const price = parseFloat(priceDrafts[key] ?? '0');
+    if (isNaN(price) || price < 0) { showToast('Invalid price.'); return; }
+    setSavingPrice(key);
+    const { error } = await supabase.rpc('set_jubah_price', {
+      p_remark: remark, p_payment_mode: paymentMode, p_price: price,
+    });
+    setSavingPrice(null);
+    if (error) showToast('Failed to save price.');
+    else {
+      showToast(`${remark} ${paymentMode === 'pickup' ? 'Pickup' : 'Postage'} price updated.`);
+      loadJubahData();
+    }
+  };
 
   const handleSaveJubahAssignment = async () => {
     if (!jubahSheetRider) return;
@@ -698,6 +717,15 @@ export const AdminHome: React.FC = () => {
     const { data: bookingsData } = await bookingsQ;
     setJubahBookings((bookingsData as JubahBookingRow[]) ?? []);
     setJubahBookingsLoading(false);
+
+    const { data: pricesData } = await supabase.rpc('get_jubah_pricing');
+    if (pricesData) {
+      const drafts: Record<string, string> = {};
+      (pricesData as JubahPrice[]).forEach(p => {
+        drafts[`${p.remark}_${p.payment_mode}`] = String(p.price);
+      });
+      setPriceDrafts(drafts);
+    }
   }, [isSuperAdmin, adminCampus]);
 
   useEffect(() => { if (activeTab === 'jubah') loadJubahData(); }, [activeTab, loadJubahData]);
@@ -2374,12 +2402,16 @@ export const AdminHome: React.FC = () => {
 
           {/* Customer | Rider sub-tabs */}
           <div className="flex bg-white border border-slate-100 rounded-2xl p-1 gap-1 shadow-sm">
-            {(['rider', 'customer'] as const).map(t => (
-              <button key={t} onClick={() => setJubahSubTab(t)}
+            {([
+              { id: 'rider', label: '🛵 Rider' },
+              { id: 'customer', label: '👤 Customer' },
+              { id: 'price', label: '💰 Price' },
+            ] as const).map(t => (
+              <button key={t.id} onClick={() => setJubahSubTab(t.id)}
                 className={`flex-1 py-2 rounded-xl text-xs font-extrabold transition ${
-                  jubahSubTab === t ? 'bg-primary text-white shadow-sm' : 'text-slate-400'
+                  jubahSubTab === t.id ? 'bg-primary text-white shadow-sm' : 'text-slate-400'
                 }`}>
-                {t === 'rider' ? '🛵 Rider' : '👤 Customer'}
+                {t.label}
               </button>
             ))}
           </div>
@@ -2545,6 +2577,55 @@ export const AdminHome: React.FC = () => {
               )}
             </div>
           </>)}
+
+          {/* ── PRICE sub-tab ── */}
+          {jubahSubTab === 'price' && (
+            <div className="bg-white border border-slate-100 rounded-3xl p-5 shadow-sm flex flex-col gap-4">
+              <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest flex items-center gap-1.5">
+                <GraduationCap className="w-4 h-4" /> Jubah Pricing Matrix
+              </h3>
+              <p className="text-[10px] text-slate-400 font-semibold -mt-2">Set price per study level × service option. Tap Save after editing each value.</p>
+
+              {(['Master', 'PHD', 'Degree', 'Diploma'] as const).map(remark => (
+                <div key={remark} className="border border-slate-100 rounded-2xl p-4 flex flex-col gap-3">
+                  <p className="text-xs font-black text-slate-700">{remark}</p>
+                  <div className="grid grid-cols-2 gap-2">
+                    {(['pickup', 'postage'] as const).map(mode => {
+                      const key = `${remark}_${mode}`;
+                      return (
+                        <div key={mode} className="flex flex-col gap-1.5">
+                          <label className="text-[9px] font-extrabold text-slate-400 uppercase tracking-wider">
+                            {mode === 'pickup' ? 'Self Pickup' : 'Pickup & Postage'}
+                          </label>
+                          <div className="flex gap-1.5">
+                            <div className="flex items-center bg-slate-50 border border-slate-200 rounded-xl px-2 py-2 gap-1 flex-1 focus-within:border-primary transition">
+                              <span className="text-[10px] font-extrabold text-slate-400 shrink-0">RM</span>
+                              <input
+                                type="number"
+                                min="0"
+                                step="0.01"
+                                value={priceDrafts[key] ?? ''}
+                                onChange={e => setPriceDrafts(prev => ({ ...prev, [key]: e.target.value }))}
+                                style={{ fontSize: '12px' }}
+                                className="flex-1 bg-transparent font-extrabold text-slate-700 focus:outline-none w-0"
+                              />
+                            </div>
+                            <button
+                              onClick={() => handleSavePrice(remark, mode)}
+                              disabled={savingPrice === key}
+                              className="shrink-0 bg-primary text-white font-extrabold text-[10px] px-2.5 py-2 rounded-xl transition active:scale-95 disabled:opacity-50"
+                            >
+                              {savingPrice === key ? '…' : 'Save'}
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       )}
 

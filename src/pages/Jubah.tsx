@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
-import { RotateCcw, Calendar, CheckCircle2, X, Upload, FileText, ShieldAlert, Download, ChevronDown, User } from 'lucide-react';
+import { RotateCcw, Calendar, CheckCircle2, X, Upload, FileText, ShieldAlert, Download, ChevronDown, User, Pencil, MapPin } from 'lucide-react';
 import { submitJubahToSheets } from '../lib/sheetsService';
 import { JubahLanding } from '../components/JubahLanding';
 import { supabase } from '../lib/supabase';
@@ -22,7 +22,7 @@ const UNIVERSITY_FACULTIES: Record<string, string[]> = {
 const REMARKS = ['Master', 'PHD', 'Degree', 'Diploma'] as const;
 
 export const Jubah: React.FC = () => {
-  const { user, jubahBooking, bookJubah, scheduleReturn, cancelJubahBooking, setCurrentPage } = useApp();
+  const { user, jubahBooking, bookJubah, scheduleReturn, cancelJubahBooking, setCurrentPage, setSheetOpen } = useApp();
 
   const [landingUniversity, setLandingUniversity] = useState('');
 
@@ -53,13 +53,57 @@ export const Jubah: React.FC = () => {
   const [riders,            setRiders]            = useState<{ id: string; name: string; jubah_drop_point: string | null }[]>([]);
   const [ridersLoading,     setRidersLoading]     = useState(false);
 
+  // Address state — only used for postage mode
+  const [addressLine1,      setAddressLine1]      = useState('');
+  const [addressLine2,      setAddressLine2]      = useState('');
+  const [addressPostal,     setAddressPostal]     = useState('');
+  const [addressState,      setAddressState]      = useState('');
+  const [showAddressSheet,  setShowAddressSheet]  = useState(false);
+  // Draft state inside the address sheet
+  const [draftLine1,        setDraftLine1]        = useState('');
+  const [draftLine2,        setDraftLine2]        = useState('');
+  const [draftPostal,       setDraftPostal]       = useState('');
+  const [draftState,        setDraftState]        = useState('');
+
+  const fullAddress = [addressLine1, addressLine2, addressPostal, addressState].filter(Boolean).join('\n');
+
+  const openAddressSheet = () => {
+    setDraftLine1(addressLine1); setDraftLine2(addressLine2);
+    setDraftPostal(addressPostal); setDraftState(addressState);
+    setShowAddressSheet(true);
+    setSheetOpen(true);
+  };
+  const saveAddress = () => {
+    setAddressLine1(draftLine1.trim()); setAddressLine2(draftLine2.trim());
+    setAddressPostal(draftPostal.trim()); setAddressState(draftState.trim());
+    setShowAddressSheet(false);
+    setSheetOpen(false);
+  };
+  const closeAddressSheet = () => { setShowAddressSheet(false); setSheetOpen(false); };
+
+  // Pricing state — fetched from jubah_pricing table
+  type PricingMap = Record<string, Record<string, number>>; // remark -> mode -> price
+  const [pricing, setPricing] = useState<PricingMap>({});
+  useEffect(() => {
+    supabase.rpc('get_jubah_pricing').then(({ data }) => {
+      if (data) {
+        const map: PricingMap = {};
+        (data as { remark: string; payment_mode: string; price: number }[]).forEach(r => {
+          if (!map[r.remark]) map[r.remark] = {};
+          map[r.remark][r.payment_mode] = r.price;
+        });
+        setPricing(map);
+      }
+    });
+  }, []);
+
+  const cost = pricing[remark]?.[paymentMode] ?? (paymentMode === 'postage' ? 90 : 70);
+
   const [returnMethod, setReturnMethod] = useState<'self' | 'locker' | 'courier'>('self');
   const [returnDate, setReturnDate]     = useState('2026-06-15');
   const [returnTime, setReturnTime]     = useState('14:00');
 
   // Fetch active riders whenever campus or service option (Pickup/Postage) changes
-  // Uses a public RPC (not a direct table query) so this also works for guest bookings
-  // — the profiles table itself is RLS-locked to authenticated users only.
   useEffect(() => {
     if (!university) { setRiders([]); setSelectedRiderId(''); return; }
     const campus = university.includes('Pekan') ? 'Pekan' : 'Gambang';
@@ -70,20 +114,19 @@ export const Jubah: React.FC = () => {
       .then(({ data }) => { setRiders(data ?? []); setRidersLoading(false); });
   }, [university, paymentMode]);
 
-  const cost = paymentMode === 'postage' ? 90 : 70;
-
   const allFilesReady = !!(oscarFile && skpgFile && konvoSlipFile && icFile);
+
+  const ACCEPTED_TYPES = ['application/pdf', 'image/jpeg', 'image/png', 'image/webp'];
 
   const handleFileSelect = (
     e: React.ChangeEvent<HTMLInputElement>,
     setFile: (f: File | null) => void,
-    pdfOnly = true,
   ) => {
     const file = e.target.files?.[0] || null;
     setFileError('');
     setCombinedBlob(null);
-    if (file && pdfOnly && file.type !== 'application/pdf') {
-      setFileError('Only PDF files are accepted for this field.');
+    if (file && !ACCEPTED_TYPES.includes(file.type)) {
+      setFileError('Only PDF, JPG or PNG files are accepted.');
       return;
     }
     setFile(file);
@@ -95,28 +138,29 @@ export const Jubah: React.FC = () => {
     try {
       const { PDFDocument } = await import('pdf-lib');
       const merged = await PDFDocument.create();
-      const pdfFiles = [oscarFile, skpgFile, konvoSlipFile];
-      for (const f of pdfFiles) {
+
+      // Helper: add any file (PDF or image) as pages into the merged PDF
+      const addFile = async (f: File) => {
         const bytes = await f.arrayBuffer();
-        const doc = await PDFDocument.load(bytes);
-        const pages = await merged.copyPages(doc, doc.getPageIndices());
-        pages.forEach(p => merged.addPage(p));
+        if (f.type === 'application/pdf') {
+          const doc = await PDFDocument.load(bytes);
+          const pages = await merged.copyPages(doc, doc.getPageIndices());
+          pages.forEach(p => merged.addPage(p));
+        } else {
+          const page = merged.addPage();
+          const img = f.type === 'image/png'
+            ? await merged.embedPng(bytes)
+            : await merged.embedJpg(bytes);
+          const { width, height } = img.scale(1);
+          page.setSize(width, height);
+          page.drawImage(img, { x: 0, y: 0, width, height });
+        }
+      };
+
+      for (const f of [oscarFile, skpgFile, konvoSlipFile, icFile]) {
+        await addFile(f);
       }
-      // IC: embed as image page if not PDF, otherwise merge as PDF
-      const icBytes = await icFile.arrayBuffer();
-      if (icFile.type === 'application/pdf') {
-        const icDoc = await PDFDocument.load(icBytes);
-        const pages = await merged.copyPages(icDoc, icDoc.getPageIndices());
-        pages.forEach(p => merged.addPage(p));
-      } else {
-        const page = merged.addPage();
-        const img = icFile.type === 'image/png'
-          ? await merged.embedPng(icBytes)
-          : await merged.embedJpg(icBytes);
-        const { width, height } = img.scale(1);
-        page.setSize(width, height);
-        page.drawImage(img, { x: 0, y: 0, width, height });
-      }
+
       const pdfBytes = await merged.save();
       setCombinedBlob(new Blob([pdfBytes.buffer as ArrayBuffer], { type: 'application/pdf' }));
     } finally {
@@ -139,13 +183,15 @@ export const Jubah: React.FC = () => {
     if (!university) { alert('Please select your university.'); return; }
     if (!faculty) { alert('Please select your faculty.'); return; }
     if (!selectedRiderId) { alert('Please select a rider.'); return; }
+    if (paymentMode === 'postage' && !fullAddress) { alert('Please enter your delivery address.'); return; }
     if (!allFilesReady) { setFileError('Please upload all required documents.'); return; }
     if (!paymentProof) { setFileError('Please upload your proof of payment.'); return; }
     const combinedFileName = `${(fullName || 'combined').replace(/\s+/g, '_')}_combined.pdf`;
     const selectedRider = riders.find(r => r.id === selectedRiderId);
     const bookingCampus = university.includes('Pekan') ? 'Pekan' : 'Gambang';
-    bookJubah(fullName, icNumber, hpNumber, university, faculty, matricId, paymentMode, remark, combinedFileName, selectedRiderId, selectedRider?.name, bookingCampus);
-    submitJubahToSheets({ fullName, icNumber, hpNumber, university, faculty, matricId, paymentMode, remark, combinedFileName, cost });
+    const addr = paymentMode === 'postage' ? fullAddress : undefined;
+    bookJubah(fullName, icNumber, hpNumber, university, faculty, matricId, paymentMode, remark, combinedFileName, selectedRiderId, selectedRider?.name, bookingCampus, addr);
+    submitJubahToSheets({ fullName, icNumber, hpNumber, university, faculty, matricId, paymentMode, remark, combinedFileName, cost, deliveryAddress: addr });
   };
 
   const handleScheduleReturn = (e: React.SyntheticEvent) => {
@@ -473,6 +519,26 @@ export const Jubah: React.FC = () => {
             )}
           </div>
 
+          {/* ── DELIVERY ADDRESS (postage only) ── */}
+          {paymentMode === 'postage' && (
+            <div className="bg-white border border-slate-100 rounded-3xl p-5 shadow-sm flex flex-col gap-3">
+              <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest">Delivery Address <span className="text-danger">*</span></h3>
+              {fullAddress ? (
+                <button type="button" onClick={openAddressSheet}
+                  className="w-full text-left bg-slate-50 border border-slate-200 rounded-xl px-3 py-3 flex items-start justify-between gap-2 active:bg-slate-100 transition">
+                  <pre className="text-xs font-bold text-slate-700 whitespace-pre-wrap font-sans flex-1">{fullAddress}</pre>
+                  <Pencil className="w-3.5 h-3.5 text-slate-400 shrink-0 mt-0.5" />
+                </button>
+              ) : (
+                <button type="button" onClick={openAddressSheet}
+                  className="w-full border-2 border-dashed border-slate-200 rounded-xl py-4 flex items-center justify-center gap-2 text-slate-400 hover:border-blue-400 hover:text-blue-500 transition active:scale-[0.99]">
+                  <MapPin className="w-4 h-4" />
+                  <span className="text-xs font-bold">Tap to enter delivery address</span>
+                </button>
+              )}
+            </div>
+          )}
+
           {/* ── DOCUMENT UPLOAD ── */}
           <div className="bg-white border border-slate-100 rounded-3xl p-5 shadow-sm flex flex-col gap-4">
             <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest">Upload Documents</h3>
@@ -480,7 +546,7 @@ export const Jubah: React.FC = () => {
             {/* OSCAR */}
             <div className="flex flex-col gap-1">
               <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">OSCAR <span className="text-danger">*</span></label>
-              <input type="file" accept=".pdf,application/pdf" ref={oscarRef} onChange={e => handleFileSelect(e, setOscarFile)} className="hidden" />
+              <input type="file" accept=".pdf,application/pdf,image/jpeg,image/png,image/webp,.jpg,.png" ref={oscarRef} onChange={e => handleFileSelect(e, setOscarFile)} className="hidden" />
               {!oscarFile ? (
                 <button type="button" onClick={() => oscarRef.current?.click()}
                   className="w-full border-2 border-dashed border-slate-200 rounded-xl py-3 flex items-center justify-center gap-2 text-slate-400 hover:border-blue-400 hover:text-blue-500 hover:bg-blue-50/30 transition cursor-pointer">
@@ -498,7 +564,7 @@ export const Jubah: React.FC = () => {
             {/* SKPG */}
             <div className="flex flex-col gap-1">
               <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">SKPG <span className="text-danger">*</span></label>
-              <input type="file" accept=".pdf,application/pdf" ref={skpgRef} onChange={e => handleFileSelect(e, setSkpgFile)} className="hidden" />
+              <input type="file" accept=".pdf,application/pdf,image/jpeg,image/png,image/webp,.jpg,.png" ref={skpgRef} onChange={e => handleFileSelect(e, setSkpgFile)} className="hidden" />
               {!skpgFile ? (
                 <button type="button" onClick={() => skpgRef.current?.click()}
                   className="w-full border-2 border-dashed border-slate-200 rounded-xl py-3 flex items-center justify-center gap-2 text-slate-400 hover:border-blue-400 hover:text-blue-500 hover:bg-blue-50/30 transition cursor-pointer">
@@ -516,7 +582,7 @@ export const Jubah: React.FC = () => {
             {/* Konvo Slip */}
             <div className="flex flex-col gap-1">
               <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Konvo Slip <span className="text-danger">*</span></label>
-              <input type="file" accept=".pdf,application/pdf" ref={konvoRef} onChange={e => handleFileSelect(e, setKonvoSlipFile)} className="hidden" />
+              <input type="file" accept=".pdf,application/pdf,image/jpeg,image/png,image/webp,.jpg,.png" ref={konvoRef} onChange={e => handleFileSelect(e, setKonvoSlipFile)} className="hidden" />
               {!konvoSlipFile ? (
                 <button type="button" onClick={() => konvoRef.current?.click()}
                   className="w-full border-2 border-dashed border-slate-200 rounded-xl py-3 flex items-center justify-center gap-2 text-slate-400 hover:border-blue-400 hover:text-blue-500 hover:bg-blue-50/30 transition cursor-pointer">
@@ -535,7 +601,7 @@ export const Jubah: React.FC = () => {
             <div className="flex flex-col gap-1">
               <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">IC (Front &amp; Back) <span className="text-danger">*</span></label>
               <p className="text-[9px] text-slate-400 -mt-0.5">Accepts PDF or image (JPG/PNG)</p>
-              <input type="file" accept=".pdf,application/pdf,image/jpeg,image/png" ref={icRef} onChange={e => handleFileSelect(e, setIcFile, false)} className="hidden" />
+              <input type="file" accept=".pdf,application/pdf,image/jpeg,image/png" ref={icRef} onChange={e => handleFileSelect(e, setIcFile)} className="hidden" />
               {!icFile ? (
                 <button type="button" onClick={() => icRef.current?.click()}
                   className="w-full border-2 border-dashed border-slate-200 rounded-xl py-3 flex items-center justify-center gap-2 text-slate-400 hover:border-blue-400 hover:text-blue-500 hover:bg-blue-50/30 transition cursor-pointer">
@@ -806,6 +872,59 @@ export const Jubah: React.FC = () => {
                 </p>
               </div>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* ── ADDRESS BOTTOM SHEET ── */}
+      {showAddressSheet && (
+        <div className="fixed inset-0 z-50 flex items-end justify-center"
+          style={{ background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(2px)' }}
+          onClick={closeAddressSheet}>
+          <div className="w-full max-w-[480px] max-h-[85vh] bg-white rounded-t-3xl shadow-2xl animate-slide-up flex flex-col"
+            onClick={e => e.stopPropagation()}>
+            <div className="flex justify-center pt-3 pb-1 shrink-0">
+              <div className="w-10 h-1 bg-slate-200 rounded-full" />
+            </div>
+            <div className="flex items-center justify-between px-5 pt-2 pb-4 shrink-0">
+              <p className="text-xs font-extrabold text-slate-400 uppercase tracking-widest">Delivery Address</p>
+              <button onClick={closeAddressSheet}
+                className="w-7 h-7 flex items-center justify-center rounded-full bg-slate-100 text-slate-500 active:scale-90 transition">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="flex-1 min-h-0 overflow-y-auto no-scrollbar px-5 pb-2 flex flex-col gap-3">
+              {[
+                { label: 'Address Line 1', placeholder: 'No. 44, Jalan Desa Melur 4/1,', value: draftLine1, set: setDraftLine1 },
+                { label: 'Address Line 2', placeholder: 'Taman Bandar Connaught,', value: draftLine2, set: setDraftLine2 },
+                { label: 'Postal Code / City', placeholder: '56000 Cheras,', value: draftPostal, set: setDraftPostal },
+                { label: 'State / Country', placeholder: 'Kuala Lumpur, Malaysia.', value: draftState, set: setDraftState },
+              ].map(f => (
+                <div key={f.label} className="flex flex-col gap-1.5">
+                  <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">{f.label}</label>
+                  <input
+                    type="text"
+                    value={f.value}
+                    onChange={e => f.set(e.target.value)}
+                    placeholder={f.placeholder}
+                    style={{ fontSize: '12px' }}
+                    className="bg-slate-50 border border-slate-200 rounded-xl py-2.5 px-3 font-bold text-slate-700 focus:outline-none focus:border-blue-500 transition placeholder:font-normal placeholder:text-slate-300"
+                  />
+                </div>
+              ))}
+            </div>
+
+            <div className="px-5 pt-3 pb-6 shrink-0 border-t border-slate-100">
+              <button
+                type="button"
+                onClick={saveAddress}
+                disabled={!draftLine1.trim() || !draftPostal.trim() || !draftState.trim()}
+                className="w-full bg-primary text-white font-extrabold text-xs py-3.5 rounded-2xl shadow-md active:scale-[0.98] transition disabled:opacity-50"
+              >
+                Save Address
+              </button>
+            </div>
           </div>
         </div>
       )}
