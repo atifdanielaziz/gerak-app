@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
-import { CheckCircle2, X, Upload, FileText, ShieldAlert, Download, ChevronDown, ChevronLeft, User, Pencil, MapPin } from 'lucide-react';
+import { CheckCircle2, X, Upload, FileText, ShieldAlert, Download, ChevronDown, ChevronLeft, User, Pencil, MapPin, Copy, Check } from 'lucide-react';
 import { submitJubahToSheets } from '../lib/sheetsService';
 import { JubahLanding } from '../components/JubahLanding';
 import { supabase } from '../lib/supabase';
@@ -191,6 +191,7 @@ export const Jubah: React.FC = () => {
   };
 
   const [booking, setBooking] = useState(false);
+  const [copied, setCopied]   = useState(false);
 
   const handleBook = async (e: React.SyntheticEvent) => {
     e.preventDefault();
@@ -801,7 +802,20 @@ export const Jubah: React.FC = () => {
           {/* Reference Number — always shown, critical for guests */}
           <div className="bg-blue-600 rounded-3xl p-5 shadow-md flex flex-col gap-1 text-center">
             <span className="text-[9px] text-blue-100 font-extrabold uppercase tracking-widest">Your Reference Number</span>
-            <span className="text-2xl font-black text-white tracking-wider">{jubahBooking.reference}</span>
+            <div className="flex items-center justify-center gap-2">
+              <span className="text-2xl font-black text-white tracking-wider">{jubahBooking.reference}</span>
+              <button
+                type="button"
+                onClick={() => {
+                  navigator.clipboard.writeText(jubahBooking.reference);
+                  setCopied(true);
+                  setTimeout(() => setCopied(false), 2000);
+                }}
+                className="w-7 h-7 flex items-center justify-center rounded-lg bg-white/20 hover:bg-white/30 active:scale-90 transition shrink-0"
+              >
+                {copied ? <Check className="w-3.5 h-3.5 text-white" /> : <Copy className="w-3.5 h-3.5 text-white" />}
+              </button>
+            </div>
             <p className="text-[10px] text-blue-100 font-semibold mt-1">
               {user.isLoggedIn
                 ? 'You can also track this anytime from your order history.'
