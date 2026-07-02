@@ -422,12 +422,12 @@ export const Jubah: React.FC = () => {
             {[
               {
                 value: 'pickup' as const,
-                label: 'Full payment (RM70) — Self Pickup',
+                label: `Full payment (RM${pricing[remark]?.['pickup'] ?? 70}) — Self Pickup`,
                 desc: 'Service charge for pickup only at UMPSA Gambang on your scheduled date. We store, manage and maintain all items (jubah, mortarboard, kad jemputan, cenderahati & selempang) until handover.',
               },
               {
                 value: 'postage' as const,
-                label: 'Postage (RM90) — Pickup & Postage SM',
+                label: `Postage (RM${pricing[remark]?.['postage'] ?? 90}) — Pickup & Postage SM`,
                 desc: 'Pickup & Postage (Semenanjung Malaysia). Total weight ≈ 3–4 kg (jubah, mortarboard, kad jemputan, cenderahati & selempang).',
               },
             ].map(opt => (
