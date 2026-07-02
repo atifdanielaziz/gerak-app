@@ -188,7 +188,9 @@ export const Jubah: React.FC = () => {
     URL.revokeObjectURL(url);
   };
 
-  const handleBook = (e: React.SyntheticEvent) => {
+  const [booking, setBooking] = useState(false);
+
+  const handleBook = async (e: React.SyntheticEvent) => {
     e.preventDefault();
     if (!university) { alert('Please select your university.'); return; }
     if (!faculty) { alert('Please select your faculty.'); return; }
@@ -196,11 +198,43 @@ export const Jubah: React.FC = () => {
     if (paymentMode === 'postage' && !fullAddress) { alert('Please enter your delivery address.'); return; }
     if (!allFilesReady) { setFileError('Please upload all required documents.'); return; }
     if (!paymentProof) { setFileError('Please upload your proof of payment.'); return; }
+
     const combinedFileName = `${(fullName || 'combined').replace(/\s+/g, '_')}_combined.pdf`;
     const selectedRider = riders.find(r => r.id === selectedRiderId);
     const bookingCampus = university.includes('Pekan') ? 'Pekan' : 'Gambang';
     const addr = paymentMode === 'postage' ? fullAddress : undefined;
-    bookJubah(fullName, icNumber, hpNumber, university, faculty, matricId, paymentMode, remark, combinedFileName, selectedRiderId, selectedRider?.name, bookingCampus, addr);
+
+    setBooking(true);
+    let driveDocsUrl: string | undefined;
+    let drivePaymentUrl: string | undefined;
+
+    try {
+      // Upload combined PDF to Drive (if generated)
+      if (combinedBlob) {
+        const docsForm = new FormData();
+        docsForm.append('file', new File([combinedBlob], combinedFileName, { type: 'application/pdf' }));
+        docsForm.append('filename', combinedFileName);
+        docsForm.append('mimeType', 'application/pdf');
+        const { data: docsData } = await supabase.functions.invoke('upload-to-drive', { body: docsForm });
+        driveDocsUrl = docsData?.url;
+      }
+
+      // Upload payment proof to Drive
+      const payForm = new FormData();
+      const payExt = paymentProof.name.split('.').pop() ?? 'jpg';
+      const payName = `${(fullName || 'payment').replace(/\s+/g, '_')}_payment.${payExt}`;
+      payForm.append('file', paymentProof, payName);
+      payForm.append('filename', payName);
+      payForm.append('mimeType', paymentProof.type);
+      const { data: payData } = await supabase.functions.invoke('upload-to-drive', { body: payForm });
+      drivePaymentUrl = payData?.url;
+    } catch (err) {
+      console.error('[GERAK] Drive upload failed:', err);
+      // Don't block booking if Drive upload fails
+    }
+
+    setBooking(false);
+    bookJubah(fullName, icNumber, hpNumber, university, faculty, matricId, paymentMode, remark, combinedFileName, selectedRiderId, selectedRider?.name, bookingCampus, addr, driveDocsUrl, drivePaymentUrl);
     submitJubahToSheets({ fullName, icNumber, hpNumber, university, faculty, matricId, paymentMode, remark, combinedFileName, cost, deliveryAddress: addr });
   };
 
@@ -719,15 +753,16 @@ export const Jubah: React.FC = () => {
           {/* SUBMIT */}
           <button
             type="submit"
-            disabled={!paymentProof}
+            disabled={!paymentProof || booking}
             className={`mx-auto flex items-center gap-2 text-white text-sm font-extrabold px-8 py-2.5 rounded-full transition-all duration-300 active:scale-95 ${
-              paymentProof
+              paymentProof && !booking
                 ? 'bg-blue-600 hover:bg-blue-700 shadow-lg shadow-blue-500/50 ring-2 ring-blue-400/40 animate-pulse-glow cursor-pointer'
                 : 'bg-slate-200 text-slate-400 cursor-not-allowed shadow-none'
             }`}
           >
-            <CheckCircle2 className="w-3.5 h-3.5" />
-            Book
+            {booking
+              ? <><span className="w-3.5 h-3.5 rounded-full border-2 border-slate-300 border-t-white animate-spin" /> Uploading…</>
+              : <><CheckCircle2 className="w-3.5 h-3.5" /> Book</>}
           </button>
         </form>
 
