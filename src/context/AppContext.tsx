@@ -270,8 +270,17 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   ]);
 
-  // Jubah Delivery
-  const [jubahBooking, setJubahBooking] = useState<JubahBooking | null>(null);
+  // Jubah Delivery — persisted to localStorage so booking survives app restarts
+  const [jubahBooking, setJubahBooking] = useState<JubahBooking | null>(() => {
+    try {
+      const saved = localStorage.getItem('gerak_jubah_booking');
+      return saved ? (JSON.parse(saved) as JubahBooking) : null;
+    } catch { return null; }
+  });
+  useEffect(() => {
+    if (jubahBooking) localStorage.setItem('gerak_jubah_booking', JSON.stringify(jubahBooking));
+    else localStorage.removeItem('gerak_jubah_booking');
+  }, [jubahBooking]);
 
   // Simulation Interval References
   const [rideTimer, setRideTimer] = useState<number | null>(null);
