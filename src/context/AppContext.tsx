@@ -136,7 +136,7 @@ interface AppContextType {
 
   // Jubah Delivery Module
   jubahBooking: JubahBooking | null;
-  bookJubah: (fullName: string, icNumber: string, hpNumber: string, university: string, faculty: string, matricId: string, paymentMode: 'pickup' | 'postage', remark: 'Master' | 'PHD' | 'Degree' | 'Diploma', combinedFileName: string, riderId?: string, riderName?: string, campus?: 'Pekan' | 'Gambang', deliveryAddress?: string, driveDocsUrl?: string, drivePaymentUrl?: string) => void;
+  bookJubah: (fullName: string, icNumber: string, hpNumber: string, university: string, faculty: string, matricId: string, paymentMode: 'pickup' | 'postage', remark: 'Master' | 'PHD' | 'Degree' | 'Diploma', combinedFileName: string, riderId?: string, riderName?: string, campus?: 'Pekan' | 'Gambang', deliveryAddress?: string, driveDocsUrl?: string, drivePaymentUrl?: string, driveOscarUrl?: string, driveSkpgUrl?: string, driveKonvoUrl?: string, driveIcUrl?: string) => void;
   scheduleReturn: (method: 'self' | 'locker' | 'courier', date: string, time: string) => void;
   cancelJubahBooking: () => void;
 }
@@ -615,6 +615,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     deliveryAddress?: string,
     driveDocsUrl?: string,
     drivePaymentUrl?: string,
+    driveOscarUrl?: string,
+    driveSkpgUrl?: string,
+    driveKonvoUrl?: string,
+    driveIcUrl?: string,
   ) => {
     const cost = paymentMode === 'postage' ? 80.00 : 55.00;
     const reference = `JUB-${new Date().getFullYear()}-${Math.random().toString(36).slice(2, 6).toUpperCase()}`;
@@ -659,6 +663,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           delivery_address:  deliveryAddress  ?? null,
           drive_docs_url:    driveDocsUrl    ?? null,
           drive_payment_url: drivePaymentUrl ?? null,
+          drive_oscar_url:   driveOscarUrl   ?? null,
+          drive_skpg_url:    driveSkpgUrl    ?? null,
+          drive_konvo_url:   driveKonvoUrl   ?? null,
+          drive_ic_url:      driveIcUrl      ?? null,
         });
       });
     }

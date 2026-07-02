@@ -207,34 +207,40 @@ export const Jubah: React.FC = () => {
     setBooking(true);
     let driveDocsUrl: string | undefined;
     let drivePaymentUrl: string | undefined;
+    let driveOscarUrl: string | undefined;
+    let driveSkpgUrl: string | undefined;
+    let driveKonvoUrl: string | undefined;
+    let driveIcUrl: string | undefined;
+
+    const uploadFile = async (file: File, label: string): Promise<string | undefined> => {
+      const ext = file.name.split('.').pop() ?? 'pdf';
+      const name = `${(fullName || 'student').replace(/\s+/g, '_')}_${label}.${ext}`;
+      const form = new FormData();
+      form.append('file', file, name);
+      form.append('filename', name);
+      form.append('mimeType', file.type);
+      const { data } = await supabase.functions.invoke('upload-to-drive', { body: form });
+      return data?.url;
+    };
 
     try {
-      // Upload combined PDF to Drive (if generated)
-      if (combinedBlob) {
-        const docsForm = new FormData();
-        docsForm.append('file', new File([combinedBlob], combinedFileName, { type: 'application/pdf' }));
-        docsForm.append('filename', combinedFileName);
-        docsForm.append('mimeType', 'application/pdf');
-        const { data: docsData } = await supabase.functions.invoke('upload-to-drive', { body: docsForm });
-        driveDocsUrl = docsData?.url;
-      }
-
-      // Upload payment proof to Drive
-      const payForm = new FormData();
-      const payExt = paymentProof.name.split('.').pop() ?? 'jpg';
-      const payName = `${(fullName || 'payment').replace(/\s+/g, '_')}_payment.${payExt}`;
-      payForm.append('file', paymentProof, payName);
-      payForm.append('filename', payName);
-      payForm.append('mimeType', paymentProof.type);
-      const { data: payData } = await supabase.functions.invoke('upload-to-drive', { body: payForm });
-      drivePaymentUrl = payData?.url;
+      const results = await Promise.all([
+        combinedBlob
+          ? uploadFile(new File([combinedBlob], combinedFileName, { type: 'application/pdf' }), 'combined')
+          : Promise.resolve(undefined),
+        uploadFile(paymentProof, 'payment'),
+        oscarFile    ? uploadFile(oscarFile,    'OSCAR')     : Promise.resolve(undefined),
+        skpgFile     ? uploadFile(skpgFile,     'SKPG')      : Promise.resolve(undefined),
+        konvoSlipFile ? uploadFile(konvoSlipFile, 'KonvoSlip') : Promise.resolve(undefined),
+        icFile       ? uploadFile(icFile,       'IC')        : Promise.resolve(undefined),
+      ]);
+      [driveDocsUrl, drivePaymentUrl, driveOscarUrl, driveSkpgUrl, driveKonvoUrl, driveIcUrl] = results;
     } catch (err) {
       console.error('[GERAK] Drive upload failed:', err);
-      // Don't block booking if Drive upload fails
     }
 
     setBooking(false);
-    bookJubah(fullName, icNumber, hpNumber, university, faculty, matricId, paymentMode, remark, combinedFileName, selectedRiderId, selectedRider?.name, bookingCampus, addr, driveDocsUrl, drivePaymentUrl);
+    bookJubah(fullName, icNumber, hpNumber, university, faculty, matricId, paymentMode, remark, combinedFileName, selectedRiderId, selectedRider?.name, bookingCampus, addr, driveDocsUrl, drivePaymentUrl, driveOscarUrl, driveSkpgUrl, driveKonvoUrl, driveIcUrl);
     submitJubahToSheets({ fullName, icNumber, hpNumber, university, faculty, matricId, paymentMode, remark, combinedFileName, cost, deliveryAddress: addr });
   };
 
