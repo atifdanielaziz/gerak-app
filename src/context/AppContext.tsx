@@ -137,7 +137,7 @@ interface AppContextType {
 
   // Jubah Delivery Module
   jubahBooking: JubahBooking | null;
-  bookJubah: (fullName: string, icNumber: string, hpNumber: string, university: string, faculty: string, matricId: string, paymentMode: 'pickup' | 'postage' | 'deposit', remark: 'Master' | 'PHD' | 'Degree' | 'Diploma', combinedFileName: string, cost: number, balanceDue: number, riderId?: string, riderName?: string, campus?: 'Pekan' | 'Gambang', deliveryAddress?: string, driveDocsUrl?: string, drivePaymentUrl?: string, driveOscarUrl?: string, driveSkpgUrl?: string, driveKonvoUrl?: string, driveIcUrl?: string) => void;
+  bookJubah: (reference: string, fullName: string, icNumber: string, hpNumber: string, university: string, faculty: string, matricId: string, paymentMode: 'pickup' | 'postage' | 'deposit', remark: 'Master' | 'PHD' | 'Degree' | 'Diploma', combinedFileName: string, cost: number, balanceDue: number, riderId?: string, riderName?: string, campus?: 'Pekan' | 'Gambang', deliveryAddress?: string, driveDocsUrl?: string, drivePaymentUrl?: string, driveOscarUrl?: string, driveSkpgUrl?: string, driveKonvoUrl?: string, driveIcUrl?: string) => void;
   scheduleReturn: (method: 'self' | 'locker' | 'courier', date: string, time: string) => void;
   cancelJubahBooking: () => void;
 }
@@ -610,6 +610,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   // 4. Jubah Delivery Operations
   const bookJubah = (
+    reference: string,
     fullName: string,
     icNumber: string,
     hpNumber: string,
@@ -632,7 +633,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     driveKonvoUrl?: string,
     driveIcUrl?: string,
   ) => {
-    const reference = `JUB-${new Date().getFullYear()}-${Math.random().toString(36).slice(2, 6).toUpperCase()}`;
 
     const newBooking: JubahBooking = {
       reference,
@@ -654,32 +654,34 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setJubahBooking(newBooking);
     addNotification('Robe Booking Confirmed', `Booking for ${fullName} (${remark}) confirmed. Service fee: RM${cost.toFixed(2)}.`, 'jubah');
 
-    // Persist to Supabase for admin tracking + guest tracking
+    // Persist to Supabase via SECURITY DEFINER RPC (bypasses RLS for guest bookings)
     if (campus) {
       supabase.auth.getUser().then(({ data: { user: authUser } }) => {
-        supabase.from('jubah_bookings').insert({
-          reference,
-          customer_id: authUser?.id ?? null,
-          full_name:   fullName,
-          ic_number:   icNumber,
-          hp_number:   hpNumber,
-          matric_id:   matricId,
-          university,
-          campus,
-          faculty,
-          remark,
-          payment_mode: paymentMode,
-          cost,
-          rider_id:         riderId ?? null,
-          rider_name:       riderName ?? null,
-          delivery_address:  deliveryAddress  ?? null,
-          drive_docs_url:    driveDocsUrl    ?? null,
-          drive_payment_url: drivePaymentUrl ?? null,
-          drive_oscar_url:   driveOscarUrl   ?? null,
-          drive_skpg_url:    driveSkpgUrl    ?? null,
-          drive_konvo_url:   driveKonvoUrl   ?? null,
-          drive_ic_url:      driveIcUrl      ?? null,
-          balance_due:       balanceDue,
+        supabase.rpc('create_jubah_booking', {
+          p_reference:         reference,
+          p_full_name:         fullName,
+          p_ic_number:         icNumber,
+          p_hp_number:         hpNumber,
+          p_matric_id:         matricId,
+          p_university:        university,
+          p_campus:            campus,
+          p_faculty:           faculty,
+          p_remark:            remark,
+          p_payment_mode:      paymentMode,
+          p_cost:              cost,
+          p_balance_due:       balanceDue,
+          p_rider_id:          riderId         ?? null,
+          p_rider_name:        riderName       ?? null,
+          p_delivery_address:  deliveryAddress ?? null,
+          p_drive_docs_url:    driveDocsUrl    ?? null,
+          p_drive_payment_url: drivePaymentUrl ?? null,
+          p_drive_oscar_url:   driveOscarUrl   ?? null,
+          p_drive_skpg_url:    driveSkpgUrl    ?? null,
+          p_drive_konvo_url:   driveKonvoUrl   ?? null,
+          p_drive_ic_url:      driveIcUrl      ?? null,
+          p_customer_id:       authUser?.id    ?? null,
+        }).then(({ data, error }) => {
+          if (error || !data?.success) console.error('[GERAK] Booking save failed:', error ?? data?.error);
         });
       });
     }

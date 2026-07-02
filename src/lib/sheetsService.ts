@@ -5,6 +5,7 @@
 const SHEETS_WEBAPP_URL = 'https://script.google.com/macros/s/AKfycbyadRSW0NO4fdPFf4nlSHGhePFBHn5BUyIF1grngwpTcYy1PXiE6W56Ix_Rrif8I3bd/exec';
 
 export interface JubahSheetRow {
+  reference: string;
   fullName: string;
   icNumber: string;
   hpNumber: string;
