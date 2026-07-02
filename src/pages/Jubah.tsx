@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
-import { RotateCcw, Calendar, CheckCircle2, X, Upload, FileText, ShieldAlert, Download, ChevronDown, User, Pencil, MapPin } from 'lucide-react';
+import { RotateCcw, Calendar, CheckCircle2, X, Upload, FileText, ShieldAlert, Download, ChevronDown, ChevronLeft, User, Pencil, MapPin } from 'lucide-react';
 import { submitJubahToSheets } from '../lib/sheetsService';
 import { JubahLanding } from '../components/JubahLanding';
 import { supabase } from '../lib/supabase';
@@ -255,11 +255,22 @@ export const Jubah: React.FC = () => {
     <div className="flex-grow bg-slate-50/50 overflow-y-auto no-scrollbar pb-24 px-4 animate-fade-in flex flex-col gap-4">
 
       {/* HEADER */}
-      <div className="mt-4 px-1">
-        <h2 className="text-xl font-black m-0 text-slate-800">Convocation Robe Service</h2>
-        <p className="text-[10px] text-slate-400 font-semibold uppercase tracking-wider mt-1">
-          {UNIVERSITY_LABELS[landingUniversity]} · Official Robe Bookings
-        </p>
+      <div className="mt-4 px-1 flex items-start gap-2">
+        {!jubahBooking && (
+          <button
+            type="button"
+            onClick={() => setLandingUniversity('')}
+            className="mt-0.5 w-7 h-7 flex items-center justify-center rounded-xl bg-slate-100 text-slate-500 active:scale-90 transition shrink-0"
+          >
+            <ChevronLeft className="w-4 h-4" />
+          </button>
+        )}
+        <div>
+          <h2 className="text-xl font-black m-0 text-slate-800">Convocation Robe Service</h2>
+          <p className="text-[10px] text-slate-400 font-semibold uppercase tracking-wider mt-1">
+            {UNIVERSITY_LABELS[landingUniversity]} · Official Robe Bookings
+          </p>
+        </div>
       </div>
 
       {!jubahBooking ? (
