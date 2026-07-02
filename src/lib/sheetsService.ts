@@ -11,7 +11,7 @@ export interface JubahSheetRow {
   university: string;
   faculty: string;
   matricId: string;
-  paymentMode: 'pickup' | 'postage';
+  paymentMode: 'pickup' | 'postage' | 'deposit';
   remark: string;
   combinedFileName: string;
   cost: number;

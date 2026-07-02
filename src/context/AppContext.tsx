@@ -89,10 +89,11 @@ export interface JubahBooking {
   university: string;
   faculty: string;
   matricId: string;
-  paymentMode: 'pickup' | 'postage';
+  paymentMode: 'pickup' | 'postage' | 'deposit';
   remark: 'Master' | 'PHD' | 'Degree' | 'Diploma';
   combinedFileName: string;
   cost: number;
+  balanceDue: number;
   status: 'ordered' | 'cleaning' | 'packaging' | 'delivering' | 'delivered';
   returnScheduled: boolean;
   returnMethod?: 'self' | 'locker' | 'courier';
@@ -136,7 +137,7 @@ interface AppContextType {
 
   // Jubah Delivery Module
   jubahBooking: JubahBooking | null;
-  bookJubah: (fullName: string, icNumber: string, hpNumber: string, university: string, faculty: string, matricId: string, paymentMode: 'pickup' | 'postage', remark: 'Master' | 'PHD' | 'Degree' | 'Diploma', combinedFileName: string, riderId?: string, riderName?: string, campus?: 'Pekan' | 'Gambang', deliveryAddress?: string, driveDocsUrl?: string, drivePaymentUrl?: string, driveOscarUrl?: string, driveSkpgUrl?: string, driveKonvoUrl?: string, driveIcUrl?: string) => void;
+  bookJubah: (fullName: string, icNumber: string, hpNumber: string, university: string, faculty: string, matricId: string, paymentMode: 'pickup' | 'postage' | 'deposit', remark: 'Master' | 'PHD' | 'Degree' | 'Diploma', combinedFileName: string, cost: number, balanceDue: number, riderId?: string, riderName?: string, campus?: 'Pekan' | 'Gambang', deliveryAddress?: string, driveDocsUrl?: string, drivePaymentUrl?: string, driveOscarUrl?: string, driveSkpgUrl?: string, driveKonvoUrl?: string, driveIcUrl?: string) => void;
   scheduleReturn: (method: 'self' | 'locker' | 'courier', date: string, time: string) => void;
   cancelJubahBooking: () => void;
 }
@@ -606,9 +607,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     university: string,
     faculty: string,
     matricId: string,
-    paymentMode: 'pickup' | 'postage',
+    paymentMode: 'pickup' | 'postage' | 'deposit',
     remark: 'Master' | 'PHD' | 'Degree' | 'Diploma',
     combinedFileName: string,
+    cost: number,
+    balanceDue: number,
     riderId?: string,
     riderName?: string,
     campus?: 'Pekan' | 'Gambang',
@@ -620,7 +623,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     driveKonvoUrl?: string,
     driveIcUrl?: string,
   ) => {
-    const cost = paymentMode === 'postage' ? 80.00 : 55.00;
     const reference = `JUB-${new Date().getFullYear()}-${Math.random().toString(36).slice(2, 6).toUpperCase()}`;
 
     const newBooking: JubahBooking = {
@@ -635,6 +637,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       remark,
       combinedFileName,
       cost,
+      balanceDue,
       status: 'ordered',
       returnScheduled: false,
     };
@@ -667,6 +670,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           drive_skpg_url:    driveSkpgUrl    ?? null,
           drive_konvo_url:   driveKonvoUrl   ?? null,
           drive_ic_url:      driveIcUrl      ?? null,
+          balance_due:       balanceDue,
         });
       });
     }
@@ -674,10 +678,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setTimeout(() => setJubahBooking(prev => prev ? { ...prev, status: 'cleaning' } : null), 15000);
     setTimeout(() => setJubahBooking(prev => prev ? { ...prev, status: 'packaging' } : null), 30000);
     setTimeout(() => {
-      setJubahBooking(prev => prev ? { ...prev, status: paymentMode === 'postage' ? 'delivering' : 'delivered' } : null);
+      const isPostage = paymentMode === 'postage';
+      setJubahBooking(prev => prev ? { ...prev, status: isPostage ? 'delivering' : 'delivered' } : null);
       addNotification(
-        paymentMode === 'postage' ? 'Robe Out for Delivery' : 'Robe Ready for Collection',
-        paymentMode === 'postage' ? 'Rider is on the way with your package.' : 'Visit the collection counter to pick up your robe.',
+        isPostage ? 'Robe Out for Delivery' : 'Robe Ready for Collection',
+        isPostage ? 'Rider is on the way with your package.' : 'Visit the collection counter to pick up your robe.',
         'jubah'
       );
     }, 45000);

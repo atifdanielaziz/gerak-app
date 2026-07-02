@@ -32,7 +32,7 @@ export const Jubah: React.FC = () => {
   const [university, setUniversity]   = useState('');
   const [faculty, setFaculty]         = useState('');
   const [matricId, setMatricId]       = useState('');
-  const [paymentMode, setPaymentMode] = useState<'pickup' | 'postage'>('pickup');
+  const [paymentMode, setPaymentMode] = useState<'pickup' | 'postage' | 'deposit'>('pickup');
   const [remark, setRemark]           = useState<typeof REMARKS[number]>('Degree');
   const [oscarFile, setOscarFile]         = useState<File | null>(null);
   const [skpgFile, setSkpgFile]           = useState<File | null>(null);
@@ -107,7 +107,11 @@ export const Jubah: React.FC = () => {
     return () => { supabase.removeChannel(channel); };
   }, []);
 
-  const cost = pricing[remark]?.[paymentMode] ?? (paymentMode === 'postage' ? 90 : 70);
+  const DEPOSIT_AMOUNT = 25;
+  const pickupPrice  = pricing[remark]?.['pickup']  ?? 70;
+  const postagePrice = pricing[remark]?.['postage'] ?? 90;
+  const balanceDue   = pickupPrice - DEPOSIT_AMOUNT;
+  const cost = paymentMode === 'deposit' ? DEPOSIT_AMOUNT : paymentMode === 'postage' ? postagePrice : pickupPrice;
 
   const [returnMethod, setReturnMethod] = useState<'self' | 'locker' | 'courier'>('self');
   const [returnDate, setReturnDate]     = useState('2026-06-15');
@@ -120,7 +124,7 @@ export const Jubah: React.FC = () => {
     setRidersLoading(true);
     setSelectedRiderId('');
     supabase
-      .rpc('get_active_jubah_riders', { p_campus: campus, p_method: paymentMode })
+      .rpc('get_active_jubah_riders', { p_campus: campus, p_method: paymentMode === 'deposit' ? 'pickup' : paymentMode })
       .then(({ data }) => { setRiders(data ?? []); setRidersLoading(false); });
   }, [university, paymentMode]);
 
@@ -240,7 +244,7 @@ export const Jubah: React.FC = () => {
     }
 
     setBooking(false);
-    bookJubah(fullName, icNumber, hpNumber, university, faculty, matricId, paymentMode, remark, combinedFileName, selectedRiderId, selectedRider?.name, bookingCampus, addr, driveDocsUrl, drivePaymentUrl, driveOscarUrl, driveSkpgUrl, driveKonvoUrl, driveIcUrl);
+    bookJubah(fullName, icNumber, hpNumber, university, faculty, matricId, paymentMode, remark, combinedFileName, cost, balanceDue, selectedRiderId, selectedRider?.name, bookingCampus, addr, driveDocsUrl, drivePaymentUrl, driveOscarUrl, driveSkpgUrl, driveKonvoUrl, driveIcUrl);
     submitJubahToSheets({ fullName, icNumber, hpNumber, university, faculty, matricId, paymentMode, remark, combinedFileName, cost, deliveryAddress: addr, driveDocsUrl, drivePaymentUrl, driveOscarUrl, driveSkpgUrl, driveKonvoUrl, driveIcUrl });
   };
 
@@ -482,13 +486,18 @@ export const Jubah: React.FC = () => {
 
             {[
               {
+                value: 'deposit' as const,
+                label: `Deposit (RM${DEPOSIT_AMOUNT}) — Pay RM${balanceDue} on Collection`,
+                desc: `Pay RM${DEPOSIT_AMOUNT} now to secure your booking. Pay the remaining RM${balanceDue} on collection day via Track My Order. Cancellation is locked 1 week before collection — deposit is forfeited if cancelled after that.`,
+              },
+              {
                 value: 'pickup' as const,
-                label: `Full payment (RM${pricing[remark]?.['pickup'] ?? 70}) — Self Pickup`,
+                label: `Full Payment (RM${pickupPrice}) — Self Pickup`,
                 desc: 'Service charge for pickup only at UMPSA Gambang on your scheduled date. We store, manage and maintain all items (jubah, mortarboard, kad jemputan, cenderahati & selempang) until handover.',
               },
               {
                 value: 'postage' as const,
-                label: `Postage (RM${pricing[remark]?.['postage'] ?? 90}) — Pickup & Postage SM`,
+                label: `Postage (RM${postagePrice}) — Pickup & Postage SM`,
                 desc: 'Pickup & Postage (Semenanjung Malaysia). Total weight ≈ 3–4 kg (jubah, mortarboard, kad jemputan, cenderahati & selempang).',
               },
             ].map(opt => (
@@ -526,6 +535,11 @@ export const Jubah: React.FC = () => {
               <span className="bg-emerald-50 text-emerald-600 border border-emerald-100 rounded-lg px-2 py-1 text-[9px] font-extrabold">
                 Earn +{paymentMode === 'postage' ? 200 : 150} Points
               </span>
+              {paymentMode === 'deposit' && (
+                <div className="mt-1 bg-amber-50 border border-amber-100 rounded-xl px-3 py-2 w-full">
+                  <p className="text-[9px] text-amber-700 font-bold">Deposit: RM{DEPOSIT_AMOUNT} now · Balance: RM{balanceDue} on collection day</p>
+                </div>
+              )}
             </div>
 
           </div>
@@ -563,12 +577,12 @@ export const Jubah: React.FC = () => {
             </div>
             {university && !ridersLoading && riders.length === 0 && (
               <p className="text-[10px] text-slate-400 font-semibold text-center -mt-2">
-                No {paymentMode === 'pickup' ? 'self-pickup' : 'postage'} riders available for this campus at the moment.
+                No {paymentMode === 'postage' ? 'postage' : 'self-pickup'} riders available for this campus at the moment.
               </p>
             )}
 
             {/* Drop Point — read-only, set by admin for the selected rider */}
-            {selectedRiderId && paymentMode === 'pickup' && (
+            {selectedRiderId && paymentMode !== 'postage' && (
               <div className="flex flex-col gap-1">
                 <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Drop Point</label>
                 <div className="bg-slate-50 border border-slate-200 rounded-xl py-2.5 px-3">
@@ -717,9 +731,11 @@ export const Jubah: React.FC = () => {
 
           {/* ── PROOF OF PAYMENT ── */}
           <div className="bg-white border border-slate-100 rounded-3xl p-5 shadow-sm flex flex-col gap-3">
-            <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest">Proof of Payment</h3>
+            <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest">
+              {paymentMode === 'deposit' ? `Proof of Deposit (RM${DEPOSIT_AMOUNT})` : 'Proof of Payment'}
+            </h3>
             <p className="text-[10px] text-slate-500 leading-relaxed">
-              Upload your <span className="font-bold text-slate-700">payment receipt</span> (screenshot or PDF). The Book button will activate once uploaded.
+              Upload your <span className="font-bold text-slate-700">{paymentMode === 'deposit' ? `RM${DEPOSIT_AMOUNT} deposit receipt` : 'payment receipt'}</span> (screenshot or PDF). The Book button will activate once uploaded.
             </p>
             <input
               type="file"
@@ -814,7 +830,12 @@ export const Jubah: React.FC = () => {
               <div className="bg-slate-50 rounded-xl p-2.5">
                 <span className="text-slate-400 font-bold uppercase tracking-wider block text-[8px]">Service Fee</span>
                 <span className="font-black text-slate-700">RM{jubahBooking.cost.toFixed(2)}</span>
-                <span className="text-slate-400 block">{jubahBooking.paymentMode === 'postage' ? 'Postage' : 'Pickup'}</span>
+                <span className="text-slate-400 block">
+                  {jubahBooking.paymentMode === 'postage' ? 'Postage' : jubahBooking.paymentMode === 'deposit' ? 'Deposit' : 'Pickup'}
+                  {jubahBooking.paymentMode === 'deposit' && jubahBooking.balanceDue > 0 && (
+                    <span className="ml-1 text-amber-600 font-bold">(RM{jubahBooking.balanceDue} due on collection)</span>
+                  )}
+                </span>
               </div>
               <div className="bg-slate-50 rounded-xl p-2.5">
                 <span className="text-slate-400 font-bold uppercase tracking-wider block text-[8px]">Document</span>

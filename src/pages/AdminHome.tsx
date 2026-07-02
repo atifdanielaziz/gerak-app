@@ -639,7 +639,7 @@ export const AdminHome: React.FC = () => {
 
   // ── Jubah tab state ────────────────────────────────────────────────────────
   type JubahRider   = { id: string; name: string; gerak_id: string; campus: string; status: string; can_robe: boolean; ic_number: string | null; phone: string | null; jubah_method: string | null; jubah_drop_point: string | null };
-  type JubahBookingRow = { id: string; reference: string; full_name: string; hp_number: string; matric_id: string; campus: string; faculty: string; remark: string; rider_name: string | null; status: string; created_at: string };
+  type JubahBookingRow = { id: string; reference: string; full_name: string; hp_number: string; matric_id: string; campus: string; faculty: string; remark: string; rider_name: string | null; status: string; payment_mode: string; balance_due: number; balance_paid: boolean; balance_proof_url: string | null; created_at: string };
   const [jubahRiders,        setJubahRiders]        = useState<JubahRider[]>([]);
   const [jubahRidersLoading, setJubahRidersLoading] = useState(false);
   const [jubahBookings,      setJubahBookings]      = useState<JubahBookingRow[]>([]);
@@ -711,7 +711,7 @@ export const AdminHome: React.FC = () => {
     setJubahRidersLoading(false);
 
     let bookingsQ = supabase.from('jubah_bookings')
-      .select('id, reference, full_name, hp_number, matric_id, campus, faculty, remark, rider_name, status, created_at')
+      .select('id, reference, full_name, hp_number, matric_id, campus, faculty, remark, rider_name, status, payment_mode, balance_due, balance_paid, balance_proof_url, created_at')
       .order('created_at', { ascending: false });
     if (!isSuperAdmin) bookingsQ = bookingsQ.eq('campus', adminCampus);
     const { data: bookingsData } = await bookingsQ;
@@ -2561,13 +2561,42 @@ export const AdminHome: React.FC = () => {
                           <td className="py-2 pr-2 text-slate-500 whitespace-nowrap">{b.campus}</td>
                           <td className="py-2 pr-2 text-slate-500 whitespace-nowrap">{b.rider_name ?? '—'}</td>
                           <td className="py-2 pr-2 whitespace-nowrap">
-                            <span className={`text-[9px] font-extrabold px-2 py-0.5 rounded-full border ${
-                              b.status === 'delivered' ? 'bg-emerald-50 border-emerald-100 text-emerald-700' :
-                              b.status === 'cancelled' ? 'bg-red-50 border-red-100 text-red-600' :
-                              'bg-amber-50 border-amber-100 text-amber-700'
-                            }`}>
-                              {b.status.replace('_', ' ')}
-                            </span>
+                            <div className="flex flex-col gap-1">
+                              <span className={`text-[9px] font-extrabold px-2 py-0.5 rounded-full border ${
+                                b.status === 'delivered' ? 'bg-emerald-50 border-emerald-100 text-emerald-700' :
+                                b.status === 'cancelled' ? 'bg-red-50 border-red-100 text-red-600' :
+                                'bg-amber-50 border-amber-100 text-amber-700'
+                              }`}>
+                                {b.status.replace('_', ' ')}
+                              </span>
+                              {b.payment_mode === 'deposit' && (
+                                <span className={`text-[9px] font-extrabold px-2 py-0.5 rounded-full border ${
+                                  b.balance_paid
+                                    ? 'bg-emerald-50 border-emerald-100 text-emerald-700'
+                                    : b.balance_proof_url
+                                      ? 'bg-violet-50 border-violet-100 text-violet-700'
+                                      : 'bg-slate-50 border-slate-200 text-slate-500'
+                                }`}>
+                                  {b.balance_paid ? '✓ Bal. Paid' : b.balance_proof_url ? 'Bal. Review' : `Dep. RM${b.balance_due}`}
+                                </span>
+                              )}
+                            </div>
+                          </td>
+                          <td className="py-2 whitespace-nowrap">
+                            {b.payment_mode === 'deposit' && b.balance_proof_url && !b.balance_paid && (
+                              <button
+                                onClick={async () => {
+                                  const { data } = await supabase.rpc('mark_jubah_balance_paid', { p_booking_id: b.id });
+                                  if (data?.success) {
+                                    setJubahBookings(prev => prev.map(r => r.id === b.id ? { ...r, balance_paid: true } : r));
+                                    showToast('Balance marked as paid.');
+                                  }
+                                }}
+                                className="bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white text-[9px] font-extrabold px-2 py-1 rounded-lg transition"
+                              >
+                                Mark Paid
+                              </button>
+                            )}
                           </td>
                         </tr>
                       ))}
