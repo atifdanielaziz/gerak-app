@@ -33,6 +33,7 @@ export const Jubah: React.FC = () => {
   const [faculty, setFaculty]         = useState('');
   const [matricId, setMatricId]       = useState('');
   const [paymentMode, setPaymentMode] = useState<'pickup' | 'postage' | 'deposit'>('pickup');
+  const [postageZone, setPostageZone] = useState<'SM' | 'SS'>('SM');
   const [remark, setRemark]           = useState<typeof REMARKS[number]>('Degree');
   const [oscarFile, setOscarFile]         = useState<File | null>(null);
   const [skpgFile, setSkpgFile]           = useState<File | null>(null);
@@ -111,7 +112,8 @@ export const Jubah: React.FC = () => {
   const pickupPrice  = pricing[remark]?.['pickup']  ?? 70;
   const postagePrice = pricing[remark]?.['postage'] ?? 90;
   const balanceDue   = pickupPrice - DEPOSIT_AMOUNT;
-  const cost = paymentMode === 'deposit' ? DEPOSIT_AMOUNT : paymentMode === 'postage' ? postagePrice : pickupPrice;
+  const ssCharge     = paymentMode === 'postage' && postageZone === 'SS' ? 10 : 0;
+  const cost = paymentMode === 'deposit' ? DEPOSIT_AMOUNT : paymentMode === 'postage' ? postagePrice + ssCharge : pickupPrice;
 
   const [returnMethod, setReturnMethod] = useState<'self' | 'locker' | 'courier'>('self');
   const [returnDate, setReturnDate]     = useState('2026-06-15');
@@ -206,7 +208,8 @@ export const Jubah: React.FC = () => {
     const combinedFileName = `${(fullName || 'combined').replace(/\s+/g, '_')}_combined.pdf`;
     const selectedRider = riders.find(r => r.id === selectedRiderId);
     const bookingCampus = university.includes('Pekan') ? 'Pekan' : 'Gambang';
-    const addr = paymentMode === 'postage' ? fullAddress : undefined;
+    const zonePrefix = postageZone === 'SS' ? '[SS - Sabah & Sarawak]\n' : '';
+    const addr = paymentMode === 'postage' ? `${zonePrefix}${fullAddress}` : undefined;
 
     setBooking(true);
     let driveDocsUrl: string | undefined;
@@ -484,61 +487,72 @@ export const Jubah: React.FC = () => {
           <div className="bg-white border border-slate-100 rounded-3xl p-5 shadow-sm flex flex-col gap-3">
             <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest">Service Option</h3>
 
-            {[
-              {
-                value: 'deposit' as const,
-                label: `Deposit (RM${DEPOSIT_AMOUNT}) — Pay RM${balanceDue} on Collection`,
-                desc: `Pay RM${DEPOSIT_AMOUNT} now to secure your booking. Pay the remaining RM${balanceDue} on collection day via Track My Order. Cancellation is locked 1 week before collection — deposit is forfeited if cancelled after that.`,
-              },
-              {
-                value: 'pickup' as const,
-                label: `Full Payment (RM${pickupPrice}) — Self Pickup`,
-                desc: 'Service charge for pickup only at UMPSA Gambang on your scheduled date. We store, manage and maintain all items (jubah, mortarboard, kad jemputan, cenderahati & selempang) until handover.',
-              },
-              {
-                value: 'postage' as const,
-                label: `Postage (RM${postagePrice}) — Pickup & Postage SM`,
-                desc: 'Pickup & Postage (Semenanjung Malaysia). Total weight ≈ 3–4 kg (jubah, mortarboard, kad jemputan, cenderahati & selempang).',
-              },
-            ].map(opt => (
-              <label
-                key={opt.value}
-                className={`flex items-start gap-3 p-3.5 rounded-2xl border cursor-pointer transition ${
-                  paymentMode === opt.value
-                    ? 'border-blue-400 bg-blue-50/60'
-                    : 'border-slate-200 hover:bg-slate-50'
-                }`}
-              >
-                <input
-                  type="radio"
-                  name="paymentMode"
-                  value={opt.value}
-                  checked={paymentMode === opt.value}
-                  onChange={() => setPaymentMode(opt.value)}
-                  className="mt-0.5 accent-blue-600 shrink-0"
-                />
-                <div>
-                  <span className={`text-xs font-bold block ${paymentMode === opt.value ? 'text-blue-700' : 'text-slate-700'}`}>
-                    {opt.label}
-                  </span>
-                  <span className="text-[9px] text-slate-400 leading-relaxed block mt-0.5">{opt.desc}</span>
-                </div>
-              </label>
-            ))}
+            {/* Deposit */}
+            <label className={`flex items-start gap-3 p-3.5 rounded-2xl border cursor-pointer transition ${paymentMode === 'deposit' ? 'border-blue-400 bg-blue-50/60' : 'border-slate-200 hover:bg-slate-50'}`}>
+              <input type="radio" name="paymentMode" value="deposit" checked={paymentMode === 'deposit'} onChange={() => setPaymentMode('deposit')} className="mt-0.5 accent-blue-600 shrink-0" />
+              <div>
+                <span className={`text-xs font-bold block ${paymentMode === 'deposit' ? 'text-blue-700' : 'text-slate-700'}`}>
+                  Deposit (RM{DEPOSIT_AMOUNT}) — Pay RM{balanceDue} on Collection
+                </span>
+                <span className="text-[9px] text-slate-400 leading-relaxed block mt-0.5">
+                  Pay RM{DEPOSIT_AMOUNT} now to secure your booking. Pay the remaining RM{balanceDue} <span className="font-bold text-slate-500">1 day before collection day</span> via Track My Order. Cancellation is locked 1 week before collection — deposit is forfeited if cancelled after that.
+                </span>
+              </div>
+            </label>
+
+            {/* Full Pickup */}
+            <label className={`flex items-start gap-3 p-3.5 rounded-2xl border cursor-pointer transition ${paymentMode === 'pickup' ? 'border-blue-400 bg-blue-50/60' : 'border-slate-200 hover:bg-slate-50'}`}>
+              <input type="radio" name="paymentMode" value="pickup" checked={paymentMode === 'pickup'} onChange={() => setPaymentMode('pickup')} className="mt-0.5 accent-blue-600 shrink-0" />
+              <div>
+                <span className={`text-xs font-bold block ${paymentMode === 'pickup' ? 'text-blue-700' : 'text-slate-700'}`}>
+                  Full Payment (RM{pickupPrice}) — Self Pickup
+                </span>
+                <span className="text-[9px] text-slate-400 leading-relaxed block mt-0.5">
+                  Service charge for pickup only at UMPSA Gambang on your scheduled date. We store, manage and maintain all items (jubah, mortarboard, kad jemputan, cenderahati &amp; selempang) until handover.
+                </span>
+              </div>
+            </label>
+
+            {/* Postage with SM/SS zone toggle */}
+            <label className={`flex items-start gap-3 p-3.5 rounded-2xl border cursor-pointer transition ${paymentMode === 'postage' ? 'border-blue-400 bg-blue-50/60' : 'border-slate-200 hover:bg-slate-50'}`}>
+              <input type="radio" name="paymentMode" value="postage" checked={paymentMode === 'postage'} onChange={() => setPaymentMode('postage')} className="mt-0.5 accent-blue-600 shrink-0" />
+              <div className="flex-1">
+                <span className={`text-xs font-bold block ${paymentMode === 'postage' ? 'text-blue-700' : 'text-slate-700'}`}>
+                  Postage (RM{postagePrice + (postageZone === 'SS' ? 10 : 0)}) — Pickup &amp; Postage {postageZone}
+                </span>
+                <span className="text-[9px] text-slate-400 leading-relaxed block mt-0.5">
+                  Total weight ≈ 3–4 kg (jubah, mortarboard, kad jemputan, cenderahati &amp; selempang).
+                </span>
+                {paymentMode === 'postage' && (
+                  <div className="flex flex-col gap-1 mt-2" onClick={e => e.preventDefault()}>
+                    {(['SM', 'SS'] as const).map(zone => (
+                      <button
+                        key={zone}
+                        type="button"
+                        onClick={e => { e.preventDefault(); setPostageZone(zone); }}
+                        className={`flex items-center justify-between px-3 py-1.5 rounded-xl border text-[10px] font-bold transition ${
+                          postageZone === zone
+                            ? 'bg-blue-600 border-blue-600 text-white'
+                            : 'bg-white border-slate-200 text-slate-500 hover:border-blue-300'
+                        }`}
+                      >
+                        <span>{zone === 'SM' ? 'SM — Semenanjung Malaysia' : 'SS — Sabah & Sarawak'}</span>
+                        <span className={`text-[9px] font-extrabold ${postageZone === zone ? 'text-blue-200' : 'text-slate-400'}`}>
+                          {zone === 'SM' ? `RM${postagePrice}` : `RM${postagePrice} + RM10`}
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </label>
 
             {/* Cost HUD */}
-            <div className="bg-slate-50 border border-slate-100 rounded-2xl p-3.5 flex items-center justify-between mt-1">
-              <div>
-                <span className="text-[9px] text-slate-400 font-bold uppercase tracking-wider block">Service Fee</span>
-                <span className="text-xl font-black text-slate-800">RM{cost}.00</span>
-              </div>
-              <span className="bg-emerald-50 text-emerald-600 border border-emerald-100 rounded-lg px-2 py-1 text-[9px] font-extrabold">
-                Earn +{paymentMode === 'postage' ? 200 : 150} Points
-              </span>
-              {paymentMode === 'deposit' && (
-                <div className="mt-1 bg-amber-50 border border-amber-100 rounded-xl px-3 py-2 w-full">
-                  <p className="text-[9px] text-amber-700 font-bold">Deposit: RM{DEPOSIT_AMOUNT} now · Balance: RM{balanceDue} on collection day</p>
-                </div>
+            <div className="bg-slate-50 border border-slate-100 rounded-2xl p-3.5 mt-1">
+              <span className="text-[9px] text-slate-400 font-bold uppercase tracking-wider block">Service Fee</span>
+              <span className="text-xl font-black text-slate-800">RM{cost}.00</span>
+              {paymentMode === 'postage' && postageZone === 'SS' && (
+                <span className="text-[9px] text-slate-400 block mt-0.5">Includes +RM10 SS surcharge</span>
               )}
             </div>
 
