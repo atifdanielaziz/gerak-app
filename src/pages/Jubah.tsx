@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
-import { RotateCcw, Calendar, CheckCircle2, X, Upload, FileText, ShieldAlert, Download, ChevronDown, ChevronLeft, User, Pencil, MapPin } from 'lucide-react';
+import { CheckCircle2, X, Upload, FileText, ShieldAlert, Download, ChevronDown, ChevronLeft, User, Pencil, MapPin } from 'lucide-react';
 import { submitJubahToSheets } from '../lib/sheetsService';
 import { JubahLanding } from '../components/JubahLanding';
 import { supabase } from '../lib/supabase';
@@ -22,7 +22,7 @@ const UNIVERSITY_FACULTIES: Record<string, string[]> = {
 const REMARKS = ['Master', 'PHD', 'Degree', 'Diploma'] as const;
 
 export const Jubah: React.FC = () => {
-  const { user, jubahBooking, bookJubah, scheduleReturn, cancelJubahBooking, setCurrentPage, setSheetOpen } = useApp();
+  const { user, jubahBooking, bookJubah, cancelJubahBooking, setCurrentPage, setSheetOpen } = useApp();
 
   const [landingUniversity, setLandingUniversity] = useState('');
 
@@ -114,10 +114,6 @@ export const Jubah: React.FC = () => {
   const balanceDue   = pickupPrice - DEPOSIT_AMOUNT;
   const ssCharge     = paymentMode === 'postage' && postageZone === 'SS' ? 10 : 0;
   const cost = paymentMode === 'deposit' ? DEPOSIT_AMOUNT : paymentMode === 'postage' ? postagePrice + ssCharge : pickupPrice;
-
-  const [returnMethod, setReturnMethod] = useState<'self' | 'locker' | 'courier'>('self');
-  const [returnDate, setReturnDate]     = useState('2026-06-15');
-  const [returnTime, setReturnTime]     = useState('14:00');
 
   // Fetch active riders whenever campus or service option (Pickup/Postage) changes
   useEffect(() => {
@@ -249,11 +245,6 @@ export const Jubah: React.FC = () => {
     setBooking(false);
     bookJubah(fullName, icNumber, hpNumber, university, faculty, matricId, paymentMode, remark, combinedFileName, cost, balanceDue, selectedRiderId, selectedRider?.name, bookingCampus, addr, driveDocsUrl, drivePaymentUrl, driveOscarUrl, driveSkpgUrl, driveKonvoUrl, driveIcUrl);
     submitJubahToSheets({ fullName, icNumber, hpNumber, university, faculty, matricId, paymentMode, remark, combinedFileName, cost, deliveryAddress: addr, driveDocsUrl, drivePaymentUrl, driveOscarUrl, driveSkpgUrl, driveKonvoUrl, driveIcUrl });
-  };
-
-  const handleScheduleReturn = (e: React.SyntheticEvent) => {
-    e.preventDefault();
-    scheduleReturn(returnMethod, returnDate, returnTime);
   };
 
   const UNIVERSITY_LABELS: Record<string, string> = {
@@ -847,7 +838,7 @@ export const Jubah: React.FC = () => {
                 <span className="text-slate-400 block">
                   {jubahBooking.paymentMode === 'postage' ? 'Postage' : jubahBooking.paymentMode === 'deposit' ? 'Deposit' : 'Pickup'}
                   {jubahBooking.paymentMode === 'deposit' && jubahBooking.balanceDue > 0 && (
-                    <span className="ml-1 text-amber-600 font-bold">(RM{jubahBooking.balanceDue} due on collection)</span>
+                    <span className="ml-1 text-amber-600 font-bold">(RM{jubahBooking.balanceDue} due 1 day before collection)</span>
                   )}
                 </span>
               </div>
@@ -894,82 +885,6 @@ export const Jubah: React.FC = () => {
             <p className="text-[8px] text-slate-400 italic mt-1">Status updates in 15-second cycles for demo purposes.</p>
           </div>
 
-          {/* Return Scheduler */}
-          <div className="bg-white border border-slate-100 rounded-3xl p-5 shadow-sm">
-            <h3 className="text-sm font-black text-slate-800 mb-3 flex items-center gap-2">
-              <RotateCcw className="w-4 h-4 text-blue-500" />
-              Schedule Robe Return
-            </h3>
-
-            {!jubahBooking.returnScheduled ? (
-              <form onSubmit={handleScheduleReturn} className="flex flex-col gap-4">
-                <p className="text-xs text-slate-500 leading-normal">Return required within 7 days post-convocation.</p>
-                <div className="grid grid-cols-3 gap-2">
-                  {[{ id: 'self', label: 'Hub Counter' }, { id: 'locker', label: 'Smart Locker' }, { id: 'courier', label: 'Home Courier' }].map(m => (
-                    <button
-                      key={m.id}
-                      type="button"
-                      onClick={() => setReturnMethod(m.id as any)}
-                      className={`py-2 rounded-xl text-[10px] font-bold border transition ${returnMethod === m.id ? 'border-blue-500 bg-blue-50 text-blue-600' : 'border-slate-200 text-slate-600 hover:bg-slate-50'}`}
-                    >
-                      {m.label}
-                    </button>
-                  ))}
-                </div>
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="flex flex-col gap-1">
-                    <label className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Return Date</label>
-                    <div className="relative group">
-                      <div className="bg-slate-50 border border-slate-200 rounded-xl py-2 px-3 flex items-center justify-between pointer-events-none group-focus-within:border-blue-500 transition">
-                        <span className={`text-xs font-bold ${returnDate ? 'text-slate-700' : 'text-slate-400'}`}>
-                          {returnDate
-                            ? new Date(returnDate + 'T00:00:00').toLocaleDateString('en-MY', { day: 'numeric', month: 'short', year: 'numeric' })
-                            : 'Select date'}
-                        </span>
-                        <Calendar className="w-3 h-3 text-slate-400 shrink-0" />
-                      </div>
-                      <input type="date" value={returnDate} onChange={e => setReturnDate(e.target.value)} required
-                        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                        style={{ fontSize: '16px' }} />
-                    </div>
-                  </div>
-                  <div className="flex flex-col gap-1">
-                    <label className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Time Slot</label>
-                    <div className="relative group">
-                      <div className="bg-slate-50 border border-slate-200 rounded-xl py-2 px-3 flex items-center justify-between pointer-events-none group-focus-within:border-blue-500 transition">
-                        <span className={`text-xs font-bold ${returnTime ? 'text-slate-700' : 'text-slate-400'}`}>
-                          {returnTime || 'Select time'}
-                        </span>
-                        <Calendar className="w-3 h-3 text-slate-400 shrink-0" />
-                      </div>
-                      <input type="time" value={returnTime} onChange={e => setReturnTime(e.target.value)} required
-                        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                        style={{ fontSize: '16px' }} />
-                    </div>
-                  </div>
-                </div>
-                <button type="submit"
-                  className="w-full bg-blue-600 hover:bg-blue-700 active:scale-[0.99] text-white font-extrabold py-3 rounded-xl transition flex items-center justify-center gap-1.5 shadow-md shadow-blue-500/20 text-xs uppercase">
-                  <Calendar className="w-4 h-4" />
-                  Confirm Return Appointment
-                </button>
-              </form>
-            ) : (
-              <div className="bg-blue-50/60 border border-blue-100 rounded-2xl p-4 flex flex-col gap-3">
-                <div className="flex items-center gap-2.5 text-blue-700">
-                  <CheckCircle2 className="w-5 h-5" />
-                  <span className="text-xs font-black uppercase tracking-wider">Return Confirmed</span>
-                </div>
-                <div className="text-xs text-slate-600 flex flex-col gap-1 border-t border-blue-100/50 pt-2">
-                  <div>Method: <span className="text-blue-800 font-bold uppercase">{jubahBooking.returnMethod}</span></div>
-                  <div>Scheduled: <span className="text-blue-800 font-bold">{jubahBooking.returnDate} at {jubahBooking.returnTime}</span></div>
-                </div>
-                <p className="text-[9px] text-slate-400 italic leading-tight">
-                  Please clean and bundle all items before dropping off. QR code will be sent to your phone.
-                </p>
-              </div>
-            )}
-          </div>
         </div>
       )}
 
