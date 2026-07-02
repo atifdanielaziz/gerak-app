@@ -81,20 +81,30 @@ export const Jubah: React.FC = () => {
   };
   const closeAddressSheet = () => { setShowAddressSheet(false); setSheetOpen(false); };
 
-  // Pricing state — fetched from jubah_pricing table
+  // Pricing state — fetched from jubah_pricing table, kept live via Realtime
   type PricingMap = Record<string, Record<string, number>>; // remark -> mode -> price
   const [pricing, setPricing] = useState<PricingMap>({});
   useEffect(() => {
-    supabase.rpc('get_jubah_pricing').then(({ data }) => {
-      if (data) {
-        const map: PricingMap = {};
-        (data as { remark: string; payment_mode: string; price: number }[]).forEach(r => {
-          if (!map[r.remark]) map[r.remark] = {};
-          map[r.remark][r.payment_mode] = r.price;
-        });
-        setPricing(map);
-      }
-    });
+    const fetchPricing = () =>
+      supabase.rpc('get_jubah_pricing').then(({ data }) => {
+        if (data) {
+          const map: PricingMap = {};
+          (data as { remark: string; payment_mode: string; price: number }[]).forEach(r => {
+            if (!map[r.remark]) map[r.remark] = {};
+            map[r.remark][r.payment_mode] = r.price;
+          });
+          setPricing(map);
+        }
+      });
+
+    fetchPricing();
+
+    const channel = supabase
+      .channel('jubah_pricing_live')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'jubah_pricing' }, fetchPricing)
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
   }, []);
 
   const cost = pricing[remark]?.[paymentMode] ?? (paymentMode === 'postage' ? 90 : 70);
