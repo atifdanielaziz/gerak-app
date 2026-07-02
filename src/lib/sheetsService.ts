@@ -16,6 +16,12 @@ export interface JubahSheetRow {
   combinedFileName: string;
   cost: number;
   deliveryAddress?: string;
+  driveDocsUrl?: string;
+  drivePaymentUrl?: string;
+  driveOscarUrl?: string;
+  driveSkpgUrl?: string;
+  driveKonvoUrl?: string;
+  driveIcUrl?: string;
 }
 
 export async function submitJubahToSheets(data: JubahSheetRow): Promise<void> {

@@ -241,7 +241,7 @@ export const Jubah: React.FC = () => {
 
     setBooking(false);
     bookJubah(fullName, icNumber, hpNumber, university, faculty, matricId, paymentMode, remark, combinedFileName, selectedRiderId, selectedRider?.name, bookingCampus, addr, driveDocsUrl, drivePaymentUrl, driveOscarUrl, driveSkpgUrl, driveKonvoUrl, driveIcUrl);
-    submitJubahToSheets({ fullName, icNumber, hpNumber, university, faculty, matricId, paymentMode, remark, combinedFileName, cost, deliveryAddress: addr });
+    submitJubahToSheets({ fullName, icNumber, hpNumber, university, faculty, matricId, paymentMode, remark, combinedFileName, cost, deliveryAddress: addr, driveDocsUrl, drivePaymentUrl, driveOscarUrl, driveSkpgUrl, driveKonvoUrl, driveIcUrl });
   };
 
   const handleScheduleReturn = (e: React.SyntheticEvent) => {
