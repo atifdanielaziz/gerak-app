@@ -645,8 +645,9 @@ export const AdminHome: React.FC = () => {
   const [jubahBookings,      setJubahBookings]      = useState<JubahBookingRow[]>([]);
   const [jubahBookingsLoading, setJubahBookingsLoading] = useState(false);
   const [deletingBooking,    setDeletingBooking]    = useState<string | null>(null);
-  const [jubahSearch,        setJubahSearch]        = useState('');
-  const [jubahPayFilter,     setJubahPayFilter]     = useState<'all' | 'booked' | 'paid'>('all');
+  const [jubahSearch,          setJubahSearch]          = useState('');
+  const [jubahPayFilter,       setJubahPayFilter]       = useState<'all' | 'booked' | 'paid'>('all');
+  const [jubahSelectedBooking, setJubahSelectedBooking] = useState<JubahBookingRow | null>(null);
   const [jubahSubTab,        setJubahSubTab]        = useState<'customer' | 'rider' | 'price'>('rider');
   type JubahPrice = { remark: string; payment_mode: string; price: number };
   const [savingPrice,        setSavingPrice]        = useState<string | null>(null);
@@ -2560,7 +2561,7 @@ export const AdminHome: React.FC = () => {
               </div>
             </div>
 
-            {/* Customer bookings table */}
+            {/* Customer bookings table — same style as rider assignment list */}
             <div className="bg-white border border-slate-100 rounded-3xl p-5 shadow-sm flex flex-col gap-3">
               <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest flex items-center justify-between">
                 <span className="flex items-center gap-1.5"><Users className="w-4 h-4" /> Customer Directory</span>
@@ -2581,20 +2582,14 @@ export const AdminHome: React.FC = () => {
                 <p className="text-xs text-slate-400 font-semibold text-center py-6">No Jubah bookings yet.</p>
               ) : (
                 <div className="overflow-x-auto overflow-y-auto no-scrollbar max-h-[600px]">
-                  <table className="min-w-full border-collapse text-left" style={{ minWidth: 860 }}>
+                  <table className="min-w-full border-collapse text-left" style={{ minWidth: 360 }}>
                     <thead className="sticky top-0 bg-white">
                       <tr className="text-[9px] font-extrabold text-slate-400 uppercase tracking-wider border-b border-slate-100">
                         <th className="py-2 pr-4 whitespace-nowrap">Reference</th>
                         <th className="py-2 pr-4 whitespace-nowrap">Name</th>
-                        <th className="py-2 pr-4 whitespace-nowrap">H/P</th>
-                        <th className="py-2 pr-4 whitespace-nowrap">Matric</th>
                         <th className="py-2 pr-4 whitespace-nowrap">Remark</th>
                         <th className="py-2 pr-4 whitespace-nowrap">Mode</th>
-                        <th className="py-2 pr-4 whitespace-nowrap">Rider</th>
-                        <th className="py-2 pr-4 whitespace-nowrap">Payment</th>
-                        <th className="py-2 pr-4 whitespace-nowrap">Delivery</th>
-                        <th className="py-2 pr-4 whitespace-nowrap">Balance</th>
-                        <th className="py-2 whitespace-nowrap">Actions</th>
+                        <th className="py-2 whitespace-nowrap">Status</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -2607,14 +2602,116 @@ export const AdminHome: React.FC = () => {
                       }).map(b => {
                         const isPaid = b.payment_mode !== 'deposit' || b.balance_paid;
                         return (
-                        <tr key={b.id} className="border-b border-slate-50 text-[10px] hover:bg-slate-50/50 transition">
-                          <td className="py-2.5 pr-4 font-mono font-bold text-primary whitespace-nowrap">{b.reference}</td>
-                          <td className="py-2.5 pr-4 font-extrabold text-slate-800 whitespace-nowrap">{b.full_name}</td>
-                          <td className="py-2.5 pr-4 whitespace-nowrap">
-                            <div className="flex items-center gap-1.5">
-                              <span className="text-slate-700 font-semibold">{b.hp_number}</span>
-                              <a
-                                href={`https://wa.me/6${b.hp_number}?text=${encodeURIComponent(
+                          <tr key={b.id}
+                            onClick={() => setJubahSelectedBooking(b)}
+                            className="border-b border-slate-50 text-[10px] hover:bg-slate-50 active:bg-slate-100 transition cursor-pointer">
+                            <td className="py-2.5 pr-4 font-mono font-bold text-primary whitespace-nowrap">{b.reference}</td>
+                            <td className="py-2.5 pr-4 font-extrabold text-slate-800 whitespace-nowrap">{b.full_name}</td>
+                            <td className="py-2.5 pr-4 text-slate-500 font-semibold whitespace-nowrap">{b.remark}</td>
+                            <td className="py-2.5 pr-4 whitespace-nowrap">
+                              <span className={`font-extrabold px-2 py-0.5 rounded-full border text-[9px] ${
+                                b.payment_mode === 'deposit' ? 'bg-amber-50 border-amber-100 text-amber-700' :
+                                b.payment_mode === 'postage' ? 'bg-blue-50 border-blue-100 text-blue-700' :
+                                'bg-slate-50 border-slate-200 text-slate-600'
+                              }`}>
+                                {b.payment_mode === 'deposit' ? 'Deposit' : b.payment_mode === 'postage' ? 'Postage' : 'Pickup'}
+                              </span>
+                            </td>
+                            <td className="py-2.5 whitespace-nowrap">
+                              <span className={`font-extrabold px-2 py-0.5 rounded-full border text-[9px] ${
+                                isPaid ? 'bg-emerald-50 border-emerald-100 text-emerald-700' : 'bg-amber-50 border-amber-100 text-amber-700'
+                              }`}>
+                                {isPaid ? 'Paid' : 'Booked'}
+                              </span>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+
+            {/* ── Customer detail bottom sheet ── */}
+            {jubahSelectedBooking && (() => {
+              const b = jubahSelectedBooking;
+              const isPaid = b.payment_mode !== 'deposit' || b.balance_paid;
+              const deliveryLabel: Record<string, string> = { booked: 'New', processing: 'Processing', collected: 'Collected', at_hub: 'At Hub', delivered: 'Delivered', cancelled: 'Cancelled' };
+              const deliveryStyle: Record<string, string> = {
+                booked: 'bg-amber-50 border-amber-100 text-amber-700', processing: 'bg-violet-50 border-violet-100 text-violet-700',
+                collected: 'bg-blue-50 border-blue-100 text-blue-700', at_hub: 'bg-emerald-50 border-emerald-100 text-emerald-700',
+                delivered: 'bg-emerald-50 border-emerald-100 text-emerald-700', cancelled: 'bg-red-50 border-red-100 text-red-600',
+              };
+              return (
+                <>
+                  {/* Backdrop */}
+                  <div className="fixed inset-0 bg-black/40 z-40 animate-fade-in" onClick={() => setJubahSelectedBooking(null)} />
+                  {/* Sheet */}
+                  <div className="fixed bottom-0 left-0 right-0 z-50 bg-white rounded-t-3xl shadow-2xl p-5 flex flex-col gap-4 animate-slide-up max-h-[85vh] overflow-y-auto no-scrollbar">
+                    {/* Handle */}
+                    <div className="w-10 h-1 bg-slate-200 rounded-full mx-auto -mt-1" />
+
+                    {/* Header */}
+                    <div className="flex items-start justify-between gap-2">
+                      <div>
+                        <p className="text-[9px] text-primary font-extrabold uppercase tracking-wider">{b.reference}</p>
+                        <h3 className="text-base font-black text-slate-800 mt-0.5">{b.full_name}</h3>
+                        <p className="text-[10px] text-slate-400 font-semibold mt-0.5">{b.remark} · {b.faculty} · UMPSA {b.campus}</p>
+                      </div>
+                      <button onClick={() => setJubahSelectedBooking(null)}
+                        className="w-8 h-8 flex items-center justify-center rounded-xl bg-slate-100 text-slate-400 shrink-0 active:scale-90 transition">
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
+
+                    {/* Info rows */}
+                    <div className="flex flex-col gap-2.5 border-t border-slate-50 pt-3">
+                      {[
+                        { label: 'Matric',   value: b.matric_id },
+                        { label: 'H/P',      value: b.hp_number },
+                        { label: 'Rider',    value: b.rider_name ?? '—' },
+                        ...(b.delivery_address ? [{ label: 'Address', value: b.delivery_address }] : []),
+                      ].map(({ label, value }) => (
+                        <div key={label} className="flex items-start justify-between gap-3">
+                          <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider shrink-0 w-16">{label}</span>
+                          <span className="text-[11px] font-bold text-slate-700 text-right leading-relaxed">{value}</span>
+                        </div>
+                      ))}
+                      <div className="flex items-center justify-between gap-3">
+                        <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">Payment</span>
+                        <span className={`font-extrabold px-2 py-0.5 rounded-full border text-[9px] ${isPaid ? 'bg-emerald-50 border-emerald-100 text-emerald-700' : 'bg-amber-50 border-amber-100 text-amber-700'}`}>
+                          {isPaid ? 'Paid' : 'Booked'}
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between gap-3">
+                        <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">Delivery</span>
+                        <span className={`font-extrabold px-2 py-0.5 rounded-full border text-[9px] ${deliveryStyle[b.status] ?? 'bg-slate-50 border-slate-200 text-slate-400'}`}>
+                          {deliveryLabel[b.status] ?? b.status}
+                        </span>
+                      </div>
+                      {b.payment_mode === 'deposit' && (
+                        <div className="flex items-center justify-between gap-3">
+                          <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">Balance</span>
+                          <div className="flex items-center gap-2">
+                            <span className={`text-[10px] font-extrabold ${b.balance_paid ? 'text-emerald-600' : b.balance_proof_url ? 'text-violet-600' : 'text-slate-400'}`}>
+                              {b.balance_paid ? '✓ Paid' : b.balance_proof_url ? '⏳ Review' : `RM${b.balance_due} due`}
+                            </span>
+                            {b.balance_proof_url && (
+                              <a href={b.balance_proof_url} target="_blank" rel="noopener noreferrer"
+                                className="text-[9px] text-blue-500 font-bold flex items-center gap-0.5 hover:underline">
+                                <ExternalLink className="w-2.5 h-2.5" /> proof
+                              </a>
+                            )}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Action buttons */}
+                    <div className="flex flex-col gap-2 border-t border-slate-50 pt-3">
+                      {/* WA reminder */}
+                      <a href={`https://wa.me/6${b.hp_number}?text=${encodeURIComponent(
 `Assalamualaikum ${b.full_name} 🎓
 
 Ini peringatan daripada Gerak Jubah.
@@ -2626,101 +2723,45 @@ Pembayaran penuh perlu diselesaikan 1 minggu sebelum tarikh pengambilan jubah.
 Rujukan: ${b.reference}
 
 Terima kasih 🙏`)}`}
-                                target="_blank" rel="noopener noreferrer" className="text-[#25D366] shrink-0"
-                              >
-                                <WaIcon className="w-3.5 h-3.5" />
-                              </a>
-                            </div>
-                          </td>
-                          <td className="py-2.5 pr-4 text-slate-500 font-semibold whitespace-nowrap">{b.matric_id}</td>
-                          <td className="py-2.5 pr-4 text-slate-500 font-semibold whitespace-nowrap">{b.remark}</td>
-                          <td className="py-2.5 pr-4 whitespace-nowrap">
-                            <span className={`font-extrabold px-2 py-0.5 rounded-full border text-[9px] ${
-                              b.payment_mode === 'deposit' ? 'bg-amber-50 border-amber-100 text-amber-700' :
-                              b.payment_mode === 'postage' ? 'bg-blue-50 border-blue-100 text-blue-700' :
-                              'bg-slate-50 border-slate-200 text-slate-600'
-                            }`}>
-                              {b.payment_mode === 'deposit' ? 'Deposit' : b.payment_mode === 'postage' ? 'Postage' : 'Pickup'}
-                            </span>
-                          </td>
-                          <td className="py-2.5 pr-4 text-slate-500 font-semibold whitespace-nowrap">{b.rider_name ?? '—'}</td>
-                          <td className="py-2.5 pr-4 whitespace-nowrap">
-                            <span className={`font-extrabold px-2 py-0.5 rounded-full border text-[9px] ${
-                              isPaid ? 'bg-emerald-50 border-emerald-100 text-emerald-700' : 'bg-amber-50 border-amber-100 text-amber-700'
-                            }`}>
-                              {isPaid ? 'Paid' : 'Booked'}
-                            </span>
-                          </td>
-                          <td className="py-2.5 pr-4 whitespace-nowrap">
-                            <span className={`font-extrabold px-2 py-0.5 rounded-full border text-[9px] ${
-                              b.status === 'delivered' || b.status === 'at_hub' ? 'bg-emerald-50 border-emerald-100 text-emerald-700' :
-                              b.status === 'collected'  ? 'bg-blue-50 border-blue-100 text-blue-700' :
-                              b.status === 'processing' ? 'bg-violet-50 border-violet-100 text-violet-700' :
-                              b.status === 'cancelled'  ? 'bg-red-50 border-red-100 text-red-600' :
-                              'bg-amber-50 border-amber-100 text-amber-700'
-                            }`}>
-                              {b.status === 'booked'     ? 'New' :
-                               b.status === 'processing' ? 'Processing' :
-                               b.status === 'collected'  ? 'Collected' :
-                               b.status === 'at_hub'     ? 'At Hub' :
-                               b.status === 'delivered'  ? 'Delivered' :
-                               b.status === 'cancelled'  ? 'Cancelled' :
-                               b.status.replace(/_/g, ' ')}
-                            </span>
-                          </td>
-                          <td className="py-2.5 pr-4 whitespace-nowrap">
-                            {b.payment_mode === 'deposit' ? (
-                              <div className="flex flex-col gap-0.5">
-                                <span className={`font-extrabold text-[9px] ${
-                                  b.balance_paid ? 'text-emerald-600' :
-                                  b.balance_proof_url ? 'text-violet-600' : 'text-slate-400'
-                                }`}>
-                                  {b.balance_paid ? '✓ Paid' : b.balance_proof_url ? '⏳ Review' : `RM${b.balance_due} due`}
-                                </span>
-                                {b.balance_proof_url && (
-                                  <a href={b.balance_proof_url} target="_blank" rel="noopener noreferrer"
-                                    className="flex items-center gap-0.5 text-[9px] text-blue-500 hover:underline font-bold">
-                                    <ExternalLink className="w-2.5 h-2.5" /> proof
-                                  </a>
-                                )}
-                              </div>
-                            ) : <span className="text-slate-300">—</span>}
-                          </td>
-                          <td className="py-2.5 whitespace-nowrap">
-                            <div className="flex items-center gap-1.5">
-                              {b.payment_mode === 'deposit' && b.balance_proof_url && !b.balance_paid && (
-                                <button
-                                  onClick={async () => {
-                                    const { data } = await supabase.rpc('mark_jubah_balance_paid', { p_booking_id: b.id });
-                                    if (data?.success) {
-                                      setJubahBookings(prev => prev.map(r => r.id === b.id ? { ...r, balance_paid: true } : r));
-                                      showToast('Balance marked as paid.');
-                                    }
-                                  }}
-                                  className="bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white text-[9px] font-extrabold px-2 py-1 rounded-lg transition"
-                                >
-                                  Mark Paid
-                                </button>
-                              )}
-                              <button
-                                onClick={() => handleDeleteJubahBooking(b)}
-                                disabled={deletingBooking === b.id}
-                                className="flex items-center gap-1 text-red-500 hover:text-red-700 text-[9px] font-extrabold transition active:scale-95 disabled:opacity-50"
-                              >
-                                {deletingBooking === b.id
-                                  ? <span className="w-3 h-3 rounded-full border border-red-400 border-t-transparent animate-spin" />
-                                  : <><Trash2 className="w-3 h-3" /> Delete</>}
-                              </button>
-                            </div>
-                          </td>
-                        </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
-                </div>
-              )}
-            </div>
+                        target="_blank" rel="noopener noreferrer"
+                        className="w-full flex items-center justify-center gap-2 bg-[#25D366] hover:bg-[#20b858] active:scale-[0.98] text-white font-extrabold py-3 rounded-2xl text-sm transition">
+                        <WaIcon className="w-4 h-4" /> Send Payment Reminder
+                      </a>
+
+                      {/* Mark Balance Paid */}
+                      {b.payment_mode === 'deposit' && b.balance_proof_url && !b.balance_paid && (
+                        <button
+                          onClick={async () => {
+                            const { data } = await supabase.rpc('mark_jubah_balance_paid', { p_booking_id: b.id });
+                            if (data?.success) {
+                              const updated = { ...b, balance_paid: true };
+                              setJubahBookings(prev => prev.map(r => r.id === b.id ? updated : r));
+                              setJubahSelectedBooking(updated);
+                              showToast('Balance marked as paid.');
+                            }
+                          }}
+                          className="w-full bg-emerald-600 hover:bg-emerald-700 active:scale-[0.98] text-white font-extrabold py-3 rounded-2xl text-sm transition">
+                          ✓ Mark Balance Paid
+                        </button>
+                      )}
+
+                      {/* Delete */}
+                      <button
+                        onClick={async () => {
+                          setJubahSelectedBooking(null);
+                          await handleDeleteJubahBooking(b);
+                        }}
+                        disabled={deletingBooking === b.id}
+                        className="w-full flex items-center justify-center gap-2 border border-red-200 text-red-500 hover:bg-red-50 active:scale-[0.98] font-extrabold py-3 rounded-2xl text-sm transition disabled:opacity-50">
+                        {deletingBooking === b.id
+                          ? <span className="w-4 h-4 rounded-full border-2 border-red-300 border-t-red-500 animate-spin" />
+                          : <><Trash2 className="w-4 h-4" /> Delete Booking</>}
+                      </button>
+                    </div>
+                  </div>
+                </>
+              );
+            })()}
           </>)}
 
           {/* ── PRICE sub-tab ── */}
