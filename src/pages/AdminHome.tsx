@@ -646,6 +646,7 @@ export const AdminHome: React.FC = () => {
   const [jubahBookingsLoading, setJubahBookingsLoading] = useState(false);
   const [deletingBooking,    setDeletingBooking]    = useState<string | null>(null);
   const [jubahSearch,        setJubahSearch]        = useState('');
+  const [jubahPayFilter,     setJubahPayFilter]     = useState<'all' | 'booked' | 'paid'>('all');
   const [jubahSubTab,        setJubahSubTab]        = useState<'customer' | 'rider' | 'price'>('rider');
   type JubahPrice = { remark: string; payment_mode: string; price: number };
   const [savingPrice,        setSavingPrice]        = useState<string | null>(null);
@@ -2524,22 +2525,39 @@ export const AdminHome: React.FC = () => {
           {jubahSubTab === 'customer' && (<>
 
             {/* Search bar */}
-            <div className="bg-white border border-slate-100 rounded-2xl p-3.5 shadow-sm flex items-center gap-2">
-              <input type="text" value={jubahSearch} onChange={e => setJubahSearch(e.target.value)}
-                placeholder="Search by name, phone or reference…"
-                style={{ fontSize: '13px' }}
-                className="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 font-bold text-slate-700 focus:outline-none focus:border-primary transition placeholder:font-normal placeholder:text-slate-300"
-              />
-              {jubahSearch && (
-                <button onClick={() => setJubahSearch('')}
-                  className="shrink-0 px-3 py-2 bg-slate-100 text-slate-500 font-extrabold text-xs rounded-xl transition active:scale-95">
+            <div className="bg-white border border-slate-100 rounded-2xl p-3.5 shadow-sm flex flex-col gap-2">
+              <div className="flex gap-2">
+                <input type="text" value={jubahSearch} onChange={e => setJubahSearch(e.target.value)}
+                  placeholder="Search by name, phone or reference…"
+                  style={{ fontSize: '12px' }}
+                  className="flex-1 bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 font-bold text-slate-700 focus:outline-none focus:border-primary transition placeholder:font-normal placeholder:text-slate-300"
+                />
+                <button onClick={() => { setJubahSearch(''); setJubahPayFilter('all'); }}
+                  disabled={!jubahSearch.trim() && jubahPayFilter === 'all'}
+                  className="px-3.5 bg-primary text-white font-extrabold text-[11px] rounded-lg transition active:scale-95 disabled:opacity-40 flex items-center gap-1.5">
                   Clear
                 </button>
-              )}
-              <button onClick={loadJubahData}
-                className="shrink-0 w-9 h-9 flex items-center justify-center rounded-xl bg-slate-50 border border-slate-100 text-slate-400 hover:text-primary transition active:scale-90">
-                <RefreshCw className="w-4 h-4" />
-              </button>
+                <button onClick={loadJubahData}
+                  className="w-9 h-9 flex items-center justify-center rounded-lg bg-slate-50 border border-slate-200 text-slate-400 hover:text-primary transition active:scale-90 shrink-0">
+                  <RefreshCw className="w-4 h-4" />
+                </button>
+              </div>
+
+              {/* Payment status filter */}
+              <div className="flex bg-slate-100 rounded-xl p-0.5 gap-0.5">
+                {([
+                  { id: 'all',    label: 'All' },
+                  { id: 'booked', label: '🟡 Booked' },
+                  { id: 'paid',   label: '🟢 Paid' },
+                ] as const).map(f => (
+                  <button key={f.id} onClick={() => setJubahPayFilter(f.id)}
+                    className={`flex-1 py-1.5 rounded-[10px] text-[10px] font-extrabold transition active:scale-95 ${
+                      jubahPayFilter === f.id ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-400'
+                    }`}>
+                    {f.label}
+                  </button>
+                ))}
+              </div>
             </div>
 
             {/* Customer bookings table */}
@@ -2547,7 +2565,13 @@ export const AdminHome: React.FC = () => {
               <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest flex items-center justify-between">
                 <span className="flex items-center gap-1.5"><Users className="w-4 h-4" /> Customer Directory</span>
                 <span className="font-bold text-slate-300 normal-case tracking-normal">
-                  {jubahBookings.filter(b => !jubahSearch.trim() || b.full_name.toLowerCase().includes(jubahSearch.toLowerCase()) || b.hp_number.includes(jubahSearch) || b.reference.toLowerCase().includes(jubahSearch.toLowerCase())).length} bookings
+                  {jubahBookings.filter(b => {
+                    const isPaid = b.payment_mode !== 'deposit' || b.balance_paid;
+                    const matchFilter = jubahPayFilter === 'all' ? true : jubahPayFilter === 'paid' ? isPaid : !isPaid;
+                    const q = jubahSearch.trim().toLowerCase();
+                    const matchSearch = !q || b.full_name.toLowerCase().includes(q) || b.hp_number.includes(q) || b.reference.toLowerCase().includes(q);
+                    return matchFilter && matchSearch;
+                  }).length} bookings
                 </span>
               </h3>
 
@@ -2573,12 +2597,15 @@ export const AdminHome: React.FC = () => {
                       </tr>
                     </thead>
                     <tbody>
-                      {jubahBookings.filter(b =>
-                        !jubahSearch.trim() ||
-                        b.full_name.toLowerCase().includes(jubahSearch.toLowerCase()) ||
-                        b.hp_number.includes(jubahSearch) ||
-                        b.reference.toLowerCase().includes(jubahSearch.toLowerCase())
-                      ).map(b => (
+                      {jubahBookings.filter(b => {
+                        const isPaid = b.payment_mode !== 'deposit' || b.balance_paid;
+                        const matchFilter = jubahPayFilter === 'all' ? true : jubahPayFilter === 'paid' ? isPaid : !isPaid;
+                        const q = jubahSearch.trim().toLowerCase();
+                        const matchSearch = !q || b.full_name.toLowerCase().includes(q) || b.hp_number.includes(q) || b.reference.toLowerCase().includes(q);
+                        return matchFilter && matchSearch;
+                      }).map(b => {
+                        const isPaid = b.payment_mode !== 'deposit' || b.balance_paid;
+                        return (
                         <tr key={b.id} className="border-b border-slate-50 text-[10px] hover:bg-slate-50/50 transition">
                           <td className="py-2.5 pr-4 font-mono font-bold text-primary whitespace-nowrap">{b.reference}</td>
                           <td className="py-2.5 pr-4 font-extrabold text-slate-800 whitespace-nowrap">{b.full_name}</td>
@@ -2618,11 +2645,9 @@ Terima kasih 🙏`)}`}
                           <td className="py-2.5 pr-4 text-slate-500 font-semibold whitespace-nowrap">{b.rider_name ?? '—'}</td>
                           <td className="py-2.5 pr-4 whitespace-nowrap">
                             <span className={`font-extrabold px-2 py-0.5 rounded-full border text-[9px] ${
-                              b.status === 'delivered' ? 'bg-emerald-50 border-emerald-100 text-emerald-700' :
-                              b.status === 'cancelled' ? 'bg-red-50 border-red-100 text-red-600' :
-                              'bg-amber-50 border-amber-100 text-amber-700'
+                              isPaid ? 'bg-emerald-50 border-emerald-100 text-emerald-700' : 'bg-amber-50 border-amber-100 text-amber-700'
                             }`}>
-                              {b.status.replace(/_/g, ' ')}
+                              {isPaid ? 'Paid' : 'Booked'}
                             </span>
                           </td>
                           <td className="py-2.5 pr-4 whitespace-nowrap">
@@ -2671,7 +2696,8 @@ Terima kasih 🙏`)}`}
                             </div>
                           </td>
                         </tr>
-                      ))}
+                        );
+                      })}
                     </tbody>
                   </table>
                 </div>
