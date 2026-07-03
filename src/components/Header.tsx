@@ -1,9 +1,9 @@
 import React from 'react';
 import { useApp } from '../context/AppContext';
-import { Bell, ChevronLeft, ShieldCheck, Car, Bike } from 'lucide-react';
+import { Bell, ChevronLeft } from 'lucide-react';
 
 export const Header: React.FC = () => {
-  const { currentPage, setCurrentPage, goBack, canGoBack, notifications, user, activeRole, switchToDriverMode, switchToAdminMode, switchToRiderMode, isPreviewMode } = useApp();
+  const { currentPage, setCurrentPage, goBack, canGoBack, notifications, user, activeRole } = useApp();
 
   const unreadCount = notifications.filter(n => !n.isRead).length;
 
@@ -76,66 +76,6 @@ export const Header: React.FC = () => {
         {/* Right: role switcher + bell */}
         <div className="flex items-center gap-2">
 
-          {/* Role switcher — superadmin: 3 segments; admin+canDrive: 2 segments */}
-          {!isPreviewMode && user.role === 'superadmin' && (
-            <div className="flex bg-slate-100 rounded-xl p-0.5 gap-0.5">
-              <button
-                onClick={switchToAdminMode}
-                className={`flex items-center gap-1 px-2.5 py-1.5 rounded-[10px] text-[9px] font-extrabold transition active:scale-95 ${
-                  activeRole !== 'driver' && activeRole !== 'rider'
-                    ? 'bg-white text-slate-800 shadow-sm'
-                    : 'text-slate-400 hover:text-slate-600'
-                }`}
-              >
-                <ShieldCheck className="w-3 h-3" />
-                Admin
-              </button>
-              <button
-                onClick={switchToDriverMode}
-                className={`flex items-center gap-1 px-2.5 py-1.5 rounded-[10px] text-[9px] font-extrabold transition active:scale-95 ${
-                  activeRole === 'driver'
-                    ? 'bg-primary text-white shadow-sm'
-                    : 'text-slate-400 hover:text-slate-600'
-                }`}
-              >
-                <Car className="w-3 h-3" />
-                Driver
-              </button>
-              <button
-                onClick={switchToRiderMode}
-                className={`flex items-center gap-1 px-2.5 py-1.5 rounded-[10px] text-[9px] font-extrabold transition active:scale-95 ${
-                  activeRole === 'rider'
-                    ? 'bg-amber-500 text-white shadow-sm'
-                    : 'text-slate-400 hover:text-slate-600'
-                }`}
-              >
-                <Bike className="w-3 h-3" />
-                Rider
-              </button>
-            </div>
-          )}
-          {!isPreviewMode && user.role === 'admin' && user.canDrive && (
-            <div className="flex bg-slate-100 rounded-xl p-0.5 gap-0.5">
-              <button
-                onClick={switchToAdminMode}
-                className={`flex items-center gap-1 px-2.5 py-1.5 rounded-[10px] text-[9px] font-extrabold transition active:scale-95 ${
-                  activeRole !== 'driver' ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-400 hover:text-slate-600'
-                }`}
-              >
-                <ShieldCheck className="w-3 h-3" />
-                Admin
-              </button>
-              <button
-                onClick={switchToDriverMode}
-                className={`flex items-center gap-1 px-2.5 py-1.5 rounded-[10px] text-[9px] font-extrabold transition active:scale-95 ${
-                  activeRole === 'driver' ? 'bg-primary text-white shadow-sm' : 'text-slate-400 hover:text-slate-600'
-                }`}
-              >
-                <Car className="w-3 h-3" />
-                Driver
-              </button>
-            </div>
-          )}
 
           {/* Notification Bell */}
           <button

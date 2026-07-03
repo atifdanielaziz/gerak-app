@@ -4,7 +4,7 @@ import { supabase } from '../lib/supabase';
 import {
   ChevronRight, CheckCircle2, HelpCircle, Heart, LogOut,
   Pencil, X, Car, Upload, FileImage,
-  ShieldCheck, ShieldOff, AlertTriangle, Clock, RefreshCw, Eye,
+  ShieldCheck, ShieldOff, AlertTriangle, Clock, RefreshCw,
 } from 'lucide-react';
 
 /* Derive active status from verified + non-expired receipt, with gate bypass */
@@ -20,7 +20,7 @@ export const driverIsActive = (
   ));
 
 export const Profile: React.FC = () => {
-  const { user, logout, updateProfile, refreshUserData, enterPreviewMode, receiptGateActive } = useApp();
+  const { user, logout, updateProfile, refreshUserData, receiptGateActive } = useApp();
 
   const isDriver = user.role === 'driver' || user.role === 'rider';
   const isActive = driverIsActive(user, receiptGateActive);
@@ -630,22 +630,6 @@ export const Profile: React.FC = () => {
         )}
       </div>
 
-      {/* ── PREVIEW MODE — admin/superadmin only ── */}
-      {(user.role === 'admin' || user.role === 'superadmin') && (
-        <div className="mx-5 mt-5 bg-violet-50 border border-violet-100 rounded-3xl p-2.5 shadow-sm">
-          <button onClick={enterPreviewMode}
-            className="w-full flex items-center justify-between p-3 rounded-2xl hover:bg-violet-100 transition text-left active:scale-[0.99] cursor-pointer">
-            <div className="flex items-center gap-3">
-              <Eye className="w-4 h-4 text-violet-500" />
-              <div>
-                <p className="text-xs font-extrabold text-violet-700">Customer Preview</p>
-                <p className="text-[10px] text-violet-400 font-semibold mt-0.5">Switch to customer view</p>
-              </div>
-            </div>
-            <ChevronRight className="w-4 h-4 text-violet-300" />
-          </button>
-        </div>
-      )}
 
       {/* ── ACTIONS ── */}
       <div className="mx-5 mt-5 bg-white border border-slate-100 rounded-3xl p-2.5 shadow-sm flex flex-col gap-1">
