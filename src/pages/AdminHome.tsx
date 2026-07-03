@@ -7,6 +7,7 @@ import {
   UserPlus, Mail, X, Send, ChevronDown, ChevronUp, Megaphone, Plus, ToggleLeft, ToggleRight,
   FileImage, ShieldCheck, ShieldOff, ExternalLink, KeyRound,
   CalendarDays, Upload, Eye, Phone, ArrowLeftRight, Pencil, GraduationCap,
+  ChevronLeft, Download,
 } from 'lucide-react';
 import { WaBtn, WaIcon, toWa } from '../lib/whatsapp';
 
@@ -639,7 +640,16 @@ export const AdminHome: React.FC = () => {
 
   // ── Jubah tab state ────────────────────────────────────────────────────────
   type JubahRider   = { id: string; name: string; gerak_id: string; campus: string; status: string; can_robe: boolean; ic_number: string | null; phone: string | null; jubah_method: string | null; jubah_drop_point: string | null };
-  type JubahBookingRow = { id: string; reference: string; full_name: string; hp_number: string; matric_id: string; campus: string; faculty: string; remark: string; rider_name: string | null; status: string; payment_mode: string; balance_due: number; balance_paid: boolean; balance_proof_url: string | null; created_at: string };
+  type JubahBookingRow = {
+    id: string; reference: string; full_name: string; ic_number: string; hp_number: string;
+    matric_id: string; university: string; campus: string; faculty: string; remark: string;
+    rider_name: string | null; status: string; payment_mode: string; cost: number;
+    balance_due: number; balance_paid: boolean; balance_proof_url: string | null;
+    delivery_address: string | null;
+    drive_docs_url: string | null; drive_payment_url: string | null; drive_oscar_url: string | null;
+    drive_skpg_url: string | null; drive_konvo_url: string | null; drive_ic_url: string | null;
+    created_at: string;
+  };
   const [jubahRiders,        setJubahRiders]        = useState<JubahRider[]>([]);
   const [jubahRidersLoading, setJubahRidersLoading] = useState(false);
   const [jubahBookings,      setJubahBookings]      = useState<JubahBookingRow[]>([]);
@@ -647,7 +657,9 @@ export const AdminHome: React.FC = () => {
   const [deletingBooking,    setDeletingBooking]    = useState<string | null>(null);
   const [jubahSearch,          setJubahSearch]          = useState('');
   const [jubahPayFilter,       setJubahPayFilter]       = useState<'all' | 'booked' | 'paid'>('all');
-  const [jubahSelectedBooking, setJubahSelectedBooking] = useState<JubahBookingRow | null>(null);
+  const [jubahAdminView,     setJubahAdminView]     = useState<'list' | 'card' | 'details'>('list');
+  const [jubahAdminSelected, setJubahAdminSelected] = useState<JubahBookingRow | null>(null);
+  const [jubahAdminUpdating, setJubahAdminUpdating] = useState(false);
   const [jubahSubTab,        setJubahSubTab]        = useState<'customer' | 'rider' | 'price'>('rider');
   type JubahPrice = { remark: string; payment_mode: string; price: number };
   const [savingPrice,        setSavingPrice]        = useState<string | null>(null);
@@ -660,10 +672,10 @@ export const AdminHome: React.FC = () => {
   // Report to AppContext whenever any bottom sheet/modal here is open,
   // so BottomNav can hide itself and never overlap sheet content.
   useEffect(() => {
-    const anyOpen = !!sheetUser || !!jubahSheetRider || !!pendingAction || showGateMasterConfirm || showInviteConfirm || !!jubahSelectedBooking;
+    const anyOpen = !!sheetUser || !!jubahSheetRider || !!pendingAction || showGateMasterConfirm || showInviteConfirm;
     setSheetOpen(anyOpen);
     return () => setSheetOpen(false);
-  }, [sheetUser, jubahSheetRider, pendingAction, showGateMasterConfirm, showInviteConfirm, jubahSelectedBooking, setSheetOpen]);
+  }, [sheetUser, jubahSheetRider, pendingAction, showGateMasterConfirm, showInviteConfirm, setSheetOpen]);
 
   const handleSavePrice = async (remark: string, paymentMode: string) => {
     const key = `${remark}_${paymentMode}`;
@@ -723,20 +735,25 @@ export const AdminHome: React.FC = () => {
     setJubahRidersLoading(false);
 
     let bookingsQ = supabase.from('jubah_bookings')
-      .select('id, reference, full_name, hp_number, matric_id, campus, faculty, remark, rider_name, status, payment_mode, balance_due, balance_paid, balance_proof_url, created_at')
+      .select('id, reference, full_name, ic_number, hp_number, matric_id, university, campus, faculty, remark, rider_name, status, payment_mode, cost, balance_due, balance_paid, balance_proof_url, delivery_address, drive_docs_url, drive_payment_url, drive_oscar_url, drive_skpg_url, drive_konvo_url, drive_ic_url, created_at')
       .order('created_at', { ascending: false });
     if (!isSuperAdmin) bookingsQ = bookingsQ.eq('campus', adminCampus);
     const { data: bookingsData, error: bookingsError } = await bookingsQ;
     if (bookingsError) {
       console.error('[GERAK] jubah_bookings load error:', bookingsError.message, bookingsError.details);
-      // Fallback: fetch without deposit columns in case migration not yet applied
+      // Fallback: fetch without new columns in case migration not yet applied
       let fallbackQ = supabase.from('jubah_bookings')
         .select('id, reference, full_name, hp_number, matric_id, campus, faculty, remark, rider_name, status, payment_mode, created_at')
         .order('created_at', { ascending: false });
       if (!isSuperAdmin) fallbackQ = fallbackQ.eq('campus', adminCampus);
       const { data: fallbackData, error: fallbackError } = await fallbackQ;
       if (fallbackError) console.error('[GERAK] jubah_bookings fallback error:', fallbackError.message);
-      setJubahBookings(((fallbackData ?? []) as JubahBookingRow[]).map(r => ({ ...r, balance_due: 0, balance_paid: false, balance_proof_url: null })));
+      setJubahBookings(((fallbackData ?? []) as JubahBookingRow[]).map(r => ({
+        ...r,
+        ic_number: '', university: '', cost: 0, balance_due: 0, balance_paid: false, balance_proof_url: null,
+        delivery_address: null, drive_docs_url: null, drive_payment_url: null, drive_oscar_url: null,
+        drive_skpg_url: null, drive_konvo_url: null, drive_ic_url: null,
+      })));
     } else {
       setJubahBookings((bookingsData as JubahBookingRow[]) ?? []);
     }
@@ -753,6 +770,76 @@ export const AdminHome: React.FC = () => {
   }, [isSuperAdmin, adminCampus]);
 
   useEffect(() => { if (activeTab === 'jubah') loadJubahData(); }, [activeTab, loadJubahData]);
+
+  // ── Admin Jubah 3-page back navigation ───────────────────────────────────
+  useEffect(() => {
+    if (activeTab !== 'jubah' || jubahSubTab !== 'customer') return;
+    const handlePop = () => {
+      setJubahAdminView(prev => {
+        if (prev === 'details') return 'card';
+        if (prev === 'card')   { setJubahAdminSelected(null); return 'list'; }
+        return prev;
+      });
+    };
+    window.addEventListener('popstate', handlePop);
+    return () => window.removeEventListener('popstate', handlePop);
+  }, [activeTab, jubahSubTab]);
+
+  const goToAdminCard = (b: JubahBookingRow) => {
+    setJubahAdminSelected(b);
+    setJubahAdminView('card');
+    window.history.pushState({ jubahAdmin: 'card' }, '');
+  };
+  const goToAdminDetails = () => {
+    setJubahAdminView('details');
+    window.history.pushState({ jubahAdmin: 'details' }, '');
+  };
+  const goAdminBack = () => window.history.back();
+
+  const JUBAH_STATUS_LABEL: Record<string, string> = {
+    booked: 'New', processing: 'Processing', collected: 'Collected',
+    at_hub: 'At Hub', delivered: 'Delivered', cancelled: 'Cancelled',
+  };
+  const JUBAH_STATUS_STYLE: Record<string, string> = {
+    booked:     'bg-blue-50 border-blue-100 text-blue-700',
+    processing: 'bg-violet-50 border-violet-100 text-violet-700',
+    collected:  'bg-amber-50 border-amber-100 text-amber-700',
+    at_hub:     'bg-emerald-50 border-emerald-100 text-emerald-700',
+    delivered:  'bg-emerald-50 border-emerald-100 text-emerald-700',
+    cancelled:  'bg-red-50 border-red-100 text-red-600',
+  };
+  const JUBAH_NEXT_LABEL: Record<string, string> = {
+    processing: 'Start Processing',
+    collected:  'Mark Collected',
+    at_hub:     'Mark Delivered to Hub',
+    delivered:  'Mark Delivered',
+  };
+  const jubahGetSteps = (mode: string) =>
+    mode === 'postage'
+      ? ['booked', 'processing', 'collected', 'at_hub']
+      : ['booked', 'processing', 'collected', 'delivered'];
+
+  const handleAdminAdvanceStatus = async () => {
+    if (!jubahAdminSelected) return;
+    const steps = jubahGetSteps(jubahAdminSelected.payment_mode);
+    const idx   = steps.indexOf(jubahAdminSelected.status);
+    const next  = idx >= 0 && idx < steps.length - 1 ? steps[idx + 1] : null;
+    if (!next) return;
+    setJubahAdminUpdating(true);
+    const { data, error } = await supabase.rpc('update_jubah_booking_status', {
+      p_booking_id: jubahAdminSelected.id,
+      p_status:     next,
+    });
+    if (error || !data?.success) {
+      showToast('Update failed. Please try again.');
+    } else {
+      const updated = { ...jubahAdminSelected, status: next };
+      setJubahAdminSelected(updated);
+      setJubahBookings(prev => prev.map(r => r.id === jubahAdminSelected.id ? updated : r));
+      showToast(`Status updated: ${JUBAH_STATUS_LABEL[next] ?? next}`);
+    }
+    setJubahAdminUpdating(false);
+  };
 
   const [showRouteForm, setShowRouteForm] = useState(false);
   const [editingRoute, setEditingRoute]   = useState<Route | null>(null);
@@ -2403,42 +2490,44 @@ export const AdminHome: React.FC = () => {
       {activeTab === 'jubah' && (
         <div className="flex flex-col gap-4">
 
-          {/* Jubah Period Toggle — above sub-tabs */}
-          <div className="bg-white border border-slate-100 rounded-3xl p-5 shadow-sm flex items-center justify-between gap-4">
-            <div className="flex items-center gap-3">
-              <div className={`w-10 h-10 rounded-2xl flex items-center justify-center ${jubahActive ? 'bg-blue-50' : 'bg-slate-100'}`}>
-                <span className="text-xl">🎓</span>
+          {/* Jubah Period Toggle + sub-tab switcher — hidden when inside customer sub-pages */}
+          {!(jubahSubTab === 'customer' && jubahAdminView !== 'list') && (<>
+            <div className="bg-white border border-slate-100 rounded-3xl p-5 shadow-sm flex items-center justify-between gap-4">
+              <div className="flex items-center gap-3">
+                <div className={`w-10 h-10 rounded-2xl flex items-center justify-center ${jubahActive ? 'bg-blue-50' : 'bg-slate-100'}`}>
+                  <span className="text-xl">🎓</span>
+                </div>
+                <div>
+                  <p className="text-xs font-black text-slate-800">Jubah Delivery Period</p>
+                  <p className="text-[10px] text-slate-400 font-semibold mt-0.5">
+                    {jubahActive ? 'Currently OPEN — students can book' : 'Currently CLOSED — booking disabled'}
+                  </p>
+                </div>
               </div>
-              <div>
-                <p className="text-xs font-black text-slate-800">Jubah Delivery Period</p>
-                <p className="text-[10px] text-slate-400 font-semibold mt-0.5">
-                  {jubahActive ? 'Currently OPEN — students can book' : 'Currently CLOSED — booking disabled'}
-                </p>
-              </div>
-            </div>
-            <button onClick={handleToggleJubah} disabled={togglingJubah}
-              className={`shrink-0 px-4 py-2 rounded-xl text-xs font-extrabold border transition active:scale-95 disabled:opacity-50 ${
-                jubahActive ? 'bg-blue-50 border-blue-200 text-blue-700' : 'bg-slate-50 border-slate-200 text-slate-500'
-              }`}>
-              {togglingJubah ? '…' : jubahActive ? '🟢 ON' : '⚫ OFF'}
-            </button>
-          </div>
-
-          {/* Customer | Rider sub-tabs */}
-          <div className="flex bg-white border border-slate-100 rounded-2xl p-1 gap-1 shadow-sm">
-            {([
-              { id: 'rider', label: '🛵 Rider' },
-              { id: 'customer', label: '👤 Customer' },
-              { id: 'price', label: '💰 Price' },
-            ] as const).map(t => (
-              <button key={t.id} onClick={() => setJubahSubTab(t.id)}
-                className={`flex-1 py-2 rounded-xl text-xs font-extrabold transition ${
-                  jubahSubTab === t.id ? 'bg-primary text-white shadow-sm' : 'text-slate-400'
+              <button onClick={handleToggleJubah} disabled={togglingJubah}
+                className={`shrink-0 px-4 py-2 rounded-xl text-xs font-extrabold border transition active:scale-95 disabled:opacity-50 ${
+                  jubahActive ? 'bg-blue-50 border-blue-200 text-blue-700' : 'bg-slate-50 border-slate-200 text-slate-500'
                 }`}>
-                {t.label}
+                {togglingJubah ? '…' : jubahActive ? '🟢 ON' : '⚫ OFF'}
               </button>
-            ))}
-          </div>
+            </div>
+
+            {/* Customer | Rider | Price sub-tabs */}
+            <div className="flex bg-white border border-slate-100 rounded-2xl p-1 gap-1 shadow-sm">
+              {([
+                { id: 'rider', label: '🛵 Rider' },
+                { id: 'customer', label: '👤 Customer' },
+                { id: 'price', label: '💰 Price' },
+              ] as const).map(t => (
+                <button key={t.id} onClick={() => { setJubahSubTab(t.id); setJubahAdminView('list'); setJubahAdminSelected(null); }}
+                  className={`flex-1 py-2 rounded-xl text-xs font-extrabold transition ${
+                    jubahSubTab === t.id ? 'bg-primary text-white shadow-sm' : 'text-slate-400'
+                  }`}>
+                  {t.label}
+                </button>
+              ))}
+            </div>
+          </>)}
 
           {/* ── RIDER sub-tab ── */}
           {jubahSubTab === 'rider' && (<>
@@ -2525,193 +2614,164 @@ export const AdminHome: React.FC = () => {
           {/* ── CUSTOMER sub-tab ── */}
           {jubahSubTab === 'customer' && (<>
 
-            {/* Search bar */}
-            <div className="bg-white border border-slate-100 rounded-2xl p-3.5 shadow-sm flex flex-col gap-2">
-              <div className="flex gap-2">
-                <input type="text" value={jubahSearch} onChange={e => setJubahSearch(e.target.value)}
-                  placeholder="Search by name, phone or reference…"
-                  style={{ fontSize: '12px' }}
-                  className="flex-1 bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 font-bold text-slate-700 focus:outline-none focus:border-primary transition placeholder:font-normal placeholder:text-slate-300"
-                />
-                <button onClick={() => { setJubahSearch(''); setJubahPayFilter('all'); }}
-                  disabled={!jubahSearch.trim() && jubahPayFilter === 'all'}
-                  className="px-3.5 bg-primary text-white font-extrabold text-[11px] rounded-lg transition active:scale-95 disabled:opacity-40 flex items-center gap-1.5">
-                  Clear
-                </button>
-                <button onClick={loadJubahData}
-                  className="w-9 h-9 flex items-center justify-center rounded-lg bg-slate-50 border border-slate-200 text-slate-400 hover:text-primary transition active:scale-90 shrink-0">
-                  <RefreshCw className="w-4 h-4" />
-                </button>
-              </div>
+            {/* PAGE 1 — List + search */}
+            {jubahAdminView === 'list' && (<>
 
-              {/* Payment status filter */}
-              <div className="flex bg-slate-100 rounded-xl p-0.5 gap-0.5">
-                {([
-                  { id: 'all',    label: 'All' },
-                  { id: 'booked', label: '🟡 Booked' },
-                  { id: 'paid',   label: '🟢 Paid' },
-                ] as const).map(f => (
-                  <button key={f.id} onClick={() => setJubahPayFilter(f.id)}
-                    className={`flex-1 py-1.5 rounded-[10px] text-[10px] font-extrabold transition active:scale-95 ${
-                      jubahPayFilter === f.id ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-400'
-                    }`}>
-                    {f.label}
+              {/* Search bar */}
+              <div className="bg-white border border-slate-100 rounded-2xl p-3.5 shadow-sm flex flex-col gap-2">
+                <div className="flex gap-2">
+                  <input type="text" value={jubahSearch} onChange={e => setJubahSearch(e.target.value)}
+                    placeholder="Search by name, phone or reference…"
+                    style={{ fontSize: '12px' }}
+                    className="flex-1 bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 font-bold text-slate-700 focus:outline-none focus:border-primary transition placeholder:font-normal placeholder:text-slate-300"
+                  />
+                  <button onClick={() => { setJubahSearch(''); setJubahPayFilter('all'); }}
+                    disabled={!jubahSearch.trim() && jubahPayFilter === 'all'}
+                    className="px-3.5 bg-primary text-white font-extrabold text-[11px] rounded-lg transition active:scale-95 disabled:opacity-40 flex items-center gap-1.5">
+                    Clear
                   </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Customer bookings table — same style as rider assignment list */}
-            <div className="bg-white border border-slate-100 rounded-3xl p-5 shadow-sm flex flex-col gap-3">
-              <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest flex items-center justify-between">
-                <span className="flex items-center gap-1.5"><Users className="w-4 h-4" /> Customer Directory</span>
-                <span className="font-bold text-slate-300 normal-case tracking-normal">
-                  {jubahBookings.filter(b => {
-                    const isPaid = b.payment_mode !== 'deposit' || b.balance_paid;
-                    const matchFilter = jubahPayFilter === 'all' ? true : jubahPayFilter === 'paid' ? isPaid : !isPaid;
-                    const q = jubahSearch.trim().toLowerCase();
-                    const matchSearch = !q || b.full_name.toLowerCase().includes(q) || b.hp_number.includes(q) || b.reference.toLowerCase().includes(q);
-                    return matchFilter && matchSearch;
-                  }).length} bookings
-                </span>
-              </h3>
-
-              {jubahBookingsLoading ? (
-                <div className="flex justify-center py-8"><span className="w-5 h-5 rounded-full border-2 border-slate-200 border-t-primary animate-spin" /></div>
-              ) : jubahBookings.length === 0 ? (
-                <p className="text-xs text-slate-400 font-semibold text-center py-6">No Jubah bookings yet.</p>
-              ) : (
-                <div className="overflow-x-auto overflow-y-auto no-scrollbar max-h-[600px]">
-                  <table className="min-w-full border-collapse text-left" style={{ minWidth: 360 }}>
-                    <thead className="sticky top-0 bg-white">
-                      <tr className="text-[9px] font-extrabold text-slate-400 uppercase tracking-wider border-b border-slate-100">
-                        <th className="py-2 pr-4 whitespace-nowrap">Reference</th>
-                        <th className="py-2 pr-4 whitespace-nowrap">Name</th>
-                        <th className="py-2 pr-4 whitespace-nowrap">Remark</th>
-                        <th className="py-2 pr-4 whitespace-nowrap">Mode</th>
-                        <th className="py-2 whitespace-nowrap">Status</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {jubahBookings.filter(b => {
-                        const isPaid = b.payment_mode !== 'deposit' || b.balance_paid;
-                        const matchFilter = jubahPayFilter === 'all' ? true : jubahPayFilter === 'paid' ? isPaid : !isPaid;
-                        const q = jubahSearch.trim().toLowerCase();
-                        const matchSearch = !q || b.full_name.toLowerCase().includes(q) || b.hp_number.includes(q) || b.reference.toLowerCase().includes(q);
-                        return matchFilter && matchSearch;
-                      }).map(b => {
-                        const isPaid = b.payment_mode !== 'deposit' || b.balance_paid;
-                        return (
-                          <tr key={b.id}
-                            onClick={() => setJubahSelectedBooking(b)}
-                            className="border-b border-slate-50 text-[10px] hover:bg-slate-50 active:bg-slate-100 transition cursor-pointer">
-                            <td className="py-2.5 pr-4 font-mono font-bold text-primary whitespace-nowrap">{b.reference}</td>
-                            <td className="py-2.5 pr-4 font-extrabold text-slate-800 whitespace-nowrap">{b.full_name}</td>
-                            <td className="py-2.5 pr-4 text-slate-500 font-semibold whitespace-nowrap">{b.remark}</td>
-                            <td className="py-2.5 pr-4 whitespace-nowrap">
-                              <span className={`font-extrabold px-2 py-0.5 rounded-full border text-[9px] ${
-                                b.payment_mode === 'deposit' ? 'bg-amber-50 border-amber-100 text-amber-700' :
-                                b.payment_mode === 'postage' ? 'bg-blue-50 border-blue-100 text-blue-700' :
-                                'bg-slate-50 border-slate-200 text-slate-600'
-                              }`}>
-                                {b.payment_mode === 'deposit' ? 'Deposit' : b.payment_mode === 'postage' ? 'Postage' : 'Pickup'}
-                              </span>
-                            </td>
-                            <td className="py-2.5 whitespace-nowrap">
-                              <span className={`font-extrabold px-2 py-0.5 rounded-full border text-[9px] ${
-                                isPaid ? 'bg-emerald-50 border-emerald-100 text-emerald-700' : 'bg-amber-50 border-amber-100 text-amber-700'
-                              }`}>
-                                {isPaid ? 'Paid' : 'Booked'}
-                              </span>
-                            </td>
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
+                  <button onClick={loadJubahData}
+                    className="w-9 h-9 flex items-center justify-center rounded-lg bg-slate-50 border border-slate-200 text-slate-400 hover:text-primary transition active:scale-90 shrink-0">
+                    <RefreshCw className="w-4 h-4" />
+                  </button>
                 </div>
-              )}
-            </div>
 
-            {/* ── Customer detail bottom sheet ── */}
-            {jubahSelectedBooking && (() => {
-              const b = jubahSelectedBooking;
-              const isPaid = b.payment_mode !== 'deposit' || b.balance_paid;
-              const deliveryLabel: Record<string, string> = { booked: 'New', processing: 'Processing', collected: 'Collected', at_hub: 'At Hub', delivered: 'Delivered', cancelled: 'Cancelled' };
-              const deliveryStyle: Record<string, string> = {
-                booked: 'bg-amber-50 border-amber-100 text-amber-700', processing: 'bg-violet-50 border-violet-100 text-violet-700',
-                collected: 'bg-blue-50 border-blue-100 text-blue-700', at_hub: 'bg-emerald-50 border-emerald-100 text-emerald-700',
-                delivered: 'bg-emerald-50 border-emerald-100 text-emerald-700', cancelled: 'bg-red-50 border-red-100 text-red-600',
-              };
+                {/* Payment status filter */}
+                <div className="flex bg-slate-100 rounded-xl p-0.5 gap-0.5">
+                  {([
+                    { id: 'all',    label: 'All' },
+                    { id: 'booked', label: '🟡 Booked' },
+                    { id: 'paid',   label: '🟢 Paid' },
+                  ] as const).map(f => (
+                    <button key={f.id} onClick={() => setJubahPayFilter(f.id)}
+                      className={`flex-1 py-1.5 rounded-[10px] text-[10px] font-extrabold transition active:scale-95 ${
+                        jubahPayFilter === f.id ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-400'
+                      }`}>
+                      {f.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Customer bookings table */}
+              <div className="bg-white border border-slate-100 rounded-3xl p-5 shadow-sm flex flex-col gap-3">
+                <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest flex items-center justify-between">
+                  <span className="flex items-center gap-1.5"><Users className="w-4 h-4" /> Customer Directory</span>
+                  <span className="font-bold text-slate-300 normal-case tracking-normal">
+                    {jubahBookings.filter(b => {
+                      const isPaid = b.payment_mode !== 'deposit' || b.balance_paid;
+                      const matchFilter = jubahPayFilter === 'all' ? true : jubahPayFilter === 'paid' ? isPaid : !isPaid;
+                      const q = jubahSearch.trim().toLowerCase();
+                      const matchSearch = !q || b.full_name.toLowerCase().includes(q) || b.hp_number.includes(q) || b.reference.toLowerCase().includes(q);
+                      return matchFilter && matchSearch;
+                    }).length} bookings
+                  </span>
+                </h3>
+
+                {jubahBookingsLoading ? (
+                  <div className="flex justify-center py-8"><span className="w-5 h-5 rounded-full border-2 border-slate-200 border-t-primary animate-spin" /></div>
+                ) : jubahBookings.length === 0 ? (
+                  <p className="text-xs text-slate-400 font-semibold text-center py-6">No Jubah bookings yet.</p>
+                ) : (
+                  <div className="overflow-x-auto overflow-y-auto no-scrollbar max-h-[600px]">
+                    <table className="min-w-full border-collapse text-left" style={{ minWidth: 360 }}>
+                      <thead className="sticky top-0 bg-white">
+                        <tr className="text-[9px] font-extrabold text-slate-400 uppercase tracking-wider border-b border-slate-100">
+                          <th className="py-2 pr-4 whitespace-nowrap">Reference</th>
+                          <th className="py-2 pr-4 whitespace-nowrap">Name</th>
+                          <th className="py-2 pr-4 whitespace-nowrap">Remark</th>
+                          <th className="py-2 pr-4 whitespace-nowrap">Mode</th>
+                          <th className="py-2 whitespace-nowrap">Status</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {jubahBookings.filter(b => {
+                          const isPaid = b.payment_mode !== 'deposit' || b.balance_paid;
+                          const matchFilter = jubahPayFilter === 'all' ? true : jubahPayFilter === 'paid' ? isPaid : !isPaid;
+                          const q = jubahSearch.trim().toLowerCase();
+                          const matchSearch = !q || b.full_name.toLowerCase().includes(q) || b.hp_number.includes(q) || b.reference.toLowerCase().includes(q);
+                          return matchFilter && matchSearch;
+                        }).map(b => {
+                          const isPaid = b.payment_mode !== 'deposit' || b.balance_paid;
+                          return (
+                            <tr key={b.id}
+                              onClick={() => goToAdminCard(b)}
+                              className="border-b border-slate-50 text-[10px] hover:bg-slate-50 active:bg-slate-100 transition cursor-pointer">
+                              <td className="py-2.5 pr-4 font-mono font-bold text-primary whitespace-nowrap">{b.reference}</td>
+                              <td className="py-2.5 pr-4 font-extrabold text-slate-800 whitespace-nowrap">{b.full_name}</td>
+                              <td className="py-2.5 pr-4 text-slate-500 font-semibold whitespace-nowrap">{b.remark}</td>
+                              <td className="py-2.5 pr-4 whitespace-nowrap">
+                                <span className={`font-extrabold px-2 py-0.5 rounded-full border text-[9px] ${
+                                  b.payment_mode === 'deposit' ? 'bg-amber-50 border-amber-100 text-amber-700' :
+                                  b.payment_mode === 'postage' ? 'bg-blue-50 border-blue-100 text-blue-700' :
+                                  'bg-slate-50 border-slate-200 text-slate-600'
+                                }`}>
+                                  {b.payment_mode === 'deposit' ? 'Deposit' : b.payment_mode === 'postage' ? 'Postage' : 'Pickup'}
+                                </span>
+                              </td>
+                              <td className="py-2.5 whitespace-nowrap">
+                                <span className={`font-extrabold px-2 py-0.5 rounded-full border text-[9px] ${
+                                  isPaid ? 'bg-emerald-50 border-emerald-100 text-emerald-700' : 'bg-amber-50 border-amber-100 text-amber-700'
+                                }`}>
+                                  {isPaid ? 'Paid' : 'Booked'}
+                                </span>
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
+            </>)}
+
+            {/* PAGE 2 — Job card with stepper */}
+            {jubahAdminView === 'card' && jubahAdminSelected && (() => {
+              const b      = jubahAdminSelected;
+              const steps  = jubahGetSteps(b.payment_mode);
+              const curStep = steps.indexOf(b.status);
+              const nextStat = (() => {
+                const idx = steps.indexOf(b.status);
+                return idx >= 0 && idx < steps.length - 1 ? steps[idx + 1] : null;
+              })();
+              const isDone = !nextStat;
               return (
-                <>
-                  {/* Backdrop */}
-                  <div className="fixed inset-0 bg-black/40 z-40 animate-fade-in" onClick={() => setJubahSelectedBooking(null)} />
-                  {/* Sheet */}
-                  <div className="fixed bottom-0 left-0 right-0 z-50 bg-white rounded-t-3xl shadow-2xl p-5 flex flex-col gap-4 animate-slide-up max-h-[85vh] overflow-y-auto no-scrollbar">
-                    {/* Handle */}
-                    <div className="w-10 h-1 bg-slate-200 rounded-full mx-auto -mt-1" />
+                <div className="flex flex-col gap-4">
+                  {/* Back row */}
+                  <div className="flex items-center gap-2">
+                    <button onClick={goAdminBack}
+                      className="w-8 h-8 flex items-center justify-center rounded-xl bg-white border border-slate-100 text-slate-500 hover:text-primary transition active:scale-90 shrink-0">
+                      <ChevronLeft className="w-4 h-4" />
+                    </button>
+                    <div>
+                      <p className="text-xs font-black text-slate-700">{b.reference}</p>
+                      <p className="text-[10px] text-slate-400 font-semibold">{b.full_name}</p>
+                    </div>
+                  </div>
 
-                    {/* Header */}
+                  {/* Status stepper card */}
+                  <div className="bg-white border border-slate-100 rounded-3xl p-5 shadow-sm flex flex-col gap-4">
+
+                    {/* Customer summary */}
                     <div className="flex items-start justify-between gap-2">
                       <div>
                         <p className="text-[9px] text-primary font-extrabold uppercase tracking-wider">{b.reference}</p>
                         <h3 className="text-base font-black text-slate-800 mt-0.5">{b.full_name}</h3>
-                        <p className="text-[10px] text-slate-400 font-semibold mt-0.5">{b.remark} · {b.faculty} · UMPSA {b.campus}</p>
+                        <p className="text-[10px] text-slate-400 font-semibold mt-0.5">
+                          {b.remark} · {b.faculty} · UMPSA {b.campus}
+                        </p>
                       </div>
-                      <button onClick={() => setJubahSelectedBooking(null)}
-                        className="w-8 h-8 flex items-center justify-center rounded-xl bg-slate-100 text-slate-400 shrink-0 active:scale-90 transition">
-                        <X className="w-4 h-4" />
-                      </button>
+                      <span className={`text-[9px] font-extrabold px-2.5 py-1 rounded-full border shrink-0 ${JUBAH_STATUS_STYLE[b.status] ?? ''}`}>
+                        {JUBAH_STATUS_LABEL[b.status] ?? b.status}
+                      </span>
                     </div>
 
-                    {/* Info rows */}
-                    <div className="flex flex-col gap-2.5 border-t border-slate-50 pt-3">
-                      {[
-                        { label: 'Matric',   value: b.matric_id },
-                        { label: 'H/P',      value: b.hp_number },
-                        { label: 'Rider',    value: b.rider_name ?? '—' },
-                        ...(b.delivery_address ? [{ label: 'Address', value: b.delivery_address }] : []),
-                      ].map(({ label, value }) => (
-                        <div key={label} className="flex items-start justify-between gap-3">
-                          <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider shrink-0 w-16">{label}</span>
-                          <span className="text-[11px] font-bold text-slate-700 text-right leading-relaxed">{value}</span>
-                        </div>
-                      ))}
-                      <div className="flex items-center justify-between gap-3">
-                        <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">Payment</span>
-                        <span className={`font-extrabold px-2 py-0.5 rounded-full border text-[9px] ${isPaid ? 'bg-emerald-50 border-emerald-100 text-emerald-700' : 'bg-amber-50 border-amber-100 text-amber-700'}`}>
-                          {isPaid ? 'Paid' : 'Booked'}
-                        </span>
-                      </div>
-                      <div className="flex items-center justify-between gap-3">
-                        <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">Delivery</span>
-                        <span className={`font-extrabold px-2 py-0.5 rounded-full border text-[9px] ${deliveryStyle[b.status] ?? 'bg-slate-50 border-slate-200 text-slate-400'}`}>
-                          {deliveryLabel[b.status] ?? b.status}
-                        </span>
-                      </div>
-                      {b.payment_mode === 'deposit' && (
-                        <div className="flex items-center justify-between gap-3">
-                          <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">Balance</span>
-                          <div className="flex items-center gap-2">
-                            <span className={`text-[10px] font-extrabold ${b.balance_paid ? 'text-emerald-600' : b.balance_proof_url ? 'text-violet-600' : 'text-slate-400'}`}>
-                              {b.balance_paid ? '✓ Paid' : b.balance_proof_url ? '⏳ Review' : `RM${b.balance_due} due`}
-                            </span>
-                            {b.balance_proof_url && (
-                              <a href={b.balance_proof_url} target="_blank" rel="noopener noreferrer"
-                                className="text-[9px] text-blue-500 font-bold flex items-center gap-0.5 hover:underline">
-                                <ExternalLink className="w-2.5 h-2.5" /> proof
-                              </a>
-                            )}
-                          </div>
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Action buttons */}
-                    <div className="flex flex-col gap-2 border-t border-slate-50 pt-3">
-                      {/* WA reminder */}
-                      <a href={`https://wa.me/6${b.hp_number}?text=${encodeURIComponent(
+                    {/* HP + Mode */}
+                    <div className="flex items-center gap-3">
+                      <div className="flex items-center gap-1.5 bg-slate-50 border border-slate-100 rounded-xl px-3 py-2 flex-1">
+                        <span className="text-[11px] font-semibold text-slate-600">{b.hp_number}</span>
+                        <a href={`https://wa.me/6${b.hp_number}?text=${encodeURIComponent(
 `Assalamualaikum ${b.full_name} 🎓
 
 Ini peringatan daripada Gerak Jubah.
@@ -2723,45 +2783,219 @@ Pembayaran penuh perlu diselesaikan 1 minggu sebelum tarikh pengambilan jubah.
 Rujukan: ${b.reference}
 
 Terima kasih 🙏`)}`}
-                        target="_blank" rel="noopener noreferrer"
-                        className="w-full flex items-center justify-center gap-2 bg-[#25D366] hover:bg-[#20b858] active:scale-[0.98] text-white font-extrabold py-3 rounded-2xl text-sm transition">
-                        <WaIcon className="w-4 h-4" /> Send Payment Reminder
-                      </a>
+                          target="_blank" rel="noopener noreferrer"
+                          className="text-[#25D366] ml-auto shrink-0">
+                          <WaIcon className="w-4 h-4" />
+                        </a>
+                      </div>
+                      <span className={`text-[9px] font-extrabold px-3 py-2 rounded-xl border shrink-0 ${
+                        b.payment_mode === 'deposit' ? 'bg-amber-50 border-amber-100 text-amber-700' :
+                        b.payment_mode === 'postage' ? 'bg-blue-50 border-blue-100 text-blue-700' :
+                        'bg-slate-50 border-slate-200 text-slate-600'
+                      }`}>
+                        {b.payment_mode === 'deposit' ? 'Deposit' : b.payment_mode === 'postage' ? 'Postage' : 'Pickup'}
+                      </span>
+                    </div>
 
-                      {/* Mark Balance Paid */}
-                      {b.payment_mode === 'deposit' && b.balance_proof_url && !b.balance_paid && (
-                        <button
-                          onClick={async () => {
-                            const { data } = await supabase.rpc('mark_jubah_balance_paid', { p_booking_id: b.id });
-                            if (data?.success) {
-                              const updated = { ...b, balance_paid: true };
-                              setJubahBookings(prev => prev.map(r => r.id === b.id ? updated : r));
-                              setJubahSelectedBooking(updated);
-                              showToast('Balance marked as paid.');
-                            }
-                          }}
-                          className="w-full bg-emerald-600 hover:bg-emerald-700 active:scale-[0.98] text-white font-extrabold py-3 rounded-2xl text-sm transition">
-                          ✓ Mark Balance Paid
-                        </button>
-                      )}
+                    {/* Progress stepper */}
+                    <div className="flex flex-col gap-2">
+                      <div className="flex items-center gap-1">
+                        {steps.map((step, i) => (
+                          <React.Fragment key={step}>
+                            <div className={`w-5 h-5 rounded-full flex items-center justify-center shrink-0 text-[8px] font-extrabold border-2 transition ${
+                              i < curStep  ? 'bg-primary border-primary text-white' :
+                              i === curStep ? 'bg-white border-primary text-primary' :
+                              'bg-white border-slate-200 text-slate-300'
+                            }`}>
+                              {i < curStep ? '✓' : i + 1}
+                            </div>
+                            {i < steps.length - 1 && (
+                              <div className={`flex-1 h-0.5 rounded-full transition ${i < curStep ? 'bg-primary' : 'bg-slate-200'}`} />
+                            )}
+                          </React.Fragment>
+                        ))}
+                      </div>
+                      <div className="flex justify-between">
+                        {steps.map(step => (
+                          <span key={step} className="text-[8px] font-extrabold text-slate-400 uppercase tracking-wide flex-1 text-center first:text-left last:text-right">
+                            {JUBAH_STATUS_LABEL[step]}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
 
-                      {/* Delete */}
+                    {/* Delivery address (postage only) */}
+                    {b.payment_mode === 'postage' && b.delivery_address && (
+                      <div className="bg-blue-50 border border-blue-100 rounded-xl p-3">
+                        <p className="text-[8px] font-extrabold text-blue-400 uppercase tracking-wider mb-1">Delivery Address</p>
+                        <p className="text-[10px] font-semibold text-blue-800 leading-relaxed">{b.delivery_address}</p>
+                      </div>
+                    )}
+
+                    {/* Balance status (deposit) */}
+                    {b.payment_mode === 'deposit' && (
+                      <div className={`rounded-xl p-3 border flex items-center justify-between gap-2 ${
+                        b.balance_paid ? 'bg-emerald-50 border-emerald-100' : b.balance_proof_url ? 'bg-violet-50 border-violet-100' : 'bg-amber-50 border-amber-100'
+                      }`}>
+                        <div>
+                          <span className={`text-[8px] font-extrabold uppercase tracking-wider block ${
+                            b.balance_paid ? 'text-emerald-500' : b.balance_proof_url ? 'text-violet-500' : 'text-amber-500'
+                          }`}>
+                            {b.balance_paid ? 'Balance Paid' : b.balance_proof_url ? 'Proof Submitted — Review' : 'Balance Due'}
+                          </span>
+                          <span className={`text-base font-black ${
+                            b.balance_paid ? 'text-emerald-700' : b.balance_proof_url ? 'text-violet-700' : 'text-amber-700'
+                          }`}>
+                            RM{b.balance_due.toFixed(2)}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          {b.balance_proof_url && (
+                            <a href={b.balance_proof_url} target="_blank" rel="noopener noreferrer"
+                              className="text-[9px] text-blue-500 font-bold flex items-center gap-0.5 hover:underline">
+                              <ExternalLink className="w-2.5 h-2.5" /> proof
+                            </a>
+                          )}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Advance status button */}
+                    {!isDone && b.status !== 'cancelled' && (
+                      <button
+                        onClick={handleAdminAdvanceStatus}
+                        disabled={jubahAdminUpdating}
+                        className="w-full bg-primary hover:bg-primary-hover active:scale-[0.98] disabled:bg-slate-200 text-white font-extrabold py-3 rounded-2xl shadow-md transition flex items-center justify-center gap-2 text-sm">
+                        {jubahAdminUpdating
+                          ? <span className="w-4 h-4 rounded-full border-2 border-white/40 border-t-white animate-spin" />
+                          : `→ ${JUBAH_NEXT_LABEL[nextStat ?? ''] ?? `Mark ${JUBAH_STATUS_LABEL[nextStat ?? '']}`}`}
+                      </button>
+                    )}
+                    {isDone && b.status !== 'cancelled' && (
+                      <div className="bg-emerald-50 border border-emerald-100 rounded-2xl px-4 py-3 text-center">
+                        <p className="text-xs font-extrabold text-emerald-700">✓ Delivery Complete</p>
+                      </div>
+                    )}
+
+                    {/* Mark Balance Paid */}
+                    {b.payment_mode === 'deposit' && b.balance_proof_url && !b.balance_paid && (
                       <button
                         onClick={async () => {
-                          setJubahSelectedBooking(null);
-                          await handleDeleteJubahBooking(b);
+                          const { data } = await supabase.rpc('mark_jubah_balance_paid', { p_booking_id: b.id });
+                          if (data?.success) {
+                            const updated = { ...b, balance_paid: true };
+                            setJubahBookings(prev => prev.map(r => r.id === b.id ? updated : r));
+                            setJubahAdminSelected(updated);
+                            showToast('Balance marked as paid.');
+                          }
                         }}
-                        disabled={deletingBooking === b.id}
-                        className="w-full flex items-center justify-center gap-2 border border-red-200 text-red-500 hover:bg-red-50 active:scale-[0.98] font-extrabold py-3 rounded-2xl text-sm transition disabled:opacity-50">
-                        {deletingBooking === b.id
-                          ? <span className="w-4 h-4 rounded-full border-2 border-red-300 border-t-red-500 animate-spin" />
-                          : <><Trash2 className="w-4 h-4" /> Delete Booking</>}
+                        className="w-full bg-emerald-600 hover:bg-emerald-700 active:scale-[0.98] text-white font-extrabold py-3 rounded-2xl text-sm transition">
+                        ✓ Mark Balance Paid
                       </button>
-                    </div>
+                    )}
                   </div>
-                </>
+
+                  {/* View Customer Details button */}
+                  <button
+                    onClick={goToAdminDetails}
+                    className="w-full bg-white border border-slate-200 text-slate-600 font-extrabold py-3 rounded-2xl text-sm transition hover:border-primary hover:text-primary active:scale-95">
+                    View Customer Details →
+                  </button>
+                </div>
               );
             })()}
+
+            {/* PAGE 3 — Customer details (read-only form + downloads) */}
+            {jubahAdminView === 'details' && jubahAdminSelected && (() => {
+              const b = jubahAdminSelected;
+              return (
+                <div className="flex flex-col gap-4">
+                  {/* Back row */}
+                  <div className="flex items-center gap-2">
+                    <button onClick={goAdminBack}
+                      className="w-8 h-8 flex items-center justify-center rounded-xl bg-white border border-slate-100 text-slate-500 hover:text-primary transition active:scale-90 shrink-0">
+                      <ChevronLeft className="w-4 h-4" />
+                    </button>
+                    <div>
+                      <p className="text-xs font-black text-slate-700">Customer Info</p>
+                      <p className="text-[10px] text-slate-400 font-semibold">{b.remark} · {b.university}</p>
+                    </div>
+                  </div>
+
+                  {/* Form fields card */}
+                  <div className="bg-white border border-slate-100 rounded-3xl p-5 shadow-sm flex flex-col gap-4">
+                    <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest">Booking Information</h3>
+
+                    {([
+                      { label: 'Full Name',     value: b.full_name },
+                      { label: 'IC Number',      value: b.ic_number },
+                      { label: 'Phone',          value: b.hp_number },
+                      { label: 'Matric No.',     value: b.matric_id },
+                      { label: 'University',     value: b.university },
+                      { label: 'Campus',         value: `UMPSA ${b.campus}` },
+                      { label: 'Faculty',        value: b.faculty },
+                      { label: 'Remark',         value: b.remark },
+                      { label: 'Payment Mode',   value: b.payment_mode.charAt(0).toUpperCase() + b.payment_mode.slice(1) },
+                      { label: 'Service Fee',    value: `RM${b.cost.toFixed(2)}` },
+                      ...(b.payment_mode === 'deposit' ? [{ label: 'Balance Due', value: `RM${b.balance_due.toFixed(2)}` }] : []),
+                      ...(b.delivery_address ? [{ label: 'Delivery Address', value: b.delivery_address }] : []),
+                      { label: 'Rider Assigned', value: b.rider_name ?? '—' },
+                      { label: 'Reference',      value: b.reference },
+                    ] as { label: string; value: string }[]).map(({ label, value }) => (
+                      <div key={label} className="flex flex-col gap-0.5 border-b border-slate-50 pb-3 last:border-0 last:pb-0">
+                        <span className="text-[9px] font-extrabold text-slate-400 uppercase tracking-wider">{label}</span>
+                        <span className="text-sm font-bold text-slate-700 leading-relaxed">{value}</span>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Documents download card */}
+                  <div className="bg-white border border-slate-100 rounded-3xl p-5 shadow-sm flex flex-col gap-3">
+                    <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest">Documents</h3>
+
+                    {([
+                      { label: 'Combined PDF',  url: b.drive_docs_url },
+                      { label: 'Payment Proof', url: b.drive_payment_url },
+                      { label: 'OSCAR',         url: b.drive_oscar_url },
+                      { label: 'SKPG',          url: b.drive_skpg_url },
+                      { label: 'Konvo Slip',    url: b.drive_konvo_url },
+                      { label: 'IC Copy',       url: b.drive_ic_url },
+                    ] as { label: string; url: string | null }[]).map(({ label, url }) => (
+                      <div key={label} className="flex items-center justify-between gap-3 border-b border-slate-50 pb-3 last:border-0 last:pb-0">
+                        <span className="text-sm font-semibold text-slate-700">{label}</span>
+                        <a
+                          href={url ?? '#'}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          onClick={e => { if (!url) e.preventDefault(); }}
+                          className={`w-9 h-9 flex items-center justify-center rounded-xl border transition shrink-0 ${
+                            url
+                              ? 'bg-slate-800 border-slate-700 text-white hover:bg-slate-700 active:scale-95'
+                              : 'bg-slate-50 border-slate-100 text-slate-300 cursor-not-allowed'
+                          }`}>
+                          <Download className="w-4 h-4" />
+                        </a>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Delete booking */}
+                  <button
+                    onClick={async () => {
+                      setJubahAdminView('list');
+                      setJubahAdminSelected(null);
+                      await handleDeleteJubahBooking(b);
+                    }}
+                    disabled={deletingBooking === b.id}
+                    className="w-full flex items-center justify-center gap-2 border border-red-200 text-red-500 hover:bg-red-50 active:scale-[0.98] font-extrabold py-3 rounded-2xl text-sm transition disabled:opacity-50">
+                    {deletingBooking === b.id
+                      ? <span className="w-4 h-4 rounded-full border-2 border-red-300 border-t-red-500 animate-spin" />
+                      : <><Trash2 className="w-4 h-4" /> Delete Booking</>}
+                  </button>
+                </div>
+              );
+            })()}
+
           </>)}
 
           {/* ── PRICE sub-tab ── */}
