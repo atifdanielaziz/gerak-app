@@ -660,10 +660,10 @@ export const AdminHome: React.FC = () => {
   // Report to AppContext whenever any bottom sheet/modal here is open,
   // so BottomNav can hide itself and never overlap sheet content.
   useEffect(() => {
-    const anyOpen = !!sheetUser || !!jubahSheetRider || !!pendingAction || showGateMasterConfirm || showInviteConfirm;
+    const anyOpen = !!sheetUser || !!jubahSheetRider || !!pendingAction || showGateMasterConfirm || showInviteConfirm || !!jubahSelectedBooking;
     setSheetOpen(anyOpen);
     return () => setSheetOpen(false);
-  }, [sheetUser, jubahSheetRider, pendingAction, showGateMasterConfirm, showInviteConfirm, setSheetOpen]);
+  }, [sheetUser, jubahSheetRider, pendingAction, showGateMasterConfirm, showInviteConfirm, jubahSelectedBooking, setSheetOpen]);
 
   const handleSavePrice = async (remark: string, paymentMode: string) => {
     const key = `${remark}_${paymentMode}`;
