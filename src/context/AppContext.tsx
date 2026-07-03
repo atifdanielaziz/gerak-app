@@ -19,7 +19,8 @@ export type ActivePage =
   | 'academic-calendar'
   | 'forgot-password'
   | 'reset-password'
-  | 'track-jubah';
+  | 'track-jubah'
+  | 'gerak-transporter';
 
 export interface UserSession {
   name: string;

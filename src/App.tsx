@@ -20,7 +20,8 @@ const GerakRental      = lazy(() => import('./pages/GerakRental').then(m => ({ d
 const AcademicCalendar = lazy(() => import('./pages/AcademicCalendar').then(m => ({ default: m.AcademicCalendar })));
 const ForgotPassword   = lazy(() => import('./pages/ForgotPassword').then(m => ({ default: m.ForgotPassword })));
 const ResetPassword    = lazy(() => import('./pages/ResetPassword').then(m => ({ default: m.ResetPassword })));
-const TrackJubah       = lazy(() => import('./pages/TrackJubah').then(m => ({ default: m.TrackJubah })));
+const TrackJubah          = lazy(() => import('./pages/TrackJubah').then(m => ({ default: m.TrackJubah })));
+const GerakTransporter    = lazy(() => import('./pages/GerakTransporter').then(m => ({ default: m.GerakTransporter })));
 interface BeforeInstallPromptEvent extends Event {
   prompt: () => Promise<void>;
   userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>;
@@ -301,6 +302,8 @@ const AppContent: React.FC = () => {
         return <ResetPassword />;
       case 'track-jubah':
         return <TrackJubah />;
+      case 'gerak-transporter':
+        return <GerakTransporter />;
       default:
         return <Dashboard />;
     }

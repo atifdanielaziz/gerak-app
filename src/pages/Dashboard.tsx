@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useApp } from '../context/AppContext';
 import { supabase } from '../lib/supabase';
-import { Car, GraduationCap, ArrowRight, Sparkles, KeyRound, ShoppingBasket } from 'lucide-react';
+import { Car, GraduationCap, ArrowRight, Sparkles, KeyRound, ShoppingBasket, Truck } from 'lucide-react';
 
 const toTitleCase = (str: string) =>
   str.toLowerCase().replace(/\b\w/g, c => c.toUpperCase());
@@ -314,6 +314,27 @@ export const Dashboard: React.FC = () => {
             </div>
           </div>
           <ArrowRight className="w-5 h-5 text-slate-300 group-active:text-amber-500 group-active:translate-x-1 transition" />
+        </div>
+
+        {/* E. Gerak Transporter Module */}
+        <div
+          onClick={() => setCurrentPage('gerak-transporter')}
+          className="group relative bg-white border border-slate-100 rounded-3xl p-5 flex items-center justify-between cursor-pointer shadow-sm active:scale-[0.99] active:shadow-md transition duration-200"
+        >
+          <div className="absolute left-0 top-6 bottom-6 w-1 bg-orange-500 rounded-r-lg group-active:scale-y-110 transition duration-300" />
+
+          <div className="flex items-center gap-4 pl-1">
+            <div className="w-12 h-12 rounded-2xl bg-orange-50 text-orange-500 flex items-center justify-center group-active:bg-orange-500 group-active:text-white transition duration-300">
+              <Truck className="w-6 h-6" />
+            </div>
+            <div>
+              <h4 className="text-base font-extrabold text-slate-800 m-0">Gerak Transporter</h4>
+              <p className="text-xs text-slate-400 font-medium mt-0.5">
+                Hantar moto pintu ke pintu. Pindah barang berskala kecil.
+              </p>
+            </div>
+          </div>
+          <ArrowRight className="w-5 h-5 text-slate-300 group-active:text-orange-500 group-active:translate-x-1 transition" />
         </div>
 
       </div>
