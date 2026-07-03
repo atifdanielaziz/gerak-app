@@ -56,6 +56,7 @@ export const JubahLanding: React.FC<Props> = ({ onProceed }) => {
   const handleUniversityChange = (key: string) => {
     setSelectedKey(key);
     setImgError(prev => ({ ...prev, [key]: false }));
+    if (key !== 'umpsa') { setRiderDir([]); return; }
     const campus = CAMPUS_MAP[key] ?? '';
     supabase.rpc('get_jubah_riders_directory', { p_campus: campus })
       .then(({ data }) => setRiderDir((data as RiderDir[]) ?? []));
@@ -92,7 +93,21 @@ export const JubahLanding: React.FC<Props> = ({ onProceed }) => {
 
       {/* University selector + banner */}
       <div className="bg-white border border-slate-100 rounded-3xl p-5 shadow-sm flex flex-col gap-4">
-        <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest">Select University</h3>
+        <div className="flex items-center justify-between">
+          <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest">Select University</h3>
+          <button
+            type="button"
+            onClick={() => { if (selectedKey) onProceed(selectedKey); }}
+            disabled={!selectedKey}
+            className={`w-8 h-8 flex items-center justify-center rounded-xl transition active:scale-90 ${
+              selectedKey
+                ? 'text-blue-600 hover:bg-blue-50 cursor-pointer'
+                : 'text-slate-300 cursor-not-allowed'
+            }`}
+          >
+            <ChevronRight className="w-5 h-5" />
+          </button>
+        </div>
 
         <select
           value={selectedKey}
@@ -209,25 +224,6 @@ export const JubahLanding: React.FC<Props> = ({ onProceed }) => {
         </div>
       )}
 
-      {/* Spacer */}
-      <div className="flex-1" />
-
-      {/* Proceed — bottom right */}
-      <div className="flex justify-end">
-        <button
-          type="button"
-          onClick={() => { if (selectedKey) onProceed(selectedKey); }}
-          disabled={!selectedKey}
-          className={`flex items-center gap-2 px-7 py-3 rounded-full text-sm font-extrabold transition-all duration-200 active:scale-95 ${
-            selectedKey
-              ? 'bg-blue-600 hover:bg-blue-700 text-white shadow-md shadow-blue-500/30 cursor-pointer'
-              : 'bg-slate-200 text-slate-400 cursor-not-allowed'
-          }`}
-        >
-          Proceed
-          <ChevronRight className="w-4 h-4" />
-        </button>
-      </div>
 
     </div>
   );
