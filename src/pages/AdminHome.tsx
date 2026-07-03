@@ -548,7 +548,7 @@ const UserCard: React.FC<{
 );
 
 export const AdminHome: React.FC = () => {
-  const { user, setCurrentPage, setSheetOpen, activeRole } = useApp();
+  const { user, setCurrentPage, setSheetOpen } = useApp();
 
   const isSuperAdmin = user.role === 'superadmin';
   const adminCampus = (
