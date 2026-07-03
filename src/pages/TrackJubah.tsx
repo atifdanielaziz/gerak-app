@@ -76,17 +76,18 @@ export const TrackJubah: React.FC = () => {
     setSubmitting(true);
     setSubmitError('');
 
-    // Upload proof to Drive
+    // Upload proof to Supabase Storage
     let driveUrl: string | undefined;
     try {
       const ext  = balanceProof.name.split('.').pop() ?? 'pdf';
-      const name = `${b.full_name.replace(/\s+/g, '_')}_balance_payment.${ext}`;
-      const form = new FormData();
-      form.append('file', balanceProof, name);
-      form.append('filename', name);
-      form.append('mimeType', balanceProof.type);
-      const { data } = await supabase.functions.invoke('upload-to-drive', { body: form });
-      driveUrl = data?.url;
+      const path = `${b.full_name.replace(/\s+/g, '_')}_balance_payment_${Date.now()}.${ext}`;
+      const { data: storageData, error: storageError } = await supabase.storage
+        .from('jubah-docs')
+        .upload(path, balanceProof, { contentType: balanceProof.type, upsert: false });
+      if (!storageError && storageData) {
+        const { data: { publicUrl } } = supabase.storage.from('jubah-docs').getPublicUrl(storageData.path);
+        driveUrl = publicUrl;
+      }
     } catch (err) {
       console.error('[GERAK] Balance proof upload failed:', err);
     }
