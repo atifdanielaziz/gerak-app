@@ -644,6 +644,7 @@ export const AdminHome: React.FC = () => {
   const [jubahRidersLoading, setJubahRidersLoading] = useState(false);
   const [jubahBookings,      setJubahBookings]      = useState<JubahBookingRow[]>([]);
   const [jubahBookingsLoading, setJubahBookingsLoading] = useState(false);
+  const [deletingBooking,    setDeletingBooking]    = useState<string | null>(null);
   const [jubahSearch,        setJubahSearch]        = useState('');
   const [jubahSubTab,        setJubahSubTab]        = useState<'customer' | 'rider' | 'price'>('rider');
   type JubahPrice = { remark: string; payment_mode: string; price: number };
@@ -691,6 +692,15 @@ export const AdminHome: React.FC = () => {
     showToast(`${jubahSheetRider.name}'s assignment updated.`);
     setJubahSheetRider(null);
     loadJubahData();
+  };
+
+  const handleDeleteJubahBooking = async (b: JubahBookingRow) => {
+    if (!window.confirm(`Delete booking ${b.reference} for ${b.full_name}? This cannot be undone.`)) return;
+    setDeletingBooking(b.id);
+    const { error } = await supabase.from('jubah_bookings').delete().eq('id', b.id);
+    setDeletingBooking(null);
+    if (error) showToast('Delete failed: ' + error.message);
+    else { showToast(`${b.reference} deleted.`); setJubahBookings(prev => prev.filter(r => r.id !== b.id)); }
   };
 
   const loadJubahData = useCallback(async () => {
@@ -2501,50 +2511,55 @@ export const AdminHome: React.FC = () => {
           {/* ── CUSTOMER sub-tab ── */}
           {jubahSubTab === 'customer' && (<>
 
-            {/* Search */}
-            <div className="bg-white border border-slate-100 rounded-2xl p-3.5 shadow-sm flex flex-col gap-2">
-              <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1.5">
-                <AlertCircle className="w-3.5 h-3.5" /> Find Customer
-              </h3>
-              <div className="flex gap-2">
-                <input type="text" value={jubahSearch} onChange={e => setJubahSearch(e.target.value)}
-                  placeholder="Name, HP or Reference"
-                  style={{ fontSize: '12px' }}
-                  className="flex-1 bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 font-bold text-slate-700 focus:outline-none focus:border-primary transition placeholder:font-normal"
-                />
-                <button onClick={() => setJubahSearch('')} disabled={!jubahSearch.trim()}
-                  className="px-3.5 bg-primary text-white font-extrabold text-[11px] rounded-lg transition active:scale-95 disabled:opacity-50">
+            {/* Search + count bar */}
+            <div className="bg-white border border-slate-100 rounded-2xl p-3.5 shadow-sm flex items-center gap-3">
+              <input type="text" value={jubahSearch} onChange={e => setJubahSearch(e.target.value)}
+                placeholder="Search by name, phone or reference…"
+                style={{ fontSize: '13px' }}
+                className="flex-1 bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 font-bold text-slate-700 focus:outline-none focus:border-primary transition placeholder:font-normal placeholder:text-slate-300"
+              />
+              {jubahSearch && (
+                <button onClick={() => setJubahSearch('')}
+                  className="shrink-0 px-3 py-2 bg-slate-100 text-slate-500 font-extrabold text-xs rounded-lg transition active:scale-95">
                   Clear
                 </button>
-              </div>
+              )}
+              <button onClick={loadJubahData}
+                className="shrink-0 w-9 h-9 flex items-center justify-center rounded-xl bg-slate-50 border border-slate-100 text-slate-400 hover:text-primary transition active:scale-90">
+                <RefreshCw className="w-4 h-4" />
+              </button>
+              <span className="shrink-0 text-[10px] font-bold text-slate-400">
+                {jubahBookings.filter(b =>
+                  !jubahSearch.trim() ||
+                  b.full_name.toLowerCase().includes(jubahSearch.toLowerCase()) ||
+                  b.hp_number.includes(jubahSearch) ||
+                  b.reference.toLowerCase().includes(jubahSearch.toLowerCase())
+                ).length} bookings
+              </span>
             </div>
 
-            {/* Customer bookings directory */}
-            <div className="bg-white border border-slate-100 rounded-3xl p-5 shadow-sm flex flex-col gap-3">
-              <div className="flex items-center justify-between">
-                <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest flex items-center gap-1.5">
-                  <Users className="w-4 h-4" /> Customer Directory
-                </h3>
-                <button onClick={loadJubahData}
-                  className="w-7 h-7 flex items-center justify-center rounded-xl bg-slate-50 border border-slate-100 text-slate-400 hover:text-primary transition active:scale-90">
-                  <RefreshCw className="w-3.5 h-3.5" />
-                </button>
-              </div>
+            {/* Customer bookings table — laptop optimised */}
+            <div className="bg-white border border-slate-100 rounded-3xl shadow-sm flex flex-col">
               {jubahBookingsLoading ? (
-                <div className="flex justify-center py-8"><span className="w-5 h-5 rounded-full border-2 border-slate-200 border-t-primary animate-spin" /></div>
+                <div className="flex justify-center py-12"><span className="w-6 h-6 rounded-full border-2 border-slate-200 border-t-primary animate-spin" /></div>
               ) : jubahBookings.length === 0 ? (
-                <p className="text-xs text-slate-400 font-semibold text-center py-6">No Jubah bookings yet.</p>
+                <p className="text-xs text-slate-400 font-semibold text-center py-10">No Jubah bookings yet.</p>
               ) : (
-                <div className="overflow-y-auto overflow-x-auto no-scrollbar max-h-[420px]">
-                  <table className="w-full text-left border-collapse">
-                    <thead className="sticky top-0 bg-white">
-                      <tr className="text-[9px] font-extrabold text-slate-400 uppercase tracking-wider border-b border-slate-100">
-                        <th className="py-2 pr-2 whitespace-nowrap">Reference</th>
-                        <th className="py-2 pr-2 whitespace-nowrap">Name</th>
-                        <th className="py-2 pr-2 whitespace-nowrap">HP</th>
-                        <th className="py-2 pr-2 whitespace-nowrap">Campus</th>
-                        <th className="py-2 pr-2 whitespace-nowrap">Rider</th>
-                        <th className="py-2 pr-2 whitespace-nowrap">Status</th>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left border-collapse min-w-[900px]">
+                    <thead>
+                      <tr className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider border-b border-slate-100 bg-slate-50/70">
+                        <th className="py-3 px-4 whitespace-nowrap rounded-tl-3xl">Reference</th>
+                        <th className="py-3 px-4 whitespace-nowrap">Name</th>
+                        <th className="py-3 px-4 whitespace-nowrap">HP</th>
+                        <th className="py-3 px-4 whitespace-nowrap">Matric</th>
+                        <th className="py-3 px-4 whitespace-nowrap">Campus</th>
+                        <th className="py-3 px-4 whitespace-nowrap">Remark</th>
+                        <th className="py-3 px-4 whitespace-nowrap">Mode</th>
+                        <th className="py-3 px-4 whitespace-nowrap">Rider</th>
+                        <th className="py-3 px-4 whitespace-nowrap">Status</th>
+                        <th className="py-3 px-4 whitespace-nowrap">Balance</th>
+                        <th className="py-3 px-4 whitespace-nowrap rounded-tr-3xl">Actions</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -2553,50 +2568,85 @@ export const AdminHome: React.FC = () => {
                         b.full_name.toLowerCase().includes(jubahSearch.toLowerCase()) ||
                         b.hp_number.includes(jubahSearch) ||
                         b.reference.toLowerCase().includes(jubahSearch.toLowerCase())
-                      ).map(b => (
-                        <tr key={b.id} className="border-b border-slate-50 text-[10px]">
-                          <td className="py-2 pr-2 font-mono font-bold text-primary whitespace-nowrap">{b.reference}</td>
-                          <td className="py-2 pr-2 font-bold text-slate-700 whitespace-nowrap">{b.full_name}</td>
-                          <td className="py-2 pr-2 text-slate-500 whitespace-nowrap">{b.hp_number}</td>
-                          <td className="py-2 pr-2 text-slate-500 whitespace-nowrap">{b.campus}</td>
-                          <td className="py-2 pr-2 text-slate-500 whitespace-nowrap">{b.rider_name ?? '—'}</td>
-                          <td className="py-2 pr-2 whitespace-nowrap">
-                            <div className="flex flex-col gap-1">
-                              <span className={`text-[9px] font-extrabold px-2 py-0.5 rounded-full border ${
-                                b.status === 'delivered' ? 'bg-emerald-50 border-emerald-100 text-emerald-700' :
-                                b.status === 'cancelled' ? 'bg-red-50 border-red-100 text-red-600' :
-                                'bg-amber-50 border-amber-100 text-amber-700'
-                              }`}>
-                                {b.status.replace('_', ' ')}
-                              </span>
-                              {b.payment_mode === 'deposit' && (
-                                <span className={`text-[9px] font-extrabold px-2 py-0.5 rounded-full border ${
-                                  b.balance_paid
-                                    ? 'bg-emerald-50 border-emerald-100 text-emerald-700'
-                                    : b.balance_proof_url
-                                      ? 'bg-violet-50 border-violet-100 text-violet-700'
-                                      : 'bg-slate-50 border-slate-200 text-slate-500'
-                                }`}>
-                                  {b.balance_paid ? '✓ Bal. Paid' : b.balance_proof_url ? 'Bal. Review' : `Dep. RM${b.balance_due}`}
-                                </span>
-                              )}
-                            </div>
+                      ).map((b, idx, arr) => (
+                        <tr key={b.id} className={`text-[11px] hover:bg-slate-50/60 transition ${idx < arr.length - 1 ? 'border-b border-slate-100' : ''}`}>
+                          <td className="py-3 px-4 font-mono font-bold text-primary whitespace-nowrap">{b.reference}</td>
+                          <td className="py-3 px-4 font-bold text-slate-800 whitespace-nowrap">{b.full_name}</td>
+                          <td className="py-3 px-4 whitespace-nowrap">
+                            <a href={`https://wa.me/6${b.hp_number}`} target="_blank" rel="noopener noreferrer"
+                              className="flex items-center gap-1 text-slate-500 hover:text-[#25D366] transition">
+                              {b.hp_number} <WaIcon className="w-3 h-3" />
+                            </a>
                           </td>
-                          <td className="py-2 whitespace-nowrap">
-                            {b.payment_mode === 'deposit' && b.balance_proof_url && !b.balance_paid && (
-                              <button
-                                onClick={async () => {
-                                  const { data } = await supabase.rpc('mark_jubah_balance_paid', { p_booking_id: b.id });
-                                  if (data?.success) {
-                                    setJubahBookings(prev => prev.map(r => r.id === b.id ? { ...r, balance_paid: true } : r));
-                                    showToast('Balance marked as paid.');
-                                  }
-                                }}
-                                className="bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white text-[9px] font-extrabold px-2 py-1 rounded-lg transition"
-                              >
-                                Mark Paid
-                              </button>
+                          <td className="py-3 px-4 text-slate-500 whitespace-nowrap">{b.matric_id}</td>
+                          <td className="py-3 px-4 text-slate-500 whitespace-nowrap">{b.campus}</td>
+                          <td className="py-3 px-4 text-slate-500 whitespace-nowrap">{b.remark}</td>
+                          <td className="py-3 px-4 whitespace-nowrap">
+                            <span className={`text-[9px] font-extrabold px-2 py-0.5 rounded-full border ${
+                              b.payment_mode === 'deposit' ? 'bg-amber-50 border-amber-100 text-amber-700' :
+                              b.payment_mode === 'postage' ? 'bg-blue-50 border-blue-100 text-blue-700' :
+                              'bg-slate-50 border-slate-200 text-slate-600'
+                            }`}>
+                              {b.payment_mode === 'deposit' ? 'Deposit' : b.payment_mode === 'postage' ? 'Postage' : 'Pickup'}
+                            </span>
+                          </td>
+                          <td className="py-3 px-4 text-slate-500 whitespace-nowrap">{b.rider_name ?? '—'}</td>
+                          <td className="py-3 px-4 whitespace-nowrap">
+                            <span className={`text-[9px] font-extrabold px-2 py-0.5 rounded-full border ${
+                              b.status === 'delivered' ? 'bg-emerald-50 border-emerald-100 text-emerald-700' :
+                              b.status === 'cancelled' ? 'bg-red-50 border-red-100 text-red-600' :
+                              'bg-amber-50 border-amber-100 text-amber-700'
+                            }`}>
+                              {b.status.replace(/_/g, ' ')}
+                            </span>
+                          </td>
+                          <td className="py-3 px-4 whitespace-nowrap">
+                            {b.payment_mode === 'deposit' ? (
+                              <div className="flex flex-col gap-1">
+                                <span className={`text-[9px] font-extrabold px-2 py-0.5 rounded-full border w-fit ${
+                                  b.balance_paid ? 'bg-emerald-50 border-emerald-100 text-emerald-700' :
+                                  b.balance_proof_url ? 'bg-violet-50 border-violet-100 text-violet-700' :
+                                  'bg-slate-50 border-slate-200 text-slate-500'
+                                }`}>
+                                  {b.balance_paid ? '✓ Paid' : b.balance_proof_url ? '⏳ Review' : `RM${b.balance_due} due`}
+                                </span>
+                                {b.balance_proof_url && (
+                                  <a href={b.balance_proof_url} target="_blank" rel="noopener noreferrer"
+                                    className="flex items-center gap-0.5 text-[9px] text-blue-500 hover:underline font-bold">
+                                    <ExternalLink className="w-2.5 h-2.5" /> View proof
+                                  </a>
+                                )}
+                              </div>
+                            ) : (
+                              <span className="text-[10px] text-slate-300">—</span>
                             )}
+                          </td>
+                          <td className="py-3 px-4 whitespace-nowrap">
+                            <div className="flex items-center gap-1.5">
+                              {b.payment_mode === 'deposit' && b.balance_proof_url && !b.balance_paid && (
+                                <button
+                                  onClick={async () => {
+                                    const { data } = await supabase.rpc('mark_jubah_balance_paid', { p_booking_id: b.id });
+                                    if (data?.success) {
+                                      setJubahBookings(prev => prev.map(r => r.id === b.id ? { ...r, balance_paid: true } : r));
+                                      showToast('Balance marked as paid.');
+                                    }
+                                  }}
+                                  className="bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white text-[9px] font-extrabold px-2.5 py-1.5 rounded-lg transition"
+                                >
+                                  Mark Paid
+                                </button>
+                              )}
+                              <button
+                                onClick={() => handleDeleteJubahBooking(b)}
+                                disabled={deletingBooking === b.id}
+                                className="flex items-center gap-1 bg-red-50 hover:bg-red-100 border border-red-200 text-red-600 text-[9px] font-extrabold px-2.5 py-1.5 rounded-lg transition active:scale-95 disabled:opacity-50"
+                              >
+                                {deletingBooking === b.id
+                                  ? <span className="w-3 h-3 rounded-full border border-red-400 border-t-transparent animate-spin" />
+                                  : <><Trash2 className="w-3 h-3" /> Delete</>}
+                              </button>
+                            </div>
                           </td>
                         </tr>
                       ))}
