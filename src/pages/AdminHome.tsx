@@ -7,7 +7,7 @@ import {
   UserPlus, Mail, X, Send, ChevronDown, ChevronUp, Megaphone, Plus, ToggleLeft, ToggleRight,
   FileImage, ShieldCheck, ShieldOff, ExternalLink, KeyRound,
   CalendarDays, Upload, Eye, Phone, ArrowLeftRight, Pencil, GraduationCap,
-  ChevronLeft, Download,
+  ChevronLeft, Download, MoreVertical, MessageCircle,
 } from 'lucide-react';
 import { WaBtn, WaIcon, toWa } from '../lib/whatsapp';
 
@@ -389,163 +389,159 @@ const UserCard: React.FC<{
   onCampusChange?: (u: ProfileUser, campus: 'Pekan' | 'Gambang') => void;
   onGateToggle?: (u: ProfileUser) => void;
   onViewProfile?: (u: ProfileUser) => void;
-}> = ({ u, canManage, togglingStatus, terminating, togglingCap, togglingCampus, onToggle, onTerminate, onCapToggle, onRiderCapToggle, onCampusChange, onGateToggle, onViewProfile }) => (
-  <div className={`rounded-2xl border p-4 flex flex-col gap-2.5 ${
-    u.status === 'inactive' ? 'bg-red-50/50 border-red-100' : 'bg-white border-slate-100'
-  }`}>
-    <button
-      type="button"
-      onClick={() => onViewProfile?.(u)}
-      className="flex-1 min-w-0 text-left active:opacity-70 transition"
-    >
-      <div className="flex items-center gap-2 flex-wrap">
-        <p className="text-xs font-black text-slate-800 truncate">{u.name}</p>
-        <span className={`text-[10px] font-semibold uppercase shrink-0 ${
-          u.role === 'driver' ? 'text-emerald-600' :
-          u.role === 'admin' || u.role === 'superadmin' ? 'text-blue-600' :
-          'text-slate-400'
-        }`}>
-          {u.role}
-        </span>
-        {u.status === 'inactive' && (
-          <span className="text-[9px] font-extrabold px-1.5 py-0.5 rounded-full bg-red-100 text-red-600 border border-red-200 uppercase shrink-0">
-            Suspended
-          </span>
-        )}
-      </div>
-      <p className="text-[10px] text-slate-400 font-semibold mt-0.5">{u.gerak_id} · UMPSA {u.campus}</p>
-      <p className="text-[10px] text-slate-400 truncate">{u.email}</p>
-    </button>
+}> = ({ u, canManage, togglingStatus, terminating, togglingCap, togglingCampus, onToggle, onTerminate, onCapToggle, onRiderCapToggle, onCampusChange, onGateToggle, onViewProfile }) => {
+  const [showMenu, setShowMenu] = useState(false);
+  const isDriverOrRider = u.role === 'driver' || u.role === 'rider';
 
+  return (
+    <div className={`rounded-2xl border p-4 flex flex-col gap-2.5 ${
+      u.status === 'inactive' ? 'bg-red-50/50 border-red-100' : 'bg-white border-slate-100'
+    }`}>
 
-    {/* Capability toggles — drivers only */}
-    {u.role === 'driver' && onCapToggle && (
-      <div className="flex gap-2">
+      {/* Header row: info + ⋮ menu */}
+      <div className="flex items-start gap-2">
         <button
-          onClick={() => onCapToggle(u, !u.can_drive, u.can_rent ?? false)}
-          disabled={togglingCap === u.id}
-          className={`flex-1 flex items-center justify-center gap-1.5 font-extrabold text-[10px] py-2 rounded-xl border transition active:scale-95 disabled:opacity-40 ${
-            u.can_drive
-              ? 'bg-primary/10 border-primary/30 text-primary'
-              : 'bg-slate-50 border-slate-200 text-slate-400'
-          }`}
+          type="button"
+          onClick={() => onViewProfile?.(u)}
+          className="flex-1 min-w-0 text-left active:opacity-70 transition"
         >
-          {togglingCap === u.id
-            ? <span className="w-3 h-3 rounded-full border border-current border-t-transparent animate-spin" />
-            : <><Car className="w-3 h-3" /> {u.can_drive ? 'Car ✓' : 'Car ✗'}</>}
+          <div className="flex items-center gap-2 flex-wrap">
+            <p className="text-xs font-black text-slate-800 truncate">{u.name}</p>
+            <span className={`text-[10px] font-semibold uppercase shrink-0 ${
+              u.role === 'driver'   ? 'text-emerald-600' :
+              u.role === 'rider'   ? 'text-amber-600' :
+              u.role === 'admin' || u.role === 'superadmin' ? 'text-blue-600' :
+              'text-slate-400'
+            }`}>{u.role}</span>
+            {u.status === 'inactive' && (
+              <span className="text-[9px] font-extrabold px-1.5 py-0.5 rounded-full bg-red-100 text-red-600 border border-red-200 uppercase shrink-0">
+                Suspended
+              </span>
+            )}
+          </div>
+          <p className="text-[10px] text-slate-400 font-semibold mt-0.5">{u.gerak_id} · UMPSA {u.campus}</p>
+          <p className="text-[10px] text-slate-400 truncate">{u.email}</p>
         </button>
-        <button
-          onClick={() => onCapToggle(u, u.can_drive ?? false, !u.can_rent)}
-          disabled={togglingCap === u.id}
-          className={`flex-1 flex items-center justify-center gap-1.5 font-extrabold text-[10px] py-2 rounded-xl border transition active:scale-95 disabled:opacity-40 ${
-            u.can_rent
-              ? 'bg-amber-50 border-amber-200 text-amber-700'
-              : 'bg-slate-50 border-slate-200 text-slate-400'
-          }`}
-        >
-          {togglingCap === u.id
-            ? <span className="w-3 h-3 rounded-full border border-current border-t-transparent animate-spin" />
-            : <><KeyRound className="w-3 h-3" /> {u.can_rent ? 'Rental ✓' : 'Rental ✗'}</>}
-        </button>
-      </div>
-    )}
 
-    {/* Capability toggles — riders only */}
-    {u.role === 'rider' && onRiderCapToggle && (
-      <div className="flex gap-2">
-        <button
-          onClick={() => onRiderCapToggle(u, !u.can_daily, u.can_robe ?? false)}
-          disabled={togglingCap === u.id}
-          className={`flex-1 flex items-center justify-center gap-1.5 font-extrabold text-[10px] py-2 rounded-xl border transition active:scale-95 disabled:opacity-40 ${
-            u.can_daily
-              ? 'bg-emerald-50 border-emerald-200 text-emerald-700'
-              : 'bg-slate-50 border-slate-200 text-slate-400'
-          }`}
-        >
-          {togglingCap === u.id
-            ? <span className="w-3 h-3 rounded-full border border-current border-t-transparent animate-spin" />
-            : <>🛵 {u.can_daily ? 'Daily ✓' : 'Daily ✗'}</>}
-        </button>
-        <button
-          onClick={() => onRiderCapToggle(u, u.can_daily ?? false, !u.can_robe)}
-          disabled={togglingCap === u.id}
-          className={`flex-1 flex items-center justify-center gap-1.5 font-extrabold text-[10px] py-2 rounded-xl border transition active:scale-95 disabled:opacity-40 ${
-            u.can_robe
-              ? 'bg-blue-50 border-blue-200 text-blue-700'
-              : 'bg-slate-50 border-slate-200 text-slate-400'
-          }`}
-        >
-          {togglingCap === u.id
-            ? <span className="w-3 h-3 rounded-full border border-current border-t-transparent animate-spin" />
-            : <>🎓 {u.can_robe ? 'Robe ✓' : 'Robe ✗'}</>}
-        </button>
-      </div>
-    )}
-
-    {/* Campus toggle — drivers and riders only, superadmin only */}
-    {(u.role === 'driver' || u.role === 'rider') && onCampusChange && (
-      <div className="flex gap-2">
-        {(['Gambang', 'Pekan'] as const).map(c => (
-          <button key={c}
-            onClick={() => u.campus !== c && onCampusChange(u, c)}
-            disabled={togglingCampus === u.id}
-            className={`flex-1 font-extrabold text-[10px] py-2 rounded-xl border transition active:scale-95 disabled:opacity-40 flex items-center justify-center gap-1 ${
-              u.campus === c
-                ? 'bg-indigo-50 border-indigo-200 text-indigo-700'
-                : 'bg-slate-50 border-slate-200 text-slate-400'
-            }`}
-          >
-            {togglingCampus === u.id && u.campus !== c
-              ? <span className="w-3 h-3 rounded-full border border-current border-t-transparent animate-spin" />
-              : <>{u.campus === c ? '📍' : ''} {c}</>}
-          </button>
-        ))}
-      </div>
-    )}
-
-    {canManage && (
-      <div className="flex gap-1.5">
-        {onGateToggle && (u.role === 'driver' || u.role === 'rider') && (
+        {/* ⋮ vertical dots */}
+        <div className="relative shrink-0">
           <button
-            onClick={() => onGateToggle(u)}
-            disabled={togglingCap === u.id}
-            className={`flex-1 min-w-0 font-extrabold text-[9px] py-1.5 px-1 rounded-xl border transition active:scale-95 disabled:opacity-40 flex items-center justify-center gap-0.5 ${
-              u.receipt_gate_exempt
-                ? 'bg-violet-50 border-violet-200 text-violet-700'
-                : 'bg-slate-50 border-slate-200 text-slate-400'
+            onClick={() => setShowMenu(p => !p)}
+            className="w-7 h-7 flex items-center justify-center rounded-lg text-slate-400 hover:bg-slate-100 active:scale-90 transition"
+          >
+            <MoreVertical className="w-4 h-4" />
+          </button>
+
+          {showMenu && (
+            <>
+              <div className="fixed inset-0 z-40" onClick={() => setShowMenu(false)} />
+              <div className="absolute right-0 top-full mt-1 z-50 bg-white border border-slate-100 rounded-2xl shadow-xl overflow-hidden min-w-[170px]">
+
+                {/* Driver capabilities */}
+                {u.role === 'driver' && onCapToggle && (
+                  <>
+                    <button onClick={() => { onCapToggle(u, !u.can_drive, u.can_rent ?? false); setShowMenu(false); }}
+                      className={`w-full flex items-center gap-3 px-4 py-3 text-left text-xs font-extrabold transition active:scale-95 ${u.can_drive ? 'bg-primary/5 text-primary' : 'text-slate-500 hover:bg-slate-50'}`}>
+                      <Car className="w-4 h-4 shrink-0" />
+                      {u.can_drive ? 'Car ✓' : 'Car ✗'}
+                      {togglingCap === u.id && <span className="ml-auto w-3 h-3 rounded-full border border-current border-t-transparent animate-spin" />}
+                    </button>
+                    <button onClick={() => { onCapToggle(u, u.can_drive ?? false, !u.can_rent); setShowMenu(false); }}
+                      className={`w-full flex items-center gap-3 px-4 py-3 text-left text-xs font-extrabold transition active:scale-95 ${u.can_rent ? 'bg-amber-50 text-amber-700' : 'text-slate-500 hover:bg-slate-50'}`}>
+                      <KeyRound className="w-4 h-4 shrink-0" />
+                      {u.can_rent ? 'Rental ✓' : 'Rental ✗'}
+                    </button>
+                  </>
+                )}
+
+                {/* Rider capabilities */}
+                {u.role === 'rider' && onRiderCapToggle && (
+                  <>
+                    <button onClick={() => { onRiderCapToggle(u, !u.can_daily, u.can_robe ?? false); setShowMenu(false); }}
+                      className={`w-full flex items-center gap-3 px-4 py-3 text-left text-xs font-extrabold transition active:scale-95 ${u.can_daily ? 'bg-emerald-50 text-emerald-700' : 'text-slate-500 hover:bg-slate-50'}`}>
+                      <span className="text-base leading-none">🛵</span>
+                      {u.can_daily ? 'Daily ✓' : 'Daily ✗'}
+                      {togglingCap === u.id && <span className="ml-auto w-3 h-3 rounded-full border border-current border-t-transparent animate-spin" />}
+                    </button>
+                    <button onClick={() => { onRiderCapToggle(u, u.can_daily ?? false, !u.can_robe); setShowMenu(false); }}
+                      className={`w-full flex items-center gap-3 px-4 py-3 text-left text-xs font-extrabold transition active:scale-95 ${u.can_robe ? 'bg-blue-50 text-blue-700' : 'text-slate-500 hover:bg-slate-50'}`}>
+                      <span className="text-base leading-none">🎓</span>
+                      {u.can_robe ? 'Robe ✓' : 'Robe ✗'}
+                    </button>
+                  </>
+                )}
+
+                {/* Campus toggle */}
+                {isDriverOrRider && onCampusChange && (
+                  (['Gambang', 'Pekan'] as const).map(c => (
+                    <button key={c}
+                      onClick={() => { if (u.campus !== c) onCampusChange(u, c); setShowMenu(false); }}
+                      disabled={togglingCampus === u.id}
+                      className={`w-full flex items-center gap-3 px-4 py-3 text-left text-xs font-extrabold transition active:scale-95 disabled:opacity-40 ${u.campus === c ? 'bg-indigo-50 text-indigo-700' : 'text-slate-500 hover:bg-slate-50'}`}>
+                      <MapPin className="w-4 h-4 shrink-0" />
+                      {c}
+                      {u.campus === c && <span className="ml-auto text-[8px] bg-indigo-100 text-indigo-600 px-1.5 py-0.5 rounded-full">Active</span>}
+                      {togglingCampus === u.id && u.campus !== c && <span className="ml-auto w-3 h-3 rounded-full border border-current border-t-transparent animate-spin" />}
+                    </button>
+                  ))
+                )}
+
+                {/* Gate toggle */}
+                {isDriverOrRider && onGateToggle && canManage && (
+                  <button onClick={() => { onGateToggle(u); setShowMenu(false); }}
+                    className={`w-full flex items-center gap-3 px-4 py-3 text-left text-xs font-extrabold transition active:scale-95 ${u.receipt_gate_exempt ? 'bg-violet-50 text-violet-700' : 'text-slate-500 hover:bg-slate-50'}`}>
+                    <ShieldCheck className="w-4 h-4 shrink-0" />
+                    {u.receipt_gate_exempt ? 'Gate ✓' : 'Gate ✗'}
+                    {togglingCap === u.id && <span className="ml-auto w-3 h-3 rounded-full border border-current border-t-transparent animate-spin" />}
+                  </button>
+                )}
+
+                <div className="border-t border-slate-100" />
+
+                {/* Message — placeholder */}
+                <button
+                  onClick={() => setShowMenu(false)}
+                  className="w-full flex items-center gap-3 px-4 py-3 text-left text-xs font-extrabold text-blue-600 hover:bg-blue-50 transition active:scale-95"
+                >
+                  <MessageCircle className="w-4 h-4 shrink-0" />
+                  Message
+                </button>
+              </div>
+            </>
+          )}
+        </div>
+      </div>
+
+      {/* Stop + Terminate */}
+      {canManage && (
+        <div className="flex gap-1.5">
+          <button
+            onClick={() => onToggle(u)}
+            disabled={togglingStatus === u.id}
+            className={`flex-1 min-w-0 font-extrabold text-[9px] py-1.5 px-1 rounded-xl transition active:scale-95 disabled:opacity-50 flex items-center justify-center ${
+              u.status === 'active'
+                ? 'bg-amber-50 border border-amber-200 text-amber-700'
+                : 'bg-emerald-50 border border-emerald-200 text-emerald-700'
             }`}
           >
-            {togglingCap === u.id
+            {togglingStatus === u.id
               ? <span className="w-3 h-3 rounded-full border border-current border-t-transparent animate-spin" />
-              : <>{u.receipt_gate_exempt ? 'Gate ✓' : 'Gate ✗'}</>}
+              : u.status === 'active' ? 'Stop' : 'Reactivate'}
           </button>
-        )}
-        <button
-          onClick={() => onToggle(u)}
-          disabled={togglingStatus === u.id}
-          className={`flex-1 min-w-0 font-extrabold text-[9px] py-1.5 px-1 rounded-xl transition active:scale-95 disabled:opacity-50 flex items-center justify-center ${
-            u.status === 'active'
-              ? 'bg-amber-50 border border-amber-200 text-amber-700'
-              : 'bg-emerald-50 border border-emerald-200 text-emerald-700'
-          }`}
-        >
-          {togglingStatus === u.id
-            ? <span className="w-3 h-3 rounded-full border border-current border-t-transparent animate-spin" />
-            : u.status === 'active' ? 'Stop' : 'Reactivate'}
-        </button>
-        <button
-          onClick={() => onTerminate(u)}
-          disabled={terminating === u.id}
-          className="flex-1 min-w-0 bg-red-50 border border-red-200 text-red-600 font-extrabold text-[9px] py-1.5 px-1 rounded-xl transition active:scale-95 disabled:opacity-50 flex items-center justify-center gap-0.5"
-        >
-          {terminating === u.id
-            ? <span className="w-3 h-3 rounded-full border border-red-400 border-t-transparent animate-spin" />
-            : <><Trash2 className="w-3 h-3 shrink-0" /> Terminate</>}
-        </button>
-      </div>
-    )}
-  </div>
-);
+          <button
+            onClick={() => onTerminate(u)}
+            disabled={terminating === u.id}
+            className="flex-1 min-w-0 bg-red-50 border border-red-200 text-red-600 font-extrabold text-[9px] py-1.5 px-1 rounded-xl transition active:scale-95 disabled:opacity-50 flex items-center justify-center gap-0.5"
+          >
+            {terminating === u.id
+              ? <span className="w-3 h-3 rounded-full border border-red-400 border-t-transparent animate-spin" />
+              : <><Trash2 className="w-3 h-3 shrink-0" /> Terminate</>}
+          </button>
+        </div>
+      )}
+    </div>
+  );
+};
 
 export const AdminHome: React.FC = () => {
   const { user, setCurrentPage, setSheetOpen } = useApp();
