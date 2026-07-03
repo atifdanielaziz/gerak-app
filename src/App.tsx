@@ -263,7 +263,7 @@ const SwipeBackGesture: React.FC<{ children: React.ReactNode }> = ({ children })
 };
 
 const AppContent: React.FC = () => {
-  const { currentPage, isPreviewMode, exitPreviewMode } = useApp();
+  const { currentPage } = useApp();
 
 
   const renderPage = () => {
@@ -311,19 +311,6 @@ const AppContent: React.FC = () => {
 
   return (
     <div className="mobile-container flex flex-col h-full bg-white select-none">
-      {/* Preview mode banner */}
-      {isPreviewMode && (
-        <div className="fixed top-0 left-0 right-0 z-[99999] flex justify-center pointer-events-none"
-          style={{ paddingTop: 'env(safe-area-inset-top)' }}>
-          <div className="bg-violet-600 text-white text-[10px] font-extrabold px-4 py-1.5 rounded-b-2xl shadow-lg flex items-center gap-3 pointer-events-auto">
-            <span>👁 Preview Mode — viewing as customer</span>
-            <button onClick={exitPreviewMode}
-              className="bg-white/20 hover:bg-white/30 text-white font-extrabold text-[10px] px-2.5 py-0.5 rounded-lg transition active:scale-95">
-              Exit
-            </button>
-          </div>
-        </div>
-      )}
       <Header />
       <div key={currentPage} className="flex-1 flex flex-col overflow-hidden page-transition">
         <Suspense fallback={<div className="flex-1 flex items-center justify-center"><span className="w-6 h-6 rounded-full border-2 border-primary border-t-transparent animate-spin" /></div>}>
