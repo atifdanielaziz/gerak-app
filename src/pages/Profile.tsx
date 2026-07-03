@@ -43,6 +43,11 @@ export const Profile: React.FC = () => {
     if (digits.length <= 8) return `${digits.slice(0, 6)}-${digits.slice(6)}`;
     return `${digits.slice(0, 6)}-${digits.slice(6, 8)}-${digits.slice(8)}`;
   };
+  const formatPhone = (val: string) => {
+    const d = val.replace(/\D/g, '').slice(0, 11);
+    if (d.length <= 3) return d;
+    return `${d.slice(0, 3)}-${d.slice(3)}`;
+  };
   const [saving, setSaving]             = useState(false);
   const [saveError, setSaveError]       = useState('');
   const [uploading, setUploading]       = useState(false);
@@ -313,9 +318,9 @@ export const Profile: React.FC = () => {
               Mobile Number <span className="text-danger">*</span>
             </span>
             {editMode ? (
-              <input type="tel" value={draftPhone} onChange={e => setDraftPhone(e.target.value)}
+              <input type="tel" value={draftPhone} onChange={e => setDraftPhone(formatPhone(e.target.value))}
                 className="mt-1 w-full bg-slate-50 border border-slate-200 rounded-xl py-2 px-3 text-sm font-medium text-slate-700 focus:outline-none focus:border-primary transition"
-                placeholder="e.g. 0123456789" />
+                placeholder="e.g. 012-34567890" />
             ) : <span className="text-sm font-medium text-slate-700 mt-1 block">{user.phone || '—'}</span>}
           </div>
           {!editMode && <ChevronRight className="w-4 h-4 text-slate-300 shrink-0" />}

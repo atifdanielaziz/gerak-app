@@ -21,6 +21,18 @@ const UNIVERSITY_FACULTIES: Record<string, string[]> = {
 
 const REMARKS = ['Master', 'PHD', 'Degree', 'Diploma'] as const;
 
+const formatIc = (val: string) => {
+  const d = val.replace(/\D/g, '').slice(0, 12);
+  if (d.length <= 6) return d;
+  if (d.length <= 8) return `${d.slice(0, 6)}-${d.slice(6)}`;
+  return `${d.slice(0, 6)}-${d.slice(6, 8)}-${d.slice(8)}`;
+};
+const formatPhone = (val: string) => {
+  const d = val.replace(/\D/g, '').slice(0, 11);
+  if (d.length <= 3) return d;
+  return `${d.slice(0, 3)}-${d.slice(3)}`;
+};
+
 export const Jubah: React.FC = () => {
   const { user, jubahBooking, bookJubah, cancelJubahBooking, setCurrentPage, setSheetOpen } = useApp();
 
@@ -345,14 +357,14 @@ export const Jubah: React.FC = () => {
               <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">
                 IC Number <span className="text-danger">*</span>
               </label>
-              <p className="text-[9px] text-slate-400 -mt-0.5">Example: 980123456789 (Without ' - ')</p>
+              <p className="text-[9px] text-slate-400 -mt-0.5">Example: 980123-45-6789</p>
               <input
                 type="text"
                 inputMode="numeric"
                 value={icNumber}
-                onChange={e => setIcNumber(e.target.value.replace(/\D/g, ''))}
-                placeholder="980123456789"
-                maxLength={12}
+                onChange={e => setIcNumber(formatIc(e.target.value))}
+                placeholder="980123-45-6789"
+                maxLength={14}
                 required
                 className="bg-slate-50 border border-slate-200 rounded-xl py-2.5 px-3 text-xs font-bold text-slate-700 focus:outline-none focus:border-blue-500 transition placeholder:font-normal placeholder:text-slate-300"
               />
@@ -363,14 +375,14 @@ export const Jubah: React.FC = () => {
               <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">
                 HP Number <span className="text-danger">*</span>
               </label>
-              <p className="text-[9px] text-slate-400 -mt-0.5">Example: 012345678 (Without ' - ') · Our runner will be in touch shortly.</p>
+              <p className="text-[9px] text-slate-400 -mt-0.5">Example: 012-34567890 · Our runner will be in touch shortly.</p>
               <input
                 type="text"
                 inputMode="numeric"
                 value={hpNumber}
-                onChange={e => setHpNumber(e.target.value.replace(/\D/g, ''))}
-                placeholder="01XXXXXXXXX"
-                maxLength={11}
+                onChange={e => setHpNumber(formatPhone(e.target.value))}
+                placeholder="012-34567890"
+                maxLength={12}
                 required
                 className="bg-slate-50 border border-slate-200 rounded-xl py-2.5 px-3 text-xs font-bold text-slate-700 focus:outline-none focus:border-blue-500 transition placeholder:font-normal placeholder:text-slate-300"
               />

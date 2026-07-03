@@ -2774,7 +2774,7 @@ export const AdminHome: React.FC = () => {
                     <div className="flex items-center gap-3">
                       <div className="flex items-center gap-1.5 bg-slate-50 border border-slate-100 rounded-xl px-3 py-2 flex-1">
                         <span className="text-[11px] font-semibold text-slate-600">{b.hp_number}</span>
-                        <a href={`https://wa.me/6${b.hp_number}?text=${encodeURIComponent(
+                        <a href={`https://wa.me/${toWa(b.hp_number)}?text=${encodeURIComponent(
 `Assalamualaikum ${b.full_name} 🎓
 
 Ini peringatan daripada Gerak Jubah.

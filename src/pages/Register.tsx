@@ -12,6 +12,11 @@ export const Register: React.FC = () => {
   const [gerakId,    setGerakId]    = useState('');
   const [name,       setName]       = useState('');
   const [phone,      setPhone]      = useState('');
+  const formatPhone = (val: string) => {
+    const d = val.replace(/\D/g, '').slice(0, 11);
+    if (d.length <= 3) return d;
+    return `${d.slice(0, 3)}-${d.slice(3)}`;
+  };
   const [email,      setEmail]      = useState('');
   const [password,        setPassword]        = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -182,9 +187,9 @@ export const Register: React.FC = () => {
               <input
                 type="tel"
                 value={phone}
-                onChange={e => setPhone(e.target.value)}
+                onChange={e => setPhone(formatPhone(e.target.value))}
                 className="w-full bg-slate-50 border border-slate-200 rounded-xl py-2.5 pl-9 pr-3 text-xs text-slate-700 focus:outline-none focus:border-primary transition"
-                placeholder="e.g. 0123456789"
+                placeholder="e.g. 012-34567890"
                 required
               />
             </div>

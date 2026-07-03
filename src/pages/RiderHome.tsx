@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { useApp } from '../context/AppContext';
 import { supabase } from '../lib/supabase';
-import { WaIcon } from '../lib/whatsapp';
+import { WaIcon, toWa } from '../lib/whatsapp';
 import {
   RefreshCw, ShoppingBasket, GraduationCap, TrendingUp,
   Upload, FileImage, ShieldCheck, ShieldAlert,
@@ -489,7 +489,7 @@ export const RiderHome: React.FC = () => {
                     <div className="flex items-center gap-3">
                       <div className="flex items-center gap-1.5 bg-slate-50 border border-slate-100 rounded-xl px-3 py-2 flex-1">
                         <span className="text-[11px] font-semibold text-slate-600">{selectedJob.hp_number}</span>
-                        <a href={`https://wa.me/6${selectedJob.hp_number}`} target="_blank" rel="noopener noreferrer"
+                        <a href={`https://wa.me/${toWa(selectedJob.hp_number)}`} target="_blank" rel="noopener noreferrer"
                           className="text-[#25D366] ml-auto shrink-0">
                           <WaIcon className="w-4 h-4" />
                         </a>
