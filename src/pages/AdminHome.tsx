@@ -2591,7 +2591,8 @@ export const AdminHome: React.FC = () => {
                         <th className="py-2 pr-4 whitespace-nowrap">Remark</th>
                         <th className="py-2 pr-4 whitespace-nowrap">Mode</th>
                         <th className="py-2 pr-4 whitespace-nowrap">Rider</th>
-                        <th className="py-2 pr-4 whitespace-nowrap">Status</th>
+                        <th className="py-2 pr-4 whitespace-nowrap">Payment</th>
+                        <th className="py-2 pr-4 whitespace-nowrap">Delivery</th>
                         <th className="py-2 pr-4 whitespace-nowrap">Balance</th>
                         <th className="py-2 whitespace-nowrap">Actions</th>
                       </tr>
@@ -2648,6 +2649,23 @@ Terima kasih 🙏`)}`}
                               isPaid ? 'bg-emerald-50 border-emerald-100 text-emerald-700' : 'bg-amber-50 border-amber-100 text-amber-700'
                             }`}>
                               {isPaid ? 'Paid' : 'Booked'}
+                            </span>
+                          </td>
+                          <td className="py-2.5 pr-4 whitespace-nowrap">
+                            <span className={`font-extrabold px-2 py-0.5 rounded-full border text-[9px] ${
+                              b.status === 'delivered' || b.status === 'at_hub' ? 'bg-emerald-50 border-emerald-100 text-emerald-700' :
+                              b.status === 'collected'  ? 'bg-blue-50 border-blue-100 text-blue-700' :
+                              b.status === 'processing' ? 'bg-violet-50 border-violet-100 text-violet-700' :
+                              b.status === 'cancelled'  ? 'bg-red-50 border-red-100 text-red-600' :
+                              'bg-amber-50 border-amber-100 text-amber-700'
+                            }`}>
+                              {b.status === 'booked'     ? 'New' :
+                               b.status === 'processing' ? 'Processing' :
+                               b.status === 'collected'  ? 'Collected' :
+                               b.status === 'at_hub'     ? 'At Hub' :
+                               b.status === 'delivered'  ? 'Delivered' :
+                               b.status === 'cancelled'  ? 'Cancelled' :
+                               b.status.replace(/_/g, ' ')}
                             </span>
                           </td>
                           <td className="py-2.5 pr-4 whitespace-nowrap">

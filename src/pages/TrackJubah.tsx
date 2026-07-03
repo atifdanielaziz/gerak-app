@@ -22,7 +22,10 @@ interface JubahBookingResult {
 }
 
 const STATUS_LABEL: Record<string, string> = {
-  booked:     'Booked',
+  booked:     'Order Received',
+  processing: 'Processing Documents',
+  collected:  'Robe Collected',
+  at_hub:     'Delivered to Postage Hub',
   picked_up:  'Picked Up',
   on_the_way: 'On The Way',
   delivered:  'Delivered',
@@ -31,6 +34,9 @@ const STATUS_LABEL: Record<string, string> = {
 
 const STATUS_STYLE: Record<string, string> = {
   booked:     'bg-amber-50 border-amber-100 text-amber-700',
+  processing: 'bg-violet-50 border-violet-100 text-violet-700',
+  collected:  'bg-blue-50 border-blue-100 text-blue-700',
+  at_hub:     'bg-emerald-50 border-emerald-100 text-emerald-700',
   picked_up:  'bg-blue-50 border-blue-100 text-blue-700',
   on_the_way: 'bg-violet-50 border-violet-100 text-violet-700',
   delivered:  'bg-emerald-50 border-emerald-100 text-emerald-700',

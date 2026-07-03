@@ -148,11 +148,12 @@ export const RiderHome: React.FC = () => {
     const next = getNextStatus(selectedJob);
     if (!next) return;
     setUpdatingStatus(true);
-    const { error } = await supabase
-      .from('jubah_bookings')
-      .update({ status: next })
-      .eq('id', selectedJob.id);
-    if (error) {
+    const { data, error } = await supabase.rpc('update_jubah_booking_status', {
+      p_booking_id: selectedJob.id,
+      p_status:     next,
+    });
+    if (error || !data?.success) {
+      console.error('[GERAK] status update failed:', error ?? data?.error);
       showToast('Update failed. Please try again.');
     } else {
       const updated = { ...selectedJob, status: next };
