@@ -1,27 +1,167 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { useApp } from '../context/AppContext';
 import { supabase } from '../lib/supabase';
+import { WaIcon } from '../lib/whatsapp';
 import {
   RefreshCw, ShoppingBasket, GraduationCap, TrendingUp,
   Upload, FileImage, ShieldCheck, ShieldAlert,
+  ChevronLeft, Download,
 } from 'lucide-react';
 import { driverIsActive } from './Profile';
 
-type RiderTab = 'daily' | 'jubah' | 'earnings';
+type RiderTab    = 'daily' | 'jubah' | 'earnings';
+type JubahView   = 'list' | 'card' | 'details';
+
+type JubahJobRow = {
+  id: string;
+  reference: string;
+  full_name: string;
+  ic_number: string;
+  hp_number: string;
+  matric_id: string;
+  university: string;
+  campus: string;
+  faculty: string;
+  remark: string;
+  payment_mode: string;
+  cost: number;
+  balance_due: number;
+  balance_paid: boolean;
+  delivery_address: string | null;
+  drive_docs_url: string | null;
+  drive_payment_url: string | null;
+  drive_oscar_url: string | null;
+  drive_skpg_url: string | null;
+  drive_konvo_url: string | null;
+  drive_ic_url: string | null;
+  status: string;
+  rider_name: string | null;
+  created_at: string;
+};
+
+const STATUS_LABEL: Record<string, string> = {
+  booked:     'New',
+  processing: 'Processing',
+  collected:  'Collected',
+  at_hub:     'At Hub',
+  delivered:  'Delivered',
+  cancelled:  'Cancelled',
+};
+
+const STATUS_STYLE: Record<string, string> = {
+  booked:     'bg-blue-50 border-blue-100 text-blue-700',
+  processing: 'bg-violet-50 border-violet-100 text-violet-700',
+  collected:  'bg-amber-50 border-amber-100 text-amber-700',
+  at_hub:     'bg-emerald-50 border-emerald-100 text-emerald-700',
+  delivered:  'bg-emerald-50 border-emerald-100 text-emerald-700',
+  cancelled:  'bg-red-50 border-red-100 text-red-600',
+};
+
+const getSteps = (paymentMode: string) =>
+  paymentMode === 'postage'
+    ? ['booked', 'processing', 'collected', 'at_hub']
+    : ['booked', 'processing', 'collected', 'delivered'];
+
+const getNextStatus = (job: JubahJobRow): string | null => {
+  const steps = getSteps(job.payment_mode);
+  const idx = steps.indexOf(job.status);
+  return idx >= 0 && idx < steps.length - 1 ? steps[idx + 1] : null;
+};
+
+const NEXT_LABEL: Record<string, string> = {
+  processing: 'Start Processing',
+  collected:  'Mark Collected',
+  at_hub:     'Mark Delivered to Hub',
+  delivered:  'Mark Delivered',
+};
 
 export const RiderHome: React.FC = () => {
   const { user, refreshUserData, receiptGateActive } = useApp();
 
-  const [activeTab, setActiveTab]     = useState<RiderTab>('daily');
-  const [toast, setToast]             = useState('');
-  const [uploadingDoc, setUploadingDoc] = useState<'ic' | 'license' | null>(null);
+  const [activeTab,     setActiveTab]     = useState<RiderTab>('daily');
+  const [toast,         setToast]         = useState('');
+  const [uploadingDoc,  setUploadingDoc]  = useState<'ic' | 'license' | null>(null);
   const icDocRef      = useRef<HTMLInputElement>(null);
   const licenseDocRef = useRef<HTMLInputElement>(null);
+
+  // Jubah sub-navigation
+  const [jubahView,      setJubahView]     = useState<JubahView>('list');
+  const [selectedJob,    setSelectedJob]   = useState<JubahJobRow | null>(null);
+  const [jubahJobs,      setJubahJobs]     = useState<JubahJobRow[]>([]);
+  const [jubahLoading,   setJubahLoading]  = useState(false);
+  const [updatingStatus, setUpdatingStatus] = useState(false);
 
   const showToast = (msg: string) => { setToast(msg); setTimeout(() => setToast(''), 3000); };
 
   const isAdminRole = user.role === 'admin' || user.role === 'superadmin';
-  const isActive = driverIsActive({ ...user, role: 'driver' }, receiptGateActive) || isAdminRole;
+  const isActive    = driverIsActive({ ...user, role: 'driver' }, receiptGateActive) || isAdminRole;
+
+  // ── Load jubah assignments ────────────────────────────────────────────────
+  const loadJubahJobs = useCallback(async () => {
+    setJubahLoading(true);
+    const { data: { user: authUser } } = await supabase.auth.getUser();
+    if (!authUser) { setJubahLoading(false); return; }
+    const { data, error } = await supabase
+      .from('jubah_bookings')
+      .select('id, reference, full_name, ic_number, hp_number, matric_id, university, campus, faculty, remark, payment_mode, cost, balance_due, balance_paid, delivery_address, drive_docs_url, drive_payment_url, drive_oscar_url, drive_skpg_url, drive_konvo_url, drive_ic_url, status, rider_name, created_at')
+      .eq('rider_id', authUser.id)
+      .order('created_at', { ascending: false });
+    if (error) console.error('[GERAK] jubah jobs load error:', error.message);
+    setJubahJobs((data as JubahJobRow[]) ?? []);
+    setJubahLoading(false);
+  }, []);
+
+  useEffect(() => {
+    if (activeTab === 'jubah') loadJubahJobs();
+  }, [activeTab, loadJubahJobs]);
+
+  // ── Browser / gesture back navigation (3→2→1) ────────────────────────────
+  useEffect(() => {
+    if (activeTab !== 'jubah') return;
+    const handlePop = () => {
+      setJubahView(prev => {
+        if (prev === 'details') return 'card';
+        if (prev === 'card')   { setSelectedJob(null); return 'list'; }
+        return prev;
+      });
+    };
+    window.addEventListener('popstate', handlePop);
+    return () => window.removeEventListener('popstate', handlePop);
+  }, [activeTab]);
+
+  const goToCard = (job: JubahJobRow) => {
+    setSelectedJob(job);
+    setJubahView('card');
+    window.history.pushState({ jubahSubPage: 'card' }, '');
+  };
+
+  const goToDetails = () => {
+    setJubahView('details');
+    window.history.pushState({ jubahSubPage: 'details' }, '');
+  };
+
+  const goBack = () => window.history.back();
+
+  // ── Advance status ────────────────────────────────────────────────────────
+  const handleAdvanceStatus = async () => {
+    if (!selectedJob) return;
+    const next = getNextStatus(selectedJob);
+    if (!next) return;
+    setUpdatingStatus(true);
+    const { error } = await supabase
+      .from('jubah_bookings')
+      .update({ status: next })
+      .eq('id', selectedJob.id);
+    if (error) {
+      showToast('Update failed. Please try again.');
+    } else {
+      const updated = { ...selectedJob, status: next };
+      setSelectedJob(updated);
+      setJubahJobs(prev => prev.map(j => j.id === selectedJob.id ? updated : j));
+      showToast(`Status updated: ${STATUS_LABEL[next]}`);
+    }
+    setUpdatingStatus(false);
+  };
 
   // ── Document upload ───────────────────────────────────────────────────────
   const handleDocUpload = async (e: React.ChangeEvent<HTMLInputElement>, type: 'ic' | 'license') => {
@@ -163,9 +303,8 @@ export const RiderHome: React.FC = () => {
   // ── Main Rider Hub ────────────────────────────────────────────────────────
   return (
     <>
-      {/* Toast */}
       {toast && (
-        <div className="fixed top-16 left-4 right-4 z-50 bg-slate-800 text-white text-xs font-bold px-4 py-2.5 rounded-2xl shadow-lg text-center">
+        <div className="fixed top-16 left-4 right-4 z-50 bg-slate-800 text-white text-xs font-bold px-4 py-2.5 rounded-2xl shadow-lg text-center animate-fade-in">
           {toast}
         </div>
       )}
@@ -174,48 +313,68 @@ export const RiderHome: React.FC = () => {
 
         {/* Header */}
         <div className="px-4 pt-5 pb-3 flex items-center justify-between">
-          <div>
-            <div className="flex items-center gap-2">
-              <h2 className="text-xl font-black text-slate-800 m-0">Rider Hub</h2>
-              <span className="flex items-center gap-1 bg-emerald-50 border border-emerald-100 text-emerald-600 text-[9px] font-extrabold px-2 py-0.5 rounded-full">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                LIVE
-              </span>
+          <div className="flex items-center gap-2">
+            {activeTab === 'jubah' && jubahView !== 'list' && (
+              <button onClick={goBack}
+                className="w-8 h-8 flex items-center justify-center rounded-xl bg-white border border-slate-100 text-slate-500 hover:text-primary transition active:scale-90 shrink-0">
+                <ChevronLeft className="w-4 h-4" />
+              </button>
+            )}
+            <div>
+              <div className="flex items-center gap-2">
+                <h2 className="text-xl font-black text-slate-800 m-0">
+                  {activeTab === 'jubah' && jubahView === 'card'    ? 'Job Details' :
+                   activeTab === 'jubah' && jubahView === 'details' ? 'Customer Info' :
+                   'Rider Hub'}
+                </h2>
+                {activeTab !== 'jubah' || jubahView === 'list' ? (
+                  <span className="flex items-center gap-1 bg-emerald-50 border border-emerald-100 text-emerald-600 text-[9px] font-extrabold px-2 py-0.5 rounded-full">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                    LIVE
+                  </span>
+                ) : null}
+              </div>
+              <p className="text-[10px] text-slate-400 font-semibold mt-0.5">
+                {activeTab === 'jubah' && jubahView === 'card' && selectedJob
+                  ? `${selectedJob.reference} · ${selectedJob.full_name}`
+                  : activeTab === 'jubah' && jubahView === 'details' && selectedJob
+                  ? `${selectedJob.remark} · ${selectedJob.university}`
+                  : `${user.name} · ${user.gerakId} · UMPSA ${user.campus}`}
+              </p>
             </div>
-            <p className="text-[10px] text-slate-400 font-semibold mt-0.5">
-              {user.name} · {user.gerakId} · UMPSA {user.campus}
-            </p>
           </div>
-          <button
-            onClick={() => {}}
-            className="w-8 h-8 flex items-center justify-center rounded-xl bg-white border border-slate-100 text-slate-400 hover:text-primary transition active:scale-90"
-          >
-            <RefreshCw className="w-4 h-4" />
-          </button>
+          {(activeTab !== 'jubah' || jubahView === 'list') && (
+            <button onClick={activeTab === 'jubah' ? loadJubahJobs : () => {}}
+              className="w-8 h-8 flex items-center justify-center rounded-xl bg-white border border-slate-100 text-slate-400 hover:text-primary transition active:scale-90">
+              <RefreshCw className="w-4 h-4" />
+            </button>
+          )}
         </div>
 
-        {/* Tab Switcher */}
-        <div className="px-4 mb-4">
-          <div className="flex bg-white border border-slate-100 rounded-2xl p-1 gap-1 shadow-sm">
-            {([
-              { id: 'daily',    label: 'Daily Job',   icon: ShoppingBasket },
-              { id: 'jubah',    label: 'Jubah Job',   icon: GraduationCap },
-              { id: 'earnings', label: 'Earnings',    icon: TrendingUp },
-            ] as { id: RiderTab; label: string; icon: React.ElementType }[]).map(tab => {
-              const Icon = tab.icon;
-              return (
-                <button key={tab.id}
-                  onClick={() => setActiveTab(tab.id)}
-                  className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-xs font-extrabold transition ${
-                    activeTab === tab.id ? 'bg-primary text-white shadow-sm' : 'text-slate-400'
-                  }`}>
-                  <Icon className="w-3.5 h-3.5" />
-                  {tab.label}
-                </button>
-              );
-            })}
+        {/* Tab Switcher — hide when in jubah sub-pages */}
+        {(activeTab !== 'jubah' || jubahView === 'list') && (
+          <div className="px-4 mb-4">
+            <div className="flex bg-white border border-slate-100 rounded-2xl p-1 gap-1 shadow-sm">
+              {([
+                { id: 'daily',    label: 'Daily Job',   icon: ShoppingBasket },
+                { id: 'jubah',    label: 'Jubah Job',   icon: GraduationCap },
+                { id: 'earnings', label: 'Earnings',    icon: TrendingUp },
+              ] as { id: RiderTab; label: string; icon: React.ElementType }[]).map(tab => {
+                const Icon = tab.icon;
+                return (
+                  <button key={tab.id}
+                    onClick={() => { setActiveTab(tab.id); setJubahView('list'); setSelectedJob(null); }}
+                    className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-xs font-extrabold transition ${
+                      activeTab === tab.id ? 'bg-primary text-white shadow-sm' : 'text-slate-400'
+                    }`}>
+                    <Icon className="w-3.5 h-3.5" />
+                    {tab.label}
+                  </button>
+                );
+              })}
+            </div>
           </div>
-        </div>
+        )}
 
         {/* ── Daily Job Tab ── */}
         {activeTab === 'daily' && (
@@ -232,14 +391,246 @@ export const RiderHome: React.FC = () => {
 
         {/* ── Jubah Job Tab ── */}
         {activeTab === 'jubah' && (
-          <div className="px-4 flex flex-col items-center justify-center flex-1 gap-3 py-12">
-            <div className="w-16 h-16 rounded-3xl bg-blue-50 border border-blue-100 flex items-center justify-center">
-              <GraduationCap className="w-7 h-7 text-blue-300" />
-            </div>
-            <p className="text-sm font-black text-slate-700">No Jubah Jobs Yet</p>
-            <p className="text-xs text-slate-400 font-semibold text-center leading-relaxed max-w-xs">
-              Jubah delivery assignments from customers will appear here during convocation period.
-            </p>
+          <div className="px-4 flex flex-col gap-4 flex-1">
+
+            {/* PAGE 1 — Assignment List */}
+            {jubahView === 'list' && (
+              <div className="bg-white border border-slate-100 rounded-3xl p-5 shadow-sm flex flex-col gap-3">
+                <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest flex items-center justify-between">
+                  <span className="flex items-center gap-1.5"><GraduationCap className="w-4 h-4" /> My Assignments</span>
+                  <span className="font-bold text-slate-300 normal-case tracking-normal">{jubahJobs.length} jobs</span>
+                </h3>
+
+                {jubahLoading ? (
+                  <div className="flex justify-center py-8">
+                    <span className="w-5 h-5 rounded-full border-2 border-slate-200 border-t-primary animate-spin" />
+                  </div>
+                ) : jubahJobs.length === 0 ? (
+                  <div className="flex flex-col items-center gap-3 py-8">
+                    <div className="w-14 h-14 rounded-3xl bg-blue-50 border border-blue-100 flex items-center justify-center">
+                      <GraduationCap className="w-6 h-6 text-blue-300" />
+                    </div>
+                    <p className="text-sm font-black text-slate-700">No Jubah Jobs Yet</p>
+                    <p className="text-xs text-slate-400 font-semibold text-center leading-relaxed max-w-xs">
+                      Jubah delivery assignments from customers will appear here during convocation period.
+                    </p>
+                  </div>
+                ) : (
+                  <div className="overflow-x-auto overflow-y-auto no-scrollbar max-h-[500px]">
+                    <table className="min-w-full border-collapse text-left" style={{ minWidth: 360 }}>
+                      <thead className="sticky top-0 bg-white">
+                        <tr className="text-[9px] font-extrabold text-slate-400 uppercase tracking-wider border-b border-slate-100">
+                          <th className="py-2 pr-4 whitespace-nowrap">Reference</th>
+                          <th className="py-2 pr-4 whitespace-nowrap">Name</th>
+                          <th className="py-2 pr-4 whitespace-nowrap">Remark</th>
+                          <th className="py-2 pr-4 whitespace-nowrap">Mode</th>
+                          <th className="py-2 whitespace-nowrap">Status</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {jubahJobs.map(job => (
+                          <tr key={job.id}
+                            onClick={() => goToCard(job)}
+                            className="border-b border-slate-50 text-[10px] hover:bg-slate-50 active:bg-slate-100 transition cursor-pointer">
+                            <td className="py-2.5 pr-4 font-mono font-bold text-primary whitespace-nowrap">{job.reference}</td>
+                            <td className="py-2.5 pr-4 font-extrabold text-slate-800 whitespace-nowrap">{job.full_name}</td>
+                            <td className="py-2.5 pr-4 text-slate-500 font-semibold whitespace-nowrap">{job.remark}</td>
+                            <td className="py-2.5 pr-4 whitespace-nowrap">
+                              <span className={`font-extrabold px-2 py-0.5 rounded-full border text-[9px] ${
+                                job.payment_mode === 'deposit' ? 'bg-amber-50 border-amber-100 text-amber-700' :
+                                job.payment_mode === 'postage' ? 'bg-blue-50 border-blue-100 text-blue-700' :
+                                'bg-slate-50 border-slate-200 text-slate-600'
+                              }`}>
+                                {job.payment_mode === 'deposit' ? 'Deposit' : job.payment_mode === 'postage' ? 'Postage' : 'Pickup'}
+                              </span>
+                            </td>
+                            <td className="py-2.5 whitespace-nowrap">
+                              <span className={`font-extrabold px-2 py-0.5 rounded-full border text-[9px] ${STATUS_STYLE[job.status] ?? 'bg-slate-50 border-slate-200 text-slate-400'}`}>
+                                {STATUS_LABEL[job.status] ?? job.status}
+                              </span>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* PAGE 2 — Job Card with stepper */}
+            {jubahView === 'card' && selectedJob && (() => {
+              const steps    = getSteps(selectedJob.payment_mode);
+              const curStep  = steps.indexOf(selectedJob.status);
+              const nextStat = getNextStatus(selectedJob);
+              const isDone   = !nextStat;
+              return (
+                <div className="flex flex-col gap-4">
+
+                  {/* Status stepper card */}
+                  <div className="bg-white border border-slate-100 rounded-3xl p-5 shadow-sm flex flex-col gap-4">
+
+                    {/* Customer summary */}
+                    <div className="flex items-start justify-between gap-2">
+                      <div>
+                        <p className="text-[9px] text-primary font-extrabold uppercase tracking-wider">{selectedJob.reference}</p>
+                        <h3 className="text-base font-black text-slate-800 mt-0.5">{selectedJob.full_name}</h3>
+                        <p className="text-[10px] text-slate-400 font-semibold mt-0.5">
+                          {selectedJob.remark} · {selectedJob.faculty} · UMPSA {selectedJob.campus}
+                        </p>
+                      </div>
+                      <span className={`text-[9px] font-extrabold px-2.5 py-1 rounded-full border shrink-0 ${STATUS_STYLE[selectedJob.status] ?? ''}`}>
+                        {STATUS_LABEL[selectedJob.status] ?? selectedJob.status}
+                      </span>
+                    </div>
+
+                    {/* HP + Mode */}
+                    <div className="flex items-center gap-3">
+                      <div className="flex items-center gap-1.5 bg-slate-50 border border-slate-100 rounded-xl px-3 py-2 flex-1">
+                        <span className="text-[11px] font-semibold text-slate-600">{selectedJob.hp_number}</span>
+                        <a href={`https://wa.me/6${selectedJob.hp_number}`} target="_blank" rel="noopener noreferrer"
+                          className="text-[#25D366] ml-auto shrink-0">
+                          <WaIcon className="w-4 h-4" />
+                        </a>
+                      </div>
+                      <span className={`text-[9px] font-extrabold px-3 py-2 rounded-xl border shrink-0 ${
+                        selectedJob.payment_mode === 'deposit' ? 'bg-amber-50 border-amber-100 text-amber-700' :
+                        selectedJob.payment_mode === 'postage' ? 'bg-blue-50 border-blue-100 text-blue-700' :
+                        'bg-slate-50 border-slate-200 text-slate-600'
+                      }`}>
+                        {selectedJob.payment_mode === 'deposit' ? 'Deposit' : selectedJob.payment_mode === 'postage' ? 'Postage' : 'Pickup'}
+                      </span>
+                    </div>
+
+                    {/* Progress stepper */}
+                    <div className="flex flex-col gap-2">
+                      <div className="flex items-center gap-1">
+                        {steps.map((step, i) => (
+                          <React.Fragment key={step}>
+                            <div className={`w-5 h-5 rounded-full flex items-center justify-center shrink-0 text-[8px] font-extrabold border-2 transition ${
+                              i < curStep  ? 'bg-primary border-primary text-white' :
+                              i === curStep ? 'bg-white border-primary text-primary' :
+                              'bg-white border-slate-200 text-slate-300'
+                            }`}>
+                              {i < curStep ? '✓' : i + 1}
+                            </div>
+                            {i < steps.length - 1 && (
+                              <div className={`flex-1 h-0.5 rounded-full transition ${i < curStep ? 'bg-primary' : 'bg-slate-200'}`} />
+                            )}
+                          </React.Fragment>
+                        ))}
+                      </div>
+                      <div className="flex justify-between">
+                        {steps.map(step => (
+                          <span key={step} className="text-[8px] font-extrabold text-slate-400 uppercase tracking-wide flex-1 text-center first:text-left last:text-right">
+                            {STATUS_LABEL[step]}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Delivery address (postage) */}
+                    {selectedJob.payment_mode === 'postage' && selectedJob.delivery_address && (
+                      <div className="bg-blue-50 border border-blue-100 rounded-xl p-3">
+                        <p className="text-[8px] font-extrabold text-blue-400 uppercase tracking-wider mb-1">Delivery Address</p>
+                        <p className="text-[10px] font-semibold text-blue-800 leading-relaxed">{selectedJob.delivery_address}</p>
+                      </div>
+                    )}
+
+                    {/* Advance status button */}
+                    {!isDone && selectedJob.status !== 'cancelled' && (
+                      <button
+                        onClick={handleAdvanceStatus}
+                        disabled={updatingStatus}
+                        className="w-full bg-primary hover:bg-primary-hover active:scale-[0.98] disabled:bg-slate-200 text-white font-extrabold py-3 rounded-2xl shadow-md transition flex items-center justify-center gap-2 text-sm"
+                      >
+                        {updatingStatus
+                          ? <span className="w-4 h-4 rounded-full border-2 border-white/40 border-t-white animate-spin" />
+                          : `→ ${NEXT_LABEL[nextStat ?? ''] ?? `Mark ${STATUS_LABEL[nextStat ?? '']}`}`}
+                      </button>
+                    )}
+                    {isDone && selectedJob.status !== 'cancelled' && (
+                      <div className="bg-emerald-50 border border-emerald-100 rounded-2xl px-4 py-3 text-center">
+                        <p className="text-xs font-extrabold text-emerald-700">✓ Job Complete</p>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* View Full Details button */}
+                  <button
+                    onClick={goToDetails}
+                    className="w-full bg-white border border-slate-200 text-slate-600 font-extrabold py-3 rounded-2xl text-sm transition hover:border-primary hover:text-primary active:scale-95"
+                  >
+                    View Customer Details →
+                  </button>
+                </div>
+              );
+            })()}
+
+            {/* PAGE 3 — Customer details (read-only form + downloads) */}
+            {jubahView === 'details' && selectedJob && (
+              <div className="flex flex-col gap-4">
+
+                {/* Form fields card */}
+                <div className="bg-white border border-slate-100 rounded-3xl p-5 shadow-sm flex flex-col gap-4">
+                  <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest">Booking Information</h3>
+
+                  {([
+                    { label: 'Full Name',        value: selectedJob.full_name },
+                    { label: 'IC Number',         value: selectedJob.ic_number },
+                    { label: 'Phone',             value: selectedJob.hp_number },
+                    { label: 'Matric No.',        value: selectedJob.matric_id },
+                    { label: 'University',        value: selectedJob.university },
+                    { label: 'Campus',            value: `UMPSA ${selectedJob.campus}` },
+                    { label: 'Faculty',           value: selectedJob.faculty },
+                    { label: 'Remark',            value: selectedJob.remark },
+                    { label: 'Payment Mode',      value: selectedJob.payment_mode.charAt(0).toUpperCase() + selectedJob.payment_mode.slice(1) },
+                    { label: 'Service Fee',       value: `RM${selectedJob.cost.toFixed(2)}` },
+                    ...(selectedJob.payment_mode === 'deposit' ? [{ label: 'Balance Due', value: `RM${selectedJob.balance_due.toFixed(2)}` }] : []),
+                    ...(selectedJob.delivery_address ? [{ label: 'Delivery Address', value: selectedJob.delivery_address }] : []),
+                    { label: 'Rider Assigned',   value: selectedJob.rider_name ?? '—' },
+                    { label: 'Reference',         value: selectedJob.reference },
+                  ] as { label: string; value: string }[]).map(({ label, value }) => (
+                    <div key={label} className="flex flex-col gap-0.5 border-b border-slate-50 pb-3 last:border-0 last:pb-0">
+                      <span className="text-[9px] font-extrabold text-slate-400 uppercase tracking-wider">{label}</span>
+                      <span className="text-sm font-bold text-slate-700 leading-relaxed">{value}</span>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Documents download card */}
+                <div className="bg-white border border-slate-100 rounded-3xl p-5 shadow-sm flex flex-col gap-3">
+                  <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest">Documents</h3>
+
+                  {([
+                    { label: 'Combined PDF',    url: selectedJob.drive_docs_url },
+                    { label: 'Payment Proof',   url: selectedJob.drive_payment_url },
+                    { label: 'OSCAR',           url: selectedJob.drive_oscar_url },
+                    { label: 'SKPG',            url: selectedJob.drive_skpg_url },
+                    { label: 'Konvo Slip',      url: selectedJob.drive_konvo_url },
+                    { label: 'IC Copy',         url: selectedJob.drive_ic_url },
+                  ] as { label: string; url: string | null }[]).map(({ label, url }) => (
+                    <div key={label} className="flex items-center justify-between gap-3 border-b border-slate-50 pb-3 last:border-0 last:pb-0">
+                      <span className="text-sm font-semibold text-slate-700">{label}</span>
+                      <a
+                        href={url ?? '#'}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        onClick={e => { if (!url) e.preventDefault(); }}
+                        className={`w-9 h-9 flex items-center justify-center rounded-xl border transition shrink-0 ${
+                          url
+                            ? 'bg-slate-800 border-slate-700 text-white hover:bg-slate-700 active:scale-95'
+                            : 'bg-slate-50 border-slate-100 text-slate-300 cursor-not-allowed'
+                        }`}
+                      >
+                        <Download className="w-4 h-4" />
+                      </a>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
           </div>
         )}
 
