@@ -106,10 +106,10 @@ export const Dashboard: React.FC = () => {
   };
 
   return (
-    <div className="flex flex-col h-full bg-slate-50/50 animate-fade-in">
+    <div className="flex-grow bg-slate-50/50 overflow-y-auto no-scrollbar pb-24 animate-fade-in">
 
-      {/* STICKY TOP: Greeting + Active Ride + Carousel */}
-      <div className="shrink-0 px-4">
+      {/* Greeting + Active Ride + Carousel */}
+      <div className="px-4">
 
       {/* 1. Student Greeting Panel */}
       <div className="mt-4 mb-4 bg-gradient-to-r from-red-700 to-red-500 text-white rounded-3xl p-5 shadow-lg relative overflow-hidden">
@@ -216,10 +216,9 @@ export const Dashboard: React.FC = () => {
 
       </div>
 
-      {/* SCROLLABLE: Campus Modules */}
-      <div className="flex-1 overflow-y-auto no-scrollbar px-4 pb-24">
+      {/* Campus Modules */}
+      <div className="px-4">
 
-      {/* 4. Large Service Cards (Grid) */}
       <h3 className="text-xs font-black text-slate-400 tracking-widest mb-3 pl-1">
         Campus Modules
       </h3>
