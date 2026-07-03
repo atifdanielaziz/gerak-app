@@ -2,7 +2,7 @@
 // After deploying your Google Apps Script web app, paste the URL below.
 // Leave the placeholder if not yet deployed — submissions will be skipped silently.
 // ─────────────────────────────────────────────────────────────────────────────
-const SHEETS_WEBAPP_URL = 'https://script.google.com/macros/s/AKfycbyadRSW0NO4fdPFf4nlSHGhePFBHn5BUyIF1grngwpTcYy1PXiE6W56Ix_Rrif8I3bd/exec';
+const SHEETS_WEBAPP_URL = 'https://script.google.com/macros/s/AKfycbxe7obSSjrwXkgyIMJyArPQZdG4C1H5Yp3BfOLVmuXiyR0q95lcD6njypWSmJU3RYLx/exec';
 
 export interface JubahSheetRow {
   reference: string;
