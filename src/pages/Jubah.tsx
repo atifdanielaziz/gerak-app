@@ -144,14 +144,11 @@ export const Jubah: React.FC = () => {
     setFile(file);
   };
 
-  const handleCombine = async () => {
-    if (!oscarFile || !skpgFile || !konvoSlipFile || !icFile) return;
-    setCombining(true);
+  const generateCombinedBlob = async (): Promise<Blob | null> => {
+    if (!oscarFile || !skpgFile || !konvoSlipFile || !icFile) return null;
     try {
       const { PDFDocument } = await import('pdf-lib');
       const merged = await PDFDocument.create();
-
-      // Helper: add any file (PDF or image) as pages into the merged PDF
       const addFile = async (f: File) => {
         const bytes = await f.arrayBuffer();
         if (f.type === 'application/pdf') {
@@ -168,16 +165,21 @@ export const Jubah: React.FC = () => {
           page.drawImage(img, { x: 0, y: 0, width, height });
         }
       };
-
-      for (const f of [oscarFile, skpgFile, konvoSlipFile, icFile]) {
-        await addFile(f);
-      }
-
+      for (const f of [oscarFile, skpgFile, konvoSlipFile, icFile]) await addFile(f);
       const pdfBytes = await merged.save();
-      setCombinedBlob(new Blob([pdfBytes.buffer as ArrayBuffer], { type: 'application/pdf' }));
-    } finally {
-      setCombining(false);
+      return new Blob([pdfBytes.buffer as ArrayBuffer], { type: 'application/pdf' });
+    } catch (err) {
+      console.error('[GERAK] Combine failed:', err);
+      return null;
     }
+  };
+
+  const handleCombine = async () => {
+    if (!oscarFile || !skpgFile || !konvoSlipFile || !icFile) return;
+    setCombining(true);
+    const blob = await generateCombinedBlob();
+    if (blob) setCombinedBlob(blob);
+    setCombining(false);
   };
 
   const handleDownload = () => {
@@ -228,10 +230,12 @@ export const Jubah: React.FC = () => {
       return publicUrl;
     };
 
+    const blobForUpload = combinedBlob ?? await generateCombinedBlob();
+
     try {
       const results = await Promise.all([
-        combinedBlob
-          ? uploadFile(new File([combinedBlob], combinedFileName, { type: 'application/pdf' }), 'combined')
+        blobForUpload
+          ? uploadFile(new File([blobForUpload], combinedFileName, { type: 'application/pdf' }), 'combined')
           : Promise.resolve(undefined),
         uploadFile(paymentProof, 'payment'),
         oscarFile    ? uploadFile(oscarFile,    'OSCAR')     : Promise.resolve(undefined),
