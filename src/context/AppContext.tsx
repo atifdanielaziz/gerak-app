@@ -462,18 +462,21 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
 
   const switchToDriverMode = () => {
+    setIsPreviewMode(false);
     setActiveRole('driver');
     setPageHistory([]);
     _setCurrentPage('driver-home');
   };
 
   const switchToAdminMode = () => {
+    setIsPreviewMode(false);
     setActiveRole('admin');
     setPageHistory([]);
     _setCurrentPage('admin-home');
   };
 
   const switchToRiderMode = () => {
+    setIsPreviewMode(false);
     setActiveRole('rider');
     setPageHistory([]);
     _setCurrentPage('rider-home');
