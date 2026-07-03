@@ -219,13 +219,13 @@ export const Jubah: React.FC = () => {
 
     const uploadFile = async (file: File, label: string): Promise<string | undefined> => {
       const ext = file.name.split('.').pop() ?? 'pdf';
-      const name = `${(fullName || 'student').replace(/\s+/g, '_')}_${label}.${ext}`;
-      const form = new FormData();
-      form.append('file', file, name);
-      form.append('filename', name);
-      form.append('mimeType', file.type);
-      const { data } = await supabase.functions.invoke('upload-to-drive', { body: form });
-      return data?.url;
+      const path = `${(fullName || 'student').replace(/\s+/g, '_')}_${label}_${Date.now()}.${ext}`;
+      const { data, error } = await supabase.storage
+        .from('jubah-docs')
+        .upload(path, file, { contentType: file.type, upsert: false });
+      if (error || !data) { console.error('[GERAK] Storage upload failed:', error); return undefined; }
+      const { data: { publicUrl } } = supabase.storage.from('jubah-docs').getPublicUrl(data.path);
+      return publicUrl;
     };
 
     try {
