@@ -110,9 +110,10 @@ interface AppContextType {
   isPreviewMode: boolean;
   enterPreviewMode: () => void;
   exitPreviewMode: () => void;
-  activeRole: 'admin' | 'driver' | null;
+  activeRole: 'admin' | 'driver' | 'rider' | null;
   switchToDriverMode: () => void;
   switchToAdminMode: () => void;
+  switchToRiderMode: () => void;
   user: UserSession;
   login: (email: string, password: string) => Promise<{ error: string | null }>;
   register: (name: string, matricNo: string, email: string, password: string, phone: string, university: string, campus: string) => Promise<{ error: string | null }>;
@@ -149,7 +150,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [currentPage, _setCurrentPage] = useState<ActivePage>('splash');
   const [pageHistory, setPageHistory] = useState<ActivePage[]>([]);
   const [isPreviewMode, setIsPreviewMode] = useState(false);
-  const [activeRole, setActiveRole] = useState<'admin' | 'driver' | null>(null);
+  const [activeRole, setActiveRole] = useState<'admin' | 'driver' | 'rider' | null>(null);
 
   const HISTORY_EXCLUDED: ActivePage[] = ['splash'];
   const HOME_PAGES: ActivePage[] = ['dashboard', 'driver-home', 'rider-home', 'admin-home', 'login', 'profile', 'academic-calendar'];
@@ -471,6 +472,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     _setCurrentPage('admin-home');
   };
 
+  const switchToRiderMode = () => {
+    setActiveRole('rider');
+    setPageHistory([]);
+    _setCurrentPage('rider-home');
+  };
+
   const enterPreviewMode = () => {
     setIsPreviewMode(true);
     setPageHistory([]);
@@ -737,6 +744,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         activeRole,
         switchToDriverMode,
         switchToAdminMode,
+        switchToRiderMode,
         user,
         login,
         register,
