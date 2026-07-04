@@ -46,8 +46,10 @@ const STATUS_STYLE: Record<string, string> = {
 
 export const TrackJubah: React.FC = () => {
   const { setCurrentPage } = useApp();
+  const [searchMode, setSearchMode] = useState<'reference' | 'matric'>('reference');
   const [reference, setReference] = useState('');
   const [phone, setPhone]         = useState('');
+  const [matric, setMatric]       = useState('');
   const [searching, setSearching] = useState(false);
   const [searched, setSearched]   = useState(false);
   const [results, setResults]     = useState<JubahBookingResult[]>([]);
@@ -62,15 +64,22 @@ export const TrackJubah: React.FC = () => {
   const handleSearch = async (e: React.SyntheticEvent) => {
     e.preventDefault();
     setError('');
-    if (!reference.trim() && !phone.trim()) {
+    if (searchMode === 'reference' && !reference.trim() && !phone.trim()) {
       setError('Please enter your reference number or phone number.');
+      return;
+    }
+    if (searchMode === 'matric' && !matric.trim()) {
+      setError('Please enter your matric number or IC number.');
       return;
     }
     setSearching(true);
     setSearched(false);
+    const isIc = searchMode === 'matric' && matric.replace(/\D/g, '').length === 12;
     const { data, error: rpcError } = await supabase.rpc('track_jubah_booking', {
-      p_reference:  reference.trim() || null,
-      p_hp_number:  phone.trim() || null,
+      p_reference:  searchMode === 'reference' ? (reference.trim() || null) : null,
+      p_hp_number:  searchMode === 'reference' ? (phone.trim() || null) : null,
+      p_matric_id:  (searchMode === 'matric' && !isIc) ? (matric.trim() || null) : null,
+      p_ic_number:  (searchMode === 'matric' && isIc)  ? (matric.trim() || null) : null,
     });
     setSearching(false);
     setSearched(true);
@@ -136,35 +145,67 @@ export const TrackJubah: React.FC = () => {
 
       {/* Search form */}
       <form onSubmit={handleSearch} className="bg-white border border-slate-100 rounded-3xl p-5 shadow-sm flex flex-col gap-4">
-        <div className="flex flex-col gap-1.5">
-          <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Reference Number</label>
-          <input
-            type="text"
-            value={reference}
-            onChange={e => setReference(e.target.value.toUpperCase())}
-            placeholder="e.g. JUB-26-UMPSA-XK7F"
-            style={{ fontSize: '16px' }}
-            className="bg-slate-50 border border-slate-200 rounded-xl py-2.5 px-3 text-sm font-bold text-slate-700 focus:outline-none focus:border-blue-500 transition placeholder:font-normal placeholder:text-slate-300"
-          />
+
+        {/* Mode toggle */}
+        <div className="flex gap-1 bg-slate-100 rounded-xl p-1">
+          {(['reference', 'matric'] as const).map(mode => (
+            <button
+              key={mode}
+              type="button"
+              onClick={() => { setSearchMode(mode); setError(''); setSearched(false); setResults([]); }}
+              className={`flex-1 py-2 rounded-lg text-[10px] font-extrabold uppercase tracking-wider transition ${
+                searchMode === mode ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-400 hover:text-slate-600'
+              }`}
+            >
+              {mode === 'reference' ? 'Reference No.' : 'Matric · IC'}
+            </button>
+          ))}
         </div>
 
-        <div className="flex items-center gap-2">
-          <div className="flex-1 h-px bg-slate-100" />
-          <span className="text-[9px] text-slate-300 font-extrabold uppercase">or</span>
-          <div className="flex-1 h-px bg-slate-100" />
-        </div>
-
-        <div className="flex flex-col gap-1.5">
-          <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Phone Number</label>
-          <input
-            type="tel"
-            value={phone}
-            onChange={e => setPhone(e.target.value.replace(/\D/g, ''))}
-            placeholder="e.g. 0123456789"
-            style={{ fontSize: '16px' }}
-            className="bg-slate-50 border border-slate-200 rounded-xl py-2.5 px-3 text-sm font-bold text-slate-700 focus:outline-none focus:border-blue-500 transition placeholder:font-normal placeholder:text-slate-300"
-          />
-        </div>
+        {searchMode === 'reference' ? (
+          <>
+            <div className="flex flex-col gap-1.5">
+              <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Reference Number</label>
+              <input
+                type="text"
+                value={reference}
+                onChange={e => setReference(e.target.value.toUpperCase())}
+                placeholder="e.g. JUB-26-UMPSA-XK7F"
+                style={{ fontSize: '16px' }}
+                className="bg-slate-50 border border-slate-200 rounded-xl py-2.5 px-3 text-sm font-bold text-slate-700 focus:outline-none focus:border-blue-500 transition placeholder:font-normal placeholder:text-slate-300"
+              />
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="flex-1 h-px bg-slate-100" />
+              <span className="text-[9px] text-slate-300 font-extrabold uppercase">or</span>
+              <div className="flex-1 h-px bg-slate-100" />
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Phone Number</label>
+              <input
+                type="tel"
+                value={phone}
+                onChange={e => setPhone(e.target.value.replace(/\D/g, ''))}
+                placeholder="e.g. 0123456789"
+                style={{ fontSize: '16px' }}
+                className="bg-slate-50 border border-slate-200 rounded-xl py-2.5 px-3 text-sm font-bold text-slate-700 focus:outline-none focus:border-blue-500 transition placeholder:font-normal placeholder:text-slate-300"
+              />
+            </div>
+          </>
+        ) : (
+          <div className="flex flex-col gap-1.5">
+            <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Matric Number or IC Number</label>
+            <input
+              type="text"
+              value={matric}
+              onChange={e => setMatric(e.target.value)}
+              placeholder="e.g. CB21110 or 980123-45-6789"
+              style={{ fontSize: '16px' }}
+              className="bg-slate-50 border border-slate-200 rounded-xl py-2.5 px-3 text-sm font-bold text-slate-700 focus:outline-none focus:border-blue-500 transition placeholder:font-normal placeholder:text-slate-300"
+            />
+            <p className="text-[9px] text-slate-400 font-semibold px-1">Enter 12-digit IC to search by IC, otherwise treated as matric number.</p>
+          </div>
+        )}
 
         {error && (
           <p className="text-[11px] text-danger font-bold text-center bg-danger/10 border border-danger/20 rounded-xl py-2.5">
@@ -189,7 +230,7 @@ export const TrackJubah: React.FC = () => {
           <div className="bg-white border border-slate-100 rounded-3xl p-8 shadow-sm flex flex-col items-center gap-3 text-center">
             <GraduationCap className="w-8 h-8 text-slate-300" />
             <p className="text-xs font-bold text-slate-500">No booking found.</p>
-            <p className="text-[10px] text-slate-400">Double-check your reference number or phone number and try again.</p>
+            <p className="text-[10px] text-slate-400">Double-check your {searchMode === 'reference' ? 'reference or phone number' : 'matric or IC number'} and try again.</p>
           </div>
         ) : (
           <div className="flex flex-col gap-3">
