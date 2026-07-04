@@ -140,7 +140,7 @@ export const TrackJubah: React.FC = () => {
             type="text"
             value={reference}
             onChange={e => setReference(e.target.value.toUpperCase())}
-            placeholder="e.g. JUB-2026-XK7F"
+            placeholder="e.g. JUB-26-UMPSA-XK7F"
             style={{ fontSize: '16px' }}
             className="bg-slate-50 border border-slate-200 rounded-xl py-2.5 px-3 text-sm font-bold text-slate-700 focus:outline-none focus:border-blue-500 transition placeholder:font-normal placeholder:text-slate-300"
           />

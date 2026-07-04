@@ -216,7 +216,11 @@ export const Jubah: React.FC = () => {
     if (!allFilesReady) { setFileError('Please upload all required documents.'); return; }
     if (!paymentProof) { setFileError('Please upload your proof of payment.'); return; }
 
-    const reference = `JUB-${new Date().getFullYear()}-${Math.random().toString(36).slice(2, 6).toUpperCase()}`;
+    const uniAbbrev = university.includes('Pahang') ? 'UMPSA'
+      : university.includes('UiTM') || university.includes('MARA') ? 'UiTM'
+      : university.includes('Kelantan') ? 'UMK'
+      : 'UIA';
+    const reference = `JUB-${new Date().getFullYear().toString().slice(-2)}-${uniAbbrev}-${Math.random().toString(36).slice(2, 6).toUpperCase()}`;
     const combinedFileName = `${(fullName || 'combined').replace(/\s+/g, '_')}_combined.pdf`;
     const selectedRider = riders.find(r => r.id === selectedRiderId);
     const bookingCampus = university.includes('Pekan') ? 'Pekan' : 'Gambang';
