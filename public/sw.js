@@ -1,4 +1,4 @@
-const CACHE_NAME = 'gerak-cache-v36';
+const CACHE_NAME = 'gerak-cache-v37';
 const ASSETS_TO_CACHE = [
   '/',
   '/index.html',
@@ -37,10 +37,28 @@ self.addEventListener('activate', (event) => {
   self.clients.claim();
 });
 
-// Fetch Event - network-first falling back to cache
+// Fetch Event - cache-first for Vite's immutable hashed build assets,
+// network-first (falling back to cache) for everything else
 self.addEventListener('fetch', (event) => {
   // Only handle standard GET requests
   if (event.request.method !== 'GET') return;
+
+  const url = new URL(event.request.url);
+  if (url.origin === self.location.origin && url.pathname.startsWith('/assets/')) {
+    event.respondWith(
+      caches.match(event.request).then((cachedResponse) => {
+        if (cachedResponse) return cachedResponse;
+        return fetch(event.request).then((response) => {
+          if (response && response.status === 200) {
+            const responseToCache = response.clone();
+            caches.open(CACHE_NAME).then((cache) => cache.put(event.request, responseToCache));
+          }
+          return response;
+        });
+      })
+    );
+    return;
+  }
 
   event.respondWith(
     fetch(event.request)

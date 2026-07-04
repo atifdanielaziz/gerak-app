@@ -1,5 +1,6 @@
-import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
+import React, { createContext, useContext, useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
+import { INACTIVITY_LIMIT_MS, isSessionExpired, touchActivity, setSessionExpiredMessage } from '../lib/idleSession';
 
 // Definitions
 export type ActivePage =
@@ -146,6 +147,9 @@ interface AppContextType {
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
+const HISTORY_EXCLUDED: ActivePage[] = ['splash'];
+const HOME_PAGES: ActivePage[] = ['dashboard', 'driver-home', 'rider-home', 'admin-home', 'login', 'profile', 'academic-calendar'];
+
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   // Navigation & Session
   const [currentPage, _setCurrentPage] = useState<ActivePage>('splash');
@@ -153,25 +157,22 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [isPreviewMode, setIsPreviewMode] = useState(false);
   const [activeRole, setActiveRole] = useState<'admin' | 'driver' | 'rider' | null>(null);
 
-  const HISTORY_EXCLUDED: ActivePage[] = ['splash'];
-  const HOME_PAGES: ActivePage[] = ['dashboard', 'driver-home', 'rider-home', 'admin-home', 'login', 'profile', 'academic-calendar'];
-
-  const setCurrentPage = (page: ActivePage) => {
+  const setCurrentPage = useCallback((page: ActivePage) => {
     if (HOME_PAGES.includes(page)) {
       setPageHistory([]);
     } else if (!HISTORY_EXCLUDED.includes(currentPage)) {
       setPageHistory(prev => [...prev, currentPage]);
     }
     _setCurrentPage(page);
-  };
+  }, [currentPage]);
 
-  const goBack = () => {
+  const goBack = useCallback(() => {
     setPageHistory(prev => {
       if (prev.length === 0) return prev;
       _setCurrentPage(prev[prev.length - 1]);
       return prev.slice(0, -1);
     });
-  };
+  }, []);
 
   // Android back button — intercept system popstate so the PWA doesn't close
   const pageHistoryRef = useRef(pageHistory);
@@ -294,29 +295,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     };
   }, [rideTimer]);
 
-  // ── Supabase: restore session on app load ──────────────────────────
-  useEffect(() => {
-    const isRecovery = window.location.hash.includes('type=recovery');
-
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session?.user && !isRecovery) loadProfile(session.user.id);
-    });
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      if (event === 'PASSWORD_RECOVERY') {
-        setPageHistory([]);
-        _setCurrentPage('reset-password');
-        return;
-      }
-      if (!session) {
-        setUser(prev => ({ ...prev, isLoggedIn: false }));
-      }
-    });
-    return () => subscription.unsubscribe();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  const loadProfile = async (userId: string) => {
+  const loadProfile = useCallback(async (userId: string) => {
     const { data } = await supabase.from('profiles').select('id,name,matric_no,email,phone,university,campus,gerak_id,role,status,vehicle,plate_number,fee_receipt_url,fee_receipt_verified,fee_receipt_amount,fee_receipt_date,fee_receipt_expiry,fee_receipt_reject_reason,can_drive,can_rent,ic_number,ic_url,license_url,docs_status,docs_reject_reason,receipt_gate_exempt').eq('id', userId).single();
     if (data) {
       const role = data.role ?? 'customer';
@@ -384,19 +363,76 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         _setCurrentPage('dashboard');
       }
     }
-  };
+  }, []);
+
+  // ── Inactivity/session-expiry tracking ──────────────────────────────
+  // isLoggingOutRef distinguishes an explicit logout() call from the
+  // session silently dying (token revoked/expired) so we only show the
+  // "session expired" message in the latter case.
+  const isLoggingOutRef = useRef(false);
+  const userLoggedInRef = useRef(false);
+  useEffect(() => { userLoggedInRef.current = user.isLoggedIn; }, [user.isLoggedIn]);
+
+  // Track activity while logged in so isSessionExpired() has a fresh timestamp.
+  useEffect(() => {
+    if (!user.isLoggedIn) return;
+    touchActivity();
+    const handler = () => touchActivity();
+    window.addEventListener('pointerdown', handler, { passive: true });
+    window.addEventListener('keydown', handler, { passive: true });
+    return () => {
+      window.removeEventListener('pointerdown', handler);
+      window.removeEventListener('keydown', handler);
+    };
+  }, [user.isLoggedIn]);
+
+  // ── Supabase: restore session on app load ──────────────────────────
+  useEffect(() => {
+    const isRecovery = window.location.hash.includes('type=recovery');
+
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (!session?.user || isRecovery) return;
+      if (isSessionExpired(INACTIVITY_LIMIT_MS)) {
+        supabase.auth.signOut();
+        setSessionExpiredMessage();
+        return;
+      }
+      loadProfile(session.user.id);
+    });
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'PASSWORD_RECOVERY') {
+        setPageHistory([]);
+        _setCurrentPage('reset-password');
+        return;
+      }
+      if (!session) {
+        const wasLoggedIn = userLoggedInRef.current;
+        const manualLogout = isLoggingOutRef.current;
+        isLoggingOutRef.current = false;
+        setUser(prev => ({ ...prev, isLoggedIn: false }));
+        if (wasLoggedIn && !manualLogout) {
+          setSessionExpiredMessage();
+          setPageHistory([]);
+          _setCurrentPage('login');
+        }
+      }
+    });
+    return () => subscription.unsubscribe();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
 
   // 1. Session Operations
-  const login = async (email: string, password: string): Promise<{ error: string | null }> => {
+  const login = useCallback(async (email: string, password: string): Promise<{ error: string | null }> => {
     const { error } = await supabase.auth.signInWithPassword({ email, password });
     if (error) return { error: error.message };
     const { data: { user: authUser } } = await supabase.auth.getUser();
     if (authUser) await loadProfile(authUser.id);
     return { error: null };
-  };
+  }, [loadProfile]);
 
-  const register = async (name: string, matricNo: string, email: string, password: string, phone: string, university: string, campus: string): Promise<{ error: string | null }> => {
+  const register = useCallback(async (name: string, matricNo: string, email: string, password: string, phone: string, university: string, campus: string): Promise<{ error: string | null }> => {
     const { error } = await supabase.auth.signUp({
       email,
       password,
@@ -411,9 +447,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       await loadProfile(authUser.id);
     }
     return { error: null };
-  };
+  }, [loadProfile]);
 
-  const refreshUserData = async () => {
+  const refreshUserData = useCallback(async () => {
     const { data: { user: authUser } } = await supabase.auth.getUser();
     if (!authUser) return;
     const { data } = await supabase.from('profiles').select('id,name,matric_no,email,phone,university,campus,gerak_id,role,status,vehicle,plate_number,fee_receipt_url,fee_receipt_verified,fee_receipt_amount,fee_receipt_date,fee_receipt_expiry,fee_receipt_reject_reason,can_drive,can_rent,ic_number,ic_url,license_url,docs_status,docs_reject_reason,receipt_gate_exempt').eq('id', authUser.id).single();
@@ -435,9 +471,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         status:           data.status            ?? 'active',
       }));
     }
-  };
+  }, []);
 
-  const updateProfile = async (updates: { name?: string; matricNo?: string; email?: string; phone?: string; vehicle?: string; plateNumber?: string; icNumber?: string; feeReceiptUrl?: string }): Promise<{ error: string | null }> => {
+  const updateProfile = useCallback(async (updates: { name?: string; matricNo?: string; email?: string; phone?: string; vehicle?: string; plateNumber?: string; icNumber?: string; feeReceiptUrl?: string }): Promise<{ error: string | null }> => {
     let { data: { user: authUser } } = await supabase.auth.getUser();
     if (!authUser) {
       const { data: refreshed } = await supabase.auth.refreshSession();
@@ -458,45 +494,46 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     if (error) return { error: error.message };
     setUser(prev => ({ ...prev, ...updates }));
     return { error: null };
-  };
+  }, []);
 
 
-  const switchToDriverMode = () => {
+  const switchToDriverMode = useCallback(() => {
     setIsPreviewMode(false);
     setActiveRole('driver');
     setPageHistory([]);
     _setCurrentPage('driver-home');
-  };
+  }, []);
 
-  const switchToAdminMode = () => {
+  const switchToAdminMode = useCallback(() => {
     setIsPreviewMode(false);
     setActiveRole('admin');
     setPageHistory([]);
     _setCurrentPage('admin-home');
-  };
+  }, []);
 
-  const switchToRiderMode = () => {
+  const switchToRiderMode = useCallback(() => {
     setIsPreviewMode(false);
     setActiveRole('rider');
     setPageHistory([]);
     _setCurrentPage('rider-home');
-  };
+  }, []);
 
-  const enterPreviewMode = () => {
+  const enterPreviewMode = useCallback(() => {
     setIsPreviewMode(true);
     setPageHistory([]);
     _setCurrentPage('dashboard');
-  };
+  }, []);
 
-  const exitPreviewMode = () => {
+  const exitPreviewMode = useCallback(() => {
     setIsPreviewMode(false);
     setPageHistory([]);
     if (user.role === 'driver') _setCurrentPage('driver-home');
     else if (user.role === 'admin' || user.role === 'superadmin') _setCurrentPage('admin-home');
     else _setCurrentPage('dashboard');
-  };
+  }, [user.role]);
 
-  const logout = () => {
+  const logout = useCallback(() => {
+    isLoggingOutRef.current = true;
     setPageHistory([]);
     setActiveRole(null);
     setIsPreviewMode(false);
@@ -505,11 +542,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setJubahBooking(null);
     _setCurrentPage('login');
     supabase.auth.signOut();
-  };
+  }, []);
 
 
   // 2. Notification Operations
-  const addNotification = (title: string, description: string, type: NotificationItem['type']) => {
+  const addNotification = useCallback((title: string, description: string, type: NotificationItem['type']) => {
     const newNotif: NotificationItem = {
       id: Date.now().toString(),
       title,
@@ -519,14 +556,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       type
     };
     setNotifications(prev => [newNotif, ...prev]);
-  };
+  }, []);
 
-  const markAllNotificationsRead = () => {
+  const markAllNotificationsRead = useCallback(() => {
     setNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
-  };
+  }, []);
 
   // 3. Transport Simulation
-  const bookRide = (pickup: string, destination: string, fare: number) => {
+  const bookRide = useCallback((pickup: string, destination: string, fare: number) => {
     const mockDriver: DriverDetails = {
       name: 'Khairul Anwar',
       rating: 4.9,
@@ -583,9 +620,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }, 6000); // changes stages every 6 seconds for test drive speed
 
     setRideTimer(intervalId);
-  };
+  }, [currentPage, setCurrentPage, addNotification]);
 
-  const cancelRide = () => {
+  const cancelRide = useCallback(() => {
     if (activeRide) {
       if (rideTimer) {
         clearInterval(rideTimer);
@@ -594,9 +631,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       addNotification('Ride Cancelled', 'Your booking was cancelled.', 'transport');
       setActiveRide(null);
     }
-  };
+  }, [activeRide, rideTimer, addNotification]);
 
-  const simulateRideProgress = () => {
+  const simulateRideProgress = useCallback(() => {
     // manual advance shortcut for user testing
     if (!activeRide) return;
     if (rideTimer) {
@@ -617,10 +654,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         addNotification('Trip Stage Updated', `Ride is now: ${nextStatus.toUpperCase()}`, 'transport');
       }
     }
-  };
+  }, [activeRide, rideTimer, addNotification]);
 
   // 4. Jubah Delivery Operations
-  const bookJubah = (
+  const bookJubah = useCallback((
     reference: string,
     fullName: string,
     icNumber: string,
@@ -714,9 +751,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         addNotification('Robe Delivered', 'Your convocation bundle has been delivered.', 'jubah');
       }, 60000);
     }
-  };
+  }, [addNotification]);
 
-  const scheduleReturn = (method: 'self' | 'locker' | 'courier', date: string, time: string) => {
+  const scheduleReturn = useCallback((method: 'self' | 'locker' | 'courier', date: string, time: string) => {
     if (!jubahBooking) return;
     setJubahBooking(prev => prev ? {
       ...prev,
@@ -726,52 +763,63 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       returnTime: time
     } : null);
     addNotification('Return Scheduled', `Robe return booking via ${method.toUpperCase()} set for ${date} at ${time}.`, 'jubah');
-  };
+  }, [jubahBooking, addNotification]);
 
-  const cancelJubahBooking = () => {
+  const cancelJubahBooking = useCallback(() => {
     if (jubahBooking) {
       setJubahBooking(null);
       addNotification('Booking Cancelled', 'Convocation robe order cancelled.', 'jubah');
     }
-  };
+  }, [jubahBooking, addNotification]);
+
+  const canGoBack = pageHistory.length > 0;
+
+  const contextValue = useMemo<AppContextType>(() => ({
+    currentPage,
+    setCurrentPage,
+    goBack,
+    canGoBack,
+    isPreviewMode,
+    enterPreviewMode,
+    exitPreviewMode,
+    activeRole,
+    switchToDriverMode,
+    switchToAdminMode,
+    switchToRiderMode,
+    user,
+    login,
+    register,
+    logout,
+    updateProfile,
+    refreshUserData,
+    receiptGateActive,
+    isSheetOpen,
+    setSheetOpen,
+    notifications,
+    addNotification,
+    markAllNotificationsRead,
+    activeRide,
+    rideHistory,
+    bookRide,
+    cancelRide,
+    simulateRideProgress,
+    jubahBooking,
+    bookJubah,
+    scheduleReturn,
+    cancelJubahBooking,
+  }), [
+    currentPage, setCurrentPage, goBack, canGoBack,
+    isPreviewMode, enterPreviewMode, exitPreviewMode,
+    activeRole, switchToDriverMode, switchToAdminMode, switchToRiderMode,
+    user, login, register, logout, updateProfile, refreshUserData,
+    receiptGateActive, isSheetOpen, setSheetOpen,
+    notifications, addNotification, markAllNotificationsRead,
+    activeRide, rideHistory, bookRide, cancelRide, simulateRideProgress,
+    jubahBooking, bookJubah, scheduleReturn, cancelJubahBooking,
+  ]);
 
   return (
-    <AppContext.Provider
-      value={{
-        currentPage,
-        setCurrentPage,
-        goBack,
-        canGoBack: pageHistory.length > 0,
-        isPreviewMode,
-        enterPreviewMode,
-        exitPreviewMode,
-        activeRole,
-        switchToDriverMode,
-        switchToAdminMode,
-        switchToRiderMode,
-        user,
-        login,
-        register,
-        logout,
-        updateProfile,
-        refreshUserData,
-        receiptGateActive,
-        isSheetOpen,
-        setSheetOpen,
-        notifications,
-        addNotification,
-        markAllNotificationsRead,
-        activeRide,
-        rideHistory,
-        bookRide,
-        cancelRide,
-        simulateRideProgress,
-        jubahBooking,
-        bookJubah,
-        scheduleReturn,
-        cancelJubahBooking
-      }}
-    >
+    <AppContext.Provider value={contextValue}>
       {children}
     </AppContext.Provider>
   );

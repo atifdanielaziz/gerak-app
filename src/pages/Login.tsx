@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
 import { supabase } from '../lib/supabase';
+import { consumeSessionExpiredMessage } from '../lib/idleSession';
 import { Mail, Lock, Eye, EyeOff, ArrowRight, GraduationCap, PackageSearch } from 'lucide-react';
 
 export const Login: React.FC = () => {
@@ -9,7 +10,9 @@ export const Login: React.FC = () => {
   const [password, setPassword]     = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading]       = useState(false);
-  const [error, setError]           = useState('');
+  const [error, setError]           = useState(() =>
+    consumeSessionExpiredMessage() ? 'Your session expired due to inactivity. Please log in again.' : ''
+  );
   const [jubahActive, setJubahActive] = useState(false);
 
   useEffect(() => {
