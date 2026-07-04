@@ -3065,6 +3065,7 @@ Terima kasih 🙏`)}`}
                       { label: 'SKPG',          url: b.drive_skpg_url },
                       { label: 'Konvo Slip',    url: b.drive_konvo_url },
                       { label: 'IC Copy',       url: b.drive_ic_url },
+                      ...(b.payment_mode === 'deposit' ? [{ label: 'Balance Proof', url: b.balance_proof_url }] : []),
                     ] as { label: string; url: string | null }[]).map(({ label, url }) => (
                       <div key={label} className="flex items-center justify-between gap-3 border-b border-slate-50 pb-3 last:border-0 last:pb-0">
                         <span className="text-sm font-semibold text-slate-700">{label}</span>

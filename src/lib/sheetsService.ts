@@ -38,6 +38,19 @@ export async function submitJubahToSheets(data: JubahSheetRow): Promise<void> {
   }
 }
 
+export async function updateJubahBalanceProof(reference: string, balanceProofUrl: string): Promise<void> {
+  try {
+    await fetch(SHEETS_WEBAPP_URL, {
+      method: 'POST',
+      mode: 'no-cors',
+      headers: { 'Content-Type': 'text/plain' },
+      body: JSON.stringify({ type: 'jubah_balance_update', reference, balanceProofUrl }),
+    });
+  } catch (err) {
+    console.error('[GERAK] Google Sheets balance update failed:', err);
+  }
+}
+
 export interface RideSheetRow {
   campus: string;
   date: string;

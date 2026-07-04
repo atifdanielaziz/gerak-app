@@ -1,6 +1,7 @@
 import React, { useState, useRef } from 'react';
 import { useApp } from '../context/AppContext';
 import { supabase } from '../lib/supabase';
+import { updateJubahBalanceProof } from '../lib/sheetsService';
 import { PackageSearch, Search, GraduationCap, Upload, FileText, X, Clock, CheckCircle2 } from 'lucide-react';
 
 interface JubahBookingResult {
@@ -111,6 +112,7 @@ export const TrackJubah: React.FC = () => {
       ));
       setBalanceProof(null);
       if (balanceProofRef.current) balanceProofRef.current.value = '';
+      if (driveUrl) updateJubahBalanceProof(b.reference, driveUrl);
     } else {
       setSubmitError(data?.error ?? 'Submission failed. Please try again.');
     }
