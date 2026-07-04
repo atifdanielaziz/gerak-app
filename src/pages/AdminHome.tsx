@@ -7,7 +7,7 @@ import {
   UserPlus, Mail, X, Send, ChevronDown, ChevronUp, Megaphone, Plus, ToggleLeft, ToggleRight,
   FileImage, ShieldCheck, ShieldOff, ExternalLink, KeyRound,
   CalendarDays, Upload, Eye, Phone, ArrowLeftRight, Pencil, GraduationCap,
-  ChevronLeft, Download, MoreVertical,
+  ChevronLeft, Download, MoreVertical, Copy, Check,
 } from 'lucide-react';
 import { WaBtn, WaIcon, toWa } from '../lib/whatsapp';
 
@@ -752,6 +752,7 @@ export const AdminHome: React.FC = () => {
   const [jubahAdminView,     setJubahAdminView]     = useState<'list' | 'card' | 'details'>('list');
   const [jubahAdminSelected, setJubahAdminSelected] = useState<JubahBookingRow | null>(null);
   const [jubahAdminUpdating, setJubahAdminUpdating] = useState(false);
+  const [copiedRef, setCopiedRef] = useState(false);
   const [jubahSubTab,        setJubahSubTab]        = useState<'customer' | 'rider' | 'price'>('rider');
   type JubahPrice = { remark: string; payment_mode: string; price: number };
   const [savingPrice,        setSavingPrice]        = useState<string | null>(null);
@@ -2841,7 +2842,15 @@ export const AdminHome: React.FC = () => {
                       <ChevronLeft className="w-4 h-4" />
                     </button>
                     <div>
-                      <p className="text-xs font-black text-slate-700">{b.reference}</p>
+                      <div className="flex items-center gap-1.5">
+                        <p className="text-xs font-black text-slate-700">{b.reference}</p>
+                        <button
+                          onClick={() => { navigator.clipboard.writeText(b.reference); setCopiedRef(true); setTimeout(() => setCopiedRef(false), 2000); }}
+                          className="w-5 h-5 flex items-center justify-center text-slate-400 hover:text-primary active:scale-90 transition"
+                        >
+                          {copiedRef ? <Check className="w-3 h-3 text-emerald-500" /> : <Copy className="w-3 h-3" />}
+                        </button>
+                      </div>
                       <p className="text-[10px] text-slate-400 font-semibold">{b.full_name}</p>
                     </div>
                   </div>
