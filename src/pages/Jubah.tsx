@@ -219,6 +219,7 @@ export const Jubah: React.FC = () => {
     const uniAbbrev = university.includes('Pahang') ? 'UMPSA'
       : university.includes('UiTM') || university.includes('MARA') ? 'UiTM'
       : university.includes('Kelantan') ? 'UMK'
+      : university.includes('Kebangsaan') ? 'UKM'
       : 'UIA';
     const reference = `JUB-${new Date().getFullYear().toString().slice(-2)}-${uniAbbrev}-${Math.random().toString(36).slice(2, 6).toUpperCase()}`;
     const combinedFileName = `${(fullName || 'combined').replace(/\s+/g, '_')}_combined.pdf`;
@@ -273,6 +274,7 @@ export const Jubah: React.FC = () => {
     umpsa: 'Universiti Malaysia Pahang Al-Sultan Abdullah',
     uitm:  'Universiti Teknologi MARA (UiTM)',
     umk:   'Universiti Malaysia Kelantan',
+    ukm:   'Universiti Kebangsaan Malaysia',
     uiam:  'Universiti Islam Antarabangsa Malaysia',
   };
 

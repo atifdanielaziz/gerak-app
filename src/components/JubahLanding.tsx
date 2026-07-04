@@ -17,6 +17,7 @@ const UNIVERSITIES = [
   { key: 'umpsa', label: 'Universiti Malaysia Pahang Al-Sultan Abdullah (UMPSA)' },
   { key: 'uitm',  label: 'Universiti Teknologi MARA (UiTM)' },
   { key: 'umk',   label: 'Universiti Malaysia Kelantan (UMK)' },
+  { key: 'ukm',   label: 'Universiti Kebangsaan Malaysia (UKM)' },
   { key: 'uiam',  label: 'Universiti Islam Antarabangsa Malaysia (UIA)' },
 ];
 
@@ -40,7 +41,7 @@ export const JubahLanding: React.FC<Props> = ({ onProceed }) => {
   // Campus mapping for the directory RPC
   const CAMPUS_MAP: Record<string, string> = {
     umpsa: '', // both Pekan and Gambang — or pass '' to get all
-    uitm: '', umk: '', uiam: '',
+    uitm: '', umk: '', ukm: '', uiam: '',
   };
 
   // Load public URLs for all universities on mount
