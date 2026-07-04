@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { useApp } from '../context/AppContext';
-import { ChevronRight, Upload, Image as ImageIcon } from 'lucide-react';
+import { ChevronRight, Upload, Image as ImageIcon, X } from 'lucide-react';
 import { WaIcon, toWa } from '../lib/whatsapp';
 
 type RiderDir = { id: string; name: string; jubah_drop_point: string | null; ic_number: string | null; phone: string | null };
@@ -11,6 +11,21 @@ const maskIc = (ic: string | null) => {
   const digits = ic.replace(/\D/g, '');
   if (digits.length < 6) return ic;
   return `${digits.slice(0, 6)}-XX-XXXX`;
+};
+
+const IcMasked: React.FC<{ ic: string | null }> = ({ ic }) => {
+  if (!ic) return <span className="text-slate-800 font-bold text-sm">—</span>;
+  const digits = ic.replace(/\D/g, '');
+  if (digits.length < 6) return <span className="text-slate-800 font-bold text-sm">{ic}</span>;
+  return (
+    <span className="font-bold text-sm font-mono">
+      <span className="text-slate-800">{digits.slice(0, 6)}</span>
+      <span className="text-slate-800">-</span>
+      <span className="text-red-500">XX</span>
+      <span className="text-slate-800">-</span>
+      <span className="text-red-500">XXXX</span>
+    </span>
+  );
 };
 
 const UNIVERSITIES = [
@@ -28,7 +43,7 @@ interface Props {
 }
 
 export const JubahLanding: React.FC<Props> = ({ onProceed }) => {
-  const { user } = useApp();
+  const { user, setSheetOpen } = useApp();
   const isAdmin = user.role === 'admin' || user.role === 'superadmin';
 
   const [selectedKey, setSelectedKey]   = useState('');
@@ -37,6 +52,10 @@ export const JubahLanding: React.FC<Props> = ({ onProceed }) => {
   const [uploading, setUploading]       = useState(false);
   const uploadRef = useRef<HTMLInputElement>(null);
   const [riderDir, setRiderDir]         = useState<RiderDir[]>([]);
+  const [selectedRider, setSelectedRider] = useState<RiderDir | null>(null);
+
+  const openRider  = (r: RiderDir) => { setSelectedRider(r); setSheetOpen(true); };
+  const closeRider = ()            => { setSelectedRider(null); setSheetOpen(false); };
 
   // Campus mapping for the directory RPC
   const CAMPUS_MAP: Record<string, string> = {
@@ -188,7 +207,8 @@ export const JubahLanding: React.FC<Props> = ({ onProceed }) => {
               </thead>
               <tbody>
                 {riderDir.map(r => (
-                  <tr key={r.id} className="border-b border-slate-50 text-[10px]">
+                  <tr key={r.id} onClick={() => openRider(r)}
+                    className="border-b border-slate-50 text-[10px] cursor-pointer hover:bg-slate-50 active:bg-slate-100 transition">
                     <td className="py-2.5 pr-4 text-slate-600 font-semibold align-top whitespace-nowrap">
                       {r.jubah_drop_point || '—'}
                     </td>
@@ -201,17 +221,7 @@ export const JubahLanding: React.FC<Props> = ({ onProceed }) => {
                     <td className="py-2.5 font-semibold text-slate-700 align-top whitespace-nowrap">
                       <div className="flex items-center gap-1.5">
                         <span>{r.phone || '—'}</span>
-                        {r.phone && (
-                          <a
-                            href={`https://wa.me/${toWa(r.phone)}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            onClick={e => e.stopPropagation()}
-                            className="text-[#25D366] active:scale-90 transition shrink-0"
-                          >
-                            <WaIcon className="w-3.5 h-3.5" />
-                          </a>
-                        )}
+                        {r.phone && <WaIcon className="w-3.5 h-3.5 text-[#25D366]" />}
                       </div>
                     </td>
                   </tr>
@@ -225,6 +235,71 @@ export const JubahLanding: React.FC<Props> = ({ onProceed }) => {
         </div>
       )}
 
+
+      {/* Representative profile sheet */}
+      {selectedRider && (
+        <>
+          <div className="fixed inset-0 z-40 bg-black/40 backdrop-blur-sm" onClick={closeRider} />
+          <div className="fixed bottom-0 left-0 right-0 z-50 bg-white rounded-t-3xl shadow-2xl animate-slide-up max-h-[80vh] overflow-y-auto no-scrollbar">
+
+            {/* Sheet header */}
+            <div className="flex items-center justify-between px-5 pt-5 pb-3 border-b border-slate-100">
+              <div>
+                <p className="text-[9px] font-extrabold text-slate-400 uppercase tracking-widest">Representative</p>
+                <h3 className="text-base font-black text-slate-800 mt-0.5">{selectedRider.name}</h3>
+              </div>
+              <button onClick={closeRider}
+                className="w-8 h-8 flex items-center justify-center rounded-xl bg-slate-100 text-slate-500 hover:bg-slate-200 active:scale-90 transition">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Fields */}
+            <div className="px-5 py-4 flex flex-col gap-5">
+
+              {/* Method */}
+              <div className="flex flex-col gap-1">
+                <span className="text-[9px] font-extrabold text-slate-400 uppercase tracking-widest">Method</span>
+                <span className="text-sm font-bold text-slate-800">{selectedRider.jubah_drop_point || '—'}</span>
+              </div>
+
+              {/* Representative Name */}
+              <div className="flex flex-col gap-1">
+                <span className="text-[9px] font-extrabold text-slate-400 uppercase tracking-widest">Representative Name</span>
+                <span className="text-sm font-bold text-slate-800">{selectedRider.name}</span>
+              </div>
+
+              {/* IC Number */}
+              <div className="flex flex-col gap-1">
+                <span className="text-[9px] font-extrabold text-slate-400 uppercase tracking-widest">I/C Number</span>
+                <IcMasked ic={selectedRider.ic_number} />
+              </div>
+
+              {/* H/P Number */}
+              <div className="flex flex-col gap-1">
+                <span className="text-[9px] font-extrabold text-slate-400 uppercase tracking-widest">H/P Number</span>
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-bold text-slate-800">{selectedRider.phone || '—'}</span>
+                  {selectedRider.phone && (
+                    <a
+                      href={`https://wa.me/${toWa(selectedRider.phone)}?text=${encodeURIComponent(
+                        `Hello gerak rider, i need your IC number : ${maskIc(selectedRider.ic_number)} for my booking. boleh bagi sekarang?`
+                      )}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      onClick={e => e.stopPropagation()}
+                      className="text-[#25D366] active:scale-90 transition shrink-0"
+                    >
+                      <WaIcon className="w-5 h-5" />
+                    </a>
+                  )}
+                </div>
+              </div>
+
+            </div>
+          </div>
+        </>
+      )}
 
     </div>
   );
