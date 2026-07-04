@@ -2877,17 +2877,10 @@ export const AdminHome: React.FC = () => {
                       <div className="flex items-center gap-1.5 bg-slate-50 border border-slate-100 rounded-xl px-3 py-2 flex-1">
                         <span className="text-[11px] font-semibold text-slate-600">{b.hp_number}</span>
                         <a href={`https://wa.me/${toWa(b.hp_number)}?text=${encodeURIComponent(
-`Assalamualaikum ${b.full_name} 🎓
-
-Ini peringatan daripada Gerak Jubah.
-
-Pembayaran penuh perlu diselesaikan 1 minggu sebelum tarikh pengambilan jubah.
-
-⚠️ Pembatalan TIDAK DIBENARKAN dalam tempoh 1 minggu sebelum tarikh pengambilan jubah.
-
-Rujukan: ${b.reference}
-
-Terima kasih 🙏`)}`}
+                          b.payment_mode === 'deposit' && !b.balance_paid
+                            ? `Assalamualaikum ${b.full_name} 🎓\n\nIni peringatan daripada Gerak Jubah.\n\nBaki bayaran anda sebanyak *RM${b.balance_due.toFixed(2)}* masih belum dijelaskan.\n\nSila kemaskini bukti pembayaran melalui akaun Gerak anda sebelum tarikh pengambilan jubah.\n\nRujukan: ${b.reference}\n\nTerima kasih 🙏`
+                            : `Assalamualaikum ${b.full_name} 🎓\n\nIni peringatan daripada Gerak Jubah.\n\nPembayaran penuh perlu diselesaikan 1 minggu sebelum tarikh pengambilan jubah.\n\n⚠️ Pembatalan TIDAK DIBENARKAN dalam tempoh 1 minggu sebelum tarikh pengambilan jubah.\n\nRujukan: ${b.reference}\n\nTerima kasih 🙏`
+                        )}`}
                           target="_blank" rel="noopener noreferrer"
                           className="text-[#25D366] ml-auto shrink-0">
                           <WaIcon className="w-4 h-4" />
