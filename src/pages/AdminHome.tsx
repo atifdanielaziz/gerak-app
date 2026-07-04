@@ -3059,18 +3059,35 @@ Terima kasih 🙏`)}`}
                     ] as { label: string; url: string | null }[]).map(({ label, url }) => (
                       <div key={label} className="flex items-center justify-between gap-3 border-b border-slate-50 pb-3 last:border-0 last:pb-0">
                         <span className="text-sm font-semibold text-slate-700">{label}</span>
-                        <a
-                          href={url ?? '#'}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          onClick={e => { if (!url) e.preventDefault(); }}
-                          className={`w-9 h-9 flex items-center justify-center rounded-xl border transition shrink-0 ${
-                            url
-                              ? 'bg-slate-800 border-slate-700 text-white hover:bg-slate-700 active:scale-95'
-                              : 'bg-slate-50 border-slate-100 text-slate-300 cursor-not-allowed'
-                          }`}>
-                          <Download className="w-4 h-4" />
-                        </a>
+                        <div className="flex items-center gap-2 shrink-0">
+                          {/* View */}
+                          <a
+                            href={url ?? '#'}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            onClick={e => { if (!url) e.preventDefault(); }}
+                            className={`w-9 h-9 flex items-center justify-center rounded-xl border transition ${
+                              url
+                                ? 'bg-blue-50 border-blue-100 text-blue-600 hover:bg-blue-100 active:scale-95'
+                                : 'bg-slate-50 border-slate-100 text-slate-300 cursor-not-allowed'
+                            }`}>
+                            <Eye className="w-4 h-4" />
+                          </a>
+                          {/* Download */}
+                          <a
+                            href={url ?? '#'}
+                            download
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            onClick={e => { if (!url) e.preventDefault(); }}
+                            className={`w-9 h-9 flex items-center justify-center rounded-xl border transition ${
+                              url
+                                ? 'bg-slate-800 border-slate-700 text-white hover:bg-slate-700 active:scale-95'
+                                : 'bg-slate-50 border-slate-100 text-slate-300 cursor-not-allowed'
+                            }`}>
+                            <Download className="w-4 h-4" />
+                          </a>
+                        </div>
                       </div>
                     ))}
                   </div>
