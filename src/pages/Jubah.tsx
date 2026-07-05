@@ -231,6 +231,31 @@ export const Jubah: React.FC = () => {
   const [booking, setBooking] = useState(false);
   const [copied, setCopied]   = useState(false);
 
+  // Live status polled from DB (replaces the demo simulation)
+  const [liveStatus,     setLiveStatus]     = useState<string | null>(null);
+  const [liveRiderName,  setLiveRiderName]  = useState<string | null>(null);
+  const [liveRiderPhone, setLiveRiderPhone] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!jubahBooking?.reference) return;
+    let cancelled = false;
+    const poll = async () => {
+      const { data } = await supabase
+        .from('jubah_bookings')
+        .select('status, rider_name, rider_phone')
+        .eq('reference', jubahBooking.reference)
+        .single();
+      if (data && !cancelled) {
+        setLiveStatus(data.status);
+        setLiveRiderName(data.rider_name ?? null);
+        setLiveRiderPhone(data.rider_phone ?? null);
+      }
+    };
+    poll();
+    const id = setInterval(poll, 30000);
+    return () => { cancelled = true; clearInterval(id); };
+  }, [jubahBooking?.reference]);
+
   const handleBook = async (e: React.SyntheticEvent) => {
     e.preventDefault();
     if (!university) { alert('Please select your university.'); return; }
@@ -924,41 +949,66 @@ export const Jubah: React.FC = () => {
               </div>
             </div>
 
-            {/* Progress steps */}
+            {/* Rider contact — only once assigned */}
+            {liveRiderName && (
+              <div className="bg-slate-50 rounded-xl p-3 flex items-center justify-between gap-2">
+                <div>
+                  <span className="text-[8px] font-extrabold text-slate-400 uppercase tracking-wider block">Your Rider</span>
+                  <span className="text-sm font-bold text-slate-800">{liveRiderName}</span>
+                  {liveRiderPhone && <span className="text-[10px] font-semibold text-slate-500 block">{liveRiderPhone}</span>}
+                </div>
+                {liveRiderPhone && (
+                  <a href={`https://wa.me/${toWa(liveRiderPhone)}?text=${encodeURIComponent(
+                    `Hello ${liveRiderName}, saya ${jubahBooking.fullName} (${jubahBooking.reference}). Saya ingin bertanya mengenai tempahan jubah saya.`
+                  )}`} target="_blank" rel="noopener noreferrer"
+                    className="text-[#25D366] active:scale-90 transition shrink-0">
+                    <WaIcon className="w-5 h-5" />
+                  </a>
+                )}
+              </div>
+            )}
+
+            {/* Progress steps — wired to real DB status */}
             <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Robe Preparation</h4>
             <div className="flex flex-col gap-4 pl-2">
-              {[
-                { key: 'ordered',   label: 'Order Confirmed',     desc: 'Booking registered in system.' },
-                { key: 'cleaning',  label: 'Dry Cleaning',        desc: 'Prepping fabric for convocation.' },
-                { key: 'packaging', label: 'Packaging',           desc: 'Wrapped in protective coat bag.' },
-                { key: 'delivering', label: jubahBooking.paymentMode === 'postage' ? 'Out for Delivery' : 'Ready for Pickup',
-                                    desc: jubahBooking.paymentMode === 'postage' ? 'Rider heading to your address.' : 'Available at collection counter.' },
-                { key: 'delivered', label: jubahBooking.paymentMode === 'postage' ? 'Delivered' : 'Collected',
-                                    desc: 'Safe in your hands!' },
-              ].map((step, idx) => {
-                const order = ['ordered', 'cleaning', 'packaging', 'delivering', 'delivered'];
-                const currentIdx = order.indexOf(jubahBooking.status);
-                const isPast    = currentIdx >= idx;
-                const isCurrent = jubahBooking.status === step.key;
-                return (
-                  <div key={step.key} className="flex gap-4 relative">
-                    {idx < 4 && (
-                      <div className={`absolute left-2.5 top-6 bottom-0 w-0.5 -translate-x-1/2 ${currentIdx > idx ? 'bg-blue-500' : 'bg-slate-100'}`} />
-                    )}
-                    <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center relative z-10 transition ${isPast ? 'bg-blue-500 border-blue-500 text-white' : 'bg-white border-slate-200'}`}>
-                      {isPast && <CheckCircle2 className="w-3.5 h-3.5" />}
+              {(() => {
+                const isPostage = jubahBooking.paymentMode === 'postage';
+                const steps = isPostage ? [
+                  { key: 'booked',     label: 'Order Confirmed',   desc: 'Booking registered in system.' },
+                  { key: 'processing', label: 'Processing',         desc: 'Robe being prepared for delivery.' },
+                  { key: 'collected',  label: 'Collected',           desc: 'Robe collected from university.' },
+                  { key: 'at_hub',     label: 'Out for Delivery',   desc: 'Arrived at postage hub.' },
+                  { key: 'delivered',  label: 'Delivered',           desc: 'Safe in your hands!' },
+                ] : [
+                  { key: 'booked',     label: 'Order Confirmed',   desc: 'Booking registered in system.' },
+                  { key: 'processing', label: 'Processing',         desc: 'Robe being prepared for collection.' },
+                  { key: 'collected',  label: 'Ready for Pickup',   desc: 'Available at collection counter.' },
+                  { key: 'delivered',  label: 'Collected',           desc: 'Safe in your hands!' },
+                ];
+                const currentStatus = liveStatus ?? 'booked';
+                const currentIdx = steps.findIndex(s => s.key === currentStatus);
+                return steps.map((step, idx) => {
+                  const isPast    = currentIdx >= idx;
+                  const isCurrent = currentIdx === idx;
+                  return (
+                    <div key={step.key} className="flex gap-4 relative">
+                      {idx < steps.length - 1 && (
+                        <div className={`absolute left-2.5 top-6 bottom-0 w-0.5 -translate-x-1/2 ${currentIdx > idx ? 'bg-blue-500' : 'bg-slate-100'}`} />
+                      )}
+                      <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center relative z-10 transition ${isPast ? 'bg-blue-500 border-blue-500 text-white' : 'bg-white border-slate-200'}`}>
+                        {isPast && <CheckCircle2 className="w-3.5 h-3.5" />}
+                      </div>
+                      <div className="flex-1 -mt-0.5">
+                        <h5 className={`text-xs font-bold leading-tight ${isCurrent ? 'text-blue-600 font-black' : isPast ? 'text-slate-700' : 'text-slate-300'}`}>
+                          {step.label}
+                        </h5>
+                        <p className="text-[10px] text-slate-400 mt-0.5">{step.desc}</p>
+                      </div>
                     </div>
-                    <div className="flex-1 -mt-0.5">
-                      <h5 className={`text-xs font-bold leading-tight ${isCurrent ? 'text-blue-600 font-black' : isPast ? 'text-slate-700' : 'text-slate-300'}`}>
-                        {step.label}
-                      </h5>
-                      <p className="text-[10px] text-slate-400 mt-0.5">{step.desc}</p>
-                    </div>
-                  </div>
-                );
-              })}
+                  );
+                });
+              })()}
             </div>
-            <p className="text-[8px] text-slate-400 italic mt-1">Status updates in 15-second cycles for demo purposes.</p>
           </div>
 
         </div>
