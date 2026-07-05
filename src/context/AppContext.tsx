@@ -696,24 +696,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         });
       });
     }
-
-    setTimeout(() => setJubahBooking(prev => prev ? { ...prev, status: 'cleaning' } : null), 15000);
-    setTimeout(() => setJubahBooking(prev => prev ? { ...prev, status: 'packaging' } : null), 30000);
-    setTimeout(() => {
-      const isPostage = paymentMode === 'postage';
-      setJubahBooking(prev => prev ? { ...prev, status: isPostage ? 'delivering' : 'delivered' } : null);
-      addNotification(
-        isPostage ? 'Robe Out for Delivery' : 'Robe Ready for Collection',
-        isPostage ? 'Rider is on the way with your package.' : 'Visit the collection counter to pick up your robe.',
-        'jubah'
-      );
-    }, 45000);
-    if (paymentMode === 'postage') {
-      setTimeout(() => {
-        setJubahBooking(prev => prev ? { ...prev, status: 'delivered' } : null);
-        addNotification('Robe Delivered', 'Your convocation bundle has been delivered.', 'jubah');
-      }, 60000);
-    }
   };
 
   const scheduleReturn = (method: 'self' | 'locker' | 'courier', date: string, time: string) => {
