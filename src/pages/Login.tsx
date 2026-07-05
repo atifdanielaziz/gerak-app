@@ -10,14 +10,22 @@ export const Login: React.FC = () => {
   const [password, setPassword]     = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading]       = useState(false);
-  const [error, setError]           = useState(() =>
-    consumeSessionExpiredMessage() ? 'Your session expired due to inactivity. Please log in again.' : ''
-  );
+  const [error, setError]           = useState('');
   const [jubahActive, setJubahActive] = useState(false);
 
   useEffect(() => {
     supabase.from('app_settings').select('value').eq('key', 'jubah_active').single()
       .then(({ data }) => { if (data) setJubahActive(data.value === 'true'); });
+  }, []);
+
+  // Reading (and clearing) sessionStorage is a side effect, so it must run in
+  // an effect rather than a useState lazy initializer — React StrictMode
+  // double-invokes lazy initializers in dev, which would consume the flag on
+  // the first call and silently return '' on the second, dropping the banner.
+  useEffect(() => {
+    if (consumeSessionExpiredMessage()) {
+      setError('Your session expired due to inactivity. Please log in again.');
+    }
   }, []);
 
   const handleSubmit = async (e: React.SyntheticEvent) => {

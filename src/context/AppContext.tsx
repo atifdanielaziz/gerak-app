@@ -544,6 +544,20 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     supabase.auth.signOut();
   }, []);
 
+  // Re-check the inactivity limit periodically while the app stays open, so a
+  // tab left open continuously (never reloaded) still gets force-logged-out
+  // once past the limit, not just on next app load.
+  useEffect(() => {
+    if (!user.isLoggedIn) return;
+    const intervalId = window.setInterval(() => {
+      if (isSessionExpired(INACTIVITY_LIMIT_MS)) {
+        setSessionExpiredMessage();
+        logout();
+      }
+    }, 15 * 60 * 1000);
+    return () => window.clearInterval(intervalId);
+  }, [user.isLoggedIn, logout]);
+
 
   // 2. Notification Operations
   const addNotification = useCallback((title: string, description: string, type: NotificationItem['type']) => {
