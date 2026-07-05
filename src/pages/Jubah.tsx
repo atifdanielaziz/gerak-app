@@ -1,9 +1,32 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
-import { CheckCircle2, X, Upload, FileText, ShieldAlert, Download, ChevronDown, ChevronLeft, User, Pencil, MapPin, Copy, Check } from 'lucide-react';
+import { CheckCircle2, X, Upload, FileText, ShieldAlert, Download, ChevronDown, ChevronLeft, User, Pencil, MapPin, Copy, Check, Info } from 'lucide-react';
 import { submitJubahToSheets } from '../lib/sheetsService';
 import { JubahLanding } from '../components/JubahLanding';
 import { supabase } from '../lib/supabase';
+import { WaIcon, toWa } from '../lib/whatsapp';
+
+const maskIc = (ic: string | null) => {
+  if (!ic) return '—';
+  const digits = ic.replace(/\D/g, '');
+  if (digits.length < 6) return ic;
+  return `${digits.slice(0, 6)}-XX-XXXX`;
+};
+
+const IcMasked: React.FC<{ ic: string | null }> = ({ ic }) => {
+  if (!ic) return <span className="text-slate-800 font-bold text-sm">—</span>;
+  const digits = ic.replace(/\D/g, '');
+  if (digits.length < 6) return <span className="text-slate-800 font-bold text-sm">{ic}</span>;
+  return (
+    <span className="font-bold text-sm font-mono">
+      <span className="text-slate-800">{digits.slice(0, 6)}</span>
+      <span className="text-slate-800">-</span>
+      <span className="text-red-500">XX</span>
+      <span className="text-slate-800">-</span>
+      <span className="text-red-500">XXXX</span>
+    </span>
+  );
+};
 
 const UNIVERSITIES = [
   'Universiti Malaysia Pahang Al-Sultan Abdullah (Pekan)',
@@ -63,8 +86,9 @@ export const Jubah: React.FC = () => {
   const paymentProofRef = useRef<HTMLInputElement>(null);
 
   const [selectedRiderId,   setSelectedRiderId]   = useState('');
-  const [riders,            setRiders]            = useState<{ id: string; name: string; jubah_drop_point: string | null }[]>([]);
+  const [riders,            setRiders]            = useState<{ id: string; name: string; jubah_drop_point: string | null; ic_number: string | null; phone: string | null }[]>([]);
   const [ridersLoading,     setRidersLoading]     = useState(false);
+  const [riderProfileOpen,  setRiderProfileOpen]  = useState(false);
 
   // Address state — only used for postage mode
   const [addressLine1,      setAddressLine1]      = useState('');
@@ -578,31 +602,45 @@ export const Jubah: React.FC = () => {
             <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest flex items-center gap-1.5">
               <User className="w-3.5 h-3.5" /> Select Rider
             </h3>
-            <div className={`relative group ${!university ? 'opacity-50 pointer-events-none' : ''}`}>
-              <div className="bg-slate-50 border border-slate-200 rounded-xl py-2.5 px-3 flex items-center justify-between pointer-events-none group-focus-within:border-blue-500 transition">
-                <span className={`text-xs ${selectedRiderId ? 'font-bold text-slate-700' : 'font-normal text-slate-300'}`}>
-                  {ridersLoading
-                    ? 'Loading riders...'
-                    : selectedRiderId
-                      ? riders.find(r => r.id === selectedRiderId)?.name ?? 'Select a rider...'
-                      : university
-                        ? riders.length === 0 ? 'No riders available' : 'Select a rider...'
-                        : 'Select campus first'}
-                </span>
-                <ChevronDown className="w-3 h-3 text-slate-400 shrink-0" />
+            <div className="flex items-center gap-2">
+              <div className={`relative group flex-1 ${!university ? 'opacity-50 pointer-events-none' : ''}`}>
+                <div className="bg-slate-50 border border-slate-200 rounded-xl py-2.5 px-3 flex items-center justify-between pointer-events-none group-focus-within:border-blue-500 transition">
+                  <span className={`text-xs ${selectedRiderId ? 'font-bold text-slate-700' : 'font-normal text-slate-300'}`}>
+                    {ridersLoading
+                      ? 'Loading riders...'
+                      : selectedRiderId
+                        ? riders.find(r => r.id === selectedRiderId)?.name ?? 'Select a rider...'
+                        : university
+                          ? riders.length === 0 ? 'No riders available' : 'Select a rider...'
+                          : 'Select campus first'}
+                  </span>
+                  <ChevronDown className="w-3 h-3 text-slate-400 shrink-0" />
+                </div>
+                <select
+                  value={selectedRiderId}
+                  onChange={e => setSelectedRiderId(e.target.value)}
+                  disabled={!university || ridersLoading || riders.length === 0}
+                  className="absolute inset-0 w-full h-full opacity-0 cursor-pointer disabled:cursor-not-allowed"
+                  style={{ fontSize: '16px' }}
+                >
+                  <option value="" disabled>Select a rider...</option>
+                  {riders.map(r => (
+                    <option key={r.id} value={r.id}>{r.name}</option>
+                  ))}
+                </select>
               </div>
-              <select
-                value={selectedRiderId}
-                onChange={e => setSelectedRiderId(e.target.value)}
-                disabled={!university || ridersLoading || riders.length === 0}
-                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer disabled:cursor-not-allowed"
-                style={{ fontSize: '16px' }}
+              <button
+                type="button"
+                disabled={!selectedRiderId}
+                onClick={() => { setRiderProfileOpen(true); setSheetOpen(true); }}
+                className={`w-10 h-10 flex items-center justify-center rounded-xl border shrink-0 transition active:scale-90 ${
+                  selectedRiderId
+                    ? 'bg-blue-50 border-blue-100 text-blue-600 hover:bg-blue-100'
+                    : 'bg-slate-50 border-slate-100 text-slate-300 cursor-not-allowed'
+                }`}
               >
-                <option value="" disabled>Select a rider...</option>
-                {riders.map(r => (
-                  <option key={r.id} value={r.id}>{r.name}</option>
-                ))}
-              </select>
+                <Info className="w-4 h-4" />
+              </button>
             </div>
             {university && !ridersLoading && riders.length === 0 && (
               <p className="text-[10px] text-slate-400 font-semibold text-center -mt-2">
@@ -977,6 +1015,62 @@ export const Jubah: React.FC = () => {
           </div>
         </div>
       )}
+
+      {/* Rider profile sheet */}
+      {riderProfileOpen && (() => {
+        const r = riders.find(rd => rd.id === selectedRiderId);
+        if (!r) return null;
+        const close = () => { setRiderProfileOpen(false); setSheetOpen(false); };
+        return (
+          <>
+            <div className="fixed inset-0 z-40 bg-black/40 backdrop-blur-sm" onClick={close} />
+            <div className="fixed bottom-0 left-0 right-0 z-50 bg-white rounded-t-3xl shadow-2xl animate-slide-up max-h-[80vh] overflow-y-auto no-scrollbar">
+              <div className="flex items-center justify-between px-5 pt-5 pb-3 border-b border-slate-100">
+                <div>
+                  <p className="text-[9px] font-extrabold text-slate-400 uppercase tracking-widest">Your Rider</p>
+                  <h3 className="text-base font-black text-slate-800 mt-0.5">{r.name}</h3>
+                </div>
+                <button onClick={close}
+                  className="w-8 h-8 flex items-center justify-center rounded-xl bg-slate-100 text-slate-500 hover:bg-slate-200 active:scale-90 transition">
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+              <div className="px-5 py-4 flex flex-col gap-5">
+                <div className="flex flex-col gap-1">
+                  <span className="text-[9px] font-extrabold text-slate-400 uppercase tracking-widest">Method</span>
+                  <span className="text-sm font-bold text-slate-800">{r.jubah_drop_point || '—'}</span>
+                </div>
+                <div className="flex flex-col gap-1">
+                  <span className="text-[9px] font-extrabold text-slate-400 uppercase tracking-widest">Representative Name</span>
+                  <span className="text-sm font-bold text-slate-800">{r.name}</span>
+                </div>
+                <div className="flex flex-col gap-1">
+                  <span className="text-[9px] font-extrabold text-slate-400 uppercase tracking-widest">I/C Number</span>
+                  <IcMasked ic={r.ic_number} />
+                </div>
+                <div className="flex flex-col gap-1">
+                  <span className="text-[9px] font-extrabold text-slate-400 uppercase tracking-widest">H/P Number</span>
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-bold text-slate-800">{r.phone || '—'}</span>
+                    {r.phone && (
+                      <a
+                        href={`https://wa.me/${toWa(r.phone)}?text=${encodeURIComponent(
+                          `Hello gerak rider, i need your IC number : ${maskIc(r.ic_number)} for my booking. boleh bagi sekarang?`
+                        )}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-[#25D366] active:scale-90 transition shrink-0"
+                      >
+                        <WaIcon className="w-5 h-5" />
+                      </a>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </>
+        );
+      })()}
     </div>
   );
 };
