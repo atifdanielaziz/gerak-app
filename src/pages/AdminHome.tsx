@@ -185,7 +185,7 @@ const ProfileSheet: React.FC<{ u: ProfileUser; onClose: () => void }> = ({ u, on
       onClick={onClose}
     >
       <div
-        className="w-full max-w-[480px] max-h-[90vh] bg-white rounded-t-3xl shadow-2xl animate-slide-up flex flex-col"
+        className="w-full max-w-[480px] max-h-[80vh] bg-white rounded-t-3xl shadow-2xl animate-slide-up flex flex-col"
         onClick={e => e.stopPropagation()}
       >
         {/* Handle */}
@@ -2721,7 +2721,9 @@ export const AdminHome: React.FC = () => {
                     </thead>
                     <tbody>
                       {jubahRiders.map(r => (
-                        <tr key={r.id} className="border-b border-slate-50 text-[10px]">
+                        <tr key={r.id}
+                          onClick={() => { setJubahSheetRider(r); setSheetOpen(true); }}
+                          className="border-b border-slate-50 text-[10px] cursor-pointer hover:bg-slate-50 active:bg-slate-100 transition">
                           <td className="py-2.5 pr-4 text-slate-600 font-semibold align-top whitespace-nowrap">
                             {r.jubah_drop_point || '—'}
                           </td>
