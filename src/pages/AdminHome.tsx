@@ -711,9 +711,7 @@ export const AdminHome: React.FC = () => {
   const [usersLoading, setUsersLoading]     = useState(false);
   const [terminating, setTerminating]       = useState<string | null>(null);
   const [togglingStatus, setTogglingStatus] = useState<string | null>(null);
-  const [searchGerakId, setSearchGerakId]   = useState('');
-  const [searchResult, setSearchResult]     = useState<ProfileUser | null | 'not_found'>(null);
-  const [searching, setSearching]           = useState(false);
+  const [staffSearch, setStaffSearch]       = useState('');
   const [pendingAction, setPendingAction]   = useState<PendingAction | null>(null);
   const [staffFilter, setStaffFilter]       = useState<'all' | 'drivers' | 'riders' | 'admins'>('all');
   const [sheetUser, setSheetUser]           = useState<ProfileUser | null>(null);
@@ -1356,20 +1354,6 @@ export const AdminHome: React.FC = () => {
     return false;
   };
 
-  const handleSearchGerakId = async () => {
-    if (!searchGerakId.trim()) return;
-    setSearching(true);
-    setSearchResult(null);
-    const { data } = await supabase.rpc('search_profile_by_gerak_id', { p_gerak_id: searchGerakId.trim() });
-    setSearching(false);
-    const results = data as ProfileUser[] | null;
-    const driver = results?.find(r =>
-      (r.role === 'driver' || (r.can_drive && ['admin','superadmin'].includes(r.role))) &&
-      (isSuperAdmin || r.campus.toLowerCase() === adminCampus.toLowerCase())
-    ) ?? null;
-    setSearchResult(driver ?? 'not_found');
-  };
-
   const handleToggleStatus = async (u: ProfileUser) => {
     setTogglingStatus(u.id);
     const newStatus = u.status === 'active' ? 'inactive' : 'active';
@@ -1929,54 +1913,30 @@ export const AdminHome: React.FC = () => {
       {activeTab === 'users' && (
         <div className="flex flex-col gap-3">
 
-          {/* Driver search */}
-          <div className="bg-white border border-slate-100 rounded-2xl p-3.5 shadow-sm flex flex-col gap-2">
-            <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1.5">
-              <AlertCircle className="w-3.5 h-3.5" /> Find Staff
-            </h3>
-            <div className="flex gap-2">
-              <input
-                type="text"
-                value={searchGerakId}
-                onChange={e => { setSearchGerakId(e.target.value.toUpperCase()); setSearchResult(null); }}
-                onKeyDown={e => e.key === 'Enter' && handleSearchGerakId()}
-                placeholder="e.g. GDP0001"
-                style={{ fontSize: '12px' }}
-                className="flex-1 bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 font-bold text-slate-700 focus:outline-none focus:border-primary transition uppercase placeholder:normal-case placeholder:font-normal"
-              />
-              <button
-                onClick={handleSearchGerakId}
-                disabled={searching || !searchGerakId.trim()}
-                className="px-3.5 bg-primary text-white font-extrabold text-[11px] rounded-lg transition active:scale-95 disabled:opacity-50 flex items-center gap-1.5"
-              >
-                {searching
-                  ? <span className="w-3.5 h-3.5 rounded-full border-2 border-white border-t-transparent animate-spin" />
-                  : 'Search'}
-              </button>
-            </div>
-
-            {/* Search result */}
-            {searchResult === 'not_found' && (
-              <p className="text-xs text-slate-400 font-semibold text-center py-2">No staff found with that Gerak ID.</p>
-            )}
-            {searchResult && searchResult !== 'not_found' && (
-              <UserCard u={searchResult} canManage={canManage(searchResult.role, searchResult.id)}
-                togglingStatus={togglingStatus} terminating={terminating}
-                togglingCap={togglingCap} togglingCampus={togglingCampus}
-                onToggle={handleToggleStatus} onTerminate={handleTerminate}
-                onCapToggle={user.role === 'superadmin' ? handleToggleCapability : undefined}
-                onRiderCapToggle={user.role === 'superadmin' ? handleToggleRiderCapability : undefined}
-                onCampusChange={user.role === 'superadmin' ? handleChangeCampus : undefined}
-                onGateToggle={user.role === 'superadmin' ? (u => setPendingAction({ type: 'toggle-gate-exempt', u })) : undefined}
-                onViewProfile={setSheetUser} />
-            )}
-          </div>
-
           {/* Admins & Drivers list */}
           <div className="bg-white border border-slate-100 rounded-3xl p-5 shadow-sm flex flex-col gap-3">
             <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest flex items-center gap-1.5">
               <Users className="w-4 h-4" /> Admins and Staff
             </h3>
+
+            {/* Search input */}
+            <div className="flex gap-2">
+              <input
+                type="text"
+                value={staffSearch}
+                onChange={e => setStaffSearch(e.target.value)}
+                placeholder="Name or Gerak ID"
+                style={{ fontSize: '12px' }}
+                className="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 font-bold text-slate-700 focus:outline-none focus:border-primary transition placeholder:font-normal placeholder:text-slate-400"
+              />
+              <button
+                onClick={() => setStaffSearch('')}
+                disabled={!staffSearch.trim()}
+                className="px-3.5 bg-primary text-white font-extrabold text-[11px] rounded-xl transition active:scale-95 disabled:opacity-50"
+              >
+                Clear
+              </button>
+            </div>
 
             {/* Filter toggle — scrollable */}
             <div className="flex bg-slate-50 border border-slate-200 rounded-2xl p-1 gap-1 overflow-x-auto no-scrollbar">
@@ -2001,12 +1961,17 @@ export const AdminHome: React.FC = () => {
                   <span className="w-5 h-5 rounded-full border-2 border-slate-200 border-t-primary animate-spin" />
                 </div>
               ) : (() => {
-                const filtered = profileUsers.filter(u =>
-                  staffFilter === 'all'     ? true :
-                  staffFilter === 'drivers' ? u.role === 'driver' :
-                  staffFilter === 'riders'  ? u.role === 'rider' :
-                  ['admin', 'superadmin'].includes(u.role)
-                );
+                const filtered = profileUsers.filter(u => {
+                  const roleMatch =
+                    staffFilter === 'all'     ? true :
+                    staffFilter === 'drivers' ? u.role === 'driver' :
+                    staffFilter === 'riders'  ? u.role === 'rider' :
+                    ['admin', 'superadmin'].includes(u.role);
+                  if (!roleMatch) return false;
+                  if (!staffSearch.trim()) return true;
+                  const q = staffSearch.toLowerCase();
+                  return u.name?.toLowerCase().includes(q) || u.gerak_id?.toLowerCase().includes(q);
+                });
                 return filtered.length === 0
                   ? <p className="text-xs text-slate-400 text-center py-4">No {staffFilter === 'all' ? 'staff' : staffFilter} found</p>
                   : (
