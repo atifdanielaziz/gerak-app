@@ -338,6 +338,7 @@ export const Jubah: React.FC = () => {
   }
 
   return (
+    <>
     <div className="flex-grow bg-slate-50/50 overflow-y-auto no-scrollbar pb-24 px-4 animate-fade-in flex flex-col gap-4">
 
       {/* HEADER */}
@@ -1016,61 +1017,63 @@ export const Jubah: React.FC = () => {
         </div>
       )}
 
-      {/* Rider profile sheet */}
-      {riderProfileOpen && (() => {
-        const r = riders.find(rd => rd.id === selectedRiderId);
-        if (!r) return null;
-        const close = () => { setRiderProfileOpen(false); setSheetOpen(false); };
-        return (
-          <>
-            <div className="fixed inset-0 z-40 bg-black/40 backdrop-blur-sm" onClick={close} />
-            <div className="fixed bottom-0 left-0 right-0 z-50 bg-white rounded-t-3xl shadow-2xl animate-slide-up max-h-[80vh] overflow-y-auto no-scrollbar">
-              <div className="flex items-center justify-between px-5 pt-5 pb-3 border-b border-slate-100">
-                <div>
-                  <p className="text-[9px] font-extrabold text-slate-400 uppercase tracking-widest">Your Rider</p>
-                  <h3 className="text-base font-black text-slate-800 mt-0.5">{r.name}</h3>
-                </div>
-                <button onClick={close}
-                  className="w-8 h-8 flex items-center justify-center rounded-xl bg-slate-100 text-slate-500 hover:bg-slate-200 active:scale-90 transition">
-                  <X className="w-4 h-4" />
-                </button>
+    </div>
+
+    {/* Rider profile sheet — outside scroll container so fixed positioning works correctly */}
+    {riderProfileOpen && (() => {
+      const r = riders.find(rd => rd.id === selectedRiderId);
+      if (!r) return null;
+      const close = () => { setRiderProfileOpen(false); setSheetOpen(false); };
+      return (
+        <>
+          <div className="fixed inset-0 z-40 bg-black/40 backdrop-blur-sm" onClick={close} />
+          <div className="fixed bottom-0 left-0 right-0 z-50 bg-white rounded-t-3xl shadow-2xl animate-slide-up max-h-[80vh] overflow-y-auto no-scrollbar">
+            <div className="flex items-center justify-between px-5 pt-5 pb-3 border-b border-slate-100">
+              <div>
+                <p className="text-[9px] font-extrabold text-slate-400 uppercase tracking-widest">Your Rider</p>
+                <h3 className="text-base font-black text-slate-800 mt-0.5">{r.name}</h3>
               </div>
-              <div className="px-5 py-4 flex flex-col gap-5">
-                <div className="flex flex-col gap-1">
-                  <span className="text-[9px] font-extrabold text-slate-400 uppercase tracking-widest">Method</span>
-                  <span className="text-sm font-bold text-slate-800">{r.jubah_drop_point || '—'}</span>
-                </div>
-                <div className="flex flex-col gap-1">
-                  <span className="text-[9px] font-extrabold text-slate-400 uppercase tracking-widest">Representative Name</span>
-                  <span className="text-sm font-bold text-slate-800">{r.name}</span>
-                </div>
-                <div className="flex flex-col gap-1">
-                  <span className="text-[9px] font-extrabold text-slate-400 uppercase tracking-widest">I/C Number</span>
-                  <IcMasked ic={r.ic_number} />
-                </div>
-                <div className="flex flex-col gap-1">
-                  <span className="text-[9px] font-extrabold text-slate-400 uppercase tracking-widest">H/P Number</span>
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm font-bold text-slate-800">{r.phone || '—'}</span>
-                    {r.phone && (
-                      <a
-                        href={`https://wa.me/${toWa(r.phone)}?text=${encodeURIComponent(
-                          `Hello gerak rider, i need your IC number : ${maskIc(r.ic_number)} for my booking. boleh bagi sekarang?`
-                        )}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-[#25D366] active:scale-90 transition shrink-0"
-                      >
-                        <WaIcon className="w-5 h-5" />
-                      </a>
-                    )}
-                  </div>
+              <button onClick={close}
+                className="w-8 h-8 flex items-center justify-center rounded-xl bg-slate-100 text-slate-500 hover:bg-slate-200 active:scale-90 transition">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            <div className="px-5 py-4 flex flex-col gap-5">
+              <div className="flex flex-col gap-1">
+                <span className="text-[9px] font-extrabold text-slate-400 uppercase tracking-widest">Method</span>
+                <span className="text-sm font-bold text-slate-800">{r.jubah_drop_point || '—'}</span>
+              </div>
+              <div className="flex flex-col gap-1">
+                <span className="text-[9px] font-extrabold text-slate-400 uppercase tracking-widest">Representative Name</span>
+                <span className="text-sm font-bold text-slate-800">{r.name}</span>
+              </div>
+              <div className="flex flex-col gap-1">
+                <span className="text-[9px] font-extrabold text-slate-400 uppercase tracking-widest">I/C Number</span>
+                <IcMasked ic={r.ic_number} />
+              </div>
+              <div className="flex flex-col gap-1">
+                <span className="text-[9px] font-extrabold text-slate-400 uppercase tracking-widest">H/P Number</span>
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-bold text-slate-800">{r.phone || '—'}</span>
+                  {r.phone && (
+                    <a
+                      href={`https://wa.me/${toWa(r.phone)}?text=${encodeURIComponent(
+                        `Hello gerak rider, i need your IC number : ${maskIc(r.ic_number)} for my booking. boleh bagi sekarang?`
+                      )}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-[#25D366] active:scale-90 transition shrink-0"
+                    >
+                      <WaIcon className="w-5 h-5" />
+                    </a>
+                  )}
                 </div>
               </div>
             </div>
-          </>
-        );
-      })()}
-    </div>
+          </div>
+        </>
+      );
+    })()}
+    </>
   );
 };
