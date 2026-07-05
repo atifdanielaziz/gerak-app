@@ -63,9 +63,10 @@ export const JubahLanding: React.FC<Props> = ({ onProceed }) => {
   // Load public URLs for all universities + default on mount
   useEffect(() => {
     const urls: Record<string, string> = {};
+    const bust = Date.now();
     ['default', ...UNIVERSITIES.map(u => u.key)].forEach(key => {
       const { data } = supabase.storage.from(BUCKET).getPublicUrl(`${key}.jpg`);
-      urls[key] = data.publicUrl;
+      urls[key] = `${data.publicUrl}?t=${bust}`;
     });
     setBannerUrls(urls);
   }, []);
