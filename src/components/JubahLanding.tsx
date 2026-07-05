@@ -108,31 +108,26 @@ export const JubahLanding: React.FC<Props> = ({ onProceed }) => {
       <div className="bg-white border border-slate-100 rounded-3xl p-5 shadow-sm flex flex-col gap-4">
         <div className="flex items-center justify-between">
           <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest">Select University</h3>
-          {selectedKey && (
-            <button
-              type="button"
-              onClick={() => onProceed(selectedKey)}
-              className="flex items-center justify-center gap-0.5 bg-blue-600 text-white rounded-xl h-9 active:scale-95 shadow-sm overflow-hidden shrink-0"
+          <button
+            type="button"
+            onClick={() => { if (selectedKey) onProceed(selectedKey); }}
+            disabled={!selectedKey}
+            className="flex items-center gap-0.5 active:scale-95 transition"
+          >
+            <span
+              className="text-xs font-extrabold text-blue-600 whitespace-nowrap overflow-hidden"
               style={{
-                maxWidth: btnCollapsed ? '36px' : '92px',
-                paddingLeft:  btnCollapsed ? '8px' : '12px',
-                paddingRight: btnCollapsed ? '8px' : '10px',
-                transition: 'max-width 0.45s cubic-bezier(0.4,0,0.2,1), padding 0.45s ease',
+                maxWidth: (selectedKey && !btnCollapsed) ? '40px' : '0px',
+                opacity:  (selectedKey && !btnCollapsed) ? 1 : 0,
+                transition: 'max-width 0.4s ease, opacity 0.3s ease',
               }}
             >
-              <span
-                className="text-xs font-extrabold whitespace-nowrap overflow-hidden"
-                style={{
-                  maxWidth: btnCollapsed ? '0px' : '52px',
-                  opacity:  btnCollapsed ? 0 : 1,
-                  transition: 'max-width 0.4s ease, opacity 0.25s ease',
-                }}
-              >
-                Next
-              </span>
-              <ChevronRight className="w-4 h-4 shrink-0" />
-            </button>
-          )}
+              Next
+            </span>
+            <ChevronRight
+              className={`w-5 h-5 transition-colors duration-300 ${selectedKey ? 'text-blue-600' : 'text-slate-300'}`}
+            />
+          </button>
         </div>
 
         <select
