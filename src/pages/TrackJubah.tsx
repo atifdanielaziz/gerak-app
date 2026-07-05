@@ -3,6 +3,7 @@ import { useApp } from '../context/AppContext';
 import { supabase } from '../lib/supabase';
 import { updateJubahBalanceProof } from '../lib/sheetsService';
 import { PackageSearch, Search, GraduationCap, Upload, FileText, X, Clock, CheckCircle2 } from 'lucide-react';
+import { WaIcon, toWa } from '../lib/whatsapp';
 
 interface JubahBookingResult {
   id: string;
@@ -13,6 +14,7 @@ interface JubahBookingResult {
   faculty: string;
   remark: string;
   rider_name: string | null;
+  rider_phone: string | null;
   status: string;
   payment_mode: string;
   balance_due: number;
@@ -212,9 +214,22 @@ export const TrackJubah: React.FC = () => {
                 </div>
 
                 {/* Rider */}
-                <div className="bg-slate-50 rounded-xl p-3 text-[10px]">
-                  <span className="text-slate-400 font-bold uppercase tracking-wider block text-[8px]">Rider</span>
-                  <span className="font-bold text-slate-700">{b.rider_name ?? 'Not yet assigned'}</span>
+                <div className="bg-slate-50 rounded-xl p-3 flex items-center justify-between gap-2">
+                  <div>
+                    <span className="text-slate-400 font-bold uppercase tracking-wider block text-[8px]">Your Rider</span>
+                    <span className="font-bold text-slate-700 text-[10px]">{b.rider_name ?? 'Not yet assigned'}</span>
+                    {b.rider_phone && (
+                      <span className="text-[10px] font-semibold text-slate-500 block">{b.rider_phone}</span>
+                    )}
+                  </div>
+                  {b.rider_phone && (
+                    <a href={`https://wa.me/${toWa(b.rider_phone)}?text=${encodeURIComponent(
+                      `Hello ${b.rider_name ?? 'Rider'}, saya ${b.full_name} (${b.reference}). Saya ingin bertanya mengenai tempahan jubah saya.`
+                    )}`} target="_blank" rel="noopener noreferrer"
+                      className="text-[#25D366] active:scale-90 transition shrink-0">
+                      <WaIcon className="w-5 h-5" />
+                    </a>
+                  )}
                 </div>
 
                 {/* ── DEPOSIT SECTION ── */}

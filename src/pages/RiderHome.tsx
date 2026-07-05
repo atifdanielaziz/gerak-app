@@ -5,7 +5,7 @@ import { WaIcon, toWa } from '../lib/whatsapp';
 import {
   RefreshCw, ShoppingBasket, GraduationCap, TrendingUp,
   Upload, FileImage, ShieldCheck, ShieldAlert,
-  ChevronLeft, Download,
+  ChevronLeft, Download, ExternalLink,
 } from 'lucide-react';
 import { driverIsActive } from './Profile';
 
@@ -27,6 +27,7 @@ type JubahJobRow = {
   cost: number;
   balance_due: number;
   balance_paid: boolean;
+  balance_proof_url: string | null;
   delivery_address: string | null;
   drive_docs_url: string | null;
   drive_payment_url: string | null;
@@ -75,6 +76,21 @@ const NEXT_LABEL: Record<string, string> = {
   delivered:  'Mark Delivered',
 };
 
+const jubahWaMsg = (name: string, status: string, ref: string, payMode: string, balPaid: boolean, balDue: number) => {
+  if (payMode === 'deposit' && !balPaid) {
+    return `Assalamualaikum ${name} 🎓\n\nIni peringatan daripada Gerak Jubah.\n\nBaki bayaran anda sebanyak *RM${balDue.toFixed(2)}* masih belum dijelaskan.\n\nSila kemaskini bukti pembayaran melalui akaun Gerak anda sebelum tarikh pengambilan jubah.\n\nRujukan: ${ref}\n\nTerima kasih 🙏`;
+  }
+  const msgs: Record<string, string> = {
+    booked:     `Assalamualaikum ${name} 🎓\n\nTempahan jubah anda telah berjaya diterima oleh Gerak Jubah! ✅\n\nKami akan maklumkan perkembangan seterusnya tidak lama lagi.\n\nRujukan: ${ref}\n\nTerima kasih 🙏`,
+    processing: `Assalamualaikum ${name} 🎓\n\nJubah anda sedang dalam proses pembersihan dan pengemasan. 🔄\n\nKami akan maklumkan apabila ia siap untuk diambil.\n\nRujukan: ${ref}\n\nTerima kasih 🙏`,
+    collected:  `Assalamualaikum ${name} 🎓\n\nJubah anda telah berjaya diambil! ✅\n\nSila hubungi kami sekiranya ada sebarang pertanyaan.\n\nRujukan: ${ref}\n\nTerima kasih 🙏`,
+    at_hub:     `Assalamualaikum ${name} 🎓\n\nJubah anda telah sampai di hab pos. 📦\n\nIa akan dihantar ke alamat anda tidak lama lagi.\n\nRujukan: ${ref}\n\nTerima kasih 🙏`,
+    on_the_way: `Assalamualaikum ${name} 🎓\n\nJubah anda sedang dalam perjalanan ke alamat anda! 🚚\n\nSila pastikan anda berada di rumah untuk menerima penghantaran.\n\nRujukan: ${ref}\n\nTerima kasih 🙏`,
+    delivered:  `Assalamualaikum ${name} 🎓\n\nJubah anda telah berjaya dihantar! 🎉\n\nTerima kasih kerana menggunakan Gerak Jubah. Semoga majlis konvokesyen anda berjalan lancar! 🎓\n\nRujukan: ${ref}`,
+  };
+  return msgs[status] ?? `Assalamualaikum ${name} 🎓\n\nIni Gerak Jubah. Terima kasih atas tempahan anda.\n\nRujukan: ${ref}\n\nTerima kasih 🙏`;
+};
+
 export const RiderHome: React.FC = () => {
   const { user, refreshUserData, receiptGateActive } = useApp();
 
@@ -103,7 +119,7 @@ export const RiderHome: React.FC = () => {
     if (!authUser) { setJubahLoading(false); return; }
     const { data, error } = await supabase
       .from('jubah_bookings')
-      .select('id, reference, full_name, ic_number, hp_number, matric_id, university, campus, faculty, remark, payment_mode, cost, balance_due, balance_paid, delivery_address, drive_docs_url, drive_payment_url, drive_oscar_url, drive_skpg_url, drive_konvo_url, drive_ic_url, status, rider_name, created_at')
+      .select('id, reference, full_name, ic_number, hp_number, matric_id, university, campus, faculty, remark, payment_mode, cost, balance_due, balance_paid, balance_proof_url, delivery_address, drive_docs_url, drive_payment_url, drive_oscar_url, drive_skpg_url, drive_konvo_url, drive_ic_url, status, rider_name, created_at')
       .eq('rider_id', authUser.id)
       .order('created_at', { ascending: false });
     if (error) console.error('[GERAK] jubah jobs load error:', error.message);
@@ -489,7 +505,9 @@ export const RiderHome: React.FC = () => {
                     <div className="flex items-center gap-3">
                       <div className="flex items-center gap-1.5 bg-slate-50 border border-slate-100 rounded-xl px-3 py-2 flex-1">
                         <span className="text-[11px] font-semibold text-slate-600">{selectedJob.hp_number}</span>
-                        <a href={`https://wa.me/${toWa(selectedJob.hp_number)}`} target="_blank" rel="noopener noreferrer"
+                        <a href={`https://wa.me/${toWa(selectedJob.hp_number)}?text=${encodeURIComponent(
+                          jubahWaMsg(selectedJob.full_name, selectedJob.status, selectedJob.reference, selectedJob.payment_mode, selectedJob.balance_paid, selectedJob.balance_due)
+                        )}`} target="_blank" rel="noopener noreferrer"
                           className="text-[#25D366] ml-auto shrink-0">
                           <WaIcon className="w-4 h-4" />
                         </a>
@@ -535,6 +553,37 @@ export const RiderHome: React.FC = () => {
                       <div className="bg-blue-50 border border-blue-100 rounded-xl p-3">
                         <p className="text-[8px] font-extrabold text-blue-400 uppercase tracking-wider mb-1">Delivery Address</p>
                         <p className="text-[10px] font-semibold text-blue-800 leading-relaxed">{selectedJob.delivery_address}</p>
+                      </div>
+                    )}
+
+                    {/* Balance status (deposit) */}
+                    {selectedJob.payment_mode === 'deposit' && (
+                      <div className={`rounded-xl p-3 border flex items-center justify-between gap-2 ${
+                        selectedJob.balance_paid ? 'bg-emerald-50 border-emerald-100' :
+                        selectedJob.balance_proof_url ? 'bg-violet-50 border-violet-100' :
+                        'bg-amber-50 border-amber-100'
+                      }`}>
+                        <div>
+                          <span className={`text-[8px] font-extrabold uppercase tracking-wider block ${
+                            selectedJob.balance_paid ? 'text-emerald-500' :
+                            selectedJob.balance_proof_url ? 'text-violet-500' : 'text-amber-500'
+                          }`}>
+                            {selectedJob.balance_paid ? 'Balance Paid' :
+                             selectedJob.balance_proof_url ? 'Proof Submitted — Pending Admin' : 'Balance Due'}
+                          </span>
+                          <span className={`text-base font-black ${
+                            selectedJob.balance_paid ? 'text-emerald-700' :
+                            selectedJob.balance_proof_url ? 'text-violet-700' : 'text-amber-700'
+                          }`}>
+                            RM{selectedJob.balance_due.toFixed(2)}
+                          </span>
+                        </div>
+                        {selectedJob.balance_proof_url && (
+                          <a href={selectedJob.balance_proof_url} target="_blank" rel="noopener noreferrer"
+                            className="text-[9px] text-blue-500 font-bold flex items-center gap-0.5 hover:underline shrink-0">
+                            <ExternalLink className="w-2.5 h-2.5" /> proof
+                          </a>
+                        )}
                       </div>
                     )}
 

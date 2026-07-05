@@ -735,7 +735,7 @@ export const AdminHome: React.FC = () => {
   type JubahBookingRow = {
     id: string; reference: string; full_name: string; ic_number: string; hp_number: string;
     matric_id: string; university: string; campus: string; faculty: string; remark: string;
-    rider_name: string | null; status: string; payment_mode: string; cost: number;
+    rider_name: string | null; rider_phone: string | null; status: string; payment_mode: string; cost: number;
     balance_due: number; balance_paid: boolean; balance_proof_url: string | null;
     delivery_address: string | null;
     drive_docs_url: string | null; drive_payment_url: string | null; drive_oscar_url: string | null;
@@ -843,7 +843,7 @@ export const AdminHome: React.FC = () => {
     setJubahRidersLoading(false);
 
     let bookingsQ = supabase.from('jubah_bookings')
-      .select('id, reference, full_name, ic_number, hp_number, matric_id, university, campus, faculty, remark, rider_name, status, payment_mode, cost, balance_due, balance_paid, balance_proof_url, delivery_address, drive_docs_url, drive_payment_url, drive_oscar_url, drive_skpg_url, drive_konvo_url, drive_ic_url, created_at')
+      .select('id, reference, full_name, ic_number, hp_number, matric_id, university, campus, faculty, remark, rider_name, rider_phone, status, payment_mode, cost, balance_due, balance_paid, balance_proof_url, delivery_address, drive_docs_url, drive_payment_url, drive_oscar_url, drive_skpg_url, drive_konvo_url, drive_ic_url, created_at')
       .order('created_at', { ascending: false });
     if (!isSuperAdmin) bookingsQ = bookingsQ.eq('campus', adminCampus);
     const { data: bookingsData, error: bookingsError } = await bookingsQ;
@@ -988,6 +988,21 @@ export const AdminHome: React.FC = () => {
     setBannerUrls(urls);
     setBannerImgError({});
   }, [activeTab, jubahSubTab]);
+
+  const jubahWaMsg = (name: string, status: string, ref: string, payMode: string, balPaid: boolean, balDue: number) => {
+    if (payMode === 'deposit' && !balPaid) {
+      return `Assalamualaikum ${name} 🎓\n\nIni peringatan daripada Gerak Jubah.\n\nBaki bayaran anda sebanyak *RM${balDue.toFixed(2)}* masih belum dijelaskan.\n\nSila kemaskini bukti pembayaran melalui akaun Gerak anda sebelum tarikh pengambilan jubah.\n\nRujukan: ${ref}\n\nTerima kasih 🙏`;
+    }
+    const msgs: Record<string, string> = {
+      booked:     `Assalamualaikum ${name} 🎓\n\nTempahan jubah anda telah berjaya diterima oleh Gerak Jubah! ✅\n\nKami akan maklumkan perkembangan seterusnya tidak lama lagi.\n\nRujukan: ${ref}\n\nTerima kasih 🙏`,
+      processing: `Assalamualaikum ${name} 🎓\n\nJubah anda sedang dalam proses pembersihan dan pengemasan. 🔄\n\nKami akan maklumkan apabila ia siap untuk diambil.\n\nRujukan: ${ref}\n\nTerima kasih 🙏`,
+      collected:  `Assalamualaikum ${name} 🎓\n\nJubah anda telah berjaya diambil! ✅\n\nSila hubungi kami sekiranya ada sebarang pertanyaan.\n\nRujukan: ${ref}\n\nTerima kasih 🙏`,
+      at_hub:     `Assalamualaikum ${name} 🎓\n\nJubah anda telah sampai di hab pos. 📦\n\nIa akan dihantar ke alamat anda tidak lama lagi.\n\nRujukan: ${ref}\n\nTerima kasih 🙏`,
+      on_the_way: `Assalamualaikum ${name} 🎓\n\nJubah anda sedang dalam perjalanan ke alamat anda! 🚚\n\nSila pastikan anda berada di rumah untuk menerima penghantaran.\n\nRujukan: ${ref}\n\nTerima kasih 🙏`,
+      delivered:  `Assalamualaikum ${name} 🎓\n\nJubah anda telah berjaya dihantar! 🎉\n\nTerima kasih kerana menggunakan Gerak Jubah. Semoga majlis konvokesyen anda berjalan lancar! 🎓\n\nRujukan: ${ref}`,
+    };
+    return msgs[status] ?? `Assalamualaikum ${name} 🎓\n\nIni Gerak Jubah. Terima kasih atas tempahan anda.\n\nRujukan: ${ref}\n\nTerima kasih 🙏`;
+  };
 
   const handleBannerUpload = async (file: File) => {
     if (!bannerUploadKey) return;
@@ -2926,9 +2941,7 @@ export const AdminHome: React.FC = () => {
                       <div className="flex items-center gap-1.5 bg-slate-50 border border-slate-100 rounded-xl px-3 py-2 flex-1">
                         <span className="text-[11px] font-semibold text-slate-600">{b.hp_number}</span>
                         <a href={`https://wa.me/${toWa(b.hp_number)}?text=${encodeURIComponent(
-                          b.payment_mode === 'deposit' && !b.balance_paid
-                            ? `Assalamualaikum ${b.full_name} 🎓\n\nIni peringatan daripada Gerak Jubah.\n\nBaki bayaran anda sebanyak *RM${b.balance_due.toFixed(2)}* masih belum dijelaskan.\n\nSila kemaskini bukti pembayaran melalui akaun Gerak anda sebelum tarikh pengambilan jubah.\n\nRujukan: ${b.reference}\n\nTerima kasih 🙏`
-                            : `Assalamualaikum ${b.full_name} 🎓\n\nIni peringatan daripada Gerak Jubah.\n\nPembayaran penuh perlu diselesaikan 1 minggu sebelum tarikh pengambilan jubah.\n\n⚠️ Pembatalan TIDAK DIBENARKAN dalam tempoh 1 minggu sebelum tarikh pengambilan jubah.\n\nRujukan: ${b.reference}\n\nTerima kasih 🙏`
+                          jubahWaMsg(b.full_name, b.status, b.reference, b.payment_mode, b.balance_paid, b.balance_due)
                         )}`}
                           target="_blank" rel="noopener noreferrer"
                           className="text-[#25D366] ml-auto shrink-0">
