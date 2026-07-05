@@ -137,6 +137,7 @@ export const Transport: React.FC = () => {
   // Submission
   const [booking,          setBooking]          = useState(false);
   const [bookingDone,      setBookingDone]      = useState(false);
+  const [bookingError,     setBookingError]     = useState<string | null>(null);
   const [submittedOrderId, setSubmittedOrderId] = useState<string | null>(null);
   const [editBlocked,      setEditBlocked]      = useState(false);
 
@@ -195,6 +196,7 @@ export const Transport: React.FC = () => {
     if (!canBook) return;
     setBooking(true);
     setEditBlocked(false);
+    setBookingError(null);
 
     const campusLabel = campus === 'pekan' ? 'Pekan' : 'Gambang';
     const orderPayload = {
@@ -231,12 +233,18 @@ export const Transport: React.FC = () => {
         }
       } else {
         // New booking
-        const { data } = await supabase
+        const { data, error } = await supabase
           .from('ride_orders')
           .insert({ ...orderPayload, customer_id: authUser.id, status: 'pending' })
           .select('id')
           .single();
-        if (data?.id) setSubmittedOrderId(data.id);
+
+        if (error || !data?.id) {
+          setBooking(false);
+          setBookingError('Your booking could not be saved. Please check your connection and try again.');
+          return;
+        }
+        setSubmittedOrderId(data.id);
 
         // Log to Google Sheets for new bookings only
         await submitRideToSheets({
@@ -710,6 +718,12 @@ export const Transport: React.FC = () => {
             </div>
           </div>
         </div>
+
+        {bookingError && (
+          <div className="bg-danger/10 border border-danger/20 rounded-xl px-4 py-3 text-xs text-danger font-bold text-center">
+            {bookingError}
+          </div>
+        )}
 
         {/* Book button */}
         <button

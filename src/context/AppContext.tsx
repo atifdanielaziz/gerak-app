@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
 import { supabase } from '../lib/supabase';
+import { INACTIVITY_LIMIT_MS, isSessionExpired, touchActivity, setSessionExpiredMessage } from '../lib/idleSession';
 
 // Definitions
 export type ActivePage =
@@ -294,12 +295,39 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     };
   }, [rideTimer]);
 
+  // ── Inactivity/session-expiry tracking ──────────────────────────────
+  // isLoggingOutRef distinguishes an explicit logout() call from the
+  // session silently dying (token revoked/expired) so we only show the
+  // "session expired" message in the latter case.
+  const isLoggingOutRef = useRef(false);
+  const userLoggedInRef = useRef(false);
+  useEffect(() => { userLoggedInRef.current = user.isLoggedIn; }, [user.isLoggedIn]);
+
+  // Track activity while logged in so isSessionExpired() has a fresh timestamp.
+  useEffect(() => {
+    if (!user.isLoggedIn) return;
+    touchActivity();
+    const handler = () => touchActivity();
+    window.addEventListener('pointerdown', handler, { passive: true });
+    window.addEventListener('keydown', handler, { passive: true });
+    return () => {
+      window.removeEventListener('pointerdown', handler);
+      window.removeEventListener('keydown', handler);
+    };
+  }, [user.isLoggedIn]);
+
   // ── Supabase: restore session on app load ──────────────────────────
   useEffect(() => {
     const isRecovery = window.location.hash.includes('type=recovery');
 
     supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session?.user && !isRecovery) loadProfile(session.user.id);
+      if (!session?.user || isRecovery) return;
+      if (isSessionExpired(INACTIVITY_LIMIT_MS)) {
+        supabase.auth.signOut();
+        setSessionExpiredMessage();
+        return;
+      }
+      loadProfile(session.user.id);
     });
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
@@ -309,7 +337,15 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         return;
       }
       if (!session) {
+        const wasLoggedIn = userLoggedInRef.current;
+        const manualLogout = isLoggingOutRef.current;
+        isLoggingOutRef.current = false;
         setUser(prev => ({ ...prev, isLoggedIn: false }));
+        if (wasLoggedIn && !manualLogout) {
+          setSessionExpiredMessage();
+          setPageHistory([]);
+          _setCurrentPage('login');
+        }
       }
     });
     return () => subscription.unsubscribe();
@@ -497,6 +533,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const logout = () => {
+    isLoggingOutRef.current = true;
     setPageHistory([]);
     setActiveRole(null);
     setIsPreviewMode(false);
@@ -506,6 +543,21 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     _setCurrentPage('login');
     supabase.auth.signOut();
   };
+
+  // Re-check the inactivity limit periodically while the app stays open, so a
+  // tab left open continuously (never reloaded) still gets force-logged-out
+  // once past the limit, not just on next app load.
+  useEffect(() => {
+    if (!user.isLoggedIn) return;
+    const intervalId = window.setInterval(() => {
+      if (isSessionExpired(INACTIVITY_LIMIT_MS)) {
+        setSessionExpiredMessage();
+        logout();
+      }
+    }, 15 * 60 * 1000);
+    return () => window.clearInterval(intervalId);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user.isLoggedIn]);
 
 
   // 2. Notification Operations

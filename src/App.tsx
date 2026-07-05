@@ -263,7 +263,7 @@ const SwipeBackGesture: React.FC<{ children: React.ReactNode }> = ({ children })
 };
 
 const AppContent: React.FC = () => {
-  const { currentPage } = useApp();
+  const { currentPage, user, activeRole } = useApp();
 
 
   const renderPage = () => {
@@ -285,11 +285,11 @@ const AppContent: React.FC = () => {
       case 'notifications':
         return <NotificationsPage />;
       case 'driver-home':
-        return <DriverHome />;
+        return (user.role === 'driver' || user.canDrive || activeRole === 'driver') ? <DriverHome /> : <Dashboard />;
       case 'rider-home':
         return <RiderHome />;
       case 'admin-home':
-        return <AdminHome />;
+        return (user.role === 'admin' || user.role === 'superadmin') ? <AdminHome /> : <Dashboard />;
       case 'my-orders':
         return <MyOrders />;
       case 'gerak-rental':

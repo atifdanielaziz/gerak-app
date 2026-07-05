@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
 import { supabase } from '../lib/supabase';
+import { consumeSessionExpiredMessage } from '../lib/idleSession';
 import { Mail, Lock, Eye, EyeOff, ArrowRight, GraduationCap, PackageSearch } from 'lucide-react';
 
 export const Login: React.FC = () => {
@@ -15,6 +16,16 @@ export const Login: React.FC = () => {
   useEffect(() => {
     supabase.from('app_settings').select('value').eq('key', 'jubah_active').single()
       .then(({ data }) => { if (data) setJubahActive(data.value === 'true'); });
+  }, []);
+
+  // Reading (and clearing) sessionStorage is a side effect, so it must run in
+  // an effect rather than a useState lazy initializer — React StrictMode
+  // double-invokes lazy initializers in dev, which would consume the flag on
+  // the first call and silently return '' on the second, dropping the banner.
+  useEffect(() => {
+    if (consumeSessionExpiredMessage()) {
+      setError('Your session expired due to inactivity. Please log in again.');
+    }
   }, []);
 
   const handleSubmit = async (e: React.SyntheticEvent) => {
