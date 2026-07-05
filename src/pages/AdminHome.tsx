@@ -753,7 +753,22 @@ export const AdminHome: React.FC = () => {
   const [jubahAdminSelected, setJubahAdminSelected] = useState<JubahBookingRow | null>(null);
   const [jubahAdminUpdating, setJubahAdminUpdating] = useState(false);
   const [copiedRef, setCopiedRef] = useState(false);
-  const [jubahSubTab,        setJubahSubTab]        = useState<'customer' | 'rider' | 'price'>('rider');
+  const [jubahSubTab,        setJubahSubTab]        = useState<'customer' | 'rider' | 'price' | 'banner'>('rider');
+
+  const BANNER_BUCKET = 'jubah-banners';
+  const BANNER_ITEMS = [
+    { key: 'default', label: 'Default Banner (RUNNER GERAK)' },
+    { key: 'umpsa',   label: 'Universiti Malaysia Pahang Al-Sultan Abdullah (UMPSA)' },
+    { key: 'uitm',    label: 'Universiti Teknologi MARA (UiTM)' },
+    { key: 'umk',     label: 'Universiti Malaysia Kelantan (UMK)' },
+    { key: 'ukm',     label: 'Universiti Kebangsaan Malaysia (UKM)' },
+    { key: 'uiam',    label: 'Universiti Islam Antarabangsa Malaysia (UIA)' },
+  ];
+  const [bannerUrls,       setBannerUrls]       = useState<Record<string, string>>({});
+  const [bannerImgError,   setBannerImgError]   = useState<Record<string, boolean>>({});
+  const [bannerUploading,  setBannerUploading]  = useState<string | null>(null);
+  const [bannerUploadKey,  setBannerUploadKey]  = useState<string | null>(null);
+  const bannerFileRef = useRef<HTMLInputElement>(null);
   type JubahPrice = { remark: string; payment_mode: string; price: number };
   const [savingPrice,        setSavingPrice]        = useState<string | null>(null);
   const [priceDrafts,        setPriceDrafts]        = useState<Record<string, string>>({});
@@ -962,6 +977,29 @@ export const AdminHome: React.FC = () => {
   }, []);
 
   useEffect(() => { if (activeTab === 'calendar') loadActiveCalendar(); }, [activeTab, loadActiveCalendar]);
+
+  useEffect(() => {
+    if (activeTab !== 'jubah' || jubahSubTab !== 'banner') return;
+    const urls: Record<string, string> = {};
+    BANNER_ITEMS.forEach(b => {
+      const { data } = supabase.storage.from(BANNER_BUCKET).getPublicUrl(`${b.key}.jpg`);
+      urls[b.key] = `${data.publicUrl}?t=${Date.now()}`;
+    });
+    setBannerUrls(urls);
+    setBannerImgError({});
+  }, [activeTab, jubahSubTab]);
+
+  const handleBannerUpload = async (file: File) => {
+    if (!bannerUploadKey) return;
+    const key = bannerUploadKey;
+    setBannerUploading(key);
+    const path = `${key}.jpg`;
+    await supabase.storage.from(BANNER_BUCKET).upload(path, file, { upsert: true, contentType: file.type });
+    const { data } = supabase.storage.from(BANNER_BUCKET).getPublicUrl(path);
+    setBannerUrls(prev => ({ ...prev, [key]: `${data.publicUrl}?t=${Date.now()}` }));
+    setBannerImgError(prev => ({ ...prev, [key]: false }));
+    setBannerUploading(null);
+  };
 
   const handleCalendarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -2612,9 +2650,10 @@ export const AdminHome: React.FC = () => {
             {/* Customer | Rider | Price sub-tabs */}
             <div className="flex bg-white border border-slate-100 rounded-2xl p-1 gap-1 shadow-sm">
               {([
-                { id: 'rider', label: '🛵 Rider' },
+                { id: 'rider',    label: '🛵 Rider' },
                 { id: 'customer', label: '👤 Customer' },
-                { id: 'price', label: '💰 Price' },
+                { id: 'price',    label: '💰 Price' },
+                { id: 'banner',   label: '🖼️ Banner' },
               ] as const).map(t => (
                 <button key={t.id} onClick={() => { setJubahSubTab(t.id); setJubahAdminView('list'); setJubahAdminSelected(null); }}
                   className={`flex-1 py-2 rounded-xl text-xs font-extrabold transition ${
@@ -3158,6 +3197,55 @@ export const AdminHome: React.FC = () => {
                       );
                     })}
                   </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* ── BANNER sub-tab ── */}
+          {jubahSubTab === 'banner' && (
+            <div className="flex flex-col gap-4">
+              <input
+                type="file"
+                ref={bannerFileRef}
+                accept="image/jpeg,image/png,image/webp"
+                className="hidden"
+                onChange={e => {
+                  const file = e.target.files?.[0];
+                  if (file) handleBannerUpload(file);
+                  if (bannerFileRef.current) bannerFileRef.current.value = '';
+                }}
+              />
+              {BANNER_ITEMS.map(item => (
+                <div key={item.key} className="bg-white border border-slate-100 rounded-3xl p-5 shadow-sm flex flex-col gap-3">
+                  <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest">{item.label}</h3>
+                  <div className="w-full rounded-2xl overflow-hidden border border-slate-100 bg-slate-50 h-40 flex items-center justify-center">
+                    {bannerUrls[item.key] && !bannerImgError[item.key] ? (
+                      <img
+                        src={bannerUrls[item.key]}
+                        alt={`${item.label} banner`}
+                        className="w-full h-full object-cover"
+                        onError={() => setBannerImgError(prev => ({ ...prev, [item.key]: true }))}
+                      />
+                    ) : (
+                      <div className="flex flex-col items-center gap-2 text-slate-300 p-4 text-center">
+                        <FileImage className="w-10 h-10" />
+                        <span className="text-[10px] font-bold">No banner uploaded yet</span>
+                      </div>
+                    )}
+                  </div>
+                  <button
+                    type="button"
+                    disabled={bannerUploading === item.key}
+                    onClick={() => { setBannerUploadKey(item.key); setTimeout(() => bannerFileRef.current?.click(), 0); }}
+                    className="flex items-center justify-center gap-2 w-full border-2 border-dashed border-slate-200 rounded-xl py-2.5 text-slate-400 hover:border-blue-400 hover:text-blue-500 hover:bg-blue-50/30 transition text-xs font-bold disabled:opacity-50"
+                  >
+                    {bannerUploading === item.key ? (
+                      <><span className="w-3.5 h-3.5 rounded-full border-2 border-slate-300 border-t-blue-500 animate-spin" /> Uploading…</>
+                    ) : (
+                      <><Upload className="w-3.5 h-3.5" /> Upload Banner</>
+                    )}
+                  </button>
                 </div>
               ))}
             </div>
