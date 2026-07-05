@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { supabase } from '../lib/supabase';
 import { useApp } from '../context/AppContext';
 import { ChevronRight, Image as ImageIcon, X } from 'lucide-react';
@@ -50,6 +50,8 @@ export const JubahLanding: React.FC<Props> = ({ onProceed }) => {
   const [imgError, setImgError]         = useState<Record<string, boolean>>({});
   const [riderDir, setRiderDir]         = useState<RiderDir[]>([]);
   const [selectedRider, setSelectedRider] = useState<RiderDir | null>(null);
+  const [btnCollapsed, setBtnCollapsed] = useState(false);
+  const collapseRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const openRider  = (r: RiderDir) => { setSelectedRider(r); setSheetOpen(true); };
   const closeRider = ()            => { setSelectedRider(null); setSheetOpen(false); };
@@ -71,9 +73,14 @@ export const JubahLanding: React.FC<Props> = ({ onProceed }) => {
     setBannerUrls(urls);
   }, []);
 
+  useEffect(() => () => { if (collapseRef.current) clearTimeout(collapseRef.current); }, []);
+
   const handleUniversityChange = (key: string) => {
     setSelectedKey(key);
+    setBtnCollapsed(false);
     setImgError(prev => ({ ...prev, [key]: false }));
+    if (collapseRef.current) clearTimeout(collapseRef.current);
+    if (key) collapseRef.current = setTimeout(() => setBtnCollapsed(true), 1500);
     if (key !== 'umpsa') { setRiderDir([]); return; }
     const campus = CAMPUS_MAP[key] ?? '';
     supabase.rpc('get_jubah_riders_directory', { p_campus: campus })
@@ -101,18 +108,31 @@ export const JubahLanding: React.FC<Props> = ({ onProceed }) => {
       <div className="bg-white border border-slate-100 rounded-3xl p-5 shadow-sm flex flex-col gap-4">
         <div className="flex items-center justify-between">
           <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest">Select University</h3>
-          <button
-            type="button"
-            onClick={() => { if (selectedKey) onProceed(selectedKey); }}
-            disabled={!selectedKey}
-            className={`w-8 h-8 flex items-center justify-center rounded-xl transition active:scale-90 ${
-              selectedKey
-                ? 'text-blue-600 hover:bg-blue-50 cursor-pointer'
-                : 'text-slate-300 cursor-not-allowed'
-            }`}
-          >
-            <ChevronRight className="w-5 h-5" />
-          </button>
+          {selectedKey && (
+            <button
+              type="button"
+              onClick={() => onProceed(selectedKey)}
+              className="flex items-center justify-center gap-0.5 bg-blue-600 text-white rounded-xl h-9 active:scale-95 shadow-sm overflow-hidden shrink-0"
+              style={{
+                maxWidth: btnCollapsed ? '36px' : '92px',
+                paddingLeft:  btnCollapsed ? '8px' : '12px',
+                paddingRight: btnCollapsed ? '8px' : '10px',
+                transition: 'max-width 0.45s cubic-bezier(0.4,0,0.2,1), padding 0.45s ease',
+              }}
+            >
+              <span
+                className="text-xs font-extrabold whitespace-nowrap overflow-hidden"
+                style={{
+                  maxWidth: btnCollapsed ? '0px' : '52px',
+                  opacity:  btnCollapsed ? 0 : 1,
+                  transition: 'max-width 0.4s ease, opacity 0.25s ease',
+                }}
+              >
+                Next
+              </span>
+              <ChevronRight className="w-4 h-4 shrink-0" />
+            </button>
+          )}
         </div>
 
         <select
