@@ -4,12 +4,13 @@ import { supabase } from '../lib/supabase';
 import {
   BarChart3, Car, Users, Clock, CheckCircle2,
   AlertCircle, RefreshCw, Trash2, MapPin, Navigation,
-  UserPlus, Mail, X, Send, ChevronDown, ChevronUp, Megaphone, Plus, ToggleLeft, ToggleRight,
+  UserPlus, Mail, X, Send, ChevronDown, ChevronUp, ChevronRight, Megaphone, Plus, ToggleLeft, ToggleRight,
   FileImage, ShieldCheck, ShieldOff, ExternalLink, KeyRound,
   CalendarDays, Upload, Eye, Phone, ArrowLeftRight, Pencil, GraduationCap,
-  ChevronLeft, Download, MoreVertical, Copy, Check,
+  ChevronLeft, Download, MoreVertical, Copy, Check, TrendingUp,
 } from 'lucide-react';
 import { WaBtn, WaIcon, toWa } from '../lib/whatsapp';
+import { MonthDrumPicker, EarningsCard, computeEarnings, type EarningsRow } from '../components/EarningsCard';
 
 interface RideOrder {
   id: string;
@@ -40,7 +41,34 @@ const STATUS_COLORS: Record<string, string> = {
 };
 
 type FilterStatus = 'all' | 'pending' | 'accepted' | 'in_progress' | 'completed' | 'cancelled';
-type AdminTab = 'orders' | 'drivers' | 'users' | 'banners' | 'receipts' | 'calendar' | 'routes' | 'verify' | 'jubah';
+type AdminTab = 'orders' | 'drivers' | 'users' | 'banners' | 'receipts' | 'calendar' | 'routes' | 'verify' | 'jubah' | 'earnings';
+
+interface DriverEarningsRow {
+  driver_id: string;
+  name: string;
+  gerak_id: string;
+  campus: string;
+  total_earnings: number;
+  completed_count: number;
+  cash_count: number;
+  tbc_count: number;
+}
+
+type EarningsPeriod = 'day' | 'week' | 'month' | 'all';
+
+const toISODate = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+const addDays = (iso: string, n: number) => { const d = new Date(iso + 'T00:00:00'); d.setDate(d.getDate() + n); return toISODate(d); };
+const mondayOf = (iso: string) => { const d = new Date(iso + 'T00:00:00'); const dow = (d.getDay() + 6) % 7; d.setDate(d.getDate() - dow); return toISODate(d); };
+
+function getLeaderboardRange(period: EarningsPeriod, day: string, weekStart: string, month: string): [string | null, string | null] {
+  if (period === 'day') return [day, day];
+  if (period === 'week') return [weekStart, addDays(weekStart, 6)];
+  if (period === 'month') {
+    const [y, m] = month.split('-').map(Number);
+    return [`${month}-01`, `${month}-${String(new Date(y, m, 0).getDate()).padStart(2, '0')}`];
+  }
+  return [null, null];
+}
 
 interface Announcement {
   id: string;
@@ -715,6 +743,23 @@ export const AdminHome: React.FC = () => {
   const [togglingReceiptGate, setTogglingReceiptGate] = useState(false);
   const [showGateMasterConfirm, setShowGateMasterConfirm] = useState(false);
   const [approvingReceipt, setApprovingReceipt]   = useState<string | null>(null);
+
+  // Driver earnings state
+  const [earningsLeaderboard, setEarningsLeaderboard] = useState<DriverEarningsRow[]>([]);
+  const [earningsLoading, setEarningsLoading]         = useState(false);
+  const [earningsDriverId, setEarningsDriverId]       = useState<string | null>(null);
+  const [earningsHistory, setEarningsHistory]         = useState<EarningsRow[]>([]);
+  const [earningsMonth, setEarningsMonth]             = useState(() => {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+  });
+  const [earningsPeriod, setEarningsPeriod]           = useState<EarningsPeriod>('all');
+  const [earningsDay, setEarningsDay]                 = useState(() => toISODate(new Date()));
+  const [earningsWeekStart, setEarningsWeekStart]     = useState(() => mondayOf(toISODate(new Date())));
+  const [leaderboardMonth, setLeaderboardMonth]       = useState(() => {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+  });
   const [rejectingReceipt, setRejectingReceipt]   = useState<string | null>(null);
 
   // Routes state
@@ -1413,6 +1458,32 @@ export const AdminHome: React.FC = () => {
 
   useEffect(() => { if (activeTab === 'receipts') loadReceipts(); }, [activeTab, loadReceipts]);
 
+  // ── Driver earnings helpers ──────────────────────────────────────────────
+  const loadEarningsLeaderboard = useCallback(async (start: string | null, end: string | null) => {
+    setEarningsLoading(true);
+    const { data } = await supabase.rpc('get_driver_earnings_leaderboard', { p_start_date: start, p_end_date: end });
+    setEarningsLeaderboard((data as DriverEarningsRow[]) ?? []);
+    setEarningsLoading(false);
+  }, []);
+
+  const loadDriverEarnings = useCallback(async (driverId: string) => {
+    setEarningsLoading(true);
+    const { data } = await supabase.rpc('get_driver_earnings_history', { p_driver_id: driverId });
+    setEarningsHistory((data as EarningsRow[]) ?? []);
+    setEarningsLoading(false);
+  }, []);
+
+  useEffect(() => {
+    if (activeTab !== 'earnings' || earningsDriverId) return;
+    const [start, end] = getLeaderboardRange(earningsPeriod, earningsDay, earningsWeekStart, leaderboardMonth);
+    loadEarningsLeaderboard(start, end);
+  }, [activeTab, earningsDriverId, earningsPeriod, earningsDay, earningsWeekStart, leaderboardMonth, loadEarningsLeaderboard]);
+
+  const handleSelectEarningsDriver = (driverId: string) => {
+    setEarningsDriverId(driverId);
+    loadDriverEarnings(driverId);
+  };
+
   const handleToggleReceiptGate = async () => {
     setTogglingReceiptGate(true);
     const newVal = (!receiptGateOn).toString();
@@ -1606,7 +1677,7 @@ export const AdminHome: React.FC = () => {
           <div className="flex items-center gap-2">
             {/* Refresh */}
             <button
-              onClick={() => activeTab === 'orders' ? loadOrders() : activeTab === 'drivers' ? loadInvites() : activeTab === 'users' ? loadUsers() : activeTab === 'receipts' ? loadReceipts() : loadAnnouncements()}
+              onClick={() => activeTab === 'orders' ? loadOrders() : activeTab === 'drivers' ? loadInvites() : activeTab === 'users' ? loadUsers() : activeTab === 'receipts' ? loadReceipts() : activeTab === 'earnings' ? (earningsDriverId ? loadDriverEarnings(earningsDriverId) : loadEarningsLeaderboard(...getLeaderboardRange(earningsPeriod, earningsDay, earningsWeekStart, leaderboardMonth))) : loadAnnouncements()}
               className="w-8 h-8 flex items-center justify-center rounded-xl bg-white border border-slate-100 text-slate-400 hover:text-primary transition active:scale-90"
             >
               <RefreshCw className="w-4 h-4" />
@@ -1625,6 +1696,7 @@ export const AdminHome: React.FC = () => {
           { id: 'banners',  label: 'Banners',   icon: Megaphone,       superadminOnly: false },
           { id: 'routes',   label: 'Routes',    icon: ArrowLeftRight,  superadminOnly: false },
           { id: 'receipts', label: 'Receipts',  icon: FileImage,       superadminOnly: true  },
+          { id: 'earnings', label: 'Earnings',  icon: TrendingUp,      superadminOnly: true  },
           { id: 'calendar', label: 'Calendar',  icon: CalendarDays,    superadminOnly: false },
         ] as { id: AdminTab; label: string; icon: React.ElementType; superadminOnly: boolean }[])
           .filter(t => !t.superadminOnly || user.role === 'superadmin')
@@ -3473,6 +3545,144 @@ export const AdminHome: React.FC = () => {
           </div>
         </div>
       )}
+
+      {/* ── EARNINGS TAB (superadmin only) ── */}
+      {activeTab === 'earnings' && user.role === 'superadmin' && (() => {
+        const selectedDriver = earningsLeaderboard.find(d => d.driver_id === earningsDriverId);
+        const [selY, selM] = earningsMonth.split('-');
+        const monthLabel = new Date(Number(selY), Number(selM) - 1, 1)
+          .toLocaleDateString('en-MY', { month: 'long', year: 'numeric' });
+        const month = computeEarnings(earningsHistory, earningsMonth);
+        const allTime = computeEarnings(earningsHistory);
+
+        if (earningsDriverId) {
+          return (
+            <div className="flex flex-col gap-3">
+              <button
+                onClick={() => { setEarningsDriverId(null); setEarningsHistory([]); }}
+                className="flex items-center gap-1 text-slate-500 text-xs font-bold hover:underline active:scale-95 transition self-start"
+              >
+                <ChevronLeft className="w-3.5 h-3.5" /> Back to leaderboard
+              </button>
+
+              <div className="bg-white border border-slate-100 rounded-3xl p-4 shadow-sm">
+                <p className="text-sm font-black text-slate-800">{selectedDriver?.name ?? 'Driver'}</p>
+                <p className="text-[10px] text-slate-400 font-semibold mt-0.5">
+                  {selectedDriver?.gerak_id} · UMPSA {selectedDriver?.campus}
+                </p>
+              </div>
+
+              {earningsLoading ? (
+                <div className="flex items-center justify-center py-14">
+                  <span className="w-6 h-6 rounded-full border-2 border-slate-200 border-t-emerald-500 animate-spin" />
+                </div>
+              ) : (
+                <div className="flex flex-col gap-3 px-0">
+                  <MonthDrumPicker value={earningsMonth} onChange={setEarningsMonth} />
+                  <EarningsCard label={monthLabel} earned={month.earned} tbc={month.tbc} rows={month.rows} />
+                  <EarningsCard label="All Time" earned={allTime.earned} tbc={allTime.tbc} rows={allTime.rows} />
+                </div>
+              )}
+            </div>
+          );
+        }
+
+        const driverCount = earningsLeaderboard.length;
+        const totalEarnings = earningsLeaderboard.reduce((s, d) => s + d.total_earnings, 0);
+        const weekEnd = addDays(earningsWeekStart, 6);
+        const weekLabel = `${new Date(earningsWeekStart + 'T00:00:00').toLocaleDateString('en-MY', { day: 'numeric', month: 'short' })} – ${new Date(weekEnd + 'T00:00:00').toLocaleDateString('en-MY', { day: 'numeric', month: 'short', year: 'numeric' })}`;
+
+        return (
+          <div className="flex flex-col gap-3">
+            {/* Period toggle */}
+            <div className="flex bg-white border border-slate-100 rounded-2xl p-1 gap-1 shadow-sm">
+              {(['day', 'week', 'month', 'all'] as const).map(p => (
+                <button key={p} onClick={() => setEarningsPeriod(p)}
+                  className={`flex-1 py-2 rounded-xl text-xs font-extrabold transition ${
+                    earningsPeriod === p ? 'bg-primary text-white shadow-sm' : 'text-slate-400'
+                  }`}>
+                  {p === 'day' ? 'Day' : p === 'week' ? 'Week' : p === 'month' ? 'Month' : 'All Time'}
+                </button>
+              ))}
+            </div>
+
+            {/* Period-specific picker */}
+            {earningsPeriod === 'day' && (
+              <input
+                type="date"
+                value={earningsDay}
+                onChange={e => setEarningsDay(e.target.value)}
+                className="bg-white border border-slate-100 rounded-2xl px-4 py-3 text-sm font-bold text-slate-700 shadow-sm focus:outline-none focus:border-primary transition"
+              />
+            )}
+            {earningsPeriod === 'week' && (
+              <div className="flex items-center justify-between bg-white border border-slate-100 rounded-2xl px-3 py-3 shadow-sm">
+                <button onClick={() => setEarningsWeekStart(addDays(earningsWeekStart, -7))}
+                  className="w-8 h-8 flex items-center justify-center rounded-xl text-slate-400 hover:text-primary transition active:scale-90">
+                  <ChevronLeft className="w-4 h-4" />
+                </button>
+                <p className="text-xs font-black text-slate-700">{weekLabel}</p>
+                <button onClick={() => setEarningsWeekStart(addDays(earningsWeekStart, 7))}
+                  className="w-8 h-8 flex items-center justify-center rounded-xl text-slate-400 hover:text-primary transition active:scale-90">
+                  <ChevronRight className="w-4 h-4" />
+                </button>
+              </div>
+            )}
+            {earningsPeriod === 'month' && (
+              <MonthDrumPicker value={leaderboardMonth} onChange={setLeaderboardMonth} />
+            )}
+
+            {/* Summary */}
+            <div className="bg-white border border-slate-100 rounded-3xl p-5 shadow-sm flex gap-3">
+              <div className="flex-1 bg-slate-50 rounded-2xl px-3 py-2.5 text-center">
+                <p className="text-lg font-black text-slate-700">{driverCount}</p>
+                <p className="text-[9px] text-slate-400 font-semibold uppercase tracking-wider">Drivers Earning</p>
+              </div>
+              <div className="flex-1 bg-emerald-50 rounded-2xl px-3 py-2.5 text-center">
+                <p className="text-lg font-black text-emerald-600">RM {totalEarnings.toFixed(2)}</p>
+                <p className="text-[9px] text-slate-400 font-semibold uppercase tracking-wider">Total Earnings</p>
+              </div>
+            </div>
+
+            {/* Leaderboard */}
+            <div className="bg-white border border-slate-100 rounded-3xl p-5 shadow-sm flex flex-col gap-3">
+              <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest flex items-center gap-1.5">
+                <TrendingUp className="w-4 h-4" /> Driver Leaderboard
+              </h3>
+
+              {earningsLoading ? (
+                <div className="flex items-center justify-center py-14">
+                  <span className="w-6 h-6 rounded-full border-2 border-slate-200 border-t-emerald-500 animate-spin" />
+                </div>
+              ) : driverCount === 0 ? (
+                <p className="text-xs text-slate-400 font-semibold text-center py-6">No completed rides yet.</p>
+              ) : (
+                <div className="flex flex-col gap-2">
+                  {earningsLeaderboard.map((d, i) => (
+                    <button
+                      key={d.driver_id}
+                      onClick={() => handleSelectEarningsDriver(d.driver_id)}
+                      className="flex items-center gap-3 bg-slate-50 hover:bg-slate-100 border border-slate-100 rounded-2xl px-3.5 py-3 transition active:scale-[0.99] text-left"
+                    >
+                      <span className="w-6 h-6 rounded-full bg-white border border-slate-200 flex items-center justify-center text-[10px] font-black text-slate-500 shrink-0">
+                        {i + 1}
+                      </span>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs font-black text-slate-800 truncate">{d.name}</p>
+                        <p className="text-[10px] text-slate-400 font-semibold">{d.gerak_id} · UMPSA {d.campus}</p>
+                      </div>
+                      <div className="text-right shrink-0">
+                        <p className="text-xs font-black text-emerald-600">RM {d.total_earnings.toFixed(2)}</p>
+                        <p className="text-[9px] text-slate-400 font-semibold">{d.completed_count} rides</p>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        );
+      })()}
 
       {/* ── CALENDAR TAB ── */}
       {activeTab === 'calendar' && (

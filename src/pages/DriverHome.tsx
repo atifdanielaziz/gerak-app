@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 import { WaIcon, toWa } from '../lib/whatsapp';
 import { OrderReceiptSheet } from '../components/OrderReceiptSheet';
+import { MonthDrumPicker, EarningsCard, computeEarnings } from '../components/EarningsCard';
 
 interface RentalVehicle {
   owner_id: string;
@@ -74,75 +75,6 @@ const HISTORY_STATUS: Record<string, { label: string; cls: string }> = {
   in_progress: { label: 'In Progress', cls: 'bg-indigo-50 text-indigo-600 border-indigo-200' },
   completed:   { label: 'Completed',   cls: 'bg-emerald-50 text-emerald-600 border-emerald-200' },
   cancelled:   { label: 'Cancelled',   cls: 'bg-slate-100 text-slate-400 border-slate-200' },
-};
-
-const ITEM_H = 40;
-const DRUM_H = 120;
-
-
-const MonthDrumPicker: React.FC<{ value: string; onChange: (m: string) => void }> = ({ value, onChange }) => {
-  const months = Array.from({ length: 12 }, (_, i) => {
-    const d = new Date();
-    d.setMonth(d.getMonth() - i);
-    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
-  });
-
-  const ref = useRef<HTMLDivElement>(null);
-  const padding = (DRUM_H - ITEM_H) / 2;
-
-  useEffect(() => {
-    const idx = months.indexOf(value);
-    if (ref.current && idx >= 0) {
-      ref.current.scrollTop = idx * ITEM_H;
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  const handleScroll = () => {
-    if (!ref.current) return;
-    const idx = Math.round(ref.current.scrollTop / ITEM_H);
-    const clamped = Math.max(0, Math.min(idx, months.length - 1));
-    if (months[clamped] !== value) onChange(months[clamped]);
-  };
-
-  return (
-    <div className="relative overflow-hidden rounded-3xl bg-white border border-slate-100 shadow-sm" style={{ height: DRUM_H }}>
-      <div
-        ref={ref}
-        onScroll={handleScroll}
-        className="h-full overflow-y-scroll no-scrollbar"
-        style={{ scrollSnapType: 'y mandatory' }}
-      >
-        <div style={{ height: padding }} />
-        {months.map(m => {
-          const [y, mo] = m.split('-');
-          const lbl = new Date(Number(y), Number(mo) - 1, 1)
-            .toLocaleDateString('en-MY', { month: 'long', year: 'numeric' });
-          return (
-            <div key={m} style={{ height: ITEM_H, scrollSnapAlign: 'center' }}
-              className={`flex items-center justify-center transition-all ${
-                value === m
-                  ? 'text-emerald-600 text-base font-extrabold'
-                  : 'text-slate-400 text-sm font-semibold'
-              }`}>
-              {lbl}
-            </div>
-          );
-        })}
-        <div style={{ height: padding }} />
-      </div>
-
-      {/* Top & bottom fade */}
-      <div className="absolute inset-x-0 top-0 pointer-events-none"
-        style={{ height: padding, background: 'linear-gradient(to bottom, white 40%, transparent)' }} />
-      <div className="absolute inset-x-0 bottom-0 pointer-events-none"
-        style={{ height: padding, background: 'linear-gradient(to top, white 40%, transparent)' }} />
-
-      {/* Selection lines */}
-      <div className="absolute inset-x-6 pointer-events-none border-t-2 border-b-2 border-emerald-200 rounded"
-        style={{ top: padding, height: ITEM_H }} />
-    </div>
-  );
 };
 
 export const DriverHome: React.FC = () => {
@@ -1146,63 +1078,11 @@ export const DriverHome: React.FC = () => {
       {!loading && activeTab === 'earnings' && effectiveCanDrive && (() => {
         const completed = myHistory.filter(o => o.status === 'completed');
 
-        // Month card — filtered by drum picker selection
         const [selY, selM] = earningsMonth.split('-');
         const monthLabel = new Date(Number(selY), Number(selM) - 1, 1)
           .toLocaleDateString('en-MY', { month: 'long', year: 'numeric' });
-        const monthFiltered   = completed.filter(o => o.date.startsWith(earningsMonth));
-        const monthEarned     = monthFiltered.filter(o => o.fare !== 'TBC').reduce((s, o) => s + Number(o.fare) + (o.night_charge ?? 0), 0);
-        const monthTbc        = monthFiltered.filter(o => o.fare === 'TBC').length;
-
-        // All time card
-        const allEarned = completed.filter(o => o.fare !== 'TBC').reduce((s, o) => s + Number(o.fare) + (o.night_charge ?? 0), 0);
-        const allTbc    = completed.filter(o => o.fare === 'TBC').length;
-
-        const EarningsCard = ({ label, earned, tbc, rows }: {
-          label: string; earned: number; tbc: number; rows: typeof completed;
-        }) => (
-          <div className="bg-white border border-slate-100 rounded-3xl p-5 shadow-sm flex flex-col gap-3">
-            <p className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest flex items-center gap-1.5">
-              <TrendingUp className="w-3.5 h-3.5 text-emerald-500" />
-              {label} Earnings
-            </p>
-            <div className="flex items-center gap-3 flex-wrap">
-              <div>
-                <p className="text-[9px] text-slate-400 font-semibold mb-0.5">Cash Fare</p>
-                <p className="text-xs font-black text-slate-800">
-                  RM <span className="text-emerald-500">{earned.toFixed(2)}</span>
-                </p>
-              </div>
-              {tbc > 0 && (
-                <>
-                  <p className="text-xs font-black text-slate-300">+</p>
-                  <div>
-                    <p className="text-[9px] text-slate-400 font-semibold mb-0.5">TBC Rides</p>
-                    <p className="text-xs font-black text-slate-800">
-                      TBC <span className="text-amber-500">({tbc})</span>
-                    </p>
-                  </div>
-                </>
-              )}
-            </div>
-            <div className="flex gap-3 pt-1">
-              <div className="flex-1 bg-slate-50 rounded-2xl px-3 py-2.5 text-center">
-                <p className="text-lg font-black text-slate-700">{rows.length}</p>
-                <p className="text-[9px] text-slate-400 font-semibold uppercase tracking-wider">Completed</p>
-              </div>
-              <div className="flex-1 bg-emerald-50 rounded-2xl px-3 py-2.5 text-center">
-                <p className="text-lg font-black text-emerald-600">{rows.filter(o => o.fare !== 'TBC').length}</p>
-                <p className="text-[9px] text-slate-400 font-semibold uppercase tracking-wider">Cash Rides</p>
-              </div>
-              {tbc > 0 && (
-                <div className="flex-1 bg-amber-50 rounded-2xl px-3 py-2.5 text-center">
-                  <p className="text-lg font-black text-amber-600">{tbc}</p>
-                  <p className="text-[9px] text-slate-400 font-semibold uppercase tracking-wider">TBC Rides</p>
-                </div>
-              )}
-            </div>
-          </div>
-        );
+        const month = computeEarnings(completed, earningsMonth);
+        const allTime = computeEarnings(completed);
 
         return (
           <div className="flex flex-col gap-3 px-4">
@@ -1210,10 +1090,10 @@ export const DriverHome: React.FC = () => {
             <MonthDrumPicker value={earningsMonth} onChange={setEarningsMonth} />
 
             {/* Month earnings */}
-            <EarningsCard label={monthLabel} earned={monthEarned} tbc={monthTbc} rows={monthFiltered} />
+            <EarningsCard label={monthLabel} earned={month.earned} tbc={month.tbc} rows={month.rows} />
 
             {/* All time earnings */}
-            <EarningsCard label="All Time" earned={allEarned} tbc={allTbc} rows={completed} />
+            <EarningsCard label="All Time" earned={allTime.earned} tbc={allTime.tbc} rows={allTime.rows} />
           </div>
         );
       })()}
