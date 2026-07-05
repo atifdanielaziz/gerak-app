@@ -3,19 +3,19 @@ import { useApp } from '../context/AppContext';
 import type { ActivePage } from '../context/AppContext';
 import { Home, UserCircle, Briefcase, LayoutDashboard, CalendarDays } from 'lucide-react';
 
-type Ripple = { id: number; x: number; y: number; btnId: string };
+type Bubble = { id: number; x: number; y: number; btnId: string };
 
 export const BottomNav: React.FC = () => {
   const { currentPage, setCurrentPage, user, isPreviewMode, activeRole, isSheetOpen } = useApp();
-  const [ripples, setRipples] = useState<Ripple[]>([]);
+  const [bubbles, setBubbles] = useState<Bubble[]>([]);
 
-  const addRipple = (e: React.MouseEvent<HTMLButtonElement>, btnId: string) => {
+  const addBubble = (e: React.MouseEvent<HTMLButtonElement>, btnId: string) => {
     const rect = e.currentTarget.getBoundingClientRect();
     const x = e.clientX - rect.left;
     const y = e.clientY - rect.top;
     const id = Date.now() + Math.random();
-    setRipples(prev => [...prev, { id, x, y, btnId }]);
-    setTimeout(() => setRipples(prev => prev.filter(r => r.id !== id)), 600);
+    setBubbles(prev => [...prev, { id, x, y, btnId }]);
+    setTimeout(() => setBubbles(prev => prev.filter(b => b.id !== id)), 700);
   };
 
   if (currentPage === 'splash' || currentPage === 'login' || currentPage === 'register' || currentPage === 'forgot-password' || currentPage === 'reset-password') {
@@ -60,8 +60,17 @@ export const BottomNav: React.FC = () => {
   return (
     <>
       <style>{`
-        @keyframes gerak-ripple {
-          to { transform: translate(-50%, -50%) scale(5); opacity: 0; }
+        @keyframes glass-bubble {
+          0%   { transform: translate(-50%,-50%) scale(0);    opacity: 0.9; }
+          35%  { transform: translate(-50%,-50%) scale(1.15); opacity: 0.75; }
+          60%  { transform: translate(-50%,-50%) scale(0.95); opacity: 0.55; }
+          80%  { transform: translate(-50%,-50%) scale(1.05); opacity: 0.3; }
+          100% { transform: translate(-50%,-50%) scale(1.4);  opacity: 0; }
+        }
+        @keyframes glass-sheen {
+          0%   { opacity: 0.8; transform: translate(-50%,-50%) scale(0) rotate(0deg); }
+          40%  { opacity: 0.5; }
+          100% { opacity: 0;   transform: translate(-50%,-50%) scale(1.4) rotate(15deg); }
         }
       `}</style>
       <div
@@ -76,28 +85,44 @@ export const BottomNav: React.FC = () => {
             return (
               <button
                 key={item.id}
-                onClick={(e) => { addRipple(e, item.id); setCurrentPage(item.id); }}
+                onClick={(e) => { addBubble(e, item.id); setCurrentPage(item.id); }}
                 className="relative flex flex-col items-center justify-center py-1 px-3 min-w-[64px] transition-all duration-300 rounded-2xl active:scale-90 overflow-hidden"
                 aria-label={item.label}
               >
-                {/* Ripple layers */}
-                {ripples.filter(r => r.btnId === item.id).map(r => (
-                  <span
-                    key={r.id}
-                    style={{
-                      position: 'absolute',
-                      left: r.x,
-                      top: r.y,
-                      width: 72,
-                      height: 72,
-                      borderRadius: '50%',
-                      backgroundColor: isActive ? 'rgba(59,130,246,0.15)' : 'rgba(148,163,184,0.18)',
-                      transform: 'translate(-50%, -50%) scale(0)',
-                      opacity: 0.5,
-                      animation: 'gerak-ripple 0.55s ease-out forwards',
-                      pointerEvents: 'none',
-                    }}
-                  />
+                {/* Liquid Glass bubbles */}
+                {bubbles.filter(b => b.btnId === item.id).map(b => (
+                  <React.Fragment key={b.id}>
+                    {/* Outer glass bubble — rim + gradient body */}
+                    <span
+                      style={{
+                        position: 'absolute',
+                        left: b.x,
+                        top: b.y,
+                        width: 80,
+                        height: 80,
+                        borderRadius: '50%',
+                        background: 'radial-gradient(circle at 35% 35%, rgba(255,255,255,0.55) 0%, rgba(255,255,255,0.18) 45%, rgba(255,255,255,0.04) 70%, transparent 100%)',
+                        border: '1.5px solid rgba(255,255,255,0.7)',
+                        boxShadow: 'inset 0 1.5px 3px rgba(255,255,255,0.8), 0 2px 12px rgba(0,0,0,0.08)',
+                        animation: 'glass-bubble 0.65s cubic-bezier(0.34,1.2,0.64,1) forwards',
+                        pointerEvents: 'none',
+                      }}
+                    />
+                    {/* Inner specular hot-spot */}
+                    <span
+                      style={{
+                        position: 'absolute',
+                        left: b.x - 10,
+                        top: b.y - 10,
+                        width: 28,
+                        height: 28,
+                        borderRadius: '50%',
+                        background: 'radial-gradient(circle at 40% 40%, rgba(255,255,255,0.9) 0%, transparent 70%)',
+                        animation: 'glass-sheen 0.65s ease-out forwards',
+                        pointerEvents: 'none',
+                      }}
+                    />
+                  </React.Fragment>
                 ))}
 
                 <div className={`p-1 rounded-xl transition-all duration-300 relative ${
