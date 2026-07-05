@@ -339,7 +339,7 @@ export const Jubah: React.FC = () => {
 
   return (
     <>
-    <div className="flex-grow bg-slate-50/50 overflow-y-auto no-scrollbar pb-24 px-4 animate-fade-in flex flex-col gap-4">
+    <div className="flex-grow bg-slate-50/50 overflow-y-auto overflow-x-hidden no-scrollbar pb-24 px-4 animate-fade-in flex flex-col gap-4">
 
       {/* HEADER */}
       <div className="mt-4 px-1 flex items-start gap-2">
@@ -1026,7 +1026,7 @@ export const Jubah: React.FC = () => {
       const close = () => { setRiderProfileOpen(false); setSheetOpen(false); };
       return (
         <>
-          <div className="fixed inset-0 z-40 bg-black/40 backdrop-blur-sm" onClick={close} />
+          <div className="fixed inset-0 z-40 bg-black/40" onClick={close} />
           <div className="fixed bottom-0 left-0 right-0 z-50 bg-white rounded-t-3xl shadow-2xl animate-slide-up max-h-[80vh] overflow-y-auto no-scrollbar">
             <div className="flex items-center justify-between px-5 pt-5 pb-3 border-b border-slate-100">
               <div>
