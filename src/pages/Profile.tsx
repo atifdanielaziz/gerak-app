@@ -281,6 +281,16 @@ export const Profile: React.FC = () => {
       {/* ── PROFILE FIELDS ── */}
       <div className="px-5 mt-2">
 
+        {/* Gerak ID — read-only, assigned at registration */}
+        <div className="flex items-center justify-between py-4 border-b border-slate-100">
+          <div className="flex-1 min-w-0 pr-3">
+            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
+              Gerak ID
+            </span>
+            <span className="text-sm font-medium text-slate-700 mt-1 block">{user.gerakId || '—'}</span>
+          </div>
+        </div>
+
         {/* Full Name * */}
         <div className="flex items-center justify-between py-4 border-b border-slate-100">
           <div className="flex-1 min-w-0 pr-3">
