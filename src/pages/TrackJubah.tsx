@@ -199,36 +199,87 @@ export const TrackJubah: React.FC = () => {
           </div>
         ) : (
           <div className="flex flex-col gap-3">
-            {results.map(b => (
-              <div key={b.id} className="bg-white border border-slate-100 rounded-3xl p-5 shadow-sm flex flex-col gap-3">
-                {/* Header row */}
+            {results.map(b => {
+              const trackSteps = b.payment_mode === 'postage'
+                ? ['booked', 'processing', 'collected', 'at_hub']
+                : ['booked', 'processing', 'collected', 'delivered'];
+              const STEP_LABEL: Record<string, string> = {
+                booked: 'New', processing: 'Processing', collected: 'Collected',
+                at_hub: 'At Hub', delivered: 'Delivered',
+              };
+              const curStep = trackSteps.indexOf(b.status);
+              const isDone  = curStep === trackSteps.length - 1;
+
+              return (
+              <div key={b.id} className="bg-white border border-slate-100 rounded-3xl p-5 shadow-sm flex flex-col gap-4">
+
+                {/* Customer summary */}
                 <div className="flex items-start justify-between gap-2">
                   <div>
                     <p className="text-[9px] text-blue-500 font-extrabold uppercase tracking-wider">{b.reference}</p>
-                    <h3 className="text-sm font-black text-slate-800 mt-0.5">{b.full_name}</h3>
-                    <p className="text-[10px] text-slate-400 mt-0.5">{b.remark} · {b.faculty} · UMPSA {b.campus}</p>
+                    <h3 className="text-base font-black text-slate-800 mt-0.5">{b.full_name}</h3>
+                    <p className="text-[10px] text-slate-400 font-semibold mt-0.5">{b.remark} · {b.faculty} · UMPSA {b.campus}</p>
                   </div>
                   <span className={`text-[9px] font-extrabold px-2.5 py-1 rounded-full border shrink-0 ${STATUS_STYLE[b.status] ?? 'bg-slate-50 border-slate-200 text-slate-400'}`}>
                     {STATUS_LABEL[b.status] ?? b.status}
                   </span>
                 </div>
 
-                {/* Rider */}
-                <div className="bg-slate-50 rounded-xl p-3 flex items-center justify-between gap-2">
-                  <div>
-                    <span className="text-slate-400 font-bold uppercase tracking-wider block text-[8px]">Your Rider</span>
-                    <span className="font-bold text-slate-700 text-[10px]">{b.rider_name ?? 'Not yet assigned'}</span>
-                    {b.rider_phone && (
-                      <span className="text-[10px] font-semibold text-slate-500 block">{b.rider_phone}</span>
+                {/* Rider phone + WA (to rider) + payment mode badge */}
+                <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-1.5 bg-slate-50 border border-slate-100 rounded-xl px-3 py-2 flex-1 min-w-0">
+                    {b.rider_phone ? (
+                      <>
+                        <span className="text-[11px] font-semibold text-slate-600 truncate">{b.rider_phone}</span>
+                        <a href={`https://wa.me/${toWa(b.rider_phone)}?text=${encodeURIComponent(
+                          `Hello ${b.rider_name ?? 'Rider'}, saya ${b.full_name} (${b.reference}). Saya ingin bertanya mengenai tempahan jubah saya.`
+                        )}`} target="_blank" rel="noopener noreferrer"
+                          className="text-[#25D366] ml-auto shrink-0 active:scale-90 transition">
+                          <WaIcon className="w-4 h-4" />
+                        </a>
+                      </>
+                    ) : (
+                      <span className="text-[11px] font-semibold text-slate-400 italic">Rider not yet assigned</span>
                     )}
                   </div>
-                  {b.rider_phone && (
-                    <a href={`https://wa.me/${toWa(b.rider_phone)}?text=${encodeURIComponent(
-                      `Hello ${b.rider_name ?? 'Rider'}, saya ${b.full_name} (${b.reference}). Saya ingin bertanya mengenai tempahan jubah saya.`
-                    )}`} target="_blank" rel="noopener noreferrer"
-                      className="text-[#25D366] active:scale-90 transition shrink-0">
-                      <WaIcon className="w-5 h-5" />
-                    </a>
+                  <span className={`text-[9px] font-extrabold px-3 py-2 rounded-xl border shrink-0 ${
+                    b.payment_mode === 'deposit' ? 'bg-amber-50 border-amber-100 text-amber-700' :
+                    b.payment_mode === 'postage' ? 'bg-blue-50 border-blue-100 text-blue-700' :
+                    'bg-slate-50 border-slate-200 text-slate-600'
+                  }`}>
+                    {b.payment_mode === 'deposit' ? 'Deposit' : b.payment_mode === 'postage' ? 'Postage' : 'Pickup'}
+                  </span>
+                </div>
+
+                {/* Horizontal step bar */}
+                <div className="flex flex-col gap-2">
+                  <div className="flex items-center gap-1">
+                    {trackSteps.map((step, i) => (
+                      <React.Fragment key={step}>
+                        <div className={`w-5 h-5 rounded-full flex items-center justify-center shrink-0 text-[8px] font-extrabold border-2 transition ${
+                          i < curStep   ? 'bg-blue-500 border-blue-500 text-white' :
+                          i === curStep ? 'bg-white border-blue-500 text-blue-500' :
+                          'bg-white border-slate-200 text-slate-300'
+                        }`}>
+                          {i < curStep ? '✓' : i + 1}
+                        </div>
+                        {i < trackSteps.length - 1 && (
+                          <div className={`flex-1 h-0.5 rounded-full transition ${i < curStep ? 'bg-blue-500' : 'bg-slate-200'}`} />
+                        )}
+                      </React.Fragment>
+                    ))}
+                  </div>
+                  <div className="flex justify-between">
+                    {trackSteps.map(step => (
+                      <span key={step} className="text-[8px] font-extrabold text-slate-400 uppercase tracking-wide flex-1 text-center first:text-left last:text-right">
+                        {STEP_LABEL[step]}
+                      </span>
+                    ))}
+                  </div>
+                  {isDone && b.status !== 'cancelled' && (
+                    <div className="bg-emerald-50 border border-emerald-100 rounded-2xl px-4 py-3 text-center">
+                      <p className="text-xs font-extrabold text-emerald-700">✓ Delivery Complete</p>
+                    </div>
                   )}
                 </div>
 
@@ -321,7 +372,8 @@ export const TrackJubah: React.FC = () => {
                   </div>
                 )}
               </div>
-            ))}
+              );
+            })}
           </div>
         )
       )}
