@@ -994,11 +994,19 @@ export const AdminHome: React.FC = () => {
     const key = bannerUploadKey;
     setBannerUploading(key);
     const path = `${key}.jpg`;
-    await supabase.storage.from(BANNER_BUCKET).upload(path, file, { upsert: true, contentType: file.type });
+    const { error: uploadError } = await supabase.storage
+      .from(BANNER_BUCKET)
+      .upload(path, file, { upsert: true, contentType: file.type });
+    if (uploadError) {
+      showToast(`Banner upload failed: ${uploadError.message}`);
+      setBannerUploading(null);
+      return;
+    }
     const { data } = supabase.storage.from(BANNER_BUCKET).getPublicUrl(path);
     setBannerUrls(prev => ({ ...prev, [key]: `${data.publicUrl}?t=${Date.now()}` }));
     setBannerImgError(prev => ({ ...prev, [key]: false }));
     setBannerUploading(null);
+    showToast('Banner uploaded ✓');
   };
 
   const handleCalendarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
