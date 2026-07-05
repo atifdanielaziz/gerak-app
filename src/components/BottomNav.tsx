@@ -1,105 +1,133 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useApp } from '../context/AppContext';
 import type { ActivePage } from '../context/AppContext';
 import { Home, UserCircle, Briefcase, LayoutDashboard, CalendarDays } from 'lucide-react';
 
+type Ripple = { id: number; x: number; y: number; btnId: string };
+
 export const BottomNav: React.FC = () => {
   const { currentPage, setCurrentPage, user, isPreviewMode, activeRole, isSheetOpen } = useApp();
+  const [ripples, setRipples] = useState<Ripple[]>([]);
+
+  const addRipple = (e: React.MouseEvent<HTMLButtonElement>, btnId: string) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    const id = Date.now() + Math.random();
+    setRipples(prev => [...prev, { id, x, y, btnId }]);
+    setTimeout(() => setRipples(prev => prev.filter(r => r.id !== id)), 600);
+  };
 
   if (currentPage === 'splash' || currentPage === 'login' || currentPage === 'register' || currentPage === 'forgot-password' || currentPage === 'reset-password') {
     return null;
   }
 
-  // Guest mode (not logged in) — no role-based tabs to show
-  if (!user.isLoggedIn) {
-    return null;
-  }
-
-  // A bottom sheet/modal is open — hide so it never overlaps the sheet's content
-  if (isSheetOpen) {
-    return null;
-  }
+  if (!user.isLoggedIn) return null;
+  if (isSheetOpen) return null;
 
   const role = isPreviewMode ? 'customer' : (activeRole === 'driver' ? 'driver' : user.role);
 
-  // Driver nav
   const driverItems = [
-    { id: 'driver-home'       as ActivePage, label: 'Jobs',      icon: Briefcase,      badge: false },
-    { id: 'academic-calendar' as ActivePage, label: 'Calendar',  icon: CalendarDays,   badge: false },
-    { id: 'profile'           as ActivePage, label: 'Profile',   icon: UserCircle,     badge: false },
+    { id: 'driver-home'       as ActivePage, label: 'Jobs',      icon: Briefcase,       badge: false },
+    { id: 'academic-calendar' as ActivePage, label: 'Calendar',  icon: CalendarDays,    badge: false },
+    { id: 'profile'           as ActivePage, label: 'Profile',   icon: UserCircle,      badge: false },
   ];
 
-  // Rider nav
   const riderItems = [
-    { id: 'rider-home'        as ActivePage, label: 'Jobs',      icon: Briefcase,      badge: false },
-    { id: 'academic-calendar' as ActivePage, label: 'Calendar',  icon: CalendarDays,   badge: false },
-    { id: 'profile'           as ActivePage, label: 'Profile',   icon: UserCircle,     badge: false },
+    { id: 'rider-home'        as ActivePage, label: 'Jobs',      icon: Briefcase,       badge: false },
+    { id: 'academic-calendar' as ActivePage, label: 'Calendar',  icon: CalendarDays,    badge: false },
+    { id: 'profile'           as ActivePage, label: 'Profile',   icon: UserCircle,      badge: false },
   ];
 
-  // Admin / superadmin nav
   const adminItems = [
     { id: 'admin-home'        as ActivePage, label: 'Dashboard', icon: LayoutDashboard, badge: false },
     { id: 'academic-calendar' as ActivePage, label: 'Calendar',  icon: CalendarDays,    badge: false },
     { id: 'profile'           as ActivePage, label: 'Profile',   icon: UserCircle,      badge: false },
   ];
 
-  // Customer nav
   const customerItems = [
-    { id: 'dashboard'         as ActivePage, label: 'Home',     icon: Home,           badge: false },
-    { id: 'academic-calendar' as ActivePage, label: 'Calendar', icon: CalendarDays,   badge: false },
-    { id: 'profile'           as ActivePage, label: 'Profile',  icon: UserCircle,     badge: false },
+    { id: 'dashboard'         as ActivePage, label: 'Home',      icon: Home,            badge: false },
+    { id: 'academic-calendar' as ActivePage, label: 'Calendar',  icon: CalendarDays,    badge: false },
+    { id: 'profile'           as ActivePage, label: 'Profile',   icon: UserCircle,      badge: false },
   ];
 
   const items =
-    role === 'driver'                          ? driverItems  :
-    role === 'rider'                           ? riderItems   :
-    role === 'superadmin' || role === 'admin'  ? adminItems   :
+    role === 'driver'                         ? driverItems  :
+    role === 'rider'                          ? riderItems   :
+    role === 'superadmin' || role === 'admin' ? adminItems   :
     customerItems;
 
   return (
-    <div
-      className="shrink-0 bg-slate-50 px-4 pt-1"
-      style={{ paddingBottom: 'calc(0.625rem + env(safe-area-inset-bottom))' }}
-    >
-      <nav
-        className="bg-white border border-slate-100 rounded-3xl px-2 py-1.5 flex items-center justify-around shadow-[0_4px_20px_rgba(0,0,0,0.08)]"
+    <>
+      <style>{`
+        @keyframes gerak-ripple {
+          to { transform: translate(-50%, -50%) scale(5); opacity: 0; }
+        }
+      `}</style>
+      <div
+        className="shrink-0 bg-slate-50 px-4 pt-1"
+        style={{ paddingBottom: 'calc(0.625rem + env(safe-area-inset-bottom))' }}
       >
-        {items.map((item) => {
-          const Icon = item.icon;
-          const isActive = currentPage === item.id;
+        <nav className="bg-white border border-slate-100 rounded-3xl px-2 py-1.5 flex items-center justify-around shadow-[0_4px_20px_rgba(0,0,0,0.08)]">
+          {items.map((item) => {
+            const Icon = item.icon;
+            const isActive = currentPage === item.id;
 
-          return (
-            <button
-              key={item.id}
-              onClick={() => setCurrentPage(item.id)}
-              className="relative flex flex-col items-center justify-center py-1 px-3 min-w-[64px] transition-all duration-300 rounded-2xl active:scale-90"
-              aria-label={item.label}
-            >
-              <div className={`p-1 rounded-xl transition-all duration-300 relative ${
-                isActive
-                  ? 'bg-primary/10 text-primary scale-110'
-                  : 'text-slate-400 hover:text-slate-600 hover:bg-slate-50'
-              }`}>
-                <Icon className="w-4.5 h-4.5" />
-                {item.badge && (
-                  <>
-                    <span className="absolute top-0 right-0 w-2.5 h-2.5 bg-danger rounded-full border-2 border-white animate-ping" />
-                    <span className="absolute top-0 right-0 w-2.5 h-2.5 bg-danger rounded-full border-2 border-white" />
-                  </>
+            return (
+              <button
+                key={item.id}
+                onClick={(e) => { addRipple(e, item.id); setCurrentPage(item.id); }}
+                className="relative flex flex-col items-center justify-center py-1 px-3 min-w-[64px] transition-all duration-300 rounded-2xl active:scale-90 overflow-hidden"
+                aria-label={item.label}
+              >
+                {/* Ripple layers */}
+                {ripples.filter(r => r.btnId === item.id).map(r => (
+                  <span
+                    key={r.id}
+                    style={{
+                      position: 'absolute',
+                      left: r.x,
+                      top: r.y,
+                      width: 72,
+                      height: 72,
+                      borderRadius: '50%',
+                      backgroundColor: isActive ? 'rgba(59,130,246,0.15)' : 'rgba(148,163,184,0.18)',
+                      transform: 'translate(-50%, -50%) scale(0)',
+                      opacity: 0.5,
+                      animation: 'gerak-ripple 0.55s ease-out forwards',
+                      pointerEvents: 'none',
+                    }}
+                  />
+                ))}
+
+                <div className={`p-1 rounded-xl transition-all duration-300 relative ${
+                  isActive
+                    ? 'bg-primary/10 text-primary scale-110'
+                    : 'text-slate-400 hover:text-slate-600 hover:bg-slate-50'
+                }`}>
+                  <Icon className="w-4.5 h-4.5" />
+                  {item.badge && (
+                    <>
+                      <span className="absolute top-0 right-0 w-2.5 h-2.5 bg-danger rounded-full border-2 border-white animate-ping" />
+                      <span className="absolute top-0 right-0 w-2.5 h-2.5 bg-danger rounded-full border-2 border-white" />
+                    </>
+                  )}
+                </div>
+
+                <span className={`text-[9px] mt-0.5 font-bold transition-all duration-200 ${
+                  isActive ? 'text-primary scale-105' : 'text-slate-400'
+                }`}>
+                  {item.label}
+                </span>
+
+                {isActive && (
+                  <span className="absolute bottom-0 w-4 h-0.75 bg-primary rounded-full animate-fade-in" />
                 )}
-              </div>
-              <span className={`text-[9px] mt-0.5 font-bold transition-all duration-200 ${
-                isActive ? 'text-primary scale-105' : 'text-slate-400'
-              }`}>
-                {item.label}
-              </span>
-              {isActive && (
-                <span className="absolute bottom-0 w-4 h-0.75 bg-primary rounded-full animate-fade-in" />
-              )}
-            </button>
-          );
-        })}
-      </nav>
-    </div>
+              </button>
+            );
+          })}
+        </nav>
+      </div>
+    </>
   );
 };
