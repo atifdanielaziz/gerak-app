@@ -749,14 +749,14 @@ export const AdminHome: React.FC = () => {
   const [earningsLoading, setEarningsLoading]         = useState(false);
   const [earningsDriverId, setEarningsDriverId]       = useState<string | null>(null);
   const [earningsHistory, setEarningsHistory]         = useState<EarningsRow[]>([]);
-  const [earningsMonth, setEarningsMonth]             = useState(() => {
-    const d = new Date();
-    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
-  });
   const [earningsPeriod, setEarningsPeriod]           = useState<EarningsPeriod>('all');
   const [earningsDay, setEarningsDay]                 = useState(() => toISODate(new Date()));
   const [earningsWeekStart, setEarningsWeekStart]     = useState(() => mondayOf(toISODate(new Date())));
   const [leaderboardMonth, setLeaderboardMonth]       = useState(() => {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+  });
+  const [detailMonth, setDetailMonth]                 = useState(() => {
     const d = new Date();
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
   });
@@ -3549,13 +3549,19 @@ export const AdminHome: React.FC = () => {
       {/* ── EARNINGS TAB (superadmin only) ── */}
       {activeTab === 'earnings' && user.role === 'superadmin' && (() => {
         const selectedDriver = earningsLeaderboard.find(d => d.driver_id === earningsDriverId);
-        const [selY, selM] = earningsMonth.split('-');
-        const monthLabel = new Date(Number(selY), Number(selM) - 1, 1)
-          .toLocaleDateString('en-MY', { month: 'long', year: 'numeric' });
-        const month = computeEarnings(earningsHistory, earningsMonth);
-        const allTime = computeEarnings(earningsHistory);
+        const weekEnd = addDays(earningsWeekStart, 6);
+        const weekLabel = `${new Date(earningsWeekStart + 'T00:00:00').toLocaleDateString('en-MY', { day: 'numeric', month: 'short' })} – ${new Date(weekEnd + 'T00:00:00').toLocaleDateString('en-MY', { day: 'numeric', month: 'short', year: 'numeric' })}`;
 
         if (earningsDriverId) {
+          // True mirror of DriverHome.tsx's own Earnings tab — current
+          // month (browsable) + all-time — independent of whatever period
+          // filter is active on the leaderboard.
+          const [selY, selM] = detailMonth.split('-');
+          const detailMonthLabel = new Date(Number(selY), Number(selM) - 1, 1)
+            .toLocaleDateString('en-MY', { month: 'long', year: 'numeric' });
+          const month = computeEarnings(earningsHistory, detailMonth);
+          const allTime = computeEarnings(earningsHistory);
+
           return (
             <div className="flex flex-col gap-3">
               <button
@@ -3578,8 +3584,8 @@ export const AdminHome: React.FC = () => {
                 </div>
               ) : (
                 <div className="flex flex-col gap-3 px-0">
-                  <MonthDrumPicker value={earningsMonth} onChange={setEarningsMonth} />
-                  <EarningsCard label={monthLabel} earned={month.earned} tbc={month.tbc} rows={month.rows} />
+                  <MonthDrumPicker value={detailMonth} onChange={setDetailMonth} />
+                  <EarningsCard label={detailMonthLabel} earned={month.earned} tbc={month.tbc} rows={month.rows} />
                   <EarningsCard label="All Time" earned={allTime.earned} tbc={allTime.tbc} rows={allTime.rows} />
                 </div>
               )}
@@ -3589,8 +3595,6 @@ export const AdminHome: React.FC = () => {
 
         const driverCount = earningsLeaderboard.length;
         const totalEarnings = earningsLeaderboard.reduce((s, d) => s + d.total_earnings, 0);
-        const weekEnd = addDays(earningsWeekStart, 6);
-        const weekLabel = `${new Date(earningsWeekStart + 'T00:00:00').toLocaleDateString('en-MY', { day: 'numeric', month: 'short' })} – ${new Date(weekEnd + 'T00:00:00').toLocaleDateString('en-MY', { day: 'numeric', month: 'short', year: 'numeric' })}`;
 
         return (
           <div className="flex flex-col gap-3">
