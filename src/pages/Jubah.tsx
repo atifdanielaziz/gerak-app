@@ -285,15 +285,17 @@ export const Jubah: React.FC = () => {
     let driveKonvoUrl: string | undefined;
     let driveIcUrl: string | undefined;
 
+    // Uploads are foldered by booking reference (not a public URL) so the
+    // jubah-docs storage policies can verify ownership later — only
+    // admin/superadmin and the assigned rider can read these back.
     const uploadFile = async (file: File, label: string): Promise<string | undefined> => {
       const ext = file.name.split('.').pop() ?? 'pdf';
-      const path = `${(fullName || 'student').replace(/\s+/g, '_')}_${label}_${Date.now()}.${ext}`;
+      const path = `${reference}/${label}.${ext}`;
       const { data, error } = await supabase.storage
         .from('jubah-docs')
         .upload(path, file, { contentType: file.type, upsert: false });
       if (error || !data) { console.error('[GERAK] Storage upload failed:', error); return undefined; }
-      const { data: { publicUrl } } = supabase.storage.from('jubah-docs').getPublicUrl(data.path);
-      return publicUrl;
+      return data.path;
     };
 
     const blobForUpload = combinedBlob ?? await generateCombinedBlob();

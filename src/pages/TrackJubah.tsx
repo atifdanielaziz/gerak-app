@@ -88,17 +88,17 @@ export const TrackJubah: React.FC = () => {
     setSubmitting(true);
     setSubmitError('');
 
-    // Upload proof to Supabase Storage
+    // Upload proof to Supabase Storage — foldered by booking reference (not
+    // a public URL) so the jubah-docs storage policies can verify ownership.
     let driveUrl: string | undefined;
     try {
       const ext  = balanceProof.name.split('.').pop() ?? 'pdf';
-      const path = `${b.full_name.replace(/\s+/g, '_')}_balance_payment_${Date.now()}.${ext}`;
+      const path = `${b.reference}/balance-payment-${Date.now()}.${ext}`;
       const { data: storageData, error: storageError } = await supabase.storage
         .from('jubah-docs')
         .upload(path, balanceProof, { contentType: balanceProof.type, upsert: false });
       if (!storageError && storageData) {
-        const { data: { publicUrl } } = supabase.storage.from('jubah-docs').getPublicUrl(storageData.path);
-        driveUrl = publicUrl;
+        driveUrl = storageData.path;
       }
     } catch (err) {
       console.error('[GERAK] Balance proof upload failed:', err);

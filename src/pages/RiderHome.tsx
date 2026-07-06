@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { useApp } from '../context/AppContext';
 import { supabase } from '../lib/supabase';
 import { WaIcon, toWa } from '../lib/whatsapp';
+import { getJubahDocSignedUrl } from '../lib/jubahDocs';
 import {
   RefreshCw, ShoppingBasket, GraduationCap, TrendingUp,
   Upload, FileImage, ShieldCheck, ShieldAlert,
@@ -662,11 +663,13 @@ export const RiderHome: React.FC = () => {
                   ] as { label: string; url: string | null }[]).map(({ label, url }) => (
                     <div key={label} className="flex items-center justify-between gap-3 border-b border-slate-50 pb-3 last:border-0 last:pb-0">
                       <span className="text-sm font-semibold text-slate-700">{label}</span>
-                      <a
-                        href={url ?? '#'}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        onClick={e => { if (!url) e.preventDefault(); }}
+                      <button
+                        type="button"
+                        disabled={!url}
+                        onClick={async () => {
+                          const signed = await getJubahDocSignedUrl(url, true);
+                          if (signed) window.open(signed, '_blank', 'noopener,noreferrer');
+                        }}
                         className={`w-9 h-9 flex items-center justify-center rounded-xl border transition shrink-0 ${
                           url
                             ? 'bg-slate-800 border-slate-700 text-white hover:bg-slate-700 active:scale-95'
@@ -674,7 +677,7 @@ export const RiderHome: React.FC = () => {
                         }`}
                       >
                         <Download className="w-4 h-4" />
-                      </a>
+                      </button>
                     </div>
                   ))}
                 </div>
