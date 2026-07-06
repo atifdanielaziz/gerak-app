@@ -91,6 +91,7 @@ export const GerakRental: React.FC = () => {
   const [myBookings, setMyBookings]   = useState<RentalBooking[]>([]);
   const [loading, setLoading]         = useState(true);
   const [bookLoading, setBookLoading] = useState(false);
+  const [bookingDone, setBookingDone] = useState(false);
   const [toast, setToast]             = useState('');
   const [view, setView]               = useState<'list' | 'book' | 'my-bookings'>('list');
 
@@ -308,6 +309,7 @@ export const GerakRental: React.FC = () => {
 
   // ── Date range / tap handler ───────────────────────────────────────────────
   const handleDateTap = (dateStr: string) => {
+    setBookingDone(false);
     if (bookingType === 'hourly') {
       setRangeStart(dateStr);
       setRangeEnd(dateStr);
@@ -334,6 +336,7 @@ export const GerakRental: React.FC = () => {
     setRangeEnd('');
     setStartHour(null);
     setDuration(1);
+    setBookingDone(false);
   };
 
   // ── Price calculation ──────────────────────────────────────────────────────
@@ -379,11 +382,9 @@ export const GerakRental: React.FC = () => {
     });
     setBookLoading(false);
     if (error) { showToast('Booking failed. Please try again.'); return; }
-    showToast('Booking sent! Upload your license while awaiting owner confirmation.');
-    setRangeStart(''); setRangeEnd(''); setStartHour(null); setDuration(1); setPersons(1); setNotes('');
+    setBookingDone(true);
     loadAvailability(selected.id, calMonth);
     loadMyBookings();
-    setView('my-bookings');
   };
 
   // ── License upload ─────────────────────────────────────────────────────────
@@ -919,12 +920,18 @@ export const GerakRental: React.FC = () => {
                     {duration}h × RM{selected.price_hour.toFixed(2)}{nightSurcharge > 0 ? ` + RM${nightSurcharge.toFixed(2)} night` : ''}
                   </p>
                 </div>
-                <button onClick={handleBook} disabled={!bookReady || bookLoading}
-                  className="bg-amber-500 hover:bg-amber-600 text-white font-extrabold text-xs px-5 py-3 rounded-2xl transition active:scale-95 disabled:opacity-40 flex items-center gap-2">
-                  {bookLoading
-                    ? <span className="w-4 h-4 rounded-full border-2 border-white border-t-transparent animate-spin" />
-                    : <><CheckCircle2 className="w-4 h-4" /> Book Now</>}
-                </button>
+                {bookingDone ? (
+                  <span className="bg-slate-100 text-slate-500 text-xs font-extrabold px-4 py-3 rounded-2xl flex items-center gap-1.5">
+                    <CheckCircle2 className="w-4 h-4 text-slate-400" /> Booked
+                  </span>
+                ) : (
+                  <button onClick={handleBook} disabled={!bookReady || bookLoading}
+                    className="bg-amber-500 hover:bg-amber-600 text-white font-extrabold text-xs px-5 py-3 rounded-2xl transition active:scale-95 disabled:opacity-40 flex items-center gap-2">
+                    {bookLoading
+                      ? <span className="w-4 h-4 rounded-full border-2 border-white border-t-transparent animate-spin" />
+                      : <><CheckCircle2 className="w-4 h-4" /> Book Now</>}
+                  </button>
+                )}
               </div>
             </div>
           )}
@@ -980,12 +987,18 @@ export const GerakRental: React.FC = () => {
                     {numDays}d × {selected.operating_end - selected.operating_start}h × RM{selected.price_hour.toFixed(2)}
                   </p>
                 </div>
-                <button onClick={handleBook} disabled={!bookReady || bookLoading}
-                  className="bg-amber-500 hover:bg-amber-600 text-white font-extrabold text-xs px-5 py-3 rounded-2xl transition active:scale-95 disabled:opacity-40 flex items-center gap-2">
-                  {bookLoading
-                    ? <span className="w-4 h-4 rounded-full border-2 border-white border-t-transparent animate-spin" />
-                    : <><CheckCircle2 className="w-4 h-4" /> Book Now</>}
-                </button>
+                {bookingDone ? (
+                  <span className="bg-slate-100 text-slate-500 text-xs font-extrabold px-4 py-3 rounded-2xl flex items-center gap-1.5">
+                    <CheckCircle2 className="w-4 h-4 text-slate-400" /> Booked
+                  </span>
+                ) : (
+                  <button onClick={handleBook} disabled={!bookReady || bookLoading}
+                    className="bg-amber-500 hover:bg-amber-600 text-white font-extrabold text-xs px-5 py-3 rounded-2xl transition active:scale-95 disabled:opacity-40 flex items-center gap-2">
+                    {bookLoading
+                      ? <span className="w-4 h-4 rounded-full border-2 border-white border-t-transparent animate-spin" />
+                      : <><CheckCircle2 className="w-4 h-4" /> Book Now</>}
+                  </button>
+                )}
               </div>
             </div>
           )}
