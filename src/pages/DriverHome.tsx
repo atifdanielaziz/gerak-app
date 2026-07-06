@@ -372,9 +372,13 @@ export const DriverHome: React.FC = () => {
     }
   }, [effectiveCanDrive]);
 
-  // Debounce ref: group rapid-fire inserts into one notification
+  // Debounce refs — ride orders
   const notifTimer  = useRef<ReturnType<typeof setTimeout> | null>(null);
   const notifCount  = useRef(0);
+
+  // Debounce refs — rental bookings
+  const notifRentalTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const notifRentalCount = useRef(0);
 
   const playChime = useCallback(() => {
     try {
@@ -414,6 +418,20 @@ export const DriverHome: React.FC = () => {
     }
   }, [playChime]);
 
+  const fireRentalNotification = useCallback(() => {
+    const count = notifRentalCount.current;
+    notifRentalCount.current = 0;
+    playChime();
+    if ('Notification' in window && Notification.permission === 'granted') {
+      new Notification('Gerak — New Rental Booking', {
+        body: count > 1 ? `${count} new rental bookings awaiting your confirmation` : 'A new rental booking is awaiting your confirmation.',
+        icon: '/icon-192.png',
+        badge: '/icon-192.png',
+        tag: 'gerak-new-rental',
+      });
+    }
+  }, [playChime]);
+
   useEffect(() => {
     if (!effectiveCanDrive) { setLoading(false); return; }
     loadOrders();
@@ -437,10 +455,17 @@ export const DriverHome: React.FC = () => {
     loadRentalData();
     const channel = supabase
       .channel('rental_bookings_owner')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'rental_bookings' }, loadRentalData)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'rental_bookings' }, (payload) => {
+        loadRentalData();
+        if (payload.eventType === 'INSERT') {
+          notifRentalCount.current += 1;
+          if (notifRentalTimer.current) clearTimeout(notifRentalTimer.current);
+          notifRentalTimer.current = setTimeout(fireRentalNotification, 2000);
+        }
+      })
       .subscribe();
     return () => { supabase.removeChannel(channel); };
-  }, [user.canRent, user.role, loadRentalData]);
+  }, [user.canRent, user.role, loadRentalData, fireRentalNotification]);
 
   const handleAccept = async (orderId: string) => {
     setAccepting(orderId);
@@ -1219,7 +1244,7 @@ export const DriverHome: React.FC = () => {
                       </span>
                     </div>
                     <div className="px-4 py-3 flex items-center justify-between gap-2">
-                      <div className="min-w-0">
+                      <div className="min-w-0 flex-1">
                         <p className="text-xs font-black text-slate-800 truncate">{bk.customer_name}</p>
                         {isAdminForRental && bk.owner_name && (
                           <p className="text-[9px] text-slate-400 font-semibold truncate">
@@ -1231,7 +1256,19 @@ export const DriverHome: React.FC = () => {
                           {!bk.license_url && <span className="text-amber-500 font-extrabold">· License pending</span>}
                         </p>
                       </div>
-                      <p className="text-sm font-black text-amber-600 shrink-0">RM{Number(bk.total_price).toFixed(2)}</p>
+                      <div className="flex items-center gap-2 shrink-0">
+                        <p className="text-sm font-black text-amber-600">RM{Number(bk.total_price).toFixed(2)}</p>
+                        {bk.customer_phone && bk.customer_phone !== '—' && (
+                          <a
+                            href={`https://wa.me/${toWa(bk.customer_phone)}?text=${encodeURIComponent(`Hi ${bk.customer_name}, regarding your rental booking #${String(bk.booking_no).padStart(5, '0')} — just confirming your details. Please let me know if you have any questions!`)}`}
+                            target="_blank" rel="noreferrer"
+                            onClick={e => e.stopPropagation()}
+                            className="w-8 h-8 flex items-center justify-center bg-emerald-500 text-white rounded-xl active:scale-90 transition shrink-0"
+                          >
+                            <WaIcon className="w-4 h-4" />
+                          </a>
+                        )}
+                      </div>
                     </div>
                   </div>
                 );
