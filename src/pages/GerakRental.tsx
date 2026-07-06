@@ -55,6 +55,8 @@ interface RentalBooking {
   price_hour: number;
 }
 
+const ALLOWED_LICENSE_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'application/pdf'];
+
 const HOURS = Array.from({ length: 24 }, (_, i) => i);
 const fmt12 = (h: number) => {
   const hh = ((h % 24) + 24) % 24;
@@ -390,6 +392,7 @@ export const GerakRental: React.FC = () => {
   // ── License upload ─────────────────────────────────────────────────────────
   const handleLicenseUpload = async (bookingId: string, file: File) => {
     if (file.size > 10 * 1024 * 1024) { showToast('File too large. Max 10MB.'); return; }
+    if (!ALLOWED_LICENSE_TYPES.includes(file.type)) { showToast('Only images or PDF files are allowed.'); return; }
     setUploadingLicense(bookingId);
     const ext  = file.name.split('.').pop() ?? 'jpg';
     const path = `${bookingId}/license.${ext}`;
