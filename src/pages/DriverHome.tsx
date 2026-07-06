@@ -44,6 +44,10 @@ interface RentalBookingOwner {
   notes: string;
   license_url: string;
   created_at: string;
+  // admin-view enrichment
+  owner_name?: string;
+  owner_phone_display?: string;
+  vehicle_label?: string;
 }
 
 interface RentalBlock {
@@ -90,7 +94,9 @@ export const DriverHome: React.FC = () => {
   // Admin/superadmin who switched the pill to Driver should behave as a full driver
   const effectiveCanDrive = user.canDrive || activeRole === 'driver';
 
-  const [activeTab, setActiveTab]           = useState<DriverTab>(!effectiveCanDrive && user.canRent ? 'rental' : 'pool');
+  const isAdminForRental = user.role === 'admin' || user.role === 'superadmin';
+  const effectiveCanRent = user.canRent || isAdminForRental;
+  const [activeTab, setActiveTab]           = useState<DriverTab>(!effectiveCanDrive && effectiveCanRent ? 'rental' : 'pool');
   const [pendingOrders, setPendingOrders]   = useState<RideOrder[]>([]);
   const [myJob, setMyJob]                   = useState<RideOrder | null>(null);
   const [myHistory, setMyHistory]           = useState<RideOrder[]>([]);
@@ -145,11 +151,53 @@ export const DriverHome: React.FC = () => {
 
   // ── Rental helpers ────────────────────────────────────────────────────────
   const loadRentalData = useCallback(async () => {
-    if (!user.canRent) return;
+    const isAdmin = user.role === 'admin' || user.role === 'superadmin';
+    if (!user.canRent && !isAdmin) return;
     setRentalLoading(true);
     const { data: { user: authUser } } = await supabase.auth.getUser();
     const uid = authUser?.id ?? '';
 
+    // ── Admin: overview of ALL rental bookings across all owners ──
+    if (isAdmin) {
+      const { data: allBookings } = await supabase
+        .from('rental_bookings')
+        .select('id, booking_no, date, end_date, booking_type, start_hour, duration, persons, total_price, status, notes, license_url, created_at, owner_id, customer_id')
+        .order('date', { ascending: false })
+        .limit(100);
+
+      let enriched: RentalBookingOwner[] = [];
+      if (allBookings?.length) {
+        const ownerIds    = [...new Set(allBookings.map(b => b.owner_id))];
+        const customerIds = [...new Set(allBookings.map(b => b.customer_id))];
+        const [{ data: ownerProfs }, { data: custProfs }, { data: vehicles }] = await Promise.all([
+          supabase.from('profiles').select('id, name, phone').in('id', ownerIds),
+          supabase.from('profiles').select('id, name, phone').in('id', customerIds),
+          supabase.from('rental_vehicles').select('owner_id, car_type, plate_no').in('owner_id', ownerIds),
+        ]);
+        enriched = allBookings.map(b => {
+          const op = ownerProfs?.find(p => p.id === b.owner_id);
+          const cp = custProfs?.find(p => p.id === b.customer_id);
+          const v  = vehicles?.find(v => v.owner_id === b.owner_id);
+          return {
+            ...b,
+            customer_name:        cp?.name  ?? '—',
+            customer_phone:       cp?.phone ?? '—',
+            owner_name:           op?.name  ?? '—',
+            owner_phone_display:  op?.phone ?? '',
+            vehicle_label:        v ? `${v.car_type} · ${v.plate_no}` : '—',
+          };
+        });
+      }
+      setRentalVehicle(null);
+      setVehicleForm({ car_type: '', plate_no: '', color: '', seats: 5, price_hour: 10, description: '', operating_start: 8, operating_end: 22, night_surcharge_on: false, night_surcharge_rate: 0 });
+      setRentalBookings(enriched);
+      setRentalBlocks([]);
+      setPendingRentals(enriched.filter(b => b.status === 'pending').length);
+      setRentalLoading(false);
+      return;
+    }
+
+    // ── Owner (driver with can_rent): own vehicle + bookings ──
     const [{ data: vehicle }, { data: bookings }, { data: blocks }] = await Promise.all([
       supabase.from('rental_vehicles').select('*').eq('owner_id', uid).maybeSingle(),
       supabase.from('rental_bookings')
@@ -160,7 +208,6 @@ export const DriverHome: React.FC = () => {
       supabase.from('rental_blocks').select('date, blocked_hours').eq('owner_id', uid),
     ]);
 
-    // Enrich bookings with customer name/phone
     let enriched: RentalBookingOwner[] = [];
     if (bookings?.length) {
       const customerIds = [...new Set(bookings.map(b => b.customer_id))];
@@ -178,7 +225,7 @@ export const DriverHome: React.FC = () => {
     setRentalBlocks(blocks ?? []);
     setPendingRentals(enriched.filter(b => b.status === 'pending').length);
     setRentalLoading(false);
-  }, [user.canRent]);
+  }, [user.canRent, user.role]);
 
   const toggleHourBlock = async (dateStr: string, hour: number) => {
     const { data: { user: authUser } } = await supabase.auth.getUser();
@@ -385,14 +432,15 @@ export const DriverHome: React.FC = () => {
   }, [loadOrders, effectiveCanDrive, fireNotification]);
 
   useEffect(() => {
-    if (!user.canRent) return;
+    const isAdmin = user.role === 'admin' || user.role === 'superadmin';
+    if (!user.canRent && !isAdmin) return;
     loadRentalData();
     const channel = supabase
       .channel('rental_bookings_owner')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'rental_bookings' }, loadRentalData)
       .subscribe();
     return () => { supabase.removeChannel(channel); };
-  }, [user.canRent, loadRentalData]);
+  }, [user.canRent, user.role, loadRentalData]);
 
   const handleAccept = async (orderId: string) => {
     setAccepting(orderId);
@@ -623,7 +671,7 @@ export const DriverHome: React.FC = () => {
           </p>
         </div>
         <button
-          onClick={() => activeTab === 'rental' ? loadRentalData() : loadOrders()}
+          onClick={() => (activeTab === 'rental' && effectiveCanRent) ? loadRentalData() : loadOrders()}
           className="w-8 h-8 flex items-center justify-center rounded-xl bg-white border border-slate-100 text-slate-400 hover:text-primary transition active:scale-90"
         >
           <RefreshCw className="w-4 h-4" />
@@ -694,8 +742,8 @@ export const DriverHome: React.FC = () => {
             </button>
           )}
 
-          {/* Rental tab — only if can_rent */}
-          {user.canRent && (
+          {/* Rental tab — owners + admins */}
+          {effectiveCanRent && (
             <button
               onClick={() => setActiveTab('rental')}
               className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-xs font-extrabold transition relative ${
@@ -1113,25 +1161,27 @@ export const DriverHome: React.FC = () => {
       {/* ══════════════════════════════════════════
           TAB 3: RENTAL (owners only)
       ══════════════════════════════════════════ */}
-      {!loading && activeTab === 'rental' && user.canRent && (
+      {!loading && activeTab === 'rental' && effectiveCanRent && (
         <div className="px-4 pt-2 flex flex-col gap-3">
 
-          {/* Sub-view switcher */}
+          {/* Sub-view switcher — admin sees Orders only; owner sees all 4 */}
           <div className="flex bg-white border border-slate-100 rounded-2xl p-1 gap-1 shadow-sm">
             {([
-              { v: 'orders',   Icon: Package,      label: 'Orders'   },
-              { v: 'schedule', Icon: CalendarDays,  label: 'Schedule' },
-              { v: 'vehicle',  Icon: Settings,      label: 'Vehicle'  },
-              { v: 'pricing',  Icon: DollarSign,    label: 'Pricing'  },
-            ] as const).map(({ v, Icon, label }) => (
-              <button key={v} onClick={() => setRentalSubView(v)}
-                className={`flex-1 py-2 rounded-xl text-[9px] font-extrabold transition flex flex-col items-center gap-0.5 ${
-                  rentalSubView === v ? 'bg-amber-500 text-white shadow-sm' : 'text-slate-400'
-                }`}>
-                <Icon className="w-3 h-3" />
-                {label}
-              </button>
-            ))}
+              { v: 'orders',   Icon: Package,      label: 'Orders',   ownerOnly: false },
+              { v: 'schedule', Icon: CalendarDays,  label: 'Schedule', ownerOnly: true  },
+              { v: 'vehicle',  Icon: Settings,      label: 'Vehicle',  ownerOnly: true  },
+              { v: 'pricing',  Icon: DollarSign,    label: 'Pricing',  ownerOnly: true  },
+            ] as const)
+              .filter(({ ownerOnly }) => !ownerOnly || !isAdminForRental)
+              .map(({ v, Icon, label }) => (
+                <button key={v} onClick={() => setRentalSubView(v)}
+                  className={`flex-1 py-2 rounded-xl text-[9px] font-extrabold transition flex flex-col items-center gap-0.5 ${
+                    rentalSubView === v ? 'bg-amber-500 text-white shadow-sm' : 'text-slate-400'
+                  }`}>
+                  <Icon className="w-3 h-3" />
+                  {label}
+                </button>
+              ))}
           </div>
 
           {rentalLoading && (
@@ -1169,14 +1219,19 @@ export const DriverHome: React.FC = () => {
                       </span>
                     </div>
                     <div className="px-4 py-3 flex items-center justify-between gap-2">
-                      <div>
-                        <p className="text-xs font-black text-slate-800">{bk.customer_name}</p>
-                        <p className="text-[10px] text-slate-400 font-semibold flex items-center gap-2">
+                      <div className="min-w-0">
+                        <p className="text-xs font-black text-slate-800 truncate">{bk.customer_name}</p>
+                        {isAdminForRental && bk.owner_name && (
+                          <p className="text-[9px] text-slate-400 font-semibold truncate">
+                            Owner: {bk.owner_name} · {bk.vehicle_label}
+                          </p>
+                        )}
+                        <p className="text-[10px] text-slate-400 font-semibold flex items-center gap-2 flex-wrap">
                           {bk.persons} pax · {bk.duration}h
                           {!bk.license_url && <span className="text-amber-500 font-extrabold">· License pending</span>}
                         </p>
                       </div>
-                      <p className="text-sm font-black text-amber-600">RM{Number(bk.total_price).toFixed(2)}</p>
+                      <p className="text-sm font-black text-amber-600 shrink-0">RM{Number(bk.total_price).toFixed(2)}</p>
                     </div>
                   </div>
                 );
@@ -1464,11 +1519,16 @@ export const DriverHome: React.FC = () => {
               <div>
                 <p className="text-[9px] font-extrabold text-amber-100 uppercase tracking-widest">Rental Booking</p>
                 <p className="text-lg font-black text-white leading-tight mt-0.5">
-                  {rentalVehicle?.car_type || 'Vehicle'}
+                  {bk.vehicle_label ?? rentalVehicle?.car_type ?? 'Vehicle'}
                 </p>
-                <p className="text-[10px] text-amber-100 font-semibold">
-                  {rentalVehicle?.plate_no} · {rentalVehicle?.color}
-                </p>
+                {!bk.vehicle_label && (
+                  <p className="text-[10px] text-amber-100 font-semibold">
+                    {rentalVehicle?.plate_no} · {rentalVehicle?.color}
+                  </p>
+                )}
+                {isAdminForRental && bk.owner_name && (
+                  <p className="text-[10px] text-amber-100 font-semibold">Owner: {bk.owner_name}</p>
+                )}
               </div>
               <div className="flex flex-col items-end gap-1.5">
                 <span className={`text-[9px] font-extrabold px-2.5 py-1 rounded-full border uppercase ${statusStyle[bk.status] ?? statusStyle.pending}`}>
