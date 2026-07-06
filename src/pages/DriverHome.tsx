@@ -8,6 +8,7 @@ import {
   ChevronLeft, ChevronRight, Settings, CalendarDays,
   Package, Ban, Unlock, Hash, X, TrendingUp,
   Upload, FileImage, ShieldCheck, ShieldAlert,
+  DollarSign, Moon, FileText, ExternalLink,
 } from 'lucide-react';
 import { WaIcon, toWa } from '../lib/whatsapp';
 import { OrderReceiptSheet } from '../components/OrderReceiptSheet';
@@ -21,6 +22,10 @@ interface RentalVehicle {
   seats: number;
   price_hour: number;
   description: string;
+  operating_start: number;
+  operating_end: number;
+  night_surcharge_on: boolean;
+  night_surcharge_rate: number;
 }
 
 interface RentalBookingOwner {
@@ -29,12 +34,15 @@ interface RentalBookingOwner {
   customer_name: string;
   customer_phone: string;
   date: string;
+  end_date: string | null;
+  booking_type: string;
   start_hour: number;
   duration: number;
   persons: number;
   total_price: number;
   status: string;
   notes: string;
+  license_url: string;
   created_at: string;
 }
 
@@ -102,7 +110,7 @@ export const DriverHome: React.FC = () => {
   const [rentalBookings,  setRentalBookings]  = useState<RentalBookingOwner[]>([]);
   const [rentalBlocks,    setRentalBlocks]    = useState<RentalBlock[]>([]);
   const [rentalLoading,   setRentalLoading]   = useState(false);
-  const [rentalSubView,   setRentalSubView]   = useState<'orders' | 'schedule' | 'vehicle'>('orders');
+  const [rentalSubView,   setRentalSubView]   = useState<'orders' | 'schedule' | 'vehicle' | 'pricing'>('orders');
   const [rentalMonth, setRentalMonth]         = useState(() => {
     const n = new Date(); return { year: n.getFullYear(), month: n.getMonth() };
   });
@@ -145,7 +153,7 @@ export const DriverHome: React.FC = () => {
     const [{ data: vehicle }, { data: bookings }, { data: blocks }] = await Promise.all([
       supabase.from('rental_vehicles').select('*').eq('owner_id', uid).maybeSingle(),
       supabase.from('rental_bookings')
-        .select('id, booking_no, date, start_hour, duration, persons, total_price, status, notes, created_at, customer_id')
+        .select('id, booking_no, date, end_date, booking_type, start_hour, duration, persons, total_price, status, notes, license_url, created_at, customer_id')
         .eq('owner_id', uid)
         .order('date', { ascending: false })
         .limit(50),
@@ -165,7 +173,7 @@ export const DriverHome: React.FC = () => {
     }
 
     setRentalVehicle(vehicle ?? null);
-    setVehicleForm(vehicle ?? { car_type: '', plate_no: '', color: '', seats: 5, price_hour: 10, description: '' });
+    setVehicleForm(vehicle ?? { car_type: '', plate_no: '', color: '', seats: 5, price_hour: 10, description: '', operating_start: 8, operating_end: 22, night_surcharge_on: false, night_surcharge_rate: 0 });
     setRentalBookings(enriched);
     setRentalBlocks(blocks ?? []);
     setPendingRentals(enriched.filter(b => b.status === 'pending').length);
@@ -214,12 +222,16 @@ export const DriverHome: React.FC = () => {
     const uid = authUser?.id ?? '';
     await supabase.from('rental_vehicles').upsert({
       owner_id: uid,
-      car_type:    vehicleForm.car_type    ?? '',
-      plate_no:    vehicleForm.plate_no    ?? '',
-      color:       vehicleForm.color       ?? '',
-      seats:       vehicleForm.seats       ?? 5,
-      price_hour:  vehicleForm.price_hour  ?? 10,
-      description: vehicleForm.description ?? '',
+      car_type:             vehicleForm.car_type             ?? '',
+      plate_no:             vehicleForm.plate_no             ?? '',
+      color:                vehicleForm.color                ?? '',
+      seats:                vehicleForm.seats                ?? 5,
+      price_hour:           vehicleForm.price_hour           ?? 10,
+      description:          vehicleForm.description          ?? '',
+      operating_start:      vehicleForm.operating_start      ?? 8,
+      operating_end:        vehicleForm.operating_end        ?? 22,
+      night_surcharge_on:   vehicleForm.night_surcharge_on   ?? false,
+      night_surcharge_rate: vehicleForm.night_surcharge_rate ?? 0,
       updated_at:  new Date().toISOString(),
     });
     setVehicleSaving(false);
@@ -1106,14 +1118,18 @@ export const DriverHome: React.FC = () => {
 
           {/* Sub-view switcher */}
           <div className="flex bg-white border border-slate-100 rounded-2xl p-1 gap-1 shadow-sm">
-            {(['orders', 'schedule', 'vehicle'] as const).map(v => (
+            {([
+              { v: 'orders',   Icon: Package,      label: 'Orders'   },
+              { v: 'schedule', Icon: CalendarDays,  label: 'Schedule' },
+              { v: 'vehicle',  Icon: Settings,      label: 'Vehicle'  },
+              { v: 'pricing',  Icon: DollarSign,    label: 'Pricing'  },
+            ] as const).map(({ v, Icon, label }) => (
               <button key={v} onClick={() => setRentalSubView(v)}
-                className={`flex-1 py-2 rounded-xl text-[10px] font-extrabold transition capitalize ${
+                className={`flex-1 py-2 rounded-xl text-[9px] font-extrabold transition flex flex-col items-center gap-0.5 ${
                   rentalSubView === v ? 'bg-amber-500 text-white shadow-sm' : 'text-slate-400'
                 }`}>
-                {v === 'orders' ? <><Package className="w-3 h-3 inline mr-1" />Orders</> :
-                 v === 'schedule' ? <><CalendarDays className="w-3 h-3 inline mr-1" />Schedule</> :
-                 <><Settings className="w-3 h-3 inline mr-1" />Vehicle</>}
+                <Icon className="w-3 h-3" />
+                {label}
               </button>
             ))}
           </div>
@@ -1143,7 +1159,11 @@ export const DriverHome: React.FC = () => {
                   <div key={bk.id} onClick={() => setRentalReceiptBk(bk)}
                     className="bg-white border border-slate-100 rounded-3xl shadow-sm overflow-hidden cursor-pointer active:scale-[0.99] transition">
                     <div className="bg-slate-50 border-b border-slate-100 px-4 py-2 flex items-center justify-between">
-                      <p className="text-[10px] font-extrabold text-slate-500">{bk.date} · {fmt12(bk.start_hour)} – {fmt12(bk.start_hour + bk.duration)}</p>
+                      <p className="text-[10px] font-extrabold text-slate-500">
+                        {bk.booking_type === 'fullday' && bk.end_date && bk.end_date !== bk.date
+                          ? `${bk.date} → ${bk.end_date} · Full Day`
+                          : `${bk.date} · ${fmt12(bk.start_hour)} – ${fmt12(bk.start_hour + bk.duration)}`}
+                      </p>
                       <span className={`text-[9px] font-extrabold px-2 py-0.5 rounded-full border uppercase ${statusStyle[bk.status] ?? statusStyle.pending}`}>
                         {bk.status}
                       </span>
@@ -1151,7 +1171,10 @@ export const DriverHome: React.FC = () => {
                     <div className="px-4 py-3 flex items-center justify-between gap-2">
                       <div>
                         <p className="text-xs font-black text-slate-800">{bk.customer_name}</p>
-                        <p className="text-[10px] text-slate-400 font-semibold">{bk.persons} pax · {bk.duration}h</p>
+                        <p className="text-[10px] text-slate-400 font-semibold flex items-center gap-2">
+                          {bk.persons} pax · {bk.duration}h
+                          {!bk.license_url && <span className="text-amber-500 font-extrabold">· License pending</span>}
+                        </p>
                       </div>
                       <p className="text-sm font-black text-amber-600">RM{Number(bk.total_price).toFixed(2)}</p>
                     </div>
@@ -1249,6 +1272,102 @@ export const DriverHome: React.FC = () => {
                   </p>
                 </div>
               )}
+            </div>
+          )}
+
+          {/* ── PRICING sub-view ── */}
+          {!rentalLoading && rentalSubView === 'pricing' && (
+            <div className="bg-white border border-slate-100 rounded-3xl p-5 shadow-sm flex flex-col gap-5">
+              <p className="text-xs font-extrabold text-slate-400 uppercase tracking-widest">Pricing & Operating Hours</p>
+
+              {/* Hourly rate */}
+              <div className="flex flex-col gap-1.5">
+                <label className="text-[10px] font-extrabold text-slate-500 uppercase tracking-wider">Hourly Rate (RM)</label>
+                <input
+                  type="number" min="1" step="0.50"
+                  value={vehicleForm.price_hour ?? 10}
+                  onChange={e => setVehicleForm(f => ({ ...f, price_hour: Number(e.target.value) }))}
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-xs font-bold text-slate-700 focus:outline-none focus:border-amber-400 transition"
+                />
+              </div>
+
+              {/* Operating hours */}
+              <div className="flex flex-col gap-2">
+                <label className="text-[10px] font-extrabold text-slate-500 uppercase tracking-wider">Operating Hours (Full-Day Bookings)</label>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="flex flex-col gap-1">
+                    <span className="text-[9px] font-bold text-slate-400">Pickup Time</span>
+                    <select
+                      value={vehicleForm.operating_start ?? 8}
+                      onChange={e => setVehicleForm(f => ({ ...f, operating_start: Number(e.target.value) }))}
+                      className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-xs font-bold text-slate-700 focus:outline-none focus:border-amber-400 transition"
+                    >
+                      {Array.from({ length: 24 }, (_, h) => (
+                        <option key={h} value={h}>{h === 0 ? '12 AM' : h < 12 ? `${h} AM` : h === 12 ? '12 PM' : `${h - 12} PM`}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="flex flex-col gap-1">
+                    <span className="text-[9px] font-bold text-slate-400">Return Time</span>
+                    <select
+                      value={vehicleForm.operating_end ?? 22}
+                      onChange={e => setVehicleForm(f => ({ ...f, operating_end: Number(e.target.value) }))}
+                      className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-xs font-bold text-slate-700 focus:outline-none focus:border-amber-400 transition"
+                    >
+                      {Array.from({ length: 24 }, (_, h) => (
+                        <option key={h} value={h}>{h === 0 ? '12 AM' : h < 12 ? `${h} AM` : h === 12 ? '12 PM' : `${h - 12} PM`}</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+                <p className="text-[9px] text-slate-400 font-semibold">
+                  Full-day bookings will use these times as pickup and return.
+                </p>
+              </div>
+
+              {/* Night surcharge */}
+              <div className="flex flex-col gap-3">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-[10px] font-extrabold text-slate-700 flex items-center gap-1.5">
+                      <Moon className="w-3.5 h-3.5 text-indigo-400" /> Night Surcharge
+                    </p>
+                    <p className="text-[9px] text-slate-400 font-semibold mt-0.5">Applies 10 PM – 5 AM for hourly bookings</p>
+                  </div>
+                  <button
+                    onClick={() => setVehicleForm(f => ({ ...f, night_surcharge_on: !f.night_surcharge_on }))}
+                    className={`relative w-11 h-6 rounded-full transition-colors duration-200 ${
+                      vehicleForm.night_surcharge_on ? 'bg-indigo-500' : 'bg-slate-200'
+                    }`}
+                  >
+                    <span className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform duration-200 ${
+                      vehicleForm.night_surcharge_on ? 'translate-x-5' : 'translate-x-0'
+                    }`} />
+                  </button>
+                </div>
+                {vehicleForm.night_surcharge_on && (
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Extra Rate / Hour (RM)</label>
+                    <input
+                      type="number" min="0" step="0.50"
+                      value={vehicleForm.night_surcharge_rate ?? 0}
+                      onChange={e => setVehicleForm(f => ({ ...f, night_surcharge_rate: Number(e.target.value) }))}
+                      placeholder="e.g. 5.00"
+                      className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-xs font-bold text-slate-700 focus:outline-none focus:border-amber-400 transition"
+                    />
+                    <p className="text-[9px] text-slate-400 font-semibold">
+                      Night hours = normal rate + this extra amount per hour.
+                    </p>
+                  </div>
+                )}
+              </div>
+
+              <button onClick={saveVehicle} disabled={vehicleSaving}
+                className="w-full bg-amber-500 hover:bg-amber-600 text-white font-extrabold text-xs py-3 rounded-2xl transition active:scale-95 disabled:opacity-50 flex items-center justify-center gap-2">
+                {vehicleSaving
+                  ? <span className="w-4 h-4 rounded-full border-2 border-white border-t-transparent animate-spin" />
+                  : <><CheckCircle2 className="w-4 h-4" /> Save Pricing</>}
+              </button>
             </div>
           )}
 
@@ -1365,25 +1484,44 @@ export const DriverHome: React.FC = () => {
             <div className="px-4 py-4 flex flex-col gap-3 overflow-y-auto no-scrollbar max-h-[65vh]">
 
               {/* Date / Time / Duration */}
-              <div className="grid grid-cols-3 gap-2">
-                <div className="bg-slate-50 rounded-2xl px-3 py-2.5 text-center">
-                  <p className="text-[9px] text-slate-400 font-bold mb-0.5">Date</p>
-                  <p className="text-[10px] font-extrabold text-slate-700 leading-tight">
-                    {new Date(bk.date + 'T00:00:00').toLocaleDateString('en-MY', { day: '2-digit', month: 'short', year: 'numeric' })}
-                  </p>
+              {bk.booking_type === 'fullday' && bk.end_date && bk.end_date !== bk.date ? (
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="bg-slate-50 rounded-2xl px-3 py-2.5 text-center">
+                    <p className="text-[9px] text-slate-400 font-bold mb-0.5">From</p>
+                    <p className="text-[10px] font-extrabold text-slate-700 leading-tight">
+                      {new Date(bk.date + 'T00:00:00').toLocaleDateString('en-MY', { day: '2-digit', month: 'short' })}
+                    </p>
+                    <p className="text-[9px] text-slate-400">{fmt12(bk.start_hour)}</p>
+                  </div>
+                  <div className="bg-slate-50 rounded-2xl px-3 py-2.5 text-center">
+                    <p className="text-[9px] text-slate-400 font-bold mb-0.5">To</p>
+                    <p className="text-[10px] font-extrabold text-slate-700 leading-tight">
+                      {new Date(bk.end_date + 'T00:00:00').toLocaleDateString('en-MY', { day: '2-digit', month: 'short' })}
+                    </p>
+                    <p className="text-[9px] text-slate-400">{fmt12(bk.start_hour)}</p>
+                  </div>
                 </div>
-                <div className="bg-slate-50 rounded-2xl px-3 py-2.5 text-center">
-                  <p className="text-[9px] text-slate-400 font-bold mb-0.5">Time</p>
-                  <p className="text-[10px] font-extrabold text-slate-700 leading-tight">
-                    {fmt12(bk.start_hour)}<br />
-                    <span className="text-[9px] text-slate-400">→ {fmt12(bk.start_hour + bk.duration)}</span>
-                  </p>
+              ) : (
+                <div className="grid grid-cols-3 gap-2">
+                  <div className="bg-slate-50 rounded-2xl px-3 py-2.5 text-center">
+                    <p className="text-[9px] text-slate-400 font-bold mb-0.5">Date</p>
+                    <p className="text-[10px] font-extrabold text-slate-700 leading-tight">
+                      {new Date(bk.date + 'T00:00:00').toLocaleDateString('en-MY', { day: '2-digit', month: 'short', year: 'numeric' })}
+                    </p>
+                  </div>
+                  <div className="bg-slate-50 rounded-2xl px-3 py-2.5 text-center">
+                    <p className="text-[9px] text-slate-400 font-bold mb-0.5">Time</p>
+                    <p className="text-[10px] font-extrabold text-slate-700 leading-tight">
+                      {fmt12(bk.start_hour)}<br />
+                      <span className="text-[9px] text-slate-400">→ {fmt12(bk.start_hour + bk.duration)}</span>
+                    </p>
+                  </div>
+                  <div className="bg-slate-50 rounded-2xl px-3 py-2.5 text-center">
+                    <p className="text-[9px] text-slate-400 font-bold mb-0.5">Duration</p>
+                    <p className="text-[10px] font-extrabold text-slate-700 leading-tight">{bk.duration} hr{bk.duration > 1 ? 's' : ''}</p>
+                  </div>
                 </div>
-                <div className="bg-slate-50 rounded-2xl px-3 py-2.5 text-center">
-                  <p className="text-[9px] text-slate-400 font-bold mb-0.5">Duration</p>
-                  <p className="text-[10px] font-extrabold text-slate-700 leading-tight">{bk.duration} hr{bk.duration > 1 ? 's' : ''}</p>
-                </div>
-              </div>
+              )}
 
               {/* Customer info */}
               <div className="bg-slate-50 rounded-2xl px-4 py-3 flex items-center justify-between gap-3">
@@ -1416,6 +1554,26 @@ export const DriverHome: React.FC = () => {
                   <span className="text-xs font-extrabold text-slate-700">Total</span>
                   <span className="text-base font-black text-amber-500">RM{Number(bk.total_price).toFixed(2)}</span>
                 </div>
+              </div>
+
+              {/* License document */}
+              <div className={`rounded-2xl px-4 py-3 flex items-center justify-between gap-3 ${bk.license_url ? 'bg-emerald-50 border border-emerald-100' : 'bg-amber-50 border border-amber-100'}`}>
+                <div className="flex items-center gap-2 min-w-0">
+                  <FileText className={`w-4 h-4 shrink-0 ${bk.license_url ? 'text-emerald-500' : 'text-amber-400'}`} />
+                  <div>
+                    <p className="text-[9px] font-extrabold uppercase tracking-widest text-slate-400">Driver's License</p>
+                    <p className={`text-[10px] font-extrabold ${bk.license_url ? 'text-emerald-700' : 'text-amber-600'}`}>
+                      {bk.license_url ? 'Uploaded ✓' : 'Not yet uploaded'}
+                    </p>
+                  </div>
+                </div>
+                {bk.license_url && (
+                  <a href={bk.license_url} target="_blank" rel="noreferrer"
+                    onClick={e => e.stopPropagation()}
+                    className="flex items-center gap-1 text-[10px] font-extrabold text-emerald-600 bg-white border border-emerald-200 px-3 py-1.5 rounded-xl active:scale-95 transition shrink-0">
+                    <ExternalLink className="w-3 h-3" /> View
+                  </a>
+                )}
               </div>
 
               {/* Notes */}
