@@ -340,7 +340,7 @@ export const Jubah: React.FC = () => {
   // Non-UMPSA universities: form not yet available
   if (!jubahBooking && landingUniversity !== 'umpsa') {
     return (
-      <div className="flex-grow bg-slate-50/50 overflow-y-auto no-scrollbar pb-24 px-4 animate-fade-in flex flex-col gap-4 items-center justify-center text-center">
+      <div className="flex-grow bg-slate-50/50 overflow-y-auto no-scrollbar pb-24 px-5 animate-fade-in flex flex-col gap-5 items-center justify-center text-center">
         <div className="bg-white border border-slate-100 rounded-3xl p-8 shadow-sm flex flex-col items-center gap-4 mx-2">
           <div className="w-16 h-16 rounded-2xl bg-amber-50 border border-amber-100 flex items-center justify-center">
             <span className="text-3xl">🎓</span>
@@ -370,7 +370,7 @@ export const Jubah: React.FC = () => {
 
   return (
     <>
-    <div className="flex-grow bg-slate-50/50 overflow-y-auto overflow-x-hidden no-scrollbar pb-24 px-4 animate-fade-in flex flex-col gap-4">
+    <div className="flex-grow bg-slate-50/50 overflow-y-auto overflow-x-hidden no-scrollbar pb-24 px-5 animate-fade-in flex flex-col gap-5">
 
       {/* HEADER */}
       <div className="mt-4 px-1 flex items-start gap-2">
@@ -555,7 +555,7 @@ export const Jubah: React.FC = () => {
           </div>
 
           {/* ── SERVICE OPTION ── */}
-          <div className="bg-white border border-slate-100 rounded-3xl p-5 shadow-sm flex flex-col gap-3">
+          <div className="bg-white border border-slate-100 rounded-3xl p-5 shadow-sm flex flex-col gap-4">
             <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest">Service Option</h3>
 
             {/* Deposit */}
@@ -695,7 +695,7 @@ export const Jubah: React.FC = () => {
 
           {/* ── DELIVERY ADDRESS (postage only) ── */}
           {paymentMode === 'postage' && (
-            <div className="bg-white border border-slate-100 rounded-3xl p-5 shadow-sm flex flex-col gap-3">
+            <div className="bg-white border border-slate-100 rounded-3xl p-5 shadow-sm flex flex-col gap-4">
               <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest">Delivery Address <span className="text-danger">*</span></h3>
               {fullAddress ? (
                 <button type="button" onClick={openAddressSheet}
@@ -798,7 +798,7 @@ export const Jubah: React.FC = () => {
           </div>
 
           {/* ── COMBINED DOCUMENT ── */}
-          <div className="bg-white border border-slate-100 rounded-3xl p-5 shadow-sm flex flex-col gap-3">
+          <div className="bg-white border border-slate-100 rounded-3xl p-5 shadow-sm flex flex-col gap-4">
             <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest">Combined Document</h3>
             <p className="text-xs text-slate-500 leading-relaxed">
               Once all documents are uploaded, generate a single combined PDF to download and review.
@@ -829,7 +829,7 @@ export const Jubah: React.FC = () => {
           </div>
 
           {/* ── PROOF OF PAYMENT ── */}
-          <div className="bg-white border border-slate-100 rounded-3xl p-5 shadow-sm flex flex-col gap-3">
+          <div className="bg-white border border-slate-100 rounded-3xl p-5 shadow-sm flex flex-col gap-4">
             <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest">
               {paymentMode === 'deposit' ? `Proof of Deposit (RM${DEPOSIT_AMOUNT})` : 'Proof of Payment'}
             </h3>
@@ -1038,7 +1038,7 @@ export const Jubah: React.FC = () => {
               </button>
             </div>
 
-            <div className="flex-1 min-h-0 overflow-y-auto no-scrollbar px-5 pb-2 flex flex-col gap-3">
+            <div className="flex-1 min-h-0 overflow-y-auto no-scrollbar px-5 pb-2 flex flex-col gap-4">
               {[
                 { label: 'Address Line 1', placeholder: 'No. 44, Jalan Desa Melur 4/1,', value: draftLine1, set: setDraftLine1 },
                 { label: 'Address Line 2', placeholder: 'Taman Bandar Connaught,', value: draftLine2, set: setDraftLine2 },

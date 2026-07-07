@@ -207,7 +207,7 @@ export const RiderHome: React.FC = () => {
   if (!isAdminRole && user.docsStatus !== 'approved') {
     const bothUploaded = !!user.icUrl && !!user.licenseUrl;
     return (
-      <div className="flex-grow bg-slate-50 overflow-y-auto no-scrollbar pb-24 px-4 flex flex-col gap-4 animate-fade-in">
+      <div className="flex-grow bg-slate-50 overflow-y-auto no-scrollbar pb-24 px-5 flex flex-col gap-5 animate-fade-in">
         <div className="mt-6 flex flex-col items-center text-center gap-2">
           <div className={`w-16 h-16 rounded-full flex items-center justify-center border-2 ${
             user.docsStatus === 'rejected' ? 'bg-red-50 border-red-100' :
@@ -413,7 +413,7 @@ export const RiderHome: React.FC = () => {
 
             {/* PAGE 1 — Assignment List */}
             {jubahView === 'list' && (
-              <div className="bg-white border border-slate-100 rounded-3xl p-5 shadow-sm flex flex-col gap-3">
+              <div className="bg-white border border-slate-100 rounded-3xl p-5 shadow-sm flex flex-col gap-4">
                 <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest flex items-center justify-between">
                   <span className="flex items-center gap-1.5"><GraduationCap className="w-4 h-4" /> My Assignments</span>
                   <span className="font-bold text-slate-300 normal-case tracking-normal">{jubahJobs.length} jobs</span>
@@ -650,7 +650,7 @@ export const RiderHome: React.FC = () => {
                 </div>
 
                 {/* Documents download card */}
-                <div className="bg-white border border-slate-100 rounded-3xl p-5 shadow-sm flex flex-col gap-3">
+                <div className="bg-white border border-slate-100 rounded-3xl p-5 shadow-sm flex flex-col gap-4">
                   <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest">Documents</h3>
 
                   {([

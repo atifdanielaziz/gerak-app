@@ -289,7 +289,7 @@ export const Transport: React.FC = () => {
 
   if (bookingDone) {
     return (
-      <div className="flex-grow bg-slate-50/50 overflow-y-auto no-scrollbar pb-24 px-4 animate-fade-in flex flex-col gap-4">
+      <div className="flex-grow bg-slate-50/50 overflow-y-auto no-scrollbar pb-24 px-5 animate-fade-in flex flex-col gap-5">
         <div className="mt-6 bg-white border border-slate-100 rounded-3xl p-6 shadow-sm flex flex-col gap-4">
           <div className="flex items-center gap-3">
             <div className="w-12 h-12 rounded-2xl bg-emerald-50 border border-emerald-100 flex items-center justify-center">
@@ -470,7 +470,7 @@ export const Transport: React.FC = () => {
 
       {/* ── Quick Routes ── */}
       {bookMode === 'quick' && (
-        <div className="px-4 mt-3 flex flex-col gap-3">
+        <div className="px-4 mt-3 flex flex-col gap-4">
           {/* FROM dropdown */}
           <div ref={fromDropdownRef} className="relative">
             <button
@@ -586,7 +586,7 @@ export const Transport: React.FC = () => {
 
       {/* ── Search Map ── */}
       {bookMode === 'map' && (
-        <div className="px-4 mt-3 flex flex-col gap-3">
+        <div className="px-4 mt-3 flex flex-col gap-4">
           <Suspense fallback={<div className="flex justify-center py-12"><span className="w-6 h-6 rounded-full border-2 border-primary border-t-transparent animate-spin" /></div>}>
             <MapboxRideMap
               campusCenter={CAMPUS_CENTERS[campus]}

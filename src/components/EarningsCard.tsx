@@ -88,7 +88,7 @@ export const MonthDrumPicker: React.FC<{ value: string; onChange: (m: string) =>
 export const EarningsCard: React.FC<{
   label: string; earned: number; tbc: number; rows: EarningsRow[];
 }> = ({ label, earned, tbc, rows }) => (
-  <div className="bg-white border border-slate-100 rounded-3xl p-5 shadow-sm flex flex-col gap-3">
+  <div className="bg-white border border-slate-100 rounded-3xl p-5 shadow-sm flex flex-col gap-4">
     <p className="text-xs font-extrabold text-slate-400 uppercase tracking-widest flex items-center gap-1.5">
       <TrendingUp className="w-3.5 h-3.5 text-emerald-500" />
       {label} Earnings

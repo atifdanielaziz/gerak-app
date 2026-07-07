@@ -348,7 +348,7 @@ export const AcademicCalendar: React.FC = () => {
           ))}
         </div>
 
-        <div className="px-4 flex flex-col gap-3 pb-4">
+        <div className="px-4 flex flex-col gap-4 pb-4">
           <p className="text-xs font-extrabold text-slate-400 uppercase tracking-widest">{semester.label}</p>
 
           {semester.events.map((ev, i) => {

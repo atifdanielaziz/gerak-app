@@ -96,7 +96,7 @@ export const Register: React.FC = () => {
 
         {/* Scrollable fields */}
         <div className="flex-1 overflow-y-auto overflow-x-hidden no-scrollbar px-5 pt-5 pb-2 overscroll-contain touch-pan-y w-full">
-        <form id="register-form" onSubmit={handleSubmit} className="flex flex-col gap-3 w-full">
+        <form id="register-form" onSubmit={handleSubmit} className="flex flex-col gap-4 w-full">
 
           {/* University */}
           <div className="flex flex-col gap-1">

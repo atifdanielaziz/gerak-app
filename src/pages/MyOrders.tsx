@@ -317,9 +317,9 @@ export const MyOrders: React.FC = () => {
       )}
 
       {!loading && orders.length > 0 && (
-        <div className="px-4 flex flex-col gap-3">
+        <div className="px-4 flex flex-col gap-4">
           {orders.map(o => (
-            <div key={o.id} className="bg-white border border-slate-100 rounded-3xl p-5 shadow-sm flex flex-col gap-3">
+            <div key={o.id} className="bg-white border border-slate-100 rounded-3xl p-5 shadow-sm flex flex-col gap-4">
 
               {/* Status + date */}
               <div className="flex items-center justify-between">

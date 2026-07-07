@@ -223,7 +223,7 @@ export const MapboxRideMap: React.FC<Props> = ({ campusCenter, onPickupChange, o
   };
 
   return (
-    <div className="relative flex flex-col gap-3">
+    <div className="relative flex flex-col gap-4">
 
       {/* Destination search */}
       <div ref={searchRef} className="relative z-10">

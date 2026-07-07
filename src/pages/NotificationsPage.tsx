@@ -39,7 +39,7 @@ export const NotificationsPage: React.FC = () => {
   };
 
   return (
-    <div className="flex-grow bg-slate-50/50 overflow-y-auto no-scrollbar pb-24 px-4 animate-fade-in flex flex-col gap-4">
+    <div className="flex-grow bg-slate-50/50 overflow-y-auto no-scrollbar pb-24 px-5 animate-fade-in flex flex-col gap-5">
       
       {/* Page Header */}
       <div className="mt-4 flex items-center justify-between pl-1">
@@ -58,7 +58,7 @@ export const NotificationsPage: React.FC = () => {
       </div>
 
       {/* Notifications List */}
-      <div className="bg-white border border-slate-100 rounded-3xl p-4 shadow-sm flex flex-col gap-1">
+      <div className="bg-white border border-slate-100 rounded-3xl p-5 shadow-sm flex flex-col gap-1">
         {notifications.length === 0 ? (
           <div className="text-center py-12 flex flex-col items-center justify-center gap-3">
             <div className="w-12 h-12 bg-slate-50 border border-slate-100 rounded-full flex items-center justify-center text-slate-300">
@@ -106,7 +106,7 @@ export const NotificationsPage: React.FC = () => {
       </div>
 
       {/* Tip Banner */}
-      <div className="bg-emerald-50 border border-emerald-100 rounded-2xl p-4 flex gap-3 text-emerald-800">
+      <div className="bg-emerald-50 border border-emerald-100 rounded-2xl p-5 flex gap-3 text-emerald-800">
         <Info className="w-5 h-5 text-emerald-600 shrink-0" />
         <div>
           <h4 className="text-xs font-bold leading-tight m-0">Dynamic Inbox Feeds</h4>

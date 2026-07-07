@@ -50,14 +50,14 @@ export const GerakTransporter: React.FC = () => {
   const [showFeatures, setShowFeatures] = useState(false);
 
   return (
-    <div className="flex-grow bg-slate-50/50 overflow-y-auto no-scrollbar pb-24 flex flex-col gap-4 animate-fade-in">
+    <div className="flex-grow bg-slate-50/50 overflow-y-auto no-scrollbar pb-24 px-5 flex flex-col gap-5 animate-fade-in">
 
       {/* ── HERO ── */}
       <div className="bg-gradient-to-br from-slate-900 via-blue-950 to-blue-900 px-5 pt-6 pb-8 relative overflow-hidden">
         <div className="absolute -right-8 -top-8 w-40 h-40 bg-blue-500/10 rounded-full blur-2xl pointer-events-none" />
         <div className="absolute right-16 bottom-0 w-24 h-24 bg-blue-400/10 rounded-full blur-xl pointer-events-none" />
 
-        <div className="relative z-10 flex flex-col gap-3">
+        <div className="relative z-10 flex flex-col gap-4">
           <div className="flex items-center gap-3">
             <div className="w-12 h-12 rounded-2xl bg-white/10 border border-white/20 flex items-center justify-center shrink-0">
               <Truck className="w-6 h-6 text-blue-300" />
@@ -104,7 +104,7 @@ export const GerakTransporter: React.FC = () => {
           </button>
 
           {showFeatures && (
-            <div className="border-t border-slate-100 px-5 pt-3 pb-4 flex flex-col gap-3">
+            <div className="border-t border-slate-100 px-5 pt-3 pb-4 flex flex-col gap-4">
               {FEATURES.map(({ icon: Icon, label, desc }) => (
                 <div key={label} className="flex items-center gap-3">
                   <div className="w-9 h-9 rounded-xl bg-slate-900 flex items-center justify-center shrink-0">
@@ -138,7 +138,7 @@ export const GerakTransporter: React.FC = () => {
               </span>
             </div>
 
-            <div className="p-4 flex flex-col gap-3">
+            <div className="p-4 flex flex-col gap-4">
               <div className="grid grid-cols-2 gap-2">
                 {[
                   { label: 'Kenderaan', value: PROVIDER.vehicle },
@@ -185,7 +185,7 @@ export const GerakTransporter: React.FC = () => {
         <div className="bg-white border border-slate-100 rounded-3xl p-5 shadow-sm flex flex-col gap-4">
           <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest">Cara Tempahan</h3>
 
-          <div className="flex flex-col gap-3">
+          <div className="flex flex-col gap-4">
             {STEPS.map(({ n, label, desc }, i) => (
               <div key={n} className="flex gap-3">
                 <div className="flex flex-col items-center shrink-0">

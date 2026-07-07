@@ -399,7 +399,7 @@ const JubahRiderSheet: React.FC<{
         </div>
 
         {/* Method + Drop point */}
-        <div className="mx-4 mb-4 flex flex-col gap-3">
+        <div className="mx-4 mb-4 flex flex-col gap-4">
           <div className="flex flex-col gap-1.5">
             <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Method</label>
             <div className="relative group">
@@ -456,7 +456,7 @@ const JubahRiderSheet: React.FC<{
       </div>
 
       {/* Save + Call/WA buttons — sticky footer, always reachable */}
-      <div className="px-4 pt-3 pb-6 flex flex-col gap-3 shrink-0 border-t border-slate-100">
+      <div className="px-4 pt-3 pb-6 flex flex-col gap-4 shrink-0 border-t border-slate-100">
         <button
           onClick={() => { onSave(); setIsEditingDropPoint(false); }}
           disabled={saving || !method}
@@ -504,7 +504,7 @@ const UserCard: React.FC<{
   const isDriverOrRider = u.role === 'driver' || u.role === 'rider';
 
   return (
-    <div className={`rounded-2xl border p-4 flex flex-col gap-2.5 ${
+    <div className={`rounded-2xl border p-5 flex flex-col gap-2.5 ${
       u.status === 'inactive' ? 'bg-red-50/50 border-red-100' : 'bg-white border-slate-100'
     }`}>
 
@@ -1662,7 +1662,7 @@ export const AdminHome: React.FC = () => {
       )}
 
       {/* Sticky header + tab switcher */}
-      <div className="sticky top-0 z-10 -mx-4 px-4 pt-4 pb-2 bg-slate-50/95 backdrop-blur-sm flex flex-col gap-3">
+      <div className="sticky top-0 z-10 -mx-4 px-4 pt-4 pb-2 bg-slate-50/95 backdrop-blur-sm flex flex-col gap-4">
 
         {/* Header */}
         <div className="flex items-center justify-between">
@@ -1720,7 +1720,7 @@ export const AdminHome: React.FC = () => {
       {activeTab === 'drivers' && (
         <div className="flex flex-col gap-4">
           {/* Invite form */}
-          <div className="bg-white border border-slate-100 rounded-3xl p-5 shadow-sm flex flex-col gap-3">
+          <div className="bg-white border border-slate-100 rounded-3xl p-5 shadow-sm flex flex-col gap-4">
             <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest flex items-center gap-1.5">
               <UserPlus className="w-4 h-4 text-primary" /> Invite Staff
             </h3>
@@ -1873,7 +1873,7 @@ export const AdminHome: React.FC = () => {
           </div>
 
           {/* Invite list */}
-          <div className="bg-white border border-slate-100 rounded-3xl p-5 shadow-sm flex flex-col gap-3">
+          <div className="bg-white border border-slate-100 rounded-3xl p-5 shadow-sm flex flex-col gap-4">
             <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest flex items-center gap-1.5">
               <Mail className="w-4 h-4" /> Invite List
             </h3>
@@ -1929,10 +1929,10 @@ export const AdminHome: React.FC = () => {
 
       {/* ── USERS TAB ── */}
       {activeTab === 'users' && (
-        <div className="flex flex-col gap-3">
+        <div className="flex flex-col gap-4">
 
           {/* Admins & Drivers list */}
-          <div className="bg-white border border-slate-100 rounded-3xl p-5 shadow-sm flex flex-col gap-3">
+          <div className="bg-white border border-slate-100 rounded-3xl p-5 shadow-sm flex flex-col gap-4">
             <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest flex items-center gap-1.5">
               <Users className="w-4 h-4" /> Admins and Staff
             </h3>
@@ -2160,7 +2160,7 @@ export const AdminHome: React.FC = () => {
           )}
 
           {/* Announcements list */}
-          <div className="bg-white border border-slate-100 rounded-3xl p-5 shadow-sm flex flex-col gap-3">
+          <div className="bg-white border border-slate-100 rounded-3xl p-5 shadow-sm flex flex-col gap-4">
             <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest flex items-center gap-1.5">
               <Megaphone className="w-4 h-4" /> All Banners
             </h3>
@@ -2172,9 +2172,9 @@ export const AdminHome: React.FC = () => {
             ) : announcements.length === 0 ? (
               <p className="text-xs text-slate-400 font-semibold text-center py-6">No banners yet. Create one above.</p>
             ) : (
-              <div className="flex flex-col gap-3">
+              <div className="flex flex-col gap-4">
                 {announcements.map(a => (
-                  <div key={a.id} className={`rounded-2xl border p-4 flex flex-col gap-2.5 ${a.is_active ? 'bg-white border-slate-100' : 'bg-slate-50 border-slate-200 opacity-60'}`}>
+                  <div key={a.id} className={`rounded-2xl border p-5 flex flex-col gap-2.5 ${a.is_active ? 'bg-white border-slate-100' : 'bg-slate-50 border-slate-200 opacity-60'}`}>
 
                     {/* Preview strip */}
                     <div className={`relative overflow-hidden rounded-xl bg-gradient-to-br ${a.gradient} px-3 py-2 text-white flex items-center gap-2`}>
@@ -2296,7 +2296,7 @@ export const AdminHome: React.FC = () => {
       </div>
 
       {/* Orders list */}
-      <div className="bg-white border border-slate-100 rounded-3xl p-5 shadow-sm flex flex-col gap-3">
+      <div className="bg-white border border-slate-100 rounded-3xl p-5 shadow-sm flex flex-col gap-4">
         <div className="flex items-center gap-2">
           <BarChart3 className="w-4 h-4 text-slate-400" />
           <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest">
@@ -2314,9 +2314,9 @@ export const AdminHome: React.FC = () => {
             <p className="text-xs font-semibold">No orders yet</p>
           </div>
         ) : (
-          <div className="overflow-y-auto no-scrollbar max-h-[520px] flex flex-col gap-3">
+          <div className="overflow-y-auto no-scrollbar max-h-[520px] flex flex-col gap-4">
             {filtered.map(order => (
-              <div key={order.id} className="border border-slate-100 rounded-2xl p-4 flex flex-col gap-2.5">
+              <div key={order.id} className="border border-slate-100 rounded-2xl p-5 flex flex-col gap-2.5">
                 {/* Top row */}
                 <div className="flex items-start justify-between gap-2">
                   <div className="flex-1 min-w-0">
@@ -2397,7 +2397,7 @@ export const AdminHome: React.FC = () => {
 
       {/* ── ROUTES TAB ── */}
       {activeTab === 'routes' && (
-        <div className="flex flex-col gap-3">
+        <div className="flex flex-col gap-4">
 
           {/* Campus switcher — superadmin only */}
           {isSuperAdmin && (
@@ -2423,7 +2423,7 @@ export const AdminHome: React.FC = () => {
 
           {/* Add / Edit form */}
           {showRouteForm && (
-            <div className="bg-white border border-slate-100 rounded-3xl p-5 shadow-sm flex flex-col gap-3">
+            <div className="bg-white border border-slate-100 rounded-3xl p-5 shadow-sm flex flex-col gap-4">
               <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest">
                 {editingRoute ? 'Edit Route' : 'New Route'}
               </h3>
@@ -2484,7 +2484,7 @@ export const AdminHome: React.FC = () => {
           )}
 
           {/* Routes list */}
-          <div className="bg-white border border-slate-100 rounded-3xl p-5 shadow-sm flex flex-col gap-3">
+          <div className="bg-white border border-slate-100 rounded-3xl p-5 shadow-sm flex flex-col gap-4">
             <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest flex items-center gap-1.5">
               <ArrowLeftRight className="w-4 h-4" /> Routes — UMPSA {isSuperAdmin ? campusView : adminCampus}
             </h3>
@@ -2499,7 +2499,7 @@ export const AdminHome: React.FC = () => {
             ) : (
               <div className="flex flex-col gap-2">
                 {routes.map(r => (
-                  <div key={r.id} className={`rounded-2xl border p-4 flex flex-col gap-2.5 ${r.is_active ? 'bg-white border-slate-100' : 'bg-slate-50 border-slate-200 opacity-60'}`}>
+                  <div key={r.id} className={`rounded-2xl border p-5 flex flex-col gap-2.5 ${r.is_active ? 'bg-white border-slate-100' : 'bg-slate-50 border-slate-200 opacity-60'}`}>
                     {/* Route display */}
                     <div className="flex items-start justify-between gap-2">
                       <div className="flex-1 min-w-0">
@@ -2581,12 +2581,12 @@ export const AdminHome: React.FC = () => {
           </div>
 
           {/* Doc list */}
-          <div className="bg-white border border-slate-100 rounded-3xl p-5 shadow-sm flex flex-col gap-3">
+          <div className="bg-white border border-slate-100 rounded-3xl p-5 shadow-sm flex flex-col gap-4">
             <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest flex items-center gap-1.5">
               <ShieldCheck className="w-4 h-4" /> Document Verification
             </h3>
 
-            <div className="overflow-y-auto no-scrollbar max-h-[520px] flex flex-col gap-3">
+            <div className="overflow-y-auto no-scrollbar max-h-[520px] flex flex-col gap-4">
             {verifyLoading ? (
               <div className="flex justify-center py-8">
                 <span className="w-5 h-5 rounded-full border-2 border-slate-200 border-t-primary animate-spin" />
@@ -2602,7 +2602,7 @@ export const AdminHome: React.FC = () => {
                 d.name.toLowerCase().includes(verifySearch.toLowerCase()) ||
                 d.gerak_id.toLowerCase().includes(verifySearch.toLowerCase())
               ).map(d => (
-              <div key={d.id} className="border border-slate-100 rounded-2xl p-4 flex flex-col gap-3">
+              <div key={d.id} className="border border-slate-100 rounded-2xl p-5 flex flex-col gap-4">
 
                 {/* Header */}
                 <div className="flex items-start justify-between gap-2">
@@ -2748,7 +2748,7 @@ export const AdminHome: React.FC = () => {
           {jubahSubTab === 'rider' && (<>
 
             {/* Rider cards — click to open assignment sheet */}
-            <div className="bg-white border border-slate-100 rounded-3xl p-5 shadow-sm flex flex-col gap-3">
+            <div className="bg-white border border-slate-100 rounded-3xl p-5 shadow-sm flex flex-col gap-4">
               <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest flex items-center gap-1.5">
                 <GraduationCap className="w-4 h-4" /> Jubah Riders
               </h3>
@@ -2784,7 +2784,7 @@ export const AdminHome: React.FC = () => {
 
             {/* Rider directory table */}
             {jubahRiders.length > 0 && (
-              <div className="bg-white border border-slate-100 rounded-3xl p-5 shadow-sm flex flex-col gap-3">
+              <div className="bg-white border border-slate-100 rounded-3xl p-5 shadow-sm flex flex-col gap-4">
                 <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest flex items-center gap-1.5">
                   <Users className="w-4 h-4" /> Representative Directory
                 </h3>
@@ -2871,7 +2871,7 @@ export const AdminHome: React.FC = () => {
               </div>
 
               {/* Customer bookings table */}
-              <div className="bg-white border border-slate-100 rounded-3xl p-5 shadow-sm flex flex-col gap-3">
+              <div className="bg-white border border-slate-100 rounded-3xl p-5 shadow-sm flex flex-col gap-4">
                 <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest flex items-center justify-between">
                   <span className="flex items-center gap-1.5"><Users className="w-4 h-4" /> Customer Directory</span>
                   <span className="font-bold text-slate-300 normal-case tracking-normal">
@@ -3166,7 +3166,7 @@ export const AdminHome: React.FC = () => {
                   </div>
 
                   {/* Documents download card */}
-                  <div className="bg-white border border-slate-100 rounded-3xl p-5 shadow-sm flex flex-col gap-3">
+                  <div className="bg-white border border-slate-100 rounded-3xl p-5 shadow-sm flex flex-col gap-4">
                     <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest">Documents</h3>
 
                     {([
@@ -3244,7 +3244,7 @@ export const AdminHome: React.FC = () => {
               <p className="text-xs text-slate-400 font-semibold -mt-2">Set price per study level × service option. Tap Save after editing each value.</p>
 
               {(['Master', 'PHD', 'Degree', 'Diploma'] as const).map(remark => (
-                <div key={remark} className="border border-slate-100 rounded-2xl p-4 flex flex-col gap-3">
+                <div key={remark} className="border border-slate-100 rounded-2xl p-5 flex flex-col gap-4">
                   <p className="text-xs font-black text-slate-700">{remark}</p>
                   <div className="grid grid-cols-2 gap-2">
                     {(['pickup', 'postage'] as const).map(mode => {
@@ -3299,7 +3299,7 @@ export const AdminHome: React.FC = () => {
                 }}
               />
               {BANNER_ITEMS.map(item => (
-                <div key={item.key} className="bg-white border border-slate-100 rounded-3xl p-5 shadow-sm flex flex-col gap-3">
+                <div key={item.key} className="bg-white border border-slate-100 rounded-3xl p-5 shadow-sm flex flex-col gap-4">
                   <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest">{item.label}</h3>
                   <div className="w-full rounded-2xl overflow-hidden border border-slate-100 bg-slate-50 h-40 flex items-center justify-center">
                     {bannerUrls[item.key] && !bannerImgError[item.key] ? (
@@ -3424,7 +3424,7 @@ export const AdminHome: React.FC = () => {
           </div>
 
           {/* Receipt list */}
-          <div className="bg-white border border-slate-100 rounded-3xl p-5 shadow-sm flex flex-col gap-3">
+          <div className="bg-white border border-slate-100 rounded-3xl p-5 shadow-sm flex flex-col gap-4">
             <div className="flex items-center justify-between">
               <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest flex items-center gap-1.5">
                 <FileImage className="w-4 h-4" /> {receiptRoleFilter === 'driver' ? 'Driver' : 'Rider'} Receipts
@@ -3450,7 +3450,7 @@ export const AdminHome: React.FC = () => {
                   const expLabel = expDate?.toLocaleDateString('en-MY', { day: 'numeric', month: 'short', year: 'numeric' });
                   return (
                     <div key={r.id}
-                      className="border border-slate-100 rounded-2xl p-4 flex flex-col gap-2.5 cursor-pointer active:opacity-75 transition"
+                      className="border border-slate-100 rounded-2xl p-5 flex flex-col gap-2.5 cursor-pointer active:opacity-75 transition"
                       onClick={() => setSheetUser({ id: r.id, name: r.name, gerak_id: r.gerak_id, role: 'driver', campus: r.campus, email: r.email, status: r.status || 'active', phone: r.phone || '' })}
                     >
 
@@ -3550,7 +3550,7 @@ export const AdminHome: React.FC = () => {
           const allTime = computeEarnings(earningsHistory);
 
           return (
-            <div className="flex flex-col gap-3">
+            <div className="flex flex-col gap-4">
               <button
                 onClick={() => { setEarningsDriverId(null); setEarningsHistory([]); }}
                 className="flex items-center gap-1 text-slate-500 text-xs font-bold hover:underline active:scale-95 transition self-start"
@@ -3558,7 +3558,7 @@ export const AdminHome: React.FC = () => {
                 <ChevronLeft className="w-3.5 h-3.5" /> Back to leaderboard
               </button>
 
-              <div className="bg-white border border-slate-100 rounded-3xl p-4 shadow-sm">
+              <div className="bg-white border border-slate-100 rounded-3xl p-5 shadow-sm">
                 <p className="text-sm font-black text-slate-800">{selectedDriver?.name ?? 'Driver'}</p>
                 <p className="text-xs text-slate-400 font-semibold mt-0.5">
                   {selectedDriver?.gerak_id} · UMPSA {selectedDriver?.campus}
@@ -3570,7 +3570,7 @@ export const AdminHome: React.FC = () => {
                   <span className="w-6 h-6 rounded-full border-2 border-slate-200 border-t-emerald-500 animate-spin" />
                 </div>
               ) : (
-                <div className="flex flex-col gap-3 px-0">
+                <div className="flex flex-col gap-4 px-0">
                   <MonthDrumPicker value={detailMonth} onChange={setDetailMonth} />
                   <EarningsCard label={detailMonthLabel} earned={month.earned} tbc={month.tbc} rows={month.rows} />
                   <EarningsCard label="All Time" earned={allTime.earned} tbc={allTime.tbc} rows={allTime.rows} />
@@ -3584,7 +3584,7 @@ export const AdminHome: React.FC = () => {
         const totalEarnings = earningsLeaderboard.reduce((s, d) => s + d.total_earnings, 0);
 
         return (
-          <div className="flex flex-col gap-3">
+          <div className="flex flex-col gap-4">
             {/* Period toggle */}
             <div className="flex bg-white border border-slate-100 rounded-2xl p-1 gap-1 shadow-sm">
               {(['day', 'week', 'month', 'all'] as const).map(p => (
@@ -3636,7 +3636,7 @@ export const AdminHome: React.FC = () => {
             </div>
 
             {/* Leaderboard */}
-            <div className="bg-white border border-slate-100 rounded-3xl p-5 shadow-sm flex flex-col gap-3">
+            <div className="bg-white border border-slate-100 rounded-3xl p-5 shadow-sm flex flex-col gap-4">
               <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest flex items-center gap-1.5">
                 <TrendingUp className="w-4 h-4" /> Driver Leaderboard
               </h3>
@@ -3680,7 +3680,7 @@ export const AdminHome: React.FC = () => {
         <div className="flex flex-col gap-4">
 
           {/* Current status */}
-          <div className={`rounded-2xl p-4 flex items-center gap-3 ${calActiveYear ? 'bg-emerald-50 border border-emerald-100' : 'bg-slate-50 border border-slate-100'}`}>
+          <div className={`rounded-2xl p-5 flex items-center gap-3 ${calActiveYear ? 'bg-emerald-50 border border-emerald-100' : 'bg-slate-50 border border-slate-100'}`}>
             <CalendarDays className={`w-5 h-5 shrink-0 ${calActiveYear ? 'text-emerald-500' : 'text-slate-400'}`} />
             <div>
               <p className="text-xs font-extrabold text-slate-700">Active Calendar</p>
@@ -3716,7 +3716,7 @@ export const AdminHome: React.FC = () => {
 
             {/* Parsed preview */}
             {calParsed && (
-              <div className="flex flex-col gap-3">
+              <div className="flex flex-col gap-4">
                 {/* Header */}
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
@@ -3925,7 +3925,7 @@ export const AdminHome: React.FC = () => {
             </div>
 
             {/* Details */}
-            <div className="px-4 py-4 flex flex-col gap-3">
+            <div className="px-4 py-4 flex flex-col gap-4">
               <div className="flex items-start justify-between gap-2">
                 <p className="text-xs font-extrabold text-slate-400 uppercase tracking-wider">Email</p>
                 <p className="text-xs font-extrabold text-slate-800 text-right break-all">{inviteEmail.trim().toLowerCase()}</p>

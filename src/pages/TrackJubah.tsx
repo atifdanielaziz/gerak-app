@@ -125,7 +125,7 @@ export const TrackJubah: React.FC = () => {
   };
 
   return (
-    <div className="flex-grow bg-slate-50/50 overflow-y-auto no-scrollbar pb-24 px-4 animate-fade-in flex flex-col gap-4">
+    <div className="flex-grow bg-slate-50/50 overflow-y-auto no-scrollbar pb-24 px-5 animate-fade-in flex flex-col gap-5">
 
       {/* HEADER */}
       <div className="mt-4 px-1 flex items-center gap-2">
@@ -199,7 +199,7 @@ export const TrackJubah: React.FC = () => {
             <p className="text-xs text-slate-400">Double-check your reference number or matric / IC number and try again.</p>
           </div>
         ) : (
-          <div className="flex flex-col gap-3">
+          <div className="flex flex-col gap-4">
             {results.map(b => {
               const trackSteps = b.payment_mode === 'postage'
                 ? ['booked', 'processing', 'collected', 'at_hub']

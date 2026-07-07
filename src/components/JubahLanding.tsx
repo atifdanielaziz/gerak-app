@@ -163,7 +163,7 @@ export const JubahLanding: React.FC<Props> = ({ onProceed }) => {
 
       {/* Rider Directory Table */}
       {riderDir.length > 0 && (
-        <div className="bg-white border border-slate-100 rounded-3xl p-5 shadow-sm flex flex-col gap-3">
+        <div className="bg-white border border-slate-100 rounded-3xl p-5 shadow-sm flex flex-col gap-4">
           <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest">Our Representatives</h3>
           <div className="overflow-x-auto overflow-y-auto no-scrollbar max-h-[280px]">
             <table className="min-w-full border-collapse text-left" style={{ minWidth: 480 }}>

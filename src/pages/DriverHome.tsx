@@ -555,7 +555,7 @@ export const DriverHome: React.FC = () => {
   if (!isAdminRole && user.docsStatus !== 'approved') {
     const bothUploaded = !!user.icUrl && !!user.licenseUrl;
     return (
-      <div className="flex-grow bg-slate-50 overflow-y-auto no-scrollbar pb-24 px-4 flex flex-col gap-4 animate-fade-in">
+      <div className="flex-grow bg-slate-50 overflow-y-auto no-scrollbar pb-24 px-5 flex flex-col gap-5 animate-fade-in">
         <div className="mt-6 flex flex-col items-center text-center gap-2">
           <div className={`w-16 h-16 rounded-full flex items-center justify-center border-2 ${
             user.docsStatus === 'rejected' ? 'bg-red-50 border-red-100' :
@@ -801,7 +801,7 @@ export const DriverHome: React.FC = () => {
           TAB 1: JOB POOL
       ══════════════════════════════════════════ */}
       {!loading && activeTab === 'pool' && (
-        <div className="px-4 pt-2 flex flex-col gap-3">
+        <div className="px-4 pt-2 flex flex-col gap-4">
 
           {/* Inactive driver lock banner */}
           {!isDriverActive && (
@@ -954,7 +954,7 @@ export const DriverHome: React.FC = () => {
 
           {/* ── Active job ── */}
           {myJob ? (
-            <div className="flex flex-col gap-3">
+            <div className="flex flex-col gap-4">
               <div className={`rounded-2xl px-4 py-2.5 flex items-center justify-between ${
                 myJob.status === 'in_progress' ? 'bg-blue-600' : 'bg-emerald-600'
               }`}>
@@ -1094,7 +1094,7 @@ export const DriverHome: React.FC = () => {
               o.status !== 'cancelled' || new Date(o.created_at).getTime() >= thirtyDaysAgo
             );
             return visibleHistory.length > 0 && (
-            <div className="flex flex-col gap-3">
+            <div className="flex flex-col gap-4">
               <h3 className="text-xs font-extrabold text-slate-400 uppercase tracking-widest flex items-center gap-1.5 pt-1">
                 <Clock className="w-3.5 h-3.5" /> Trip History
               </h3>
@@ -1170,7 +1170,7 @@ export const DriverHome: React.FC = () => {
         const allTime = computeEarnings(completed);
 
         return (
-          <div className="flex flex-col gap-3 px-4">
+          <div className="flex flex-col gap-4 px-4">
             {/* Drum picker */}
             <MonthDrumPicker value={earningsMonth} onChange={setEarningsMonth} />
 
@@ -1187,7 +1187,7 @@ export const DriverHome: React.FC = () => {
           TAB 3: RENTAL (owners only)
       ══════════════════════════════════════════ */}
       {!loading && activeTab === 'rental' && effectiveCanRent && (
-        <div className="px-4 pt-2 flex flex-col gap-3">
+        <div className="px-4 pt-2 flex flex-col gap-4">
 
           {/* Sub-view switcher — admin sees Orders only; owner sees all 4 */}
           <div className="flex bg-white border border-slate-100 rounded-2xl p-1 gap-1 shadow-sm">
@@ -1217,7 +1217,7 @@ export const DriverHome: React.FC = () => {
 
           {/* ── ORDERS sub-view ── */}
           {!rentalLoading && rentalSubView === 'orders' && (
-            <div className="flex flex-col gap-3">
+            <div className="flex flex-col gap-4">
               {rentalBookings.length === 0 ? (
                 <div className="bg-white border border-slate-100 rounded-3xl p-8 text-center flex flex-col items-center gap-2">
                   <Package className="w-8 h-8 text-slate-200" />
@@ -1278,10 +1278,10 @@ export const DriverHome: React.FC = () => {
 
           {/* ── SCHEDULE sub-view ── */}
           {!rentalLoading && rentalSubView === 'schedule' && (
-            <div className="flex flex-col gap-3">
+            <div className="flex flex-col gap-4">
 
               {/* Calendar */}
-              <div className="bg-white border border-slate-100 rounded-3xl p-4 shadow-sm">
+              <div className="bg-white border border-slate-100 rounded-3xl p-5 shadow-sm">
                 <div className="flex items-center justify-between mb-3">
                   <button onClick={() => setRentalMonth(m => {
                     const d = new Date(m.year, m.month - 1, 1);
@@ -1330,7 +1330,7 @@ export const DriverHome: React.FC = () => {
 
               {/* Hour-level controls for selected date */}
               {scheduleDate && (
-                <div className="bg-white border border-slate-100 rounded-3xl p-4 shadow-sm">
+                <div className="bg-white border border-slate-100 rounded-3xl p-5 shadow-sm">
                   <div className="flex items-center justify-between mb-3">
                     <p className="text-xs font-extrabold text-slate-700">{scheduleDate}</p>
                     <div className="flex gap-2">
@@ -1418,7 +1418,7 @@ export const DriverHome: React.FC = () => {
               </div>
 
               {/* Night surcharge */}
-              <div className="flex flex-col gap-3">
+              <div className="flex flex-col gap-4">
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-xs font-extrabold text-slate-700 flex items-center gap-1.5">
@@ -1578,7 +1578,7 @@ export const DriverHome: React.FC = () => {
               </div>
             </div>
 
-            <div className="px-4 py-4 flex flex-col gap-3 overflow-y-auto no-scrollbar max-h-[65vh]">
+            <div className="px-4 py-4 flex flex-col gap-4 overflow-y-auto no-scrollbar max-h-[65vh]">
 
               {/* Date / Time / Duration */}
               {bk.booking_type === 'fullday' && bk.end_date && bk.end_date !== bk.date ? (

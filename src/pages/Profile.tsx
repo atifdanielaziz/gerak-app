@@ -412,7 +412,7 @@ export const Profile: React.FC = () => {
             </div>
 
             {/* ── Documents (IC + License) ── */}
-            <div className="py-4 border-b border-slate-100 flex flex-col gap-3">
+            <div className="py-4 border-b border-slate-100 flex flex-col gap-4">
               <div className="flex items-center justify-between">
                 <span className="text-xs font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1">
                   <ShieldCheck className="w-3 h-3" /> Documents

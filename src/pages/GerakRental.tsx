@@ -703,7 +703,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
               <div className="mx-5 border-t border-dashed border-slate-200" />
 
               {/* Booked By → Vehicle Owner stacked, WA icon at owner name level */}
-              <div className="px-5 py-3 flex flex-col gap-3">
+              <div className="px-5 py-3 flex flex-col gap-4">
                 <div>
                   <p className="text-xs text-slate-400 font-bold uppercase tracking-widest mb-0.5">Booked By</p>
                   <p className="text-xs font-extrabold text-slate-800">{user.name}</p>
@@ -766,7 +766,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 
       {/* ── OWNER LIST VIEW ── */}
       {view === 'list' && !selected && (
-        <div className="px-4 flex flex-col gap-3">
+        <div className="px-4 flex flex-col gap-4">
           {loading ? (
             <div className="flex justify-center py-12">
               <span className="w-6 h-6 rounded-full border-2 border-slate-200 border-t-amber-500 animate-spin" />
@@ -778,7 +778,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
             </div>
           ) : owners.map(o => (
             <div key={o.id} onClick={() => { setSelected(o); setView('book'); }}
-              className="bg-white border border-slate-100 rounded-3xl p-5 shadow-sm cursor-pointer hover:shadow-md active:scale-[0.99] transition flex flex-col gap-3">
+              className="bg-white border border-slate-100 rounded-3xl p-5 shadow-sm cursor-pointer hover:shadow-md active:scale-[0.99] transition flex flex-col gap-4">
               <div className="flex items-start justify-between gap-3">
                 <div className="w-12 h-12 rounded-2xl bg-amber-50 flex items-center justify-center shrink-0">
                   <Car className="w-6 h-6 text-amber-500" />
@@ -833,7 +833,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
         <div className="px-4 flex flex-col gap-4">
 
           {/* Vehicle summary */}
-          <div className="bg-amber-50 border border-amber-100 rounded-2xl p-4 flex items-center gap-3">
+          <div className="bg-amber-50 border border-amber-100 rounded-2xl p-5 flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-amber-100 flex items-center justify-center shrink-0">
               <Car className="w-5 h-5 text-amber-600" />
             </div>
@@ -872,7 +872,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
           )}
 
           {/* Calendar */}
-          <div className="bg-white border border-slate-100 rounded-3xl p-4 shadow-sm">
+          <div className="bg-white border border-slate-100 rounded-3xl p-5 shadow-sm">
             <div className="flex items-center justify-between mb-3">
               <button onClick={prevMonth} className="w-7 h-7 rounded-xl bg-slate-50 flex items-center justify-center text-slate-400 active:scale-90">
                 <ChevronLeft className="w-4 h-4" />
@@ -926,7 +926,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 
           {/* Hourly: time slot picker */}
           {bookingType === 'hourly' && rangeStart && (
-            <div className="bg-white border border-slate-100 rounded-3xl p-4 shadow-sm">
+            <div className="bg-white border border-slate-100 rounded-3xl p-5 shadow-sm">
               <p className="text-xs font-extrabold text-slate-400 uppercase tracking-widest mb-1">
                 Available Hours — {rangeStart}
               </p>
@@ -965,7 +965,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 
           {/* Duration + Persons + Notes (hourly) */}
           {bookingType === 'hourly' && rangeStart && startHour !== null && (
-            <div className="bg-white border border-slate-100 rounded-3xl p-4 shadow-sm flex flex-col gap-4">
+            <div className="bg-white border border-slate-100 rounded-3xl p-5 shadow-sm flex flex-col gap-4">
               {/* Duration */}
               <div className="flex items-center justify-between">
                 <div>
@@ -1025,7 +1025,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
               </div>
 
               {/* Total + Book */}
-              <div className="bg-amber-50 border border-amber-100 rounded-2xl p-4 flex items-center justify-between">
+              <div className="bg-amber-50 border border-amber-100 rounded-2xl p-5 flex items-center justify-between">
                 <div>
                   <p className="text-xs text-amber-600 font-bold">Total</p>
                   <p className="text-xl font-black text-slate-800">RM{totalPrice.toFixed(2)}</p>
@@ -1051,7 +1051,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 
           {/* Full-day: persons + notes + total */}
           {bookingType === 'fullday' && rangeStart && rangeEnd && (
-            <div className="bg-white border border-slate-100 rounded-3xl p-4 shadow-sm flex flex-col gap-4">
+            <div className="bg-white border border-slate-100 rounded-3xl p-5 shadow-sm flex flex-col gap-4">
               {/* Full-day summary */}
               <div className="bg-slate-50 rounded-xl px-4 py-3 flex flex-col gap-1">
                 <p className="text-xs font-extrabold text-slate-400 uppercase tracking-wider">Booking Summary</p>
@@ -1092,7 +1092,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
               </div>
 
               {/* Total + Book */}
-              <div className="bg-amber-50 border border-amber-100 rounded-2xl p-4 flex items-center justify-between">
+              <div className="bg-amber-50 border border-amber-100 rounded-2xl p-5 flex items-center justify-between">
                 <div>
                   <p className="text-xs text-amber-600 font-bold">Total</p>
                   <p className="text-xl font-black text-slate-800">RM{totalPrice.toFixed(2)}</p>
@@ -1117,7 +1117,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
           )}
 
           {/* Owner contact info */}
-          <div className="bg-slate-50 border border-slate-100 rounded-2xl p-4 flex items-center justify-between gap-3">
+          <div className="bg-slate-50 border border-slate-100 rounded-2xl p-5 flex items-center justify-between gap-3">
             <div className="flex items-start gap-2 min-w-0">
               <Info className="w-4 h-4 text-slate-400 shrink-0 mt-0.5" />
               <div className="min-w-0">

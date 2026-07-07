@@ -97,7 +97,7 @@ const InstallPrompt: React.FC = () => {
 
         {step === 'ios' ? (
           /* iOS instructions */
-          <div className="px-6 pt-5 pb-2 flex flex-col gap-3">
+          <div className="px-6 pt-5 pb-2 flex flex-col gap-4">
             <p className="text-sm font-black text-slate-800 text-center">Add to your Home Screen</p>
             {[
               { n: '1', icon: '⬆', text: <>Tap the <b>Share</b> button at the bottom of Safari</> },
