@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+﻿import React, { useState, useMemo, useEffect } from 'react';
 import {
   ChevronLeft, ChevronRight,
   BookOpen, Clock, GraduationCap, Coffee, AlertCircle,
@@ -267,8 +267,8 @@ export const AcademicCalendar: React.FC = () => {
 
         {/* Year label */}
         <div className="px-4 pt-3 pb-1 flex items-center justify-between">
-          <p className="text-[9px] font-extrabold text-slate-400 uppercase tracking-widest">UMPSA Academic Calendar</p>
-          <span className="text-[9px] font-extrabold text-primary bg-primary/10 px-2 py-0.5 rounded-full">
+          <p className="text-xs font-extrabold text-slate-400 uppercase tracking-widest">UMPSA Academic Calendar</p>
+          <span className="text-xs font-extrabold text-primary bg-primary/10 px-2 py-0.5 rounded-full">
             {calYear ?? '2026/2027'}
           </span>
         </div>
@@ -289,7 +289,7 @@ export const AcademicCalendar: React.FC = () => {
         {/* Day labels */}
         <div className="grid grid-cols-7 px-3 mb-1">
           {DAYS.map(d => (
-            <div key={d} className="text-center text-[9px] font-extrabold text-slate-400">{d}</div>
+            <div key={d} className="text-center text-xs font-extrabold text-slate-400">{d}</div>
           ))}
         </div>
 
@@ -304,7 +304,7 @@ export const AcademicCalendar: React.FC = () => {
 
             return (
               <div key={dateStr}
-                className={`aspect-square flex flex-col items-center justify-center rounded-xl text-[10px] font-bold relative mx-0.5 my-0.5 transition ${cellCls} ${
+                className={`aspect-square flex flex-col items-center justify-center rounded-xl text-xs font-bold relative mx-0.5 my-0.5 transition ${cellCls} ${
                   isToday ? 'ring-2 ring-offset-1 ring-primary' : ''
                 }`}>
                 {parseInt(dateStr.split('-')[2])}
@@ -319,12 +319,12 @@ export const AcademicCalendar: React.FC = () => {
         {/* Legend */}
         <div className="flex flex-wrap gap-x-3 gap-y-1 px-4 pb-3">
           {(Object.keys(CFG) as EventType[]).map(t => (
-            <span key={t} className="flex items-center gap-1 text-[9px] font-bold text-slate-500">
+            <span key={t} className="flex items-center gap-1 text-xs font-bold text-slate-500">
               <span className={`w-2.5 h-2.5 rounded-sm ${CFG[t].bar}`} />
               {CFG[t].label}
             </span>
           ))}
-          <span className="flex items-center gap-1 text-[9px] font-bold text-slate-500">
+          <span className="flex items-center gap-1 text-xs font-bold text-slate-500">
             <span className="w-2.5 h-2.5 rounded-full bg-orange-400" />
             Holiday
           </span>
@@ -338,7 +338,7 @@ export const AcademicCalendar: React.FC = () => {
         <div className="flex gap-2 px-4 pt-3 pb-2 overflow-x-auto no-scrollbar">
           {SEMESTERS.map(s => (
             <button key={s.id} onClick={() => setActiveSem(s.id)}
-              className={`shrink-0 px-4 py-1.5 rounded-2xl text-[11px] font-extrabold border transition active:scale-95 ${
+              className={`shrink-0 px-4 py-1.5 rounded-2xl text-xs font-extrabold border transition active:scale-95 ${
                 activeSem === s.id
                   ? `${s.bg} text-white border-transparent shadow-sm`
                   : 'bg-white text-slate-500 border-slate-100'
@@ -349,7 +349,7 @@ export const AcademicCalendar: React.FC = () => {
         </div>
 
         <div className="px-4 flex flex-col gap-3 pb-4">
-          <p className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest">{semester.label}</p>
+          <p className="text-xs font-extrabold text-slate-400 uppercase tracking-widest">{semester.label}</p>
 
           {semester.events.map((ev, i) => {
             const cfg = CFG[ev.type];
@@ -360,24 +360,24 @@ export const AcademicCalendar: React.FC = () => {
                   <div className={`w-1 shrink-0 ${cfg.bar}`} />
                   <div className="flex-1 px-4 py-3 flex flex-col gap-1.5">
                     <div className="flex items-center justify-between gap-2">
-                      <span className={`flex items-center gap-1 text-[9px] font-extrabold uppercase tracking-wider ${cfg.text}`}>
+                      <span className={`flex items-center gap-1 text-xs font-extrabold uppercase tracking-wider ${cfg.text}`}>
                         <Icon className="w-3 h-3" />
                         {cfg.label}
                       </span>
                       {ev.duration && (
-                        <span className={`text-[9px] font-bold px-2 py-0.5 rounded-full ${cfg.badge}`}>
+                        <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${cfg.badge}`}>
                           {ev.duration}
                         </span>
                       )}
                     </div>
                     <p className="text-xs font-extrabold text-slate-800 leading-snug">{ev.title}</p>
-                    <p className="text-[10px] font-bold text-slate-500">{ev.date}</p>
+                    <p className="text-xs font-bold text-slate-500">{ev.date}</p>
                     {ev.notes && (
                       <div className="mt-0.5 flex flex-col gap-1">
                         {ev.notes.map((note, j) => (
                           <div key={j} className="flex items-start gap-1.5">
                             <span className="w-1 h-1 rounded-full bg-slate-300 mt-1.5 shrink-0" />
-                            <p className="text-[9px] text-slate-400 font-semibold leading-tight">{note}</p>
+                            <p className="text-xs text-slate-400 font-semibold leading-tight">{note}</p>
                           </div>
                         ))}
                       </div>
@@ -391,7 +391,7 @@ export const AcademicCalendar: React.FC = () => {
           {/* Disclaimer */}
           <div className="bg-amber-50 border border-amber-100 rounded-2xl px-4 py-3 flex gap-2 items-start">
             <AlertCircle className="w-3.5 h-3.5 text-amber-500 shrink-0 mt-0.5" />
-            <p className="text-[10px] text-amber-700 font-semibold leading-relaxed">
+            <p className="text-xs text-amber-700 font-semibold leading-relaxed">
               Based on UMPSA Academic Calendar {calYear ?? '2026/2027'}. Subject to change — refer to official university announcements.
             </p>
           </div>

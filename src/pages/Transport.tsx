@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useRef, useEffect, lazy, Suspense } from 'react';
+﻿import React, { useState, useMemo, useRef, useEffect, lazy, Suspense } from 'react';
 import { useApp } from '../context/AppContext';
 import { supabase } from '../lib/supabase';
 import type { PinLocation } from '../components/MapPicker';
@@ -297,7 +297,7 @@ export const Transport: React.FC = () => {
             </div>
             <div>
               <h2 className="text-lg font-black text-slate-800 m-0">Booking Submitted!</h2>
-              <p className="text-[10px] text-emerald-500 font-semibold uppercase tracking-wider mt-0.5">
+              <p className="text-xs text-emerald-500 font-semibold uppercase tracking-wider mt-0.5">
                 Searching for your driver
               </p>
             </div>
@@ -404,7 +404,7 @@ export const Transport: React.FC = () => {
 
         <button
           onClick={() => setCurrentPage('my-orders')}
-          className="self-end flex items-center gap-1.5 text-[10px] font-bold text-slate-400 hover:text-primary transition"
+          className="self-end flex items-center gap-1.5 text-xs font-bold text-slate-400 hover:text-primary transition"
         >
           <ClipboardList className="w-3.5 h-3.5" />
           My Orders
@@ -421,14 +421,14 @@ export const Transport: React.FC = () => {
           >
             <div className="flex items-center gap-2">
               <Info className="w-3.5 h-3.5 text-amber-500 shrink-0" />
-              <span className="text-[10px] font-extrabold text-amber-700 uppercase tracking-wider">
+              <span className="text-xs font-extrabold text-amber-700 uppercase tracking-wider">
                 Booking Info & Prices
               </span>
             </div>
             {showInfo ? <ChevronUp className="w-3.5 h-3.5 text-amber-400" /> : <ChevronDown className="w-3.5 h-3.5 text-amber-400" />}
           </button>
           {showInfo && (
-            <div className="px-4 pb-3 text-[10px] text-amber-800 font-semibold leading-relaxed space-y-0.5 border-t border-amber-100">
+            <div className="px-4 pb-3 text-xs text-amber-800 font-semibold leading-relaxed space-y-0.5 border-t border-amber-100">
               <p>• Bookings between <strong>12am–7am</strong> must be placed <strong>before 10pm</strong>.</p>
               <p>• Night ride (12am–7am) attracts an extra <strong>RM5 charge</strong> — applied automatically.</p>
               <p>• Maximum <strong>4 passengers</strong> per trip. Exceeding this may incur extra charge.</p>
@@ -534,7 +534,7 @@ export const Transport: React.FC = () => {
                     {selectedRoute.from} → {selectedRoute.to}
                   </p>
                   {selectedRoute.maxPax && (
-                    <p className="text-[9px] text-amber-600 font-bold mt-0.5">Max {selectedRoute.maxPax} pax</p>
+                    <p className="text-xs text-amber-600 font-bold mt-0.5">Max {selectedRoute.maxPax} pax</p>
                   )}
                 </div>
               </div>
@@ -569,7 +569,7 @@ export const Transport: React.FC = () => {
                           {route.from} → {route.to}
                         </p>
                         {route.maxPax && (
-                          <p className="text-[9px] text-amber-600 font-bold mt-0.5">Max {route.maxPax} pax</p>
+                          <p className="text-xs text-amber-600 font-bold mt-0.5">Max {route.maxPax} pax</p>
                         )}
                       </div>
                     </div>
@@ -594,7 +594,7 @@ export const Transport: React.FC = () => {
               onDestinationChange={name => setDestPin(name ? { address: name, coords: [0, 0] } : null)}
             />
           </Suspense>
-          <p className="text-[10px] text-slate-400 font-semibold text-center italic">
+          <p className="text-xs text-slate-400 font-semibold text-center italic">
             Fare for map bookings will be confirmed by your driver
           </p>
         </div>
@@ -603,14 +603,14 @@ export const Transport: React.FC = () => {
       {/* ── Order form ── */}
       <form onSubmit={handleBook} className="px-4 mt-2 flex flex-col gap-2">
         <div className="bg-white border border-slate-100 rounded-2xl p-3 shadow-sm flex flex-col gap-2.5">
-          <h3 className="text-[9px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1">
+          <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest flex items-center gap-1">
             <CalendarDays className="w-3 h-3" /> Order Details
           </h3>
 
           {/* Date + Time — overlay trick: display div at 12px, real input invisible on top */}
           <div className="grid grid-cols-2 gap-2">
             <div className="flex flex-col gap-0.5">
-              <label className="text-[9px] font-bold text-slate-400 uppercase tracking-wider pl-1">Date</label>
+              <label className="text-xs font-bold text-slate-400 uppercase tracking-wider pl-1">Date</label>
               <div className="relative h-9 group">
                 <div className="absolute inset-0 bg-slate-50 border border-slate-200 rounded-lg px-2.5 flex items-center justify-between pointer-events-none group-focus-within:border-primary transition">
                   <span className={`text-xs font-bold ${date ? 'text-slate-700' : 'text-slate-400'}`}>
@@ -626,7 +626,7 @@ export const Transport: React.FC = () => {
               </div>
             </div>
             <div className="flex flex-col gap-0.5">
-              <label className="text-[9px] font-bold text-slate-400 uppercase tracking-wider pl-1 flex items-center gap-1">
+              <label className="text-xs font-bold text-slate-400 uppercase tracking-wider pl-1 flex items-center gap-1">
                 <Clock className="w-3 h-3" /> Time
                 {isNight && <span className="text-amber-500 font-extrabold ml-1">+RM5</span>}
               </label>
@@ -649,7 +649,7 @@ export const Transport: React.FC = () => {
 
           {/* Passengers stepper */}
           <div className="flex flex-col gap-0.5">
-            <label className="text-[9px] font-bold text-slate-400 uppercase tracking-wider pl-1 flex items-center gap-1">
+            <label className="text-xs font-bold text-slate-400 uppercase tracking-wider pl-1 flex items-center gap-1">
               <Users className="w-3 h-3" /> Number of Passengers
             </label>
             <div className="flex items-center gap-2">
@@ -660,13 +660,13 @@ export const Transport: React.FC = () => {
                 className="w-10 h-10 rounded-xl border border-slate-200 bg-slate-50 text-slate-700 font-extrabold text-sm active:bg-slate-100 active:scale-95 transition flex items-center justify-center shrink-0">+</button>
             </div>
             {passengers > 4 && (
-              <p className="text-[10px] text-amber-600 font-bold pl-1">Over 4 pax — extra charge may apply</p>
+              <p className="text-xs text-amber-600 font-bold pl-1">Over 4 pax — extra charge may apply</p>
             )}
           </div>
 
           {/* Contact — overlay: transparent real input, 12px display div, red caret */}
           <div className="flex flex-col gap-0.5">
-            <label className="text-[9px] font-bold text-slate-400 uppercase tracking-wider pl-1 flex items-center gap-1">
+            <label className="text-xs font-bold text-slate-400 uppercase tracking-wider pl-1 flex items-center gap-1">
               <Phone className="w-3 h-3" /> Contact Number
             </label>
             <div className="relative h-9 group">
@@ -685,7 +685,7 @@ export const Transport: React.FC = () => {
 
           {/* Remark — same overlay pattern */}
           <div className="flex flex-col gap-0.5">
-            <label className="text-[9px] font-bold text-slate-400 uppercase tracking-wider pl-1">
+            <label className="text-xs font-bold text-slate-400 uppercase tracking-wider pl-1">
               Remark for Driver (optional)
             </label>
             <div className="relative h-9 group">
@@ -707,13 +707,13 @@ export const Transport: React.FC = () => {
         {/* Fare summary */}
         <div className="bg-white border border-slate-100 rounded-xl px-3.5 py-2.5 flex items-center justify-between shadow-sm">
           <div>
-            <span className="text-[9px] text-slate-400 font-bold uppercase tracking-wider block">Estimated Fare</span>
+            <span className="text-xs text-slate-400 font-bold uppercase tracking-wider block">Estimated Fare</span>
             <div className="flex items-baseline gap-1.5 mt-0.5">
               <span className="text-base font-black text-slate-800">
                 {totalFare === 'TBC' ? 'TBC' : `RM${totalFare.toFixed(2)}`}
               </span>
               {isNight && baseFare !== 'TBC' && (
-                <span className="text-[10px] font-bold text-amber-500">incl. night +RM5</span>
+                <span className="text-xs font-bold text-amber-500">incl. night +RM5</span>
               )}
             </div>
           </div>
@@ -746,7 +746,7 @@ export const Transport: React.FC = () => {
         </button>
 
         {!canBook && (
-          <p className="text-[10px] text-slate-400 font-semibold text-center -mt-1">
+          <p className="text-xs text-slate-400 font-semibold text-center -mt-1">
             {bookMode === 'quick' && !selectedRoute ? 'Select a route above to continue' : ''}
             {bookMode === 'map' && !(pickupPin && destPin) ? 'Drop both pins on the map to continue' : ''}
             {!(date && time) ? 'Fill in date and time to continue' : ''}

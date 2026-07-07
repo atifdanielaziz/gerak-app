@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+﻿import React, { useEffect, useRef } from 'react';
 import { TrendingUp } from 'lucide-react';
 
 const ITEM_H = 40;
@@ -89,13 +89,13 @@ export const EarningsCard: React.FC<{
   label: string; earned: number; tbc: number; rows: EarningsRow[];
 }> = ({ label, earned, tbc, rows }) => (
   <div className="bg-white border border-slate-100 rounded-3xl p-5 shadow-sm flex flex-col gap-3">
-    <p className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest flex items-center gap-1.5">
+    <p className="text-xs font-extrabold text-slate-400 uppercase tracking-widest flex items-center gap-1.5">
       <TrendingUp className="w-3.5 h-3.5 text-emerald-500" />
       {label} Earnings
     </p>
     <div className="flex items-center gap-3 flex-wrap">
       <div>
-        <p className="text-[9px] text-slate-400 font-semibold mb-0.5">Cash Fare</p>
+        <p className="text-xs text-slate-400 font-semibold mb-0.5">Cash Fare</p>
         <p className="text-xs font-black text-slate-800">
           RM <span className="text-emerald-500">{earned.toFixed(2)}</span>
         </p>
@@ -104,7 +104,7 @@ export const EarningsCard: React.FC<{
         <>
           <p className="text-xs font-black text-slate-300">+</p>
           <div>
-            <p className="text-[9px] text-slate-400 font-semibold mb-0.5">TBC Rides</p>
+            <p className="text-xs text-slate-400 font-semibold mb-0.5">TBC Rides</p>
             <p className="text-xs font-black text-slate-800">
               TBC <span className="text-amber-500">({tbc})</span>
             </p>
@@ -115,16 +115,16 @@ export const EarningsCard: React.FC<{
     <div className="flex gap-3 pt-1">
       <div className="flex-1 bg-slate-50 rounded-2xl px-3 py-2.5 text-center">
         <p className="text-lg font-black text-slate-700">{rows.length}</p>
-        <p className="text-[9px] text-slate-400 font-semibold uppercase tracking-wider">Completed</p>
+        <p className="text-xs text-slate-400 font-semibold uppercase tracking-wider">Completed</p>
       </div>
       <div className="flex-1 bg-emerald-50 rounded-2xl px-3 py-2.5 text-center">
         <p className="text-lg font-black text-emerald-600">{rows.filter(o => o.fare !== 'TBC').length}</p>
-        <p className="text-[9px] text-slate-400 font-semibold uppercase tracking-wider">Cash Rides</p>
+        <p className="text-xs text-slate-400 font-semibold uppercase tracking-wider">Cash Rides</p>
       </div>
       {tbc > 0 && (
         <div className="flex-1 bg-amber-50 rounded-2xl px-3 py-2.5 text-center">
           <p className="text-lg font-black text-amber-600">{tbc}</p>
-          <p className="text-[9px] text-slate-400 font-semibold uppercase tracking-wider">TBC Rides</p>
+          <p className="text-xs text-slate-400 font-semibold uppercase tracking-wider">TBC Rides</p>
         </div>
       )}
     </div>

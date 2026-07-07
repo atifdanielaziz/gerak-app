@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback, useRef } from 'react';
+﻿import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { useApp } from '../context/AppContext';
 import { supabase } from '../lib/supabase';
 import {
@@ -200,7 +200,7 @@ const ProfileSheet: React.FC<{ u: ProfileUser; onClose: () => void }> = ({ u, on
 
   const Row = ({ label, value, children }: { label: string; value?: string | null; children?: React.ReactNode }) => (
     <div className="flex items-start justify-between py-2.5 border-b border-slate-50 last:border-0 gap-2">
-      <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider shrink-0 pt-0.5">{label}</span>
+      <span className="text-xs font-extrabold text-slate-400 uppercase tracking-wider shrink-0 pt-0.5">{label}</span>
       <div className="text-right flex items-center gap-1.5 flex-wrap justify-end">
         {children ?? <span className={`text-xs font-semibold ${value ? 'text-slate-700' : 'text-slate-300'}`}>{value || '—'}</span>}
       </div>
@@ -241,7 +241,7 @@ const ProfileSheet: React.FC<{ u: ProfileUser; onClose: () => void }> = ({ u, on
             </div>
             <div className="text-center">
               <p className="text-xl font-black text-slate-800">{u.name}</p>
-              <span className={`inline-flex items-center gap-1 mt-1 text-[10px] font-extrabold px-2.5 py-1 rounded-full border ${roleBadge}`}>
+              <span className={`inline-flex items-center gap-1 mt-1 text-xs font-extrabold px-2.5 py-1 rounded-full border ${roleBadge}`}>
                 <ShieldCheck className="w-3 h-3" /> {u.role}
               </span>
             </div>
@@ -304,18 +304,18 @@ const ProfileSheet: React.FC<{ u: ProfileUser; onClose: () => void }> = ({ u, on
                   <Row label="IC Photo">
                     {merged.ic_url
                       ? <a href={merged.ic_url} target="_blank" rel="noopener noreferrer"
-                          className="text-[10px] font-extrabold text-blue-600 bg-blue-50 border border-blue-100 px-2.5 py-1 rounded-lg active:scale-95 transition flex items-center gap-1">
+                          className="text-xs font-extrabold text-blue-600 bg-blue-50 border border-blue-100 px-2.5 py-1 rounded-lg active:scale-95 transition flex items-center gap-1">
                           <ExternalLink className="w-3 h-3" /> View
                         </a>
-                      : <span className="text-[10px] font-semibold text-slate-300">Not uploaded</span>}
+                      : <span className="text-xs font-semibold text-slate-300">Not uploaded</span>}
                   </Row>
                   <Row label="License">
                     {merged.license_url
                       ? <a href={merged.license_url} target="_blank" rel="noopener noreferrer"
-                          className="text-[10px] font-extrabold text-blue-600 bg-blue-50 border border-blue-100 px-2.5 py-1 rounded-lg active:scale-95 transition flex items-center gap-1">
+                          className="text-xs font-extrabold text-blue-600 bg-blue-50 border border-blue-100 px-2.5 py-1 rounded-lg active:scale-95 transition flex items-center gap-1">
                           <ExternalLink className="w-3 h-3" /> View
                         </a>
-                      : <span className="text-[10px] font-semibold text-slate-300">Not uploaded</span>}
+                      : <span className="text-xs font-semibold text-slate-300">Not uploaded</span>}
                   </Row>
                 </div>
               )}
@@ -384,7 +384,7 @@ const JubahRiderSheet: React.FC<{
           </div>
           <div className="text-center mt-1">
             <p className="text-xl font-black text-slate-800">{rider.name}</p>
-            <span className="inline-flex items-center gap-1 mt-1 text-[10px] font-extrabold px-2.5 py-1 rounded-full border bg-blue-50 border-blue-100 text-blue-600">
+            <span className="inline-flex items-center gap-1 mt-1 text-xs font-extrabold px-2.5 py-1 rounded-full border bg-blue-50 border-blue-100 text-blue-600">
               <GraduationCap className="w-3 h-3" /> rider
             </span>
           </div>
@@ -401,7 +401,7 @@ const JubahRiderSheet: React.FC<{
         {/* Method + Drop point */}
         <div className="mx-4 mb-4 flex flex-col gap-3">
           <div className="flex flex-col gap-1.5">
-            <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Method</label>
+            <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Method</label>
             <div className="relative group">
               <div className="bg-slate-50 border border-slate-200 rounded-xl py-2.5 px-3 flex items-center justify-between pointer-events-none group-focus-within:border-primary transition">
                 <span className={`text-xs ${method ? 'font-bold text-slate-700' : 'font-normal text-slate-300'}`}>
@@ -424,12 +424,12 @@ const JubahRiderSheet: React.FC<{
 
           <div className="flex flex-col gap-1.5">
             <div className="flex items-center justify-between">
-              <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Drop Point</label>
+              <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Drop Point</label>
               {method !== 'postage' && (
                 <button
                   type="button"
                   onClick={() => setIsEditingDropPoint(v => !v)}
-                  className={`flex items-center gap-1 text-[9px] font-extrabold px-2 py-0.5 rounded-full border transition active:scale-95 ${
+                  className={`flex items-center gap-1 text-xs font-extrabold px-2 py-0.5 rounded-full border transition active:scale-95 ${
                     isEditingDropPoint
                       ? 'bg-primary/10 border-primary/30 text-primary'
                       : 'bg-slate-100 border-slate-200 text-slate-500'
@@ -449,7 +449,7 @@ const JubahRiderSheet: React.FC<{
               className="bg-slate-50 border border-slate-200 rounded-xl py-2.5 px-3 font-bold text-slate-700 focus:outline-none focus:border-primary transition placeholder:font-normal disabled:opacity-50 disabled:cursor-not-allowed"
             />
             {method === 'postage' && (
-              <p className="text-[9px] text-slate-400 font-semibold">Not applicable — robe is couriered, no physical drop point needed.</p>
+              <p className="text-xs text-slate-400 font-semibold">Not applicable — robe is couriered, no physical drop point needed.</p>
             )}
           </div>
         </div>
@@ -517,20 +517,20 @@ const UserCard: React.FC<{
         >
           <div className="flex items-center gap-2 flex-wrap">
             <p className="text-xs font-black text-slate-800 truncate">{u.name}</p>
-            <span className={`text-[10px] font-semibold uppercase shrink-0 ${
+            <span className={`text-xs font-semibold uppercase shrink-0 ${
               u.role === 'driver'   ? 'text-emerald-600' :
               u.role === 'rider'   ? 'text-amber-600' :
               u.role === 'admin' || u.role === 'superadmin' ? 'text-blue-600' :
               'text-slate-400'
             }`}>{u.role}</span>
             {u.status === 'inactive' && (
-              <span className="text-[9px] font-extrabold px-1.5 py-0.5 rounded-full bg-red-100 text-red-600 border border-red-200 uppercase shrink-0">
+              <span className="text-xs font-extrabold px-1.5 py-0.5 rounded-full bg-red-100 text-red-600 border border-red-200 uppercase shrink-0">
                 Suspended
               </span>
             )}
           </div>
-          <p className="text-[10px] text-slate-400 font-semibold mt-0.5">{u.gerak_id} · UMPSA {u.campus}</p>
-          <p className="text-[10px] text-slate-400 truncate">{u.email}</p>
+          <p className="text-xs text-slate-400 font-semibold mt-0.5">{u.gerak_id} · UMPSA {u.campus}</p>
+          <p className="text-xs text-slate-400 truncate">{u.email}</p>
         </button>
 
         {/* ⋮ vertical dots */}
@@ -661,7 +661,7 @@ const UserCard: React.FC<{
           <button
             onClick={() => onToggle(u)}
             disabled={togglingStatus === u.id}
-            className={`flex-1 min-w-0 font-extrabold text-[9px] py-1.5 px-1 rounded-xl transition active:scale-95 disabled:opacity-50 flex items-center justify-center ${
+            className={`flex-1 min-w-0 font-extrabold text-xs py-1.5 px-1 rounded-xl transition active:scale-95 disabled:opacity-50 flex items-center justify-center ${
               u.status === 'active'
                 ? 'bg-amber-50 border border-amber-200 text-amber-700'
                 : 'bg-emerald-50 border border-emerald-200 text-emerald-700'
@@ -674,7 +674,7 @@ const UserCard: React.FC<{
           <button
             onClick={() => onTerminate(u)}
             disabled={terminating === u.id}
-            className="flex-1 min-w-0 bg-red-50 border border-red-200 text-red-600 font-extrabold text-[9px] py-1.5 px-1 rounded-xl transition active:scale-95 disabled:opacity-50 flex items-center justify-center gap-0.5"
+            className="flex-1 min-w-0 bg-red-50 border border-red-200 text-red-600 font-extrabold text-xs py-1.5 px-1 rounded-xl transition active:scale-95 disabled:opacity-50 flex items-center justify-center gap-0.5"
           >
             {terminating === u.id
               ? <span className="w-3 h-3 rounded-full border border-red-400 border-t-transparent animate-spin" />
@@ -1669,11 +1669,11 @@ export const AdminHome: React.FC = () => {
           <div>
             <div className="flex items-center gap-2">
               <h2 className="text-xl font-black text-slate-800 m-0">Admin Panel</h2>
-              <span className="bg-primary/10 text-primary text-[9px] font-extrabold px-2 py-0.5 rounded-full uppercase tracking-wider">
+              <span className="bg-primary/10 text-primary text-xs font-extrabold px-2 py-0.5 rounded-full uppercase tracking-wider">
                 {user.role}
               </span>
             </div>
-            <p className="text-[10px] text-slate-400 font-semibold mt-0.5">{user.name} · {user.gerakId}</p>
+            <p className="text-xs text-slate-400 font-semibold mt-0.5">{user.name} · {user.gerakId}</p>
           </div>
 
           <div className="flex items-center gap-2">
@@ -1727,7 +1727,7 @@ export const AdminHome: React.FC = () => {
 
             {/* Role selector */}
             <div>
-              <p className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest mb-2">Role</p>
+              <p className="text-xs font-extrabold text-slate-400 uppercase tracking-widest mb-2">Role</p>
               <div className="flex bg-slate-50 border border-slate-200 rounded-2xl p-1 gap-1">
                 {([
                   { id: 'driver', label: '🚗 Driver', color: 'bg-primary text-white' },
@@ -1750,7 +1750,7 @@ export const AdminHome: React.FC = () => {
                 ))}
               </div>
               {inviteRole === 'admin' && (
-                <p className="text-[10px] text-violet-500 font-semibold mt-1.5 pl-1">
+                <p className="text-xs text-violet-500 font-semibold mt-1.5 pl-1">
                   Admin includes full driving capabilities automatically.
                 </p>
               )}
@@ -1759,7 +1759,7 @@ export const AdminHome: React.FC = () => {
             {/* Campus picker — superadmin only; regular admin locked to their campus */}
             {isSuperAdmin ? (
               <div>
-                <p className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest mb-2">Campus</p>
+                <p className="text-xs font-extrabold text-slate-400 uppercase tracking-widest mb-2">Campus</p>
                 <div className="flex bg-slate-50 border border-slate-200 rounded-2xl p-1 gap-1">
                   {(['Gambang', 'Pekan'] as const).map(c => (
                     <button key={c} type="button" onClick={() => setInviteCampus(c)}
@@ -1776,7 +1776,7 @@ export const AdminHome: React.FC = () => {
               <div className="flex items-center gap-2 bg-slate-50 border border-slate-200 rounded-2xl px-4 py-2.5">
                 <MapPin className="w-3.5 h-3.5 text-primary shrink-0" />
                 <p className="text-xs font-extrabold text-slate-700">UMPSA {adminCampus}</p>
-                <span className="text-[9px] font-bold text-slate-400 ml-auto">campus locked</span>
+                <span className="text-xs font-bold text-slate-400 ml-auto">campus locked</span>
               </div>
             )}
 
@@ -1796,16 +1796,16 @@ export const AdminHome: React.FC = () => {
             {/* Capability toggles — driver */}
             {inviteRole === 'driver' && (
               <div>
-                <p className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest mb-2">Capabilities</p>
+                <p className="text-xs font-extrabold text-slate-400 uppercase tracking-widest mb-2">Capabilities</p>
                 <div className="flex gap-2">
                   <button type="button" onClick={() => setInviteCanDrive(v => !v)}
-                    className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl text-[10px] font-extrabold border transition active:scale-95 ${
+                    className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl text-xs font-extrabold border transition active:scale-95 ${
                       inviteCanDrive ? 'bg-primary/10 border-primary/30 text-primary' : 'bg-slate-50 border-slate-200 text-slate-400'
                     }`}>
                     <Car className="w-3 h-3" /> Gerak Car {inviteCanDrive ? '✓' : '✗'}
                   </button>
                   <button type="button" onClick={() => setInviteCanRent(v => !v)}
-                    className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl text-[10px] font-extrabold border transition active:scale-95 ${
+                    className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl text-xs font-extrabold border transition active:scale-95 ${
                       inviteCanRent ? 'bg-amber-50 border-amber-200 text-amber-700' : 'bg-slate-50 border-slate-200 text-slate-400'
                     }`}>
                     <KeyRound className="w-3 h-3" /> Rental {inviteCanRent ? '✓' : '✗'}
@@ -1817,16 +1817,16 @@ export const AdminHome: React.FC = () => {
             {/* Capability toggles — rider */}
             {inviteRole === 'rider' && (
               <div>
-                <p className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest mb-2">Capabilities</p>
+                <p className="text-xs font-extrabold text-slate-400 uppercase tracking-widest mb-2">Capabilities</p>
                 <div className="flex gap-2">
                   <button type="button" onClick={() => setInviteCanDaily(v => !v)}
-                    className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl text-[10px] font-extrabold border transition active:scale-95 ${
+                    className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl text-xs font-extrabold border transition active:scale-95 ${
                       inviteCanDaily ? 'bg-emerald-50 border-emerald-200 text-emerald-700' : 'bg-slate-50 border-slate-200 text-slate-400'
                     }`}>
                     🛵 Daily {inviteCanDaily ? '✓' : '✗'}
                   </button>
                   <button type="button" onClick={() => setInviteCanRobe(v => !v)}
-                    className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl text-[10px] font-extrabold border transition active:scale-95 ${
+                    className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl text-xs font-extrabold border transition active:scale-95 ${
                       inviteCanRobe ? 'bg-blue-50 border-blue-200 text-blue-700' : 'bg-slate-50 border-slate-200 text-slate-400'
                     }`}>
                     🎓 Robe {inviteCanRobe ? '✓' : '✗'}
@@ -1850,7 +1850,7 @@ export const AdminHome: React.FC = () => {
 
           {/* Search */}
           <div className="bg-white border border-slate-100 rounded-2xl p-3.5 shadow-sm flex flex-col gap-2">
-            <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1.5">
+            <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest flex items-center gap-1.5">
               <AlertCircle className="w-3.5 h-3.5" /> Find Staff
             </h3>
             <div className="flex gap-2">
@@ -1865,7 +1865,7 @@ export const AdminHome: React.FC = () => {
               <button
                 onClick={() => setInviteSearch('')}
                 disabled={!inviteSearch.trim()}
-                className="px-3.5 bg-primary text-white font-extrabold text-[11px] rounded-lg transition active:scale-95 disabled:opacity-50 flex items-center gap-1.5"
+                className="px-3.5 bg-primary text-white font-extrabold text-xs rounded-lg transition active:scale-95 disabled:opacity-50 flex items-center gap-1.5"
               >
                 Clear
               </button>
@@ -1895,17 +1895,17 @@ export const AdminHome: React.FC = () => {
                     <div className="flex-1 min-w-0">
                       <p className="text-xs font-bold text-slate-700 truncate">{inv.email}</p>
                       <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
-                        <span className="text-[9px] font-extrabold text-slate-400 uppercase">{inv.campus}</span>
+                        <span className="text-xs font-extrabold text-slate-400 uppercase">{inv.campus}</span>
                         {inv.used
-                          ? <span className="text-[9px] font-extrabold text-emerald-600 bg-emerald-100 px-1.5 py-0.5 rounded-full">Registered</span>
-                          : <span className="text-[9px] font-extrabold text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded-full">Pending</span>}
+                          ? <span className="text-xs font-extrabold text-emerald-600 bg-emerald-100 px-1.5 py-0.5 rounded-full">Registered</span>
+                          : <span className="text-xs font-extrabold text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded-full">Pending</span>}
                         {inv.can_drive && (
-                          <span className="text-[9px] font-extrabold text-primary bg-primary/10 px-1.5 py-0.5 rounded-full flex items-center gap-0.5">
+                          <span className="text-xs font-extrabold text-primary bg-primary/10 px-1.5 py-0.5 rounded-full flex items-center gap-0.5">
                             <Car className="w-2.5 h-2.5" /> Car
                           </span>
                         )}
                         {inv.can_rent && (
-                          <span className="text-[9px] font-extrabold text-amber-700 bg-amber-50 px-1.5 py-0.5 rounded-full flex items-center gap-0.5">
+                          <span className="text-xs font-extrabold text-amber-700 bg-amber-50 px-1.5 py-0.5 rounded-full flex items-center gap-0.5">
                             <KeyRound className="w-2.5 h-2.5" /> Rental
                           </span>
                         )}
@@ -1950,7 +1950,7 @@ export const AdminHome: React.FC = () => {
               <button
                 onClick={() => setStaffSearch('')}
                 disabled={!staffSearch.trim()}
-                className="px-3.5 bg-primary text-white font-extrabold text-[11px] rounded-xl transition active:scale-95 disabled:opacity-50"
+                className="px-3.5 bg-primary text-white font-extrabold text-xs rounded-xl transition active:scale-95 disabled:opacity-50"
               >
                 Clear
               </button>
@@ -1965,7 +1965,7 @@ export const AdminHome: React.FC = () => {
                 { id: 'admins',  label: '⚙️ Admins' },
               ] as const).map(f => (
                 <button key={f.id} onClick={() => setStaffFilter(f.id)}
-                  className={`shrink-0 px-4 py-1.5 rounded-xl text-[10px] font-extrabold transition ${
+                  className={`shrink-0 px-4 py-1.5 rounded-xl text-xs font-extrabold transition ${
                     staffFilter === f.id ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-400'
                   }`}>
                   {f.label}
@@ -2038,7 +2038,7 @@ export const AdminHome: React.FC = () => {
 
               {/* Tag */}
               <div className="flex flex-col gap-1.5">
-                <label className="text-[10px] font-extrabold text-slate-500 uppercase tracking-widest">Tag (e.g. 🚗 Ride)</label>
+                <label className="text-xs font-extrabold text-slate-500 uppercase tracking-widest">Tag (e.g. 🚗 Ride)</label>
                 <input
                   type="text"
                   value={bannerTag}
@@ -2049,7 +2049,7 @@ export const AdminHome: React.FC = () => {
 
               {/* Title */}
               <div className="flex flex-col gap-1.5">
-                <label className="text-[10px] font-extrabold text-slate-500 uppercase tracking-widest">Title <span className="text-red-400">*</span></label>
+                <label className="text-xs font-extrabold text-slate-500 uppercase tracking-widest">Title <span className="text-red-400">*</span></label>
                 <input
                   type="text"
                   value={bannerTitle}
@@ -2061,7 +2061,7 @@ export const AdminHome: React.FC = () => {
 
               {/* Subtitle */}
               <div className="flex flex-col gap-1.5">
-                <label className="text-[10px] font-extrabold text-slate-500 uppercase tracking-widest">Subtitle</label>
+                <label className="text-xs font-extrabold text-slate-500 uppercase tracking-widest">Subtitle</label>
                 <textarea
                   value={bannerSubtitle}
                   onChange={e => setBannerSubtitle(e.target.value)}
@@ -2074,7 +2074,7 @@ export const AdminHome: React.FC = () => {
               {/* CTA label + page row */}
               <div className="flex gap-3">
                 <div className="flex-1 flex flex-col gap-1.5">
-                  <label className="text-[10px] font-extrabold text-slate-500 uppercase tracking-widest">CTA Label</label>
+                  <label className="text-xs font-extrabold text-slate-500 uppercase tracking-widest">CTA Label</label>
                   <input
                     type="text"
                     value={bannerCtaLabel}
@@ -2084,7 +2084,7 @@ export const AdminHome: React.FC = () => {
                   />
                 </div>
                 <div className="flex-1 flex flex-col gap-1.5">
-                  <label className="text-[10px] font-extrabold text-slate-500 uppercase tracking-widest">CTA Page</label>
+                  <label className="text-xs font-extrabold text-slate-500 uppercase tracking-widest">CTA Page</label>
                   <select
                     value={bannerCtaPage}
                     onChange={e => setBannerCtaPage(e.target.value)}
@@ -2099,7 +2099,7 @@ export const AdminHome: React.FC = () => {
 
               {/* Emoji */}
               <div className="flex flex-col gap-1.5">
-                <label className="text-[10px] font-extrabold text-slate-500 uppercase tracking-widest">Decorative Emoji</label>
+                <label className="text-xs font-extrabold text-slate-500 uppercase tracking-widest">Decorative Emoji</label>
                 <input
                   type="text"
                   value={bannerEmoji}
@@ -2111,14 +2111,14 @@ export const AdminHome: React.FC = () => {
 
               {/* Gradient picker */}
               <div className="flex flex-col gap-1.5">
-                <label className="text-[10px] font-extrabold text-slate-500 uppercase tracking-widest">Banner Colour</label>
+                <label className="text-xs font-extrabold text-slate-500 uppercase tracking-widest">Banner Colour</label>
                 <div className="flex flex-wrap gap-2">
                   {GRADIENTS.map(g => (
                     <button
                       key={g.value}
                       type="button"
                       onClick={() => setBannerGradient(g.value)}
-                      className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[10px] font-extrabold text-white bg-gradient-to-r ${g.value} transition active:scale-95 ${
+                      className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-extrabold text-white bg-gradient-to-r ${g.value} transition active:scale-95 ${
                         bannerGradient === g.value ? 'ring-2 ring-offset-1 ring-slate-400' : ''
                       }`}
                     >
@@ -2132,9 +2132,9 @@ export const AdminHome: React.FC = () => {
               {bannerTitle && (
                 <div className={`relative overflow-hidden rounded-2xl bg-gradient-to-br ${bannerGradient} p-4 text-white`} style={{ height: 100 }}>
                   <div className="absolute -right-3 -top-3 text-6xl opacity-20 select-none pointer-events-none">{bannerEmoji}</div>
-                  <span className="self-start bg-white/20 border border-white/25 rounded-full px-2 py-0.5 text-[9px] font-extrabold tracking-wider">{bannerTag}</span>
+                  <span className="self-start bg-white/20 border border-white/25 rounded-full px-2 py-0.5 text-xs font-extrabold tracking-wider">{bannerTag}</span>
                   <h4 className="text-sm font-black leading-tight mt-1 m-0">{bannerTitle}</h4>
-                  {bannerSubtitle && <p className="text-[9px] text-white/80 font-medium leading-snug mt-0.5 line-clamp-2">{bannerSubtitle}</p>}
+                  {bannerSubtitle && <p className="text-xs text-white/80 font-medium leading-snug mt-0.5 line-clamp-2">{bannerSubtitle}</p>}
                 </div>
               )}
 
@@ -2180,14 +2180,14 @@ export const AdminHome: React.FC = () => {
                     <div className={`relative overflow-hidden rounded-xl bg-gradient-to-br ${a.gradient} px-3 py-2 text-white flex items-center gap-2`}>
                       <span className="text-xl">{a.emoji}</span>
                       <div className="min-w-0">
-                        <p className="text-[9px] font-extrabold opacity-70 truncate">{a.tag}</p>
+                        <p className="text-xs font-extrabold opacity-70 truncate">{a.tag}</p>
                         <p className="text-xs font-black truncate">{a.title}</p>
                       </div>
                     </div>
 
                     {/* Meta */}
-                    <p className="text-[10px] text-slate-400 font-semibold line-clamp-2">{a.subtitle}</p>
-                    <p className="text-[9px] text-slate-300 font-semibold">
+                    <p className="text-xs text-slate-400 font-semibold line-clamp-2">{a.subtitle}</p>
+                    <p className="text-xs text-slate-300 font-semibold">
                       CTA: {a.cta_label} → {a.cta_page} · {new Date(a.created_at).toLocaleDateString('en-MY', { day: '2-digit', month: 'short', year: 'numeric' })}
                     </p>
 
@@ -2195,7 +2195,7 @@ export const AdminHome: React.FC = () => {
                     <div className="flex gap-2">
                       <button
                         onClick={() => handleToggleBanner(a)}
-                        className={`flex-1 flex items-center justify-center gap-1.5 font-extrabold text-[10px] py-2 rounded-xl border transition active:scale-95 ${
+                        className={`flex-1 flex items-center justify-center gap-1.5 font-extrabold text-xs py-2 rounded-xl border transition active:scale-95 ${
                           a.is_active
                             ? 'bg-emerald-50 border-emerald-100 text-emerald-700'
                             : 'bg-slate-100 border-slate-200 text-slate-500'
@@ -2207,7 +2207,7 @@ export const AdminHome: React.FC = () => {
                       </button>
                       <button
                         onClick={() => handleDeleteBanner(a.id)}
-                        className="px-3 bg-red-50 border border-red-100 text-red-400 hover:text-red-600 font-extrabold text-[10px] py-2 rounded-xl transition active:scale-95 flex items-center justify-center gap-1"
+                        className="px-3 bg-red-50 border border-red-100 text-red-400 hover:text-red-600 font-extrabold text-xs py-2 rounded-xl transition active:scale-95 flex items-center justify-center gap-1"
                       >
                         <Trash2 className="w-3 h-3" /> Delete
                       </button>
@@ -2254,7 +2254,7 @@ export const AdminHome: React.FC = () => {
               {filter.replace('_', ' ')}
             </span>
             {filter !== 'all' && orders.filter(o => o.status === filter).length > 0 && (
-              <span className="bg-primary/10 text-primary text-[9px] font-extrabold px-1.5 py-0.5 rounded-full">
+              <span className="bg-primary/10 text-primary text-xs font-extrabold px-1.5 py-0.5 rounded-full">
                 {orders.filter(o => o.status === filter).length}
               </span>
             )}
@@ -2282,7 +2282,7 @@ export const AdminHome: React.FC = () => {
                 >
                   <span className="uppercase text-xs tracking-wide">{f.replace('_', ' ')}</span>
                   {f !== 'all' && orders.filter(o => o.status === f).length > 0 && (
-                    <span className={`text-[9px] font-extrabold px-1.5 py-0.5 rounded-full ${
+                    <span className={`text-xs font-extrabold px-1.5 py-0.5 rounded-full ${
                       filter === f ? 'bg-primary/20 text-primary' : 'bg-slate-100 text-slate-500'
                     }`}>
                       {orders.filter(o => o.status === f).length}
@@ -2322,11 +2322,11 @@ export const AdminHome: React.FC = () => {
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
                       <p className="text-xs font-black text-slate-800 truncate">{order.customer_name}</p>
-                      <span className={`text-[9px] font-extrabold px-2 py-0.5 rounded-full border uppercase shrink-0 ${STATUS_COLORS[order.status]}`}>
+                      <span className={`text-xs font-extrabold px-2 py-0.5 rounded-full border uppercase shrink-0 ${STATUS_COLORS[order.status]}`}>
                         {order.status.replace('_', ' ')}
                       </span>
                     </div>
-                    <p className="text-[10px] text-slate-400 mt-0.5">{order.date} · {order.time}</p>
+                    <p className="text-xs text-slate-400 mt-0.5">{order.date} · {order.time}</p>
                   </div>
                   <span className="text-sm font-black text-slate-800 shrink-0">
                     RM{order.fare === 'TBC' ? 'TBC' : (Number(order.fare) + order.night_charge).toFixed(0)}
@@ -2334,7 +2334,7 @@ export const AdminHome: React.FC = () => {
                 </div>
 
                 {/* Route */}
-                <div className="bg-slate-50 rounded-xl px-3 py-2 flex flex-col gap-1 text-[11px]">
+                <div className="bg-slate-50 rounded-xl px-3 py-2 flex flex-col gap-1 text-xs">
                   <div className="flex items-center gap-1.5 text-slate-600">
                     <MapPin className="w-3 h-3 text-blue-500 shrink-0" />
                     <span className="font-semibold truncate">{order.pickup}</span>
@@ -2346,7 +2346,7 @@ export const AdminHome: React.FC = () => {
                 </div>
 
                 {/* Meta */}
-                <div className="flex items-center flex-wrap gap-3 text-[10px] text-slate-400">
+                <div className="flex items-center flex-wrap gap-3 text-xs text-slate-400">
                   <span className="flex items-center gap-1">
                     <Users className="w-3 h-3" /> {order.passengers} pax
                   </span>
@@ -2364,7 +2364,7 @@ export const AdminHome: React.FC = () => {
                 </div>
 
                 {order.notes && (
-                  <p className="text-[10px] text-slate-400 italic">"{order.notes}"</p>
+                  <p className="text-xs text-slate-400 italic">"{order.notes}"</p>
                 )}
 
                 {/* Admin actions */}
@@ -2372,7 +2372,7 @@ export const AdminHome: React.FC = () => {
                   {order.status === 'pending' && (
                     <button
                       onClick={() => handleForceStatus(order.id, 'cancelled')}
-                      className="flex-1 bg-red-50 border border-red-100 text-red-500 font-extrabold text-[10px] py-2 rounded-xl transition active:scale-95 flex items-center justify-center gap-1"
+                      className="flex-1 bg-red-50 border border-red-100 text-red-500 font-extrabold text-xs py-2 rounded-xl transition active:scale-95 flex items-center justify-center gap-1"
                     >
                       <Clock className="w-3 h-3" /> Cancel
                     </button>
@@ -2380,7 +2380,7 @@ export const AdminHome: React.FC = () => {
                   <button
                     onClick={() => handleDelete(order.id)}
                     disabled={deleting === order.id}
-                    className="px-3 bg-slate-50 border border-slate-200 text-slate-400 hover:text-red-500 font-extrabold text-[10px] py-2 rounded-xl transition active:scale-95 flex items-center justify-center gap-1 disabled:opacity-50"
+                    className="px-3 bg-slate-50 border border-slate-200 text-slate-400 hover:text-red-500 font-extrabold text-xs py-2 rounded-xl transition active:scale-95 flex items-center justify-center gap-1 disabled:opacity-50"
                   >
                     {deleting === order.id
                       ? <span className="w-3 h-3 rounded-full border border-slate-400 border-t-transparent animate-spin" />
@@ -2429,7 +2429,7 @@ export const AdminHome: React.FC = () => {
               </h3>
 
               <div className="flex flex-col gap-1.5">
-                <label className="text-[10px] font-extrabold text-slate-500 uppercase tracking-widest">Point A</label>
+                <label className="text-xs font-extrabold text-slate-500 uppercase tracking-widest">Point A</label>
                 <input
                   type="text"
                   value={routePointA}
@@ -2444,7 +2444,7 @@ export const AdminHome: React.FC = () => {
               </div>
 
               <div className="flex flex-col gap-1.5">
-                <label className="text-[10px] font-extrabold text-slate-500 uppercase tracking-widest">Point B</label>
+                <label className="text-xs font-extrabold text-slate-500 uppercase tracking-widest">Point B</label>
                 <input
                   type="text"
                   value={routePointB}
@@ -2455,7 +2455,7 @@ export const AdminHome: React.FC = () => {
               </div>
 
               <div className="flex flex-col gap-1.5">
-                <label className="text-[10px] font-extrabold text-slate-500 uppercase tracking-widest">Price (RM)</label>
+                <label className="text-xs font-extrabold text-slate-500 uppercase tracking-widest">Price (RM)</label>
                 <input
                   type="number"
                   min="0"
@@ -2522,12 +2522,12 @@ export const AdminHome: React.FC = () => {
                           setRoutePrice(String(r.price));
                           setShowRouteForm(true);
                         }}
-                        className="px-3 bg-slate-50 border border-slate-200 text-slate-500 font-extrabold text-[10px] py-2 rounded-xl transition active:scale-95 flex items-center justify-center gap-1">
+                        className="px-3 bg-slate-50 border border-slate-200 text-slate-500 font-extrabold text-xs py-2 rounded-xl transition active:scale-95 flex items-center justify-center gap-1">
                         <Pencil className="w-3 h-3" /> Edit
                       </button>
                       <button
                         onClick={() => handleDeleteRoute(r.id)}
-                        className="px-3 bg-red-50 border border-red-100 text-red-400 font-extrabold text-[10px] py-2 rounded-xl transition active:scale-95 flex items-center justify-center gap-1">
+                        className="px-3 bg-red-50 border border-red-100 text-red-400 font-extrabold text-xs py-2 rounded-xl transition active:scale-95 flex items-center justify-center gap-1">
                         <Trash2 className="w-3 h-3" />
                       </button>
                     </div>
@@ -2558,7 +2558,7 @@ export const AdminHome: React.FC = () => {
 
           {/* Search */}
           <div className="bg-white border border-slate-100 rounded-2xl p-3.5 shadow-sm flex flex-col gap-2">
-            <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1.5">
+            <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest flex items-center gap-1.5">
               <AlertCircle className="w-3.5 h-3.5" /> Find {verifyFilter === 'driver' ? 'Driver' : 'Rider'}
             </h3>
             <div className="flex gap-2">
@@ -2573,7 +2573,7 @@ export const AdminHome: React.FC = () => {
               <button
                 onClick={() => setVerifySearch('')}
                 disabled={!verifySearch.trim()}
-                className="px-3.5 bg-primary text-white font-extrabold text-[11px] rounded-lg transition active:scale-95 disabled:opacity-50 flex items-center gap-1.5"
+                className="px-3.5 bg-primary text-white font-extrabold text-xs rounded-lg transition active:scale-95 disabled:opacity-50 flex items-center gap-1.5"
               >
                 Clear
               </button>
@@ -2608,15 +2608,15 @@ export const AdminHome: React.FC = () => {
                 <div className="flex items-start justify-between gap-2">
                   <div className="flex-1 min-w-0">
                     <p className="text-xs font-black text-slate-800 truncate">{d.name}</p>
-                    <p className="text-[10px] text-slate-400 font-semibold mt-0.5">{d.gerak_id} · UMPSA {d.campus}</p>
+                    <p className="text-xs text-slate-400 font-semibold mt-0.5">{d.gerak_id} · UMPSA {d.campus}</p>
                     {d.ic_number && (
-                      <p className="text-[10px] font-extrabold text-slate-500 mt-0.5">IC: {d.ic_number}</p>
+                      <p className="text-xs font-extrabold text-slate-500 mt-0.5">IC: {d.ic_number}</p>
                     )}
                     {!d.ic_number && (
-                      <p className="text-[10px] font-semibold text-amber-500 mt-0.5">IC number not set yet</p>
+                      <p className="text-xs font-semibold text-amber-500 mt-0.5">IC number not set yet</p>
                     )}
                   </div>
-                  <span className={`text-[9px] font-extrabold px-2 py-1 rounded-full border shrink-0 ${
+                  <span className={`text-xs font-extrabold px-2 py-1 rounded-full border shrink-0 ${
                     d.docs_status === 'approved' ? 'bg-emerald-50 border-emerald-100 text-emerald-700' :
                     d.docs_status === 'rejected' ? 'bg-red-50 border-red-100 text-red-600' :
                     d.docs_status === 'pending'  ? 'bg-amber-50 border-amber-100 text-amber-700' :
@@ -2630,7 +2630,7 @@ export const AdminHome: React.FC = () => {
 
                 {/* Reject reason */}
                 {d.docs_status === 'rejected' && d.docs_reject_reason && (
-                  <p className="text-[10px] text-red-500 font-semibold bg-red-50 rounded-xl px-3 py-2">
+                  <p className="text-xs text-red-500 font-semibold bg-red-50 rounded-xl px-3 py-2">
                     Reason: {d.docs_reject_reason}
                   </p>
                 )}
@@ -2638,13 +2638,13 @@ export const AdminHome: React.FC = () => {
                 {/* Document links */}
                 <div className="grid grid-cols-2 gap-2">
                   <a href={d.ic_url ?? '#'} target="_blank" rel="noopener noreferrer"
-                    className={`flex items-center justify-center gap-1.5 py-2 rounded-xl text-[10px] font-extrabold border transition ${
+                    className={`flex items-center justify-center gap-1.5 py-2 rounded-xl text-xs font-extrabold border transition ${
                       d.ic_url ? 'bg-blue-50 border-blue-100 text-blue-600 active:scale-95' : 'bg-slate-50 border-slate-200 text-slate-300 pointer-events-none'
                     }`}>
                     <ExternalLink className="w-3 h-3" /> IC (MyKad)
                   </a>
                   <a href={d.license_url ?? '#'} target="_blank" rel="noopener noreferrer"
-                    className={`flex items-center justify-center gap-1.5 py-2 rounded-xl text-[10px] font-extrabold border transition ${
+                    className={`flex items-center justify-center gap-1.5 py-2 rounded-xl text-xs font-extrabold border transition ${
                       d.license_url ? 'bg-blue-50 border-blue-100 text-blue-600 active:scale-95' : 'bg-slate-50 border-slate-200 text-slate-300 pointer-events-none'
                     }`}>
                     <ExternalLink className="w-3 h-3" /> License
@@ -2662,11 +2662,11 @@ export const AdminHome: React.FC = () => {
                     />
                     <div className="flex gap-2">
                       <button onClick={() => handleRejectDoc(d.id)}
-                        className="flex-1 bg-red-500 text-white text-[10px] font-extrabold py-2 rounded-xl active:scale-95 transition">
+                        className="flex-1 bg-red-500 text-white text-xs font-extrabold py-2 rounded-xl active:scale-95 transition">
                         Confirm Reject
                       </button>
                       <button onClick={() => { setRejectingDoc(null); setRejectReason(''); }}
-                        className="flex-1 bg-slate-100 text-slate-500 text-[10px] font-extrabold py-2 rounded-xl active:scale-95 transition">
+                        className="flex-1 bg-slate-100 text-slate-500 text-xs font-extrabold py-2 rounded-xl active:scale-95 transition">
                         Cancel
                       </button>
                     </div>
@@ -2677,11 +2677,11 @@ export const AdminHome: React.FC = () => {
                 {d.docs_status !== 'approved' && rejectingDoc !== d.id && (d.ic_url || d.license_url) && (
                   <div className="flex gap-2">
                     <button onClick={() => handleApproveDoc(d.id)}
-                      className="flex-1 flex items-center justify-center gap-1.5 bg-emerald-500 text-white text-[10px] font-extrabold py-2.5 rounded-xl active:scale-95 transition">
+                      className="flex-1 flex items-center justify-center gap-1.5 bg-emerald-500 text-white text-xs font-extrabold py-2.5 rounded-xl active:scale-95 transition">
                       <ShieldCheck className="w-3.5 h-3.5" /> Approve
                     </button>
                     <button onClick={() => { setRejectingDoc(d.id); setRejectReason(''); }}
-                      className="flex-1 flex items-center justify-center gap-1.5 bg-red-50 border border-red-100 text-red-500 text-[10px] font-extrabold py-2.5 rounded-xl active:scale-95 transition">
+                      className="flex-1 flex items-center justify-center gap-1.5 bg-red-50 border border-red-100 text-red-500 text-xs font-extrabold py-2.5 rounded-xl active:scale-95 transition">
                       <ShieldOff className="w-3.5 h-3.5" /> Reject
                     </button>
                   </div>
@@ -2689,7 +2689,7 @@ export const AdminHome: React.FC = () => {
 
                 {d.docs_status === 'approved' && (
                   <button onClick={() => { setRejectingDoc(d.id); setRejectReason(''); }}
-                    className="w-full flex items-center justify-center gap-1.5 bg-slate-50 border border-slate-200 text-slate-400 text-[10px] font-extrabold py-2 rounded-xl active:scale-95 transition">
+                    className="w-full flex items-center justify-center gap-1.5 bg-slate-50 border border-slate-200 text-slate-400 text-xs font-extrabold py-2 rounded-xl active:scale-95 transition">
                     <ShieldOff className="w-3 h-3" /> Revoke Approval
                   </button>
                 )}
@@ -2713,7 +2713,7 @@ export const AdminHome: React.FC = () => {
                 </div>
                 <div>
                   <p className="text-xs font-black text-slate-800">Jubah Delivery Period</p>
-                  <p className="text-[10px] text-slate-400 font-semibold mt-0.5">
+                  <p className="text-xs text-slate-400 font-semibold mt-0.5">
                     {jubahActive ? 'Currently OPEN — students can book' : 'Currently CLOSED — booking disabled'}
                   </p>
                 </div>
@@ -2770,9 +2770,9 @@ export const AdminHome: React.FC = () => {
                   >
                     <div className="flex-1 min-w-0">
                       <p className="text-xs font-bold text-slate-700 truncate">{r.name}</p>
-                      <p className="text-[10px] text-slate-400 font-semibold mt-0.5">{r.gerak_id} · UMPSA {r.campus}</p>
+                      <p className="text-xs text-slate-400 font-semibold mt-0.5">{r.gerak_id} · UMPSA {r.campus}</p>
                     </div>
-                    <span className={`text-[9px] font-extrabold px-2 py-1 rounded-full border shrink-0 ${
+                    <span className={`text-xs font-extrabold px-2 py-1 rounded-full border shrink-0 ${
                       r.status === 'active' ? 'bg-emerald-50 border-emerald-100 text-emerald-700' : 'bg-slate-50 border-slate-200 text-slate-400'
                     }`}>
                       {r.status === 'active' ? 'Active' : 'Inactive'}
@@ -2791,7 +2791,7 @@ export const AdminHome: React.FC = () => {
                 <div className="overflow-x-auto overflow-y-auto no-scrollbar max-h-[320px]">
                   <table className="text-left border-collapse" style={{ minWidth: 520 }}>
                     <thead className="sticky top-0 bg-white">
-                      <tr className="text-[9px] font-extrabold text-slate-400 uppercase tracking-wider border-b border-slate-100">
+                      <tr className="text-xs font-extrabold text-slate-400 uppercase tracking-wider border-b border-slate-100">
                         <th className="py-2 pr-4 whitespace-nowrap">Method</th>
                         <th className="py-2 pr-4 whitespace-nowrap">Representative Name</th>
                         <th className="py-2 pr-4 whitespace-nowrap">I/C Number</th>
@@ -2802,7 +2802,7 @@ export const AdminHome: React.FC = () => {
                       {jubahRiders.map(r => (
                         <tr key={r.id}
                           onClick={() => { setJubahSheetRider(r); setSheetOpen(true); }}
-                          className="border-b border-slate-50 text-[10px] cursor-pointer hover:bg-slate-50 active:bg-slate-100 transition">
+                          className="border-b border-slate-50 text-xs cursor-pointer hover:bg-slate-50 active:bg-slate-100 transition">
                           <td className="py-2.5 pr-4 text-slate-600 font-semibold align-top whitespace-nowrap">
                             {r.jubah_drop_point || '—'}
                           </td>
@@ -2844,7 +2844,7 @@ export const AdminHome: React.FC = () => {
                   />
                   <button onClick={() => { setJubahSearch(''); setJubahPayFilter('all'); }}
                     disabled={!jubahSearch.trim() && jubahPayFilter === 'all'}
-                    className="px-3.5 bg-primary text-white font-extrabold text-[11px] rounded-lg transition active:scale-95 disabled:opacity-40 flex items-center gap-1.5">
+                    className="px-3.5 bg-primary text-white font-extrabold text-xs rounded-lg transition active:scale-95 disabled:opacity-40 flex items-center gap-1.5">
                     Clear
                   </button>
                   <button onClick={loadJubahData}
@@ -2861,7 +2861,7 @@ export const AdminHome: React.FC = () => {
                     { id: 'paid',   label: '🟢 Paid' },
                   ] as const).map(f => (
                     <button key={f.id} onClick={() => setJubahPayFilter(f.id)}
-                      className={`flex-1 py-1.5 rounded-[10px] text-[10px] font-extrabold transition active:scale-95 ${
+                      className={`flex-1 py-1.5 rounded-[10px] text-xs font-extrabold transition active:scale-95 ${
                         jubahPayFilter === f.id ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-400'
                       }`}>
                       {f.label}
@@ -2893,7 +2893,7 @@ export const AdminHome: React.FC = () => {
                   <div className="overflow-x-auto overflow-y-auto no-scrollbar max-h-[600px]">
                     <table className="min-w-full border-collapse text-left" style={{ minWidth: 360 }}>
                       <thead className="sticky top-0 bg-white">
-                        <tr className="text-[9px] font-extrabold text-slate-400 uppercase tracking-wider border-b border-slate-100">
+                        <tr className="text-xs font-extrabold text-slate-400 uppercase tracking-wider border-b border-slate-100">
                           <th className="py-2 pr-4 whitespace-nowrap">Reference</th>
                           <th className="py-2 pr-4 whitespace-nowrap">Name</th>
                           <th className="py-2 pr-4 whitespace-nowrap">Remark</th>
@@ -2913,12 +2913,12 @@ export const AdminHome: React.FC = () => {
                           return (
                             <tr key={b.id}
                               onClick={() => goToAdminCard(b)}
-                              className="border-b border-slate-50 text-[10px] hover:bg-slate-50 active:bg-slate-100 transition cursor-pointer">
+                              className="border-b border-slate-50 text-xs hover:bg-slate-50 active:bg-slate-100 transition cursor-pointer">
                               <td className="py-2.5 pr-4 font-mono font-bold text-primary whitespace-nowrap">{b.reference}</td>
                               <td className="py-2.5 pr-4 font-extrabold text-slate-800 whitespace-nowrap">{b.full_name}</td>
                               <td className="py-2.5 pr-4 text-slate-500 font-semibold whitespace-nowrap">{b.remark}</td>
                               <td className="py-2.5 pr-4 whitespace-nowrap">
-                                <span className={`font-extrabold px-2 py-0.5 rounded-full border text-[9px] ${
+                                <span className={`font-extrabold px-2 py-0.5 rounded-full border text-xs ${
                                   b.payment_mode === 'deposit' ? 'bg-amber-50 border-amber-100 text-amber-700' :
                                   b.payment_mode === 'postage' ? 'bg-blue-50 border-blue-100 text-blue-700' :
                                   'bg-slate-50 border-slate-200 text-slate-600'
@@ -2927,7 +2927,7 @@ export const AdminHome: React.FC = () => {
                                 </span>
                               </td>
                               <td className="py-2.5 whitespace-nowrap">
-                                <span className={`font-extrabold px-2 py-0.5 rounded-full border text-[9px] ${
+                                <span className={`font-extrabold px-2 py-0.5 rounded-full border text-xs ${
                                   isPaid ? 'bg-emerald-50 border-emerald-100 text-emerald-700' : 'bg-amber-50 border-amber-100 text-amber-700'
                                 }`}>
                                   {isPaid ? 'Paid' : 'Booked'}
@@ -2971,7 +2971,7 @@ export const AdminHome: React.FC = () => {
                           {copiedRef ? <Check className="w-3 h-3 text-emerald-500" /> : <Copy className="w-3 h-3" />}
                         </button>
                       </div>
-                      <p className="text-[10px] text-slate-400 font-semibold">{b.full_name}</p>
+                      <p className="text-xs text-slate-400 font-semibold">{b.full_name}</p>
                     </div>
                   </div>
 
@@ -2981,13 +2981,13 @@ export const AdminHome: React.FC = () => {
                     {/* Customer summary */}
                     <div className="flex items-start justify-between gap-2">
                       <div>
-                        <p className="text-[9px] text-primary font-extrabold uppercase tracking-wider">{b.reference}</p>
+                        <p className="text-xs text-primary font-extrabold uppercase tracking-wider">{b.reference}</p>
                         <h3 className="text-base font-black text-slate-800 mt-0.5">{b.full_name}</h3>
-                        <p className="text-[10px] text-slate-400 font-semibold mt-0.5">
+                        <p className="text-xs text-slate-400 font-semibold mt-0.5">
                           {b.remark} · {b.faculty} · UMPSA {b.campus}
                         </p>
                       </div>
-                      <span className={`text-[9px] font-extrabold px-2.5 py-1 rounded-full border shrink-0 ${JUBAH_STATUS_STYLE[b.status] ?? ''}`}>
+                      <span className={`text-xs font-extrabold px-2.5 py-1 rounded-full border shrink-0 ${JUBAH_STATUS_STYLE[b.status] ?? ''}`}>
                         {JUBAH_STATUS_LABEL[b.status] ?? b.status}
                       </span>
                     </div>
@@ -2995,7 +2995,7 @@ export const AdminHome: React.FC = () => {
                     {/* HP + Mode */}
                     <div className="flex items-center gap-3">
                       <div className="flex items-center gap-1.5 bg-slate-50 border border-slate-100 rounded-xl px-3 py-2 flex-1">
-                        <span className="text-[11px] font-semibold text-slate-600">{b.hp_number}</span>
+                        <span className="text-xs font-semibold text-slate-600">{b.hp_number}</span>
                         <a href={`https://wa.me/${toWa(b.hp_number)}?text=${encodeURIComponent(
                           jubahWaMsg(b.full_name, b.status, b.reference, b.payment_mode, b.balance_paid, b.balance_due)
                         )}`}
@@ -3004,7 +3004,7 @@ export const AdminHome: React.FC = () => {
                           <WaIcon className="w-4 h-4" />
                         </a>
                       </div>
-                      <span className={`text-[9px] font-extrabold px-3 py-2 rounded-xl border shrink-0 ${
+                      <span className={`text-xs font-extrabold px-3 py-2 rounded-xl border shrink-0 ${
                         b.payment_mode === 'deposit' ? 'bg-amber-50 border-amber-100 text-amber-700' :
                         b.payment_mode === 'postage' ? 'bg-blue-50 border-blue-100 text-blue-700' :
                         'bg-slate-50 border-slate-200 text-slate-600'
@@ -3044,7 +3044,7 @@ export const AdminHome: React.FC = () => {
                     {b.payment_mode === 'postage' && b.delivery_address && (
                       <div className="bg-blue-50 border border-blue-100 rounded-xl p-3">
                         <p className="text-[8px] font-extrabold text-blue-400 uppercase tracking-wider mb-1">Delivery Address</p>
-                        <p className="text-[10px] font-semibold text-blue-800 leading-relaxed">{b.delivery_address}</p>
+                        <p className="text-xs font-semibold text-blue-800 leading-relaxed">{b.delivery_address}</p>
                       </div>
                     )}
 
@@ -3068,7 +3068,7 @@ export const AdminHome: React.FC = () => {
                         <div className="flex items-center gap-2">
                           {b.balance_proof_url && (
                             <a href={b.balance_proof_url} target="_blank" rel="noopener noreferrer"
-                              className="text-[9px] text-blue-500 font-bold flex items-center gap-0.5 hover:underline">
+                              className="text-xs text-blue-500 font-bold flex items-center gap-0.5 hover:underline">
                               <ExternalLink className="w-2.5 h-2.5" /> proof
                             </a>
                           )}
@@ -3134,7 +3134,7 @@ export const AdminHome: React.FC = () => {
                     </button>
                     <div>
                       <p className="text-xs font-black text-slate-700">Customer Info</p>
-                      <p className="text-[10px] text-slate-400 font-semibold">{b.remark} · {b.university}</p>
+                      <p className="text-xs text-slate-400 font-semibold">{b.remark} · {b.university}</p>
                     </div>
                   </div>
 
@@ -3159,7 +3159,7 @@ export const AdminHome: React.FC = () => {
                       { label: 'Reference',      value: b.reference },
                     ] as { label: string; value: string }[]).map(({ label, value }) => (
                       <div key={label} className="flex flex-col gap-0.5 border-b border-slate-50 pb-3 last:border-0 last:pb-0">
-                        <span className="text-[9px] font-extrabold text-slate-400 uppercase tracking-wider">{label}</span>
+                        <span className="text-xs font-extrabold text-slate-400 uppercase tracking-wider">{label}</span>
                         <span className="text-sm font-bold text-slate-700 leading-relaxed">{value}</span>
                       </div>
                     ))}
@@ -3241,7 +3241,7 @@ export const AdminHome: React.FC = () => {
               <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest flex items-center gap-1.5">
                 <GraduationCap className="w-4 h-4" /> Jubah Pricing Matrix
               </h3>
-              <p className="text-[10px] text-slate-400 font-semibold -mt-2">Set price per study level × service option. Tap Save after editing each value.</p>
+              <p className="text-xs text-slate-400 font-semibold -mt-2">Set price per study level × service option. Tap Save after editing each value.</p>
 
               {(['Master', 'PHD', 'Degree', 'Diploma'] as const).map(remark => (
                 <div key={remark} className="border border-slate-100 rounded-2xl p-4 flex flex-col gap-3">
@@ -3251,12 +3251,12 @@ export const AdminHome: React.FC = () => {
                       const key = `${remark}_${mode}`;
                       return (
                         <div key={mode} className="flex flex-col gap-1.5">
-                          <label className="text-[9px] font-extrabold text-slate-400 uppercase tracking-wider">
+                          <label className="text-xs font-extrabold text-slate-400 uppercase tracking-wider">
                             {mode === 'pickup' ? 'Self Pickup' : 'Pickup & Postage'}
                           </label>
                           <div className="flex gap-1.5">
                             <div className="flex items-center bg-slate-50 border border-slate-200 rounded-xl px-2 py-2 gap-1 flex-1 focus-within:border-primary transition">
-                              <span className="text-[10px] font-extrabold text-slate-400 shrink-0">RM</span>
+                              <span className="text-xs font-extrabold text-slate-400 shrink-0">RM</span>
                               <input
                                 type="number"
                                 min="0"
@@ -3270,7 +3270,7 @@ export const AdminHome: React.FC = () => {
                             <button
                               onClick={() => handleSavePrice(remark, mode)}
                               disabled={savingPrice === key}
-                              className="shrink-0 bg-primary text-white font-extrabold text-[10px] px-2.5 py-2 rounded-xl transition active:scale-95 disabled:opacity-50"
+                              className="shrink-0 bg-primary text-white font-extrabold text-xs px-2.5 py-2 rounded-xl transition active:scale-95 disabled:opacity-50"
                             >
                               {savingPrice === key ? '…' : 'Save'}
                             </button>
@@ -3312,7 +3312,7 @@ export const AdminHome: React.FC = () => {
                     ) : (
                       <div className="flex flex-col items-center gap-2 text-slate-300 p-4 text-center">
                         <FileImage className="w-10 h-10" />
-                        <span className="text-[10px] font-bold">No banner uploaded yet</span>
+                        <span className="text-xs font-bold">No banner uploaded yet</span>
                       </div>
                     )}
                   </div>
@@ -3347,7 +3347,7 @@ export const AdminHome: React.FC = () => {
               </div>
               <div>
                 <p className="text-xs font-black text-slate-800">Receipt Gate</p>
-                <p className="text-[10px] text-slate-400 font-semibold mt-0.5">
+                <p className="text-xs text-slate-400 font-semibold mt-0.5">
                   {receiptGateOn ? 'ON — monthly receipt required to be active' : 'OFF — everyone bypasses the receipt requirement'}
                 </p>
               </div>
@@ -3393,7 +3393,7 @@ export const AdminHome: React.FC = () => {
                   }`}
                 >
                   <span className="text-lg font-black leading-none">{count}</span>
-                  <span className="text-[9px] font-extrabold uppercase tracking-wider capitalize">{s}</span>
+                  <span className="text-xs font-extrabold uppercase tracking-wider capitalize">{s}</span>
                 </button>
               );
             })}
@@ -3401,7 +3401,7 @@ export const AdminHome: React.FC = () => {
 
           {/* Search */}
           <div className="bg-white border border-slate-100 rounded-2xl p-3.5 shadow-sm flex flex-col gap-2">
-            <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1.5">
+            <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest flex items-center gap-1.5">
               <AlertCircle className="w-3.5 h-3.5" /> Find {receiptRoleFilter === 'driver' ? 'Driver' : 'Rider'}
             </h3>
             <div className="flex gap-2">
@@ -3416,7 +3416,7 @@ export const AdminHome: React.FC = () => {
               <button
                 onClick={() => setReceiptSearch('')}
                 disabled={!receiptSearch.trim()}
-                className="px-3.5 bg-primary text-white font-extrabold text-[11px] rounded-lg transition active:scale-95 disabled:opacity-50 flex items-center gap-1.5"
+                className="px-3.5 bg-primary text-white font-extrabold text-xs rounded-lg transition active:scale-95 disabled:opacity-50 flex items-center gap-1.5"
               >
                 Clear
               </button>
@@ -3458,16 +3458,16 @@ export const AdminHome: React.FC = () => {
                       <div className="flex items-start justify-between gap-2">
                         <div className="flex-1 min-w-0">
                           <p className="text-xs font-black text-slate-800 truncate">{r.name}</p>
-                          <p className="text-[10px] text-slate-400 font-semibold mt-0.5">{r.gerak_id} · {r.campus}</p>
+                          <p className="text-xs text-slate-400 font-semibold mt-0.5">{r.gerak_id} · {r.campus}</p>
                         </div>
-                        <span className={`text-[9px] font-extrabold px-2 py-1 rounded-full border uppercase shrink-0 flex items-center gap-1 ${RECEIPT_STATUS_STYLE[status]}`}>
+                        <span className={`text-xs font-extrabold px-2 py-1 rounded-full border uppercase shrink-0 flex items-center gap-1 ${RECEIPT_STATUS_STYLE[status]}`}>
                           {status === 'verified' ? <ShieldCheck className="w-2.5 h-2.5" /> : <ShieldOff className="w-2.5 h-2.5" />}
                           {status}
                         </span>
                       </div>
 
                       {/* Row 2: receipt details */}
-                      <div className="grid grid-cols-3 gap-2 text-[10px]">
+                      <div className="grid grid-cols-3 gap-2 text-xs">
                         <div className="bg-slate-50 rounded-xl px-3 py-2">
                           <p className="text-slate-400 font-semibold mb-0.5">Amount</p>
                           <p className="font-extrabold text-slate-700">{r.fee_receipt_amount || '—'}</p>
@@ -3486,7 +3486,7 @@ export const AdminHome: React.FC = () => {
 
                       {/* Reject reason */}
                       {status === 'rejected' && r.fee_receipt_reject_reason && (
-                        <p className="text-[10px] text-orange-600 bg-orange-50 border border-orange-100 rounded-xl px-3 py-2 font-semibold">
+                        <p className="text-xs text-orange-600 bg-orange-50 border border-orange-100 rounded-xl px-3 py-2 font-semibold">
                           Rejected: {r.fee_receipt_reject_reason}
                         </p>
                       )}
@@ -3495,7 +3495,7 @@ export const AdminHome: React.FC = () => {
                       {r.fee_receipt_url && (
                         <a href={r.fee_receipt_url} target="_blank" rel="noopener noreferrer"
                           onClick={e => e.stopPropagation()}
-                          className="flex items-center justify-center gap-1.5 bg-primary/5 border border-primary/20 text-primary font-extrabold text-[10px] py-2 rounded-xl hover:bg-primary/10 transition active:scale-95">
+                          className="flex items-center justify-center gap-1.5 bg-primary/5 border border-primary/20 text-primary font-extrabold text-xs py-2 rounded-xl hover:bg-primary/10 transition active:scale-95">
                           <ExternalLink className="w-3 h-3" /> View Receipt
                         </a>
                       )}
@@ -3506,7 +3506,7 @@ export const AdminHome: React.FC = () => {
                           <button
                             onClick={() => handleApproveReceipt(r)}
                             disabled={approvingReceipt === r.id || rejectingReceipt === r.id}
-                            className="flex-1 flex items-center justify-center gap-1.5 bg-emerald-500 hover:bg-emerald-600 text-white font-extrabold text-[10px] py-2.5 rounded-xl transition active:scale-95 disabled:opacity-50"
+                            className="flex-1 flex items-center justify-center gap-1.5 bg-emerald-500 hover:bg-emerald-600 text-white font-extrabold text-xs py-2.5 rounded-xl transition active:scale-95 disabled:opacity-50"
                           >
                             {approvingReceipt === r.id
                               ? <span className="w-3 h-3 rounded-full border-2 border-white border-t-transparent animate-spin" />
@@ -3515,7 +3515,7 @@ export const AdminHome: React.FC = () => {
                           <button
                             onClick={() => handleRejectReceipt(r)}
                             disabled={approvingReceipt === r.id || rejectingReceipt === r.id}
-                            className="flex-1 flex items-center justify-center gap-1.5 bg-red-50 border border-red-200 text-red-600 font-extrabold text-[10px] py-2.5 rounded-xl transition active:scale-95 disabled:opacity-50"
+                            className="flex-1 flex items-center justify-center gap-1.5 bg-red-50 border border-red-200 text-red-600 font-extrabold text-xs py-2.5 rounded-xl transition active:scale-95 disabled:opacity-50"
                           >
                             {rejectingReceipt === r.id
                               ? <span className="w-3 h-3 rounded-full border-2 border-red-400 border-t-transparent animate-spin" />
@@ -3560,7 +3560,7 @@ export const AdminHome: React.FC = () => {
 
               <div className="bg-white border border-slate-100 rounded-3xl p-4 shadow-sm">
                 <p className="text-sm font-black text-slate-800">{selectedDriver?.name ?? 'Driver'}</p>
-                <p className="text-[10px] text-slate-400 font-semibold mt-0.5">
+                <p className="text-xs text-slate-400 font-semibold mt-0.5">
                   {selectedDriver?.gerak_id} · UMPSA {selectedDriver?.campus}
                 </p>
               </div>
@@ -3627,11 +3627,11 @@ export const AdminHome: React.FC = () => {
             <div className="bg-white border border-slate-100 rounded-3xl p-5 shadow-sm flex gap-3">
               <div className="flex-1 bg-slate-50 rounded-2xl px-3 py-2.5 text-center">
                 <p className="text-lg font-black text-slate-700">{driverCount}</p>
-                <p className="text-[9px] text-slate-400 font-semibold uppercase tracking-wider">Drivers Earning</p>
+                <p className="text-xs text-slate-400 font-semibold uppercase tracking-wider">Drivers Earning</p>
               </div>
               <div className="flex-1 bg-emerald-50 rounded-2xl px-3 py-2.5 text-center">
                 <p className="text-lg font-black text-emerald-600">RM {totalEarnings.toFixed(2)}</p>
-                <p className="text-[9px] text-slate-400 font-semibold uppercase tracking-wider">Total Earnings</p>
+                <p className="text-xs text-slate-400 font-semibold uppercase tracking-wider">Total Earnings</p>
               </div>
             </div>
 
@@ -3655,16 +3655,16 @@ export const AdminHome: React.FC = () => {
                       onClick={() => handleSelectEarningsDriver(d.driver_id)}
                       className="flex items-center gap-3 bg-slate-50 hover:bg-slate-100 border border-slate-100 rounded-2xl px-3.5 py-3 transition active:scale-[0.99] text-left"
                     >
-                      <span className="w-6 h-6 rounded-full bg-white border border-slate-200 flex items-center justify-center text-[10px] font-black text-slate-500 shrink-0">
+                      <span className="w-6 h-6 rounded-full bg-white border border-slate-200 flex items-center justify-center text-xs font-black text-slate-500 shrink-0">
                         {i + 1}
                       </span>
                       <div className="flex-1 min-w-0">
                         <p className="text-xs font-black text-slate-800 truncate">{d.name}</p>
-                        <p className="text-[10px] text-slate-400 font-semibold">{d.gerak_id} · UMPSA {d.campus}</p>
+                        <p className="text-xs text-slate-400 font-semibold">{d.gerak_id} · UMPSA {d.campus}</p>
                       </div>
                       <div className="text-right shrink-0">
                         <p className="text-xs font-black text-emerald-600">RM {d.total_earnings.toFixed(2)}</p>
-                        <p className="text-[9px] text-slate-400 font-semibold">{d.completed_count} rides</p>
+                        <p className="text-xs text-slate-400 font-semibold">{d.completed_count} rides</p>
                       </div>
                     </button>
                   ))}
@@ -3684,7 +3684,7 @@ export const AdminHome: React.FC = () => {
             <CalendarDays className={`w-5 h-5 shrink-0 ${calActiveYear ? 'text-emerald-500' : 'text-slate-400'}`} />
             <div>
               <p className="text-xs font-extrabold text-slate-700">Active Calendar</p>
-              <p className={`text-[10px] font-semibold ${calActiveYear ? 'text-emerald-600' : 'text-slate-400'}`}>
+              <p className={`text-xs font-semibold ${calActiveYear ? 'text-emerald-600' : 'text-slate-400'}`}>
                 {calActiveYear ? `UMPSA ${calActiveYear}` : 'No calendar uploaded yet'}
               </p>
             </div>
@@ -3694,7 +3694,7 @@ export const AdminHome: React.FC = () => {
           <div className="bg-white border border-slate-100 rounded-2xl p-5 flex flex-col gap-4">
             <div>
               <p className="text-xs font-extrabold text-slate-700">Upload New Calendar PDF</p>
-              <p className="text-[10px] text-slate-400 font-semibold mt-0.5">Claude AI will parse the PDF and extract all semester events automatically.</p>
+              <p className="text-xs text-slate-400 font-semibold mt-0.5">Claude AI will parse the PDF and extract all semester events automatically.</p>
             </div>
 
             <input ref={calUploadRef} type="file" accept="application/pdf" className="hidden" onChange={handleCalendarUpload} />
@@ -3732,7 +3732,7 @@ export const AdminHome: React.FC = () => {
                 <div className="flex gap-1.5 overflow-x-auto no-scrollbar">
                   {calParsed.semesters?.map((s: any, i: number) => (
                     <button key={s.id} onClick={() => setCalPreviewSem(i)}
-                      className={`shrink-0 px-3 py-1.5 rounded-xl text-[10px] font-extrabold transition ${calPreviewSem === i ? 'bg-primary text-white' : 'bg-slate-100 text-slate-500'}`}>
+                      className={`shrink-0 px-3 py-1.5 rounded-xl text-xs font-extrabold transition ${calPreviewSem === i ? 'bg-primary text-white' : 'bg-slate-100 text-slate-500'}`}>
                       {s.short}
                     </button>
                   ))}
@@ -3751,16 +3751,16 @@ export const AdminHome: React.FC = () => {
                           ev.type === 'orientation'  ? 'bg-purple-100 text-purple-600' :
                                                        'bg-blue-100 text-blue-600'
                         }`}>{ev.type}</span>
-                        <span className="text-[10px] font-bold text-slate-700">{ev.title}</span>
-                        <p className="text-[9px] text-slate-400 font-semibold mt-0.5">{ev.date}</p>
+                        <span className="text-xs font-bold text-slate-700">{ev.title}</span>
+                        <p className="text-xs text-slate-400 font-semibold mt-0.5">{ev.date}</p>
                       </div>
-                      {ev.duration && <span className="text-[9px] bg-white border border-slate-100 text-slate-400 font-bold px-1.5 py-0.5 rounded-full shrink-0">{ev.duration}</span>}
+                      {ev.duration && <span className="text-xs bg-white border border-slate-100 text-slate-400 font-bold px-1.5 py-0.5 rounded-full shrink-0">{ev.duration}</span>}
                     </div>
                   ))}
                 </div>
 
                 {/* Holidays count */}
-                <p className="text-[10px] text-slate-400 font-semibold">
+                <p className="text-xs text-slate-400 font-semibold">
                   {calParsed.holidays?.length ?? 0} public holidays / special dates detected
                 </p>
 
@@ -3784,7 +3784,7 @@ export const AdminHome: React.FC = () => {
           {/* Instructions */}
           <div className="bg-amber-50 border border-amber-100 rounded-2xl px-4 py-3 flex gap-2 items-start">
             <AlertCircle className="w-3.5 h-3.5 text-amber-500 shrink-0 mt-0.5" />
-            <div className="text-[10px] text-amber-700 font-semibold leading-relaxed flex flex-col gap-0.5">
+            <div className="text-xs text-amber-700 font-semibold leading-relaxed flex flex-col gap-0.5">
               <p className="font-extrabold">How to update the calendar:</p>
               <p>1. Download the latest UMPSA Academic Calendar PDF from the university website.</p>
               <p>2. Tap "Choose PDF to Upload" above.</p>
@@ -3840,7 +3840,7 @@ export const AdminHome: React.FC = () => {
                   : <span className="text-primary font-black text-sm">✓</span>}
             </div>
             <h3 className="text-sm font-black text-slate-800 text-center mb-1">{title}</h3>
-            <p className="text-[11px] text-slate-400 font-semibold text-center mb-6">{desc}</p>
+            <p className="text-xs text-slate-400 font-semibold text-center mb-6">{desc}</p>
             <div className="flex gap-3">
               <button onClick={() => setPendingAction(null)}
                 className="flex-1 bg-slate-100 text-slate-600 font-extrabold text-xs py-3 rounded-2xl transition active:scale-95">
@@ -3875,7 +3875,7 @@ export const AdminHome: React.FC = () => {
           <h3 className="text-sm font-black text-slate-800 text-center mb-1">
             {receiptGateOn ? 'Turn OFF Receipt Gate?' : 'Turn ON Receipt Gate?'}
           </h3>
-          <p className="text-[11px] text-slate-400 font-semibold text-center mb-6">
+          <p className="text-xs text-slate-400 font-semibold text-center mb-6">
             {receiptGateOn
               ? 'Every driver and rider will bypass the monthly receipt requirement and stay active regardless of payment.'
               : 'Drivers and riders will need a valid monthly receipt again to stay active.'}
@@ -3911,7 +3911,7 @@ export const AdminHome: React.FC = () => {
 
           {/* Title */}
           <h3 className="text-sm font-black text-slate-800 text-center mb-1">Confirm {inviteRole === 'admin' ? 'Admin' : inviteRole === 'rider' ? 'Rider' : 'Driver'} Invite</h3>
-          <p className="text-[10px] text-slate-400 font-semibold text-center mb-5">
+          <p className="text-xs text-slate-400 font-semibold text-center mb-5">
             Please review before sending.
           </p>
 
@@ -3927,40 +3927,40 @@ export const AdminHome: React.FC = () => {
             {/* Details */}
             <div className="px-4 py-4 flex flex-col gap-3">
               <div className="flex items-start justify-between gap-2">
-                <p className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">Email</p>
+                <p className="text-xs font-extrabold text-slate-400 uppercase tracking-wider">Email</p>
                 <p className="text-xs font-extrabold text-slate-800 text-right break-all">{inviteEmail.trim().toLowerCase()}</p>
               </div>
 
               <div className="h-px bg-slate-100" />
 
               <div className="flex items-center justify-between gap-2">
-                <p className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">Campus</p>
+                <p className="text-xs font-extrabold text-slate-400 uppercase tracking-wider">Campus</p>
                 <span className="text-xs font-extrabold text-slate-800">UMPSA {inviteCampus}</span>
               </div>
 
               <div className="h-px bg-slate-100" />
 
               <div className="flex items-start justify-between gap-2">
-                <p className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">Capabilities</p>
+                <p className="text-xs font-extrabold text-slate-400 uppercase tracking-wider">Capabilities</p>
                 <div className="flex flex-col items-end gap-1.5">
                   {inviteRole === 'driver' && (<>
-                    <span className={`flex items-center gap-1.5 text-[10px] font-extrabold px-2.5 py-1 rounded-full ${inviteCanDrive ? 'bg-primary/10 text-primary' : 'bg-slate-100 text-slate-400 line-through'}`}>
+                    <span className={`flex items-center gap-1.5 text-xs font-extrabold px-2.5 py-1 rounded-full ${inviteCanDrive ? 'bg-primary/10 text-primary' : 'bg-slate-100 text-slate-400 line-through'}`}>
                       <Car className="w-3 h-3" /> Gerak Car {inviteCanDrive ? '✓' : '✗'}
                     </span>
-                    <span className={`flex items-center gap-1.5 text-[10px] font-extrabold px-2.5 py-1 rounded-full ${inviteCanRent ? 'bg-amber-50 text-amber-700' : 'bg-slate-100 text-slate-400 line-through'}`}>
+                    <span className={`flex items-center gap-1.5 text-xs font-extrabold px-2.5 py-1 rounded-full ${inviteCanRent ? 'bg-amber-50 text-amber-700' : 'bg-slate-100 text-slate-400 line-through'}`}>
                       <KeyRound className="w-3 h-3" /> Gerak Rental {inviteCanRent ? '✓' : '✗'}
                     </span>
                   </>)}
                   {inviteRole === 'rider' && (<>
-                    <span className={`flex items-center gap-1.5 text-[10px] font-extrabold px-2.5 py-1 rounded-full ${inviteCanDaily ? 'bg-emerald-50 text-emerald-700' : 'bg-slate-100 text-slate-400 line-through'}`}>
+                    <span className={`flex items-center gap-1.5 text-xs font-extrabold px-2.5 py-1 rounded-full ${inviteCanDaily ? 'bg-emerald-50 text-emerald-700' : 'bg-slate-100 text-slate-400 line-through'}`}>
                       🛵 Gerak Daily {inviteCanDaily ? '✓' : '✗'}
                     </span>
-                    <span className={`flex items-center gap-1.5 text-[10px] font-extrabold px-2.5 py-1 rounded-full ${inviteCanRobe ? 'bg-blue-50 text-blue-700' : 'bg-slate-100 text-slate-400 line-through'}`}>
+                    <span className={`flex items-center gap-1.5 text-xs font-extrabold px-2.5 py-1 rounded-full ${inviteCanRobe ? 'bg-blue-50 text-blue-700' : 'bg-slate-100 text-slate-400 line-through'}`}>
                       🎓 Robe Convocation {inviteCanRobe ? '✓' : '✗'}
                     </span>
                   </>)}
                   {inviteRole === 'admin' && (
-                    <span className="flex items-center gap-1.5 text-[10px] font-extrabold px-2.5 py-1 rounded-full bg-violet-50 text-violet-700">
+                    <span className="flex items-center gap-1.5 text-xs font-extrabold px-2.5 py-1 rounded-full bg-violet-50 text-violet-700">
                       ⚙️ Full Access
                     </span>
                   )}
@@ -3970,7 +3970,7 @@ export const AdminHome: React.FC = () => {
 
             {/* Footer stripe */}
             <div className="bg-slate-100 px-4 py-2.5">
-              <p className="text-[9px] text-slate-400 font-semibold text-center">
+              <p className="text-xs text-slate-400 font-semibold text-center">
                 Sent by {user.name} · {new Date().toLocaleDateString('en-MY', { day: 'numeric', month: 'short', year: 'numeric' })}
               </p>
             </div>

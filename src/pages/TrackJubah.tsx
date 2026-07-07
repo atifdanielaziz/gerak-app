@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+﻿import React, { useState, useRef } from 'react';
 import { useApp } from '../context/AppContext';
 import { supabase } from '../lib/supabase';
 import { updateJubahBalanceProof } from '../lib/sheetsService';
@@ -134,7 +134,7 @@ export const TrackJubah: React.FC = () => {
         </div>
         <div>
           <h2 className="text-xl font-black m-0 text-slate-800">Track My Order</h2>
-          <p className="text-[10px] text-slate-400 font-semibold uppercase tracking-wider mt-0.5">
+          <p className="text-xs text-slate-400 font-semibold uppercase tracking-wider mt-0.5">
             Jubah Delivery Status
           </p>
         </div>
@@ -144,7 +144,7 @@ export const TrackJubah: React.FC = () => {
       <form onSubmit={handleSearch} className="bg-white border border-slate-100 rounded-3xl p-5 shadow-sm flex flex-col gap-4">
 
         <div className="flex flex-col gap-1.5">
-          <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Reference Number</label>
+          <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Reference Number</label>
           <input
             type="text"
             value={reference}
@@ -157,12 +157,12 @@ export const TrackJubah: React.FC = () => {
 
         <div className="flex items-center gap-2">
           <div className="flex-1 h-px bg-slate-100" />
-          <span className="text-[9px] text-slate-300 font-extrabold uppercase">or</span>
+          <span className="text-xs text-slate-300 font-extrabold uppercase">or</span>
           <div className="flex-1 h-px bg-slate-100" />
         </div>
 
         <div className="flex flex-col gap-1.5">
-          <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Matric or IC Number</label>
+          <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Matric or IC Number</label>
           <input
             type="text"
             value={matric}
@@ -174,7 +174,7 @@ export const TrackJubah: React.FC = () => {
         </div>
 
         {error && (
-          <p className="text-[11px] text-danger font-bold text-center bg-danger/10 border border-danger/20 rounded-xl py-2.5">
+          <p className="text-xs text-danger font-bold text-center bg-danger/10 border border-danger/20 rounded-xl py-2.5">
             {error}
           </p>
         )}
@@ -196,7 +196,7 @@ export const TrackJubah: React.FC = () => {
           <div className="bg-white border border-slate-100 rounded-3xl p-8 shadow-sm flex flex-col items-center gap-3 text-center">
             <GraduationCap className="w-8 h-8 text-slate-300" />
             <p className="text-xs font-bold text-slate-500">No booking found.</p>
-            <p className="text-[10px] text-slate-400">Double-check your reference number or matric / IC number and try again.</p>
+            <p className="text-xs text-slate-400">Double-check your reference number or matric / IC number and try again.</p>
           </div>
         ) : (
           <div className="flex flex-col gap-3">
@@ -217,11 +217,11 @@ export const TrackJubah: React.FC = () => {
                 {/* Customer summary */}
                 <div className="flex items-start justify-between gap-2">
                   <div>
-                    <p className="text-[9px] text-blue-500 font-extrabold uppercase tracking-wider">{b.reference}</p>
+                    <p className="text-xs text-blue-500 font-extrabold uppercase tracking-wider">{b.reference}</p>
                     <h3 className="text-base font-black text-slate-800 mt-0.5">{b.full_name}</h3>
-                    <p className="text-[10px] text-slate-400 font-semibold mt-0.5">{b.remark} · {b.faculty} · UMPSA {b.campus}</p>
+                    <p className="text-xs text-slate-400 font-semibold mt-0.5">{b.remark} · {b.faculty} · UMPSA {b.campus}</p>
                   </div>
-                  <span className={`text-[9px] font-extrabold px-2.5 py-1 rounded-full border shrink-0 ${STATUS_STYLE[b.status] ?? 'bg-slate-50 border-slate-200 text-slate-400'}`}>
+                  <span className={`text-xs font-extrabold px-2.5 py-1 rounded-full border shrink-0 ${STATUS_STYLE[b.status] ?? 'bg-slate-50 border-slate-200 text-slate-400'}`}>
                     {STATUS_LABEL[b.status] ?? b.status}
                   </span>
                 </div>
@@ -231,7 +231,7 @@ export const TrackJubah: React.FC = () => {
                   <div className="flex items-center gap-1.5 bg-slate-50 border border-slate-100 rounded-xl px-3 py-2 flex-1 min-w-0">
                     {b.rider_phone ? (
                       <>
-                        <span className="text-[11px] font-semibold text-slate-600 truncate">{b.rider_phone}</span>
+                        <span className="text-xs font-semibold text-slate-600 truncate">{b.rider_phone}</span>
                         <a href={`https://wa.me/${toWa(b.rider_phone)}?text=${encodeURIComponent(
                           `Hello ${b.rider_name ?? 'Rider'}, saya ${b.full_name} (${b.reference}). Saya ingin bertanya mengenai tempahan jubah saya.`
                         )}`} target="_blank" rel="noopener noreferrer"
@@ -240,10 +240,10 @@ export const TrackJubah: React.FC = () => {
                         </a>
                       </>
                     ) : (
-                      <span className="text-[11px] font-semibold text-slate-400 italic">Rider not yet assigned</span>
+                      <span className="text-xs font-semibold text-slate-400 italic">Rider not yet assigned</span>
                     )}
                   </div>
-                  <span className={`text-[9px] font-extrabold px-3 py-2 rounded-xl border shrink-0 ${
+                  <span className={`text-xs font-extrabold px-3 py-2 rounded-xl border shrink-0 ${
                     b.payment_mode === 'deposit' ? 'bg-amber-50 border-amber-100 text-amber-700' :
                     b.payment_mode === 'postage' ? 'bg-blue-50 border-blue-100 text-blue-700' :
                     'bg-slate-50 border-slate-200 text-slate-600'
@@ -310,7 +310,7 @@ export const TrackJubah: React.FC = () => {
 
                     {/* Submitted — under review */}
                     {b.balance_proof_url && !b.balance_paid && (
-                      <p className="text-[10px] text-amber-700 font-bold bg-amber-50 border border-amber-100 rounded-xl px-3 py-2">
+                      <p className="text-xs text-amber-700 font-bold bg-amber-50 border border-amber-100 rounded-xl px-3 py-2">
                         Balance payment receipt submitted — admin will confirm shortly.
                       </p>
                     )}
@@ -318,7 +318,7 @@ export const TrackJubah: React.FC = () => {
                     {/* Pay balance upload */}
                     {!b.balance_paid && !b.balance_proof_url && (
                       <div className="flex flex-col gap-2">
-                        <p className="text-[10px] text-slate-500 font-semibold">
+                        <p className="text-xs text-slate-500 font-semibold">
                           Ready to pay your balance? Upload proof of payment below.
                         </p>
                         <input
@@ -343,7 +343,7 @@ export const TrackJubah: React.FC = () => {
                               <FileText className="w-5 h-5 text-emerald-500 shrink-0" />
                               <div className="flex-1 min-w-0">
                                 <p className="text-xs font-bold text-emerald-700 truncate">{balanceProof.name}</p>
-                                <p className="text-[9px] text-emerald-500">{(balanceProof.size / 1024).toFixed(1)} KB</p>
+                                <p className="text-xs text-emerald-500">{(balanceProof.size / 1024).toFixed(1)} KB</p>
                               </div>
                               <button
                                 type="button"
@@ -366,7 +366,7 @@ export const TrackJubah: React.FC = () => {
                           </div>
                         )}
                         {submitError && (
-                          <p className="text-[10px] text-danger font-bold">{submitError}</p>
+                          <p className="text-xs text-danger font-bold">{submitError}</p>
                         )}
                       </div>
                     )}

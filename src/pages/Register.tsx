@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
 import { supabase } from '../lib/supabase';
 import { ShieldAlert, User, Mail, Lock, Eye, EyeOff, Phone, ArrowRight, Building2, MapPin, IdCard, Car } from 'lucide-react';
@@ -86,7 +86,7 @@ export const Register: React.FC = () => {
         <h2 className="text-xl font-black text-slate-800 tracking-tight font-heading m-0">
           Create Gerak Account
         </h2>
-        <p className="text-slate-400 text-[10px] mt-1 font-bold">
+        <p className="text-slate-400 text-xs mt-1 font-bold">
           Register with unified campus login parameters.
         </p>
       </div>
@@ -100,7 +100,7 @@ export const Register: React.FC = () => {
 
           {/* University */}
           <div className="flex flex-col gap-1">
-            <label className="text-[9px] font-bold text-slate-500 uppercase tracking-wider pl-1">University</label>
+            <label className="text-xs font-bold text-slate-500 uppercase tracking-wider pl-1">University</label>
             <div className="relative">
               <Building2 className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
               <select
@@ -119,7 +119,7 @@ export const Register: React.FC = () => {
           {university && (
             isDriver ? (
               <div className="flex flex-col gap-1">
-                <label className="text-[9px] font-bold text-slate-500 uppercase tracking-wider pl-1">Campus</label>
+                <label className="text-xs font-bold text-slate-500 uppercase tracking-wider pl-1">Campus</label>
                 <div className="flex items-center gap-2 bg-emerald-50 border border-emerald-200 rounded-xl py-2 px-3">
                   <MapPin className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
                   <span className="text-xs font-extrabold text-emerald-700 flex-1">UMPSA {invite!.campus}</span>
@@ -128,7 +128,7 @@ export const Register: React.FC = () => {
               </div>
             ) : (
               <div className="flex flex-col gap-1">
-                <label className="text-[9px] font-bold text-slate-500 uppercase tracking-wider pl-1">Campus</label>
+                <label className="text-xs font-bold text-slate-500 uppercase tracking-wider pl-1">Campus</label>
                 <div className="relative">
                   <MapPin className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
                   <select
@@ -149,7 +149,7 @@ export const Register: React.FC = () => {
           {/* Gerak ID preview */}
           {gerakId && (
             <div className="flex flex-col gap-1">
-              <label className="text-[9px] font-bold text-slate-500 uppercase tracking-wider pl-1">Your Gerak ID</label>
+              <label className="text-xs font-bold text-slate-500 uppercase tracking-wider pl-1">Your Gerak ID</label>
               <div className="relative">
                 <IdCard className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-emerald-500 pointer-events-none" />
                 <input
@@ -159,13 +159,13 @@ export const Register: React.FC = () => {
                   className="w-full bg-emerald-50 border border-emerald-200 rounded-xl py-2 pl-9 pr-3 text-xs font-black text-emerald-700 cursor-default select-none focus:outline-none"
                 />
               </div>
-              <p className="text-[9px] text-slate-400 font-semibold pl-1">Auto-assigned — cannot be changed</p>
+              <p className="text-xs text-slate-400 font-semibold pl-1">Auto-assigned — cannot be changed</p>
             </div>
           )}
 
           {/* Full Name */}
           <div className="flex flex-col gap-1">
-            <label className="text-[9px] font-bold text-slate-500 uppercase tracking-wider pl-1">Full Name</label>
+            <label className="text-xs font-bold text-slate-500 uppercase tracking-wider pl-1">Full Name</label>
             <div className="relative">
               <User className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
               <input
@@ -181,7 +181,7 @@ export const Register: React.FC = () => {
 
           {/* Phone */}
           <div className="flex flex-col gap-1">
-            <label className="text-[9px] font-bold text-slate-500 uppercase tracking-wider pl-1">Phone Number</label>
+            <label className="text-xs font-bold text-slate-500 uppercase tracking-wider pl-1">Phone Number</label>
             <div className="relative">
               <Phone className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
               <input
@@ -197,7 +197,7 @@ export const Register: React.FC = () => {
 
           {/* Email */}
           <div className="flex flex-col gap-1">
-            <label className="text-[9px] font-bold text-slate-500 uppercase tracking-wider pl-1">Email Address</label>
+            <label className="text-xs font-bold text-slate-500 uppercase tracking-wider pl-1">Email Address</label>
             <div className="relative">
               <Mail className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
               <input
@@ -231,7 +231,7 @@ export const Register: React.FC = () => {
                       <p className="font-extrabold leading-tight">
                         {invite!.role === 'admin' ? 'Pre-approved Admin' : invite!.role === 'rider' ? 'Pre-approved Rider' : 'Pre-approved Driver'}
                       </p>
-                      <p className="text-[9px] font-semibold opacity-70 mt-0.5">
+                      <p className="text-xs font-semibold opacity-70 mt-0.5">
                         UMPSA {invite!.campus} · {invite!.role === 'admin' ? 'Admin Account' : invite!.role === 'rider' ? 'Rider Account' : 'Driver Account'}
                       </p>
                     </div>
@@ -241,7 +241,7 @@ export const Register: React.FC = () => {
                     <User className="w-4 h-4 shrink-0" />
                     <div>
                       <p className="font-extrabold leading-tight">Standard Account</p>
-                      <p className="text-[9px] font-semibold opacity-70 mt-0.5">Customer · {campus ? `UMPSA ${campus}` : 'Select campus above'}</p>
+                      <p className="text-xs font-semibold opacity-70 mt-0.5">Customer · {campus ? `UMPSA ${campus}` : 'Select campus above'}</p>
                     </div>
                   </>
                 )}
@@ -251,7 +251,7 @@ export const Register: React.FC = () => {
 
           {/* Password */}
           <div className="flex flex-col gap-1">
-            <label className="text-[9px] font-bold text-slate-500 uppercase tracking-wider pl-1">Password</label>
+            <label className="text-xs font-bold text-slate-500 uppercase tracking-wider pl-1">Password</label>
             <div className="relative">
               <Lock className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
               <input
@@ -271,7 +271,7 @@ export const Register: React.FC = () => {
 
           {/* Confirm Password */}
           <div className="flex flex-col gap-1">
-            <label className="text-[9px] font-bold text-slate-500 uppercase tracking-wider pl-1">Confirm Password</label>
+            <label className="text-xs font-bold text-slate-500 uppercase tracking-wider pl-1">Confirm Password</label>
             <div className="relative">
               <Lock className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
               <input
@@ -291,7 +291,7 @@ export const Register: React.FC = () => {
 
           {/* Error */}
           {error && (
-            <div className="bg-danger/10 border border-danger/20 rounded-xl p-2.5 text-[10px] text-danger font-bold text-center flex items-center justify-center gap-1.5 animate-pulse">
+            <div className="bg-danger/10 border border-danger/20 rounded-xl p-2.5 text-xs text-danger font-bold text-center flex items-center justify-center gap-1.5 animate-pulse">
               <ShieldAlert className="w-3.5 h-3.5" />
               {error}
             </div>

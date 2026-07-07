@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+﻿import React, { useState, useRef, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
 import { CheckCircle2, X, Upload, FileText, ShieldAlert, Download, ChevronDown, ChevronLeft, User, Pencil, MapPin, Copy, Check, Info } from 'lucide-react';
 import { submitJubahToSheets } from '../lib/sheetsService';
@@ -385,7 +385,7 @@ export const Jubah: React.FC = () => {
         )}
         <div>
           <h2 className="text-xl font-black m-0 text-slate-800">Convocation Robe Service</h2>
-          <p className="text-[10px] text-slate-400 font-semibold uppercase tracking-wider mt-1">
+          <p className="text-xs text-slate-400 font-semibold uppercase tracking-wider mt-1">
             {UNIVERSITY_LABELS[landingUniversity]} · Official Robe Bookings
           </p>
         </div>
@@ -400,10 +400,10 @@ export const Jubah: React.FC = () => {
 
             {/* Full Name */}
             <div className="flex flex-col gap-1">
-              <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">
+              <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">
                 Full Name <span className="text-danger">*</span>
               </label>
-              <p className="text-[9px] text-slate-400 -mt-0.5">Use uppercase letters. Example: MUHAMMAD AMIRUDDIN BIN AHMAD</p>
+              <p className="text-xs text-slate-400 -mt-0.5">Use uppercase letters. Example: MUHAMMAD AMIRUDDIN BIN AHMAD</p>
               <input
                 type="text"
                 value={fullName}
@@ -416,10 +416,10 @@ export const Jubah: React.FC = () => {
 
             {/* IC Number */}
             <div className="flex flex-col gap-1">
-              <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">
+              <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">
                 IC Number <span className="text-danger">*</span>
               </label>
-              <p className="text-[9px] text-slate-400 -mt-0.5">Example: 980123-45-6789</p>
+              <p className="text-xs text-slate-400 -mt-0.5">Example: 980123-45-6789</p>
               <input
                 type="text"
                 inputMode="numeric"
@@ -434,10 +434,10 @@ export const Jubah: React.FC = () => {
 
             {/* HP Number */}
             <div className="flex flex-col gap-1">
-              <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">
+              <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">
                 HP Number <span className="text-danger">*</span>
               </label>
-              <p className="text-[9px] text-slate-400 -mt-0.5">Example: 012-34567890 · Our runner will be in touch shortly.</p>
+              <p className="text-xs text-slate-400 -mt-0.5">Example: 012-34567890 · Our runner will be in touch shortly.</p>
               <input
                 type="text"
                 inputMode="numeric"
@@ -452,10 +452,10 @@ export const Jubah: React.FC = () => {
 
             {/* Matric ID */}
             <div className="flex flex-col gap-1">
-              <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">
+              <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">
                 Matric ID <span className="text-danger">*</span>
               </label>
-              <p className="text-[9px] text-slate-400 -mt-0.5">Use uppercase letters. Example: HB19021</p>
+              <p className="text-xs text-slate-400 -mt-0.5">Use uppercase letters. Example: HB19021</p>
               <input
                 type="text"
                 value={matricId}
@@ -473,7 +473,7 @@ export const Jubah: React.FC = () => {
 
             {/* University */}
             <div className="flex flex-col gap-1.5">
-              <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">
+              <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">
                 Campus <span className="text-danger">*</span>
               </label>
               <div className="relative group">
@@ -502,7 +502,7 @@ export const Jubah: React.FC = () => {
 
             {/* Faculty — list changes based on selected university */}
             <div className="flex flex-col gap-1.5">
-              <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">
+              <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">
                 Faculty <span className="text-danger">*</span>
               </label>
               <div className={`relative group ${!university ? 'opacity-50 pointer-events-none' : ''}`}>
@@ -532,7 +532,7 @@ export const Jubah: React.FC = () => {
 
             {/* Remark */}
             <div className="flex flex-col gap-1.5">
-              <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">
+              <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">
                 Remark <span className="text-danger">*</span>
               </label>
               <div className="grid grid-cols-4 gap-2">
@@ -565,7 +565,7 @@ export const Jubah: React.FC = () => {
                 <span className={`text-xs font-bold block ${paymentMode === 'deposit' ? 'text-blue-700' : 'text-slate-700'}`}>
                   Deposit (RM{DEPOSIT_AMOUNT}) — Pay RM{balanceDue} on Collection
                 </span>
-                <span className="text-[9px] text-slate-400 leading-relaxed block mt-0.5">
+                <span className="text-xs text-slate-400 leading-relaxed block mt-0.5">
                   Pay RM{DEPOSIT_AMOUNT} now to secure your booking. Pay the remaining RM{balanceDue} <span className="font-bold text-slate-500">1 day before collection day</span> via Track My Order. Cancellation is locked 1 week before collection — deposit is forfeited if cancelled after that.
                 </span>
               </div>
@@ -578,7 +578,7 @@ export const Jubah: React.FC = () => {
                 <span className={`text-xs font-bold block ${paymentMode === 'pickup' ? 'text-blue-700' : 'text-slate-700'}`}>
                   Full Payment (RM{pickupPrice}) — Self Pickup
                 </span>
-                <span className="text-[9px] text-slate-400 leading-relaxed block mt-0.5">
+                <span className="text-xs text-slate-400 leading-relaxed block mt-0.5">
                   Service charge for pickup only at UMPSA Gambang on your scheduled date. We store, manage and maintain all items (jubah, mortarboard, kad jemputan, cenderahati &amp; selempang) until handover.
                 </span>
               </div>
@@ -591,7 +591,7 @@ export const Jubah: React.FC = () => {
                 <span className={`text-xs font-bold block ${paymentMode === 'postage' ? 'text-blue-700' : 'text-slate-700'}`}>
                   Postage (RM{postagePrice + (postageZone === 'SS' ? 10 : 0)}) — Pickup &amp; Postage {postageZone}
                 </span>
-                <span className="text-[9px] text-slate-400 leading-relaxed block mt-0.5">
+                <span className="text-xs text-slate-400 leading-relaxed block mt-0.5">
                   Total weight ≈ 3–4 kg (jubah, mortarboard, kad jemputan, cenderahati &amp; selempang).
                 </span>
                 {paymentMode === 'postage' && (
@@ -601,14 +601,14 @@ export const Jubah: React.FC = () => {
                         key={zone}
                         type="button"
                         onClick={e => { e.preventDefault(); setPostageZone(zone); }}
-                        className={`flex items-center justify-between px-3 py-1.5 rounded-xl border text-[10px] font-bold transition ${
+                        className={`flex items-center justify-between px-3 py-1.5 rounded-xl border text-xs font-bold transition ${
                           postageZone === zone
                             ? 'bg-blue-600 border-blue-600 text-white'
                             : 'bg-white border-slate-200 text-slate-500 hover:border-blue-300'
                         }`}
                       >
                         <span>{zone === 'SM' ? 'SM — Semenanjung Malaysia' : 'SS — Sabah & Sarawak'}</span>
-                        <span className={`text-[9px] font-extrabold ${postageZone === zone ? 'text-blue-200' : 'text-slate-400'}`}>
+                        <span className={`text-xs font-extrabold ${postageZone === zone ? 'text-blue-200' : 'text-slate-400'}`}>
                           {zone === 'SM' ? `RM${postagePrice}` : `RM${postagePrice} + RM10`}
                         </span>
                       </button>
@@ -620,10 +620,10 @@ export const Jubah: React.FC = () => {
 
             {/* Cost HUD */}
             <div className="bg-slate-50 border border-slate-100 rounded-2xl p-3.5 mt-1">
-              <span className="text-[9px] text-slate-400 font-bold uppercase tracking-wider block">Service Fee</span>
+              <span className="text-xs text-slate-400 font-bold uppercase tracking-wider block">Service Fee</span>
               <span className="text-xl font-black text-slate-800">RM{cost}.00</span>
               {paymentMode === 'postage' && postageZone === 'SS' && (
-                <span className="text-[9px] text-slate-400 block mt-0.5">Includes +RM10 SS surcharge</span>
+                <span className="text-xs text-slate-400 block mt-0.5">Includes +RM10 SS surcharge</span>
               )}
             </div>
 
@@ -675,7 +675,7 @@ export const Jubah: React.FC = () => {
               </button>
             </div>
             {university && !ridersLoading && riders.length === 0 && (
-              <p className="text-[10px] text-slate-400 font-semibold text-center -mt-2">
+              <p className="text-xs text-slate-400 font-semibold text-center -mt-2">
                 No {paymentMode === 'postage' ? 'postage' : 'self-pickup'} riders available for this campus at the moment.
               </p>
             )}
@@ -683,7 +683,7 @@ export const Jubah: React.FC = () => {
             {/* Drop Point — read-only, set by admin for the selected rider */}
             {selectedRiderId && paymentMode !== 'postage' && (
               <div className="flex flex-col gap-1">
-                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Drop Point</label>
+                <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Drop Point</label>
                 <div className="bg-slate-50 border border-slate-200 rounded-xl py-2.5 px-3">
                   <span className="text-xs font-bold text-slate-700">
                     {riders.find(r => r.id === selectedRiderId)?.jubah_drop_point || 'Not set yet — contact admin'}
@@ -719,7 +719,7 @@ export const Jubah: React.FC = () => {
 
             {/* OSCAR */}
             <div className="flex flex-col gap-1">
-              <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">OSCAR <span className="text-danger">*</span></label>
+              <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">OSCAR <span className="text-danger">*</span></label>
               <input type="file" accept=".pdf,application/pdf,image/jpeg,image/png,image/webp,.jpg,.png" ref={oscarRef} onChange={e => handleFileSelect(e, setOscarFile)} className="hidden" />
               {!oscarFile ? (
                 <button type="button" onClick={() => oscarRef.current?.click()}
@@ -729,7 +729,7 @@ export const Jubah: React.FC = () => {
               ) : (
                 <div className="flex items-center gap-3 bg-emerald-50 border border-emerald-100 rounded-xl p-2.5">
                   <FileText className="w-5 h-5 text-emerald-500 shrink-0" />
-                  <div className="flex-1 min-w-0"><p className="text-xs font-bold text-emerald-700 truncate">{oscarFile.name}</p><p className="text-[9px] text-emerald-500">{(oscarFile.size / 1024).toFixed(1)} KB</p></div>
+                  <div className="flex-1 min-w-0"><p className="text-xs font-bold text-emerald-700 truncate">{oscarFile.name}</p><p className="text-xs text-emerald-500">{(oscarFile.size / 1024).toFixed(1)} KB</p></div>
                   <button type="button" onClick={() => { setOscarFile(null); setCombinedBlob(null); if (oscarRef.current) oscarRef.current.value = ''; }} className="text-slate-400 hover:text-danger transition shrink-0 cursor-pointer"><X className="w-4 h-4" /></button>
                 </div>
               )}
@@ -737,7 +737,7 @@ export const Jubah: React.FC = () => {
 
             {/* SKPG */}
             <div className="flex flex-col gap-1">
-              <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">SKPG <span className="text-danger">*</span></label>
+              <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">SKPG <span className="text-danger">*</span></label>
               <input type="file" accept=".pdf,application/pdf,image/jpeg,image/png,image/webp,.jpg,.png" ref={skpgRef} onChange={e => handleFileSelect(e, setSkpgFile)} className="hidden" />
               {!skpgFile ? (
                 <button type="button" onClick={() => skpgRef.current?.click()}
@@ -747,7 +747,7 @@ export const Jubah: React.FC = () => {
               ) : (
                 <div className="flex items-center gap-3 bg-emerald-50 border border-emerald-100 rounded-xl p-2.5">
                   <FileText className="w-5 h-5 text-emerald-500 shrink-0" />
-                  <div className="flex-1 min-w-0"><p className="text-xs font-bold text-emerald-700 truncate">{skpgFile.name}</p><p className="text-[9px] text-emerald-500">{(skpgFile.size / 1024).toFixed(1)} KB</p></div>
+                  <div className="flex-1 min-w-0"><p className="text-xs font-bold text-emerald-700 truncate">{skpgFile.name}</p><p className="text-xs text-emerald-500">{(skpgFile.size / 1024).toFixed(1)} KB</p></div>
                   <button type="button" onClick={() => { setSkpgFile(null); setCombinedBlob(null); if (skpgRef.current) skpgRef.current.value = ''; }} className="text-slate-400 hover:text-danger transition shrink-0 cursor-pointer"><X className="w-4 h-4" /></button>
                 </div>
               )}
@@ -755,7 +755,7 @@ export const Jubah: React.FC = () => {
 
             {/* Konvo Slip */}
             <div className="flex flex-col gap-1">
-              <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Konvo Slip <span className="text-danger">*</span></label>
+              <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Konvo Slip <span className="text-danger">*</span></label>
               <input type="file" accept=".pdf,application/pdf,image/jpeg,image/png,image/webp,.jpg,.png" ref={konvoRef} onChange={e => handleFileSelect(e, setKonvoSlipFile)} className="hidden" />
               {!konvoSlipFile ? (
                 <button type="button" onClick={() => konvoRef.current?.click()}
@@ -765,7 +765,7 @@ export const Jubah: React.FC = () => {
               ) : (
                 <div className="flex items-center gap-3 bg-emerald-50 border border-emerald-100 rounded-xl p-2.5">
                   <FileText className="w-5 h-5 text-emerald-500 shrink-0" />
-                  <div className="flex-1 min-w-0"><p className="text-xs font-bold text-emerald-700 truncate">{konvoSlipFile.name}</p><p className="text-[9px] text-emerald-500">{(konvoSlipFile.size / 1024).toFixed(1)} KB</p></div>
+                  <div className="flex-1 min-w-0"><p className="text-xs font-bold text-emerald-700 truncate">{konvoSlipFile.name}</p><p className="text-xs text-emerald-500">{(konvoSlipFile.size / 1024).toFixed(1)} KB</p></div>
                   <button type="button" onClick={() => { setKonvoSlipFile(null); setCombinedBlob(null); if (konvoRef.current) konvoRef.current.value = ''; }} className="text-slate-400 hover:text-danger transition shrink-0 cursor-pointer"><X className="w-4 h-4" /></button>
                 </div>
               )}
@@ -773,8 +773,8 @@ export const Jubah: React.FC = () => {
 
             {/* IC */}
             <div className="flex flex-col gap-1">
-              <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">IC (Front &amp; Back) <span className="text-danger">*</span></label>
-              <p className="text-[9px] text-slate-400 -mt-0.5">Accepts PDF or image (JPG/PNG)</p>
+              <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">IC (Front &amp; Back) <span className="text-danger">*</span></label>
+              <p className="text-xs text-slate-400 -mt-0.5">Accepts PDF or image (JPG/PNG)</p>
               <input type="file" accept=".pdf,application/pdf,image/jpeg,image/png" ref={icRef} onChange={e => handleFileSelect(e, setIcFile)} className="hidden" />
               {!icFile ? (
                 <button type="button" onClick={() => icRef.current?.click()}
@@ -784,14 +784,14 @@ export const Jubah: React.FC = () => {
               ) : (
                 <div className="flex items-center gap-3 bg-emerald-50 border border-emerald-100 rounded-xl p-2.5">
                   <FileText className="w-5 h-5 text-emerald-500 shrink-0" />
-                  <div className="flex-1 min-w-0"><p className="text-xs font-bold text-emerald-700 truncate">{icFile.name}</p><p className="text-[9px] text-emerald-500">{(icFile.size / 1024).toFixed(1)} KB</p></div>
+                  <div className="flex-1 min-w-0"><p className="text-xs font-bold text-emerald-700 truncate">{icFile.name}</p><p className="text-xs text-emerald-500">{(icFile.size / 1024).toFixed(1)} KB</p></div>
                   <button type="button" onClick={() => { setIcFile(null); setCombinedBlob(null); if (icRef.current) icRef.current.value = ''; }} className="text-slate-400 hover:text-danger transition shrink-0 cursor-pointer"><X className="w-4 h-4" /></button>
                 </div>
               )}
             </div>
 
             {fileError && (
-              <p className="text-[10px] text-danger font-bold flex items-center gap-1">
+              <p className="text-xs text-danger font-bold flex items-center gap-1">
                 <ShieldAlert className="w-3.5 h-3.5" /> {fileError}
               </p>
             )}
@@ -800,7 +800,7 @@ export const Jubah: React.FC = () => {
           {/* ── COMBINED DOCUMENT ── */}
           <div className="bg-white border border-slate-100 rounded-3xl p-5 shadow-sm flex flex-col gap-3">
             <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest">Combined Document</h3>
-            <p className="text-[10px] text-slate-500 leading-relaxed">
+            <p className="text-xs text-slate-500 leading-relaxed">
               Once all documents are uploaded, generate a single combined PDF to download and review.
             </p>
             {!allFilesReady ? (
@@ -833,7 +833,7 @@ export const Jubah: React.FC = () => {
             <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest">
               {paymentMode === 'deposit' ? `Proof of Deposit (RM${DEPOSIT_AMOUNT})` : 'Proof of Payment'}
             </h3>
-            <p className="text-[10px] text-slate-500 leading-relaxed">
+            <p className="text-xs text-slate-500 leading-relaxed">
               Upload your <span className="font-bold text-slate-700">{paymentMode === 'deposit' ? `RM${DEPOSIT_AMOUNT} deposit receipt` : 'payment receipt'}</span> (screenshot or PDF). The Book button will activate once uploaded.
             </p>
             <input
@@ -851,14 +851,14 @@ export const Jubah: React.FC = () => {
               >
                 <Upload className="w-5 h-5" />
                 <span className="text-xs font-bold">Upload Receipt</span>
-                <span className="text-[9px]">PDF · JPG · PNG accepted</span>
+                <span className="text-xs">PDF · JPG · PNG accepted</span>
               </button>
             ) : (
               <div className="flex items-center gap-3 bg-emerald-50 border border-emerald-100 rounded-xl p-2.5">
                 <FileText className="w-5 h-5 text-emerald-500 shrink-0" />
                 <div className="flex-1 min-w-0">
                   <p className="text-xs font-bold text-emerald-700 truncate">{paymentProof.name}</p>
-                  <p className="text-[9px] text-emerald-500 mt-0.5">{(paymentProof.size / 1024).toFixed(1)} KB</p>
+                  <p className="text-xs text-emerald-500 mt-0.5">{(paymentProof.size / 1024).toFixed(1)} KB</p>
                 </div>
                 <button
                   type="button"
@@ -893,7 +893,7 @@ export const Jubah: React.FC = () => {
 
           {/* Reference Number — always shown, critical for guests */}
           <div className="bg-blue-600 rounded-3xl p-5 shadow-md flex flex-col gap-1 text-center">
-            <span className="text-[9px] text-blue-100 font-extrabold uppercase tracking-widest">Your Reference Number</span>
+            <span className="text-xs text-blue-100 font-extrabold uppercase tracking-widest">Your Reference Number</span>
             <div className="flex items-center justify-center gap-2">
               <span className="text-2xl font-black text-white tracking-wider">{jubahBooking.reference}</span>
               <button
@@ -908,7 +908,7 @@ export const Jubah: React.FC = () => {
                 {copied ? <Check className="w-3.5 h-3.5 text-white" /> : <Copy className="w-3.5 h-3.5 text-white" />}
               </button>
             </div>
-            <p className="text-[10px] text-blue-100 font-semibold mt-1">
+            <p className="text-xs text-blue-100 font-semibold mt-1">
               {user.isLoggedIn
                 ? 'You can also track this anytime from your order history.'
                 : 'Save this number or your phone number — you\'ll need it to track your delivery.'}
@@ -927,9 +927,9 @@ export const Jubah: React.FC = () => {
           <div className="bg-white border border-slate-100 rounded-3xl p-5 shadow-sm flex flex-col gap-4">
             <div className="flex items-start justify-between">
               <div>
-                <span className="text-[9px] text-blue-500 font-extrabold uppercase tracking-wider">Reservation Active</span>
+                <span className="text-xs text-blue-500 font-extrabold uppercase tracking-wider">Reservation Active</span>
                 <h3 className="text-sm font-black text-slate-800 mt-0.5">{jubahBooking.fullName}</h3>
-                <p className="text-[10px] text-slate-400 mt-0.5">
+                <p className="text-xs text-slate-400 mt-0.5">
                   {jubahBooking.remark} · {jubahBooking.faculty} · {jubahBooking.matricId}
                 </p>
               </div>
@@ -938,7 +938,7 @@ export const Jubah: React.FC = () => {
               </button>
             </div>
 
-            <div className="grid grid-cols-2 gap-2 text-[10px]">
+            <div className="grid grid-cols-2 gap-2 text-xs">
               <div className="bg-slate-50 rounded-xl p-2.5">
                 <span className="text-slate-400 font-bold uppercase tracking-wider block text-[8px]">Service Fee</span>
                 <span className="font-black text-slate-700">RM{jubahBooking.cost.toFixed(2)}</span>
@@ -961,7 +961,7 @@ export const Jubah: React.FC = () => {
                 <div>
                   <span className="text-[8px] font-extrabold text-slate-400 uppercase tracking-wider block">Your Rider</span>
                   <span className="text-sm font-bold text-slate-800">{liveRiderName}</span>
-                  {liveRiderPhone && <span className="text-[10px] font-semibold text-slate-500 block">{liveRiderPhone}</span>}
+                  {liveRiderPhone && <span className="text-xs font-semibold text-slate-500 block">{liveRiderPhone}</span>}
                 </div>
                 {liveRiderPhone && (
                   <a href={`https://wa.me/${toWa(liveRiderPhone)}?text=${encodeURIComponent(
@@ -975,7 +975,7 @@ export const Jubah: React.FC = () => {
             )}
 
             {/* Progress steps — wired to real DB status */}
-            <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Robe Preparation</h4>
+            <h4 className="text-xs font-black text-slate-400 uppercase tracking-wider">Robe Preparation</h4>
             <div className="flex flex-col gap-4 pl-2">
               {(() => {
                 const isPostage = jubahBooking.paymentMode === 'postage';
@@ -1008,7 +1008,7 @@ export const Jubah: React.FC = () => {
                         <h5 className={`text-xs font-bold leading-tight ${isCurrent ? 'text-blue-600 font-black' : isPast ? 'text-slate-700' : 'text-slate-300'}`}>
                           {step.label}
                         </h5>
-                        <p className="text-[10px] text-slate-400 mt-0.5">{step.desc}</p>
+                        <p className="text-xs text-slate-400 mt-0.5">{step.desc}</p>
                       </div>
                     </div>
                   );
@@ -1046,7 +1046,7 @@ export const Jubah: React.FC = () => {
                 { label: 'State / Country', placeholder: 'Kuala Lumpur, Malaysia.', value: draftState, set: setDraftState },
               ].map(f => (
                 <div key={f.label} className="flex flex-col gap-1.5">
-                  <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">{f.label}</label>
+                  <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">{f.label}</label>
                   <input
                     type="text"
                     value={f.value}
@@ -1086,7 +1086,7 @@ export const Jubah: React.FC = () => {
           <div className="fixed bottom-0 left-0 right-0 z-50 bg-white rounded-t-3xl shadow-2xl animate-slide-up max-h-[80vh] overflow-y-auto no-scrollbar">
             <div className="flex items-center justify-between px-5 pt-5 pb-3 border-b border-slate-100">
               <div>
-                <p className="text-[9px] font-extrabold text-slate-400 uppercase tracking-widest">Your Rider</p>
+                <p className="text-xs font-extrabold text-slate-400 uppercase tracking-widest">Your Rider</p>
                 <h3 className="text-base font-black text-slate-800 mt-0.5">{r.name}</h3>
               </div>
               <button onClick={close}
@@ -1096,19 +1096,19 @@ export const Jubah: React.FC = () => {
             </div>
             <div className="px-5 py-4 flex flex-col gap-5">
               <div className="flex flex-col gap-1">
-                <span className="text-[9px] font-extrabold text-slate-400 uppercase tracking-widest">Method</span>
+                <span className="text-xs font-extrabold text-slate-400 uppercase tracking-widest">Method</span>
                 <span className="text-sm font-bold text-slate-800">{r.jubah_drop_point || '—'}</span>
               </div>
               <div className="flex flex-col gap-1">
-                <span className="text-[9px] font-extrabold text-slate-400 uppercase tracking-widest">Representative Name</span>
+                <span className="text-xs font-extrabold text-slate-400 uppercase tracking-widest">Representative Name</span>
                 <span className="text-sm font-bold text-slate-800">{r.name}</span>
               </div>
               <div className="flex flex-col gap-1">
-                <span className="text-[9px] font-extrabold text-slate-400 uppercase tracking-widest">I/C Number</span>
+                <span className="text-xs font-extrabold text-slate-400 uppercase tracking-widest">I/C Number</span>
                 <IcMasked ic={r.ic_number} />
               </div>
               <div className="flex flex-col gap-1">
-                <span className="text-[9px] font-extrabold text-slate-400 uppercase tracking-widest">H/P Number</span>
+                <span className="text-xs font-extrabold text-slate-400 uppercase tracking-widest">H/P Number</span>
                 <div className="flex items-center gap-2">
                   <span className="text-sm font-bold text-slate-800">{r.phone || '—'}</span>
                   {r.phone && (

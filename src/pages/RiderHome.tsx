@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, useCallback } from 'react';
+﻿import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { useApp } from '../context/AppContext';
 import { supabase } from '../lib/supabase';
 import { WaIcon, toWa } from '../lib/whatsapp';
@@ -234,7 +234,7 @@ export const RiderHome: React.FC = () => {
           <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest">Required Documents</h3>
 
           <div className="flex flex-col gap-2">
-            <label className="text-[10px] font-extrabold text-slate-500 uppercase tracking-wider">Identity Card (MyKad) *</label>
+            <label className="text-xs font-extrabold text-slate-500 uppercase tracking-wider">Identity Card (MyKad) *</label>
             <input ref={icDocRef} type="file" accept="image/*,.pdf" className="hidden" onChange={e => handleDocUpload(e, 'ic')} />
             {user.icUrl ? (
               <div className="flex items-center justify-between bg-emerald-50 border border-emerald-100 rounded-2xl px-4 py-3">
@@ -242,7 +242,7 @@ export const RiderHome: React.FC = () => {
                   <FileImage className="w-4 h-4 text-emerald-500" />
                   <span className="text-xs font-extrabold text-emerald-700">IC Uploaded ✓</span>
                 </div>
-                <button onClick={() => icDocRef.current?.click()} className="text-[10px] font-extrabold text-slate-400 underline">
+                <button onClick={() => icDocRef.current?.click()} className="text-xs font-extrabold text-slate-400 underline">
                   {uploadingDoc === 'ic' ? 'Uploading…' : 'Replace'}
                 </button>
               </div>
@@ -257,7 +257,7 @@ export const RiderHome: React.FC = () => {
           </div>
 
           <div className="flex flex-col gap-2">
-            <label className="text-[10px] font-extrabold text-slate-500 uppercase tracking-wider">Driving License *</label>
+            <label className="text-xs font-extrabold text-slate-500 uppercase tracking-wider">Driving License *</label>
             <input ref={licenseDocRef} type="file" accept="image/*,.pdf" className="hidden" onChange={e => handleDocUpload(e, 'license')} />
             {user.licenseUrl ? (
               <div className="flex items-center justify-between bg-emerald-50 border border-emerald-100 rounded-2xl px-4 py-3">
@@ -265,7 +265,7 @@ export const RiderHome: React.FC = () => {
                   <FileImage className="w-4 h-4 text-emerald-500" />
                   <span className="text-xs font-extrabold text-emerald-700">License Uploaded ✓</span>
                 </div>
-                <button onClick={() => licenseDocRef.current?.click()} className="text-[10px] font-extrabold text-slate-400 underline">
+                <button onClick={() => licenseDocRef.current?.click()} className="text-xs font-extrabold text-slate-400 underline">
                   {uploadingDoc === 'license' ? 'Uploading…' : 'Replace'}
                 </button>
               </div>
@@ -282,13 +282,13 @@ export const RiderHome: React.FC = () => {
           {bothUploaded && user.docsStatus === 'none' && (
             <div className="bg-amber-50 border border-amber-100 rounded-2xl px-4 py-3 text-center">
               <p className="text-xs font-extrabold text-amber-700">Documents submitted for review</p>
-              <p className="text-[10px] text-amber-500 font-semibold mt-0.5">Admin will verify your documents shortly.</p>
+              <p className="text-xs text-amber-500 font-semibold mt-0.5">Admin will verify your documents shortly.</p>
             </div>
           )}
         </div>
 
         <div className="bg-slate-50 border border-slate-100 rounded-2xl px-4 py-3">
-          <p className="text-[10px] text-slate-400 font-semibold text-center leading-relaxed">
+          <p className="text-xs text-slate-400 font-semibold text-center leading-relaxed">
             Your Gerak ID: <span className="font-black text-slate-600">{user.gerakId}</span><br />
             Documents are reviewed within 24 hours.
           </p>
@@ -311,7 +311,7 @@ export const RiderHome: React.FC = () => {
           </p>
         </div>
         <div className="bg-amber-50 border border-amber-100 rounded-2xl px-4 py-3 text-center">
-          <p className="text-[10px] font-bold text-amber-400 uppercase tracking-wider">Gerak ID</p>
+          <p className="text-xs font-bold text-amber-400 uppercase tracking-wider">Gerak ID</p>
           <p className="text-sm font-black text-amber-600 mt-0.5">{user.gerakId}</p>
         </div>
       </div>
@@ -346,13 +346,13 @@ export const RiderHome: React.FC = () => {
                    'Rider Hub'}
                 </h2>
                 {activeTab !== 'jubah' || jubahView === 'list' ? (
-                  <span className="flex items-center gap-1 bg-emerald-50 border border-emerald-100 text-emerald-600 text-[9px] font-extrabold px-2 py-0.5 rounded-full">
+                  <span className="flex items-center gap-1 bg-emerald-50 border border-emerald-100 text-emerald-600 text-xs font-extrabold px-2 py-0.5 rounded-full">
                     <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
                     LIVE
                   </span>
                 ) : null}
               </div>
-              <p className="text-[10px] text-slate-400 font-semibold mt-0.5">
+              <p className="text-xs text-slate-400 font-semibold mt-0.5">
                 {activeTab === 'jubah' && jubahView === 'card' && selectedJob
                   ? `${selectedJob.reference} · ${selectedJob.full_name}`
                   : activeTab === 'jubah' && jubahView === 'details' && selectedJob
@@ -437,7 +437,7 @@ export const RiderHome: React.FC = () => {
                   <div className="overflow-x-auto overflow-y-auto no-scrollbar max-h-[500px]">
                     <table className="min-w-full border-collapse text-left" style={{ minWidth: 360 }}>
                       <thead className="sticky top-0 bg-white">
-                        <tr className="text-[9px] font-extrabold text-slate-400 uppercase tracking-wider border-b border-slate-100">
+                        <tr className="text-xs font-extrabold text-slate-400 uppercase tracking-wider border-b border-slate-100">
                           <th className="py-2 pr-4 whitespace-nowrap">Reference</th>
                           <th className="py-2 pr-4 whitespace-nowrap">Name</th>
                           <th className="py-2 pr-4 whitespace-nowrap">Remark</th>
@@ -449,12 +449,12 @@ export const RiderHome: React.FC = () => {
                         {jubahJobs.map(job => (
                           <tr key={job.id}
                             onClick={() => goToCard(job)}
-                            className="border-b border-slate-50 text-[10px] hover:bg-slate-50 active:bg-slate-100 transition cursor-pointer">
+                            className="border-b border-slate-50 text-xs hover:bg-slate-50 active:bg-slate-100 transition cursor-pointer">
                             <td className="py-2.5 pr-4 font-mono font-bold text-primary whitespace-nowrap">{job.reference}</td>
                             <td className="py-2.5 pr-4 font-extrabold text-slate-800 whitespace-nowrap">{job.full_name}</td>
                             <td className="py-2.5 pr-4 text-slate-500 font-semibold whitespace-nowrap">{job.remark}</td>
                             <td className="py-2.5 pr-4 whitespace-nowrap">
-                              <span className={`font-extrabold px-2 py-0.5 rounded-full border text-[9px] ${
+                              <span className={`font-extrabold px-2 py-0.5 rounded-full border text-xs ${
                                 job.payment_mode === 'deposit' ? 'bg-amber-50 border-amber-100 text-amber-700' :
                                 job.payment_mode === 'postage' ? 'bg-blue-50 border-blue-100 text-blue-700' :
                                 'bg-slate-50 border-slate-200 text-slate-600'
@@ -463,7 +463,7 @@ export const RiderHome: React.FC = () => {
                               </span>
                             </td>
                             <td className="py-2.5 whitespace-nowrap">
-                              <span className={`font-extrabold px-2 py-0.5 rounded-full border text-[9px] ${STATUS_STYLE[job.status] ?? 'bg-slate-50 border-slate-200 text-slate-400'}`}>
+                              <span className={`font-extrabold px-2 py-0.5 rounded-full border text-xs ${STATUS_STYLE[job.status] ?? 'bg-slate-50 border-slate-200 text-slate-400'}`}>
                                 {STATUS_LABEL[job.status] ?? job.status}
                               </span>
                             </td>
@@ -491,13 +491,13 @@ export const RiderHome: React.FC = () => {
                     {/* Customer summary */}
                     <div className="flex items-start justify-between gap-2">
                       <div>
-                        <p className="text-[9px] text-primary font-extrabold uppercase tracking-wider">{selectedJob.reference}</p>
+                        <p className="text-xs text-primary font-extrabold uppercase tracking-wider">{selectedJob.reference}</p>
                         <h3 className="text-base font-black text-slate-800 mt-0.5">{selectedJob.full_name}</h3>
-                        <p className="text-[10px] text-slate-400 font-semibold mt-0.5">
+                        <p className="text-xs text-slate-400 font-semibold mt-0.5">
                           {selectedJob.remark} · {selectedJob.faculty} · UMPSA {selectedJob.campus}
                         </p>
                       </div>
-                      <span className={`text-[9px] font-extrabold px-2.5 py-1 rounded-full border shrink-0 ${STATUS_STYLE[selectedJob.status] ?? ''}`}>
+                      <span className={`text-xs font-extrabold px-2.5 py-1 rounded-full border shrink-0 ${STATUS_STYLE[selectedJob.status] ?? ''}`}>
                         {STATUS_LABEL[selectedJob.status] ?? selectedJob.status}
                       </span>
                     </div>
@@ -505,7 +505,7 @@ export const RiderHome: React.FC = () => {
                     {/* HP + Mode */}
                     <div className="flex items-center gap-3">
                       <div className="flex items-center gap-1.5 bg-slate-50 border border-slate-100 rounded-xl px-3 py-2 flex-1">
-                        <span className="text-[11px] font-semibold text-slate-600">{selectedJob.hp_number}</span>
+                        <span className="text-xs font-semibold text-slate-600">{selectedJob.hp_number}</span>
                         <a href={`https://wa.me/${toWa(selectedJob.hp_number)}?text=${encodeURIComponent(
                           jubahWaMsg(selectedJob.full_name, selectedJob.status, selectedJob.reference, selectedJob.payment_mode, selectedJob.balance_paid, selectedJob.balance_due)
                         )}`} target="_blank" rel="noopener noreferrer"
@@ -513,7 +513,7 @@ export const RiderHome: React.FC = () => {
                           <WaIcon className="w-4 h-4" />
                         </a>
                       </div>
-                      <span className={`text-[9px] font-extrabold px-3 py-2 rounded-xl border shrink-0 ${
+                      <span className={`text-xs font-extrabold px-3 py-2 rounded-xl border shrink-0 ${
                         selectedJob.payment_mode === 'deposit' ? 'bg-amber-50 border-amber-100 text-amber-700' :
                         selectedJob.payment_mode === 'postage' ? 'bg-blue-50 border-blue-100 text-blue-700' :
                         'bg-slate-50 border-slate-200 text-slate-600'
@@ -553,7 +553,7 @@ export const RiderHome: React.FC = () => {
                     {selectedJob.payment_mode === 'postage' && selectedJob.delivery_address && (
                       <div className="bg-blue-50 border border-blue-100 rounded-xl p-3">
                         <p className="text-[8px] font-extrabold text-blue-400 uppercase tracking-wider mb-1">Delivery Address</p>
-                        <p className="text-[10px] font-semibold text-blue-800 leading-relaxed">{selectedJob.delivery_address}</p>
+                        <p className="text-xs font-semibold text-blue-800 leading-relaxed">{selectedJob.delivery_address}</p>
                       </div>
                     )}
 
@@ -581,7 +581,7 @@ export const RiderHome: React.FC = () => {
                         </div>
                         {selectedJob.balance_proof_url && (
                           <a href={selectedJob.balance_proof_url} target="_blank" rel="noopener noreferrer"
-                            className="text-[9px] text-blue-500 font-bold flex items-center gap-0.5 hover:underline shrink-0">
+                            className="text-xs text-blue-500 font-bold flex items-center gap-0.5 hover:underline shrink-0">
                             <ExternalLink className="w-2.5 h-2.5" /> proof
                           </a>
                         )}
@@ -643,7 +643,7 @@ export const RiderHome: React.FC = () => {
                     { label: 'Reference',         value: selectedJob.reference },
                   ] as { label: string; value: string }[]).map(({ label, value }) => (
                     <div key={label} className="flex flex-col gap-0.5 border-b border-slate-50 pb-3 last:border-0 last:pb-0">
-                      <span className="text-[9px] font-extrabold text-slate-400 uppercase tracking-wider">{label}</span>
+                      <span className="text-xs font-extrabold text-slate-400 uppercase tracking-wider">{label}</span>
                       <span className="text-sm font-bold text-slate-700 leading-relaxed">{value}</span>
                     </div>
                   ))}

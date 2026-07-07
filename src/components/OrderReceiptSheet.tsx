@@ -1,4 +1,4 @@
-import React from 'react';
+﻿import React from 'react';
 import { WaBtn } from '../lib/whatsapp';
 
 export interface OrderReceiptFields {
@@ -82,10 +82,10 @@ export const OrderReceiptSheet: React.FC<{ order: OrderReceiptFields; onClose: (
         <div className="px-5 pt-2 pb-8 flex flex-col gap-3">
           {/* Status + date */}
           <div className="flex items-center justify-between">
-            <span className={`text-[9px] font-extrabold uppercase tracking-wider px-2.5 py-1 rounded-lg border ${badgeCls}`}>
+            <span className={`text-xs font-extrabold uppercase tracking-wider px-2.5 py-1 rounded-lg border ${badgeCls}`}>
               {badgeLbl}
             </span>
-            <span className="text-[10px] text-slate-400 font-semibold">{createdAt}</span>
+            <span className="text-xs text-slate-400 font-semibold">{createdAt}</span>
           </div>
 
           <OrderReceiptBlock order={order} showWhatsApp={showWhatsApp} />

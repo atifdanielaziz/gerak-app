@@ -1,4 +1,4 @@
-import React, { useRef, useEffect } from 'react';
+﻿import React, { useRef, useEffect } from 'react';
 import maplibregl from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 
@@ -113,7 +113,7 @@ export const MapPicker: React.FC<Props> = ({ center, activePin, onPickup, onDest
     <div className="relative rounded-2xl overflow-hidden border border-slate-100 shadow-sm">
       <div ref={containerRef} className="w-full h-[280px]" />
       <div className="absolute top-3 left-1/2 -translate-x-1/2 pointer-events-none z-10">
-        <div className={`rounded-full px-4 py-1.5 shadow-md text-[11px] font-bold whitespace-nowrap ${
+        <div className={`rounded-full px-4 py-1.5 shadow-md text-xs font-bold whitespace-nowrap ${
           activePin === 'pickup'
             ? 'bg-blue-600 text-white'
             : 'bg-red-500 text-white'

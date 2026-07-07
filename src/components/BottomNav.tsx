@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+﻿import React, { useState } from 'react';
 import { useApp } from '../context/AppContext';
 import type { ActivePage } from '../context/AppContext';
 import { Home, UserCircle, Briefcase, LayoutDashboard, CalendarDays } from 'lucide-react';
@@ -139,7 +139,7 @@ export const BottomNav: React.FC = () => {
                   )}
                 </div>
 
-                <span className={`text-[9px] mt-0.5 font-bold transition-all duration-200 ${
+                <span className={`text-xs mt-0.5 font-bold transition-all duration-200 ${
                   isActive ? 'text-primary scale-105' : 'text-slate-400'
                 }`}>
                   {item.label}

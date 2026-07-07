@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+﻿import React, { useState, useEffect, useRef } from 'react';
 import { supabase } from '../lib/supabase';
 import { useApp } from '../context/AppContext';
 import { ChevronRight, Image as ImageIcon, X } from 'lucide-react';
@@ -99,7 +99,7 @@ export const JubahLanding: React.FC<Props> = ({ onProceed }) => {
       {/* Header */}
       <div className="mt-4 px-1">
         <h2 className="text-xl font-black m-0 text-slate-800">Jubah Delivery</h2>
-        <p className="text-[10px] text-slate-400 font-semibold uppercase tracking-wider mt-1">
+        <p className="text-xs text-slate-400 font-semibold uppercase tracking-wider mt-1">
           Select your university to continue
         </p>
       </div>
@@ -154,7 +154,7 @@ export const JubahLanding: React.FC<Props> = ({ onProceed }) => {
           ) : (
             <div className="flex flex-col items-center gap-2 text-slate-300 p-4 text-center">
               <ImageIcon className="w-10 h-10" />
-              <span className="text-[10px] font-bold">No banner uploaded yet</span>
+              <span className="text-xs font-bold">No banner uploaded yet</span>
             </div>
           )}
         </div>
@@ -168,7 +168,7 @@ export const JubahLanding: React.FC<Props> = ({ onProceed }) => {
           <div className="overflow-x-auto overflow-y-auto no-scrollbar max-h-[280px]">
             <table className="min-w-full border-collapse text-left" style={{ minWidth: 480 }}>
               <thead className="sticky top-0 bg-white">
-                <tr className="text-[9px] font-extrabold text-slate-400 uppercase tracking-wider border-b border-slate-100">
+                <tr className="text-xs font-extrabold text-slate-400 uppercase tracking-wider border-b border-slate-100">
                   <th className="py-2 pr-4 whitespace-nowrap">Method</th>
                   <th className="py-2 pr-4 whitespace-nowrap">Representative Name</th>
                   <th className="py-2 pr-4 whitespace-nowrap">I/C Number</th>
@@ -178,7 +178,7 @@ export const JubahLanding: React.FC<Props> = ({ onProceed }) => {
               <tbody>
                 {riderDir.map(r => (
                   <tr key={r.id} onClick={() => openRider(r)}
-                    className="border-b border-slate-50 text-[10px] cursor-pointer hover:bg-slate-50 active:bg-slate-100 transition">
+                    className="border-b border-slate-50 text-xs cursor-pointer hover:bg-slate-50 active:bg-slate-100 transition">
                     <td className="py-2.5 pr-4 text-slate-600 font-semibold align-top whitespace-nowrap">
                       {r.jubah_drop_point || '—'}
                     </td>
@@ -199,7 +199,7 @@ export const JubahLanding: React.FC<Props> = ({ onProceed }) => {
               </tbody>
             </table>
           </div>
-          <p className="text-[9px] text-slate-400 font-semibold">
+          <p className="text-xs text-slate-400 font-semibold">
             💡 I/C numbers are partially masked. Tap the WhatsApp icon to contact the representative and confirm the full IC for physical registration.
           </p>
         </div>
@@ -215,7 +215,7 @@ export const JubahLanding: React.FC<Props> = ({ onProceed }) => {
             {/* Sheet header */}
             <div className="flex items-center justify-between px-5 pt-5 pb-3 border-b border-slate-100">
               <div>
-                <p className="text-[9px] font-extrabold text-slate-400 uppercase tracking-widest">Representative</p>
+                <p className="text-xs font-extrabold text-slate-400 uppercase tracking-widest">Representative</p>
                 <h3 className="text-base font-black text-slate-800 mt-0.5">{selectedRider.name}</h3>
               </div>
               <button onClick={closeRider}
@@ -229,25 +229,25 @@ export const JubahLanding: React.FC<Props> = ({ onProceed }) => {
 
               {/* Method */}
               <div className="flex flex-col gap-1">
-                <span className="text-[9px] font-extrabold text-slate-400 uppercase tracking-widest">Method</span>
+                <span className="text-xs font-extrabold text-slate-400 uppercase tracking-widest">Method</span>
                 <span className="text-sm font-bold text-slate-800">{selectedRider.jubah_drop_point || '—'}</span>
               </div>
 
               {/* Representative Name */}
               <div className="flex flex-col gap-1">
-                <span className="text-[9px] font-extrabold text-slate-400 uppercase tracking-widest">Representative Name</span>
+                <span className="text-xs font-extrabold text-slate-400 uppercase tracking-widest">Representative Name</span>
                 <span className="text-sm font-bold text-slate-800">{selectedRider.name}</span>
               </div>
 
               {/* IC Number */}
               <div className="flex flex-col gap-1">
-                <span className="text-[9px] font-extrabold text-slate-400 uppercase tracking-widest">I/C Number</span>
+                <span className="text-xs font-extrabold text-slate-400 uppercase tracking-widest">I/C Number</span>
                 <IcMasked ic={selectedRider.ic_number} />
               </div>
 
               {/* H/P Number */}
               <div className="flex flex-col gap-1">
-                <span className="text-[9px] font-extrabold text-slate-400 uppercase tracking-widest">H/P Number</span>
+                <span className="text-xs font-extrabold text-slate-400 uppercase tracking-widest">H/P Number</span>
                 <div className="flex items-center gap-2">
                   <span className="text-sm font-bold text-slate-800">{selectedRider.phone || '—'}</span>
                   {selectedRider.phone && (

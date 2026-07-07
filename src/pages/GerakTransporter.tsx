@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+﻿import React, { useState } from 'react';
 import { useApp } from '../context/AppContext';
 import { WaIcon } from '../lib/whatsapp';
 import {
@@ -64,7 +64,7 @@ export const GerakTransporter: React.FC = () => {
             </div>
             <div>
               <h2 className="text-xl font-black text-white m-0 leading-tight">Gerak Transporter</h2>
-              <p className="text-[10px] text-blue-300/80 font-extrabold uppercase tracking-widest mt-0.5">
+              <p className="text-xs text-blue-300/80 font-extrabold uppercase tracking-widest mt-0.5">
                 Penghantaran Motosikal & Pindah Barang
               </p>
             </div>
@@ -79,7 +79,7 @@ export const GerakTransporter: React.FC = () => {
           <div className="flex bg-black/30 border border-white/10 rounded-2xl p-1 gap-1 mt-1">
             {(['Penghantaran Motosikal', 'Pindah Barang'] as const).map(s => (
               <button key={s} onClick={() => setServiceType(s)}
-                className={`flex-1 py-2 rounded-xl text-[10px] font-extrabold transition active:scale-95 ${
+                className={`flex-1 py-2 rounded-xl text-xs font-extrabold transition active:scale-95 ${
                   serviceType === s ? 'bg-white text-slate-900 shadow-sm' : 'text-blue-300/70'
                 }`}>
                 {s === 'Penghantaran Motosikal' ? '🏍️ Motosikal' : '📦 Pindah Barang'}
@@ -112,7 +112,7 @@ export const GerakTransporter: React.FC = () => {
                   </div>
                   <div>
                     <p className="text-xs font-extrabold text-slate-800 leading-tight">{label}</p>
-                    <p className="text-[10px] font-semibold text-slate-400 mt-0.5">{desc}</p>
+                    <p className="text-xs font-semibold text-slate-400 mt-0.5">{desc}</p>
                   </div>
                 </div>
               ))}
@@ -131,7 +131,7 @@ export const GerakTransporter: React.FC = () => {
               </div>
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-black text-white leading-tight">{PROVIDER.name}</p>
-                <p className="text-[9px] text-blue-300/80 font-extrabold uppercase tracking-wider mt-0.5">{PROVIDER.tagline}</p>
+                <p className="text-xs text-blue-300/80 font-extrabold uppercase tracking-wider mt-0.5">{PROVIDER.tagline}</p>
               </div>
               <span className="shrink-0 bg-emerald-400/20 border border-emerald-400/30 text-emerald-300 text-[8px] font-extrabold px-2 py-0.5 rounded-full uppercase tracking-wider">
                 Aktif
@@ -148,7 +148,7 @@ export const GerakTransporter: React.FC = () => {
                 ].map(({ label, value }) => (
                   <div key={label} className="flex flex-col gap-0.5">
                     <span className="text-[8px] font-extrabold text-slate-400 uppercase tracking-wider">{label}</span>
-                    <span className="text-[11px] font-bold text-slate-700">{value}</span>
+                    <span className="text-xs font-bold text-slate-700">{value}</span>
                   </div>
                 ))}
               </div>
@@ -196,7 +196,7 @@ export const GerakTransporter: React.FC = () => {
                 </div>
                 <div className="pb-3">
                   <p className="text-xs font-extrabold text-slate-800">{label}</p>
-                  <p className="text-[10px] text-slate-400 font-semibold mt-0.5 leading-snug">{desc}</p>
+                  <p className="text-xs text-slate-400 font-semibold mt-0.5 leading-snug">{desc}</p>
                 </div>
               </div>
             ))}
@@ -210,11 +210,11 @@ export const GerakTransporter: React.FC = () => {
           </div>
           <div>
             <p className="text-xs font-black text-white">Harga Berdasarkan Jarak</p>
-            <p className="text-[10px] text-slate-400 font-semibold mt-1 leading-relaxed">
+            <p className="text-xs text-slate-400 font-semibold mt-1 leading-relaxed">
               Harga bergantung kepada jarak perjalanan dan jenis perkhidmatan.
               Hubungi penyedia untuk sebut harga percuma.
             </p>
-            <p className="text-[9px] text-blue-400 font-extrabold mt-2 uppercase tracking-wider">
+            <p className="text-xs text-blue-400 font-extrabold mt-2 uppercase tracking-wider">
               ⚡ Tempahan awal disyorkan
             </p>
           </div>
@@ -233,7 +233,7 @@ export const GerakTransporter: React.FC = () => {
             </div>
             <div className="text-left">
               <p className="text-sm font-black leading-tight">Tempah Sekarang</p>
-              <p className="text-[10px] text-blue-300/80 font-semibold mt-0.5">{serviceType}</p>
+              <p className="text-xs text-blue-300/80 font-semibold mt-0.5">{serviceType}</p>
             </div>
           </div>
           <ChevronRight className="w-5 h-5 text-white/40" />

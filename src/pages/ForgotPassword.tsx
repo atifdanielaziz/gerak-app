@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+﻿import React, { useState } from 'react';
 import { useApp } from '../context/AppContext';
 import { supabase } from '../lib/supabase';
 import { Mail, ArrowLeft, CheckCircle } from 'lucide-react';
@@ -42,7 +42,7 @@ export const ForgotPassword: React.FC = () => {
         <div className="w-full bg-white rounded-3xl p-6 border border-slate-100 shadow-md">
           <form onSubmit={handleSubmit} className="flex flex-col gap-4">
             <div className="flex flex-col gap-1">
-              <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider pl-1">
+              <label className="text-xs font-bold text-slate-500 uppercase tracking-wider pl-1">
                 Email Address
               </label>
               <div className="relative">

@@ -1,4 +1,4 @@
-import React, { useRef, useEffect, useState } from 'react';
+﻿import React, { useRef, useEffect, useState } from 'react';
 import maplibregl from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import { useApp } from '../context/AppContext';
@@ -280,7 +280,7 @@ export const MapLibre: React.FC = () => {
       {/* Grab-style status pill */}
       {activeRide && activeRide.status !== 'completed' && (
         <div className="absolute top-3 left-1/2 -translate-x-1/2 pointer-events-none z-10">
-          <div className="bg-white/90 backdrop-blur-sm rounded-full px-4 py-1.5 shadow-md border border-slate-100 text-[11px] font-bold text-slate-700 whitespace-nowrap">
+          <div className="bg-white/90 backdrop-blur-sm rounded-full px-4 py-1.5 shadow-md border border-slate-100 text-xs font-bold text-slate-700 whitespace-nowrap">
             {STATUS_LABEL[activeRide.status]}
           </div>
         </div>
@@ -305,7 +305,7 @@ export const MapLibre: React.FC = () => {
 
       {/* GPS denied warning */}
       {gpsError === 'denied' && (
-        <div className="absolute bottom-3 left-3 right-14 z-10 bg-white/90 backdrop-blur-sm border border-amber-200 text-amber-700 text-[10px] font-bold rounded-lg px-3 py-1.5">
+        <div className="absolute bottom-3 left-3 right-14 z-10 bg-white/90 backdrop-blur-sm border border-amber-200 text-amber-700 text-xs font-bold rounded-lg px-3 py-1.5">
           Location access denied. Enable GPS in browser settings.
         </div>
       )}

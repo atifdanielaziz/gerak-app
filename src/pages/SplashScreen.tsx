@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+﻿import React, { useEffect, useState } from 'react';
 import { useApp } from '../context/AppContext';
 
 export const SplashScreen: React.FC = () => {
@@ -29,7 +29,7 @@ export const SplashScreen: React.FC = () => {
           ger<span style={{ color: '#EF4444' }}>a</span>k
         </h1>
 
-        <p className="text-slate-400 font-semibold text-[11px] tracking-[0.2em] uppercase m-0">
+        <p className="text-slate-400 font-semibold text-xs tracking-[0.2em] uppercase m-0">
           Smart Campus Platform
         </p>
 

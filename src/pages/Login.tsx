@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
 import { supabase } from '../lib/supabase';
 import { consumeSessionExpiredMessage } from '../lib/idleSession';
@@ -64,7 +64,7 @@ export const Login: React.FC = () => {
 
           {/* Email */}
           <div className="flex flex-col gap-1">
-            <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider pl-1">
+            <label className="text-xs font-bold text-slate-500 uppercase tracking-wider pl-1">
               Email Address
             </label>
             <div className="relative">
@@ -89,7 +89,7 @@ export const Login: React.FC = () => {
 
           {/* Password */}
           <div className="flex flex-col gap-1">
-            <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider pl-1">
+            <label className="text-xs font-bold text-slate-500 uppercase tracking-wider pl-1">
               Password
             </label>
             <div className="relative">

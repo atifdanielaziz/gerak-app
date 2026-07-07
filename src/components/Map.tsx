@@ -1,4 +1,4 @@
-import React, { useRef, useEffect } from 'react';
+﻿import React, { useRef, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
 
 interface Landmark {
@@ -282,7 +282,7 @@ export const Map: React.FC = () => {
       </div>
 
       {activeRide && (
-        <div className="absolute bottom-3 right-3 bg-white/95 backdrop-blur-xs border border-slate-100 rounded-xl px-2.5 py-1.5 text-[9px] font-bold text-slate-700 shadow-md flex flex-col gap-0.5">
+        <div className="absolute bottom-3 right-3 bg-white/95 backdrop-blur-xs border border-slate-100 rounded-xl px-2.5 py-1.5 text-xs font-bold text-slate-700 shadow-md flex flex-col gap-0.5">
           <div className="text-primary flex items-center gap-1">
             <span className="w-1 h-1 rounded-full bg-primary" />
             Active Route

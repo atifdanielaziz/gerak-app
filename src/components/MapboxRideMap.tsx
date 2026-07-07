@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+﻿import React, { useEffect, useRef, useState } from 'react';
 import maplibregl from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import { LocateFixed, Search, X } from 'lucide-react';
@@ -259,7 +259,7 @@ export const MapboxRideMap: React.FC<Props> = ({ campusCenter, onPickupChange, o
                     }`}
                   >
                     <p className="text-xs font-bold text-slate-800 truncate">{parts[0]}</p>
-                    <p className="text-[10px] text-slate-400 truncate mt-0.5">
+                    <p className="text-xs text-slate-400 truncate mt-0.5">
                       {parts.slice(1).join(',').trim()}
                     </p>
                   </button>
@@ -287,8 +287,8 @@ export const MapboxRideMap: React.FC<Props> = ({ campusCenter, onPickupChange, o
         <div className="flex-1 flex items-center gap-2 p-3 rounded-xl bg-blue-50 border border-blue-100 min-w-0">
           <div className="w-2.5 h-2.5 rounded-full bg-blue-500 shrink-0" />
           <div className="min-w-0">
-            <p className="text-[9px] font-extrabold text-blue-400 uppercase tracking-wider">Pickup</p>
-            <p className="text-[10px] font-bold text-slate-700 truncate mt-0.5">
+            <p className="text-xs font-extrabold text-blue-400 uppercase tracking-wider">Pickup</p>
+            <p className="text-xs font-bold text-slate-700 truncate mt-0.5">
               {locating ? 'Detecting location…' : pickupName || 'Allow location access'}
             </p>
           </div>
@@ -296,8 +296,8 @@ export const MapboxRideMap: React.FC<Props> = ({ campusCenter, onPickupChange, o
         <div className="flex-1 flex items-center gap-2 p-3 rounded-xl bg-red-50 border border-red-100 min-w-0">
           <div className="w-2.5 h-2.5 rounded-full bg-red-500 shrink-0" />
           <div className="min-w-0">
-            <p className="text-[9px] font-extrabold text-red-400 uppercase tracking-wider">Destination</p>
-            <p className="text-[10px] font-bold text-slate-700 truncate mt-0.5">
+            <p className="text-xs font-extrabold text-red-400 uppercase tracking-wider">Destination</p>
+            <p className="text-xs font-bold text-slate-700 truncate mt-0.5">
               {destName || 'Search above'}
             </p>
           </div>

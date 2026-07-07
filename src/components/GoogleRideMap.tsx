@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+﻿import React, { useEffect, useRef, useState } from 'react';
 import { LocateFixed, MapPin, Navigation } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 
@@ -352,7 +352,7 @@ export const GoogleRideMap: React.FC = () => {
         </div>
         <div>
           <h3 className="text-sm font-black text-slate-800">Google Maps key required</h3>
-          <p className="text-[11px] text-slate-500 font-semibold leading-relaxed mt-1">
+          <p className="text-xs text-slate-500 font-semibold leading-relaxed mt-1">
             Add VITE_GOOGLE_MAPS_API_KEY to your local environment, then restart the dev server.
           </p>
         </div>
@@ -374,7 +374,7 @@ export const GoogleRideMap: React.FC = () => {
 
       {activeRide && activeRide.status !== 'completed' && (
         <div className="absolute top-3 left-1/2 -translate-x-1/2 pointer-events-none z-10">
-          <div className="bg-white/95 backdrop-blur-sm rounded-full px-4 py-1.5 shadow-md border border-slate-100 text-[11px] font-black text-slate-700 whitespace-nowrap">
+          <div className="bg-white/95 backdrop-blur-sm rounded-full px-4 py-1.5 shadow-md border border-slate-100 text-xs font-black text-slate-700 whitespace-nowrap">
             {STATUS_LABEL[activeRide.status]}
           </div>
         </div>
@@ -394,13 +394,13 @@ export const GoogleRideMap: React.FC = () => {
       </button>
 
       {gpsError && (
-        <div className="absolute bottom-3 left-3 right-16 z-10 bg-white/95 backdrop-blur-sm border border-amber-200 text-amber-700 text-[10px] font-bold rounded-xl px-3 py-2">
+        <div className="absolute bottom-3 left-3 right-16 z-10 bg-white/95 backdrop-blur-sm border border-amber-200 text-amber-700 text-xs font-bold rounded-xl px-3 py-2">
           {gpsError}
         </div>
       )}
 
       {!activeRide && (
-        <div className="absolute bottom-3 left-3 z-10 bg-white/95 backdrop-blur-sm border border-slate-100 text-slate-600 text-[10px] font-bold rounded-xl px-3 py-2 flex items-center gap-1.5 shadow-sm">
+        <div className="absolute bottom-3 left-3 z-10 bg-white/95 backdrop-blur-sm border border-slate-100 text-slate-600 text-xs font-bold rounded-xl px-3 py-2 flex items-center gap-1.5 shadow-sm">
           <Navigation className="w-3.5 h-3.5 text-primary" />
           Live GPS ready
         </div>

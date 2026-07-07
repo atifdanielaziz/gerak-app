@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback, useRef } from 'react';
+﻿import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { supabase } from '../lib/supabase';
 import { useApp } from '../context/AppContext';
 import {
@@ -537,7 +537,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
             <h2 className="text-xl font-black text-slate-800 m-0 flex items-center gap-2">
               <KeyRound className="w-5 h-5 text-amber-500" /> Gerak Rental
             </h2>
-            <p className="text-[10px] text-slate-400 font-semibold mt-0.5">
+            <p className="text-xs text-slate-400 font-semibold mt-0.5">
               {selected ? selected.car_type || 'Book your slot' : 'Campus vehicle rental'}
             </p>
           </div>
@@ -569,11 +569,11 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
               {/* Receipt header */}
               <div className="bg-amber-500 px-5 pt-4 pb-3 flex items-start justify-between">
                 <div>
-                  <p className="text-[9px] font-extrabold text-amber-100 uppercase tracking-widest">Gerak Rental Receipt</p>
+                  <p className="text-xs font-extrabold text-amber-100 uppercase tracking-widest">Gerak Rental Receipt</p>
                   <p className="text-lg font-black text-white leading-tight mt-0.5">{bk.car_type}</p>
-                  <p className="text-[10px] text-amber-100 font-semibold">{bk.plate_no} · {bk.color}</p>
+                  <p className="text-xs text-amber-100 font-semibold">{bk.plate_no} · {bk.color}</p>
                 </div>
-                <span className={`text-[9px] font-extrabold px-2.5 py-1 rounded-full border uppercase ${statusStyle[bk.status] ?? statusStyle.pending}`}>
+                <span className={`text-xs font-extrabold px-2.5 py-1 rounded-full border uppercase ${statusStyle[bk.status] ?? statusStyle.pending}`}>
                   {bk.status}
                 </span>
               </div>
@@ -583,16 +583,16 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
               {/* Date & time block */}
               <div className="px-5 pt-4 pb-2 grid grid-cols-3 gap-2">
                 <div className="bg-slate-50 rounded-2xl px-3 py-2.5 text-center col-span-2">
-                  <p className="text-[9px] text-slate-400 font-bold mb-0.5">
+                  <p className="text-xs text-slate-400 font-bold mb-0.5">
                     {bk.booking_type === 'fullday' ? 'Date Range' : 'Date'}
                   </p>
-                  <p className="text-[10px] font-extrabold text-slate-700 leading-tight">{fmtDateRange(bk)}</p>
+                  <p className="text-xs font-extrabold text-slate-700 leading-tight">{fmtDateRange(bk)}</p>
                 </div>
                 <div className="bg-slate-50 rounded-2xl px-3 py-2.5 text-center">
-                  <p className="text-[9px] text-slate-400 font-bold mb-0.5">
+                  <p className="text-xs text-slate-400 font-bold mb-0.5">
                     {bk.booking_type === 'fullday' ? 'Days' : 'Duration'}
                   </p>
-                  <p className="text-[10px] font-extrabold text-slate-700 leading-tight">
+                  <p className="text-xs font-extrabold text-slate-700 leading-tight">
                     {bk.booking_type === 'fullday' && bk.end_date
                       ? `${getDatesInRange(bk.date, bk.end_date).length}d`
                       : `${bk.duration}h`}
@@ -604,8 +604,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
               {bk.booking_type !== 'fullday' && (
                 <div className="px-5 pb-2">
                   <div className="bg-slate-50 rounded-2xl px-3 py-2.5 text-center">
-                    <p className="text-[9px] text-slate-400 font-bold mb-0.5">Time</p>
-                    <p className="text-[10px] font-extrabold text-slate-700">
+                    <p className="text-xs text-slate-400 font-bold mb-0.5">Time</p>
+                    <p className="text-xs font-extrabold text-slate-700">
                       {fmt12(bk.start_hour)} → {fmt12(bk.start_hour + bk.duration)}
                     </p>
                   </div>
@@ -614,15 +614,15 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 
               {/* Price breakdown */}
               <div className="px-5 py-3 flex flex-col gap-1.5">
-                <div className="flex items-center justify-between text-[10px]">
+                <div className="flex items-center justify-between text-xs">
                   <span className="text-slate-400 font-semibold">Rate</span>
                   <span className="font-bold text-slate-600">RM{bk.price_hour.toFixed(2)} / hour</span>
                 </div>
-                <div className="flex items-center justify-between text-[10px]">
+                <div className="flex items-center justify-between text-xs">
                   <span className="text-slate-400 font-semibold">Total hours</span>
                   <span className="font-bold text-slate-600">{bk.duration}h</span>
                 </div>
-                <div className="flex items-center justify-between text-[10px]">
+                <div className="flex items-center justify-between text-xs">
                   <span className="text-slate-400 font-semibold">Persons</span>
                   <span className="font-bold text-slate-600">{bk.persons} pax</span>
                 </div>
@@ -651,15 +651,15 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
                       <div className="flex items-center justify-between bg-emerald-50 border border-emerald-100 rounded-2xl px-4 py-2.5 gap-3">
                         <div className="flex items-center gap-2 min-w-0">
                           <FileText className="w-4 h-4 text-emerald-500 shrink-0" />
-                          <p className="text-[10px] font-extrabold text-emerald-700">License Uploaded ✓</p>
+                          <p className="text-xs font-extrabold text-emerald-700">License Uploaded ✓</p>
                         </div>
                         <div className="flex items-center gap-2 shrink-0">
                           <a href={bk.license_url} target="_blank" rel="noreferrer"
-                            className="text-[10px] font-extrabold text-emerald-600 flex items-center gap-1">
+                            className="text-xs font-extrabold text-emerald-600 flex items-center gap-1">
                             <ExternalLink className="w-3 h-3" /> View
                           </a>
                           <button onClick={() => licenseRefs.current[bk.id]?.click()}
-                            className="text-[10px] font-extrabold text-slate-400 hover:text-slate-600 transition">
+                            className="text-xs font-extrabold text-slate-400 hover:text-slate-600 transition">
                             Replace
                           </button>
                         </div>
@@ -668,7 +668,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
                       <button
                         onClick={() => licenseRefs.current[bk.id]?.click()}
                         disabled={uploadingLicense === bk.id}
-                        className="w-full flex items-center justify-center gap-2 bg-amber-50 border border-amber-200 text-amber-700 text-[10px] font-extrabold py-2.5 rounded-2xl active:scale-95 transition disabled:opacity-50"
+                        className="w-full flex items-center justify-center gap-2 bg-amber-50 border border-amber-200 text-amber-700 text-xs font-extrabold py-2.5 rounded-2xl active:scale-95 transition disabled:opacity-50"
                       >
                         {uploadingLicense === bk.id
                           ? <span className="w-3.5 h-3.5 rounded-full border-2 border-amber-500 border-t-transparent animate-spin" />
@@ -682,10 +682,10 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
                   <div className="flex items-center justify-between bg-emerald-50 border border-emerald-100 rounded-2xl px-4 py-2.5 gap-3">
                     <div className="flex items-center gap-2">
                       <FileText className="w-4 h-4 text-emerald-500 shrink-0" />
-                      <p className="text-[10px] font-extrabold text-emerald-700">License Uploaded ✓</p>
+                      <p className="text-xs font-extrabold text-emerald-700">License Uploaded ✓</p>
                     </div>
                     <a href={bk.license_url} target="_blank" rel="noreferrer"
-                      className="text-[10px] font-extrabold text-emerald-600 flex items-center gap-1">
+                      className="text-xs font-extrabold text-emerald-600 flex items-center gap-1">
                       <ExternalLink className="w-3 h-3" /> View
                     </a>
                   </div>
@@ -695,8 +695,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
               {/* Notes */}
               {bk.notes && (
                 <div className="mx-5 mb-3 bg-slate-50 rounded-xl px-3 py-2">
-                  <p className="text-[9px] text-slate-400 font-bold mb-0.5">Note</p>
-                  <p className="text-[10px] text-slate-500 italic">"{bk.notes}"</p>
+                  <p className="text-xs text-slate-400 font-bold mb-0.5">Note</p>
+                  <p className="text-xs text-slate-500 italic">"{bk.notes}"</p>
                 </div>
               )}
 
@@ -705,24 +705,24 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
               {/* Booked By → Vehicle Owner stacked, WA icon at owner name level */}
               <div className="px-5 py-3 flex flex-col gap-3">
                 <div>
-                  <p className="text-[9px] text-slate-400 font-bold uppercase tracking-widest mb-0.5">Booked By</p>
+                  <p className="text-xs text-slate-400 font-bold uppercase tracking-widest mb-0.5">Booked By</p>
                   <p className="text-xs font-extrabold text-slate-800">{user.name}</p>
-                  <p className="text-[10px] text-slate-400 font-semibold">{user.phone}</p>
+                  <p className="text-xs text-slate-400 font-semibold">{user.phone}</p>
                   {bk.status === 'pending' && (
                     <button
                       onClick={() => handleCancelBooking(bk.id)}
-                      className="mt-1.5 flex items-center gap-1 text-[10px] font-extrabold text-red-500 bg-red-50 border border-red-100 px-3 py-1.5 rounded-xl active:scale-95 transition"
+                      className="mt-1.5 flex items-center gap-1 text-xs font-extrabold text-red-500 bg-red-50 border border-red-100 px-3 py-1.5 rounded-xl active:scale-95 transition"
                     >
                       <XCircle className="w-3 h-3" /> Cancel Booking
                     </button>
                   )}
                 </div>
                 <div>
-                  <p className="text-[9px] text-slate-400 font-bold uppercase tracking-widest mb-0.5">Vehicle Owner</p>
+                  <p className="text-xs text-slate-400 font-bold uppercase tracking-widest mb-0.5">Vehicle Owner</p>
                   <div className="flex items-center justify-between gap-2">
                     <div className="min-w-0">
                       <p className="text-xs font-extrabold text-slate-800 truncate">{bk.owner_name}</p>
-                      <p className="text-[10px] text-slate-400 font-semibold">{bk.owner_gerak_id}</p>
+                      <p className="text-xs text-slate-400 font-semibold">{bk.owner_gerak_id}</p>
                     </div>
                     {bk.owner_phone && (
                       <a
@@ -742,7 +742,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
                 <div className="px-5 pb-3">
                   <button
                     onClick={() => generatePdf(bk)}
-                    className="w-full flex items-center justify-center gap-2 bg-slate-50 border border-slate-200 text-slate-500 text-[10px] font-extrabold py-2.5 rounded-2xl active:scale-95 transition hover:bg-slate-100"
+                    className="w-full flex items-center justify-center gap-2 bg-slate-50 border border-slate-200 text-slate-500 text-xs font-extrabold py-2.5 rounded-2xl active:scale-95 transition hover:bg-slate-100"
                   >
                     <FileDown className="w-3.5 h-3.5" /> Save as PDF
                   </button>
@@ -752,10 +752,10 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
               {/* Booking ref footer */}
               <div className="bg-slate-50 px-5 py-2 flex items-center gap-1.5">
                 <Hash className="w-3 h-3 text-slate-300" />
-                <p className="text-[9px] text-slate-400 font-mono font-bold tracking-wider">
+                <p className="text-xs text-slate-400 font-mono font-bold tracking-wider">
                   {String(bk.booking_no ?? '').padStart(5, '0')}
                 </p>
-                <span className="ml-auto text-[9px] text-slate-300 font-semibold">
+                <span className="ml-auto text-xs text-slate-300 font-semibold">
                   {new Date(bk.created_at).toLocaleDateString('en-MY', { day: '2-digit', month: 'short', year: 'numeric' })}
                 </span>
               </div>
@@ -785,25 +785,25 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
                 </div>
                 <div className="flex-1 min-w-0">
                   <h4 className="text-base font-extrabold text-slate-800 m-0 truncate">{o.car_type || 'Vehicle'}</h4>
-                  <p className="text-[10px] text-slate-400 font-semibold mt-0.5">{o.plate_no} · {o.color}</p>
+                  <p className="text-xs text-slate-400 font-semibold mt-0.5">{o.plate_no} · {o.color}</p>
                 </div>
                 <div className="text-right shrink-0">
                   <p className="text-lg font-black text-amber-500">RM{o.price_hour.toFixed(2)}</p>
-                  <p className="text-[9px] text-slate-400 font-bold">per hour</p>
+                  <p className="text-xs text-slate-400 font-bold">per hour</p>
                 </div>
               </div>
 
               <div className="flex gap-2">
                 <div className="flex-1 bg-slate-50 rounded-xl px-3 py-2 text-center">
-                  <p className="text-[9px] text-slate-400 font-bold">Seats</p>
+                  <p className="text-xs text-slate-400 font-bold">Seats</p>
                   <p className="text-xs font-extrabold text-slate-700">{o.seats} pax</p>
                 </div>
                 <div className="flex-1 bg-slate-50 rounded-xl px-3 py-2 text-center">
-                  <p className="text-[9px] text-slate-400 font-bold">Campus</p>
+                  <p className="text-xs text-slate-400 font-bold">Campus</p>
                   <p className="text-xs font-extrabold text-slate-700">{o.campus}</p>
                 </div>
                 <div className="flex-1 bg-slate-50 rounded-xl px-3 py-2 text-center">
-                  <p className="text-[9px] text-slate-400 font-bold">Hours</p>
+                  <p className="text-xs text-slate-400 font-bold">Hours</p>
                   <p className="text-xs font-extrabold text-slate-700">{fmt12(o.operating_start)}–{fmt12(o.operating_end)}</p>
                 </div>
               </div>
@@ -811,17 +811,17 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
               {o.night_surcharge_on && (
                 <div className="flex items-center gap-1.5 bg-indigo-50 rounded-xl px-3 py-1.5">
                   <Moon className="w-3 h-3 text-indigo-400" />
-                  <p className="text-[9px] font-bold text-indigo-600">Night surcharge +RM{o.night_surcharge_rate.toFixed(2)}/h (10PM–5AM)</p>
+                  <p className="text-xs font-bold text-indigo-600">Night surcharge +RM{o.night_surcharge_rate.toFixed(2)}/h (10PM–5AM)</p>
                 </div>
               )}
 
               {o.description && (
-                <p className="text-[10px] text-slate-400 font-semibold leading-relaxed">{o.description}</p>
+                <p className="text-xs text-slate-400 font-semibold leading-relaxed">{o.description}</p>
               )}
 
               <div className="flex items-center justify-between pt-1 border-t border-slate-50">
-                <p className="text-[10px] text-slate-400 font-bold">ID: {o.gerak_id}</p>
-                <span className="text-[10px] text-amber-500 font-extrabold">Tap to book →</span>
+                <p className="text-xs text-slate-400 font-bold">ID: {o.gerak_id}</p>
+                <span className="text-xs text-amber-500 font-extrabold">Tap to book →</span>
               </div>
             </div>
           ))}
@@ -839,7 +839,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
             </div>
             <div className="flex-1 min-w-0">
               <p className="text-xs font-black text-slate-800 truncate">{selected.car_type}</p>
-              <p className="text-[10px] text-slate-500 font-semibold">{selected.plate_no} · {selected.color} · {selected.seats} seats</p>
+              <p className="text-xs text-slate-500 font-semibold">{selected.plate_no} · {selected.color} · {selected.seats} seats</p>
             </div>
             <p className="text-sm font-black text-amber-600 shrink-0">RM{selected.price_hour.toFixed(2)}/h</p>
           </div>
@@ -847,13 +847,13 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
           {/* Booking type toggle */}
           <div className="flex bg-white border border-slate-100 rounded-2xl p-1 gap-1 shadow-sm">
             <button onClick={() => switchBookingType('hourly')}
-              className={`flex-1 py-2 rounded-xl text-[10px] font-extrabold transition flex items-center justify-center gap-1.5 ${
+              className={`flex-1 py-2 rounded-xl text-xs font-extrabold transition flex items-center justify-center gap-1.5 ${
                 bookingType === 'hourly' ? 'bg-amber-500 text-white shadow-sm' : 'text-slate-400'
               }`}>
               <Clock className="w-3 h-3" /> Hourly
             </button>
             <button onClick={() => switchBookingType('fullday')}
-              className={`flex-1 py-2 rounded-xl text-[10px] font-extrabold transition flex items-center justify-center gap-1.5 ${
+              className={`flex-1 py-2 rounded-xl text-xs font-extrabold transition flex items-center justify-center gap-1.5 ${
                 bookingType === 'fullday' ? 'bg-amber-500 text-white shadow-sm' : 'text-slate-400'
               }`}>
               <CalendarDays className="w-3 h-3" /> Full Day / Multi-Day
@@ -864,7 +864,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
           {bookingType === 'fullday' && (
             <div className="bg-slate-50 border border-slate-100 rounded-2xl px-4 py-3 flex items-start gap-2">
               <Info className="w-4 h-4 text-slate-400 shrink-0 mt-0.5" />
-              <p className="text-[10px] text-slate-500 font-semibold leading-relaxed">
+              <p className="text-xs text-slate-500 font-semibold leading-relaxed">
                 Full-day pickup: <strong>{fmt12(selected.operating_start)}</strong> · Return: <strong>{fmt12(selected.operating_end)}</strong>.
                 Tap a start date, then an end date to select a range.
               </p>
@@ -885,7 +885,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 
             <div className="grid grid-cols-7 mb-1">
               {['Su','Mo','Tu','We','Th','Fr','Sa'].map(d => (
-                <div key={d} className="text-center text-[9px] font-extrabold text-slate-400">{d}</div>
+                <div key={d} className="text-center text-xs font-extrabold text-slate-400">{d}</div>
               ))}
             </div>
 
@@ -902,7 +902,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
                   <button key={dateStr}
                     disabled={isPast || isBlocked}
                     onClick={() => handleDateTap(dateStr)}
-                    className={`aspect-square text-[10px] font-bold transition active:scale-90 ${
+                    className={`aspect-square text-xs font-bold transition active:scale-90 ${
                       isSelected  ? 'bg-primary text-white font-extrabold rounded-xl' :
                       isInRange   ? 'bg-primary/15 text-primary rounded-sm' :
                       isBlocked   ? 'bg-red-50 text-red-300 cursor-not-allowed rounded-xl' :
@@ -915,7 +915,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
               })}
             </div>
 
-            <div className="flex gap-3 mt-3 text-[9px] font-bold text-slate-400">
+            <div className="flex gap-3 mt-3 text-xs font-bold text-slate-400">
               <span className="flex items-center gap-1"><span className="w-3 h-3 rounded bg-red-100 inline-block" /> Blocked</span>
               <span className="flex items-center gap-1"><span className="w-3 h-3 rounded bg-primary inline-block" /> Selected</span>
               {bookingType === 'fullday' && rangeStart && !rangeEnd && (
@@ -930,7 +930,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
               <p className="text-xs font-extrabold text-slate-400 uppercase tracking-widest mb-1">
                 Available Hours — {rangeStart}
               </p>
-              <p className="text-[9px] text-slate-400 font-semibold mb-3">
+              <p className="text-xs text-slate-400 font-semibold mb-3">
                 Grey = booked or buffered (30-min gap between bookings)
               </p>
               <div className="grid grid-cols-4 gap-1.5">
@@ -942,7 +942,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
                   return (
                     <button key={h} disabled={!avail}
                       onClick={() => setStartHour(h)}
-                      className={`py-2 rounded-xl text-[10px] font-bold transition active:scale-95 relative ${
+                      className={`py-2 rounded-xl text-xs font-bold transition active:scale-95 relative ${
                         picked   ? 'bg-primary text-white' :
                         inSlot   ? 'bg-primary/20 text-primary' :
                         !avail   ? 'bg-slate-100 text-slate-300 cursor-not-allowed' :
@@ -956,7 +956,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
                 })}
               </div>
               {selected.night_surcharge_on && (
-                <p className="text-[9px] text-indigo-500 font-semibold mt-2 flex items-center gap-1">
+                <p className="text-xs text-indigo-500 font-semibold mt-2 flex items-center gap-1">
                   <Moon className="w-3 h-3" /> Purple = night hours (+RM{selected.night_surcharge_rate.toFixed(2)}/h surcharge)
                 </p>
               )}
@@ -972,7 +972,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
                   <p className="text-xs font-extrabold text-slate-700 flex items-center gap-1.5">
                     <Clock className="w-3.5 h-3.5 text-amber-500" /> Duration
                   </p>
-                  <p className="text-[10px] text-slate-400 font-semibold mt-0.5">
+                  <p className="text-xs text-slate-400 font-semibold mt-0.5">
                     {fmt12(startHour)} → {fmt12(startHour + duration)}
                   </p>
                 </div>
@@ -990,8 +990,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
                 <div className="bg-indigo-50 border border-indigo-100 rounded-xl px-3 py-2.5 flex items-center gap-2">
                   <Moon className="w-4 h-4 text-indigo-400 shrink-0" />
                   <div>
-                    <p className="text-[9px] font-extrabold text-indigo-600 uppercase tracking-wider">Night Surcharge</p>
-                    <p className="text-[10px] text-indigo-700 font-semibold">
+                    <p className="text-xs font-extrabold text-indigo-600 uppercase tracking-wider">Night Surcharge</p>
+                    <p className="text-xs text-indigo-700 font-semibold">
                       +RM{nightSurcharge.toFixed(2)} for night hours in this slot
                     </p>
                   </div>
@@ -1019,17 +1019,17 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 
               {/* Profile auto-fill display */}
               <div className="bg-slate-50 rounded-xl px-3 py-2.5 flex flex-col gap-0.5">
-                <p className="text-[9px] font-extrabold text-slate-400 uppercase tracking-wider">Booking as</p>
+                <p className="text-xs font-extrabold text-slate-400 uppercase tracking-wider">Booking as</p>
                 <p className="text-xs font-bold text-slate-700">{user.name}</p>
-                <p className="text-[10px] text-slate-400 font-semibold">{user.phone}</p>
+                <p className="text-xs text-slate-400 font-semibold">{user.phone}</p>
               </div>
 
               {/* Total + Book */}
               <div className="bg-amber-50 border border-amber-100 rounded-2xl p-4 flex items-center justify-between">
                 <div>
-                  <p className="text-[10px] text-amber-600 font-bold">Total</p>
+                  <p className="text-xs text-amber-600 font-bold">Total</p>
                   <p className="text-xl font-black text-slate-800">RM{totalPrice.toFixed(2)}</p>
-                  <p className="text-[9px] text-slate-400 font-semibold">
+                  <p className="text-xs text-slate-400 font-semibold">
                     {duration}h × RM{selected.price_hour.toFixed(2)}{nightSurcharge > 0 ? ` + RM${nightSurcharge.toFixed(2)} night` : ''}
                   </p>
                 </div>
@@ -1054,13 +1054,13 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
             <div className="bg-white border border-slate-100 rounded-3xl p-4 shadow-sm flex flex-col gap-4">
               {/* Full-day summary */}
               <div className="bg-slate-50 rounded-xl px-4 py-3 flex flex-col gap-1">
-                <p className="text-[9px] font-extrabold text-slate-400 uppercase tracking-wider">Booking Summary</p>
+                <p className="text-xs font-extrabold text-slate-400 uppercase tracking-wider">Booking Summary</p>
                 <p className="text-xs font-bold text-slate-700">
                   {rangeStart === rangeEnd
                     ? new Date(rangeStart + 'T00:00:00').toLocaleDateString('en-MY', { day: '2-digit', month: 'short', year: 'numeric' })
                     : `${new Date(rangeStart + 'T00:00:00').toLocaleDateString('en-MY', { day: '2-digit', month: 'short' })} – ${new Date(rangeEnd + 'T00:00:00').toLocaleDateString('en-MY', { day: '2-digit', month: 'short', year: 'numeric' })}`}
                 </p>
-                <p className="text-[10px] text-slate-500 font-semibold">
+                <p className="text-xs text-slate-500 font-semibold">
                   {numDays} day{numDays > 1 ? 's' : ''} · Pickup {fmt12(selected.operating_start)} → Return {fmt12(selected.operating_end)} · {totalHours}h total
                 </p>
               </div>
@@ -1086,17 +1086,17 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 
               {/* Profile auto-fill display */}
               <div className="bg-slate-50 rounded-xl px-3 py-2.5 flex flex-col gap-0.5">
-                <p className="text-[9px] font-extrabold text-slate-400 uppercase tracking-wider">Booking as</p>
+                <p className="text-xs font-extrabold text-slate-400 uppercase tracking-wider">Booking as</p>
                 <p className="text-xs font-bold text-slate-700">{user.name}</p>
-                <p className="text-[10px] text-slate-400 font-semibold">{user.phone}</p>
+                <p className="text-xs text-slate-400 font-semibold">{user.phone}</p>
               </div>
 
               {/* Total + Book */}
               <div className="bg-amber-50 border border-amber-100 rounded-2xl p-4 flex items-center justify-between">
                 <div>
-                  <p className="text-[10px] text-amber-600 font-bold">Total</p>
+                  <p className="text-xs text-amber-600 font-bold">Total</p>
                   <p className="text-xl font-black text-slate-800">RM{totalPrice.toFixed(2)}</p>
-                  <p className="text-[9px] text-slate-400 font-semibold">
+                  <p className="text-xs text-slate-400 font-semibold">
                     {numDays}d × {selected.operating_end - selected.operating_start}h × RM{selected.price_hour.toFixed(2)}
                   </p>
                 </div>
@@ -1122,7 +1122,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
               <Info className="w-4 h-4 text-slate-400 shrink-0 mt-0.5" />
               <div className="min-w-0">
                 <p className="text-xs font-extrabold text-slate-700 truncate">Owner — {selected.name}</p>
-                <p className="text-[10px] text-slate-400 font-semibold mt-0.5">
+                <p className="text-xs text-slate-400 font-semibold mt-0.5">
                   {selected.gerak_id} · {selected.phone}
                 </p>
               </div>
@@ -1130,7 +1130,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
             {selected.phone && (
               <a href={`https://wa.me/${toWa(selected.phone)}`}
                 target="_blank" rel="noreferrer"
-                className="flex items-center gap-1.5 bg-emerald-500 text-white text-[10px] font-extrabold px-3 py-2 rounded-xl transition active:scale-95 shrink-0">
+                className="flex items-center gap-1.5 bg-emerald-500 text-white text-xs font-extrabold px-3 py-2 rounded-xl transition active:scale-95 shrink-0">
                 <WaIcon className="w-3 h-3" /> WhatsApp
               </a>
             )}

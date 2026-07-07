@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback, useRef } from 'react';
+﻿import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { useApp } from '../context/AppContext';
 import { supabase } from '../lib/supabase';
 import {
@@ -583,7 +583,7 @@ export const DriverHome: React.FC = () => {
 
           {/* IC Upload */}
           <div className="flex flex-col gap-2">
-            <label className="text-[10px] font-extrabold text-slate-500 uppercase tracking-wider">Identity Card (MyKad) *</label>
+            <label className="text-xs font-extrabold text-slate-500 uppercase tracking-wider">Identity Card (MyKad) *</label>
             <input ref={icDocRef} type="file" accept="image/*,.pdf" className="hidden" onChange={e => handleDocUpload(e, 'ic')} />
             {user.icUrl ? (
               <div className="flex items-center justify-between bg-emerald-50 border border-emerald-100 rounded-2xl px-4 py-3">
@@ -592,7 +592,7 @@ export const DriverHome: React.FC = () => {
                   <span className="text-xs font-extrabold text-emerald-700">IC Uploaded ✓</span>
                 </div>
                 <button onClick={() => icDocRef.current?.click()}
-                  className="text-[10px] font-extrabold text-slate-400 underline">
+                  className="text-xs font-extrabold text-slate-400 underline">
                   {uploadingDoc === 'ic' ? 'Uploading…' : 'Replace'}
                 </button>
               </div>
@@ -608,7 +608,7 @@ export const DriverHome: React.FC = () => {
 
           {/* License Upload */}
           <div className="flex flex-col gap-2">
-            <label className="text-[10px] font-extrabold text-slate-500 uppercase tracking-wider">Driving License *</label>
+            <label className="text-xs font-extrabold text-slate-500 uppercase tracking-wider">Driving License *</label>
             <input ref={licenseDocRef} type="file" accept="image/*,.pdf" className="hidden" onChange={e => handleDocUpload(e, 'license')} />
             {user.licenseUrl ? (
               <div className="flex items-center justify-between bg-emerald-50 border border-emerald-100 rounded-2xl px-4 py-3">
@@ -617,7 +617,7 @@ export const DriverHome: React.FC = () => {
                   <span className="text-xs font-extrabold text-emerald-700">License Uploaded ✓</span>
                 </div>
                 <button onClick={() => licenseDocRef.current?.click()}
-                  className="text-[10px] font-extrabold text-slate-400 underline">
+                  className="text-xs font-extrabold text-slate-400 underline">
                   {uploadingDoc === 'license' ? 'Uploading…' : 'Replace'}
                 </button>
               </div>
@@ -634,13 +634,13 @@ export const DriverHome: React.FC = () => {
           {bothUploaded && user.docsStatus === 'none' && (
             <div className="bg-amber-50 border border-amber-100 rounded-2xl px-4 py-3 text-center">
               <p className="text-xs font-extrabold text-amber-700">Documents submitted for review</p>
-              <p className="text-[10px] text-amber-500 font-semibold mt-0.5">Admin will verify your documents shortly.</p>
+              <p className="text-xs text-amber-500 font-semibold mt-0.5">Admin will verify your documents shortly.</p>
             </div>
           )}
         </div>
 
         <div className="bg-slate-50 border border-slate-100 rounded-2xl px-4 py-3">
-          <p className="text-[10px] text-slate-400 font-semibold text-center leading-relaxed">
+          <p className="text-xs text-slate-400 font-semibold text-center leading-relaxed">
             Your Gerak ID: <span className="font-black text-slate-600">{user.gerakId}</span><br />
             Documents are reviewed within 24 hours.
           </p>
@@ -663,7 +663,7 @@ export const DriverHome: React.FC = () => {
           </p>
         </div>
         <div className="bg-red-50 border border-red-100 rounded-2xl px-4 py-3 text-center">
-          <p className="text-[10px] font-bold text-red-400 uppercase tracking-wider">Gerak ID</p>
+          <p className="text-xs font-bold text-red-400 uppercase tracking-wider">Gerak ID</p>
           <p className="text-sm font-black text-red-600 mt-0.5">{user.gerakId}</p>
         </div>
       </div>
@@ -686,12 +686,12 @@ export const DriverHome: React.FC = () => {
         <div>
           <div className="flex items-center gap-2">
             <h2 className="text-xl font-black text-slate-800 m-0">Driver Hub</h2>
-            <span className="flex items-center gap-1 bg-emerald-50 border border-emerald-100 text-emerald-600 text-[9px] font-extrabold px-2 py-0.5 rounded-full">
+            <span className="flex items-center gap-1 bg-emerald-50 border border-emerald-100 text-emerald-600 text-xs font-extrabold px-2 py-0.5 rounded-full">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
               LIVE
             </span>
           </div>
-          <p className="text-[10px] text-slate-400 font-semibold mt-0.5">
+          <p className="text-xs text-slate-400 font-semibold mt-0.5">
             {user.name} · {user.gerakId} · UMPSA {user.campus}
           </p>
         </div>
@@ -725,7 +725,7 @@ export const DriverHome: React.FC = () => {
               <ListOrdered className="w-3.5 h-3.5" />
               Job Pool
               {pendingOrders.length > 0 && (
-                <span className={`text-[9px] font-extrabold px-1.5 py-0.5 rounded-full min-w-[18px] text-center ${
+                <span className={`text-xs font-extrabold px-1.5 py-0.5 rounded-full min-w-[18px] text-center ${
                   activeTab === 'pool'
                     ? 'bg-white/25 text-white'
                     : `bg-primary text-white ${newPing ? 'animate-bounce' : ''}`
@@ -765,7 +765,7 @@ export const DriverHome: React.FC = () => {
               <KeyRound className="w-3.5 h-3.5" />
               Rental
               {pendingRentals > 0 && (
-                <span className={`text-[9px] font-extrabold px-1.5 py-0.5 rounded-full min-w-[18px] text-center ${
+                <span className={`text-xs font-extrabold px-1.5 py-0.5 rounded-full min-w-[18px] text-center ${
                   activeTab === 'rental' ? 'bg-white/25 text-white' : 'bg-amber-500 text-white'
                 }`}>
                   {pendingRentals}
@@ -808,8 +808,8 @@ export const DriverHome: React.FC = () => {
             <div className="bg-red-50 border border-red-200 rounded-2xl px-4 py-3 flex items-start gap-2.5">
               <ShieldOff className="w-4 h-4 text-red-400 shrink-0 mt-0.5" />
               <div>
-                <p className="text-[11px] font-extrabold text-red-600">Account inactive — cannot accept jobs</p>
-                <p className="text-[10px] text-red-400 font-medium mt-0.5 leading-relaxed">
+                <p className="text-xs font-extrabold text-red-600">Account inactive — cannot accept jobs</p>
+                <p className="text-xs text-red-400 font-medium mt-0.5 leading-relaxed">
                   Upload your monthly fee receipt in <strong>Profile</strong> to activate your account.
                 </p>
               </div>
@@ -819,7 +819,7 @@ export const DriverHome: React.FC = () => {
           {myJob && isDriverActive && (
             <div className="bg-amber-50 border border-amber-200 rounded-2xl px-4 py-3 flex items-center gap-2">
               <Clock className="w-4 h-4 text-amber-500 shrink-0" />
-              <p className="text-[11px] font-bold text-amber-700">
+              <p className="text-xs font-bold text-amber-700">
                 You have an active trip. Complete it before accepting a new job.
               </p>
             </div>
@@ -835,13 +835,13 @@ export const DriverHome: React.FC = () => {
               </div>
               <div>
                 <p className="text-sm font-black text-slate-700">Queue is clear</p>
-                <p className="text-[11px] text-slate-400 font-semibold mt-1 leading-relaxed">
+                <p className="text-xs text-slate-400 font-semibold mt-1 leading-relaxed">
                   New orders appear here instantly,<br />sorted by booking time.
                 </p>
               </div>
               <div className="flex items-center gap-1.5 bg-emerald-50 border border-emerald-100 rounded-full px-3 py-1.5">
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                <span className="text-[10px] font-extrabold text-emerald-600">Connected · UMPSA {user.campus}</span>
+                <span className="text-xs font-extrabold text-emerald-600">Connected · UMPSA {user.campus}</span>
               </div>
             </div>
           ) : (
@@ -851,14 +851,14 @@ export const DriverHome: React.FC = () => {
                 {/* Queue position strip */}
                 <div className="bg-slate-50 border-b border-slate-100 px-4 py-2 flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <span className="w-6 h-6 rounded-full bg-primary text-white text-[10px] font-extrabold flex items-center justify-center">
+                    <span className="w-6 h-6 rounded-full bg-primary text-white text-xs font-extrabold flex items-center justify-center">
                       {idx + 1}
                     </span>
-                    <span className="text-[10px] font-extrabold text-slate-500 uppercase tracking-wider">
+                    <span className="text-xs font-extrabold text-slate-500 uppercase tracking-wider">
                       {idx === 0 ? 'Next in queue' : `Queue position ${idx + 1}`}
                     </span>
                   </div>
-                  <div className="flex items-center gap-1 text-[10px] text-blue-600 font-extrabold">
+                  <div className="flex items-center gap-1 text-xs text-blue-600 font-extrabold">
                     <Clock className="w-3 h-3" />
                     {order.date} · {order.time}
                   </div>
@@ -868,7 +868,7 @@ export const DriverHome: React.FC = () => {
                 <div className="px-4 pt-3 pb-2 flex items-start justify-between gap-3">
                   <div>
                     <p className="text-sm font-black text-slate-800">{order.customer_name}</p>
-                    <p className="text-[10px] text-slate-400 font-semibold mt-0.5 flex items-center gap-1.5">
+                    <p className="text-xs text-slate-400 font-semibold mt-0.5 flex items-center gap-1.5">
                       <Users className="w-3 h-3" /> {order.passengers} pax
                     </p>
                   </div>
@@ -877,7 +877,7 @@ export const DriverHome: React.FC = () => {
                       {fmt(order)}
                     </p>
                     {order.night_charge > 0 && (
-                      <p className="text-[9px] text-amber-500 font-bold">+RM{order.night_charge} night</p>
+                      <p className="text-xs text-amber-500 font-bold">+RM{order.night_charge} night</p>
                     )}
                   </div>
                 </div>
@@ -892,11 +892,11 @@ export const DriverHome: React.FC = () => {
                     </div>
                     <div className="flex flex-col gap-2 flex-1 min-w-0">
                       <div>
-                        <p className="text-[9px] text-slate-400 font-bold uppercase tracking-wider">Pick-up</p>
+                        <p className="text-xs text-slate-400 font-bold uppercase tracking-wider">Pick-up</p>
                         <p className="text-xs font-extrabold text-slate-700 leading-tight">{order.pickup}</p>
                       </div>
                       <div>
-                        <p className="text-[9px] text-slate-400 font-bold uppercase tracking-wider">Drop-off</p>
+                        <p className="text-xs text-slate-400 font-bold uppercase tracking-wider">Drop-off</p>
                         <p className="text-xs font-extrabold text-slate-700 leading-tight">{order.destination}</p>
                       </div>
                     </div>
@@ -905,12 +905,12 @@ export const DriverHome: React.FC = () => {
 
                 {/* Contact — hidden when driver is inactive */}
                 {isDriverActive && (
-                  <div className="mx-4 mb-3 flex items-center gap-2 text-[11px] text-slate-500 font-semibold">
+                  <div className="mx-4 mb-3 flex items-center gap-2 text-xs text-slate-500 font-semibold">
                     <a
                       href={`https://wa.me/${order.contact.replace(/\D/g,'').replace(/^0/,'60')}`}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="flex items-center gap-1.5 bg-[#25D366]/10 text-[#25D366] font-extrabold px-3 py-1.5 rounded-full text-[10px] active:scale-95 transition"
+                      className="flex items-center gap-1.5 bg-[#25D366]/10 text-[#25D366] font-extrabold px-3 py-1.5 rounded-full text-xs active:scale-95 transition"
                       onClick={e => e.stopPropagation()}
                     >
                       <WaIcon className="w-3 h-3" /> {order.contact}
@@ -919,7 +919,7 @@ export const DriverHome: React.FC = () => {
                 )}
 
                 {order.notes && (
-                  <p className="mx-4 mb-3 text-[10px] text-slate-500 italic bg-amber-50 border border-amber-100 rounded-xl px-3 py-2">
+                  <p className="mx-4 mb-3 text-xs text-slate-500 italic bg-amber-50 border border-amber-100 rounded-xl px-3 py-2">
                     Remark: "{order.notes}"
                   </p>
                 )}
@@ -964,23 +964,23 @@ export const DriverHome: React.FC = () => {
                     {myJob.status === 'in_progress' ? 'Trip In Progress' : 'Job Accepted'}
                   </span>
                 </div>
-                <span className="text-white/70 text-[10px] font-bold">{myJob.date} · {myJob.time}</span>
+                <span className="text-white/70 text-xs font-bold">{myJob.date} · {myJob.time}</span>
               </div>
 
               <div className="bg-white border border-slate-100 rounded-3xl shadow-sm overflow-hidden cursor-pointer" onClick={() => setSheetOrder(myJob)}>
                 <div className="px-5 pt-5 pb-4 flex flex-col gap-0.5">
                   <div className="flex items-center justify-between gap-3">
-                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Customer</p>
-                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Fare</p>
+                    <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Customer</p>
+                    <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Fare</p>
                   </div>
                   <div className="flex items-center justify-between gap-3">
                     <p className="text-sm font-black text-slate-800 leading-tight">{myJob.customer_name}</p>
                     <p className="text-sm font-black text-slate-800 shrink-0">{fmt(myJob)}</p>
                   </div>
                   {myJob.night_charge > 0 && (
-                    <p className="text-[9px] text-amber-500 font-bold text-right">Night +RM{myJob.night_charge}</p>
+                    <p className="text-xs text-amber-500 font-bold text-right">Night +RM{myJob.night_charge}</p>
                   )}
-                  <p className="text-[10px] text-slate-400 mt-0.5 flex items-center gap-1">
+                  <p className="text-xs text-slate-400 mt-0.5 flex items-center gap-1">
                     <Users className="w-3 h-3" /> {myJob.passengers} passenger{myJob.passengers > 1 ? 's' : ''}
                   </p>
                 </div>
@@ -994,11 +994,11 @@ export const DriverHome: React.FC = () => {
                     </div>
                     <div className="flex flex-col gap-2.5 flex-1 min-w-0">
                       <div>
-                        <p className="text-[9px] font-bold text-slate-400 uppercase">Pickup</p>
+                        <p className="text-xs font-bold text-slate-400 uppercase">Pickup</p>
                         <p className="text-xs font-extrabold text-slate-700 leading-tight">{myJob.pickup}</p>
                       </div>
                       <div>
-                        <p className="text-[9px] font-bold text-slate-400 uppercase">Destination</p>
+                        <p className="text-xs font-bold text-slate-400 uppercase">Destination</p>
                         <p className="text-xs font-extrabold text-slate-700 leading-tight">{myJob.destination}</p>
                       </div>
                     </div>
@@ -1006,7 +1006,7 @@ export const DriverHome: React.FC = () => {
                 </div>
 
                 {myJob.notes && (
-                  <p className="mx-4 mb-3 text-[10px] text-slate-500 italic bg-amber-50 border border-amber-100 rounded-xl px-3 py-2">
+                  <p className="mx-4 mb-3 text-xs text-slate-500 italic bg-amber-50 border border-amber-100 rounded-xl px-3 py-2">
                     Remark: "{myJob.notes}"
                   </p>
                 )}
@@ -1071,7 +1071,7 @@ export const DriverHome: React.FC = () => {
                     <button
                       onClick={handleCancel}
                       disabled={updating}
-                      className="flex flex-col items-center justify-center bg-red-50 border border-red-100 text-red-500 font-extrabold text-[9px] px-3 py-2 rounded-2xl transition active:scale-95 disabled:opacity-50 shrink-0"
+                      className="flex flex-col items-center justify-center bg-red-50 border border-red-100 text-red-500 font-extrabold text-xs px-3 py-2 rounded-2xl transition active:scale-95 disabled:opacity-50 shrink-0"
                     >
                       <XCircle className="w-3.5 h-3.5 mb-0.5" />
                       {fmtCountdown(cancelSecsLeft)}
@@ -1083,7 +1083,7 @@ export const DriverHome: React.FC = () => {
           ) : (
             <div className="bg-slate-100/60 border border-slate-200/60 rounded-2xl px-4 py-3 flex items-center gap-2">
               <CheckCircle2 className="w-4 h-4 text-slate-400 shrink-0" />
-              <p className="text-[11px] font-semibold text-slate-500">No active trip right now. Accept a job from the Pool tab.</p>
+              <p className="text-xs font-semibold text-slate-500">No active trip right now. Accept a job from the Pool tab.</p>
             </div>
           )}
 
@@ -1095,7 +1095,7 @@ export const DriverHome: React.FC = () => {
             );
             return visibleHistory.length > 0 && (
             <div className="flex flex-col gap-3">
-              <h3 className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest flex items-center gap-1.5 pt-1">
+              <h3 className="text-xs font-extrabold text-slate-400 uppercase tracking-widest flex items-center gap-1.5 pt-1">
                 <Clock className="w-3.5 h-3.5" /> Trip History
               </h3>
 
@@ -1109,11 +1109,11 @@ export const DriverHome: React.FC = () => {
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 flex-wrap">
                           <p className="text-xs font-black text-slate-800 truncate">{order.customer_name}</p>
-                          <span className={`text-[9px] font-extrabold px-2 py-0.5 rounded-full border shrink-0 ${st.cls}`}>
+                          <span className={`text-xs font-extrabold px-2 py-0.5 rounded-full border shrink-0 ${st.cls}`}>
                             {st.label}
                           </span>
                         </div>
-                        <p className="text-[10px] text-slate-400 font-semibold mt-0.5 flex items-center gap-1">
+                        <p className="text-xs text-slate-400 font-semibold mt-0.5 flex items-center gap-1">
                           <Clock className="w-3 h-3" /> {order.date} · {order.time} &nbsp;·&nbsp;
                           <Users className="w-3 h-3" /> {order.passengers} pax
                         </p>
@@ -1134,7 +1134,7 @@ export const DriverHome: React.FC = () => {
                         <span className="font-semibold text-slate-500 truncate">{order.destination}</span>
                       </div>
                       {order.notes && (
-                        <p className="text-[10px] text-slate-400 italic mt-1">"{order.notes}"</p>
+                        <p className="text-xs text-slate-400 italic mt-1">"{order.notes}"</p>
                       )}
                     </div>
                   </div>
@@ -1200,7 +1200,7 @@ export const DriverHome: React.FC = () => {
               .filter(({ ownerOnly }) => !ownerOnly || !isAdminForRental)
               .map(({ v, Icon, label }) => (
                 <button key={v} onClick={() => setRentalSubView(v)}
-                  className={`flex-1 py-2 rounded-xl text-[9px] font-extrabold transition flex flex-col items-center gap-0.5 ${
+                  className={`flex-1 py-2 rounded-xl text-xs font-extrabold transition flex flex-col items-center gap-0.5 ${
                     rentalSubView === v ? 'bg-amber-500 text-white shadow-sm' : 'text-slate-400'
                   }`}>
                   <Icon className="w-3 h-3" />
@@ -1234,12 +1234,12 @@ export const DriverHome: React.FC = () => {
                   <div key={bk.id} onClick={() => setRentalReceiptBk(bk)}
                     className="bg-white border border-slate-100 rounded-3xl shadow-sm overflow-hidden cursor-pointer active:scale-[0.99] transition">
                     <div className="bg-slate-50 border-b border-slate-100 px-4 py-2 flex items-center justify-between">
-                      <p className="text-[10px] font-extrabold text-slate-500">
+                      <p className="text-xs font-extrabold text-slate-500">
                         {bk.booking_type === 'fullday' && bk.end_date && bk.end_date !== bk.date
                           ? `${bk.date} → ${bk.end_date} · Full Day`
                           : `${bk.date} · ${fmt12(bk.start_hour)} – ${fmt12(bk.start_hour + bk.duration)}`}
                       </p>
-                      <span className={`text-[9px] font-extrabold px-2 py-0.5 rounded-full border uppercase ${statusStyle[bk.status] ?? statusStyle.pending}`}>
+                      <span className={`text-xs font-extrabold px-2 py-0.5 rounded-full border uppercase ${statusStyle[bk.status] ?? statusStyle.pending}`}>
                         {bk.status}
                       </span>
                     </div>
@@ -1247,11 +1247,11 @@ export const DriverHome: React.FC = () => {
                       <div className="min-w-0 flex-1">
                         <p className="text-xs font-black text-slate-800 truncate">{bk.customer_name}</p>
                         {isAdminForRental && bk.owner_name && (
-                          <p className="text-[9px] text-slate-400 font-semibold truncate">
+                          <p className="text-xs text-slate-400 font-semibold truncate">
                             Owner: {bk.owner_name} · {bk.vehicle_label}
                           </p>
                         )}
-                        <p className="text-[10px] text-slate-400 font-semibold flex items-center gap-2 flex-wrap">
+                        <p className="text-xs text-slate-400 font-semibold flex items-center gap-2 flex-wrap">
                           {bk.persons} pax · {bk.duration}h
                           {!bk.license_url && <span className="text-amber-500 font-extrabold">· License pending</span>}
                         </p>
@@ -1299,7 +1299,7 @@ export const DriverHome: React.FC = () => {
                 </div>
                 <div className="grid grid-cols-7 mb-1">
                   {['Su','Mo','Tu','We','Th','Fr','Sa'].map(d => (
-                    <div key={d} className="text-center text-[9px] font-extrabold text-slate-400">{d}</div>
+                    <div key={d} className="text-center text-xs font-extrabold text-slate-400">{d}</div>
                   ))}
                 </div>
                 <div className="grid grid-cols-7 gap-0.5">
@@ -1311,7 +1311,7 @@ export const DriverHome: React.FC = () => {
                     return (
                       <button key={dateStr} disabled={isPast}
                         onClick={() => setScheduleDate(dateStr)}
-                        className={`aspect-square rounded-xl text-[10px] font-bold transition active:scale-90 ${
+                        className={`aspect-square rounded-xl text-xs font-bold transition active:scale-90 ${
                           isPicked   ? 'bg-amber-500 text-white font-extrabold' :
                           isBlocked  ? 'bg-red-100 text-red-400' :
                           isPast     ? 'text-slate-200 cursor-not-allowed' :
@@ -1322,7 +1322,7 @@ export const DriverHome: React.FC = () => {
                     );
                   })}
                 </div>
-                <div className="flex gap-3 mt-3 text-[9px] font-bold text-slate-400">
+                <div className="flex gap-3 mt-3 text-xs font-bold text-slate-400">
                   <span className="flex items-center gap-1"><span className="w-3 h-3 rounded bg-red-100 inline-block" /> Blocked</span>
                   <span className="flex items-center gap-1"><span className="w-3 h-3 rounded bg-amber-500 inline-block" /> Selected</span>
                 </div>
@@ -1335,11 +1335,11 @@ export const DriverHome: React.FC = () => {
                     <p className="text-xs font-extrabold text-slate-700">{scheduleDate}</p>
                     <div className="flex gap-2">
                       <button onClick={() => blockFullDay(scheduleDate, true)}
-                        className="flex items-center gap-1 text-[10px] font-extrabold text-red-500 bg-red-50 border border-red-100 px-2.5 py-1.5 rounded-xl active:scale-95 transition">
+                        className="flex items-center gap-1 text-xs font-extrabold text-red-500 bg-red-50 border border-red-100 px-2.5 py-1.5 rounded-xl active:scale-95 transition">
                         <Ban className="w-3 h-3" /> Block All
                       </button>
                       <button onClick={() => blockFullDay(scheduleDate, false)}
-                        className="flex items-center gap-1 text-[10px] font-extrabold text-emerald-600 bg-emerald-50 border border-emerald-100 px-2.5 py-1.5 rounded-xl active:scale-95 transition">
+                        className="flex items-center gap-1 text-xs font-extrabold text-emerald-600 bg-emerald-50 border border-emerald-100 px-2.5 py-1.5 rounded-xl active:scale-95 transition">
                         <Unlock className="w-3 h-3" /> Open All
                       </button>
                     </div>
@@ -1349,7 +1349,7 @@ export const DriverHome: React.FC = () => {
                       const blocked = blockedHoursOn(scheduleDate).includes(h);
                       return (
                         <button key={h} onClick={() => toggleHourBlock(scheduleDate, h)}
-                          className={`py-2 rounded-xl text-[10px] font-bold transition active:scale-95 ${
+                          className={`py-2 rounded-xl text-xs font-bold transition active:scale-95 ${
                             blocked
                               ? 'bg-red-100 text-red-500 border border-red-200'
                               : 'bg-slate-50 text-slate-600 hover:bg-amber-50 hover:text-amber-700'
@@ -1359,7 +1359,7 @@ export const DriverHome: React.FC = () => {
                       );
                     })}
                   </div>
-                  <p className="text-[9px] text-slate-400 font-semibold text-center mt-3">
+                  <p className="text-xs text-slate-400 font-semibold text-center mt-3">
                     Tap a slot to toggle. Red = blocked from customers.
                   </p>
                 </div>
@@ -1374,7 +1374,7 @@ export const DriverHome: React.FC = () => {
 
               {/* Hourly rate */}
               <div className="flex flex-col gap-1.5">
-                <label className="text-[10px] font-extrabold text-slate-500 uppercase tracking-wider">Hourly Rate (RM)</label>
+                <label className="text-xs font-extrabold text-slate-500 uppercase tracking-wider">Hourly Rate (RM)</label>
                 <input
                   type="number" min="1" step="0.50"
                   value={vehicleForm.price_hour ?? 10}
@@ -1385,10 +1385,10 @@ export const DriverHome: React.FC = () => {
 
               {/* Operating hours */}
               <div className="flex flex-col gap-2">
-                <label className="text-[10px] font-extrabold text-slate-500 uppercase tracking-wider">Operating Hours (Full-Day Bookings)</label>
+                <label className="text-xs font-extrabold text-slate-500 uppercase tracking-wider">Operating Hours (Full-Day Bookings)</label>
                 <div className="grid grid-cols-2 gap-3">
                   <div className="flex flex-col gap-1">
-                    <span className="text-[9px] font-bold text-slate-400">Pickup Time</span>
+                    <span className="text-xs font-bold text-slate-400">Pickup Time</span>
                     <select
                       value={vehicleForm.operating_start ?? 8}
                       onChange={e => setVehicleForm(f => ({ ...f, operating_start: Number(e.target.value) }))}
@@ -1400,7 +1400,7 @@ export const DriverHome: React.FC = () => {
                     </select>
                   </div>
                   <div className="flex flex-col gap-1">
-                    <span className="text-[9px] font-bold text-slate-400">Return Time</span>
+                    <span className="text-xs font-bold text-slate-400">Return Time</span>
                     <select
                       value={vehicleForm.operating_end ?? 22}
                       onChange={e => setVehicleForm(f => ({ ...f, operating_end: Number(e.target.value) }))}
@@ -1412,7 +1412,7 @@ export const DriverHome: React.FC = () => {
                     </select>
                   </div>
                 </div>
-                <p className="text-[9px] text-slate-400 font-semibold">
+                <p className="text-xs text-slate-400 font-semibold">
                   Full-day bookings will use these times as pickup and return.
                 </p>
               </div>
@@ -1421,10 +1421,10 @@ export const DriverHome: React.FC = () => {
               <div className="flex flex-col gap-3">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-[10px] font-extrabold text-slate-700 flex items-center gap-1.5">
+                    <p className="text-xs font-extrabold text-slate-700 flex items-center gap-1.5">
                       <Moon className="w-3.5 h-3.5 text-indigo-400" /> Night Surcharge
                     </p>
-                    <p className="text-[9px] text-slate-400 font-semibold mt-0.5">Applies 10 PM – 5 AM for hourly bookings</p>
+                    <p className="text-xs text-slate-400 font-semibold mt-0.5">Applies 10 PM – 5 AM for hourly bookings</p>
                   </div>
                   <button
                     onClick={() => setVehicleForm(f => ({ ...f, night_surcharge_on: !f.night_surcharge_on }))}
@@ -1439,7 +1439,7 @@ export const DriverHome: React.FC = () => {
                 </div>
                 {vehicleForm.night_surcharge_on && (
                   <div className="flex flex-col gap-1.5">
-                    <label className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Extra Rate / Hour (RM)</label>
+                    <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Extra Rate / Hour (RM)</label>
                     <input
                       type="number" min="0" step="0.50"
                       value={vehicleForm.night_surcharge_rate ?? 0}
@@ -1447,7 +1447,7 @@ export const DriverHome: React.FC = () => {
                       placeholder="e.g. 5.00"
                       className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-xs font-bold text-slate-700 focus:outline-none focus:border-amber-400 transition"
                     />
-                    <p className="text-[9px] text-slate-400 font-semibold">
+                    <p className="text-xs text-slate-400 font-semibold">
                       Night hours = normal rate + this extra amount per hour.
                     </p>
                   </div>
@@ -1474,7 +1474,7 @@ export const DriverHome: React.FC = () => {
                 { label: 'Color', key: 'color' as const, placeholder: 'e.g. Silver' },
               ].map(({ label, key, placeholder }) => (
                 <div key={key} className="flex flex-col gap-1.5">
-                  <label className="text-[10px] font-extrabold text-slate-500 uppercase tracking-wider">{label}</label>
+                  <label className="text-xs font-extrabold text-slate-500 uppercase tracking-wider">{label}</label>
                   <input
                     value={vehicleForm[key] as string ?? ''}
                     onChange={e => setVehicleForm(f => ({ ...f, [key]: e.target.value }))}
@@ -1486,7 +1486,7 @@ export const DriverHome: React.FC = () => {
 
               <div className="grid grid-cols-2 gap-3">
                 <div className="flex flex-col gap-1.5">
-                  <label className="text-[10px] font-extrabold text-slate-500 uppercase tracking-wider">Seats</label>
+                  <label className="text-xs font-extrabold text-slate-500 uppercase tracking-wider">Seats</label>
                   <div className="flex items-center gap-2">
                     <button onClick={() => setVehicleForm(f => ({ ...f, seats: Math.max(1, (f.seats ?? 5) - 1) }))}
                       className="w-8 h-8 rounded-xl bg-slate-100 text-slate-600 font-black flex items-center justify-center active:scale-90">−</button>
@@ -1496,7 +1496,7 @@ export const DriverHome: React.FC = () => {
                   </div>
                 </div>
                 <div className="flex flex-col gap-1.5">
-                  <label className="text-[10px] font-extrabold text-slate-500 uppercase tracking-wider">Price/Hour (RM)</label>
+                  <label className="text-xs font-extrabold text-slate-500 uppercase tracking-wider">Price/Hour (RM)</label>
                   <input
                     type="number" min="1" step="0.50"
                     value={vehicleForm.price_hour ?? 10}
@@ -1507,7 +1507,7 @@ export const DriverHome: React.FC = () => {
               </div>
 
               <div className="flex flex-col gap-1.5">
-                <label className="text-[10px] font-extrabold text-slate-500 uppercase tracking-wider">Description (optional)</label>
+                <label className="text-xs font-extrabold text-slate-500 uppercase tracking-wider">Description (optional)</label>
                 <textarea
                   value={vehicleForm.description ?? ''}
                   onChange={e => setVehicleForm(f => ({ ...f, description: e.target.value }))}
@@ -1554,21 +1554,21 @@ export const DriverHome: React.FC = () => {
             {/* Receipt header */}
             <div className="bg-amber-500 mx-4 mt-2 mb-0 rounded-2xl px-5 pt-4 pb-4 flex items-start justify-between">
               <div>
-                <p className="text-[9px] font-extrabold text-amber-100 uppercase tracking-widest">Rental Booking</p>
+                <p className="text-xs font-extrabold text-amber-100 uppercase tracking-widest">Rental Booking</p>
                 <p className="text-lg font-black text-white leading-tight mt-0.5">
                   {bk.vehicle_label ?? rentalVehicle?.car_type ?? 'Vehicle'}
                 </p>
                 {!bk.vehicle_label && (
-                  <p className="text-[10px] text-amber-100 font-semibold">
+                  <p className="text-xs text-amber-100 font-semibold">
                     {rentalVehicle?.plate_no} · {rentalVehicle?.color}
                   </p>
                 )}
                 {isAdminForRental && bk.owner_name && (
-                  <p className="text-[10px] text-amber-100 font-semibold">Owner: {bk.owner_name}</p>
+                  <p className="text-xs text-amber-100 font-semibold">Owner: {bk.owner_name}</p>
                 )}
               </div>
               <div className="flex flex-col items-end gap-1.5">
-                <span className={`text-[9px] font-extrabold px-2.5 py-1 rounded-full border uppercase ${statusStyle[bk.status] ?? statusStyle.pending}`}>
+                <span className={`text-xs font-extrabold px-2.5 py-1 rounded-full border uppercase ${statusStyle[bk.status] ?? statusStyle.pending}`}>
                   {bk.status}
                 </span>
                 <button onClick={() => setRentalReceiptBk(null)}
@@ -1584,38 +1584,38 @@ export const DriverHome: React.FC = () => {
               {bk.booking_type === 'fullday' && bk.end_date && bk.end_date !== bk.date ? (
                 <div className="grid grid-cols-2 gap-2">
                   <div className="bg-slate-50 rounded-2xl px-3 py-2.5 text-center">
-                    <p className="text-[9px] text-slate-400 font-bold mb-0.5">From</p>
-                    <p className="text-[10px] font-extrabold text-slate-700 leading-tight">
+                    <p className="text-xs text-slate-400 font-bold mb-0.5">From</p>
+                    <p className="text-xs font-extrabold text-slate-700 leading-tight">
                       {new Date(bk.date + 'T00:00:00').toLocaleDateString('en-MY', { day: '2-digit', month: 'short' })}
                     </p>
-                    <p className="text-[9px] text-slate-400">{fmt12(bk.start_hour)}</p>
+                    <p className="text-xs text-slate-400">{fmt12(bk.start_hour)}</p>
                   </div>
                   <div className="bg-slate-50 rounded-2xl px-3 py-2.5 text-center">
-                    <p className="text-[9px] text-slate-400 font-bold mb-0.5">To</p>
-                    <p className="text-[10px] font-extrabold text-slate-700 leading-tight">
+                    <p className="text-xs text-slate-400 font-bold mb-0.5">To</p>
+                    <p className="text-xs font-extrabold text-slate-700 leading-tight">
                       {new Date(bk.end_date + 'T00:00:00').toLocaleDateString('en-MY', { day: '2-digit', month: 'short' })}
                     </p>
-                    <p className="text-[9px] text-slate-400">{fmt12(bk.start_hour)}</p>
+                    <p className="text-xs text-slate-400">{fmt12(bk.start_hour)}</p>
                   </div>
                 </div>
               ) : (
                 <div className="grid grid-cols-3 gap-2">
                   <div className="bg-slate-50 rounded-2xl px-3 py-2.5 text-center">
-                    <p className="text-[9px] text-slate-400 font-bold mb-0.5">Date</p>
-                    <p className="text-[10px] font-extrabold text-slate-700 leading-tight">
+                    <p className="text-xs text-slate-400 font-bold mb-0.5">Date</p>
+                    <p className="text-xs font-extrabold text-slate-700 leading-tight">
                       {new Date(bk.date + 'T00:00:00').toLocaleDateString('en-MY', { day: '2-digit', month: 'short', year: 'numeric' })}
                     </p>
                   </div>
                   <div className="bg-slate-50 rounded-2xl px-3 py-2.5 text-center">
-                    <p className="text-[9px] text-slate-400 font-bold mb-0.5">Time</p>
-                    <p className="text-[10px] font-extrabold text-slate-700 leading-tight">
+                    <p className="text-xs text-slate-400 font-bold mb-0.5">Time</p>
+                    <p className="text-xs font-extrabold text-slate-700 leading-tight">
                       {fmt12(bk.start_hour)}<br />
-                      <span className="text-[9px] text-slate-400">→ {fmt12(bk.start_hour + bk.duration)}</span>
+                      <span className="text-xs text-slate-400">→ {fmt12(bk.start_hour + bk.duration)}</span>
                     </p>
                   </div>
                   <div className="bg-slate-50 rounded-2xl px-3 py-2.5 text-center">
-                    <p className="text-[9px] text-slate-400 font-bold mb-0.5">Duration</p>
-                    <p className="text-[10px] font-extrabold text-slate-700 leading-tight">{bk.duration} hr{bk.duration > 1 ? 's' : ''}</p>
+                    <p className="text-xs text-slate-400 font-bold mb-0.5">Duration</p>
+                    <p className="text-xs font-extrabold text-slate-700 leading-tight">{bk.duration} hr{bk.duration > 1 ? 's' : ''}</p>
                   </div>
                 </div>
               )}
@@ -1623,9 +1623,9 @@ export const DriverHome: React.FC = () => {
               {/* Customer info */}
               <div className="bg-slate-50 rounded-2xl px-4 py-3 flex items-center justify-between gap-3">
                 <div className="min-w-0">
-                  <p className="text-[9px] text-slate-400 font-bold uppercase tracking-widest">Customer</p>
+                  <p className="text-xs text-slate-400 font-bold uppercase tracking-widest">Customer</p>
                   <p className="text-xs font-extrabold text-slate-800 truncate">{bk.customer_name}</p>
-                  <p className="text-[10px] text-slate-500 font-semibold">{bk.persons} pax</p>
+                  <p className="text-xs text-slate-500 font-semibold">{bk.persons} pax</p>
                 </div>
                 {bk.customer_phone && bk.customer_phone !== '—' && (
                   <a href={`https://wa.me/${toWa(bk.customer_phone)}?text=${encodeURIComponent(`Hi ${bk.customer_name}, regarding your rental booking #${String(bk.booking_no).padStart(5, '0')} — just confirming your details. Please let me know if you have any questions!`)}`}
@@ -1639,11 +1639,11 @@ export const DriverHome: React.FC = () => {
 
               {/* Price breakdown */}
               <div className="flex flex-col gap-1.5 px-1">
-                <div className="flex items-center justify-between text-[10px]">
+                <div className="flex items-center justify-between text-xs">
                   <span className="text-slate-400 font-semibold">Rate</span>
                   <span className="font-bold text-slate-600">RM{Number(priceHour).toFixed(2)} / hour</span>
                 </div>
-                <div className="flex items-center justify-between text-[10px]">
+                <div className="flex items-center justify-between text-xs">
                   <span className="text-slate-400 font-semibold">Duration</span>
                   <span className="font-bold text-slate-600">{bk.duration} hour{bk.duration > 1 ? 's' : ''}</span>
                 </div>
@@ -1658,8 +1658,8 @@ export const DriverHome: React.FC = () => {
                 <div className="flex items-center gap-2 min-w-0">
                   <FileText className={`w-4 h-4 shrink-0 ${bk.license_url ? 'text-emerald-500' : 'text-amber-400'}`} />
                   <div>
-                    <p className="text-[9px] font-extrabold uppercase tracking-widest text-slate-400">Driver's License</p>
-                    <p className={`text-[10px] font-extrabold ${bk.license_url ? 'text-emerald-700' : 'text-amber-600'}`}>
+                    <p className="text-xs font-extrabold uppercase tracking-widest text-slate-400">Driver's License</p>
+                    <p className={`text-xs font-extrabold ${bk.license_url ? 'text-emerald-700' : 'text-amber-600'}`}>
                       {bk.license_url ? 'Uploaded ✓' : 'Not yet uploaded'}
                     </p>
                   </div>
@@ -1667,7 +1667,7 @@ export const DriverHome: React.FC = () => {
                 {bk.license_url && (
                   <a href={bk.license_url} target="_blank" rel="noreferrer"
                     onClick={e => e.stopPropagation()}
-                    className="flex items-center gap-1 text-[10px] font-extrabold text-emerald-600 bg-white border border-emerald-200 px-3 py-1.5 rounded-xl active:scale-95 transition shrink-0">
+                    className="flex items-center gap-1 text-xs font-extrabold text-emerald-600 bg-white border border-emerald-200 px-3 py-1.5 rounded-xl active:scale-95 transition shrink-0">
                     <ExternalLink className="w-3 h-3" /> View
                   </a>
                 )}
@@ -1676,16 +1676,16 @@ export const DriverHome: React.FC = () => {
               {/* Notes */}
               {bk.notes && (
                 <div className="bg-slate-50 rounded-xl px-3 py-2">
-                  <p className="text-[9px] text-slate-400 font-bold mb-0.5">Note from customer</p>
-                  <p className="text-[10px] text-slate-500 italic">"{bk.notes}"</p>
+                  <p className="text-xs text-slate-400 font-bold mb-0.5">Note from customer</p>
+                  <p className="text-xs text-slate-500 italic">"{bk.notes}"</p>
                 </div>
               )}
 
               {/* Booking ref */}
               <div className="flex items-center gap-1.5 px-1">
                 <Hash className="w-3 h-3 text-slate-300" />
-                <p className="text-[9px] text-slate-400 font-mono font-bold tracking-wider">{String(bk.booking_no).padStart(5, '0')}</p>
-                <span className="ml-auto text-[9px] text-slate-300 font-semibold">
+                <p className="text-xs text-slate-400 font-mono font-bold tracking-wider">{String(bk.booking_no).padStart(5, '0')}</p>
+                <span className="ml-auto text-xs text-slate-300 font-semibold">
                   {new Date(bk.created_at).toLocaleDateString('en-MY', { day: '2-digit', month: 'short', year: 'numeric' })}
                 </span>
               </div>
@@ -1780,7 +1780,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
                 };
                 return (
                   <button onClick={handlePdf}
-                    className="w-full flex items-center justify-center gap-2 bg-slate-50 border border-slate-200 text-slate-500 text-[10px] font-extrabold py-2.5 rounded-2xl active:scale-95 transition hover:bg-slate-100">
+                    className="w-full flex items-center justify-center gap-2 bg-slate-50 border border-slate-200 text-slate-500 text-xs font-extrabold py-2.5 rounded-2xl active:scale-95 transition hover:bg-slate-100">
                     <FileDown className="w-3.5 h-3.5" /> Save as PDF
                   </button>
                 );

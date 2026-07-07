@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+﻿import React, { useState } from 'react';
 import { useApp } from '../context/AppContext';
 import { supabase } from '../lib/supabase';
 import { Lock, Eye, EyeOff, CheckCircle } from 'lucide-react';
@@ -61,7 +61,7 @@ export const ResetPassword: React.FC = () => {
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
 
           <div className="flex flex-col gap-1">
-            <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider pl-1">New Password</label>
+            <label className="text-xs font-bold text-slate-500 uppercase tracking-wider pl-1">New Password</label>
             <div className="relative">
               <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400">
                 <Lock className="w-4 h-4" />
@@ -86,7 +86,7 @@ export const ResetPassword: React.FC = () => {
           </div>
 
           <div className="flex flex-col gap-1">
-            <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider pl-1">Confirm Password</label>
+            <label className="text-xs font-bold text-slate-500 uppercase tracking-wider pl-1">Confirm Password</label>
             <div className="relative">
               <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400">
                 <Lock className="w-4 h-4" />

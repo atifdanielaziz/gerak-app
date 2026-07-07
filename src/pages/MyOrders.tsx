@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+﻿import React, { useEffect, useRef, useState } from 'react';
 import { useApp } from '../context/AppContext';
 import { supabase } from '../lib/supabase';
 import {
@@ -92,7 +92,7 @@ const DriverSheet: React.FC<DriverSheetProps> = ({ order, onClose }) => (
           </div>
           <div className="text-center mt-1">
             <p className="text-xl font-black text-slate-800">{order.driver_name}</p>
-            <span className="inline-flex items-center gap-1 mt-1 bg-emerald-50 border border-emerald-100 text-emerald-600 text-[10px] font-extrabold px-2.5 py-1 rounded-full">
+            <span className="inline-flex items-center gap-1 mt-1 bg-emerald-50 border border-emerald-100 text-emerald-600 text-xs font-extrabold px-2.5 py-1 rounded-full">
               <ShieldCheck className="w-3 h-3" /> Verified Gerak Driver
             </span>
           </div>
@@ -143,7 +143,7 @@ const InfoRow: React.FC<{
       {icon}
     </div>
     <div className="flex-1 min-w-0">
-      <p className="text-[9px] font-extrabold text-slate-400 uppercase tracking-wider">{label}</p>
+      <p className="text-xs font-extrabold text-slate-400 uppercase tracking-wider">{label}</p>
       <div className="flex items-center gap-2 mt-0.5">
         <p className={`text-sm font-bold truncate ${
           highlight ? 'text-emerald-600' : mono ? 'text-slate-800 font-mono tracking-widest' : 'text-slate-800'
@@ -295,7 +295,7 @@ export const MyOrders: React.FC = () => {
 
       <div className="px-4 pt-5 pb-3">
         <h2 className="text-xl font-black text-slate-800">My Orders</h2>
-        <p className="text-[10px] text-slate-400 font-semibold mt-0.5">{user.name} · {user.gerakId}</p>
+        <p className="text-xs text-slate-400 font-semibold mt-0.5">{user.name} · {user.gerakId}</p>
       </div>
 
       {loading && (
@@ -323,10 +323,10 @@ export const MyOrders: React.FC = () => {
 
               {/* Status + date */}
               <div className="flex items-center justify-between">
-                <span className={`text-[9px] font-extrabold uppercase tracking-wider px-2.5 py-1 rounded-lg border ${STATUS_STYLE[o.status] ?? STATUS_STYLE.cancelled}`}>
+                <span className={`text-xs font-extrabold uppercase tracking-wider px-2.5 py-1 rounded-lg border ${STATUS_STYLE[o.status] ?? STATUS_STYLE.cancelled}`}>
                   {STATUS_LABEL[o.status] ?? o.status}
                 </span>
-                <span className="text-[10px] text-slate-400 font-semibold">
+                <span className="text-xs text-slate-400 font-semibold">
                   {new Date(o.created_at).toLocaleDateString('en-MY', { day: '2-digit', month: 'short', year: 'numeric' })}
                 </span>
               </div>
@@ -348,7 +348,7 @@ export const MyOrders: React.FC = () => {
                       <span className="text-emerald-600 font-bold truncate flex-1 min-w-0">
                         {o.driver_gerak_id ?? o.driver_name}
                       </span>
-                      <span className="shrink-0 ml-1 text-[9px] bg-emerald-100 text-emerald-600 px-1.5 py-0.5 rounded-full font-extrabold">
+                      <span className="shrink-0 ml-1 text-xs bg-emerald-100 text-emerald-600 px-1.5 py-0.5 rounded-full font-extrabold">
                         View
                       </span>
                     </button>
@@ -359,7 +359,7 @@ export const MyOrders: React.FC = () => {
               {/* 5-minute action window */}
               {canAct(o) && (
                 <div className="flex flex-col gap-2">
-                  <div className="flex items-center justify-between text-[10px] font-semibold px-0.5">
+                  <div className="flex items-center justify-between text-xs font-semibold px-0.5">
                     <span className="text-slate-400">Quick actions</span>
                     <span className="font-mono text-primary">{fmtCountdown(secsLeft(o))} left</span>
                   </div>

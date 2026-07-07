@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+﻿import React, { useState } from 'react';
 import { useApp } from '../context/AppContext';
 import { Bell, ChevronLeft, ShieldCheck, Car, Bike, MoreHorizontal, Eye } from 'lucide-react';
 
@@ -154,7 +154,7 @@ export const Header: React.FC = () => {
             <div className="flex bg-slate-100 rounded-xl p-0.5 gap-0.5">
               <button
                 onClick={switchToAdminMode}
-                className={`flex items-center gap-1 px-2.5 py-1.5 rounded-[10px] text-[9px] font-extrabold transition active:scale-95 ${
+                className={`flex items-center gap-1 px-2.5 py-1.5 rounded-[10px] text-xs font-extrabold transition active:scale-95 ${
                   activeRole !== 'driver' ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-400 hover:text-slate-600'
                 }`}
               >
@@ -163,7 +163,7 @@ export const Header: React.FC = () => {
               </button>
               <button
                 onClick={switchToDriverMode}
-                className={`flex items-center gap-1 px-2.5 py-1.5 rounded-[10px] text-[9px] font-extrabold transition active:scale-95 ${
+                className={`flex items-center gap-1 px-2.5 py-1.5 rounded-[10px] text-xs font-extrabold transition active:scale-95 ${
                   activeRole === 'driver' ? 'bg-primary text-white shadow-sm' : 'text-slate-400 hover:text-slate-600'
                 }`}
               >
@@ -181,7 +181,7 @@ export const Header: React.FC = () => {
           >
             <Bell className="w-5 h-5" />
             {unreadCount > 0 && (
-              <span className="absolute top-1 right-1 w-4.5 h-4.5 bg-danger text-white text-[9px] font-bold rounded-full flex items-center justify-center border-2 border-white animate-pulse">
+              <span className="absolute top-1 right-1 w-4.5 h-4.5 bg-danger text-white text-xs font-bold rounded-full flex items-center justify-center border-2 border-white animate-pulse">
                 {unreadCount}
               </span>
             )}

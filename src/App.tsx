@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState, lazy, Suspense } from 'react';
+﻿import React, { useEffect, useRef, useState, lazy, Suspense } from 'react';
 import { AppProvider, useApp } from './context/AppContext';
 import { Header } from './components/Header';
 import { BottomNav } from './components/BottomNav';
@@ -119,7 +119,7 @@ const InstallPrompt: React.FC = () => {
           <div className="px-6 pt-5 pb-2 flex flex-col gap-4">
             <div className="text-center">
               <p className="text-sm font-black text-slate-800 mb-1">Install gerak on your phone</p>
-              <p className="text-[11px] text-slate-400 font-semibold leading-relaxed">
+              <p className="text-xs text-slate-400 font-semibold leading-relaxed">
                 Works offline · loads instantly · no App Store needed
               </p>
             </div>

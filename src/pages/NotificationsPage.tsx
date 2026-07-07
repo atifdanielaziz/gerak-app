@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+﻿import React, { useEffect } from 'react';
 import { useApp } from '../context/AppContext';
 import type { NotificationItem } from '../context/AppContext';
 import { BellRing, Check, Info, Car, GraduationCap, HelpCircle } from 'lucide-react';
@@ -91,7 +91,7 @@ export const NotificationsPage: React.FC = () => {
                   </h4>
                   <span className="text-[8px] text-slate-400 font-bold whitespace-nowrap">{notif.time}</span>
                 </div>
-                <p className="text-[10px] text-slate-500 leading-normal font-semibold mt-1">
+                <p className="text-xs text-slate-500 leading-normal font-semibold mt-1">
                   {notif.description}
                 </p>
               </div>
@@ -110,7 +110,7 @@ export const NotificationsPage: React.FC = () => {
         <Info className="w-5 h-5 text-emerald-600 shrink-0" />
         <div>
           <h4 className="text-xs font-bold leading-tight m-0">Dynamic Inbox Feeds</h4>
-          <p className="text-[10px] text-emerald-700 leading-normal mt-1 font-semibold">
+          <p className="text-xs text-emerald-700 leading-normal mt-1 font-semibold">
             Track and history logs update automatically. Verify alerts here for driver coordinates and gown shipments.
           </p>
         </div>
