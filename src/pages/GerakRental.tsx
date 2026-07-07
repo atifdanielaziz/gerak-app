@@ -437,7 +437,7 @@ export const GerakRental: React.FC = () => {
     const bookingDate = new Date(bk.created_at).toLocaleDateString('en-MY', { day: '2-digit', month: 'short', year: 'numeric' });
 
     const html = `<!DOCTYPE html><html><head><meta charset="utf-8">
-<title>Rental Receipt #${String(bk.booking_no ?? '').padStart(5, '0')}</title>
+<title>Gerak Rental Receipt #${String(bk.booking_no ?? '').padStart(5, '0')}</title>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
 body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f8fafc;display:flex;justify-content:center;padding:40px 20px}
@@ -464,10 +464,11 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .notes{margin:0 24px 12px;background:#f8fafc;border-radius:10px;padding:10px 12px}
 .notes-label{font-size:9px;color:#94a3b8;font-weight:700;margin-bottom:3px}
 .notes-text{font-size:10px;color:#64748b;font-style:italic}
-.owner{padding:12px 24px}
-.owner-label{font-size:9px;color:#94a3b8;font-weight:700;text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px}
-.owner-name{font-size:13px;font-weight:800;color:#1e293b}
-.owner-id{font-size:10px;color:#94a3b8;font-weight:600;margin-top:1px}
+.parties{display:flex;gap:0;padding:12px 24px}
+.party{flex:1}
+.party-label{font-size:9px;color:#94a3b8;font-weight:700;text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px}
+.party-name{font-size:12px;font-weight:800;color:#1e293b}
+.party-sub{font-size:10px;color:#94a3b8;font-weight:600;margin-top:1px}
 .footer{background:#f8fafc;padding:10px 24px;display:flex;align-items:center;justify-content:space-between}
 .footer-ref{font-size:9px;color:#94a3b8;font-weight:700;font-family:monospace;letter-spacing:.05em}
 .footer-date{font-size:9px;color:#94a3b8;font-weight:600}
@@ -475,7 +476,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 </style></head><body>
 <div class="card">
   <div class="header"><div class="header-top">
-    <div><div class="header-label">Rental Receipt</div><div class="header-vehicle">${bk.car_type}</div><div class="header-plate">${bk.plate_no} · ${bk.color}</div></div>
+    <div><div class="header-label">Gerak Rental Receipt</div><div class="header-vehicle">${bk.car_type}</div><div class="header-plate">${bk.plate_no} · ${bk.color}</div></div>
     <span class="badge">${bk.status}</span>
   </div></div>
   <hr class="divider"/>
@@ -492,14 +493,27 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
   </div>
   ${notesBlock}
   <hr class="divider"/>
-  <div class="owner"><div class="owner-label">Vehicle Owner</div><div class="owner-name">${bk.owner_name}</div><div class="owner-id">${bk.owner_gerak_id}</div></div>
+  <div class="parties">
+    <div class="party"><div class="party-label">Booked By</div><div class="party-name">${user.name}</div><div class="party-sub">${user.phone}</div></div>
+    <div class="party"><div class="party-label">Vehicle Owner</div><div class="party-name">${bk.owner_name}</div><div class="party-sub">${bk.owner_gerak_id}</div></div>
+  </div>
   <div class="footer"><span class="footer-ref"># ${String(bk.booking_no ?? '').padStart(5, '0')}</span><span class="footer-date">${bookingDate}</span></div>
 </div>
-<script>window.onload=function(){window.print()}<\/script>
+<script>window.onload=function(){window.print();window.onafterprint=function(){window.close()}}<\/script>
 </body></html>`;
 
-    const w = window.open('', '_blank');
-    if (w) { w.document.write(html); w.document.close(); }
+    const iframe = document.createElement('iframe');
+    iframe.style.cssText = 'position:fixed;width:0;height:0;border:none;visibility:hidden;';
+    document.body.appendChild(iframe);
+    const doc = iframe.contentDocument ?? iframe.contentWindow?.document;
+    if (doc) {
+      doc.open(); doc.write(html); doc.close();
+      setTimeout(() => {
+        iframe.contentWindow?.focus();
+        iframe.contentWindow?.print();
+        setTimeout(() => document.body.removeChild(iframe), 1000);
+      }, 300);
+    }
   };
 
   return (
@@ -557,7 +571,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
               {/* Receipt header */}
               <div className="bg-amber-500 px-5 pt-4 pb-3 flex items-start justify-between">
                 <div>
-                  <p className="text-[9px] font-extrabold text-amber-100 uppercase tracking-widest">Rental Receipt</p>
+                  <p className="text-[9px] font-extrabold text-amber-100 uppercase tracking-widest">Gerak Rental Receipt</p>
                   <p className="text-lg font-black text-white leading-tight mt-0.5">{bk.car_type}</p>
                   <p className="text-[10px] text-amber-100 font-semibold">{bk.plate_no} · {bk.color}</p>
                 </div>
@@ -690,13 +704,23 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 
               <div className="mx-5 border-t border-dashed border-slate-200" />
 
-              {/* Owner + actions */}
-              <div className="px-5 py-3 flex items-center justify-between gap-3">
-                <div className="min-w-0">
-                  <p className="text-[9px] text-slate-400 font-bold uppercase tracking-widest">Vehicle Owner</p>
+              {/* Booked By + Owner */}
+              <div className="px-5 pt-3 pb-1 flex gap-4">
+                <div className="flex-1 min-w-0">
+                  <p className="text-[9px] text-slate-400 font-bold uppercase tracking-widest mb-0.5">Booked By</p>
+                  <p className="text-xs font-extrabold text-slate-800 truncate">{user.name}</p>
+                  <p className="text-[10px] text-slate-400 font-semibold">{user.phone}</p>
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-[9px] text-slate-400 font-bold uppercase tracking-widest mb-0.5">Vehicle Owner</p>
                   <p className="text-xs font-extrabold text-slate-800 truncate">{bk.owner_name}</p>
                   <p className="text-[10px] text-slate-400 font-semibold">{bk.owner_gerak_id}</p>
                 </div>
+              </div>
+
+              {/* Owner actions */}
+              <div className="px-5 py-3 flex items-center justify-between gap-3">
+                <div className="min-w-0" />
                 <div className="flex items-center gap-2 shrink-0">
                   {bk.status === 'pending' && (
                     <button
