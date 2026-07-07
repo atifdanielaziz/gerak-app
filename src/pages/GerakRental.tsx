@@ -464,11 +464,10 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .notes{margin:0 24px 12px;background:#f8fafc;border-radius:10px;padding:10px 12px}
 .notes-label{font-size:9px;color:#94a3b8;font-weight:700;margin-bottom:3px}
 .notes-text{font-size:10px;color:#64748b;font-style:italic}
-.parties{display:flex;gap:0;padding:12px 24px}
-.party{flex:1}
-.party-label{font-size:9px;color:#94a3b8;font-weight:700;text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px}
-.party-name{font-size:12px;font-weight:800;color:#1e293b}
-.party-sub{font-size:10px;color:#94a3b8;font-weight:600;margin-top:1px}
+.owner{padding:12px 24px}
+.owner-label{font-size:9px;color:#94a3b8;font-weight:700;text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px}
+.owner-name{font-size:12px;font-weight:800;color:#1e293b}
+.owner-id{font-size:10px;color:#94a3b8;font-weight:600;margin-top:1px}
 .footer{background:#f8fafc;padding:10px 24px;display:flex;align-items:center;justify-content:space-between}
 .footer-ref{font-size:9px;color:#94a3b8;font-weight:700;font-family:monospace;letter-spacing:.05em}
 .footer-date{font-size:9px;color:#94a3b8;font-weight:600}
@@ -489,14 +488,13 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
     <div class="row"><span class="row-label">Rate</span><span class="row-value">RM${bk.price_hour.toFixed(2)} / hour</span></div>
     <div class="row"><span class="row-label">Total hours</span><span class="row-value">${bk.duration}h</span></div>
     <div class="row"><span class="row-label">Persons</span><span class="row-value">${bk.persons} pax</span></div>
+    <div class="row"><span class="row-label">Renter</span><span class="row-value">${user.name}</span></div>
+    <div class="row"><span class="row-label">Phone</span><span class="row-value">${user.phone}</span></div>
     <div class="total-row"><span class="total-label">Total</span><span class="total-amount">RM${Number(bk.total_price).toFixed(2)}</span></div>
   </div>
   ${notesBlock}
   <hr class="divider"/>
-  <div class="parties">
-    <div class="party"><div class="party-label">Booked By</div><div class="party-name">${user.name}</div><div class="party-sub">${user.phone}</div></div>
-    <div class="party"><div class="party-label">Vehicle Owner</div><div class="party-name">${bk.owner_name}</div><div class="party-sub">${bk.owner_gerak_id}</div></div>
-  </div>
+  <div class="owner"><div class="owner-label">Vehicle Owner</div><div class="owner-name">${bk.owner_name}</div><div class="owner-id">${bk.owner_gerak_id}</div></div>
   <div class="footer"><span class="footer-ref"># ${String(bk.booking_no ?? '').padStart(5, '0')}</span><span class="footer-date">${bookingDate}</span></div>
 </div>
 <script>window.onload=function(){window.print();window.onafterprint=function(){window.close()}}<\/script>
