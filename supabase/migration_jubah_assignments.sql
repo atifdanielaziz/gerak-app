@@ -48,6 +48,7 @@ WHERE role = 'rider'
 ON CONFLICT DO NOTHING;
 
 -- 4. Update get_active_jubah_riders RPC (customer booking form)
+DROP FUNCTION IF EXISTS get_active_jubah_riders(TEXT, TEXT);
 CREATE OR REPLACE FUNCTION get_active_jubah_riders(p_campus TEXT, p_method TEXT)
 RETURNS TABLE (id UUID, name TEXT, jubah_drop_point TEXT, ic_number TEXT, phone TEXT)
 LANGUAGE sql SECURITY DEFINER AS $$
@@ -69,6 +70,7 @@ LANGUAGE sql SECURITY DEFINER AS $$
 $$;
 
 -- 5. Update get_jubah_riders_directory RPC (landing page public directory)
+DROP FUNCTION IF EXISTS get_jubah_riders_directory(TEXT);
 CREATE OR REPLACE FUNCTION get_jubah_riders_directory(p_campus TEXT)
 RETURNS TABLE (id UUID, name TEXT, jubah_drop_point TEXT, ic_number TEXT, phone TEXT)
 LANGUAGE sql SECURITY DEFINER AS $$
