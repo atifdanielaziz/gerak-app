@@ -287,10 +287,14 @@ export const Jubah: React.FC = () => {
 
     // Uploads are foldered by booking reference (not a public URL) so the
     // jubah-docs storage policies can verify ownership later — only
-    // admin/superadmin and the assigned rider can read these back.
+    // admin/superadmin and the assigned rider can read these back. The
+    // filename itself (not the folder) also carries the student's name for
+    // readability when browsing storage directly — this has no bearing on
+    // access control, which only checks the folder (the reference).
     const uploadFile = async (file: File, label: string): Promise<string | undefined> => {
       const ext = file.name.split('.').pop() ?? 'pdf';
-      const path = `${reference}/${label}.${ext}`;
+      const namePart = (fullName || 'student').replace(/\s+/g, '_');
+      const path = `${reference}/${namePart}_${label}_${Date.now()}.${ext}`;
       const { data, error } = await supabase.storage
         .from('jubah-docs')
         .upload(path, file, { contentType: file.type, upsert: false });

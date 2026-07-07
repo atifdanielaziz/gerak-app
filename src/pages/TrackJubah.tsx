@@ -93,7 +93,8 @@ export const TrackJubah: React.FC = () => {
     let driveUrl: string | undefined;
     try {
       const ext  = balanceProof.name.split('.').pop() ?? 'pdf';
-      const path = `${b.reference}/balance-payment-${Date.now()}.${ext}`;
+      const namePart = b.full_name.replace(/\s+/g, '_');
+      const path = `${b.reference}/${namePart}_balance-payment_${Date.now()}.${ext}`;
       const { data: storageData, error: storageError } = await supabase.storage
         .from('jubah-docs')
         .upload(path, balanceProof, { contentType: balanceProof.type, upsert: false });
