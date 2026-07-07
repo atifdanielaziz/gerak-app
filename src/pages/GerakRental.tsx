@@ -4,7 +4,7 @@ import { useApp } from '../context/AppContext';
 import {
   KeyRound, ChevronLeft, ChevronRight, Users, Clock,
   CalendarDays, Car, RefreshCw, CheckCircle2, Info,
-  Hash, Moon, Upload, FileText, XCircle, ExternalLink,
+  Hash, Moon, Upload, FileText, XCircle, ExternalLink, FileDown,
 } from 'lucide-react';
 import { WaIcon, toWa } from '../lib/whatsapp';
 
@@ -423,6 +423,85 @@ export const GerakRental: React.FC = () => {
     return new Date(bk.date + 'T00:00:00').toLocaleDateString('en-MY', { day: '2-digit', month: 'short', year: 'numeric' });
   };
 
+  const generatePdf = (bk: RentalBooking) => {
+    const dateLabel = bk.booking_type === 'fullday' ? 'Date Range' : 'Date';
+    const durLabel = bk.booking_type === 'fullday' && bk.end_date
+      ? `${getDatesInRange(bk.date, bk.end_date).length} day(s)`
+      : `${bk.duration}h`;
+    const timeCell = bk.booking_type !== 'fullday'
+      ? `<div class="cell full"><div class="cell-label">Time</div><div class="cell-value">${fmt12(bk.start_hour)} → ${fmt12(bk.start_hour + bk.duration)}</div></div>`
+      : '';
+    const notesBlock = bk.notes
+      ? `<div class="notes"><div class="notes-label">Note</div><div class="notes-text">"${bk.notes}"</div></div>`
+      : '';
+    const bookingDate = new Date(bk.created_at).toLocaleDateString('en-MY', { day: '2-digit', month: 'short', year: 'numeric' });
+
+    const html = `<!DOCTYPE html><html><head><meta charset="utf-8">
+<title>Rental Receipt #${String(bk.booking_no ?? '').padStart(5, '0')}</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f8fafc;display:flex;justify-content:center;padding:40px 20px}
+.card{background:white;border-radius:20px;overflow:hidden;width:100%;max-width:420px;box-shadow:0 4px 24px rgba(0,0,0,.08)}
+.header{background:#f59e0b;padding:20px 24px 16px}
+.header-top{display:flex;justify-content:space-between;align-items:flex-start}
+.header-label{font-size:9px;font-weight:800;color:rgba(255,255,255,.7);letter-spacing:.1em;text-transform:uppercase}
+.header-vehicle{font-size:22px;font-weight:900;color:white;margin:4px 0 2px}
+.header-plate{font-size:11px;color:rgba(255,255,255,.8);font-weight:600}
+.badge{background:rgba(255,255,255,.25);border:1px solid rgba(255,255,255,.4);color:white;font-size:9px;font-weight:800;padding:4px 10px;border-radius:20px;text-transform:uppercase;white-space:nowrap}
+.divider{border:none;border-top:1.5px dashed #e2e8f0;margin:0 24px}
+.grid{display:grid;grid-template-columns:2fr 1fr;gap:8px;padding:16px 24px 8px}
+.cell{background:#f8fafc;border-radius:12px;padding:10px 12px;text-align:center}
+.cell.full{grid-column:1/-1}
+.cell-label{font-size:9px;color:#94a3b8;font-weight:700;margin-bottom:3px}
+.cell-value{font-size:11px;font-weight:800;color:#334155}
+.breakdown{padding:12px 24px}
+.row{display:flex;justify-content:space-between;font-size:10px;margin-bottom:6px}
+.row-label{color:#94a3b8;font-weight:600}
+.row-value{color:#475569;font-weight:700}
+.total-row{display:flex;justify-content:space-between;align-items:center;padding-top:10px;margin-top:4px;border-top:1.5px dashed #e2e8f0}
+.total-label{font-size:13px;font-weight:800;color:#1e293b}
+.total-amount{font-size:22px;font-weight:900;color:#f59e0b}
+.notes{margin:0 24px 12px;background:#f8fafc;border-radius:10px;padding:10px 12px}
+.notes-label{font-size:9px;color:#94a3b8;font-weight:700;margin-bottom:3px}
+.notes-text{font-size:10px;color:#64748b;font-style:italic}
+.owner{padding:12px 24px}
+.owner-label{font-size:9px;color:#94a3b8;font-weight:700;text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px}
+.owner-name{font-size:13px;font-weight:800;color:#1e293b}
+.owner-id{font-size:10px;color:#94a3b8;font-weight:600;margin-top:1px}
+.footer{background:#f8fafc;padding:10px 24px;display:flex;align-items:center;justify-content:space-between}
+.footer-ref{font-size:9px;color:#94a3b8;font-weight:700;font-family:monospace;letter-spacing:.05em}
+.footer-date{font-size:9px;color:#94a3b8;font-weight:600}
+@media print{body{padding:0;background:white}.card{box-shadow:none;border-radius:0;max-width:100%}}
+</style></head><body>
+<div class="card">
+  <div class="header"><div class="header-top">
+    <div><div class="header-label">Rental Receipt</div><div class="header-vehicle">${bk.car_type}</div><div class="header-plate">${bk.plate_no} · ${bk.color}</div></div>
+    <span class="badge">${bk.status}</span>
+  </div></div>
+  <hr class="divider"/>
+  <div class="grid">
+    <div class="cell"><div class="cell-label">${dateLabel}</div><div class="cell-value">${fmtDateRange(bk)}</div></div>
+    <div class="cell"><div class="cell-label">${bk.booking_type === 'fullday' ? 'Days' : 'Duration'}</div><div class="cell-value">${durLabel}</div></div>
+    ${timeCell}
+  </div>
+  <div class="breakdown">
+    <div class="row"><span class="row-label">Rate</span><span class="row-value">RM${bk.price_hour.toFixed(2)} / hour</span></div>
+    <div class="row"><span class="row-label">Total hours</span><span class="row-value">${bk.duration}h</span></div>
+    <div class="row"><span class="row-label">Persons</span><span class="row-value">${bk.persons} pax</span></div>
+    <div class="total-row"><span class="total-label">Total</span><span class="total-amount">RM${Number(bk.total_price).toFixed(2)}</span></div>
+  </div>
+  ${notesBlock}
+  <hr class="divider"/>
+  <div class="owner"><div class="owner-label">Vehicle Owner</div><div class="owner-name">${bk.owner_name}</div><div class="owner-id">${bk.owner_gerak_id}</div></div>
+  <div class="footer"><span class="footer-ref"># ${String(bk.booking_no ?? '').padStart(5, '0')}</span><span class="footer-date">${bookingDate}</span></div>
+</div>
+<script>window.onload=function(){window.print()}<\/script>
+</body></html>`;
+
+    const w = window.open('', '_blank');
+    if (w) { w.document.write(html); w.document.close(); }
+  };
+
   return (
     <div className="flex-grow bg-slate-50 overflow-y-auto no-scrollbar pb-24 flex flex-col animate-fade-in">
 
@@ -637,6 +716,16 @@ export const GerakRental: React.FC = () => {
                     </a>
                   )}
                 </div>
+              </div>
+
+              {/* PDF button */}
+              <div className="px-5 pb-3">
+                <button
+                  onClick={() => generatePdf(bk)}
+                  className="w-full flex items-center justify-center gap-2 bg-slate-50 border border-slate-200 text-slate-500 text-[10px] font-extrabold py-2.5 rounded-2xl active:scale-95 transition hover:bg-slate-100"
+                >
+                  <FileDown className="w-3.5 h-3.5" /> Save as PDF
+                </button>
               </div>
 
               {/* Booking ref footer */}
