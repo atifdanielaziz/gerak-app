@@ -237,7 +237,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     {
       id: '1',
       title: 'Welcome to gerak!',
-      description: 'Your Smart Campus Service Platform is ready. Check out Transport or Jubah services.',
+      description: 'Your Smart University Service Platform is ready. Check out Transport or Jubah services.',
       time: 'Just now',
       isRead: false,
       type: 'system',

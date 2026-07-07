@@ -54,7 +54,7 @@ export const Login: React.FC = () => {
           Sign In to <span style={{ fontFamily: 'Inter, sans-serif', fontSize: '2rem', lineHeight: 1, fontWeight: 700 }}>ger<span style={{ color: '#EF4444' }}>a</span>k</span>
         </h2>
         <p className="text-slate-400 text-xs mt-1 font-semibold">
-          Smart Campus Service Platform
+          Smart University Service Platform
         </p>
       </div>
 
