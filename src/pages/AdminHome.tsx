@@ -344,13 +344,33 @@ const JubahRiderSheet: React.FC<{
   method: 'pickup' | 'postage' | '';
   dropPoint: string;
   saving: boolean;
+  assignments: { id: string; method: string; drop_point: string | null }[];
   onMethodChange: (m: 'pickup' | 'postage') => void;
   onDropPointChange: (v: string) => void;
   onSave: () => void;
+  onAddAssignment: (method: 'pickup' | 'postage', dropPoint: string) => Promise<void>;
   onClose: () => void;
-}> = ({ rider, method, dropPoint, saving, onMethodChange, onDropPointChange, onSave, onClose }) => {
+}> = ({ rider, method, dropPoint, saving, assignments, onMethodChange, onDropPointChange, onSave, onAddAssignment, onClose }) => {
   const [isEditingDropPoint, setIsEditingDropPoint] = useState(!dropPoint);
   const dropPointDisabled = method === 'postage' || !isEditingDropPoint;
+
+  const [showAdd, setShowAdd] = useState(false);
+  const [addMethod, setAddMethod] = useState<'pickup' | 'postage'>('pickup');
+  const [addDropPoint, setAddDropPoint] = useState('');
+  const [addSaving, setAddSaving] = useState(false);
+
+  const handleAdd = async () => {
+    if (addMethod !== 'postage' && !addDropPoint.trim()) return;
+    setAddSaving(true);
+    await onAddAssignment(addMethod, addMethod === 'postage' ? '-' : addDropPoint.trim());
+    setAddSaving(false);
+    setShowAdd(false);
+    setAddDropPoint('');
+    setAddMethod('pickup');
+  };
+
+  // secondary = any assignments beyond the first (which was migrated from profiles)
+  const secondary = assignments.slice(1);
 
   return (
   <div
@@ -399,73 +419,192 @@ const JubahRiderSheet: React.FC<{
         </div>
 
         {/* Method + Drop point */}
-        <div className="mx-4 mb-4 flex flex-col gap-4">
-          <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Method</label>
-            <div className="relative group">
-              <div className="bg-slate-50 border border-slate-200 rounded-xl py-2.5 px-3 flex items-center justify-between pointer-events-none group-focus-within:border-primary transition">
-                <span className={`text-xs ${method ? 'font-bold text-slate-700' : 'font-normal text-slate-300'}`}>
-                  {method === 'pickup' ? 'Self Pickup' : method === 'postage' ? 'Pickup & Postage' : 'Select method...'}
-                </span>
-                <ChevronDown className="w-3 h-3 text-slate-400 shrink-0" />
-              </div>
-              <select
-                value={method}
-                onChange={e => onMethodChange(e.target.value as 'pickup' | 'postage')}
-                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                style={{ fontSize: '16px' }}
+        <div className="mx-4 mb-4 flex flex-col gap-5">
+
+          {/* ── METHOD section ── */}
+          <div className="flex flex-col gap-2">
+            <div className="flex items-center justify-between">
+              <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Method</label>
+              <button
+                onClick={() => { setShowAdd(v => !v); setAddDropPoint(''); setAddMethod('pickup'); }}
+                className={`flex items-center gap-1 text-xs font-extrabold px-2.5 py-1 rounded-full border transition active:scale-95 ${
+                  showAdd
+                    ? 'bg-indigo-50 border-indigo-200 text-indigo-600'
+                    : 'bg-slate-100 border-slate-200 text-slate-500'
+                }`}
               >
-                <option value="" disabled>Select method...</option>
-                <option value="pickup">Self Pickup</option>
-                <option value="postage">Pickup &amp; Postage</option>
-              </select>
+                <Plus className="w-3 h-3" /> Add
+              </button>
             </div>
+
+            {/* METHOD 1 — primary (editable) */}
+            <div className="flex flex-col gap-1">
+              {(secondary.length > 0 || showAdd) && (
+                <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">Method 1</span>
+              )}
+              <div className="relative group">
+                <div className="bg-slate-50 border border-slate-200 rounded-xl py-2.5 px-3 flex items-center justify-between pointer-events-none group-focus-within:border-primary transition">
+                  <span className={`text-xs ${method ? 'font-bold text-slate-700' : 'font-normal text-slate-300'}`}>
+                    {method === 'pickup' ? 'Self Pickup' : method === 'postage' ? 'Pickup & Postage' : 'Select method...'}
+                  </span>
+                  <ChevronDown className="w-3 h-3 text-slate-400 shrink-0" />
+                </div>
+                <select
+                  value={method}
+                  onChange={e => onMethodChange(e.target.value as 'pickup' | 'postage')}
+                  className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                  style={{ fontSize: '16px' }}
+                >
+                  <option value="" disabled>Select method...</option>
+                  <option value="pickup">Self Pickup</option>
+                  <option value="postage">Pickup &amp; Postage</option>
+                </select>
+              </div>
+            </div>
+
+            {/* METHOD 2+ — secondary (read-only) */}
+            {secondary.map((a, i) => (
+              <div key={a.id} className="flex flex-col gap-1">
+                <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">Method {i + 2}</span>
+                <div className="bg-slate-50 border border-slate-100 rounded-xl py-2.5 px-3 text-xs font-bold text-slate-600">
+                  {a.method === 'pickup' ? 'Self Pickup' : 'Pickup & Postage'}
+                </div>
+              </div>
+            ))}
+
+            {/* New method input */}
+            {showAdd && (
+              <div className="flex flex-col gap-1">
+                <span className="text-[10px] font-extrabold text-indigo-400 uppercase tracking-wider">
+                  Method {secondary.length + 2}
+                </span>
+                <div className="relative group">
+                  <div className="bg-indigo-50/50 border border-indigo-200 rounded-xl py-2.5 px-3 flex items-center justify-between pointer-events-none transition">
+                    <span className="text-xs font-bold text-slate-700">
+                      {addMethod === 'pickup' ? 'Self Pickup' : 'Pickup & Postage'}
+                    </span>
+                    <ChevronDown className="w-3 h-3 text-slate-400 shrink-0" />
+                  </div>
+                  <select
+                    value={addMethod}
+                    onChange={e => setAddMethod(e.target.value as 'pickup' | 'postage')}
+                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                    style={{ fontSize: '16px' }}
+                  >
+                    <option value="pickup">Self Pickup</option>
+                    <option value="postage">Pickup &amp; Postage</option>
+                  </select>
+                </div>
+              </div>
+            )}
           </div>
 
-          <div className="flex flex-col gap-1.5">
-            <div className="flex items-center justify-between">
-              <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Drop Point</label>
-              {method !== 'postage' && (
-                <button
-                  type="button"
-                  onClick={() => setIsEditingDropPoint(v => !v)}
-                  className={`flex items-center gap-1 text-xs font-extrabold px-2 py-0.5 rounded-full border transition active:scale-95 ${
-                    isEditingDropPoint
-                      ? 'bg-primary/10 border-primary/30 text-primary'
-                      : 'bg-slate-100 border-slate-200 text-slate-500'
-                  }`}
-                >
-                  <Pencil className="w-2.5 h-2.5" /> {isEditingDropPoint ? 'Editing' : 'Edit'}
-                </button>
+          {/* ── DROP POINT section ── */}
+          <div className="flex flex-col gap-2">
+            <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Drop Point</label>
+
+            {/* DROP POINT 1 — primary (editable) */}
+            <div className="flex flex-col gap-1">
+              {(secondary.length > 0 || showAdd) && (
+                <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">Drop Point 1</span>
+              )}
+              <div className="flex items-center justify-between mb-1">
+                {method !== 'postage' && (
+                  <button
+                    type="button"
+                    onClick={() => setIsEditingDropPoint(v => !v)}
+                    className={`flex items-center gap-1 text-xs font-extrabold px-2 py-0.5 rounded-full border transition active:scale-95 ${
+                      isEditingDropPoint
+                        ? 'bg-primary/10 border-primary/30 text-primary'
+                        : 'bg-slate-100 border-slate-200 text-slate-500'
+                    }`}
+                  >
+                    <Pencil className="w-2.5 h-2.5" /> {isEditingDropPoint ? 'Editing' : 'Edit'}
+                  </button>
+                )}
+              </div>
+              <input
+                type="text"
+                value={dropPoint}
+                onChange={e => onDropPointChange(e.target.value)}
+                placeholder="e.g. UMP Gambang Counter"
+                disabled={dropPointDisabled}
+                style={{ fontSize: '12px' }}
+                className="bg-slate-50 border border-slate-200 rounded-xl py-2.5 px-3 font-bold text-slate-700 focus:outline-none focus:border-primary transition placeholder:font-normal disabled:opacity-50 disabled:cursor-not-allowed"
+              />
+              {method === 'postage' && (
+                <p className="text-xs text-slate-400 font-semibold">Not applicable — robe is couriered, no physical drop point needed.</p>
               )}
             </div>
-            <input
-              type="text"
-              value={dropPoint}
-              onChange={e => onDropPointChange(e.target.value)}
-              placeholder="e.g. UMP Gambang Counter"
-              disabled={dropPointDisabled}
-              style={{ fontSize: '12px' }}
-              className="bg-slate-50 border border-slate-200 rounded-xl py-2.5 px-3 font-bold text-slate-700 focus:outline-none focus:border-primary transition placeholder:font-normal disabled:opacity-50 disabled:cursor-not-allowed"
-            />
-            {method === 'postage' && (
-              <p className="text-xs text-slate-400 font-semibold">Not applicable — robe is couriered, no physical drop point needed.</p>
+
+            {/* DROP POINT 2+ — secondary (read-only) */}
+            {secondary.map((a, i) => (
+              <div key={a.id} className="flex flex-col gap-1">
+                <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">Drop Point {i + 2}</span>
+                <div className="bg-slate-50 border border-slate-100 rounded-xl py-2.5 px-3 text-xs font-bold text-slate-600">
+                  {a.drop_point && a.drop_point !== '-' ? a.drop_point : '— (Postage, no drop point)'}
+                </div>
+              </div>
+            ))}
+
+            {/* New drop point input */}
+            {showAdd && (
+              <div className="flex flex-col gap-1">
+                <span className="text-[10px] font-extrabold text-indigo-400 uppercase tracking-wider">
+                  Drop Point {secondary.length + 2}
+                </span>
+                {addMethod !== 'postage' ? (
+                  <input
+                    type="text"
+                    value={addDropPoint}
+                    onChange={e => setAddDropPoint(e.target.value)}
+                    placeholder="e.g. Kolej Kediaman 3, Lobby A"
+                    style={{ fontSize: '12px' }}
+                    className="bg-indigo-50/50 border border-indigo-200 rounded-xl py-2.5 px-3 font-bold text-slate-700 focus:outline-none focus:border-indigo-400 transition placeholder:font-normal placeholder:text-slate-300"
+                    autoFocus
+                  />
+                ) : (
+                  <div className="bg-slate-50 border border-slate-100 rounded-xl py-2.5 px-3 text-xs text-slate-400 font-semibold">
+                    Not applicable — robe is couriered.
+                  </div>
+                )}
+              </div>
             )}
           </div>
         </div>
       </div>
 
-      {/* Save + Call/WA buttons — sticky footer, always reachable */}
-      <div className="px-4 pt-3 pb-6 flex flex-col gap-4 shrink-0 border-t border-slate-100">
-        <button
-          onClick={() => { onSave(); setIsEditingDropPoint(false); }}
-          disabled={saving || !method}
-          className="w-full bg-primary text-white font-extrabold text-xs py-3.5 rounded-2xl shadow-md active:scale-[0.98] transition disabled:opacity-50 flex items-center justify-center gap-2"
-        >
-          {saving
-            ? <span className="w-4 h-4 rounded-full border-2 border-white border-t-transparent animate-spin" />
-            : 'Save Assignment'}
-        </button>
+      {/* Footer — sticky, always reachable */}
+      <div className="px-4 pt-3 pb-6 flex flex-col gap-3 shrink-0 border-t border-slate-100">
+        {showAdd ? (
+          <div className="flex gap-2">
+            <button
+              onClick={() => { setShowAdd(false); setAddDropPoint(''); setAddMethod('pickup'); }}
+              className="flex-1 bg-slate-100 text-slate-600 font-extrabold text-xs py-3.5 rounded-2xl active:scale-95 transition"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleAdd}
+              disabled={addSaving || (addMethod !== 'postage' && !addDropPoint.trim())}
+              className="flex-1 bg-indigo-600 text-white font-extrabold text-xs py-3.5 rounded-2xl shadow-md active:scale-[0.98] transition disabled:opacity-50 flex items-center justify-center gap-2"
+            >
+              {addSaving
+                ? <span className="w-4 h-4 rounded-full border-2 border-white border-t-transparent animate-spin" />
+                : 'Add Assignment'}
+            </button>
+          </div>
+        ) : (
+          <button
+            onClick={() => { onSave(); setIsEditingDropPoint(false); }}
+            disabled={saving || !method}
+            className="w-full bg-primary text-white font-extrabold text-xs py-3.5 rounded-2xl shadow-md active:scale-[0.98] transition disabled:opacity-50 flex items-center justify-center gap-2"
+          >
+            {saving
+              ? <span className="w-4 h-4 rounded-full border-2 border-white border-t-transparent animate-spin" />
+              : 'Save Assignment'}
+          </button>
+        )}
         {rider.phone && (
           <div className="flex gap-3">
             <a
@@ -807,10 +946,6 @@ export const AdminHome: React.FC = () => {
   const [jubahRiders,        setJubahRiders]        = useState<JubahRider[]>([]);
   const [jubahRidersLoading, setJubahRidersLoading] = useState(false);
   const [jubahAssignments,   setJubahAssignments]   = useState<JubahAssignment[]>([]);
-  const [dupModal,           setDupModal]           = useState<{ rider: JubahRider } | null>(null);
-  const [dupDropPoint,       setDupDropPoint]       = useState('');
-  const [dupMethod,          setDupMethod]          = useState<'pickup' | 'postage'>('pickup');
-  const [dupSaving,          setDupSaving]          = useState(false);
   const [jubahBookings,      setJubahBookings]      = useState<JubahBookingRow[]>([]);
   const [jubahBookingsLoading, setJubahBookingsLoading] = useState(false);
   const [deletingBooking,    setDeletingBooking]    = useState<string | null>(null);
@@ -880,26 +1015,6 @@ export const AdminHome: React.FC = () => {
     if (error) { showToast('Failed to update assignment.'); return; }
     showToast(`${jubahSheetRider.name}'s assignment updated.`);
     setJubahSheetRider(null);
-    loadJubahData();
-  };
-
-  const handleDuplicateAssignment = async () => {
-    if (!dupModal) return;
-    if (!dupDropPoint.trim()) { showToast('Please enter a drop point.'); return; }
-    setDupSaving(true);
-    const { error } = await supabase.from('jubah_rider_assignments').insert({
-      rider_id:   dupModal.rider.id,
-      drop_point: dupDropPoint.trim(),
-      method:     dupMethod,
-      campus:     dupModal.rider.campus,
-      is_active:  true,
-    });
-    setDupSaving(false);
-    if (error) { showToast('Save failed: ' + error.message); return; }
-    showToast('Assignment added.');
-    setDupModal(null);
-    setDupDropPoint('');
-    setDupMethod('pickup');
     loadJubahData();
   };
 
@@ -1697,89 +1812,27 @@ export const AdminHome: React.FC = () => {
           method={jubahMethodDraft}
           dropPoint={jubahDropPointDraft}
           saving={savingJubahAssignment}
+          assignments={jubahAssignments.filter(a => a.rider_id === jubahSheetRider.id)}
           onMethodChange={m => {
             setJubahMethodDraft(m);
             if (m === 'postage') setJubahDropPointDraft('-');
           }}
           onDropPointChange={setJubahDropPointDraft}
           onSave={handleSaveJubahAssignment}
+          onAddAssignment={async (method, dropPoint) => {
+            const { error } = await supabase.from('jubah_rider_assignments').insert({
+              rider_id:   jubahSheetRider.id,
+              drop_point: dropPoint,
+              method,
+              campus:     jubahSheetRider.campus,
+              is_active:  true,
+            });
+            if (error) { showToast('Failed: ' + error.message); return; }
+            showToast('Assignment added.');
+            loadJubahData();
+          }}
           onClose={() => setJubahSheetRider(null)}
         />
-      )}
-
-      {/* Duplicate assignment modal */}
-      {dupModal && (
-        <div
-          className="fixed inset-0 z-50 flex items-end justify-center"
-          style={{ background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(2px)' }}
-          onClick={() => setDupModal(null)}
-        >
-          <div
-            className="w-full bg-white rounded-t-3xl shadow-2xl animate-slide-up overflow-hidden flex flex-col"
-            style={{ maxWidth: 480, paddingBottom: 'calc(1.5rem + env(safe-area-inset-bottom))' }}
-            onClick={e => e.stopPropagation()}
-          >
-            {/* Handle */}
-            <div className="flex justify-center pt-3 pb-2 shrink-0">
-              <div className="w-10 h-1 bg-slate-200 rounded-full" />
-            </div>
-
-            <div className="px-6 pb-2 flex flex-col gap-5">
-              <div>
-                <h3 className="text-sm font-black text-slate-800">Add Assignment</h3>
-                <p className="text-xs text-slate-400 font-semibold mt-0.5">
-                  New assignment for <span className="text-slate-700 font-extrabold">{dupModal.rider.name}</span>
-                </p>
-              </div>
-
-              {/* Drop point */}
-              <div className="flex flex-col gap-1.5">
-                <label className="text-xs font-extrabold text-slate-500 uppercase tracking-wider">Drop Point</label>
-                <input
-                  type="text"
-                  value={dupDropPoint}
-                  onChange={e => setDupDropPoint(e.target.value)}
-                  placeholder="e.g. Kolej Kediaman 3, Lobby A…"
-                  style={{ fontSize: '13px' }}
-                  className="bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 font-semibold text-slate-800 focus:outline-none focus:border-primary transition placeholder:font-normal placeholder:text-slate-300"
-                  autoFocus
-                />
-              </div>
-
-              {/* Method */}
-              <div className="flex flex-col gap-1.5">
-                <label className="text-xs font-extrabold text-slate-500 uppercase tracking-wider">Method</label>
-                <div className="flex bg-slate-100 rounded-xl p-1 gap-1">
-                  {(['pickup', 'postage'] as const).map(m => (
-                    <button key={m} onClick={() => setDupMethod(m)}
-                      className={`flex-1 py-2 rounded-lg text-xs font-extrabold transition active:scale-95 capitalize ${
-                        dupMethod === m ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-400'
-                      }`}>
-                      {m}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Actions */}
-              <div className="flex gap-2 pt-1">
-                <button
-                  onClick={() => setDupModal(null)}
-                  className="flex-1 bg-slate-100 text-slate-600 font-extrabold text-sm py-3.5 rounded-2xl active:scale-95 transition"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={handleDuplicateAssignment}
-                  disabled={dupSaving || !dupDropPoint.trim()}
-                  className="flex-1 bg-primary text-white font-extrabold text-sm py-3.5 rounded-2xl shadow-lg shadow-primary/20 active:scale-95 transition disabled:opacity-50"
-                >
-                  {dupSaving ? 'Saving…' : 'Save'}
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
       )}
 
       {/* Sticky header + tab switcher */}
@@ -2910,14 +2963,13 @@ export const AdminHome: React.FC = () => {
                   <Users className="w-4 h-4" /> Representative Directory
                 </h3>
                 <div className="overflow-x-auto overflow-y-auto no-scrollbar max-h-[320px]">
-                  <table className="text-left border-collapse" style={{ minWidth: 560 }}>
+                  <table className="text-left border-collapse" style={{ minWidth: 480 }}>
                     <thead className="sticky top-0 bg-white">
                       <tr className="text-xs font-extrabold text-slate-400 uppercase tracking-wider border-b border-slate-100">
                         <th className="py-2 pr-4 whitespace-nowrap">Method</th>
                         <th className="py-2 pr-4 whitespace-nowrap">Representative Name</th>
                         <th className="py-2 pr-4 whitespace-nowrap">I/C Number</th>
-                        <th className="py-2 pr-4 whitespace-nowrap">H/P</th>
-                        <th className="py-2 whitespace-nowrap"></th>
+                        <th className="py-2 whitespace-nowrap">H/P</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -2931,7 +2983,7 @@ export const AdminHome: React.FC = () => {
                             </td>
                             <td className="py-2.5 pr-4 font-extrabold text-slate-800 align-top">{a.name}</td>
                             <td className="py-2.5 pr-4 font-mono text-slate-700 align-top whitespace-nowrap">{a.ic_number || '—'}</td>
-                            <td className="py-2.5 pr-4 text-slate-700 font-semibold align-top whitespace-nowrap">
+                            <td className="py-2.5 text-slate-700 font-semibold align-top whitespace-nowrap">
                               <div className="flex items-center gap-1.5">
                                 <span>{a.phone || '—'}</span>
                                 {a.phone && (
@@ -2941,16 +2993,6 @@ export const AdminHome: React.FC = () => {
                                   </a>
                                 )}
                               </div>
-                            </td>
-                            <td className="py-2 align-top">
-                              {rider && (
-                                <button
-                                  onClick={() => { setDupModal({ rider }); setDupDropPoint(''); setDupMethod('pickup'); }}
-                                  className="w-7 h-7 flex items-center justify-center rounded-lg bg-slate-50 border border-slate-200 text-slate-400 hover:text-indigo-600 hover:border-indigo-200 hover:bg-indigo-50 active:scale-90 transition"
-                                  title="Duplicate assignment">
-                                  <CopyPlus className="w-3.5 h-3.5" />
-                                </button>
-                              )}
                             </td>
                           </tr>
                         );
