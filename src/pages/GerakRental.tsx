@@ -704,41 +704,38 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 
               <div className="mx-5 border-t border-dashed border-slate-200" />
 
-              {/* Booked By + Owner */}
-              <div className="px-5 pt-3 pb-1 flex gap-4">
-                <div className="flex-1 min-w-0">
+              {/* Booked By → Vehicle Owner stacked, WA icon at owner name level */}
+              <div className="px-5 py-3 flex flex-col gap-3">
+                <div>
                   <p className="text-[9px] text-slate-400 font-bold uppercase tracking-widest mb-0.5">Booked By</p>
-                  <p className="text-xs font-extrabold text-slate-800 truncate">{user.name}</p>
+                  <p className="text-xs font-extrabold text-slate-800">{user.name}</p>
                   <p className="text-[10px] text-slate-400 font-semibold">{user.phone}</p>
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-[9px] text-slate-400 font-bold uppercase tracking-widest mb-0.5">Vehicle Owner</p>
-                  <p className="text-xs font-extrabold text-slate-800 truncate">{bk.owner_name}</p>
-                  <p className="text-[10px] text-slate-400 font-semibold">{bk.owner_gerak_id}</p>
-                </div>
-              </div>
-
-              {/* Owner actions */}
-              <div className="px-5 py-3 flex items-center justify-between gap-3">
-                <div className="min-w-0" />
-                <div className="flex items-center gap-2 shrink-0">
                   {bk.status === 'pending' && (
                     <button
                       onClick={() => handleCancelBooking(bk.id)}
-                      className="flex items-center gap-1 text-[10px] font-extrabold text-red-500 bg-red-50 border border-red-100 px-3 py-2 rounded-xl active:scale-95 transition"
+                      className="mt-1.5 flex items-center gap-1 text-[10px] font-extrabold text-red-500 bg-red-50 border border-red-100 px-3 py-1.5 rounded-xl active:scale-95 transition"
                     >
-                      <XCircle className="w-3 h-3" /> Cancel
+                      <XCircle className="w-3 h-3" /> Cancel Booking
                     </button>
                   )}
-                  {bk.owner_phone && (
-                    <a
-                      href={`https://wa.me/${toWa(bk.owner_phone)}?text=${encodeURIComponent(`Hi, I have a rental booking with you. Booking #${String(bk.booking_no ?? '').padStart(5, '0')}`)}`}
-                      target="_blank" rel="noreferrer"
-                      className="flex items-center gap-1.5 bg-emerald-500 hover:bg-emerald-600 text-white text-[10px] font-extrabold px-3 py-2 rounded-xl transition active:scale-95"
-                    >
-                      <WaIcon className="w-3 h-3" /> WhatsApp
-                    </a>
-                  )}
+                </div>
+                <div>
+                  <p className="text-[9px] text-slate-400 font-bold uppercase tracking-widest mb-0.5">Vehicle Owner</p>
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="min-w-0">
+                      <p className="text-xs font-extrabold text-slate-800 truncate">{bk.owner_name}</p>
+                      <p className="text-[10px] text-slate-400 font-semibold">{bk.owner_gerak_id}</p>
+                    </div>
+                    {bk.owner_phone && (
+                      <a
+                        href={`https://wa.me/${toWa(bk.owner_phone)}?text=${encodeURIComponent(`Hi, I have a rental booking with you. Booking #${String(bk.booking_no ?? '').padStart(5, '0')}`)}`}
+                        target="_blank" rel="noreferrer"
+                        className="w-8 h-8 flex items-center justify-center bg-emerald-500 text-white rounded-xl active:scale-90 transition shrink-0"
+                      >
+                        <WaIcon className="w-4 h-4" />
+                      </a>
+                    )}
+                  </div>
                 </div>
               </div>
 
