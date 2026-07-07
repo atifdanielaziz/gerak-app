@@ -497,8 +497,9 @@ const UserCard: React.FC<{
   onRiderCapToggle?: (u: ProfileUser, canDaily: boolean, canRobe: boolean) => void;
   onCampusChange?: (u: ProfileUser, campus: 'Pekan' | 'Gambang') => void;
   onGateToggle?: (u: ProfileUser) => void;
+  onRoleToggle?: (u: ProfileUser, newRole: 'driver' | 'admin') => void;
   onViewProfile?: (u: ProfileUser) => void;
-}> = ({ u, canManage, togglingStatus, terminating, togglingCap, togglingCampus, onToggle, onTerminate, onCapToggle, onRiderCapToggle, onCampusChange, onGateToggle, onViewProfile }) => {
+}> = ({ u, canManage, togglingStatus, terminating, togglingCap, togglingCampus, onToggle, onTerminate, onCapToggle, onRiderCapToggle, onCampusChange, onGateToggle, onRoleToggle, onViewProfile }) => {
   const [showMenu, setShowMenu] = useState(false);
   const isDriverOrRider = u.role === 'driver' || u.role === 'rider';
 
@@ -602,6 +603,22 @@ const UserCard: React.FC<{
                     <ShieldCheck className="w-4 h-4 shrink-0" />
                     {u.receipt_gate_exempt ? 'Gate ✓' : 'Gate ✗'}
                     {togglingCap === u.id && <span className="ml-auto w-3 h-3 rounded-full border border-current border-t-transparent animate-spin" />}
+                  </button>
+                )}
+
+                {/* Role toggle — superadmin only */}
+                {onRoleToggle && isDriverOrRider && (
+                  <button onClick={() => { onRoleToggle(u, 'admin'); setShowMenu(false); }}
+                    className="w-full flex items-center gap-3 px-4 py-3 text-left text-xs font-extrabold text-indigo-600 hover:bg-indigo-50 transition active:scale-95">
+                    <ShieldCheck className="w-4 h-4 shrink-0" />
+                    Make Admin
+                  </button>
+                )}
+                {onRoleToggle && u.role === 'admin' && (
+                  <button onClick={() => { onRoleToggle(u, 'driver'); setShowMenu(false); }}
+                    className="w-full flex items-center gap-3 px-4 py-3 text-left text-xs font-extrabold text-red-500 hover:bg-red-50 transition active:scale-95">
+                    <ShieldOff className="w-4 h-4 shrink-0" />
+                    Remove Admin
                   </button>
                 )}
 
@@ -1987,6 +2004,7 @@ export const AdminHome: React.FC = () => {
                           onRiderCapToggle={user.role === 'superadmin' ? (u, canDaily, canRobe) => setPendingAction({ type: 'toggle-rider-cap', u, canDaily, canRobe }) : undefined}
                           onCampusChange={user.role === 'superadmin' ? (u, campus) => setPendingAction({ type: 'campus', u, campus }) : undefined}
                           onGateToggle={user.role === 'superadmin' ? (u => setPendingAction({ type: 'toggle-gate-exempt', u })) : undefined}
+                          onRoleToggle={user.role === 'superadmin' ? (u, newRole) => setPendingAction({ type: 'toggle-role', u, newRole }) : undefined}
                           onViewProfile={setSheetUser} />
                       ))}
                     </div>

@@ -754,19 +754,6 @@ export const DriverHome: React.FC = () => {
             </button>
           )}
 
-          {/* Earnings tab — only if can_drive */}
-          {effectiveCanDrive && (
-            <button
-              onClick={() => setActiveTab('earnings')}
-              className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-xs font-extrabold transition ${
-                activeTab === 'earnings' ? 'bg-emerald-500 text-white shadow-sm' : 'text-slate-400'
-              }`}
-            >
-              <TrendingUp className="w-3.5 h-3.5" />
-              Earnings
-            </button>
-          )}
-
           {/* Rental tab — owners + admins */}
           {effectiveCanRent && (
             <button
@@ -784,6 +771,19 @@ export const DriverHome: React.FC = () => {
                   {pendingRentals}
                 </span>
               )}
+            </button>
+          )}
+
+          {/* Earnings tab — only if can_drive */}
+          {effectiveCanDrive && (
+            <button
+              onClick={() => setActiveTab('earnings')}
+              className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-xs font-extrabold transition ${
+                activeTab === 'earnings' ? 'bg-emerald-500 text-white shadow-sm' : 'text-slate-400'
+              }`}
+            >
+              <TrendingUp className="w-3.5 h-3.5" />
+              Earnings
             </button>
           )}
 
