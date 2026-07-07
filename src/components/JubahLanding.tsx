@@ -56,10 +56,13 @@ export const JubahLanding: React.FC<Props> = ({ onProceed }) => {
   const openRider  = (r: RiderDir) => { setSelectedRider(r); setSheetOpen(true); };
   const closeRider = ()            => { setSelectedRider(null); setSheetOpen(false); };
 
-  // Campus mapping for the directory RPC
+  // Campus mapping for the directory RPC — '' returns all campuses for that university key
   const CAMPUS_MAP: Record<string, string> = {
-    umpsa: '', // both Pekan and Gambang — or pass '' to get all
-    uitm: '', umk: '', ukm: '', uiam: '',
+    umpsa: '',   // '' = all UMPSA campuses (Pekan + Gambang)
+    uitm:  'UiTM',
+    umk:   'UMK',
+    ukm:   'UKM',
+    uiam:  'UIAM',
   };
 
   // Load public URLs for all universities + default on mount
@@ -81,8 +84,8 @@ export const JubahLanding: React.FC<Props> = ({ onProceed }) => {
     setImgError(prev => ({ ...prev, [key]: false }));
     if (collapseRef.current) clearTimeout(collapseRef.current);
     if (key) collapseRef.current = setTimeout(() => setBtnCollapsed(true), 1500);
-    if (key !== 'umpsa') { setRiderDir([]); return; }
-    const campus = CAMPUS_MAP[key] ?? '';
+    if (!key) { setRiderDir([]); return; }
+    const campus = CAMPUS_MAP[key] ?? key;
     supabase.rpc('get_jubah_riders_directory', { p_campus: campus })
       .then(({ data }) => setRiderDir((data as RiderDir[]) ?? []));
   };
