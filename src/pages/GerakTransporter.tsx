@@ -3,7 +3,7 @@ import { useApp } from '../context/AppContext';
 import { WaIcon } from '../lib/whatsapp';
 import {
   Truck, Home, MapPin, Banknote, Shield,
-  Package, Clock, ChevronRight, Phone, ChevronDown, ChevronUp,
+  Package, Clock, ChevronRight, Phone, ChevronDown, ChevronUp, Bike,
 } from 'lucide-react';
 
 const PROVIDER = {
@@ -79,10 +79,10 @@ export const GerakTransporter: React.FC = () => {
           <div className="flex bg-black/30 border border-white/10 rounded-2xl p-1 gap-1 mt-1">
             {(['Penghantaran Motosikal', 'Pindah Barang'] as const).map(s => (
               <button key={s} onClick={() => setServiceType(s)}
-                className={`flex-1 py-2 rounded-xl text-xs font-extrabold transition active:scale-95 ${
+                className={`flex-1 py-2 rounded-xl text-xs font-extrabold transition active:scale-95 flex items-center justify-center gap-1.5 ${
                   serviceType === s ? 'bg-white text-slate-900 shadow-sm' : 'text-blue-300/70'
                 }`}>
-                {s === 'Penghantaran Motosikal' ? '🏍️ Motosikal' : '📦 Pindah Barang'}
+                {s === 'Penghantaran Motosikal' ? <><Bike className="w-3.5 h-3.5" />Motosikal</> : <><Package className="w-3.5 h-3.5" />Pindah Barang</>}
               </button>
             ))}
           </div>

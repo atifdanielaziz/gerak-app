@@ -1,6 +1,6 @@
 ﻿import React, { useState, useRef, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
-import { CheckCircle2, X, Upload, FileText, ShieldAlert, Download, ChevronDown, ChevronLeft, User, Pencil, MapPin, Copy, Check, Info } from 'lucide-react';
+import { CheckCircle2, X, Upload, FileText, ShieldAlert, Download, ChevronDown, ChevronLeft, User, Pencil, MapPin, Copy, Check, Info, GraduationCap } from 'lucide-react';
 import { submitJubahToSheets } from '../lib/sheetsService';
 import { JubahLanding } from '../components/JubahLanding';
 import { supabase } from '../lib/supabase';
@@ -343,7 +343,7 @@ export const Jubah: React.FC = () => {
       <div className="flex-grow bg-slate-50/50 overflow-y-auto no-scrollbar pb-24 px-5 animate-fade-in flex flex-col gap-5 items-center justify-center text-center">
         <div className="bg-white border border-slate-100 rounded-3xl p-8 shadow-sm flex flex-col items-center gap-4 mx-2">
           <div className="w-16 h-16 rounded-2xl bg-amber-50 border border-amber-100 flex items-center justify-center">
-            <span className="text-3xl">🎓</span>
+            <GraduationCap className="w-8 h-8 text-amber-400" />
           </div>
           <div>
             <h3 className="text-base font-black text-slate-800 m-0">Coming Soon</h3>

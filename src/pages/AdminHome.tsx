@@ -7,7 +7,7 @@ import {
   UserPlus, Mail, X, Send, ChevronDown, ChevronUp, ChevronRight, Megaphone, Plus, ToggleLeft, ToggleRight,
   FileImage, ShieldCheck, ShieldOff, ExternalLink, KeyRound,
   CalendarDays, Upload, Eye, Phone, ArrowLeftRight, Pencil, GraduationCap,
-  ChevronLeft, Download, MoreVertical, Copy, Check, TrendingUp,
+  ChevronLeft, Download, MoreVertical, Copy, Check, TrendingUp, Bike, Settings,
 } from 'lucide-react';
 import { WaBtn, WaIcon, toWa } from '../lib/whatsapp';
 import { MonthDrumPicker, EarningsCard, computeEarnings, type EarningsRow } from '../components/EarningsCard';
@@ -236,7 +236,7 @@ const ProfileSheet: React.FC<{ u: ProfileUser; onClose: () => void }> = ({ u, on
           <div className="flex flex-col items-center pb-5 gap-2">
             <div className={`w-20 h-20 rounded-full flex items-center justify-center shadow-lg ${avatarBg}`}>
               {u.role === 'driver' ? <Car className="w-9 h-9 text-white" /> :
-               u.role === 'rider'  ? <span className="text-3xl">🛵</span>  :
+               u.role === 'rider'  ? <Bike className="w-9 h-9 text-white" />  :
                <ShieldCheck className="w-9 h-9 text-white" />}
             </div>
             <div className="text-center">
@@ -569,13 +569,13 @@ const UserCard: React.FC<{
                   <>
                     <button onClick={() => { onRiderCapToggle(u, !u.can_daily, u.can_robe ?? false); setShowMenu(false); }}
                       className={`w-full flex items-center gap-3 px-4 py-3 text-left text-xs font-extrabold transition active:scale-95 ${u.can_daily ? 'bg-emerald-50 text-emerald-700' : 'text-slate-500 hover:bg-slate-50'}`}>
-                      <span className="text-base leading-none">🛵</span>
+                      <Bike className="w-4 h-4" />
                       {u.can_daily ? 'Daily ✓' : 'Daily ✗'}
                       {togglingCap === u.id && <span className="ml-auto w-3 h-3 rounded-full border border-current border-t-transparent animate-spin" />}
                     </button>
                     <button onClick={() => { onRiderCapToggle(u, u.can_daily ?? false, !u.can_robe); setShowMenu(false); }}
                       className={`w-full flex items-center gap-3 px-4 py-3 text-left text-xs font-extrabold transition active:scale-95 ${u.can_robe ? 'bg-blue-50 text-blue-700' : 'text-slate-500 hover:bg-slate-50'}`}>
-                      <span className="text-base leading-none">🎓</span>
+                      <GraduationCap className="w-4 h-4" />
                       {u.can_robe ? 'Robe ✓' : 'Robe ✗'}
                     </button>
                   </>
@@ -1730,9 +1730,9 @@ export const AdminHome: React.FC = () => {
               <p className="text-xs font-extrabold text-slate-400 uppercase tracking-widest mb-2">Role</p>
               <div className="flex bg-slate-50 border border-slate-200 rounded-2xl p-1 gap-1">
                 {([
-                  { id: 'driver', label: '🚗 Driver', color: 'bg-primary text-white' },
-                  { id: 'rider',  label: '🛵 Rider',  color: 'bg-emerald-600 text-white' },
-                  { id: 'admin',  label: '⚙️ Admin',  color: 'bg-violet-600 text-white' },
+                  { id: 'driver', label: 'Driver', color: 'bg-primary text-white' },
+                  { id: 'rider',  label: 'Rider',  color: 'bg-emerald-600 text-white' },
+                  { id: 'admin',  label: 'Admin',  color: 'bg-violet-600 text-white' },
                 ] as const).map(r => (
                   <button key={r.id} type="button"
                     onClick={() => {
@@ -1823,13 +1823,13 @@ export const AdminHome: React.FC = () => {
                     className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl text-xs font-extrabold border transition active:scale-95 ${
                       inviteCanDaily ? 'bg-emerald-50 border-emerald-200 text-emerald-700' : 'bg-slate-50 border-slate-200 text-slate-400'
                     }`}>
-                    🛵 Daily {inviteCanDaily ? '✓' : '✗'}
+                    <Bike className="w-3.5 h-3.5" /> Daily {inviteCanDaily ? '✓' : '✗'}
                   </button>
                   <button type="button" onClick={() => setInviteCanRobe(v => !v)}
                     className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl text-xs font-extrabold border transition active:scale-95 ${
                       inviteCanRobe ? 'bg-blue-50 border-blue-200 text-blue-700' : 'bg-slate-50 border-slate-200 text-slate-400'
                     }`}>
-                    🎓 Robe {inviteCanRobe ? '✓' : '✗'}
+                    <GraduationCap className="w-3.5 h-3.5" /> Robe {inviteCanRobe ? '✓' : '✗'}
                   </button>
                 </div>
               </div>
@@ -1960,9 +1960,9 @@ export const AdminHome: React.FC = () => {
             <div className="flex bg-slate-50 border border-slate-200 rounded-2xl p-1 gap-1 overflow-x-auto no-scrollbar">
               {([
                 { id: 'all',     label: 'All' },
-                { id: 'drivers', label: '🚗 Drivers' },
-                { id: 'riders',  label: '🛵 Riders' },
-                { id: 'admins',  label: '⚙️ Admins' },
+                { id: 'drivers', label: 'Drivers' },
+                { id: 'riders',  label: 'Riders' },
+                { id: 'admins',  label: 'Admins' },
               ] as const).map(f => (
                 <button key={f.id} onClick={() => setStaffFilter(f.id)}
                   className={`shrink-0 px-4 py-1.5 rounded-xl text-xs font-extrabold transition ${
@@ -2551,7 +2551,7 @@ export const AdminHome: React.FC = () => {
                 className={`flex-1 py-2 rounded-xl text-xs font-extrabold transition ${
                   verifyFilter === r ? 'bg-primary text-white shadow-sm' : 'text-slate-400'
                 }`}>
-                {r === 'driver' ? '🚗 Drivers' : '🛵 Riders'}
+                {r === 'driver' ? 'Drivers' : 'Riders'}
               </button>
             ))}
           </div>
@@ -2709,7 +2709,7 @@ export const AdminHome: React.FC = () => {
             <div className="bg-white border border-slate-100 rounded-3xl p-5 shadow-sm flex items-center justify-between gap-4">
               <div className="flex items-center gap-3">
                 <div className={`w-10 h-10 rounded-2xl flex items-center justify-center ${jubahActive ? 'bg-blue-50' : 'bg-slate-100'}`}>
-                  <span className="text-xl">🎓</span>
+                  <GraduationCap className="w-5 h-5" />
                 </div>
                 <div>
                   <p className="text-xs font-black text-slate-800">Jubah Delivery Period</p>
@@ -2722,17 +2722,17 @@ export const AdminHome: React.FC = () => {
                 className={`shrink-0 px-4 py-2 rounded-xl text-xs font-extrabold border transition active:scale-95 disabled:opacity-50 ${
                   jubahActive ? 'bg-blue-50 border-blue-200 text-blue-700' : 'bg-slate-50 border-slate-200 text-slate-500'
                 }`}>
-                {togglingJubah ? '…' : jubahActive ? '🟢 ON' : '⚫ OFF'}
+                {togglingJubah ? '…' : jubahActive ? <><span className="inline-block w-2 h-2 rounded-full bg-emerald-400 mr-1" />ON</> : <><span className="inline-block w-2 h-2 rounded-full bg-slate-400 mr-1" />OFF</>}
               </button>
             </div>
 
             {/* Customer | Rider | Price sub-tabs */}
             <div className="flex bg-white border border-slate-100 rounded-2xl p-1 gap-1 shadow-sm">
               {([
-                { id: 'rider',    label: '🛵 Rider' },
-                { id: 'customer', label: '👤 Customer' },
-                { id: 'price',    label: '💰 Price' },
-                { id: 'banner',   label: '🖼️ Banner' },
+                { id: 'rider',    label: 'Rider' },
+                { id: 'customer', label: 'Customer' },
+                { id: 'price',    label: 'Price' },
+                { id: 'banner',   label: 'Banner' },
               ] as const).map(t => (
                 <button key={t.id} onClick={() => { setJubahSubTab(t.id); setJubahAdminView('list'); setJubahAdminSelected(null); }}
                   className={`flex-1 py-2 rounded-xl text-xs font-extrabold transition ${
@@ -2857,8 +2857,8 @@ export const AdminHome: React.FC = () => {
                 <div className="flex bg-slate-100 rounded-xl p-0.5 gap-0.5">
                   {([
                     { id: 'all',    label: 'All' },
-                    { id: 'booked', label: '🟡 Booked' },
-                    { id: 'paid',   label: '🟢 Paid' },
+                    { id: 'booked', label: 'Booked' },
+                    { id: 'paid',   label: 'Paid' },
                   ] as const).map(f => (
                     <button key={f.id} onClick={() => setJubahPayFilter(f.id)}
                       className={`flex-1 py-1.5 rounded-[10px] text-xs font-extrabold transition active:scale-95 ${
@@ -3358,7 +3358,7 @@ export const AdminHome: React.FC = () => {
                   ? 'bg-emerald-50 border-emerald-200 text-emerald-700'
                   : 'bg-slate-50 border-slate-200 text-slate-500'
               }`}>
-              {togglingReceiptGate ? '…' : receiptGateOn ? '🟢 ON' : '⚫ OFF'}
+              {togglingReceiptGate ? '…' : receiptGateOn ? <><span className="inline-block w-2 h-2 rounded-full bg-emerald-400 mr-1" />ON</> : <><span className="inline-block w-2 h-2 rounded-full bg-slate-400 mr-1" />OFF</>}
             </button>
           </div>
 
@@ -3369,7 +3369,7 @@ export const AdminHome: React.FC = () => {
                 className={`flex-1 py-2 rounded-xl text-xs font-extrabold transition ${
                   receiptRoleFilter === r ? 'bg-primary text-white shadow-sm' : 'text-slate-400'
                 }`}>
-                {r === 'driver' ? '🚗 Drivers' : '🛵 Riders'}
+                {r === 'driver' ? 'Drivers' : 'Riders'}
               </button>
             ))}
           </div>
@@ -3953,15 +3953,15 @@ export const AdminHome: React.FC = () => {
                   </>)}
                   {inviteRole === 'rider' && (<>
                     <span className={`flex items-center gap-1.5 text-xs font-extrabold px-2.5 py-1 rounded-full ${inviteCanDaily ? 'bg-emerald-50 text-emerald-700' : 'bg-slate-100 text-slate-400 line-through'}`}>
-                      🛵 Gerak Daily {inviteCanDaily ? '✓' : '✗'}
+                      <Bike className="w-3 h-3" /> Gerak Daily {inviteCanDaily ? '✓' : '✗'}
                     </span>
                     <span className={`flex items-center gap-1.5 text-xs font-extrabold px-2.5 py-1 rounded-full ${inviteCanRobe ? 'bg-blue-50 text-blue-700' : 'bg-slate-100 text-slate-400 line-through'}`}>
-                      🎓 Robe Convocation {inviteCanRobe ? '✓' : '✗'}
+                      <GraduationCap className="w-3 h-3" /> Robe Convocation {inviteCanRobe ? '✓' : '✗'}
                     </span>
                   </>)}
                   {inviteRole === 'admin' && (
                     <span className="flex items-center gap-1.5 text-xs font-extrabold px-2.5 py-1 rounded-full bg-violet-50 text-violet-700">
-                      ⚙️ Full Access
+                      <Settings className="w-3 h-3" /> Full Access
                     </span>
                   )}
                 </div>
