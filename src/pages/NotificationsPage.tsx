@@ -39,7 +39,7 @@ export const NotificationsPage: React.FC = () => {
   };
 
   return (
-    <div className="flex-grow bg-slate-50/50 overflow-y-auto no-scrollbar pb-8 px-5 animate-fade-in flex flex-col gap-5">
+    <div className="flex-grow bg-slate-50/50 overflow-y-auto no-scrollbar pb-4 px-5 animate-fade-in flex flex-col gap-5">
       
       {/* Page Header */}
       <div className="mt-4 flex items-center justify-between pl-1">

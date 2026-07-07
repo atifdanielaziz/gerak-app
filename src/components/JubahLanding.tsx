@@ -94,7 +94,7 @@ export const JubahLanding: React.FC<Props> = ({ onProceed }) => {
   const selectedLabel  = UNIVERSITIES.find(u => u.key === selectedKey)?.label ?? '';
 
   return (
-    <div className="flex-grow bg-slate-50/50 overflow-y-auto overflow-x-hidden no-scrollbar pb-8 px-4 animate-fade-in flex flex-col gap-4">
+    <div className="flex-grow bg-slate-50/50 overflow-y-auto overflow-x-hidden no-scrollbar pb-4 px-4 animate-fade-in flex flex-col gap-4">
 
       {/* Header */}
       <div className="mt-4 px-1">

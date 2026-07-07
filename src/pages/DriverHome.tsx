@@ -555,7 +555,7 @@ export const DriverHome: React.FC = () => {
   if (!isAdminRole && user.docsStatus !== 'approved') {
     const bothUploaded = !!user.icUrl && !!user.licenseUrl;
     return (
-      <div className="flex-grow bg-slate-50 overflow-y-auto no-scrollbar pb-8 px-5 flex flex-col gap-5 animate-fade-in">
+      <div className="flex-grow bg-slate-50 overflow-y-auto no-scrollbar pb-4 px-5 flex flex-col gap-5 animate-fade-in">
         <div className="mt-6 flex flex-col items-center text-center gap-2">
           <div className={`w-16 h-16 rounded-full flex items-center justify-center border-2 ${
             user.docsStatus === 'rejected' ? 'bg-red-50 border-red-100' :
@@ -679,7 +679,7 @@ export const DriverHome: React.FC = () => {
         showWhatsApp={sheetOrder.status === 'completed' || sheetOrder.status === 'cancelled'}
       />
     )}
-    <div className="flex-grow bg-slate-50 overflow-y-auto no-scrollbar pb-8 flex flex-col animate-fade-in">
+    <div className="flex-grow bg-slate-50 overflow-y-auto no-scrollbar pb-4 flex flex-col animate-fade-in">
 
       {/* ── Header ── */}
       <div className="px-4 pt-5 pb-3 flex items-center justify-between">

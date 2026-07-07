@@ -79,7 +79,7 @@ export const OrderReceiptSheet: React.FC<{ order: OrderReceiptFields; onClose: (
           <div className="w-10 h-1 bg-slate-200 rounded-full" />
         </div>
 
-        <div className="px-5 pt-2 pb-8 flex flex-col gap-4">
+        <div className="px-5 pt-2 pb-4 flex flex-col gap-4">
           {/* Status + date */}
           <div className="flex items-center justify-between">
             <span className={`text-xs font-extrabold uppercase tracking-wider px-2.5 py-1 rounded-lg border ${badgeCls}`}>

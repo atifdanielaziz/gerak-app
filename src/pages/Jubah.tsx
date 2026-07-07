@@ -340,7 +340,7 @@ export const Jubah: React.FC = () => {
   // Non-UMPSA universities: form not yet available
   if (!jubahBooking && landingUniversity !== 'umpsa') {
     return (
-      <div className="flex-grow bg-slate-50/50 overflow-y-auto no-scrollbar pb-8 px-5 animate-fade-in flex flex-col gap-5 items-center justify-center text-center">
+      <div className="flex-grow bg-slate-50/50 overflow-y-auto no-scrollbar pb-4 px-5 animate-fade-in flex flex-col gap-5 items-center justify-center text-center">
         <div className="bg-white border border-slate-100 rounded-3xl p-8 shadow-sm flex flex-col items-center gap-4 mx-2">
           <div className="w-16 h-16 rounded-2xl bg-amber-50 border border-amber-100 flex items-center justify-center">
             <GraduationCap className="w-8 h-8 text-amber-400" />
@@ -370,7 +370,7 @@ export const Jubah: React.FC = () => {
 
   return (
     <>
-    <div className="flex-grow bg-slate-50/50 overflow-y-auto overflow-x-hidden no-scrollbar pb-8 px-5 animate-fade-in flex flex-col gap-5">
+    <div className="flex-grow bg-slate-50/50 overflow-y-auto overflow-x-hidden no-scrollbar pb-4 px-5 animate-fade-in flex flex-col gap-5">
 
       {/* HEADER */}
       <div className="mt-4 px-1 flex items-start gap-2">
