@@ -7,7 +7,7 @@ import {
   UserPlus, Mail, X, Send, ChevronDown, ChevronUp, ChevronRight, Megaphone, Plus, ToggleLeft, ToggleRight,
   FileImage, ShieldCheck, ShieldOff, ExternalLink, KeyRound,
   CalendarDays, Upload, Eye, Phone, ArrowLeftRight, Pencil, GraduationCap,
-  ChevronLeft, Download, MoreVertical, Copy, Check, TrendingUp, Bike, Settings, CopyPlus,
+  ChevronLeft, Download, MoreVertical, Copy, Check, TrendingUp, Bike, Settings,
 } from 'lucide-react';
 import { WaBtn, WaIcon, toWa } from '../lib/whatsapp';
 import { MonthDrumPicker, EarningsCard, computeEarnings, type EarningsRow } from '../components/EarningsCard';
@@ -2974,7 +2974,6 @@ export const AdminHome: React.FC = () => {
                     </thead>
                     <tbody>
                       {jubahAssignments.map(a => {
-                        const rider = jubahRiders.find(r => r.id === a.rider_id);
                         return (
                           <tr key={a.id}
                             className="border-b border-slate-50 text-xs hover:bg-slate-50 transition">
