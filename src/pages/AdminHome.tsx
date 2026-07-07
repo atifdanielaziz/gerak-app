@@ -7,7 +7,7 @@ import {
   UserPlus, Mail, X, Send, ChevronDown, ChevronUp, ChevronRight, Megaphone, Plus, ToggleLeft, ToggleRight,
   FileImage, ShieldCheck, ShieldOff, ExternalLink, KeyRound,
   CalendarDays, Upload, Eye, Phone, ArrowLeftRight, Pencil, GraduationCap,
-  ChevronLeft, Download, MoreVertical, Copy, Check, TrendingUp, Bike, Settings,
+  ChevronLeft, Download, MoreVertical, Copy, Check, TrendingUp, Bike, Settings, CopyPlus,
 } from 'lucide-react';
 import { WaBtn, WaIcon, toWa } from '../lib/whatsapp';
 import { MonthDrumPicker, EarningsCard, computeEarnings, type EarningsRow } from '../components/EarningsCard';
@@ -793,6 +793,7 @@ export const AdminHome: React.FC = () => {
 
   // ── Jubah tab state ────────────────────────────────────────────────────────
   type JubahRider   = { id: string; name: string; gerak_id: string; campus: string; status: string; can_robe: boolean; ic_number: string | null; phone: string | null; jubah_method: string | null; jubah_drop_point: string | null };
+  type JubahAssignment = { id: string; rider_id: string; name: string; drop_point: string | null; method: string; campus: string; ic_number: string | null; phone: string | null };
   type JubahBookingRow = {
     id: string; reference: string; full_name: string; ic_number: string; hp_number: string;
     matric_id: string; university: string; campus: string; faculty: string; remark: string;
@@ -805,6 +806,11 @@ export const AdminHome: React.FC = () => {
   };
   const [jubahRiders,        setJubahRiders]        = useState<JubahRider[]>([]);
   const [jubahRidersLoading, setJubahRidersLoading] = useState(false);
+  const [jubahAssignments,   setJubahAssignments]   = useState<JubahAssignment[]>([]);
+  const [dupModal,           setDupModal]           = useState<{ rider: JubahRider } | null>(null);
+  const [dupDropPoint,       setDupDropPoint]       = useState('');
+  const [dupMethod,          setDupMethod]          = useState<'pickup' | 'postage'>('pickup');
+  const [dupSaving,          setDupSaving]          = useState(false);
   const [jubahBookings,      setJubahBookings]      = useState<JubahBookingRow[]>([]);
   const [jubahBookingsLoading, setJubahBookingsLoading] = useState(false);
   const [deletingBooking,    setDeletingBooking]    = useState<string | null>(null);
@@ -877,6 +883,26 @@ export const AdminHome: React.FC = () => {
     loadJubahData();
   };
 
+  const handleDuplicateAssignment = async () => {
+    if (!dupModal) return;
+    if (!dupDropPoint.trim()) { showToast('Please enter a drop point.'); return; }
+    setDupSaving(true);
+    const { error } = await supabase.from('jubah_rider_assignments').insert({
+      rider_id:   dupModal.rider.id,
+      drop_point: dupDropPoint.trim(),
+      method:     dupMethod,
+      campus:     dupModal.rider.campus,
+      is_active:  true,
+    });
+    setDupSaving(false);
+    if (error) { showToast('Save failed: ' + error.message); return; }
+    showToast('Assignment added.');
+    setDupModal(null);
+    setDupDropPoint('');
+    setDupMethod('pickup');
+    loadJubahData();
+  };
+
   const handleDeleteJubahBooking = async (b: JubahBookingRow) => {
     if (!window.confirm(`Delete booking ${b.reference} for ${b.full_name}? This cannot be undone.`)) return;
     setDeletingBooking(b.id);
@@ -902,6 +928,26 @@ export const AdminHome: React.FC = () => {
     const { data: ridersData } = await ridersQ;
     setJubahRiders((ridersData as JubahRider[]) ?? []);
     setJubahRidersLoading(false);
+
+    // Load assignments for Representative Directory
+    const riderIds = (ridersData ?? []).map((r: JubahRider) => r.id);
+    if (riderIds.length > 0) {
+      const { data: assignData } = await supabase
+        .from('jubah_rider_assignments')
+        .select('id, rider_id, drop_point, method, campus')
+        .in('rider_id', riderIds)
+        .eq('is_active', true)
+        .order('created_at');
+      const profileMap = Object.fromEntries((ridersData ?? []).map((r: JubahRider) => [r.id, r]));
+      setJubahAssignments(
+        (assignData ?? []).map((a: { id: string; rider_id: string; drop_point: string | null; method: string; campus: string }) => {
+          const p = profileMap[a.rider_id] as JubahRider | undefined;
+          return { ...a, name: p?.name ?? '—', ic_number: p?.ic_number ?? null, phone: p?.phone ?? null };
+        })
+      );
+    } else {
+      setJubahAssignments([]);
+    }
 
     let bookingsQ = supabase.from('jubah_bookings')
       .select('id, reference, full_name, ic_number, hp_number, matric_id, university, campus, faculty, remark, rider_name, rider_phone, status, payment_mode, cost, balance_due, balance_paid, balance_proof_url, delivery_address, drive_docs_url, drive_payment_url, drive_oscar_url, drive_skpg_url, drive_konvo_url, drive_ic_url, created_at')
@@ -1659,6 +1705,81 @@ export const AdminHome: React.FC = () => {
           onSave={handleSaveJubahAssignment}
           onClose={() => setJubahSheetRider(null)}
         />
+      )}
+
+      {/* Duplicate assignment modal */}
+      {dupModal && (
+        <div
+          className="fixed inset-0 z-50 flex items-end justify-center"
+          style={{ background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(2px)' }}
+          onClick={() => setDupModal(null)}
+        >
+          <div
+            className="w-full bg-white rounded-t-3xl shadow-2xl animate-slide-up overflow-hidden flex flex-col"
+            style={{ maxWidth: 480, paddingBottom: 'calc(1.5rem + env(safe-area-inset-bottom))' }}
+            onClick={e => e.stopPropagation()}
+          >
+            {/* Handle */}
+            <div className="flex justify-center pt-3 pb-2 shrink-0">
+              <div className="w-10 h-1 bg-slate-200 rounded-full" />
+            </div>
+
+            <div className="px-6 pb-2 flex flex-col gap-5">
+              <div>
+                <h3 className="text-sm font-black text-slate-800">Add Assignment</h3>
+                <p className="text-xs text-slate-400 font-semibold mt-0.5">
+                  New assignment for <span className="text-slate-700 font-extrabold">{dupModal.rider.name}</span>
+                </p>
+              </div>
+
+              {/* Drop point */}
+              <div className="flex flex-col gap-1.5">
+                <label className="text-xs font-extrabold text-slate-500 uppercase tracking-wider">Drop Point</label>
+                <input
+                  type="text"
+                  value={dupDropPoint}
+                  onChange={e => setDupDropPoint(e.target.value)}
+                  placeholder="e.g. Kolej Kediaman 3, Lobby A…"
+                  style={{ fontSize: '13px' }}
+                  className="bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 font-semibold text-slate-800 focus:outline-none focus:border-primary transition placeholder:font-normal placeholder:text-slate-300"
+                  autoFocus
+                />
+              </div>
+
+              {/* Method */}
+              <div className="flex flex-col gap-1.5">
+                <label className="text-xs font-extrabold text-slate-500 uppercase tracking-wider">Method</label>
+                <div className="flex bg-slate-100 rounded-xl p-1 gap-1">
+                  {(['pickup', 'postage'] as const).map(m => (
+                    <button key={m} onClick={() => setDupMethod(m)}
+                      className={`flex-1 py-2 rounded-lg text-xs font-extrabold transition active:scale-95 capitalize ${
+                        dupMethod === m ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-400'
+                      }`}>
+                      {m}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Actions */}
+              <div className="flex gap-2 pt-1">
+                <button
+                  onClick={() => setDupModal(null)}
+                  className="flex-1 bg-slate-100 text-slate-600 font-extrabold text-sm py-3.5 rounded-2xl active:scale-95 transition"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleDuplicateAssignment}
+                  disabled={dupSaving || !dupDropPoint.trim()}
+                  className="flex-1 bg-primary text-white font-extrabold text-sm py-3.5 rounded-2xl shadow-lg shadow-primary/20 active:scale-95 transition disabled:opacity-50"
+                >
+                  {dupSaving ? 'Saving…' : 'Save'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
       )}
 
       {/* Sticky header + tab switcher */}
@@ -2783,44 +2904,57 @@ export const AdminHome: React.FC = () => {
             </div>
 
             {/* Rider directory table */}
-            {jubahRiders.length > 0 && (
+            {jubahAssignments.length > 0 && (
               <div className="bg-white border border-slate-100 rounded-3xl p-5 shadow-sm flex flex-col gap-4">
                 <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest flex items-center gap-1.5">
                   <Users className="w-4 h-4" /> Representative Directory
                 </h3>
                 <div className="overflow-x-auto overflow-y-auto no-scrollbar max-h-[320px]">
-                  <table className="text-left border-collapse" style={{ minWidth: 520 }}>
+                  <table className="text-left border-collapse" style={{ minWidth: 560 }}>
                     <thead className="sticky top-0 bg-white">
                       <tr className="text-xs font-extrabold text-slate-400 uppercase tracking-wider border-b border-slate-100">
                         <th className="py-2 pr-4 whitespace-nowrap">Method</th>
                         <th className="py-2 pr-4 whitespace-nowrap">Representative Name</th>
                         <th className="py-2 pr-4 whitespace-nowrap">I/C Number</th>
-                        <th className="py-2 whitespace-nowrap">H/P</th>
+                        <th className="py-2 pr-4 whitespace-nowrap">H/P</th>
+                        <th className="py-2 whitespace-nowrap"></th>
                       </tr>
                     </thead>
                     <tbody>
-                      {jubahRiders.map(r => (
-                        <tr key={r.id}
-                          onClick={() => { setJubahSheetRider(r); setSheetOpen(true); }}
-                          className="border-b border-slate-50 text-xs cursor-pointer hover:bg-slate-50 active:bg-slate-100 transition">
-                          <td className="py-2.5 pr-4 text-slate-600 font-semibold align-top whitespace-nowrap">
-                            {r.jubah_drop_point || '—'}
-                          </td>
-                          <td className="py-2.5 pr-4 font-extrabold text-slate-800 align-top">{r.name}</td>
-                          <td className="py-2.5 pr-4 font-mono text-slate-700 align-top whitespace-nowrap">{r.ic_number || '—'}</td>
-                          <td className="py-2.5 text-slate-700 font-semibold align-top whitespace-nowrap">
-                            <div className="flex items-center gap-1.5">
-                              <span>{r.phone || '—'}</span>
-                              {r.phone && (
-                                <a href={`https://wa.me/${toWa(r.phone)}`} target="_blank" rel="noopener noreferrer"
-                                  onClick={e => e.stopPropagation()} className="text-[#25D366] active:scale-90 transition shrink-0">
-                                  <WaIcon className="w-3.5 h-3.5" />
-                                </a>
+                      {jubahAssignments.map(a => {
+                        const rider = jubahRiders.find(r => r.id === a.rider_id);
+                        return (
+                          <tr key={a.id}
+                            className="border-b border-slate-50 text-xs hover:bg-slate-50 transition">
+                            <td className="py-2.5 pr-4 text-slate-600 font-semibold align-top whitespace-nowrap">
+                              {a.drop_point || '—'}
+                            </td>
+                            <td className="py-2.5 pr-4 font-extrabold text-slate-800 align-top">{a.name}</td>
+                            <td className="py-2.5 pr-4 font-mono text-slate-700 align-top whitespace-nowrap">{a.ic_number || '—'}</td>
+                            <td className="py-2.5 pr-4 text-slate-700 font-semibold align-top whitespace-nowrap">
+                              <div className="flex items-center gap-1.5">
+                                <span>{a.phone || '—'}</span>
+                                {a.phone && (
+                                  <a href={`https://wa.me/${toWa(a.phone)}`} target="_blank" rel="noopener noreferrer"
+                                    onClick={e => e.stopPropagation()} className="text-[#25D366] active:scale-90 transition shrink-0">
+                                    <WaIcon className="w-3.5 h-3.5" />
+                                  </a>
+                                )}
+                              </div>
+                            </td>
+                            <td className="py-2 align-top">
+                              {rider && (
+                                <button
+                                  onClick={() => { setDupModal({ rider }); setDupDropPoint(''); setDupMethod('pickup'); }}
+                                  className="w-7 h-7 flex items-center justify-center rounded-lg bg-slate-50 border border-slate-200 text-slate-400 hover:text-indigo-600 hover:border-indigo-200 hover:bg-indigo-50 active:scale-90 transition"
+                                  title="Duplicate assignment">
+                                  <CopyPlus className="w-3.5 h-3.5" />
+                                </button>
                               )}
-                            </div>
-                          </td>
-                        </tr>
-                      ))}
+                            </td>
+                          </tr>
+                        );
+                      })}
                     </tbody>
                   </table>
                 </div>
