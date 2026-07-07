@@ -1728,9 +1728,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .total-row{display:flex;justify-content:space-between;align-items:center;padding-top:10px;margin-top:4px;border-top:1.5px dashed #e2e8f0}
 .total-label{font-size:13px;font-weight:800;color:#1e293b}
 .total-amount{font-size:22px;font-weight:900;color:#f59e0b}
-.parties{display:flex;padding:12px 24px;gap:12px}
-.party{flex:1}
-.party-label{font-size:9px;color:#94a3b8;font-weight:700;text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px}
+.parties{display:flex;flex-direction:column;padding:12px 24px;gap:10px}
+.party-label{font-size:9px;color:#94a3b8;font-weight:700;text-transform:uppercase;letter-spacing:.05em;margin-bottom:3px}
 .party-name{font-size:12px;font-weight:800;color:#1e293b}
 .party-sub{font-size:10px;color:#94a3b8;font-weight:600;margin-top:1px}
 .footer{background:#f8fafc;padding:10px 24px;display:flex;align-items:center;justify-content:space-between}
