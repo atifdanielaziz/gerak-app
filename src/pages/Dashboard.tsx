@@ -106,7 +106,7 @@ export const Dashboard: React.FC = () => {
   };
 
   return (
-    <div className="flex-grow bg-slate-50/50 overflow-y-auto no-scrollbar pb-24 animate-fade-in">
+    <div className="flex-grow bg-slate-50/50 overflow-y-auto no-scrollbar pb-8 animate-fade-in">
 
       {/* Greeting + Active Ride + Carousel */}
       <div className="px-4">

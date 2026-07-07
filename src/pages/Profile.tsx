@@ -214,7 +214,7 @@ export const Profile: React.FC = () => {
   const isRejected = hasReceipt && !user.feeReceiptVerified && !!user.feeReceiptRejectReason;
 
   return (
-    <div className="flex flex-col h-full w-full bg-white overflow-y-auto no-scrollbar animate-fade-in pb-24">
+    <div className="flex flex-col h-full w-full bg-white overflow-y-auto no-scrollbar animate-fade-in pb-8">
 
       {/* Page Title */}
       <div className="px-5 pt-6 pb-2 flex items-center justify-between">

@@ -50,7 +50,7 @@ export const GerakTransporter: React.FC = () => {
   const [showFeatures, setShowFeatures] = useState(false);
 
   return (
-    <div className="flex-grow bg-slate-50/50 overflow-y-auto no-scrollbar pb-24 px-5 flex flex-col gap-5 animate-fade-in">
+    <div className="flex-grow bg-slate-50/50 overflow-y-auto no-scrollbar pb-8 px-5 flex flex-col gap-5 animate-fade-in">
 
       {/* ── HERO ── */}
       <div className="bg-gradient-to-br from-slate-900 via-blue-950 to-blue-900 px-5 pt-6 pb-8 relative overflow-hidden">

@@ -125,7 +125,7 @@ export const TrackJubah: React.FC = () => {
   };
 
   return (
-    <div className="flex-grow bg-slate-50/50 overflow-y-auto no-scrollbar pb-24 px-5 animate-fade-in flex flex-col gap-5">
+    <div className="flex-grow bg-slate-50/50 overflow-y-auto no-scrollbar pb-8 px-5 animate-fade-in flex flex-col gap-5">
 
       {/* HEADER */}
       <div className="mt-4 px-1 flex items-center gap-2">

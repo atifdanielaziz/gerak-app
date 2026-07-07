@@ -515,7 +515,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
   };
 
   return (
-    <div className="flex-grow bg-slate-50 overflow-y-auto no-scrollbar pb-24 flex flex-col animate-fade-in">
+    <div className="flex-grow bg-slate-50 overflow-y-auto no-scrollbar pb-8 flex flex-col animate-fade-in">
 
       {/* Toast */}
       {toast && (
