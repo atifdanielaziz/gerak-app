@@ -65,6 +65,10 @@ export const JubahLanding: React.FC<Props> = ({ onProceed }) => {
     uiam:  'UIAM',
   };
 
+  const UNIV_SHORT: Record<string, string> = {
+    umpsa: 'UMPSA', uitm: 'UiTM', umk: 'UMK', ukm: 'UKM', uiam: 'UIAM',
+  };
+
   // Load public URLs for all universities + default on mount
   useEffect(() => {
     const urls: Record<string, string> = {};
@@ -256,7 +260,7 @@ export const JubahLanding: React.FC<Props> = ({ onProceed }) => {
                   {selectedRider.phone && (
                     <a
                       href={`https://wa.me/${toWa(selectedRider.phone)}?text=${encodeURIComponent(
-                        `Hello gerak rider, i need your IC number : ${maskIc(selectedRider.ic_number)} for my booking. boleh bagi sekarang?`
+                        `Asslammualaikum Jubah rider, saya perlukan 6 digit IC ${selectedRider.ic_number ? selectedRider.ic_number.replace(/\D/g,'').slice(0,6) + '-XX-XXXX' : 'XXXXXX-XX-XXXX'} terakhir awak untuk pengisian representative jubah ${UNIV_SHORT[selectedKey] ?? selectedKey.toUpperCase()}`
                       )}`}
                       target="_blank"
                       rel="noopener noreferrer"

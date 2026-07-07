@@ -14,41 +14,26 @@ export const WaIcon: React.FC<{ className?: string }> = ({ className }) => (
   </svg>
 );
 
+/* Always renders as a bare green icon link — no backgrounds, no text */
 interface WaBtnProps {
   phone: string;
   message?: string;
-  variant?: 'icon' | 'full';
-  label?: string;
+  variant?: 'icon' | 'full'; // kept for compatibility, ignored
+  label?: string;             // kept for compatibility, ignored
+  iconClass?: string;
 }
 
-export const WaBtn: React.FC<WaBtnProps> = ({ phone, message, variant = 'icon', label }) => {
+export const WaBtn: React.FC<WaBtnProps> = ({ phone, message, iconClass = 'w-5 h-5' }) => {
   const url = `https://wa.me/${toWa(phone)}${message ? `?text=${encodeURIComponent(message)}` : ''}`;
-
-  if (variant === 'full') {
-    return (
-      <a
-        href={url}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="flex-1 flex items-center justify-center gap-2 bg-[#25D366] hover:bg-[#1ebe5d] text-white font-extrabold text-xs py-3 rounded-2xl active:scale-95 transition shadow-md"
-      >
-        <WaIcon className="w-4 h-4" />
-        {label ?? 'WhatsApp'}
-      </a>
-    );
-  }
-
-  /* icon — small green circle, sits inline next to a phone number */
   return (
     <a
       href={url}
       target="_blank"
       rel="noopener noreferrer"
-      className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-[#25D366] text-white active:scale-90 transition shrink-0"
-      aria-label={`WhatsApp ${phone}`}
+      className="text-[#25D366] active:scale-90 transition shrink-0"
       onClick={e => e.stopPropagation()}
     >
-      <WaIcon className="w-3 h-3" />
+      <WaIcon className={iconClass} />
     </a>
   );
 };

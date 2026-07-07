@@ -1631,8 +1631,8 @@ export const DriverHome: React.FC = () => {
                   <a href={`https://wa.me/${toWa(bk.customer_phone)}?text=${encodeURIComponent(`Hi ${bk.customer_name}, regarding your rental booking #${String(bk.booking_no).padStart(5, '0')} — just confirming your details. Please let me know if you have any questions!`)}`}
                     target="_blank" rel="noreferrer"
                     onClick={e => e.stopPropagation()}
-                    className="w-8 h-8 flex items-center justify-center bg-emerald-500 text-white rounded-xl active:scale-90 transition shrink-0">
-                    <WaIcon className="w-4 h-4" />
+                    className="text-[#25D366] active:scale-90 transition shrink-0">
+                    <WaIcon className="w-5 h-5" />
                   </a>
                 )}
               </div>

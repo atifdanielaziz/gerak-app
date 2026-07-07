@@ -6,13 +6,6 @@ import { JubahLanding } from '../components/JubahLanding';
 import { supabase } from '../lib/supabase';
 import { WaIcon, toWa } from '../lib/whatsapp';
 
-const maskIc = (ic: string | null) => {
-  if (!ic) return '—';
-  const digits = ic.replace(/\D/g, '');
-  if (digits.length < 6) return ic;
-  return `${digits.slice(0, 6)}-XX-XXXX`;
-};
-
 const IcMasked: React.FC<{ ic: string | null }> = ({ ic }) => {
   if (!ic) return <span className="text-slate-800 font-bold text-sm">—</span>;
   const digits = ic.replace(/\D/g, '');
@@ -1114,7 +1107,7 @@ export const Jubah: React.FC = () => {
                   {r.phone && (
                     <a
                       href={`https://wa.me/${toWa(r.phone)}?text=${encodeURIComponent(
-                        `Hello gerak rider, i need your IC number : ${maskIc(r.ic_number)} for my booking. boleh bagi sekarang?`
+                        `Asslammualaikum Jubah rider, saya perlukan 6 digit IC ${r.ic_number ? r.ic_number.replace(/\D/g,'').slice(0,6) + '-XX-XXXX' : 'XXXXXX-XX-XXXX'} terakhir awak untuk pengisian representative jubah ${university.includes('Pahang') ? 'UMPSA' : university.includes('UiTM') || university.includes('MARA') ? 'UiTM' : university.includes('Kelantan') ? 'UMK' : university.includes('Kebangsaan') ? 'UKM' : 'UIAM'}`
                       )}`}
                       target="_blank"
                       rel="noopener noreferrer"

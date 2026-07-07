@@ -161,14 +161,14 @@ export const GerakTransporter: React.FC = () => {
                 ))}
               </div>
 
-              <div className="flex gap-2 pt-1">
+              <div className="flex gap-2 pt-1 items-center">
                 <a
                   href={`https://wa.me/6${PROVIDER.phone}?text=${buildWaMsg(serviceType)}`}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex-1 flex items-center justify-center gap-2 bg-[#25D366] hover:bg-[#20b858] active:scale-[0.98] text-white font-extrabold py-3 rounded-2xl text-xs transition shadow-md shadow-green-500/20"
+                  className="text-[#25D366] active:scale-90 transition shrink-0"
                 >
-                  <WaIcon className="w-4 h-4" /> WhatsApp
+                  <WaIcon className="w-6 h-6" />
                 </a>
                 <a
                   href={`tel:+6${PROVIDER.phone}`}

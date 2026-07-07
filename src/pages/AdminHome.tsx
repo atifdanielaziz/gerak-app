@@ -785,7 +785,6 @@ const UserCard: React.FC<{
                     className="w-full flex items-center gap-3 px-4 py-3 text-left text-xs font-extrabold text-[#25D366] hover:bg-green-50 transition active:scale-95"
                   >
                     <WaIcon className="w-4 h-4 shrink-0" />
-                    WhatsApp
                   </a>
                 )}
               </div>
@@ -946,6 +945,7 @@ export const AdminHome: React.FC = () => {
   const [jubahRiders,        setJubahRiders]        = useState<JubahRider[]>([]);
   const [jubahRidersLoading, setJubahRidersLoading] = useState(false);
   const [jubahAssignments,   setJubahAssignments]   = useState<JubahAssignment[]>([]);
+  const [dirSheet,           setDirSheet]           = useState<JubahAssignment | null>(null);
   const [jubahBookings,      setJubahBookings]      = useState<JubahBookingRow[]>([]);
   const [jubahBookingsLoading, setJubahBookingsLoading] = useState(false);
   const [deletingBooking,    setDeletingBooking]    = useState<string | null>(null);
@@ -1834,6 +1834,57 @@ export const AdminHome: React.FC = () => {
           onClose={() => setJubahSheetRider(null)}
         />
       )}
+
+      {/* Representative Directory row sheet */}
+      {dirSheet && (() => {
+        const univ = (dirSheet.campus === 'Pekan' || dirSheet.campus === 'Gambang') ? 'UMPSA' : dirSheet.campus;
+        const ic   = dirSheet.ic_number ? dirSheet.ic_number.replace(/\D/g,'').slice(0,6) + '-XX-XXXX' : null;
+        const waMsg = `Asslammualaikum Jubah rider, saya perlukan 6 digit IC ${ic ?? 'XXXXXX-XX-XXXX'} terakhir awak untuk pengisian representative jubah ${univ}`;
+        return (
+          <div className="fixed inset-0 z-50 flex items-end justify-center"
+            style={{ background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(2px)' }}
+            onClick={() => setDirSheet(null)}>
+            <div className="w-full max-w-[480px] bg-white rounded-t-3xl shadow-2xl animate-slide-up flex flex-col"
+              style={{ paddingBottom: 'calc(1.5rem + env(safe-area-inset-bottom))' }}
+              onClick={e => e.stopPropagation()}>
+              <div className="flex justify-center pt-3 pb-1"><div className="w-10 h-1 bg-slate-200 rounded-full" /></div>
+              <div className="flex items-center justify-between px-5 pt-2 pb-4">
+                <p className="text-xs font-extrabold text-slate-400 uppercase tracking-widest">Representative</p>
+                <button onClick={() => setDirSheet(null)} className="w-7 h-7 flex items-center justify-center rounded-full bg-slate-100 text-slate-500 active:scale-90 transition">
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+              <div className="px-5 pb-6 flex flex-col gap-4">
+                <div className="bg-slate-50 border border-slate-100 rounded-2xl p-4 flex flex-col gap-3 text-xs">
+                  {[
+                    { label: 'Representative Name', value: dirSheet.name },
+                    { label: 'Drop Point',           value: dirSheet.drop_point || '—' },
+                    { label: 'Method',               value: dirSheet.method === 'pickup' ? 'Self Pickup' : 'Pickup & Postage' },
+                    { label: 'I/C Number',           value: ic ?? '—' },
+                  ].map(({ label, value }) => (
+                    <div key={label} className="flex flex-col gap-0.5">
+                      <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">{label}</span>
+                      <span className="font-bold text-slate-800">{value}</span>
+                    </div>
+                  ))}
+                  <div className="flex flex-col gap-0.5">
+                    <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">H/P</span>
+                    <div className="flex items-center gap-2">
+                      <span className="font-bold text-slate-800">{dirSheet.phone || '—'}</span>
+                      {dirSheet.phone && (
+                        <a href={`https://wa.me/${toWa(dirSheet.phone)}?text=${encodeURIComponent(waMsg)}`}
+                          target="_blank" rel="noopener noreferrer" className="text-[#25D366] active:scale-90 transition shrink-0">
+                          <WaIcon className="w-5 h-5" />
+                        </a>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
 
       {/* Sticky header + tab switcher */}
       <div className="sticky top-0 z-10 -mx-4 px-4 pt-4 pb-2 bg-slate-50/95 backdrop-blur-sm flex flex-col gap-4">
@@ -2976,7 +3027,8 @@ export const AdminHome: React.FC = () => {
                       {jubahAssignments.map(a => {
                         return (
                           <tr key={a.id}
-                            className="border-b border-slate-50 text-xs hover:bg-slate-50 transition">
+                            onClick={() => setDirSheet(a)}
+                            className="border-b border-slate-50 text-xs cursor-pointer hover:bg-slate-50 active:bg-slate-100 transition">
                             <td className="py-2.5 pr-4 text-slate-600 font-semibold align-top whitespace-nowrap">
                               {a.drop_point || '—'}
                             </td>
