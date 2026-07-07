@@ -8,7 +8,7 @@ import {
   ChevronLeft, ChevronRight, Settings, CalendarDays,
   Package, Ban, Unlock, Hash, X, TrendingUp,
   Upload, FileImage, ShieldCheck, ShieldAlert,
-  DollarSign, Moon, FileText, ExternalLink,
+  DollarSign, Moon, FileText, ExternalLink, FileDown,
 } from 'lucide-react';
 import { WaIcon, toWa } from '../lib/whatsapp';
 import { OrderReceiptSheet } from '../components/OrderReceiptSheet';
@@ -1628,11 +1628,11 @@ export const DriverHome: React.FC = () => {
                   <p className="text-[10px] text-slate-500 font-semibold">{bk.persons} pax</p>
                 </div>
                 {bk.customer_phone && bk.customer_phone !== '—' && (
-                  <a href={`https://wa.me/${toWa(bk.customer_phone)}`}
+                  <a href={`https://wa.me/${toWa(bk.customer_phone)}?text=${encodeURIComponent(`Hi ${bk.customer_name}, regarding your rental booking #${String(bk.booking_no).padStart(5, '0')} — just confirming your details. Please let me know if you have any questions!`)}`}
                     target="_blank" rel="noreferrer"
                     onClick={e => e.stopPropagation()}
-                    className="flex items-center gap-1.5 bg-emerald-500 hover:bg-emerald-600 text-white text-[10px] font-extrabold px-3 py-2 rounded-xl transition active:scale-95 shrink-0">
-                    <WaIcon className="w-3 h-3" /> WhatsApp
+                    className="w-8 h-8 flex items-center justify-center bg-emerald-500 text-white rounded-xl active:scale-90 transition shrink-0">
+                    <WaIcon className="w-4 h-4" />
                   </a>
                 )}
               </div>
@@ -1689,6 +1689,103 @@ export const DriverHome: React.FC = () => {
                   {new Date(bk.created_at).toLocaleDateString('en-MY', { day: '2-digit', month: 'short', year: 'numeric' })}
                 </span>
               </div>
+
+              {/* PDF button — only when confirmed or completed */}
+              {(bk.status === 'confirmed' || bk.status === 'completed') && (() => {
+                const vehicleName = bk.vehicle_label ?? rentalVehicle?.car_type ?? 'Vehicle';
+                const plateColor = rentalVehicle ? `${rentalVehicle.plate_no} · ${rentalVehicle.color}` : '';
+                const priceH = rentalVehicle?.price_hour ?? 0;
+                const isFullDay = bk.booking_type === 'fullday' && bk.end_date && bk.end_date !== bk.date;
+                const dateStr = isFullDay
+                  ? `${new Date(bk.date + 'T00:00:00').toLocaleDateString('en-MY', { day: '2-digit', month: 'short' })} – ${new Date(bk.end_date! + 'T00:00:00').toLocaleDateString('en-MY', { day: '2-digit', month: 'short', year: 'numeric' })}`
+                  : new Date(bk.date + 'T00:00:00').toLocaleDateString('en-MY', { day: '2-digit', month: 'short', year: 'numeric' });
+                const timeStr = isFullDay ? '' : `${fmt12(bk.start_hour)} → ${fmt12(bk.start_hour + bk.duration)}`;
+                const bookingDate = new Date(bk.created_at).toLocaleDateString('en-MY', { day: '2-digit', month: 'short', year: 'numeric' });
+                const ownerLabel = isAdminForRental && bk.owner_name ? bk.owner_name : (user.name ?? '');
+
+                const html = `<!DOCTYPE html><html><head><meta charset="utf-8">
+<title>Gerak Rental Receipt #${String(bk.booking_no).padStart(5, '0')}</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f8fafc;display:flex;justify-content:center;padding:40px 20px}
+.card{background:white;border-radius:20px;overflow:hidden;width:100%;max-width:420px;box-shadow:0 4px 24px rgba(0,0,0,.08)}
+.header{background:#f59e0b;padding:20px 24px 16px}
+.header-top{display:flex;justify-content:space-between;align-items:flex-start}
+.header-label{font-size:9px;font-weight:800;color:rgba(255,255,255,.7);letter-spacing:.1em;text-transform:uppercase}
+.header-vehicle{font-size:22px;font-weight:900;color:white;margin:4px 0 2px}
+.header-plate{font-size:11px;color:rgba(255,255,255,.8);font-weight:600}
+.badge{background:rgba(255,255,255,.25);border:1px solid rgba(255,255,255,.4);color:white;font-size:9px;font-weight:800;padding:4px 10px;border-radius:20px;text-transform:uppercase;white-space:nowrap}
+.divider{border:none;border-top:1.5px dashed #e2e8f0;margin:0 24px}
+.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;padding:16px 24px 8px}
+.cell{background:#f8fafc;border-radius:12px;padding:10px 12px;text-align:center}
+.cell-label{font-size:9px;color:#94a3b8;font-weight:700;margin-bottom:3px}
+.cell-value{font-size:11px;font-weight:800;color:#334155}
+.cell-sub{font-size:9px;color:#94a3b8;margin-top:2px}
+.breakdown{padding:12px 24px}
+.row{display:flex;justify-content:space-between;font-size:10px;margin-bottom:6px}
+.row-label{color:#94a3b8;font-weight:600}
+.row-value{color:#475569;font-weight:700}
+.total-row{display:flex;justify-content:space-between;align-items:center;padding-top:10px;margin-top:4px;border-top:1.5px dashed #e2e8f0}
+.total-label{font-size:13px;font-weight:800;color:#1e293b}
+.total-amount{font-size:22px;font-weight:900;color:#f59e0b}
+.parties{display:flex;padding:12px 24px;gap:12px}
+.party{flex:1}
+.party-label{font-size:9px;color:#94a3b8;font-weight:700;text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px}
+.party-name{font-size:12px;font-weight:800;color:#1e293b}
+.party-sub{font-size:10px;color:#94a3b8;font-weight:600;margin-top:1px}
+.footer{background:#f8fafc;padding:10px 24px;display:flex;align-items:center;justify-content:space-between}
+.footer-ref{font-size:9px;color:#94a3b8;font-weight:700;font-family:monospace;letter-spacing:.05em}
+.footer-date{font-size:9px;color:#94a3b8;font-weight:600}
+@media print{body{padding:0;background:white}.card{box-shadow:none;border-radius:0;max-width:100%}}
+</style></head><body>
+<div class="card">
+  <div class="header"><div class="header-top">
+    <div><div class="header-label">Gerak Rental Receipt</div><div class="header-vehicle">${vehicleName}</div>${plateColor ? `<div class="header-plate">${plateColor}</div>` : ''}</div>
+    <span class="badge">${bk.status}</span>
+  </div></div>
+  <hr class="divider"/>
+  <div class="grid">
+    <div class="cell"><div class="cell-label">${isFullDay ? 'Date Range' : 'Date'}</div><div class="cell-value" style="font-size:10px">${dateStr}</div></div>
+    ${timeStr ? `<div class="cell"><div class="cell-label">Time</div><div class="cell-value">${fmt12(bk.start_hour)}</div><div class="cell-sub">→ ${fmt12(bk.start_hour + bk.duration)}</div></div>` : '<div class="cell"><div class="cell-label">Type</div><div class="cell-value">Full Day</div></div>'}
+    <div class="cell"><div class="cell-label">Duration</div><div class="cell-value">${bk.duration}h</div></div>
+  </div>
+  <div class="breakdown">
+    <div class="row"><span class="row-label">Rate</span><span class="row-value">RM${Number(priceH).toFixed(2)} / hour</span></div>
+    <div class="row"><span class="row-label">Duration</span><span class="row-value">${bk.duration} hour${bk.duration > 1 ? 's' : ''}</span></div>
+    <div class="row"><span class="row-label">Persons</span><span class="row-value">${bk.persons} pax</span></div>
+    <div class="total-row"><span class="total-label">Total</span><span class="total-amount">RM${Number(bk.total_price).toFixed(2)}</span></div>
+  </div>
+  <hr class="divider"/>
+  <div class="parties">
+    <div class="party"><div class="party-label">Customer</div><div class="party-name">${bk.customer_name}</div><div class="party-sub">${bk.customer_phone !== '—' ? bk.customer_phone : ''}</div></div>
+    <div class="party"><div class="party-label">Vehicle Owner</div><div class="party-name">${ownerLabel}</div></div>
+  </div>
+  <div class="footer"><span class="footer-ref"># ${String(bk.booking_no).padStart(5, '0')}</span><span class="footer-date">${bookingDate}</span></div>
+</div>
+<script>window.onload=function(){window.print();window.onafterprint=function(){window.close()}}<\/script>
+</body></html>`;
+
+                const handlePdf = () => {
+                  const iframe = document.createElement('iframe');
+                  iframe.style.cssText = 'position:fixed;width:0;height:0;border:none;visibility:hidden;';
+                  document.body.appendChild(iframe);
+                  const doc = iframe.contentDocument ?? iframe.contentWindow?.document;
+                  if (doc) {
+                    doc.open(); doc.write(html); doc.close();
+                    setTimeout(() => {
+                      iframe.contentWindow?.focus();
+                      iframe.contentWindow?.print();
+                      setTimeout(() => document.body.removeChild(iframe), 1000);
+                    }, 300);
+                  }
+                };
+                return (
+                  <button onClick={handlePdf}
+                    className="w-full flex items-center justify-center gap-2 bg-slate-50 border border-slate-200 text-slate-500 text-[10px] font-extrabold py-2.5 rounded-2xl active:scale-95 transition hover:bg-slate-100">
+                    <FileDown className="w-3.5 h-3.5" /> Save as PDF
+                  </button>
+                );
+              })()}
 
               {/* Action buttons */}
               {bk.status === 'pending' && (

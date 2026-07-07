@@ -739,15 +739,17 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
                 </div>
               </div>
 
-              {/* PDF button */}
-              <div className="px-5 pb-3">
-                <button
-                  onClick={() => generatePdf(bk)}
-                  className="w-full flex items-center justify-center gap-2 bg-slate-50 border border-slate-200 text-slate-500 text-[10px] font-extrabold py-2.5 rounded-2xl active:scale-95 transition hover:bg-slate-100"
-                >
-                  <FileDown className="w-3.5 h-3.5" /> Save as PDF
-                </button>
-              </div>
+              {/* PDF button — only when confirmed or completed */}
+              {(bk.status === 'confirmed' || bk.status === 'completed') && (
+                <div className="px-5 pb-3">
+                  <button
+                    onClick={() => generatePdf(bk)}
+                    className="w-full flex items-center justify-center gap-2 bg-slate-50 border border-slate-200 text-slate-500 text-[10px] font-extrabold py-2.5 rounded-2xl active:scale-95 transition hover:bg-slate-100"
+                  >
+                    <FileDown className="w-3.5 h-3.5" /> Save as PDF
+                  </button>
+                </div>
+              )}
 
               {/* Booking ref footer */}
               <div className="bg-slate-50 px-5 py-2 flex items-center gap-1.5">
