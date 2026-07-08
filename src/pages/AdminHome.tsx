@@ -4,7 +4,7 @@ import { supabase } from '../lib/supabase';
 import {
   BarChart3, Car, Users, Clock, CheckCircle2,
   AlertCircle, RefreshCw, Trash2, MapPin, Navigation,
-  UserPlus, Mail, X, Send, ChevronDown, ChevronUp, ChevronRight, Megaphone, Plus, ToggleLeft, ToggleRight,
+  UserPlus, Mail, X, Send, ChevronDown, ChevronUp, ChevronRight, Megaphone, Plus, PlusCircle, MinusCircle, Minus, ToggleLeft, ToggleRight,
   FileImage, ShieldCheck, ShieldOff, ExternalLink, KeyRound,
   CalendarDays, Upload, Eye, Phone, ArrowLeftRight, Pencil, GraduationCap,
   ChevronLeft, Download, MoreVertical, Copy, Check, TrendingUp, Bike, Settings,
@@ -349,15 +349,17 @@ const JubahRiderSheet: React.FC<{
   onDropPointChange: (v: string) => void;
   onSave: () => void;
   onAddAssignment: (method: 'pickup' | 'postage', dropPoint: string) => Promise<void>;
+  onDeleteAssignment: (id: string) => Promise<void>;
   onClose: () => void;
-}> = ({ rider, method, dropPoint, saving, assignments, onMethodChange, onDropPointChange, onSave, onAddAssignment, onClose }) => {
+}> = ({ rider, method, dropPoint, saving, assignments, onMethodChange, onDropPointChange, onSave, onAddAssignment, onDeleteAssignment, onClose }) => {
   const [isEditingDropPoint, setIsEditingDropPoint] = useState(!dropPoint);
   const dropPointDisabled = method === 'postage' || !isEditingDropPoint;
 
-  const [showAdd, setShowAdd] = useState(false);
-  const [addMethod, setAddMethod] = useState<'pickup' | 'postage'>('pickup');
+  const [showAdd,    setShowAdd]    = useState(false);
+  const [deleteMode, setDeleteMode] = useState(false);
+  const [addMethod,    setAddMethod]    = useState<'pickup' | 'postage'>('pickup');
   const [addDropPoint, setAddDropPoint] = useState('');
-  const [addSaving, setAddSaving] = useState(false);
+  const [addSaving,    setAddSaving]    = useState(false);
 
   const handleAdd = async () => {
     if (addMethod !== 'postage' && !addDropPoint.trim()) return;
@@ -415,7 +417,16 @@ const JubahRiderSheet: React.FC<{
           <p><span className="text-slate-400">Gerak ID:</span> <span className="text-blue-600 font-bold">{rider.gerak_id}</span></p>
           <p><span className="text-slate-400">Campus:</span> UMPSA {rider.campus}</p>
           <p><span className="text-slate-400">IC Number:</span> {rider.ic_number || '—'}</p>
-          <p><span className="text-slate-400">H/P:</span> {rider.phone || '—'}</p>
+          <div className="flex items-center gap-2">
+            <span><span className="text-slate-400">H/P:</span> {rider.phone || '—'}</span>
+            {rider.phone && (
+              <a href={`https://wa.me/${toWa(rider.phone)}`} target="_blank" rel="noopener noreferrer"
+                onClick={e => e.stopPropagation()}
+                className="text-[#25D366] active:scale-90 transition shrink-0">
+                <WaIcon className="w-4 h-4" />
+              </a>
+            )}
+          </div>
         </div>
 
         {/* Method + Drop point */}
@@ -425,16 +436,26 @@ const JubahRiderSheet: React.FC<{
           <div className="flex flex-col gap-2">
             <div className="flex items-center justify-between">
               <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Method</label>
-              <button
-                onClick={() => { setShowAdd(v => !v); setAddDropPoint(''); setAddMethod('pickup'); }}
-                className={`flex items-center gap-1 text-xs font-extrabold px-2.5 py-1 rounded-full border transition active:scale-95 ${
-                  showAdd
-                    ? 'bg-indigo-50 border-indigo-200 text-indigo-600'
-                    : 'bg-slate-100 border-slate-200 text-slate-500'
-                }`}
-              >
-                <Plus className="w-3 h-3" /> Add
-              </button>
+              <div className="flex items-center gap-2">
+                {/* MinusCircle — only when >1 method; hidden while showAdd is open */}
+                {assignments.length > 1 && !showAdd && (
+                  <button
+                    onClick={() => setDeleteMode(v => !v)}
+                    className="active:scale-90 transition"
+                  >
+                    <MinusCircle className={`w-5 h-5 ${deleteMode ? 'text-red-500' : 'text-slate-300'}`} />
+                  </button>
+                )}
+                {/* PlusCircle — hidden when 3 methods exist or delete mode is on */}
+                {assignments.length < 3 && !deleteMode && (
+                  <button
+                    onClick={() => { setShowAdd(v => !v); setAddDropPoint(''); setAddMethod('pickup'); }}
+                    className="active:scale-90 transition"
+                  >
+                    <PlusCircle className={`w-5 h-5 ${showAdd ? 'text-indigo-500' : 'text-slate-300'}`} />
+                  </button>
+                )}
+              </div>
             </div>
 
             {/* METHOD 1 — primary (editable) */}
@@ -442,23 +463,26 @@ const JubahRiderSheet: React.FC<{
               {(secondary.length > 0 || showAdd) && (
                 <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">Method 1</span>
               )}
-              <div className="relative group">
-                <div className="bg-slate-50 border border-slate-200 rounded-xl py-2.5 px-3 flex items-center justify-between pointer-events-none group-focus-within:border-primary transition">
-                  <span className={`text-xs ${method ? 'font-bold text-slate-700' : 'font-normal text-slate-300'}`}>
-                    {method === 'pickup' ? 'Self Pickup' : method === 'postage' ? 'Pickup & Postage' : 'Select method...'}
-                  </span>
-                  <ChevronDown className="w-3 h-3 text-slate-400 shrink-0" />
+              <div className="flex items-center gap-2">
+                {deleteMode && <Minus className="w-4 h-4 text-slate-200 shrink-0" />}
+                <div className="relative group flex-1">
+                  <div className="bg-slate-50 border border-slate-200 rounded-xl py-2.5 px-3 flex items-center justify-between pointer-events-none group-focus-within:border-primary transition">
+                    <span className={`text-xs ${method ? 'font-bold text-slate-700' : 'font-normal text-slate-300'}`}>
+                      {method === 'pickup' ? 'Self Pickup' : method === 'postage' ? 'Pickup & Postage' : 'Select method...'}
+                    </span>
+                    <ChevronDown className="w-3 h-3 text-slate-400 shrink-0" />
+                  </div>
+                  <select
+                    value={method}
+                    onChange={e => onMethodChange(e.target.value as 'pickup' | 'postage')}
+                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                    style={{ fontSize: '16px' }}
+                  >
+                    <option value="" disabled>Select method...</option>
+                    <option value="pickup">Self Pickup</option>
+                    <option value="postage">Pickup &amp; Postage</option>
+                  </select>
                 </div>
-                <select
-                  value={method}
-                  onChange={e => onMethodChange(e.target.value as 'pickup' | 'postage')}
-                  className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                  style={{ fontSize: '16px' }}
-                >
-                  <option value="" disabled>Select method...</option>
-                  <option value="pickup">Self Pickup</option>
-                  <option value="postage">Pickup &amp; Postage</option>
-                </select>
               </div>
             </div>
 
@@ -466,8 +490,15 @@ const JubahRiderSheet: React.FC<{
             {secondary.map((a, i) => (
               <div key={a.id} className="flex flex-col gap-1">
                 <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">Method {i + 2}</span>
-                <div className="bg-slate-50 border border-slate-100 rounded-xl py-2.5 px-3 text-xs font-bold text-slate-600">
-                  {a.method === 'pickup' ? 'Self Pickup' : 'Pickup & Postage'}
+                <div className="flex items-center gap-2">
+                  {deleteMode && (
+                    <button onClick={() => onDeleteAssignment(a.id)} className="text-red-500 active:scale-90 transition shrink-0">
+                      <Minus className="w-4 h-4" />
+                    </button>
+                  )}
+                  <div className="flex-1 bg-slate-50 border border-slate-100 rounded-xl py-2.5 px-3 text-xs font-bold text-slate-600">
+                    {a.method === 'pickup' ? 'Self Pickup' : 'Pickup & Postage'}
+                  </div>
                 </div>
               </div>
             ))}
@@ -508,41 +539,49 @@ const JubahRiderSheet: React.FC<{
               {(secondary.length > 0 || showAdd) && (
                 <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">Drop Point 1</span>
               )}
-              <div className="flex items-center justify-between mb-1">
-                {method !== 'postage' && (
-                  <button
-                    type="button"
-                    onClick={() => setIsEditingDropPoint(v => !v)}
-                    className={`flex items-center gap-1 text-xs font-extrabold px-2 py-0.5 rounded-full border transition active:scale-95 ${
-                      isEditingDropPoint
-                        ? 'bg-primary/10 border-primary/30 text-primary'
-                        : 'bg-slate-100 border-slate-200 text-slate-500'
-                    }`}
-                  >
-                    <Pencil className="w-2.5 h-2.5" /> {isEditingDropPoint ? 'Editing' : 'Edit'}
-                  </button>
-                )}
+              <div className="flex items-start gap-2">
+                {deleteMode && <div className="w-4 shrink-0" />}
+                <div className="flex-1 flex flex-col gap-1">
+                  <div className="flex items-center justify-between">
+                    {method !== 'postage' && (
+                      <button
+                        type="button"
+                        onClick={() => setIsEditingDropPoint(v => !v)}
+                        className={`flex items-center gap-1 text-xs font-extrabold px-2 py-0.5 rounded-full border transition active:scale-95 ${
+                          isEditingDropPoint
+                            ? 'bg-primary/10 border-primary/30 text-primary'
+                            : 'bg-slate-100 border-slate-200 text-slate-500'
+                        }`}
+                      >
+                        <Pencil className="w-2.5 h-2.5" /> {isEditingDropPoint ? 'Editing' : 'Edit'}
+                      </button>
+                    )}
+                  </div>
+                  <input
+                    type="text"
+                    value={dropPoint}
+                    onChange={e => onDropPointChange(e.target.value)}
+                    placeholder="e.g. UMP Gambang Counter"
+                    disabled={dropPointDisabled}
+                    style={{ fontSize: '12px' }}
+                    className="bg-slate-50 border border-slate-200 rounded-xl py-2.5 px-3 font-bold text-slate-700 focus:outline-none focus:border-primary transition placeholder:font-normal disabled:opacity-50 disabled:cursor-not-allowed"
+                  />
+                  {method === 'postage' && (
+                    <p className="text-xs text-slate-400 font-semibold">Not applicable — robe is couriered, no physical drop point needed.</p>
+                  )}
+                </div>
               </div>
-              <input
-                type="text"
-                value={dropPoint}
-                onChange={e => onDropPointChange(e.target.value)}
-                placeholder="e.g. UMP Gambang Counter"
-                disabled={dropPointDisabled}
-                style={{ fontSize: '12px' }}
-                className="bg-slate-50 border border-slate-200 rounded-xl py-2.5 px-3 font-bold text-slate-700 focus:outline-none focus:border-primary transition placeholder:font-normal disabled:opacity-50 disabled:cursor-not-allowed"
-              />
-              {method === 'postage' && (
-                <p className="text-xs text-slate-400 font-semibold">Not applicable — robe is couriered, no physical drop point needed.</p>
-              )}
             </div>
 
             {/* DROP POINT 2+ — secondary (read-only) */}
             {secondary.map((a, i) => (
               <div key={a.id} className="flex flex-col gap-1">
                 <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">Drop Point {i + 2}</span>
-                <div className="bg-slate-50 border border-slate-100 rounded-xl py-2.5 px-3 text-xs font-bold text-slate-600">
-                  {a.drop_point && a.drop_point !== '-' ? a.drop_point : '— (Postage, no drop point)'}
+                <div className="flex items-center gap-2">
+                  {deleteMode && <div className="w-4 shrink-0" />}
+                  <div className="flex-1 bg-slate-50 border border-slate-100 rounded-xl py-2.5 px-3 text-xs font-bold text-slate-600">
+                    {a.drop_point && a.drop_point !== '-' ? a.drop_point : '— (Postage, no drop point)'}
+                  </div>
                 </div>
               </div>
             ))}
@@ -604,17 +643,6 @@ const JubahRiderSheet: React.FC<{
               ? <span className="w-4 h-4 rounded-full border-2 border-white border-t-transparent animate-spin" />
               : 'Save Assignment'}
           </button>
-        )}
-        {rider.phone && (
-          <div className="flex gap-3">
-            <a
-              href={`tel:${rider.phone}`}
-              className="flex-1 flex items-center justify-center gap-2 bg-slate-800 text-white font-extrabold text-xs py-3.5 rounded-2xl shadow-md active:scale-[0.98] transition"
-            >
-              <Phone className="w-4 h-4" /> Call
-            </a>
-            <WaBtn phone={rider.phone} variant="full" label="WhatsApp" />
-          </div>
         )}
       </div>
     </div>
@@ -1831,6 +1859,12 @@ export const AdminHome: React.FC = () => {
             showToast('Assignment added.');
             loadJubahData();
           }}
+          onDeleteAssignment={async (id) => {
+            const { error } = await supabase.from('jubah_rider_assignments').delete().eq('id', id);
+            if (error) { showToast('Failed: ' + error.message); return; }
+            showToast('Assignment removed.');
+            loadJubahData();
+          }}
           onClose={() => setJubahSheetRider(null)}
         />
       )}
@@ -1845,7 +1879,6 @@ export const AdminHome: React.FC = () => {
             style={{ background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(2px)' }}
             onClick={() => setDirSheet(null)}>
             <div className="w-full max-w-[480px] bg-white rounded-t-3xl shadow-2xl animate-slide-up flex flex-col"
-              style={{ paddingBottom: 'calc(1.5rem + env(safe-area-inset-bottom))' }}
               onClick={e => e.stopPropagation()}>
               <div className="flex justify-center pt-3 pb-1"><div className="w-10 h-1 bg-slate-200 rounded-full" /></div>
               <div className="flex items-center justify-between px-5 pt-2 pb-4">
@@ -1854,7 +1887,7 @@ export const AdminHome: React.FC = () => {
                   <X className="w-4 h-4" />
                 </button>
               </div>
-              <div className="px-5 pb-6 flex flex-col gap-4">
+              <div className="px-5 flex flex-col gap-4" style={{ paddingBottom: 'calc(5rem + env(safe-area-inset-bottom))' }}>
                 <div className="bg-slate-50 border border-slate-100 rounded-2xl p-4 flex flex-col gap-3 text-xs">
                   {[
                     { label: 'Representative Name', value: dirSheet.name },
