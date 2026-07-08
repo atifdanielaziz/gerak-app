@@ -69,13 +69,12 @@ export const JubahLanding: React.FC<Props> = ({ onProceed }) => {
     umpsa: 'UMPSA', uitm: 'UiTM', umk: 'UMK', ukm: 'UKM', uiam: 'UIAM',
   };
 
-  // Load public URLs for all universities + default on mount
+  // Compute public URLs once on mount — no cache-busting so browser can cache images
   useEffect(() => {
     const urls: Record<string, string> = {};
-    const bust = Date.now();
     ['default', ...UNIVERSITIES.map(u => u.key)].forEach(key => {
       const { data } = supabase.storage.from(BUCKET).getPublicUrl(`${key}.jpg`);
-      urls[key] = `${data.publicUrl}?t=${bust}`;
+      urls[key] = data.publicUrl;
     });
     setBannerUrls(urls);
   }, []);
