@@ -213,26 +213,34 @@ export const JubahLanding: React.FC<Props> = ({ onProceed }) => {
       )}
 
 
-      {/* Representative profile sheet */}
+      {/* Representative profile sheet — Bare Drawer standard */}
       {selectedRider && (
         <>
-          <div className="fixed inset-0 z-40 bg-black/40" onClick={closeRider} />
+          <div className="fixed inset-0 z-40 bg-black/40"
+            style={{ backdropFilter: 'blur(2px)' }}
+            onClick={closeRider} />
           <div className="fixed bottom-0 left-0 right-0 z-50 bg-white rounded-t-3xl shadow-2xl animate-slide-up max-h-[calc(100dvh-3rem)] overflow-y-auto no-scrollbar">
 
-            {/* Sheet header */}
-            <div className="flex items-center justify-between px-5 pt-5 pb-3 border-b border-slate-100">
+            {/* Drag pill */}
+            <div className="flex justify-center pt-3 pb-1 shrink-0">
+              <div className="w-10 h-1 bg-slate-200 rounded-full" />
+            </div>
+
+            {/* Header */}
+            <div className="flex items-center justify-between px-5 pt-2 pb-4 shrink-0">
               <div>
                 <p className="text-xs font-extrabold text-slate-400 uppercase tracking-widest">Representative</p>
                 <h3 className="text-base font-black text-slate-800 mt-0.5">{selectedRider.name}</h3>
               </div>
               <button onClick={closeRider}
-                className="w-8 h-8 flex items-center justify-center rounded-xl bg-slate-100 text-slate-500 hover:bg-slate-200 active:scale-90 transition">
+                className="w-7 h-7 flex items-center justify-center rounded-full bg-slate-100 text-slate-500 active:scale-90 transition">
                 <X className="w-4 h-4" />
               </button>
             </div>
 
             {/* Fields */}
-            <div className="px-5 py-4 flex flex-col gap-5">
+            <div className="px-5 flex flex-col gap-5"
+              style={{ paddingBottom: 'calc(1.5rem + env(safe-area-inset-bottom))' }}>
 
               {/* Method */}
               <div className="flex flex-col gap-1">
