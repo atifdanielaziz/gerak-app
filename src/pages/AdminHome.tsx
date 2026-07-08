@@ -7,7 +7,7 @@ import {
   UserPlus, Mail, X, Send, ChevronDown, ChevronUp, ChevronRight, Megaphone, Plus, PlusCircle, MinusCircle, Minus, ToggleLeft, ToggleRight,
   FileImage, ShieldCheck, ShieldOff, ExternalLink, KeyRound,
   CalendarDays, Upload, Eye, Phone, ArrowLeftRight, Pencil, GraduationCap,
-  ChevronLeft, Download, MoreVertical, Copy, Check, TrendingUp, Bike, Settings, Info,
+  ChevronLeft, Download, MoreVertical, Copy, Check, TrendingUp, Bike, Settings, Info, Save,
 } from 'lucide-react';
 import { WaBtn, WaIcon, toWa } from '../lib/whatsapp';
 import { MonthDrumPicker, EarningsCard, computeEarnings, type EarningsRow } from '../components/EarningsCard';
@@ -997,6 +997,7 @@ export const AdminHome: React.FC = () => {
   const [sampleDocsPage,   setSampleDocsPage]   = useState<{ key: string; label: string } | null>(null);
   const [docFields,        setDocFields]        = useState<DocField[]>([]);
   const [docFieldDrafts,   setDocFieldDrafts]   = useState<Record<string, string>>({});
+  const [docSaved,         setDocSaved]         = useState(false);
   const [sampleUrls,       setSampleUrls]       = useState<Record<string, string>>({});
   const [sampleLoaded,     setSampleLoaded]     = useState<Record<string, boolean>>({});
   const [sampleUploading,  setSampleUploading]  = useState<string | null>(null);
@@ -1331,6 +1332,24 @@ export const AdminHome: React.FC = () => {
     if (!label) return;
     await supabase.from('jubah_doc_fields').update({ label }).eq('id', id);
     setDocFields(prev => prev.map(f => f.id === id ? { ...f, label } : f));
+  };
+
+  const handleSaveAllDocFields = async () => {
+    const pending = Object.entries(docFieldDrafts).filter(([, label]) => label.trim());
+    if (pending.length > 0) {
+      await Promise.all(
+        pending.map(([id, label]) =>
+          supabase.from('jubah_doc_fields').update({ label: label.trim() }).eq('id', id)
+        )
+      );
+      setDocFields(prev => prev.map(f => {
+        const draft = docFieldDrafts[f.id];
+        return draft !== undefined ? { ...f, label: draft.trim() } : f;
+      }));
+      setDocFieldDrafts({});
+    }
+    setDocSaved(true);
+    setTimeout(() => setDocSaved(false), 1200);
   };
 
   const handleRemoveDocField = async (id: string) => {
@@ -2102,6 +2121,10 @@ export const AdminHome: React.FC = () => {
                 <ChevronLeft className="w-4 h-4" />
               </button>
               <h3 className="flex-1 text-xs font-black text-slate-400 uppercase tracking-widest">Upload Documents (Sample)</h3>
+              <button onClick={handleSaveAllDocFields}
+                className="w-7 h-7 flex items-center justify-center rounded-xl bg-emerald-50 text-emerald-500 active:scale-90 transition shrink-0">
+                {docSaved ? <Check className="w-4 h-4" /> : <Save className="w-4 h-4" />}
+              </button>
               <button onClick={handleAddDocField}
                 className="w-7 h-7 flex items-center justify-center rounded-xl bg-blue-50 text-blue-500 active:scale-90 transition shrink-0">
                 <PlusCircle className="w-4 h-4" />
