@@ -985,10 +985,11 @@ export const AdminHome: React.FC = () => {
     { key: 'ukm',     label: 'Universiti Kebangsaan Malaysia (UKM)' },
     { key: 'uiam',    label: 'Universiti Islam Antarabangsa Malaysia (UIA)' },
   ];
-  const [bannerUrls,       setBannerUrls]       = useState<Record<string, string>>({});
-  const [bannerImgError,   setBannerImgError]   = useState<Record<string, boolean>>({});
-  const [bannerUploading,  setBannerUploading]  = useState<string | null>(null);
-  const [bannerUploadKey,  setBannerUploadKey]  = useState<string | null>(null);
+  const [bannerUrls,        setBannerUrls]        = useState<Record<string, string>>({});
+  const [bannerImgError,    setBannerImgError]    = useState<Record<string, boolean>>({});
+  const [bannerRefreshKey,  setBannerRefreshKey]  = useState<Record<string, number>>({});
+  const [bannerUploading,   setBannerUploading]   = useState<string | null>(null);
+  const [bannerUploadKey,   setBannerUploadKey]   = useState<string | null>(null);
   const bannerFileRef = useRef<HTMLInputElement>(null);
   type JubahPrice = { remark: string; payment_mode: string; price: number };
   const [savingPrice,        setSavingPrice]        = useState<string | null>(null);
@@ -1259,10 +1260,14 @@ export const AdminHome: React.FC = () => {
       return;
     }
     const { data } = supabase.storage.from(BANNER_BUCKET).getPublicUrl(path);
-    setBannerUrls(prev => ({ ...prev, [key]: `${data.publicUrl}?t=${Date.now()}` }));
-    setBannerImgError(prev => ({ ...prev, [key]: false }));
     setBannerUploading(null);
     showToast('Banner uploaded ✓');
+    // Give Supabase CDN ~1s to propagate, then force fresh load
+    setTimeout(() => {
+      setBannerImgError(prev => ({ ...prev, [key]: false }));
+      setBannerUrls(prev => ({ ...prev, [key]: `${data.publicUrl}?t=${Date.now()}` }));
+      setBannerRefreshKey(prev => ({ ...prev, [key]: (prev[key] ?? 0) + 1 }));
+    }, 1000);
   };
 
   const handleCalendarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -3555,6 +3560,7 @@ export const AdminHome: React.FC = () => {
                   <div className="w-full rounded-2xl overflow-hidden border border-slate-100 bg-slate-50 h-40 flex items-center justify-center">
                     {bannerUrls[item.key] && !bannerImgError[item.key] ? (
                       <img
+                        key={`${item.key}-${bannerRefreshKey[item.key] ?? 0}`}
                         src={bannerUrls[item.key]}
                         alt={`${item.label} banner`}
                         className="w-full h-full object-cover"
