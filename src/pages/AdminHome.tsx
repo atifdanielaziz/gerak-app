@@ -4373,22 +4373,22 @@ export const AdminHome: React.FC = () => {
     {sampleDocsPage && (
       <div className="absolute inset-0 z-[90] bg-slate-50 flex flex-col" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
 
-        {/* Top bar */}
-        <div className="bg-white border-b border-slate-100 px-5 py-4 flex items-start gap-2 shrink-0">
-          <button
-            onClick={() => setSampleDocsPage(null)}
-            className="mt-0.5 w-7 h-7 flex items-center justify-center rounded-xl bg-slate-100 text-slate-500 active:scale-90 transition shrink-0">
-            <ChevronLeft className="w-4 h-4" />
-          </button>
-          <div>
-            <p className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest">Jubah · Sample Documents</p>
-            <h2 className="text-sm font-black text-slate-800">{UNIV_SHORT[sampleDocsPage.key] ?? sampleDocsPage.key.toUpperCase()}</h2>
-          </div>
-        </div>
-
         {/* Scrollable content */}
-        <div className="flex-1 overflow-y-auto no-scrollbar px-4 pt-4 flex flex-col gap-4"
-          style={{ paddingBottom: 'calc(2rem + env(safe-area-inset-bottom))' }}>
+        <div className="flex-1 overflow-y-auto no-scrollbar px-4 flex flex-col gap-4"
+          style={{ paddingTop: '1rem', paddingBottom: 'calc(6.5rem + env(safe-area-inset-bottom))' }}>
+
+          {/* Header row — back button + title */}
+          <div className="flex items-start gap-2 px-1">
+            <button
+              onClick={() => setSampleDocsPage(null)}
+              className="mt-0.5 w-7 h-7 flex items-center justify-center rounded-xl bg-slate-100 text-slate-500 active:scale-90 transition shrink-0">
+              <ChevronLeft className="w-4 h-4" />
+            </button>
+            <div>
+              <p className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest">Jubah · Sample Documents</p>
+              <h2 className="text-sm font-black text-slate-800">{UNIV_SHORT[sampleDocsPage.key] ?? sampleDocsPage.key.toUpperCase()}</h2>
+            </div>
+          </div>
 
           {/* Hidden file input */}
           <input
