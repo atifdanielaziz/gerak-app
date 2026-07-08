@@ -434,35 +434,27 @@ const JubahRiderSheet: React.FC<{
 
           {/* ── METHOD section ── */}
           <div className="flex flex-col gap-2">
-            <div className="flex items-center justify-between">
-              <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Method</label>
-              <div className="flex items-center gap-2">
-                {/* MinusCircle — only when >1 method; hidden while showAdd is open */}
-                {assignments.length > 1 && !showAdd && (
-                  <button
-                    onClick={() => setDeleteMode(v => !v)}
-                    className="active:scale-90 transition"
-                  >
-                    <MinusCircle className={`w-5 h-5 ${deleteMode ? 'text-red-500' : 'text-slate-300'}`} />
-                  </button>
-                )}
-                {/* PlusCircle — hidden when 3 methods exist or delete mode is on */}
-                {assignments.length < 3 && !deleteMode && (
-                  <button
-                    onClick={() => { setShowAdd(v => !v); setAddDropPoint(''); setAddMethod('pickup'); }}
-                    className="active:scale-90 transition"
-                  >
-                    <PlusCircle className={`w-5 h-5 ${showAdd ? 'text-indigo-500' : 'text-slate-300'}`} />
-                  </button>
-                )}
-              </div>
-            </div>
 
             {/* METHOD 1 — primary (editable) */}
             <div className="flex flex-col gap-1">
-              {(secondary.length > 0 || showAdd) && (
-                <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">Method 1</span>
-              )}
+              {/* Label row: dynamic "Method" vs "Method 1" + icon buttons */}
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">
+                  {(secondary.length > 0 || showAdd) ? 'Method 1' : 'Method'}
+                </span>
+                <div className="flex items-center gap-2">
+                  {assignments.length > 1 && !showAdd && (
+                    <button onClick={() => setDeleteMode(v => !v)} className="active:scale-90 transition">
+                      <MinusCircle className={`w-5 h-5 ${deleteMode ? 'text-red-500' : 'text-slate-300'}`} />
+                    </button>
+                  )}
+                  {assignments.length < 3 && !deleteMode && (
+                    <button onClick={() => { setShowAdd(v => !v); setAddDropPoint(''); setAddMethod('pickup'); }} className="active:scale-90 transition">
+                      <PlusCircle className={`w-5 h-5 ${showAdd ? 'text-indigo-500' : 'text-slate-300'}`} />
+                    </button>
+                  )}
+                </div>
+              </div>
               <div className="flex items-center gap-2">
                 {deleteMode && <Minus className="w-4 h-4 text-slate-200 shrink-0" />}
                 <div className="relative group flex-1">
@@ -532,13 +524,12 @@ const JubahRiderSheet: React.FC<{
 
           {/* ── DROP POINT section ── */}
           <div className="flex flex-col gap-2">
-            <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Drop Point</label>
 
             {/* DROP POINT 1 — primary (editable) */}
             <div className="flex flex-col gap-1">
-              {(secondary.length > 0 || showAdd) && (
-                <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">Drop Point 1</span>
-              )}
+              <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">
+                {(secondary.length > 0 || showAdd) ? 'Drop Point 1' : 'Drop Point'}
+              </span>
               <div className="flex items-start gap-2">
                 {deleteMode && <div className="w-4 shrink-0" />}
                 <div className="flex-1 flex flex-col gap-1">
