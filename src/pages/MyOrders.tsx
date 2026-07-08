@@ -65,7 +65,7 @@ const DriverSheet: React.FC<DriverSheetProps> = ({ order, onClose }) => (
   >
     {/* Sheet */}
     <div
-      className="w-full max-w-[480px] max-h-[85vh] bg-white rounded-t-3xl shadow-2xl animate-slide-up flex flex-col"
+      className="w-full max-w-[480px] max-h-[calc(100dvh-3rem)] bg-white rounded-t-3xl shadow-2xl animate-slide-up flex flex-col"
       onClick={e => e.stopPropagation()}
     >
       {/* Drag handle */}

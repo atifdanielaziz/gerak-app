@@ -71,7 +71,7 @@ export const OrderReceiptSheet: React.FC<{ order: OrderReceiptFields; onClose: (
       onClick={onClose}
     >
       <div
-        className="w-full max-w-[480px] max-h-[85vh] overflow-y-auto no-scrollbar bg-white rounded-t-3xl shadow-2xl animate-slide-up"
+        className="w-full max-w-[480px] max-h-[calc(100dvh-3rem)] overflow-y-auto no-scrollbar bg-white rounded-t-3xl shadow-2xl animate-slide-up"
         onClick={e => e.stopPropagation()}
       >
         {/* Drag handle */}

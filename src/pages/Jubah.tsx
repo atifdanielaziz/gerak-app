@@ -1018,7 +1018,7 @@ export const Jubah: React.FC = () => {
         <div className="fixed inset-0 z-50 flex items-end justify-center"
           style={{ background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(2px)' }}
           onClick={closeAddressSheet}>
-          <div className="w-full max-w-[480px] max-h-[85vh] bg-white rounded-t-3xl shadow-2xl animate-slide-up flex flex-col"
+          <div className="w-full max-w-[480px] max-h-[calc(100dvh-3rem)] bg-white rounded-t-3xl shadow-2xl animate-slide-up flex flex-col"
             onClick={e => e.stopPropagation()}>
             <div className="flex justify-center pt-3 pb-1 shrink-0">
               <div className="w-10 h-1 bg-slate-200 rounded-full" />
@@ -1076,7 +1076,7 @@ export const Jubah: React.FC = () => {
       return (
         <>
           <div className="fixed inset-0 z-40 bg-black/40" onClick={close} />
-          <div className="fixed bottom-0 left-0 right-0 z-50 bg-white rounded-t-3xl shadow-2xl animate-slide-up max-h-[80vh] overflow-y-auto no-scrollbar">
+          <div className="fixed bottom-0 left-0 right-0 z-50 bg-white rounded-t-3xl shadow-2xl animate-slide-up max-h-[calc(100dvh-3rem)] overflow-y-auto no-scrollbar">
             <div className="flex items-center justify-between px-5 pt-5 pb-3 border-b border-slate-100">
               <div>
                 <p className="text-xs font-extrabold text-slate-400 uppercase tracking-widest">Your Rider</p>

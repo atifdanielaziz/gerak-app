@@ -214,7 +214,7 @@ const ProfileSheet: React.FC<{ u: ProfileUser; onClose: () => void }> = ({ u, on
       onClick={onClose}
     >
       <div
-        className="w-full max-w-[480px] max-h-[80vh] bg-white rounded-t-3xl shadow-2xl animate-slide-up flex flex-col"
+        className="w-full max-w-[480px] max-h-[calc(100dvh-3rem)] bg-white rounded-t-3xl shadow-2xl animate-slide-up flex flex-col"
         onClick={e => e.stopPropagation()}
       >
         {/* Handle */}
@@ -381,7 +381,7 @@ const JubahRiderSheet: React.FC<{
     onClick={onClose}
   >
     <div
-      className="w-full max-w-[480px] max-h-[85vh] bg-white rounded-t-3xl shadow-2xl animate-slide-up flex flex-col"
+      className="w-full max-w-[480px] max-h-[calc(100dvh-3rem)] bg-white rounded-t-3xl shadow-2xl animate-slide-up flex flex-col"
       onClick={e => e.stopPropagation()}
     >
       <div className="flex justify-center pt-3 pb-1 shrink-0">
@@ -1869,7 +1869,7 @@ export const AdminHome: React.FC = () => {
           <div className="fixed inset-0 z-50 flex items-end justify-center"
             style={{ background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(2px)' }}
             onClick={() => setDirSheet(null)}>
-            <div className="w-full max-w-[480px] bg-white rounded-t-3xl shadow-2xl animate-slide-up flex flex-col"
+            <div className="w-full max-w-[480px] max-h-[calc(100dvh-3rem)] bg-white rounded-t-3xl shadow-2xl animate-slide-up flex flex-col overflow-y-auto no-scrollbar"
               onClick={e => e.stopPropagation()}>
               <div className="flex justify-center pt-3 pb-1"><div className="w-10 h-1 bg-slate-200 rounded-full" /></div>
               <div className="flex items-center justify-between px-5 pt-2 pb-4">
@@ -4078,7 +4078,7 @@ export const AdminHome: React.FC = () => {
       return (
         <div className="fixed inset-0 z-50 bg-black/40 flex items-end justify-center"
           onClick={() => setPendingAction(null)}>
-          <div className="w-full max-w-sm max-h-[85vh] overflow-y-auto no-scrollbar bg-white rounded-t-3xl p-6 pb-10 shadow-2xl animate-slide-up"
+          <div className="w-full max-w-sm max-h-[calc(100dvh-3rem)] overflow-y-auto no-scrollbar bg-white rounded-t-3xl p-6 pb-10 shadow-2xl animate-slide-up"
             onClick={e => e.stopPropagation()}>
             <div className="w-10 h-1 bg-slate-200 rounded-full mx-auto mb-5" />
             <div className={`w-10 h-10 rounded-2xl mx-auto mb-3 flex items-center justify-center ${
@@ -4113,7 +4113,7 @@ export const AdminHome: React.FC = () => {
     {showGateMasterConfirm && (
       <div className="fixed inset-0 z-50 bg-black/40 flex items-end justify-center"
         onClick={() => setShowGateMasterConfirm(false)}>
-        <div className="w-full max-w-sm max-h-[85vh] overflow-y-auto no-scrollbar bg-white rounded-t-3xl p-6 pb-10 shadow-2xl animate-slide-up"
+        <div className="w-full max-w-sm max-h-[calc(100dvh-3rem)] overflow-y-auto no-scrollbar bg-white rounded-t-3xl p-6 pb-10 shadow-2xl animate-slide-up"
           onClick={e => e.stopPropagation()}>
           <div className="w-10 h-1 bg-slate-200 rounded-full mx-auto mb-5" />
           <div className={`w-10 h-10 rounded-2xl mx-auto mb-3 flex items-center justify-center ${
@@ -4154,7 +4154,7 @@ export const AdminHome: React.FC = () => {
         onClick={() => setShowInviteConfirm(false)}
       >
         <div
-          className="w-full max-w-sm max-h-[85vh] overflow-y-auto no-scrollbar bg-white rounded-t-3xl p-6 pb-10 shadow-2xl animate-slide-up"
+          className="w-full max-w-sm max-h-[calc(100dvh-3rem)] overflow-y-auto no-scrollbar bg-white rounded-t-3xl p-6 pb-10 shadow-2xl animate-slide-up"
           onClick={e => e.stopPropagation()}
         >
           {/* Handle bar */}

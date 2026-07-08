@@ -217,7 +217,7 @@ export const JubahLanding: React.FC<Props> = ({ onProceed }) => {
       {selectedRider && (
         <>
           <div className="fixed inset-0 z-40 bg-black/40" onClick={closeRider} />
-          <div className="fixed bottom-0 left-0 right-0 z-50 bg-white rounded-t-3xl shadow-2xl animate-slide-up max-h-[80vh] overflow-y-auto no-scrollbar">
+          <div className="fixed bottom-0 left-0 right-0 z-50 bg-white rounded-t-3xl shadow-2xl animate-slide-up max-h-[calc(100dvh-3rem)] overflow-y-auto no-scrollbar">
 
             {/* Sheet header */}
             <div className="flex items-center justify-between px-5 pt-5 pb-3 border-b border-slate-100">
