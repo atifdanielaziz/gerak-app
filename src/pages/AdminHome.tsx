@@ -605,7 +605,7 @@ const JubahRiderSheet: React.FC<{
       </div>
 
       {/* Footer — sticky, always reachable */}
-      <div className="px-4 pt-3 pb-6 flex flex-col gap-3 shrink-0 border-t border-slate-100">
+      <div className="px-4 pt-3 flex flex-col gap-3 shrink-0 border-t border-slate-100" style={{ paddingBottom: 'calc(5rem + env(safe-area-inset-bottom))' }}>
         {showAdd ? (
           <div className="flex gap-2">
             <button
