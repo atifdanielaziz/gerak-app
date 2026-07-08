@@ -64,7 +64,13 @@ export const Jubah: React.FC = () => {
   const [postageZone, setPostageZone] = useState<'SM' | 'SS'>('SM');
   const [remark, setRemark]           = useState<typeof REMARKS[number]>('Degree');
   type JubahDocField = { id: string; label: string; hint: string | null; position: number };
-  const [docFields,    setDocFields]    = useState<JubahDocField[]>([]);
+  const FALLBACK_DOC_FIELDS: JubahDocField[] = [
+    { id: 'oscar', label: 'OSCAR',             hint: null,                                   position: 1 },
+    { id: 'skpg',  label: 'SKPG',              hint: null,                                   position: 2 },
+    { id: 'konvo', label: 'Konvo Slip',         hint: null,                                   position: 3 },
+    { id: 'ic',    label: 'IC (Front & Back)',  hint: 'Accepts PDF or image (JPG/PNG)',       position: 4 },
+  ];
+  const [docFields,    setDocFields]    = useState<JubahDocField[]>(FALLBACK_DOC_FIELDS);
   const [docFiles,     setDocFiles]     = useState<Record<string, File | null>>({});
   const docRefs = useRef<Record<string, HTMLInputElement | null>>({});
   const [fileError, setFileError]         = useState('');
@@ -151,25 +157,27 @@ export const Jubah: React.FC = () => {
       .then(({ data }) => { setRiders(data ?? []); setRidersLoading(false); });
   }, [university, paymentMode]);
 
-  // Load doc fields for the selected university; fall back to UMPSA if none configured
+  // Load doc fields for the selected university; fall back to UMPSA then hardcoded defaults
   useEffect(() => {
     if (!landingUniversity) return;
     setDocFiles({});
     setCombinedBlob(null);
-    supabase
-      .from('jubah_doc_fields')
-      .select('id, label, hint, position')
-      .eq('university_key', landingUniversity)
-      .order('position')
-      .then(async ({ data }) => {
-        if (data && data.length > 0) { setDocFields(data); return; }
-        const { data: defaults } = await supabase
-          .from('jubah_doc_fields')
-          .select('id, label, hint, position')
-          .eq('university_key', 'umpsa')
-          .order('position');
-        setDocFields(defaults ?? []);
-      });
+    const load = async () => {
+      const { data } = await supabase
+        .from('jubah_doc_fields')
+        .select('id, label, hint, position')
+        .eq('university_key', landingUniversity)
+        .order('position');
+      if (data && data.length > 0) { setDocFields(data); return; }
+      const { data: defaults } = await supabase
+        .from('jubah_doc_fields')
+        .select('id, label, hint, position')
+        .eq('university_key', 'umpsa')
+        .order('position');
+      if (defaults && defaults.length > 0) { setDocFields(defaults); return; }
+      setDocFields(FALLBACK_DOC_FIELDS);
+    };
+    load();
   }, [landingUniversity]);
 
   const allFilesReady = docFields.length > 0 && docFields.every(f => !!docFiles[f.id]);
