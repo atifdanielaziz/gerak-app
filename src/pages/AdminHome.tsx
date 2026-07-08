@@ -987,12 +987,7 @@ export const AdminHome: React.FC = () => {
     { key: 'ukm',     label: 'Universiti Kebangsaan Malaysia (UKM)' },
     { key: 'uiam',    label: 'Universiti Islam Antarabangsa Malaysia (UIA)' },
   ];
-  const SAMPLE_DOCS = [
-    { key: 'oscar', label: 'OSCAR' },
-    { key: 'skpg',  label: 'SKPG' },
-    { key: 'konvo', label: 'Konvo Slip' },
-    { key: 'ic',    label: 'IC (Front & Back)', hint: 'Accepts image (JPG/PNG)' },
-  ];
+  type DocField = { id: string; label: string; hint: string | null; position: number };
   const [bannerUrls,        setBannerUrls]        = useState<Record<string, string>>({});
   const [bannerImgError,    setBannerImgError]    = useState<Record<string, boolean>>({});
   const [bannerRefreshKey,  setBannerRefreshKey]  = useState<Record<string, number>>({});
@@ -1000,6 +995,8 @@ export const AdminHome: React.FC = () => {
   const [bannerUploadKey,   setBannerUploadKey]   = useState<string | null>(null);
   const bannerFileRef = useRef<HTMLInputElement>(null);
   const [sampleDocsPage,   setSampleDocsPage]   = useState<{ key: string; label: string } | null>(null);
+  const [docFields,        setDocFields]        = useState<DocField[]>([]);
+  const [docFieldDrafts,   setDocFieldDrafts]   = useState<Record<string, string>>({});
   const [sampleUrls,       setSampleUrls]       = useState<Record<string, string>>({});
   const [sampleLoaded,     setSampleLoaded]     = useState<Record<string, boolean>>({});
   const [sampleUploading,  setSampleUploading]  = useState<string | null>(null);
@@ -1266,36 +1263,103 @@ export const AdminHome: React.FC = () => {
   };
 
   useEffect(() => {
-    if (!sampleDocsPage) { setSampleUrls({}); setSampleLoaded({}); return; }
+    if (!sampleDocsPage) {
+      setSampleUrls({}); setSampleLoaded({}); setDocFields([]); setDocFieldDrafts({});
+      return;
+    }
     if (mainScrollRef.current) mainScrollRef.current.scrollTop = 0;
-    const bust = Date.now();
-    const urls: Record<string, string> = {};
-    SAMPLE_DOCS.forEach(({ key }) => {
-      const { data } = supabase.storage.from(BANNER_BUCKET).getPublicUrl(`samples/${sampleDocsPage.key}/${key}.jpg`);
-      urls[key] = `${data.publicUrl}?t=${bust}`;
-    });
-    setSampleUrls(urls);
-    setSampleLoaded({});
+
+    const load = async () => {
+      let fields: DocField[] = [];
+      const { data } = await supabase
+        .from('jubah_doc_fields')
+        .select('id, label, hint, position')
+        .eq('university_key', sampleDocsPage.key)
+        .order('position');
+
+      if (data && data.length > 0) {
+        fields = data;
+      } else {
+        // First open for this university — copy from UMPSA defaults
+        const { data: defaults } = await supabase
+          .from('jubah_doc_fields')
+          .select('label, hint, position')
+          .eq('university_key', 'umpsa')
+          .order('position');
+        if (defaults?.length) {
+          const { data: inserted } = await supabase
+            .from('jubah_doc_fields')
+            .insert(defaults.map(d => ({ university_key: sampleDocsPage.key, label: d.label, hint: d.hint, position: d.position })))
+            .select('id, label, hint, position');
+          fields = inserted ?? [];
+        }
+      }
+
+      setDocFields(fields);
+      setDocFieldDrafts(Object.fromEntries(fields.map(f => [f.id, f.label])));
+
+      const bust = Date.now();
+      const urls: Record<string, string> = {};
+      fields.forEach(f => {
+        const { data: u } = supabase.storage.from(BANNER_BUCKET).getPublicUrl(`samples/${sampleDocsPage.key}/${f.id}.jpg`);
+        urls[f.id] = `${u.publicUrl}?t=${bust}`;
+      });
+      setSampleUrls(urls);
+      setSampleLoaded({});
+    };
+
+    load();
   }, [sampleDocsPage]);
 
-  const handleSampleUpload = async (file: File, docKey: string) => {
+  const handleAddDocField = async () => {
     if (!sampleDocsPage) return;
-    setSampleUploading(docKey);
-    const path = `samples/${sampleDocsPage.key}/${docKey}.jpg`;
+    const maxPos = docFields.length > 0 ? Math.max(...docFields.map(f => f.position)) : 0;
+    const { data } = await supabase
+      .from('jubah_doc_fields')
+      .insert({ university_key: sampleDocsPage.key, label: 'New Document', hint: null, position: maxPos + 1 })
+      .select('id, label, hint, position')
+      .single();
+    if (!data) return;
+    setDocFields(prev => [...prev, data]);
+    setDocFieldDrafts(prev => ({ ...prev, [data.id]: data.label }));
+    const { data: u } = supabase.storage.from(BANNER_BUCKET).getPublicUrl(`samples/${sampleDocsPage.key}/${data.id}.jpg`);
+    setSampleUrls(prev => ({ ...prev, [data.id]: `${u.publicUrl}?t=${Date.now()}` }));
+  };
+
+  const handleDocLabelBlur = async (id: string) => {
+    const label = (docFieldDrafts[id] ?? '').trim();
+    if (!label) return;
+    await supabase.from('jubah_doc_fields').update({ label }).eq('id', id);
+    setDocFields(prev => prev.map(f => f.id === id ? { ...f, label } : f));
+  };
+
+  const handleRemoveDocField = async (id: string) => {
+    if (!sampleDocsPage) return;
+    await supabase.from('jubah_doc_fields').delete().eq('id', id);
+    await supabase.storage.from(BANNER_BUCKET).remove([`samples/${sampleDocsPage.key}/${id}.jpg`]);
+    setDocFields(prev => prev.filter(f => f.id !== id));
+    setDocFieldDrafts(prev => { const n = { ...prev }; delete n[id]; return n; });
+    setSampleLoaded(prev => { const n = { ...prev }; delete n[id]; return n; });
+  };
+
+  const handleSampleUpload = async (file: File, fieldId: string) => {
+    if (!sampleDocsPage) return;
+    setSampleUploading(fieldId);
+    const path = `samples/${sampleDocsPage.key}/${fieldId}.jpg`;
     const { error } = await supabase.storage.from(BANNER_BUCKET).upload(path, file, { upsert: true, contentType: file.type });
     if (error) { showToast('Upload failed: ' + error.message); setSampleUploading(null); return; }
     const { data } = supabase.storage.from(BANNER_BUCKET).getPublicUrl(path);
-    setSampleUrls(prev => ({ ...prev, [docKey]: `${data.publicUrl}?t=${Date.now()}` }));
-    setSampleLoaded(prev => ({ ...prev, [docKey]: true }));
+    setSampleUrls(prev => ({ ...prev, [fieldId]: `${data.publicUrl}?t=${Date.now()}` }));
+    setSampleLoaded(prev => ({ ...prev, [fieldId]: true }));
     setSampleUploading(null);
     showToast('Sample uploaded ✓');
   };
 
-  const handleSampleDelete = async (docKey: string) => {
+  const handleSampleDelete = async (fieldId: string) => {
     if (!sampleDocsPage) return;
-    const path = `samples/${sampleDocsPage.key}/${docKey}.jpg`;
+    const path = `samples/${sampleDocsPage.key}/${fieldId}.jpg`;
     await supabase.storage.from(BANNER_BUCKET).remove([path]);
-    setSampleLoaded(prev => ({ ...prev, [docKey]: false }));
+    setSampleLoaded(prev => ({ ...prev, [fieldId]: false }));
     showToast('Sample removed.');
   };
 
@@ -2019,54 +2083,73 @@ export const AdminHome: React.FC = () => {
 
           {/* Hidden image probes */}
           <div className="hidden">
-            {SAMPLE_DOCS.map(({ key }) => sampleUrls[key] && (
-              <img key={key} src={sampleUrls[key]}
-                onLoad={() => setSampleLoaded(prev => ({ ...prev, [key]: true }))}
-                onError={() => setSampleLoaded(prev => ({ ...prev, [key]: false }))}
+            {docFields.map(f => sampleUrls[f.id] && (
+              <img key={f.id} src={sampleUrls[f.id]}
+                onLoad={() => setSampleLoaded(prev => ({ ...prev, [f.id]: true }))}
+                onError={() => setSampleLoaded(prev => ({ ...prev, [f.id]: false }))}
               />
             ))}
           </div>
 
-          {/* Upload Documents (Sample) card — back button anchored in card header */}
+          {/* Upload Documents (Sample) card */}
           <div className="mt-4 bg-white border border-slate-100 rounded-3xl p-5 shadow-sm flex flex-col gap-4"
             style={{ marginBottom: 'calc(6.5rem + env(safe-area-inset-bottom))' }}>
+
+            {/* Card header: back + title + add (+) */}
             <div className="flex items-center gap-3">
-              <button
-                onClick={() => setSampleDocsPage(null)}
+              <button onClick={() => setSampleDocsPage(null)}
                 className="w-7 h-7 flex items-center justify-center rounded-xl bg-slate-100 text-slate-500 active:scale-90 transition shrink-0">
                 <ChevronLeft className="w-4 h-4" />
               </button>
-              <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest">Upload Documents (Sample)</h3>
+              <h3 className="flex-1 text-xs font-black text-slate-400 uppercase tracking-widest">Upload Documents (Sample)</h3>
+              <button onClick={handleAddDocField}
+                className="w-7 h-7 flex items-center justify-center rounded-xl bg-blue-50 text-blue-500 active:scale-90 transition shrink-0">
+                <PlusCircle className="w-4 h-4" />
+              </button>
             </div>
-            {SAMPLE_DOCS.map(doc => (
-              <div key={doc.key} className="flex flex-col gap-1">
-                <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">{doc.label}</label>
-                {'hint' in doc && <p className="text-xs text-slate-400 -mt-0.5">{doc.hint}</p>}
-                {sampleLoaded[doc.key] ? (
+
+            {/* Dynamic doc fields */}
+            {docFields.map(field => (
+              <div key={field.id} className="flex flex-col gap-1.5">
+                {/* Label row: red minus + editable input */}
+                <div className="flex items-center gap-2">
+                  <button onClick={() => handleRemoveDocField(field.id)}
+                    className="text-red-400 active:scale-90 transition shrink-0">
+                    <MinusCircle className="w-4 h-4" />
+                  </button>
+                  <input
+                    value={docFieldDrafts[field.id] ?? field.label}
+                    onChange={e => setDocFieldDrafts(prev => ({ ...prev, [field.id]: e.target.value }))}
+                    onBlur={() => handleDocLabelBlur(field.id)}
+                    className="flex-1 text-xs font-extrabold text-slate-600 uppercase tracking-wider bg-transparent border-b border-dashed border-slate-200 focus:border-blue-400 focus:outline-none py-0.5"
+                  />
+                </div>
+                {/* Sample image upload */}
+                {sampleLoaded[field.id] ? (
                   <div className="flex items-center gap-3 bg-emerald-50 border border-emerald-100 rounded-xl p-2.5">
-                    <img src={sampleUrls[doc.key]} alt={doc.label} className="w-10 h-10 rounded-lg object-cover shrink-0" />
+                    <img src={sampleUrls[field.id]} alt={field.label} className="w-10 h-10 rounded-lg object-cover shrink-0" />
                     <div className="flex-1 min-w-0">
                       <p className="text-xs font-bold text-emerald-700">Sample uploaded</p>
-                      <p className="text-xs text-emerald-500">Tap icons to replace or remove</p>
+                      <p className="text-xs text-emerald-500">Tap to replace or remove</p>
                     </div>
                     <button type="button"
-                      onClick={() => { setCurrentSampleDoc(doc.key); setTimeout(() => sampleFileRef.current?.click(), 0); }}
+                      onClick={() => { setCurrentSampleDoc(field.id); setTimeout(() => sampleFileRef.current?.click(), 0); }}
                       className="text-slate-400 active:scale-90 transition shrink-0 p-1">
                       <Upload className="w-4 h-4" />
                     </button>
-                    <button type="button" onClick={() => handleSampleDelete(doc.key)}
+                    <button type="button" onClick={() => handleSampleDelete(field.id)}
                       className="text-slate-400 active:scale-90 transition shrink-0 p-1">
                       <Trash2 className="w-4 h-4" />
                     </button>
                   </div>
                 ) : (
                   <button type="button"
-                    disabled={sampleUploading === doc.key}
-                    onClick={() => { setCurrentSampleDoc(doc.key); setTimeout(() => sampleFileRef.current?.click(), 0); }}
+                    disabled={sampleUploading === field.id}
+                    onClick={() => { setCurrentSampleDoc(field.id); setTimeout(() => sampleFileRef.current?.click(), 0); }}
                     className="w-full border-2 border-dashed border-slate-200 rounded-xl py-3 flex items-center justify-center gap-2 text-slate-400 hover:border-blue-400 hover:text-blue-500 hover:bg-blue-50/30 transition cursor-pointer disabled:opacity-50">
-                    {sampleUploading === doc.key
+                    {sampleUploading === field.id
                       ? <span className="w-4 h-4 rounded-full border-2 border-slate-300 border-t-blue-500 animate-spin" />
-                      : <><Upload className="w-4 h-4" /><span className="text-xs font-bold">Upload {doc.label} Sample</span></>
+                      : <><Upload className="w-4 h-4" /><span className="text-xs font-bold">Upload {field.label} Sample</span></>
                     }
                   </button>
                 )}

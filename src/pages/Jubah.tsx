@@ -63,19 +63,15 @@ export const Jubah: React.FC = () => {
   const [paymentMode, setPaymentMode] = useState<'pickup' | 'postage' | 'deposit'>('pickup');
   const [postageZone, setPostageZone] = useState<'SM' | 'SS'>('SM');
   const [remark, setRemark]           = useState<typeof REMARKS[number]>('Degree');
-  const [oscarFile, setOscarFile]         = useState<File | null>(null);
-  const [skpgFile, setSkpgFile]           = useState<File | null>(null);
-  const [konvoSlipFile, setKonvoSlipFile] = useState<File | null>(null);
-  const [icFile, setIcFile]               = useState<File | null>(null);
+  type JubahDocField = { id: string; label: string; hint: string | null; position: number };
+  const [docFields,    setDocFields]    = useState<JubahDocField[]>([]);
+  const [docFiles,     setDocFiles]     = useState<Record<string, File | null>>({});
+  const docRefs = useRef<Record<string, HTMLInputElement | null>>({});
   const [fileError, setFileError]         = useState('');
   const [combining, setCombining]         = useState(false);
   const [combinedBlob, setCombinedBlob]   = useState<Blob | null>(null);
   const [paymentProof, setPaymentProof]   = useState<File | null>(null);
 
-  const oscarRef       = useRef<HTMLInputElement>(null);
-  const skpgRef        = useRef<HTMLInputElement>(null);
-  const konvoRef       = useRef<HTMLInputElement>(null);
-  const icRef          = useRef<HTMLInputElement>(null);
   const paymentProofRef = useRef<HTMLInputElement>(null);
 
   const [selectedRiderId,   setSelectedRiderId]   = useState('');
@@ -155,14 +151,32 @@ export const Jubah: React.FC = () => {
       .then(({ data }) => { setRiders(data ?? []); setRidersLoading(false); });
   }, [university, paymentMode]);
 
-  const allFilesReady = !!(oscarFile && skpgFile && konvoSlipFile && icFile);
+  // Load doc fields for the selected university; fall back to UMPSA if none configured
+  useEffect(() => {
+    if (!landingUniversity) return;
+    setDocFiles({});
+    setCombinedBlob(null);
+    supabase
+      .from('jubah_doc_fields')
+      .select('id, label, hint, position')
+      .eq('university_key', landingUniversity)
+      .order('position')
+      .then(async ({ data }) => {
+        if (data && data.length > 0) { setDocFields(data); return; }
+        const { data: defaults } = await supabase
+          .from('jubah_doc_fields')
+          .select('id, label, hint, position')
+          .eq('university_key', 'umpsa')
+          .order('position');
+        setDocFields(defaults ?? []);
+      });
+  }, [landingUniversity]);
+
+  const allFilesReady = docFields.length > 0 && docFields.every(f => !!docFiles[f.id]);
 
   const ACCEPTED_TYPES = ['application/pdf', 'image/jpeg', 'image/png', 'image/webp'];
 
-  const handleFileSelect = (
-    e: React.ChangeEvent<HTMLInputElement>,
-    setFile: (f: File | null) => void,
-  ) => {
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>, fieldId: string) => {
     const file = e.target.files?.[0] || null;
     setFileError('');
     setCombinedBlob(null);
@@ -170,11 +184,12 @@ export const Jubah: React.FC = () => {
       setFileError('Only PDF, JPG or PNG files are accepted.');
       return;
     }
-    setFile(file);
+    setDocFiles(prev => ({ ...prev, [fieldId]: file }));
   };
 
   const generateCombinedBlob = async (): Promise<Blob | null> => {
-    if (!oscarFile || !skpgFile || !konvoSlipFile || !icFile) return null;
+    const files = docFields.map(f => docFiles[f.id]).filter((f): f is File => !!f);
+    if (files.length !== docFields.length) return null;
     try {
       const { PDFDocument } = await import('pdf-lib');
       const merged = await PDFDocument.create();
@@ -194,7 +209,7 @@ export const Jubah: React.FC = () => {
           page.drawImage(img, { x: 0, y: 0, width, height });
         }
       };
-      for (const f of [oscarFile, skpgFile, konvoSlipFile, icFile]) await addFile(f);
+      for (const f of files) await addFile(f);
       const pdfBytes = await merged.save();
       return new Blob([pdfBytes.buffer as ArrayBuffer], { type: 'application/pdf' });
     } catch (err) {
@@ -204,7 +219,7 @@ export const Jubah: React.FC = () => {
   };
 
   const handleCombine = async () => {
-    if (!oscarFile || !skpgFile || !konvoSlipFile || !icFile) return;
+    if (!allFilesReady) return;
     setCombining(true);
     const blob = await generateCombinedBlob();
     if (blob) setCombinedBlob(blob);
@@ -298,17 +313,24 @@ export const Jubah: React.FC = () => {
     const blobForUpload = combinedBlob ?? await generateCombinedBlob();
 
     try {
+      const docUploads = await Promise.all(
+        docFields.map(f => {
+          const file = docFiles[f.id];
+          return file ? uploadFile(file, f.label.replace(/\s+/g,'_')) : Promise.resolve(undefined);
+        })
+      );
       const results = await Promise.all([
         blobForUpload
           ? uploadFile(new File([blobForUpload], combinedFileName, { type: 'application/pdf' }), 'combined')
           : Promise.resolve(undefined),
         uploadFile(paymentProof, 'payment'),
-        oscarFile    ? uploadFile(oscarFile,    'OSCAR')     : Promise.resolve(undefined),
-        skpgFile     ? uploadFile(skpgFile,     'SKPG')      : Promise.resolve(undefined),
-        konvoSlipFile ? uploadFile(konvoSlipFile, 'KonvoSlip') : Promise.resolve(undefined),
-        icFile       ? uploadFile(icFile,       'IC')        : Promise.resolve(undefined),
       ]);
-      [driveDocsUrl, drivePaymentUrl, driveOscarUrl, driveSkpgUrl, driveKonvoUrl, driveIcUrl] = results;
+      [driveDocsUrl, drivePaymentUrl] = results;
+      // Map first 4 doc fields by position to named URL params for backward compat
+      driveOscarUrl = docUploads[0];
+      driveSkpgUrl  = docUploads[1];
+      driveKonvoUrl = docUploads[2];
+      driveIcUrl    = docUploads[3];
     } catch (err) {
       console.error('[GERAK] Drive upload failed:', err);
     }
@@ -706,82 +728,47 @@ export const Jubah: React.FC = () => {
             </div>
           )}
 
-          {/* ── DOCUMENT UPLOAD ── */}
+          {/* ── DOCUMENT UPLOAD — dynamic from jubah_doc_fields ── */}
           <div className="bg-white border border-slate-100 rounded-3xl p-5 shadow-sm flex flex-col gap-4">
             <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest">Upload Documents</h3>
 
-            {/* OSCAR */}
-            <div className="flex flex-col gap-1">
-              <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">OSCAR <span className="text-danger">*</span></label>
-              <input type="file" accept=".pdf,application/pdf,image/jpeg,image/png,image/webp,.jpg,.png" ref={oscarRef} onChange={e => handleFileSelect(e, setOscarFile)} className="hidden" />
-              {!oscarFile ? (
-                <button type="button" onClick={() => oscarRef.current?.click()}
-                  className="w-full border-2 border-dashed border-slate-200 rounded-xl py-3 flex items-center justify-center gap-2 text-slate-400 hover:border-blue-400 hover:text-blue-500 hover:bg-blue-50/30 transition cursor-pointer">
-                  <Upload className="w-4 h-4" /><span className="text-xs font-bold">Upload OSCAR</span>
-                </button>
-              ) : (
-                <div className="flex items-center gap-3 bg-emerald-50 border border-emerald-100 rounded-xl p-2.5">
-                  <FileText className="w-5 h-5 text-emerald-500 shrink-0" />
-                  <div className="flex-1 min-w-0"><p className="text-xs font-bold text-emerald-700 truncate">{oscarFile.name}</p><p className="text-xs text-emerald-500">{(oscarFile.size / 1024).toFixed(1)} KB</p></div>
-                  <button type="button" onClick={() => { setOscarFile(null); setCombinedBlob(null); if (oscarRef.current) oscarRef.current.value = ''; }} className="text-slate-400 hover:text-danger transition shrink-0 cursor-pointer"><X className="w-4 h-4" /></button>
+            {docFields.map(field => {
+              const file = docFiles[field.id] ?? null;
+              return (
+                <div key={field.id} className="flex flex-col gap-1">
+                  <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">
+                    {field.label} <span className="text-danger">*</span>
+                  </label>
+                  {field.hint && <p className="text-xs text-slate-400 -mt-0.5">{field.hint}</p>}
+                  <input
+                    type="file"
+                    accept=".pdf,application/pdf,image/jpeg,image/png,image/webp,.jpg,.png"
+                    ref={el => { docRefs.current[field.id] = el; }}
+                    onChange={e => handleFileSelect(e, field.id)}
+                    className="hidden"
+                  />
+                  {!file ? (
+                    <button type="button" onClick={() => docRefs.current[field.id]?.click()}
+                      className="w-full border-2 border-dashed border-slate-200 rounded-xl py-3 flex items-center justify-center gap-2 text-slate-400 hover:border-blue-400 hover:text-blue-500 hover:bg-blue-50/30 transition cursor-pointer">
+                      <Upload className="w-4 h-4" /><span className="text-xs font-bold">Upload {field.label}</span>
+                    </button>
+                  ) : (
+                    <div className="flex items-center gap-3 bg-emerald-50 border border-emerald-100 rounded-xl p-2.5">
+                      <FileText className="w-5 h-5 text-emerald-500 shrink-0" />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs font-bold text-emerald-700 truncate">{file.name}</p>
+                        <p className="text-xs text-emerald-500">{(file.size / 1024).toFixed(1)} KB</p>
+                      </div>
+                      <button type="button"
+                        onClick={() => { setDocFiles(prev => ({ ...prev, [field.id]: null })); setCombinedBlob(null); if (docRefs.current[field.id]) docRefs.current[field.id]!.value = ''; }}
+                        className="text-slate-400 hover:text-danger transition shrink-0 cursor-pointer">
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
+                  )}
                 </div>
-              )}
-            </div>
-
-            {/* SKPG */}
-            <div className="flex flex-col gap-1">
-              <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">SKPG <span className="text-danger">*</span></label>
-              <input type="file" accept=".pdf,application/pdf,image/jpeg,image/png,image/webp,.jpg,.png" ref={skpgRef} onChange={e => handleFileSelect(e, setSkpgFile)} className="hidden" />
-              {!skpgFile ? (
-                <button type="button" onClick={() => skpgRef.current?.click()}
-                  className="w-full border-2 border-dashed border-slate-200 rounded-xl py-3 flex items-center justify-center gap-2 text-slate-400 hover:border-blue-400 hover:text-blue-500 hover:bg-blue-50/30 transition cursor-pointer">
-                  <Upload className="w-4 h-4" /><span className="text-xs font-bold">Upload SKPG</span>
-                </button>
-              ) : (
-                <div className="flex items-center gap-3 bg-emerald-50 border border-emerald-100 rounded-xl p-2.5">
-                  <FileText className="w-5 h-5 text-emerald-500 shrink-0" />
-                  <div className="flex-1 min-w-0"><p className="text-xs font-bold text-emerald-700 truncate">{skpgFile.name}</p><p className="text-xs text-emerald-500">{(skpgFile.size / 1024).toFixed(1)} KB</p></div>
-                  <button type="button" onClick={() => { setSkpgFile(null); setCombinedBlob(null); if (skpgRef.current) skpgRef.current.value = ''; }} className="text-slate-400 hover:text-danger transition shrink-0 cursor-pointer"><X className="w-4 h-4" /></button>
-                </div>
-              )}
-            </div>
-
-            {/* Konvo Slip */}
-            <div className="flex flex-col gap-1">
-              <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Konvo Slip <span className="text-danger">*</span></label>
-              <input type="file" accept=".pdf,application/pdf,image/jpeg,image/png,image/webp,.jpg,.png" ref={konvoRef} onChange={e => handleFileSelect(e, setKonvoSlipFile)} className="hidden" />
-              {!konvoSlipFile ? (
-                <button type="button" onClick={() => konvoRef.current?.click()}
-                  className="w-full border-2 border-dashed border-slate-200 rounded-xl py-3 flex items-center justify-center gap-2 text-slate-400 hover:border-blue-400 hover:text-blue-500 hover:bg-blue-50/30 transition cursor-pointer">
-                  <Upload className="w-4 h-4" /><span className="text-xs font-bold">Upload Konvo Slip</span>
-                </button>
-              ) : (
-                <div className="flex items-center gap-3 bg-emerald-50 border border-emerald-100 rounded-xl p-2.5">
-                  <FileText className="w-5 h-5 text-emerald-500 shrink-0" />
-                  <div className="flex-1 min-w-0"><p className="text-xs font-bold text-emerald-700 truncate">{konvoSlipFile.name}</p><p className="text-xs text-emerald-500">{(konvoSlipFile.size / 1024).toFixed(1)} KB</p></div>
-                  <button type="button" onClick={() => { setKonvoSlipFile(null); setCombinedBlob(null); if (konvoRef.current) konvoRef.current.value = ''; }} className="text-slate-400 hover:text-danger transition shrink-0 cursor-pointer"><X className="w-4 h-4" /></button>
-                </div>
-              )}
-            </div>
-
-            {/* IC */}
-            <div className="flex flex-col gap-1">
-              <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">IC (Front &amp; Back) <span className="text-danger">*</span></label>
-              <p className="text-xs text-slate-400 -mt-0.5">Accepts PDF or image (JPG/PNG)</p>
-              <input type="file" accept=".pdf,application/pdf,image/jpeg,image/png" ref={icRef} onChange={e => handleFileSelect(e, setIcFile)} className="hidden" />
-              {!icFile ? (
-                <button type="button" onClick={() => icRef.current?.click()}
-                  className="w-full border-2 border-dashed border-slate-200 rounded-xl py-3 flex items-center justify-center gap-2 text-slate-400 hover:border-blue-400 hover:text-blue-500 hover:bg-blue-50/30 transition cursor-pointer">
-                  <Upload className="w-4 h-4" /><span className="text-xs font-bold">Upload IC</span>
-                </button>
-              ) : (
-                <div className="flex items-center gap-3 bg-emerald-50 border border-emerald-100 rounded-xl p-2.5">
-                  <FileText className="w-5 h-5 text-emerald-500 shrink-0" />
-                  <div className="flex-1 min-w-0"><p className="text-xs font-bold text-emerald-700 truncate">{icFile.name}</p><p className="text-xs text-emerald-500">{(icFile.size / 1024).toFixed(1)} KB</p></div>
-                  <button type="button" onClick={() => { setIcFile(null); setCombinedBlob(null); if (icRef.current) icRef.current.value = ''; }} className="text-slate-400 hover:text-danger transition shrink-0 cursor-pointer"><X className="w-4 h-4" /></button>
-                </div>
-              )}
-            </div>
+              );
+            })}
 
             {fileError && (
               <p className="text-xs text-danger font-bold flex items-center gap-1">
@@ -799,7 +786,7 @@ export const Jubah: React.FC = () => {
             {!allFilesReady ? (
               <div className="bg-slate-50 border border-dashed border-slate-200 rounded-2xl py-4 flex items-center justify-center gap-2 text-slate-300">
                 <FileText className="w-5 h-5" />
-                <span className="text-xs font-bold">Upload all 4 documents above first</span>
+                <span className="text-xs font-bold">Upload all {docFields.length} documents above first</span>
               </div>
             ) : combining ? (
               <div className="flex items-center justify-center gap-2 py-4 text-slate-400">
