@@ -26,10 +26,10 @@ alter table jubah_doc_fields enable row level security;
 create policy "jubah_doc_fields_admin_all" on jubah_doc_fields
   for all to authenticated
   using (
-    exists (select 1 from users where id = auth.uid() and role in ('admin', 'superadmin'))
+    exists (select 1 from profiles where id = auth.uid() and role in ('admin', 'superadmin'))
   )
   with check (
-    exists (select 1 from users where id = auth.uid() and role in ('admin', 'superadmin'))
+    exists (select 1 from profiles where id = auth.uid() and role in ('admin', 'superadmin'))
   );
 
 -- All authenticated users can read (Jubah form needs this)
