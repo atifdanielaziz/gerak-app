@@ -69,12 +69,14 @@ export const JubahLanding: React.FC<Props> = ({ onProceed }) => {
     umpsa: 'UMPSA', uitm: 'UiTM', umk: 'UMK', ukm: 'UKM', uiam: 'UIAM',
   };
 
-  // Compute public URLs once on mount — no cache-busting so browser can cache images
+  // Compute public URLs once on mount — daily bust so browser caches within the day
+  // but everyone auto-fetches fresh after midnight if admin updates a banner
   useEffect(() => {
     const urls: Record<string, string> = {};
+    const bust = new Date().toISOString().slice(0, 10); // YYYY-MM-DD
     ['default', ...UNIVERSITIES.map(u => u.key)].forEach(key => {
       const { data } = supabase.storage.from(BUCKET).getPublicUrl(`${key}.jpg`);
-      urls[key] = data.publicUrl;
+      urls[key] = `${data.publicUrl}?v=${bust}`;
     });
     setBannerUrls(urls);
   }, []);
