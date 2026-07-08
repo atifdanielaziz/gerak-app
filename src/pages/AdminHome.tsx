@@ -1270,6 +1270,15 @@ export const AdminHome: React.FC = () => {
     }, 1000);
   };
 
+  const handleBannerDelete = async (key: string) => {
+    const { error } = await supabase.storage.from(BANNER_BUCKET).remove([`${key}.jpg`]);
+    if (error) { showToast('Delete failed: ' + error.message); return; }
+    setBannerUrls(prev => ({ ...prev, [key]: '' }));
+    setBannerImgError(prev => ({ ...prev, [key]: true }));
+    setBannerRefreshKey(prev => ({ ...prev, [key]: (prev[key] ?? 0) + 1 }));
+    showToast('Banner deleted.');
+  };
+
   const handleCalendarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -3573,18 +3582,28 @@ export const AdminHome: React.FC = () => {
                       </div>
                     )}
                   </div>
-                  <button
-                    type="button"
-                    disabled={bannerUploading === item.key}
-                    onClick={() => { setBannerUploadKey(item.key); setTimeout(() => bannerFileRef.current?.click(), 0); }}
-                    className="flex items-center justify-center gap-2 w-full border-2 border-dashed border-slate-200 rounded-xl py-2.5 text-slate-400 hover:border-blue-400 hover:text-blue-500 hover:bg-blue-50/30 transition text-xs font-bold disabled:opacity-50"
-                  >
-                    {bannerUploading === item.key ? (
-                      <><span className="w-3.5 h-3.5 rounded-full border-2 border-slate-300 border-t-blue-500 animate-spin" /> Uploading…</>
-                    ) : (
-                      <><Upload className="w-3.5 h-3.5" /> Upload Banner</>
-                    )}
-                  </button>
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      disabled={bannerUploading === item.key}
+                      onClick={() => { setBannerUploadKey(item.key); setTimeout(() => bannerFileRef.current?.click(), 0); }}
+                      className="flex-1 flex items-center justify-center gap-2 border-2 border-dashed border-slate-200 rounded-xl py-2.5 text-slate-400 hover:border-blue-400 hover:text-blue-500 hover:bg-blue-50/30 transition text-xs font-bold disabled:opacity-50"
+                    >
+                      {bannerUploading === item.key ? (
+                        <><span className="w-3.5 h-3.5 rounded-full border-2 border-slate-300 border-t-blue-500 animate-spin" /> Uploading…</>
+                      ) : (
+                        <><Upload className="w-3.5 h-3.5" /> Upload Banner</>
+                      )}
+                    </button>
+                    <button
+                      type="button"
+                      disabled={!bannerUrls[item.key] || bannerImgError[item.key]}
+                      onClick={() => handleBannerDelete(item.key)}
+                      className="flex-1 flex items-center justify-center border-2 border-dashed border-red-200 rounded-xl py-2.5 text-red-400 hover:border-red-400 hover:text-red-500 hover:bg-red-50/30 transition disabled:opacity-30 disabled:cursor-not-allowed"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
                 </div>
               ))}
             </div>
