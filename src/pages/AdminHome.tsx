@@ -1878,7 +1878,7 @@ export const AdminHome: React.FC = () => {
                   <X className="w-4 h-4" />
                 </button>
               </div>
-              <div className="px-5 flex flex-col gap-4" style={{ paddingBottom: 'calc(5rem + env(safe-area-inset-bottom))' }}>
+              <div className="px-5 flex flex-col gap-4" style={{ paddingBottom: 'calc(6.5rem + env(safe-area-inset-bottom))' }}>
                 <div className="bg-slate-50 border border-slate-100 rounded-2xl p-4 flex flex-col gap-3 text-xs">
                   {[
                     { label: 'Representative Name', value: dirSheet.name },
