@@ -467,7 +467,7 @@ const JubahRiderSheet: React.FC<{
                 {deleteMode && <Minus className="w-4 h-4 text-slate-200 shrink-0" />}
                 <div className="relative group flex-1">
                   <div className="bg-slate-50 border border-slate-200 rounded-xl py-2.5 px-3 flex items-center justify-between pointer-events-none group-focus-within:border-primary transition">
-                    <span className={`text-xs ${method ? 'font-bold text-slate-700' : 'font-normal text-slate-300'}`}>
+                    <span style={{ fontSize: '12px' }} className={method ? 'font-bold text-slate-700' : 'font-normal text-slate-300'}>
                       {method === 'pickup' ? 'Self Pickup' : method === 'postage' ? 'Pickup & Postage' : 'Select method...'}
                     </span>
                     <ChevronDown className="w-3 h-3 text-slate-400 shrink-0" />
@@ -496,7 +496,7 @@ const JubahRiderSheet: React.FC<{
                       <Minus className="w-4 h-4" />
                     </button>
                   )}
-                  <div className="flex-1 bg-slate-50 border border-slate-100 rounded-xl py-2.5 px-3 text-xs font-bold text-slate-600">
+                  <div style={{ fontSize: '12px' }} className="flex-1 bg-slate-50 border border-slate-100 rounded-xl py-2.5 px-3 font-bold text-slate-600">
                     {a.method === 'pickup' ? 'Self Pickup' : 'Pickup & Postage'}
                   </div>
                 </div>
@@ -511,7 +511,7 @@ const JubahRiderSheet: React.FC<{
                 </span>
                 <div className="relative group">
                   <div className="bg-indigo-50/50 border border-indigo-200 rounded-xl py-2.5 px-3 flex items-center justify-between pointer-events-none transition">
-                    <span className="text-xs font-bold text-slate-700">
+                    <span style={{ fontSize: '12px' }} className="font-bold text-slate-700">
                       {addMethod === 'pickup' ? 'Self Pickup' : 'Pickup & Postage'}
                     </span>
                     <ChevronDown className="w-3 h-3 text-slate-400 shrink-0" />
@@ -579,7 +579,7 @@ const JubahRiderSheet: React.FC<{
                 <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">Drop Point {i + 2}</span>
                 <div className="flex items-center gap-2">
                   {deleteMode && <div className="w-4 shrink-0" />}
-                  <div className="flex-1 bg-slate-50 border border-slate-100 rounded-xl py-2.5 px-3 text-xs font-bold text-slate-600">
+                  <div style={{ fontSize: '12px' }} className="flex-1 bg-slate-50 border border-slate-100 rounded-xl py-2.5 px-3 font-bold text-slate-600">
                     {a.drop_point && a.drop_point !== '-' ? a.drop_point : '— (Postage, no drop point)'}
                   </div>
                 </div>
