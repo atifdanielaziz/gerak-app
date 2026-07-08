@@ -4371,7 +4371,7 @@ export const AdminHome: React.FC = () => {
 
     {/* ── Sample Docs Sub-page ── */}
     {sampleDocsPage && (
-      <div className="fixed inset-0 z-[90] bg-slate-50 flex flex-col" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
+      <div className="absolute inset-0 z-[90] bg-slate-50 flex flex-col">
 
         {/* Top bar */}
         <div className="bg-white border-b border-slate-100 px-5 py-4 flex items-start gap-2 shrink-0">
@@ -4468,7 +4468,7 @@ export const AdminHome: React.FC = () => {
 
     {/* ── Banner Crop Modal ── */}
     {cropSrc && (
-      <div className="fixed inset-0 z-[80] bg-black flex flex-col" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
+      <div className="absolute inset-0 z-[80] bg-black flex flex-col">
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-4 shrink-0">
           <button
