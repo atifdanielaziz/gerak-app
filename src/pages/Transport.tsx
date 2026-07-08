@@ -296,8 +296,8 @@ export const Transport: React.FC = () => {
               <CheckCircle2 className="w-6 h-6 text-emerald-500" />
             </div>
             <div>
-              <h2 className="text-lg font-black text-slate-800 m-0">Booking Submitted!</h2>
-              <p className="text-xs text-emerald-500 font-semibold uppercase tracking-wider mt-0.5">
+              <h2 className="text-lg font-bold text-slate-800 m-0">Booking Submitted!</h2>
+              <p className="text-xs text-emerald-500 font-normal mt-0.5">
                 Searching for your driver
               </p>
             </div>
@@ -327,14 +327,14 @@ export const Transport: React.FC = () => {
             {!editBlocked && (
               <button
                 onClick={handleEditBooking}
-                className="flex-1 flex items-center justify-center gap-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-extrabold py-3 rounded-xl transition active:scale-[0.99]"
+                className="flex-1 flex items-center justify-center gap-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold py-3 rounded-xl transition active:scale-[0.99]"
               >
                 Edit Booking
               </button>
             )}
             <button
               onClick={handleNewBooking}
-              className="flex-1 flex items-center justify-center gap-2 bg-primary hover:bg-primary-hover text-white font-extrabold py-3 rounded-xl shadow-md shadow-primary/20 transition active:scale-[0.99]"
+              className="flex-1 flex items-center justify-center gap-2 bg-primary hover:bg-primary-hover text-white font-semibold py-3 rounded-xl shadow-md shadow-primary/20 transition active:scale-[0.99]"
             >
               <RotateCcw className="w-4 h-4" />
               New Booking
@@ -343,7 +343,7 @@ export const Transport: React.FC = () => {
 
           <button
             onClick={() => setCurrentPage('my-orders')}
-            className="w-full flex items-center justify-center gap-2 text-slate-400 hover:text-primary text-xs font-bold py-1 transition"
+            className="w-full flex items-center justify-center gap-2 text-slate-400 hover:text-primary text-xs font-normal py-1 transition"
           >
             <ClipboardList className="w-3.5 h-3.5" />
             View all my orders
@@ -363,8 +363,8 @@ export const Transport: React.FC = () => {
           <Map className="w-7 h-7 text-slate-300" />
         </div>
         <div className="text-center">
-          <p className="text-sm font-black text-slate-700">Gerak Car Unavailable</p>
-          <p className="text-xs text-slate-400 font-semibold mt-1 leading-relaxed">
+          <p className="text-sm font-bold text-slate-700">Gerak Car Unavailable</p>
+          <p className="text-xs text-slate-400 font-normal mt-1 leading-relaxed">
             This service is for customers only.<br />You're here to drive, not to book.
           </p>
         </div>
@@ -384,7 +384,7 @@ export const Transport: React.FC = () => {
                 key={c}
                 type="button"
                 onClick={() => switchCampus(c)}
-                className={`flex-1 py-2 rounded-xl text-xs font-extrabold transition-all ${
+                className={`flex-1 py-2 rounded-xl text-xs font-semibold transition-all ${
                   campus === c
                     ? 'bg-white text-primary shadow-sm'
                     : 'text-slate-500 hover:text-slate-700'
@@ -396,7 +396,7 @@ export const Transport: React.FC = () => {
           </div>
         ) : (
           <div className="bg-primary/10 rounded-2xl px-4 py-2.5 text-center">
-            <span className="text-xs font-extrabold text-primary uppercase tracking-wider">
+            <span className="text-xs font-semibold text-primary">
               UMPSA {user.campus}
             </span>
           </div>
@@ -404,7 +404,7 @@ export const Transport: React.FC = () => {
 
         <button
           onClick={() => setCurrentPage('my-orders')}
-          className="self-end flex items-center gap-1.5 text-xs font-bold text-slate-400 hover:text-primary transition"
+          className="self-end flex items-center gap-1.5 text-xs font-normal text-slate-400 hover:text-primary transition"
         >
           <ClipboardList className="w-3.5 h-3.5" />
           My Orders
@@ -421,7 +421,7 @@ export const Transport: React.FC = () => {
           >
             <div className="flex items-center gap-2">
               <Info className="w-3.5 h-3.5 text-amber-400 shrink-0" />
-              <span className="text-xs font-bold text-slate-500">
+              <span className="text-xs font-semibold text-slate-500">
                 Booking Info & Prices
               </span>
             </div>
@@ -444,7 +444,7 @@ export const Transport: React.FC = () => {
           <button
             type="button"
             onClick={() => setBookMode('quick')}
-            className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-xs font-extrabold transition-all ${
+            className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-xs font-semibold transition-all ${
               bookMode === 'quick'
                 ? 'bg-white text-primary shadow-sm'
                 : 'text-slate-500 hover:text-slate-700'
@@ -456,7 +456,7 @@ export const Transport: React.FC = () => {
           <button
             type="button"
             onClick={() => setBookMode('map')}
-            className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-xs font-extrabold transition-all ${
+            className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-xs font-semibold transition-all ${
               bookMode === 'map'
                 ? 'bg-white text-primary shadow-sm'
                 : 'text-slate-500 hover:text-slate-700'
@@ -476,9 +476,9 @@ export const Transport: React.FC = () => {
             <button
               type="button"
               onClick={() => setShowFromDropdown(v => !v)}
-              className="w-full flex items-center justify-between bg-white border border-slate-200 rounded-2xl px-4 py-3 text-sm font-bold text-slate-700 transition hover:border-primary active:scale-[0.98]"
+              className="w-full flex items-center justify-between bg-white border border-slate-200 rounded-2xl px-4 py-3 text-sm font-semibold text-slate-700 transition hover:border-primary active:scale-[0.98]"
             >
-              <span className={selectedFrom ? 'text-slate-800' : 'text-slate-400 font-semibold'}>
+              <span className={selectedFrom ? 'text-slate-800' : 'text-slate-400 font-normal'}>
                 {selectedFrom || 'Select pickup location…'}
               </span>
               {showFromDropdown
@@ -499,11 +499,11 @@ export const Transport: React.FC = () => {
                         setShowRouteList(true);
                         setShowFromDropdown(false);
                       }}
-                      className={`w-full text-left px-4 py-3 text-sm font-semibold transition ${
+                      className={`w-full text-left px-4 py-3 text-sm font-normal transition ${
                         i < fromOptions.length - 1 ? 'border-b border-slate-50' : ''
                       } ${
                         selectedFrom === from
-                          ? 'bg-primary/10 text-primary font-extrabold'
+                          ? 'bg-primary/10 text-primary font-semibold'
                           : 'text-slate-700 hover:bg-slate-50'
                       }`}
                     >
@@ -517,7 +517,7 @@ export const Transport: React.FC = () => {
 
           {/* Route cards / selected summary */}
           {!selectedFrom ? (
-            <p className="text-xs text-slate-400 font-semibold text-center py-4 italic">
+            <p className="text-xs text-slate-400 font-normal text-center py-4 italic">
               Select a pickup location above to see routes
             </p>
           ) : selectedRoute && !showRouteList ? (
@@ -530,7 +530,7 @@ export const Transport: React.FC = () => {
               <div className="flex items-center gap-3">
                 <span className="text-xl">{selectedRoute.emoji}</span>
                 <div>
-                  <p className="text-xs font-extrabold text-slate-800 leading-tight">
+                  <p className="text-xs font-semibold text-slate-800 leading-tight">
                     {selectedRoute.from} → {selectedRoute.to}
                   </p>
                   {selectedRoute.maxPax && (
@@ -540,7 +540,7 @@ export const Transport: React.FC = () => {
               </div>
               <div className="text-right shrink-0 ml-2">
                 <span className="text-xs font-black text-slate-800">RM{selectedRoute.fare}</span>
-                <span className="block text-[8px] font-extrabold text-primary uppercase tracking-wider mt-0.5">Tap to change</span>
+                <span className="block text-[9px] font-normal text-primary mt-0.5">Tap to change</span>
               </div>
             </button>
           ) : (
@@ -565,11 +565,11 @@ export const Transport: React.FC = () => {
                     <div className="flex items-center gap-3">
                       <span className="text-xl">{route.emoji}</span>
                       <div>
-                        <p className="text-xs font-extrabold text-slate-800 leading-tight">
+                        <p className="text-xs font-semibold text-slate-800 leading-tight">
                           {route.from} → {route.to}
                         </p>
                         {route.maxPax && (
-                          <p className="text-xs text-amber-600 font-bold mt-0.5">Max {route.maxPax} pax</p>
+                          <p className="text-xs text-amber-600 font-normal mt-0.5">Max {route.maxPax} pax</p>
                         )}
                       </div>
                     </div>
@@ -594,7 +594,7 @@ export const Transport: React.FC = () => {
               onDestinationChange={name => setDestPin(name ? { address: name, coords: [0, 0] } : null)}
             />
           </Suspense>
-          <p className="text-xs text-slate-400 font-semibold text-center italic">
+          <p className="text-xs text-slate-400 font-normal text-center italic">
             Fare for map bookings will be confirmed by your driver
           </p>
         </div>
@@ -610,7 +610,7 @@ export const Transport: React.FC = () => {
           {/* Date + Time — overlay trick: display div at 12px, real input invisible on top */}
           <div className="grid grid-cols-2 gap-2">
             <div className="flex flex-col gap-0.5">
-              <label className="text-xs font-semibold text-slate-400 pl-1">Date</label>
+              <label className="text-xs font-normal text-slate-400 pl-1">Date</label>
               <div className="relative h-9 group">
                 <div className="absolute inset-0 bg-white border border-slate-100 rounded-lg px-2.5 flex items-center justify-between pointer-events-none group-focus-within:border-primary transition">
                   <span className={`text-xs font-bold ${date ? 'text-slate-700' : 'text-slate-400'}`}>
@@ -626,7 +626,7 @@ export const Transport: React.FC = () => {
               </div>
             </div>
             <div className="flex flex-col gap-0.5">
-              <label className="text-xs font-semibold text-slate-400 pl-1 flex items-center gap-1">
+              <label className="text-xs font-normal text-slate-400 pl-1 flex items-center gap-1">
                 <Clock className="w-3 h-3" /> Time
                 {isNight && <span className="text-amber-500 font-extrabold ml-1">+RM5</span>}
               </label>
@@ -660,7 +660,7 @@ export const Transport: React.FC = () => {
                 className="w-10 h-10 rounded-xl border border-slate-200 bg-slate-50 text-slate-700 font-extrabold text-sm active:bg-slate-100 active:scale-95 transition flex items-center justify-center shrink-0">+</button>
             </div>
             {passengers > 4 && (
-              <p className="text-xs text-amber-600 font-bold pl-1">Over 4 pax — extra charge may apply</p>
+              <p className="text-xs text-amber-600 font-normal pl-1">Over 4 pax — extra charge may apply</p>
             )}
           </div>
 
@@ -707,13 +707,13 @@ export const Transport: React.FC = () => {
         {/* Fare summary */}
         <div className="bg-white border border-slate-100 rounded-xl px-3.5 py-2.5 flex items-center justify-between">
           <div>
-            <span className="text-xs text-slate-400 font-bold uppercase tracking-wider block">Estimated Fare</span>
+            <span className="text-xs text-slate-400 font-normal block">Estimated Fare</span>
             <div className="flex items-baseline gap-1.5 mt-0.5">
               <span className="text-base font-black text-slate-800">
                 {totalFare === 'TBC' ? 'TBC' : `RM${totalFare.toFixed(2)}`}
               </span>
               {isNight && baseFare !== 'TBC' && (
-                <span className="text-xs font-bold text-amber-500">incl. night +RM5</span>
+                <span className="text-xs font-normal text-amber-500">incl. night +RM5</span>
               )}
             </div>
           </div>
@@ -729,7 +729,7 @@ export const Transport: React.FC = () => {
         <button
           type="submit"
           disabled={!canBook || booking}
-          className={`mx-auto flex items-center gap-2 text-white text-sm font-extrabold px-8 py-2 rounded-full transition-all duration-300 active:scale-95 ${
+          className={`mx-auto flex items-center gap-2 text-white text-sm font-semibold px-8 py-2 rounded-full transition-all duration-300 active:scale-95 ${
             canBook && !booking
               ? 'bg-primary hover:bg-primary-hover shadow-lg shadow-primary/50 ring-2 ring-primary/40 animate-pulse-glow cursor-pointer'
               : 'bg-slate-200 text-slate-400 cursor-not-allowed shadow-none'
@@ -746,7 +746,7 @@ export const Transport: React.FC = () => {
         </button>
 
         {!canBook && (
-          <p className="text-xs text-slate-400 font-semibold text-center -mt-1">
+          <p className="text-xs text-slate-400 font-normal text-center -mt-1">
             {bookMode === 'quick' && !selectedRoute ? 'Select a route above to continue' : ''}
             {bookMode === 'map' && !(pickupPin && destPin) ? 'Drop both pins on the map to continue' : ''}
             {!(date && time) ? 'Fill in date and time to continue' : ''}
