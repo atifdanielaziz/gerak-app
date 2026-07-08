@@ -736,12 +736,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           p_rider_id:          riderId         ?? null,
           p_rider_name:        riderName       ?? null,
           p_delivery_address:  deliveryAddress ?? null,
-          p_drive_docs_url:    docsPath    ?? null,
-          p_drive_payment_url: paymentPath ?? null,
-          p_drive_oscar_url:   oscarPath   ?? null,
-          p_drive_skpg_url:    skpgPath    ?? null,
-          p_drive_konvo_url:   konvoPath   ?? null,
-          p_drive_ic_url:      icPath      ?? null,
+          p_docs_path:    docsPath    ?? null,
+          p_payment_path: paymentPath ?? null,
+          p_oscar_path:   oscarPath   ?? null,
+          p_skpg_path:    skpgPath    ?? null,
+          p_konvo_path:   konvoPath   ?? null,
+          p_ic_path:      icPath      ?? null,
           p_customer_id:       authUser?.id    ?? null,
         }).then(({ data, error }) => {
           if (error || !data?.success) console.error('[GERAK] Booking save failed:', error ?? data?.error);
