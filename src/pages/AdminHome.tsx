@@ -1270,7 +1270,7 @@ export const AdminHome: React.FC = () => {
 
   useEffect(() => {
     if (!sampleDocsPage) { setSampleUrls({}); setSampleLoaded({}); return; }
-    mainScrollRef.current?.scrollTo({ top: 0, behavior: 'instant' });
+    if (mainScrollRef.current) mainScrollRef.current.scrollTop = 0;
     const bust = Date.now();
     const urls: Record<string, string> = {};
     SAMPLE_DOCS.forEach(({ key }) => {
@@ -2011,19 +2011,6 @@ export const AdminHome: React.FC = () => {
       {/* ── Sub-page Standard: replace all tab content when active ── */}
       {sampleDocsPage ? (
         <>
-          {/* Back button + title */}
-          <div className="mt-4 px-1 flex items-start gap-2">
-            <button
-              onClick={() => setSampleDocsPage(null)}
-              className="mt-0.5 w-7 h-7 flex items-center justify-center rounded-xl bg-slate-100 text-slate-500 active:scale-90 transition shrink-0">
-              <ChevronLeft className="w-4 h-4" />
-            </button>
-            <div>
-              <p className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest">Jubah · Sample Documents</p>
-              <h2 className="text-xl font-black text-slate-800">{UNIV_SHORT[sampleDocsPage.key] ?? sampleDocsPage.key.toUpperCase()}</h2>
-            </div>
-          </div>
-
           {/* Hidden file input */}
           <input type="file" ref={sampleFileRef} accept="image/jpeg,image/png,image/webp" className="hidden"
             onChange={async e => {
@@ -2043,10 +2030,17 @@ export const AdminHome: React.FC = () => {
             ))}
           </div>
 
-          {/* Upload Documents (Sample) card */}
-          <div className="bg-white border border-slate-100 rounded-3xl p-5 shadow-sm flex flex-col gap-4"
+          {/* Upload Documents (Sample) card — back button anchored in card header */}
+          <div className="mt-4 bg-white border border-slate-100 rounded-3xl p-5 shadow-sm flex flex-col gap-4"
             style={{ marginBottom: 'calc(6.5rem + env(safe-area-inset-bottom))' }}>
-            <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest">Upload Documents (Sample)</h3>
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => setSampleDocsPage(null)}
+                className="w-7 h-7 flex items-center justify-center rounded-xl bg-slate-100 text-slate-500 active:scale-90 transition shrink-0">
+                <ChevronLeft className="w-4 h-4" />
+              </button>
+              <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest">Upload Documents (Sample)</h3>
+            </div>
             {SAMPLE_DOCS.map(doc => (
               <div key={doc.key} className="flex flex-col gap-1">
                 <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">{doc.label}</label>
