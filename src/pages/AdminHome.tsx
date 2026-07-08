@@ -4371,7 +4371,7 @@ export const AdminHome: React.FC = () => {
 
     {/* ── Sample Docs Sub-page ── */}
     {sampleDocsPage && (
-      <div className="absolute inset-0 z-[90] bg-slate-50 flex flex-col">
+      <div className="absolute inset-0 z-[90] bg-slate-50 flex flex-col" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
 
         {/* Top bar */}
         <div className="bg-white border-b border-slate-100 px-5 py-4 flex items-start gap-2 shrink-0">
