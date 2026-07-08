@@ -1007,7 +1007,8 @@ export const AdminHome: React.FC = () => {
   const [sampleLoaded,     setSampleLoaded]     = useState<Record<string, boolean>>({});
   const [sampleUploading,  setSampleUploading]  = useState<string | null>(null);
   const [currentSampleDoc, setCurrentSampleDoc] = useState<string | null>(null);
-  const sampleFileRef = useRef<HTMLInputElement>(null);
+  const sampleFileRef   = useRef<HTMLInputElement>(null);
+  const mainScrollRef   = useRef<HTMLDivElement>(null);
   const [cropSrc,        setCropSrc]        = useState<string>('');
   const [cropObj,        setCropObj]        = useState<Crop | undefined>(undefined);
   const [completedCrop,  setCompletedCrop]  = useState<PixelCrop | undefined>(undefined);
@@ -1269,6 +1270,7 @@ export const AdminHome: React.FC = () => {
 
   useEffect(() => {
     if (!sampleDocsPage) { setSampleUrls({}); setSampleLoaded({}); return; }
+    mainScrollRef.current?.scrollTo({ top: 0, behavior: 'instant' });
     const bust = Date.now();
     const urls: Record<string, string> = {};
     SAMPLE_DOCS.forEach(({ key }) => {
@@ -1909,7 +1911,7 @@ export const AdminHome: React.FC = () => {
 
   return (
     <>
-    <div className="flex-grow bg-slate-50/50 overflow-y-auto overflow-x-hidden no-scrollbar pb-4 px-4 animate-fade-in flex flex-col gap-4 touch-pan-y">
+    <div ref={mainScrollRef} className="flex-grow bg-slate-50/50 overflow-y-auto overflow-x-hidden no-scrollbar pb-4 px-4 animate-fade-in flex flex-col gap-4 touch-pan-y">
 
       {/* Toast */}
       {toast && (
