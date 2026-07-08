@@ -1,6 +1,6 @@
 ﻿import React, { useState, useRef, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
-import { CheckCircle2, X, Upload, FileText, ShieldAlert, Download, ChevronDown, ChevronLeft, User, Pencil, MapPin, Copy, Check, Info, GraduationCap } from 'lucide-react';
+import { CheckCircle2, X, Upload, FileText, ShieldAlert, Download, ChevronDown, ChevronLeft, User, Pencil, MapPin, Copy, Check, Info, GraduationCap, Eye } from 'lucide-react';
 import { submitJubahToSheets } from '../lib/sheetsService';
 import { JubahLanding } from '../components/JubahLanding';
 import { supabase } from '../lib/supabase';
@@ -70,8 +70,12 @@ export const Jubah: React.FC = () => {
     { id: 'konvo', label: 'Konvo Slip',         hint: null,                                   position: 3 },
     { id: 'ic',    label: 'IC (Front & Back)',  hint: 'Accepts PDF or image (JPG/PNG)',       position: 4 },
   ];
-  const [docFields,    setDocFields]    = useState<JubahDocField[]>(FALLBACK_DOC_FIELDS);
-  const [docFiles,     setDocFiles]     = useState<Record<string, File | null>>({});
+  const [docFields,      setDocFields]      = useState<JubahDocField[]>(FALLBACK_DOC_FIELDS);
+  const [docFiles,       setDocFiles]       = useState<Record<string, File | null>>({});
+  const [sampleUrls,     setSampleUrls]     = useState<Record<string, string>>({});
+  const [sampleLoaded,   setSampleLoaded]   = useState<Record<string, boolean>>({});
+  const [sampleUnivKey,  setSampleUnivKey]  = useState('umpsa');
+  const [samplePreview,  setSamplePreview]  = useState<string | null>(null);
   const docRefs = useRef<Record<string, HTMLInputElement | null>>({});
   const [fileError, setFileError]         = useState('');
   const [combining, setCombining]         = useState(false);
@@ -162,20 +166,33 @@ export const Jubah: React.FC = () => {
     if (!landingUniversity) return;
     setDocFiles({});
     setCombinedBlob(null);
+    setSampleLoaded({});
+
+    const applyFields = (fields: JubahDocField[], univKey: string) => {
+      setDocFields(fields);
+      setSampleUnivKey(univKey);
+      const urls: Record<string, string> = {};
+      fields.forEach(f => {
+        const { data } = supabase.storage.from('jubah-banners').getPublicUrl(`samples/${univKey}/${f.id}.jpg`);
+        urls[f.id] = `${data.publicUrl}?t=${Date.now()}`;
+      });
+      setSampleUrls(urls);
+    };
+
     const load = async () => {
       const { data } = await supabase
         .from('jubah_doc_fields')
         .select('id, label, hint, position')
         .eq('university_key', landingUniversity)
         .order('position');
-      if (data && data.length > 0) { setDocFields(data); return; }
+      if (data && data.length > 0) { applyFields(data, landingUniversity); return; }
       const { data: defaults } = await supabase
         .from('jubah_doc_fields')
         .select('id, label, hint, position')
         .eq('university_key', 'umpsa')
         .order('position');
-      if (defaults && defaults.length > 0) { setDocFields(defaults); return; }
-      setDocFields(FALLBACK_DOC_FIELDS);
+      if (defaults && defaults.length > 0) { applyFields(defaults, 'umpsa'); return; }
+      applyFields(FALLBACK_DOC_FIELDS, 'umpsa');
     };
     load();
   }, [landingUniversity]);
@@ -736,6 +753,16 @@ export const Jubah: React.FC = () => {
             </div>
           )}
 
+          {/* Hidden sample image probes — detect which fields have admin-uploaded samples */}
+          <div className="hidden">
+            {docFields.map(f => sampleUrls[f.id] && (
+              <img key={f.id} src={sampleUrls[f.id]}
+                onLoad={() => setSampleLoaded(prev => ({ ...prev, [f.id]: true }))}
+                onError={() => setSampleLoaded(prev => ({ ...prev, [f.id]: false }))}
+              />
+            ))}
+          </div>
+
           {/* ── DOCUMENT UPLOAD — dynamic from jubah_doc_fields ── */}
           <div className="bg-white border border-slate-100 rounded-3xl p-5 shadow-sm flex flex-col gap-4">
             <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest">Upload Documents</h3>
@@ -744,9 +771,17 @@ export const Jubah: React.FC = () => {
               const file = docFiles[field.id] ?? null;
               return (
                 <div key={field.id} className="flex flex-col gap-1">
-                  <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">
-                    {field.label} <span className="text-danger">*</span>
-                  </label>
+                  <div className="flex items-center gap-1.5">
+                    <label className="flex-1 text-xs font-bold text-slate-500 uppercase tracking-wider">
+                      {field.label} <span className="text-danger">*</span>
+                    </label>
+                    <button type="button"
+                      disabled={!sampleLoaded[field.id]}
+                      onClick={() => sampleLoaded[field.id] && setSamplePreview(sampleUrls[field.id])}
+                      className={`w-6 h-6 flex items-center justify-center rounded-lg transition shrink-0 ${sampleLoaded[field.id] ? 'text-blue-400 active:scale-90 cursor-pointer' : 'text-slate-200 cursor-default'}`}>
+                      <Eye className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
                   {field.hint && <p className="text-xs text-slate-400 -mt-0.5">{field.hint}</p>}
                   <input
                     type="file"
@@ -1062,6 +1097,22 @@ export const Jubah: React.FC = () => {
       )}
 
     </div>
+
+    {/* Sample image preview modal */}
+    {samplePreview && (
+      <>
+        <div className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-6"
+          onClick={() => setSamplePreview(null)}>
+          <div className="relative w-full max-w-sm" onClick={e => e.stopPropagation()}>
+            <img src={samplePreview} alt="Sample document" className="w-full rounded-2xl object-contain max-h-[70dvh]" />
+            <button onClick={() => setSamplePreview(null)}
+              className="absolute top-3 right-3 w-8 h-8 flex items-center justify-center rounded-full bg-black/50 text-white active:scale-90 transition">
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+      </>
+    )}
 
     {/* Rider profile sheet — outside scroll container so fixed positioning works correctly */}
     {riderProfileOpen && (() => {
