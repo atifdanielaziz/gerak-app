@@ -1263,7 +1263,7 @@ export const AdminHome: React.FC = () => {
 
   useEffect(() => {
     if (!sampleDocsPage) {
-      setSampleUrls({}); setSampleLoaded({}); setDocFields([]); setDocFieldDrafts({});
+      setSampleUrls({}); setSampleLoaded({}); setDocFields([]);
       return;
     }
     if (mainScrollRef.current) mainScrollRef.current.scrollTop = 0;
@@ -1295,7 +1295,6 @@ export const AdminHome: React.FC = () => {
       }
 
       setDocFields(fields);
-      setDocFieldDrafts(Object.fromEntries(fields.map(f => [f.id, f.label])));
 
       const bust = Date.now();
       const urls: Record<string, string> = {};
