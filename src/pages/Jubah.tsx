@@ -72,10 +72,9 @@ export const Jubah: React.FC = () => {
   ];
   const [docFields,      setDocFields]      = useState<JubahDocField[]>(FALLBACK_DOC_FIELDS);
   const [docFiles,       setDocFiles]       = useState<Record<string, File | null>>({});
-  const [sampleUrls,     setSampleUrls]     = useState<Record<string, string>>({});
-  const [sampleLoaded,   setSampleLoaded]   = useState<Record<string, boolean>>({});
-  const [sampleUnivKey,  setSampleUnivKey]  = useState('umpsa');
-  const [samplePreview,  setSamplePreview]  = useState<string | null>(null);
+  const [sampleUrls,    setSampleUrls]    = useState<Record<string, string>>({});
+  const [sampleLoaded,  setSampleLoaded]  = useState<Record<string, boolean>>({});
+  const [samplePreview, setSamplePreview] = useState<string | null>(null);
   const docRefs = useRef<Record<string, HTMLInputElement | null>>({});
   const [fileError, setFileError]         = useState('');
   const [combining, setCombining]         = useState(false);
@@ -170,7 +169,6 @@ export const Jubah: React.FC = () => {
 
     const applyFields = (fields: JubahDocField[], univKey: string) => {
       setDocFields(fields);
-      setSampleUnivKey(univKey);
       const urls: Record<string, string> = {};
       fields.forEach(f => {
         const { data } = supabase.storage.from('jubah-banners').getPublicUrl(`samples/${univKey}/${f.id}.jpg`);
@@ -311,12 +309,12 @@ export const Jubah: React.FC = () => {
     const addr = paymentMode === 'postage' ? `${zonePrefix}${fullAddress}` : undefined;
 
     setBooking(true);
-    let driveDocsUrl: string | undefined;
-    let drivePaymentUrl: string | undefined;
-    let driveOscarUrl: string | undefined;
-    let driveSkpgUrl: string | undefined;
-    let driveKonvoUrl: string | undefined;
-    let driveIcUrl: string | undefined;
+    let docsPath: string | undefined;
+    let paymentPath: string | undefined;
+    let oscarPath: string | undefined;
+    let skpgPath: string | undefined;
+    let konvoPath: string | undefined;
+    let icPath: string | undefined;
 
     // Uploads are foldered by booking reference (not a public URL) so the
     // jubah-docs storage policies can verify ownership later — only
@@ -350,19 +348,18 @@ export const Jubah: React.FC = () => {
           : Promise.resolve(undefined),
         uploadFile(paymentProof, 'payment'),
       ]);
-      [driveDocsUrl, drivePaymentUrl] = results;
-      // Map first 4 doc fields by position to named URL params for backward compat
-      driveOscarUrl = docUploads[0];
-      driveSkpgUrl  = docUploads[1];
-      driveKonvoUrl = docUploads[2];
-      driveIcUrl    = docUploads[3];
+      [docsPath, paymentPath] = results;
+      oscarPath = docUploads[0];
+      skpgPath  = docUploads[1];
+      konvoPath = docUploads[2];
+      icPath    = docUploads[3];
     } catch (err) {
-      console.error('[GERAK] Drive upload failed:', err);
+      console.error('[GERAK] Storage upload failed:', err);
     }
 
     setBooking(false);
-    bookJubah(reference, fullName, icNumber, hpNumber, university, faculty, matricId, paymentMode, remark, combinedFileName, cost, balanceDue, selectedRiderId, selectedRider?.name, bookingCampus, addr, driveDocsUrl, drivePaymentUrl, driveOscarUrl, driveSkpgUrl, driveKonvoUrl, driveIcUrl);
-    submitJubahToSheets({ reference, fullName, icNumber, hpNumber, university, faculty, matricId, paymentMode, remark, combinedFileName, cost, deliveryAddress: addr, driveDocsUrl, drivePaymentUrl, driveOscarUrl, driveSkpgUrl, driveKonvoUrl, driveIcUrl });
+    bookJubah(reference, fullName, icNumber, hpNumber, university, faculty, matricId, paymentMode, remark, combinedFileName, cost, balanceDue, selectedRiderId, selectedRider?.name, bookingCampus, addr, docsPath, paymentPath, oscarPath, skpgPath, konvoPath, icPath);
+    submitJubahToSheets({ reference, fullName, icNumber, hpNumber, university, faculty, matricId, paymentMode, remark, combinedFileName, cost, deliveryAddress: addr, docsPath, paymentPath, oscarPath, skpgPath, konvoPath, icPath });
   };
 
   const UNIVERSITY_LABELS: Record<string, string> = {

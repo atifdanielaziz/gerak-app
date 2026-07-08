@@ -140,7 +140,7 @@ interface AppContextType {
 
   // Jubah Delivery Module
   jubahBooking: JubahBooking | null;
-  bookJubah: (reference: string, fullName: string, icNumber: string, hpNumber: string, university: string, faculty: string, matricId: string, paymentMode: 'pickup' | 'postage' | 'deposit', remark: 'Master' | 'PHD' | 'Degree' | 'Diploma', combinedFileName: string, cost: number, balanceDue: number, riderId?: string, riderName?: string, campus?: 'Pekan' | 'Gambang', deliveryAddress?: string, driveDocsUrl?: string, drivePaymentUrl?: string, driveOscarUrl?: string, driveSkpgUrl?: string, driveKonvoUrl?: string, driveIcUrl?: string) => void;
+  bookJubah: (reference: string, fullName: string, icNumber: string, hpNumber: string, university: string, faculty: string, matricId: string, paymentMode: 'pickup' | 'postage' | 'deposit', remark: 'Master' | 'PHD' | 'Degree' | 'Diploma', combinedFileName: string, cost: number, balanceDue: number, riderId?: string, riderName?: string, campus?: 'Pekan' | 'Gambang', deliveryAddress?: string, docsPath?: string, paymentPath?: string, oscarPath?: string, skpgPath?: string, konvoPath?: string, icPath?: string) => void;
   scheduleReturn: (method: 'self' | 'locker' | 'courier', date: string, time: string) => void;
   cancelJubahBooking: () => void;
 }
@@ -689,12 +689,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     riderName?: string,
     campus?: 'Pekan' | 'Gambang',
     deliveryAddress?: string,
-    driveDocsUrl?: string,
-    drivePaymentUrl?: string,
-    driveOscarUrl?: string,
-    driveSkpgUrl?: string,
-    driveKonvoUrl?: string,
-    driveIcUrl?: string,
+    docsPath?: string,
+    paymentPath?: string,
+    oscarPath?: string,
+    skpgPath?: string,
+    konvoPath?: string,
+    icPath?: string,
   ) => {
 
     const newBooking: JubahBooking = {
@@ -736,12 +736,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           p_rider_id:          riderId         ?? null,
           p_rider_name:        riderName       ?? null,
           p_delivery_address:  deliveryAddress ?? null,
-          p_drive_docs_url:    driveDocsUrl    ?? null,
-          p_drive_payment_url: drivePaymentUrl ?? null,
-          p_drive_oscar_url:   driveOscarUrl   ?? null,
-          p_drive_skpg_url:    driveSkpgUrl    ?? null,
-          p_drive_konvo_url:   driveKonvoUrl   ?? null,
-          p_drive_ic_url:      driveIcUrl      ?? null,
+          p_drive_docs_url:    docsPath    ?? null,
+          p_drive_payment_url: paymentPath ?? null,
+          p_drive_oscar_url:   oscarPath   ?? null,
+          p_drive_skpg_url:    skpgPath    ?? null,
+          p_drive_konvo_url:   konvoPath   ?? null,
+          p_drive_ic_url:      icPath      ?? null,
           p_customer_id:       authUser?.id    ?? null,
         }).then(({ data, error }) => {
           if (error || !data?.success) console.error('[GERAK] Booking save failed:', error ?? data?.error);
