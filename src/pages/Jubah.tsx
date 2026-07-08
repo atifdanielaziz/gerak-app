@@ -773,9 +773,8 @@ export const Jubah: React.FC = () => {
                       {field.label} <span className="text-danger">*</span>
                     </label>
                     <button type="button"
-                      disabled={!sampleLoaded[field.id]}
-                      onClick={() => sampleLoaded[field.id] && setSamplePreview(sampleUrls[field.id])}
-                      className={`w-6 h-6 flex items-center justify-center rounded-lg transition shrink-0 ${sampleLoaded[field.id] ? 'text-blue-400 active:scale-90 cursor-pointer' : 'text-slate-200 cursor-default'}`}>
+                      onClick={() => sampleLoaded[field.id] ? setSamplePreview(sampleUrls[field.id]) : setFileError(`No sample uploaded for ${field.label} yet.`)}
+                      className={`w-6 h-6 flex items-center justify-center rounded-lg transition shrink-0 active:scale-90 ${sampleLoaded[field.id] ? 'text-blue-400' : 'text-slate-300'}`}>
                       <Eye className="w-3.5 h-3.5" />
                     </button>
                   </div>
