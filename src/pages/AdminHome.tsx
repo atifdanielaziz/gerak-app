@@ -987,9 +987,6 @@ export const AdminHome: React.FC = () => {
     { key: 'ukm',     label: 'Universiti Kebangsaan Malaysia (UKM)' },
     { key: 'uiam',    label: 'Universiti Islam Antarabangsa Malaysia (UIA)' },
   ];
-  const UNIV_SHORT: Record<string, string> = {
-    umpsa: 'UMPSA', uitm: 'UiTM', umk: 'UMK', ukm: 'UKM', uiam: 'UIAM',
-  };
   const SAMPLE_DOCS = [
     { key: 'oscar', label: 'OSCAR' },
     { key: 'skpg',  label: 'SKPG' },
