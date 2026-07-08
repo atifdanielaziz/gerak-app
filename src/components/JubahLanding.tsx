@@ -43,7 +43,8 @@ interface Props {
 }
 
 export const JubahLanding: React.FC<Props> = ({ onProceed }) => {
-  const { setSheetOpen } = useApp();
+  const { setSheetOpen, user } = useApp();
+  const isAdmin = user.role === 'admin' || user.role === 'superadmin';
 
   const [selectedKey, setSelectedKey]   = useState('');
   const [bannerUrls, setBannerUrls]     = useState<Record<string, string>>({});
@@ -150,19 +151,27 @@ export const JubahLanding: React.FC<Props> = ({ onProceed }) => {
           ))}
         </select>
 
-        {/* Banner area */}
-        <div className="w-full rounded-2xl overflow-hidden border border-slate-100 bg-slate-50 h-40 flex items-center justify-center relative">
+        {/* Banner area — dynamic height (Option A) */}
+        <div className="w-full rounded-2xl overflow-hidden border border-slate-100 bg-slate-50 relative">
           {currentBanner && !hasBannerError ? (
             <img
               src={currentBanner}
               alt={`${selectedLabel || 'Gerak'} banner`}
-              className="w-full h-full object-cover"
+              className="w-full h-auto block"
               onError={() => setImgError(prev => ({ ...prev, [displayKey]: true }))}
             />
           ) : (
-            <div className="flex flex-col items-center gap-2 text-slate-300 p-4 text-center">
+            <div className="min-h-[120px] flex flex-col items-center justify-center gap-2 text-slate-300 p-4 text-center">
               <ImageIcon className="w-10 h-10" />
               <span className="text-xs font-bold">No banner uploaded yet</span>
+            </div>
+          )}
+          {/* Admin hint: shows when a university is selected but has no banner → falling back to default */}
+          {isAdmin && selectedKey && imgError[selectedKey] && (
+            <div className="absolute bottom-2 left-2 right-2 flex justify-center">
+              <span className="bg-black/60 text-white text-[10px] font-bold px-2.5 py-1 rounded-full tracking-wide">
+                Default banner · Upload {UNIV_SHORT[selectedKey] ?? selectedKey.toUpperCase()} banner via admin
+              </span>
             </div>
           )}
         </div>

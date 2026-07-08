@@ -7,11 +7,13 @@ import {
   UserPlus, Mail, X, Send, ChevronDown, ChevronUp, ChevronRight, Megaphone, Plus, PlusCircle, MinusCircle, Minus, ToggleLeft, ToggleRight,
   FileImage, ShieldCheck, ShieldOff, ExternalLink, KeyRound,
   CalendarDays, Upload, Eye, Phone, ArrowLeftRight, Pencil, GraduationCap,
-  ChevronLeft, Download, MoreVertical, Copy, Check, TrendingUp, Bike, Settings,
+  ChevronLeft, Download, MoreVertical, Copy, Check, TrendingUp, Bike, Settings, Info,
 } from 'lucide-react';
 import { WaBtn, WaIcon, toWa } from '../lib/whatsapp';
 import { MonthDrumPicker, EarningsCard, computeEarnings, type EarningsRow } from '../components/EarningsCard';
 import { getJubahDocSignedUrl } from '../lib/jubahDocs';
+import ReactCrop, { centerCrop, makeAspectCrop, type Crop, type PixelCrop } from 'react-image-crop';
+import 'react-image-crop/dist/ReactCrop.css';
 
 interface RideOrder {
   id: string;
@@ -985,12 +987,31 @@ export const AdminHome: React.FC = () => {
     { key: 'ukm',     label: 'Universiti Kebangsaan Malaysia (UKM)' },
     { key: 'uiam',    label: 'Universiti Islam Antarabangsa Malaysia (UIA)' },
   ];
+  const UNIV_SHORT: Record<string, string> = {
+    umpsa: 'UMPSA', uitm: 'UiTM', umk: 'UMK', ukm: 'UKM', uiam: 'UIAM',
+  };
+  const SAMPLE_DOCS = [
+    { key: 'oscar', label: 'OSCAR' },
+    { key: 'skpg',  label: 'SKPG' },
+    { key: 'konvo', label: 'Konvo Slip' },
+    { key: 'ic',    label: 'IC (Front & Back)', hint: 'Accepts image (JPG/PNG)' },
+  ];
   const [bannerUrls,        setBannerUrls]        = useState<Record<string, string>>({});
   const [bannerImgError,    setBannerImgError]    = useState<Record<string, boolean>>({});
   const [bannerRefreshKey,  setBannerRefreshKey]  = useState<Record<string, number>>({});
   const [bannerUploading,   setBannerUploading]   = useState<string | null>(null);
   const [bannerUploadKey,   setBannerUploadKey]   = useState<string | null>(null);
   const bannerFileRef = useRef<HTMLInputElement>(null);
+  const [sampleDocsPage,   setSampleDocsPage]   = useState<{ key: string; label: string } | null>(null);
+  const [sampleUrls,       setSampleUrls]       = useState<Record<string, string>>({});
+  const [sampleLoaded,     setSampleLoaded]     = useState<Record<string, boolean>>({});
+  const [sampleUploading,  setSampleUploading]  = useState<string | null>(null);
+  const [currentSampleDoc, setCurrentSampleDoc] = useState<string | null>(null);
+  const sampleFileRef = useRef<HTMLInputElement>(null);
+  const [cropSrc,        setCropSrc]        = useState<string>('');
+  const [cropObj,        setCropObj]        = useState<Crop | undefined>(undefined);
+  const [completedCrop,  setCompletedCrop]  = useState<PixelCrop | undefined>(undefined);
+  const cropImgRef = useRef<HTMLImageElement>(null);
   type JubahPrice = { remark: string; payment_mode: string; price: number };
   const [savingPrice,        setSavingPrice]        = useState<string | null>(null);
   const [priceDrafts,        setPriceDrafts]        = useState<Record<string, string>>({});
@@ -1244,6 +1265,67 @@ export const AdminHome: React.FC = () => {
       delivered:  `Assalamualaikum ${name} 🎓\n\nJubah anda telah berjaya dihantar! 🎉\n\nTerima kasih kerana menggunakan Gerak Jubah. Semoga majlis konvokesyen anda berjalan lancar! 🎓\n\nRujukan: ${ref}`,
     };
     return msgs[status] ?? `Assalamualaikum ${name} 🎓\n\nIni Gerak Jubah. Terima kasih atas tempahan anda.\n\nRujukan: ${ref}\n\nTerima kasih 🙏`;
+  };
+
+  useEffect(() => {
+    if (!sampleDocsPage) { setSampleUrls({}); setSampleLoaded({}); return; }
+    const bust = Date.now();
+    const urls: Record<string, string> = {};
+    SAMPLE_DOCS.forEach(({ key }) => {
+      const { data } = supabase.storage.from(BANNER_BUCKET).getPublicUrl(`samples/${sampleDocsPage.key}/${key}.jpg`);
+      urls[key] = `${data.publicUrl}?t=${bust}`;
+    });
+    setSampleUrls(urls);
+    setSampleLoaded({});
+  }, [sampleDocsPage]);
+
+  const handleSampleUpload = async (file: File, docKey: string) => {
+    if (!sampleDocsPage) return;
+    setSampleUploading(docKey);
+    const path = `samples/${sampleDocsPage.key}/${docKey}.jpg`;
+    const { error } = await supabase.storage.from(BANNER_BUCKET).upload(path, file, { upsert: true, contentType: file.type });
+    if (error) { showToast('Upload failed: ' + error.message); setSampleUploading(null); return; }
+    const { data } = supabase.storage.from(BANNER_BUCKET).getPublicUrl(path);
+    setSampleUrls(prev => ({ ...prev, [docKey]: `${data.publicUrl}?t=${Date.now()}` }));
+    setSampleLoaded(prev => ({ ...prev, [docKey]: true }));
+    setSampleUploading(null);
+    showToast('Sample uploaded ✓');
+  };
+
+  const handleSampleDelete = async (docKey: string) => {
+    if (!sampleDocsPage) return;
+    const path = `samples/${sampleDocsPage.key}/${docKey}.jpg`;
+    await supabase.storage.from(BANNER_BUCKET).remove([path]);
+    setSampleLoaded(prev => ({ ...prev, [docKey]: false }));
+    showToast('Sample removed.');
+  };
+
+  const getCroppedBlob = (image: HTMLImageElement, px: PixelCrop): Promise<Blob> => {
+    const canvas = document.createElement('canvas');
+    const scaleX = image.naturalWidth  / image.width;
+    const scaleY = image.naturalHeight / image.height;
+    canvas.width  = Math.round(px.width  * scaleX);
+    canvas.height = Math.round(px.height * scaleY);
+    const ctx = canvas.getContext('2d')!;
+    ctx.drawImage(image, px.x * scaleX, px.y * scaleY, px.width * scaleX, px.height * scaleY, 0, 0, canvas.width, canvas.height);
+    return new Promise(res => canvas.toBlob(b => res(b!), 'image/jpeg', 0.92));
+  };
+
+  const onCropImgLoad = (e: React.SyntheticEvent<HTMLImageElement>) => {
+    const { offsetWidth: w, offsetHeight: h } = e.currentTarget;
+    const pct = centerCrop(makeAspectCrop({ unit: '%', width: 90 }, w / h, w, h), w, h);
+    setCropObj(pct);
+    setCompletedCrop({ unit: 'px', x: (pct.x / 100) * w, y: (pct.y / 100) * h, width: (pct.width / 100) * w, height: (pct.height / 100) * h });
+  };
+
+  const handleCropConfirm = async () => {
+    if (!completedCrop || !cropImgRef.current || !bannerUploadKey) return;
+    const blob = await getCroppedBlob(cropImgRef.current, completedCrop);
+    setCropSrc('');
+    setCropObj(undefined);
+    setCompletedCrop(undefined);
+    const file = new File([blob], `${bannerUploadKey}.jpg`, { type: 'image/jpeg' });
+    handleBannerUpload(file);
   };
 
   const handleBannerUpload = async (file: File) => {
@@ -3559,24 +3641,37 @@ export const AdminHome: React.FC = () => {
                 className="hidden"
                 onChange={e => {
                   const file = e.target.files?.[0];
-                  if (file) handleBannerUpload(file);
+                  if (file) {
+                    const reader = new FileReader();
+                    reader.onload = () => { setCropSrc(reader.result as string); setCropObj(undefined); setCompletedCrop(undefined); };
+                    reader.readAsDataURL(file);
+                  }
                   if (bannerFileRef.current) bannerFileRef.current.value = '';
                 }}
               />
               {BANNER_ITEMS.map(item => (
                 <div key={item.key} className="bg-white border border-slate-100 rounded-3xl p-5 shadow-sm flex flex-col gap-4">
-                  <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest">{item.label}</h3>
-                  <div className="w-full rounded-2xl overflow-hidden border border-slate-100 bg-slate-50 h-40 flex items-center justify-center">
+                  <div className="flex items-start justify-between gap-2">
+                    <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest flex-1 min-w-0">{item.label}</h3>
+                    {item.key !== 'default' && (
+                      <button
+                        onClick={() => setSampleDocsPage({ key: item.key, label: item.label })}
+                        className="w-7 h-7 flex items-center justify-center rounded-full border border-slate-200 bg-white text-slate-500 active:scale-90 active:bg-slate-100 transition shrink-0">
+                        <Info className="w-3.5 h-3.5" />
+                      </button>
+                    )}
+                  </div>
+                  <div className="w-full rounded-2xl overflow-hidden border border-slate-100 bg-slate-50">
                     {bannerUrls[item.key] && !bannerImgError[item.key] ? (
                       <img
                         key={`${item.key}-${bannerRefreshKey[item.key] ?? 0}`}
                         src={bannerUrls[item.key]}
                         alt={`${item.label} banner`}
-                        className="w-full h-full object-cover"
+                        className="w-full h-auto block"
                         onError={() => setBannerImgError(prev => ({ ...prev, [item.key]: true }))}
                       />
                     ) : (
-                      <div className="flex flex-col items-center gap-2 text-slate-300 p-4 text-center">
+                      <div className="min-h-[120px] flex flex-col items-center justify-center gap-2 text-slate-300 p-4 text-center">
                         <FileImage className="w-10 h-10" />
                         <span className="text-xs font-bold">No banner uploaded yet</span>
                       </div>
@@ -4270,6 +4365,148 @@ export const AdminHome: React.FC = () => {
                 : <><Send className="w-3.5 h-3.5" /> Yes, Send Invite</>}
             </button>
           </div>
+        </div>
+      </div>
+    )}
+
+    {/* ── Sample Docs Sub-page ── */}
+    {sampleDocsPage && (
+      <div className="fixed inset-0 z-[90] bg-slate-50 flex flex-col" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
+
+        {/* Top bar */}
+        <div className="bg-white border-b border-slate-100 px-4 py-3 flex items-center gap-3 shrink-0">
+          <button
+            onClick={() => setSampleDocsPage(null)}
+            className="w-8 h-8 flex items-center justify-center rounded-full bg-slate-100 text-slate-600 active:scale-90 transition shrink-0">
+            <ChevronLeft className="w-4 h-4" />
+          </button>
+          <div className="flex-1 min-w-0">
+            <p className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest">Jubah · Sample Documents</p>
+            <h2 className="text-sm font-black text-slate-800 truncate">{UNIV_SHORT[sampleDocsPage.key] ?? sampleDocsPage.key.toUpperCase()}</h2>
+          </div>
+        </div>
+
+        {/* Scrollable content */}
+        <div className="flex-1 overflow-y-auto no-scrollbar px-4 pt-4 flex flex-col gap-4"
+          style={{ paddingBottom: 'calc(2rem + env(safe-area-inset-bottom))' }}>
+
+          {/* Hidden file input */}
+          <input
+            type="file"
+            ref={sampleFileRef}
+            accept="image/jpeg,image/png,image/webp"
+            className="hidden"
+            onChange={async e => {
+              const file = e.target.files?.[0];
+              if (file && currentSampleDoc) await handleSampleUpload(file, currentSampleDoc);
+              if (sampleFileRef.current) sampleFileRef.current.value = '';
+            }}
+          />
+
+          {/* Hidden image probes — detect which samples already exist */}
+          <div className="hidden">
+            {SAMPLE_DOCS.map(({ key }) => sampleUrls[key] && (
+              <img key={key} src={sampleUrls[key]}
+                onLoad={() => setSampleLoaded(prev => ({ ...prev, [key]: true }))}
+                onError={() => setSampleLoaded(prev => ({ ...prev, [key]: false }))}
+              />
+            ))}
+          </div>
+
+          {/* Upload Documents (Sample) card */}
+          <div className="bg-white border border-slate-100 rounded-3xl p-5 shadow-sm flex flex-col gap-4">
+            <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest">Upload Documents (Sample)</h3>
+
+            {SAMPLE_DOCS.map(doc => (
+              <div key={doc.key} className="flex flex-col gap-1">
+                <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">{doc.label}</label>
+                {'hint' in doc && <p className="text-xs text-slate-400 -mt-0.5">{doc.hint}</p>}
+
+                {sampleLoaded[doc.key] ? (
+                  <div className="flex items-center gap-3 bg-emerald-50 border border-emerald-100 rounded-xl p-2.5">
+                    <img
+                      src={sampleUrls[doc.key]}
+                      alt={doc.label}
+                      className="w-10 h-10 rounded-lg object-cover shrink-0"
+                    />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs font-bold text-emerald-700">Sample uploaded</p>
+                      <p className="text-xs text-emerald-500">Tap icons to replace or remove</p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => { setCurrentSampleDoc(doc.key); setTimeout(() => sampleFileRef.current?.click(), 0); }}
+                      className="text-slate-400 active:scale-90 transition shrink-0 p-1">
+                      <Upload className="w-4 h-4" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleSampleDelete(doc.key)}
+                      className="text-slate-400 active:scale-90 transition shrink-0 p-1">
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    disabled={sampleUploading === doc.key}
+                    onClick={() => { setCurrentSampleDoc(doc.key); setTimeout(() => sampleFileRef.current?.click(), 0); }}
+                    className="w-full border-2 border-dashed border-slate-200 rounded-xl py-3 flex items-center justify-center gap-2 text-slate-400 hover:border-blue-400 hover:text-blue-500 hover:bg-blue-50/30 transition cursor-pointer disabled:opacity-50">
+                    {sampleUploading === doc.key
+                      ? <span className="w-4 h-4 rounded-full border-2 border-slate-300 border-t-blue-500 animate-spin" />
+                      : <><Upload className="w-4 h-4" /><span className="text-xs font-bold">Upload {doc.label} Sample</span></>
+                    }
+                  </button>
+                )}
+              </div>
+            ))}
+          </div>
+
+        </div>
+      </div>
+    )}
+
+    {/* ── Banner Crop Modal ── */}
+    {cropSrc && (
+      <div className="fixed inset-0 z-[80] bg-black flex flex-col" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
+        {/* Header */}
+        <div className="flex items-center justify-between px-5 py-4 shrink-0">
+          <button
+            onClick={() => { setCropSrc(''); setCropObj(undefined); setCompletedCrop(undefined); }}
+            className="w-8 h-8 flex items-center justify-center rounded-full bg-white/10 text-white active:bg-white/20 transition">
+            <X className="w-4 h-4" />
+          </button>
+          <span className="text-white font-black text-sm tracking-wide">Crop Banner</span>
+          <button
+            onClick={handleCropConfirm}
+            disabled={!completedCrop}
+            className="flex items-center gap-1.5 bg-amber-400 text-black font-black text-xs px-3 py-1.5 rounded-full active:scale-95 transition disabled:opacity-40">
+            <Check className="w-3.5 h-3.5" />
+            Done
+          </button>
+        </div>
+
+        {/* Crop area */}
+        <div className="flex-1 flex items-center justify-center p-4 overflow-hidden min-h-0">
+          <ReactCrop
+            crop={cropObj}
+            onChange={c => setCropObj(c)}
+            onComplete={c => setCompletedCrop(c)}
+            style={{ maxWidth: '100%', maxHeight: '100%' }}
+          >
+            <img
+              ref={cropImgRef}
+              src={cropSrc}
+              alt="crop preview"
+              onLoad={onCropImgLoad}
+              style={{ maxWidth: '100%', maxHeight: 'calc(100dvh - 160px)', objectFit: 'contain', display: 'block' }}
+            />
+          </ReactCrop>
+        </div>
+
+        {/* Hint */}
+        <div className="px-4 pb-8 text-center shrink-0">
+          <span className="text-white/40 text-xs">Drag corners to adjust · Free crop, any shape</span>
         </div>
       </div>
     )}
