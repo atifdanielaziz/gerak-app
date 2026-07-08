@@ -7,7 +7,7 @@ import {
   UserPlus, Mail, X, Send, ChevronDown, ChevronUp, ChevronRight, Megaphone, Plus, PlusCircle, MinusCircle, Minus, ToggleLeft, ToggleRight,
   FileImage, ShieldCheck, ShieldOff, ExternalLink, KeyRound,
   CalendarDays, Upload, Eye, Phone, ArrowLeftRight, Pencil, GraduationCap,
-  ChevronLeft, Download, MoreVertical, Copy, Check, TrendingUp, Bike, Settings, Info,
+  ChevronLeft, Download, MoreVertical, Copy, Check, TrendingUp, Bike, Settings, Info, BadgeCheck,
 } from 'lucide-react';
 import { WaBtn, WaIcon, toWa } from '../lib/whatsapp';
 import { MonthDrumPicker, EarningsCard, computeEarnings, type EarningsRow } from '../components/EarningsCard';
@@ -959,8 +959,8 @@ export const AdminHome: React.FC = () => {
     rider_name: string | null; rider_phone: string | null; status: string; payment_mode: string; cost: number;
     balance_due: number; balance_paid: boolean; balance_proof_url: string | null;
     delivery_address: string | null;
-    drive_docs_url: string | null; drive_payment_url: string | null; drive_oscar_url: string | null;
-    drive_skpg_url: string | null; drive_konvo_url: string | null; drive_ic_url: string | null;
+    docs_path: string | null; payment_path: string | null; oscar_path: string | null;
+    skpg_path: string | null; konvo_path: string | null; ic_path: string | null;
     created_at: string;
   };
   const [jubahRiders,        setJubahRiders]        = useState<JubahRider[]>([]);
@@ -970,6 +970,7 @@ export const AdminHome: React.FC = () => {
   const [jubahBookings,      setJubahBookings]      = useState<JubahBookingRow[]>([]);
   const [jubahBookingsLoading, setJubahBookingsLoading] = useState(false);
   const [deletingBooking,    setDeletingBooking]    = useState<string | null>(null);
+  const [confirmingBooking,  setConfirmingBooking]  = useState(false);
   const [jubahSearch,          setJubahSearch]          = useState('');
   const [jubahPayFilter,       setJubahPayFilter]       = useState<'all' | 'booked' | 'paid'>('all');
   const [jubahAdminView,     setJubahAdminView]     = useState<'list' | 'card' | 'details'>('list');
@@ -1100,7 +1101,7 @@ export const AdminHome: React.FC = () => {
     }
 
     let bookingsQ = supabase.from('jubah_bookings')
-      .select('id, reference, full_name, ic_number, hp_number, matric_id, university, campus, faculty, remark, rider_name, rider_phone, status, payment_mode, cost, balance_due, balance_paid, balance_proof_url, delivery_address, drive_docs_url, drive_payment_url, drive_oscar_url, drive_skpg_url, drive_konvo_url, drive_ic_url, created_at')
+      .select('id, reference, full_name, ic_number, hp_number, matric_id, university, campus, faculty, remark, rider_name, rider_phone, status, payment_mode, cost, balance_due, balance_paid, balance_proof_url, delivery_address, docs_path, payment_path, oscar_path, skpg_path, konvo_path, ic_path, created_at')
       .order('created_at', { ascending: false });
     if (!isSuperAdmin) bookingsQ = bookingsQ.eq('campus', adminCampus);
     const { data: bookingsData, error: bookingsError } = await bookingsQ;
@@ -1116,8 +1117,8 @@ export const AdminHome: React.FC = () => {
       setJubahBookings(((fallbackData ?? []) as JubahBookingRow[]).map(r => ({
         ...r,
         ic_number: '', university: '', cost: 0, balance_due: 0, balance_paid: false, balance_proof_url: null,
-        delivery_address: null, drive_docs_url: null, drive_payment_url: null, drive_oscar_url: null,
-        drive_skpg_url: null, drive_konvo_url: null, drive_ic_url: null,
+        delivery_address: null, docs_path: null, payment_path: null, oscar_path: null,
+        skpg_path: null, konvo_path: null, ic_path: null,
       })));
     } else {
       setJubahBookings((bookingsData as JubahBookingRow[]) ?? []);
@@ -1162,10 +1163,14 @@ export const AdminHome: React.FC = () => {
   const goAdminBack = () => window.history.back();
 
   const JUBAH_STATUS_LABEL: Record<string, string> = {
-    booked: 'New', processing: 'Processing', collected: 'Collected',
-    at_hub: 'At Hub', delivered: 'Delivered', cancelled: 'Cancelled',
+    ordered:    'Pending',
+    paid:       'Paid',
+    booked:     'New', processing: 'Processing', collected: 'Collected',
+    at_hub:     'At Hub', delivered: 'Delivered', cancelled: 'Cancelled',
   };
   const JUBAH_STATUS_STYLE: Record<string, string> = {
+    ordered:    'bg-slate-50 border-slate-200 text-slate-500',
+    paid:       'bg-emerald-50 border-emerald-100 text-emerald-700',
     booked:     'bg-blue-50 border-blue-100 text-blue-700',
     processing: 'bg-violet-50 border-violet-100 text-violet-700',
     collected:  'bg-amber-50 border-amber-100 text-amber-700',
@@ -1174,15 +1179,53 @@ export const AdminHome: React.FC = () => {
     cancelled:  'bg-red-50 border-red-100 text-red-600',
   };
   const JUBAH_NEXT_LABEL: Record<string, string> = {
+    paid:       'Start Booking',
     processing: 'Start Processing',
     collected:  'Mark Collected',
     at_hub:     'Mark Delivered to Hub',
     delivered:  'Mark Delivered',
   };
   const jubahGetSteps = (mode: string) =>
-    mode === 'postage'
-      ? ['booked', 'processing', 'collected', 'at_hub']
-      : ['booked', 'processing', 'collected', 'delivered'];
+    mode === 'deposit'
+      ? ['booked', 'processing', 'collected', 'delivered']
+      : mode === 'postage'
+      ? ['paid', 'booked', 'processing', 'collected', 'at_hub']
+      : ['paid', 'booked', 'processing', 'collected', 'delivered'];
+
+  const handleConfirmJubahBooking = async () => {
+    if (!jubahAdminSelected) return;
+    const b = jubahAdminSelected;
+    setConfirmingBooking(true);
+
+    if (b.payment_mode === 'deposit' && b.balance_proof_url && !b.balance_paid) {
+      // State 2: confirm balance payment for deposit
+      const { data } = await supabase.rpc('mark_jubah_balance_paid', { p_booking_id: b.id });
+      if (data?.success) {
+        const updated = { ...b, balance_paid: true };
+        setJubahAdminSelected(updated);
+        setJubahBookings(prev => prev.map(r => r.id === b.id ? updated : r));
+        showToast('Balance confirmed ✓');
+      } else {
+        showToast('Failed to confirm balance.');
+      }
+    } else if (b.status === 'ordered' && b.payment_path) {
+      // State 1: confirm initial payment — deposit→booked, others→paid
+      const newStatus = b.payment_mode === 'deposit' ? 'booked' : 'paid';
+      const { data, error } = await supabase.rpc('update_jubah_booking_status', {
+        p_booking_id: b.id,
+        p_status:     newStatus,
+      });
+      if (error || !data?.success) {
+        showToast('Failed to confirm payment.');
+      } else {
+        const updated = { ...b, status: newStatus };
+        setJubahAdminSelected(updated);
+        setJubahBookings(prev => prev.map(r => r.id === b.id ? updated : r));
+        showToast(b.payment_mode === 'deposit' ? 'Deposit confirmed → Booked ✓' : 'Payment confirmed → Paid ✓');
+      }
+    }
+    setConfirmingBooking(false);
+  };
 
   const handleAdminAdvanceStatus = async () => {
     if (!jubahAdminSelected) return;
@@ -3350,7 +3393,8 @@ export const AdminHome: React.FC = () => {
                           <th className="py-2 pr-4 whitespace-nowrap">Name</th>
                           <th className="py-2 pr-4 whitespace-nowrap">Remark</th>
                           <th className="py-2 pr-4 whitespace-nowrap">Mode</th>
-                          <th className="py-2 whitespace-nowrap">Status</th>
+                          <th className="py-2 pr-4 whitespace-nowrap">Status</th>
+                          <th className="py-2 whitespace-nowrap">Confirm</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -3378,12 +3422,22 @@ export const AdminHome: React.FC = () => {
                                   {b.payment_mode === 'deposit' ? 'Deposit' : b.payment_mode === 'postage' ? 'Postage' : 'Pickup'}
                                 </span>
                               </td>
-                              <td className="py-2.5 whitespace-nowrap">
+                              <td className="py-2.5 pr-4 whitespace-nowrap">
                                 <span className={`font-extrabold px-2 py-0.5 rounded-full border text-xs ${
                                   isPaid ? 'bg-emerald-50 border-emerald-100 text-emerald-700' : 'bg-amber-50 border-amber-100 text-amber-700'
                                 }`}>
                                   {isPaid ? 'Paid' : 'Booked'}
                                 </span>
+                              </td>
+                              <td className="py-2.5 whitespace-nowrap">
+                                {(() => {
+                                  const confirmed = b.payment_mode === 'deposit'
+                                    ? b.balance_paid
+                                    : b.status !== 'ordered';
+                                  return (
+                                    <CheckCircle2 className={`w-4 h-4 ${confirmed ? 'text-emerald-500' : 'text-slate-200'}`} />
+                                  );
+                                })()}
                               </td>
                             </tr>
                           );
@@ -3622,12 +3676,12 @@ export const AdminHome: React.FC = () => {
                     <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest">Documents</h3>
 
                     {([
-                      { label: 'Combined PDF',  url: b.drive_docs_url },
-                      { label: 'Payment Proof', url: b.drive_payment_url },
-                      { label: 'OSCAR',         url: b.drive_oscar_url },
-                      { label: 'SKPG',          url: b.drive_skpg_url },
-                      { label: 'Konvo Slip',    url: b.drive_konvo_url },
-                      { label: 'IC Copy',       url: b.drive_ic_url },
+                      { label: 'Combined PDF',  url: b.docs_path },
+                      { label: 'Payment Proof', url: b.payment_path },
+                      { label: 'OSCAR',         url: b.oscar_path },
+                      { label: 'SKPG',          url: b.skpg_path },
+                      { label: 'Konvo Slip',    url: b.konvo_path },
+                      { label: 'IC Copy',       url: b.ic_path },
                       ...(b.payment_mode === 'deposit' ? [{ label: 'Balance Proof', url: b.balance_proof_url }] : []),
                     ] as { label: string; url: string | null }[]).map(({ label, url }) => (
                       <div key={label} className="flex items-center justify-between gap-3 border-b border-slate-50 pb-3 last:border-0 last:pb-0">
@@ -3668,19 +3722,37 @@ export const AdminHome: React.FC = () => {
                     ))}
                   </div>
 
-                  {/* Delete booking */}
-                  <button
-                    onClick={async () => {
-                      setJubahAdminView('list');
-                      setJubahAdminSelected(null);
-                      await handleDeleteJubahBooking(b);
-                    }}
-                    disabled={deletingBooking === b.id}
-                    className="w-full flex items-center justify-center gap-2 border border-red-200 text-red-500 hover:bg-red-50 active:scale-[0.98] font-extrabold py-3 rounded-2xl text-sm transition disabled:opacity-50">
-                    {deletingBooking === b.id
-                      ? <span className="w-4 h-4 rounded-full border-2 border-red-300 border-t-red-500 animate-spin" />
-                      : <><Trash2 className="w-4 h-4" /> Delete Booking</>}
-                  </button>
+                  {/* Confirm + Delete row */}
+                  {(() => {
+                    const canConfirmPayment = b.status === 'ordered' && !!b.payment_path;
+                    const canConfirmBalance = b.payment_mode === 'deposit' && !!b.balance_proof_url && !b.balance_paid;
+                    const confirmActive = canConfirmPayment || canConfirmBalance;
+                    const confirmLabel  = canConfirmBalance ? 'Confirm Balance' : 'Confirm Payment';
+                    return (
+                      <div className="flex gap-3">
+                        <button
+                          onClick={handleConfirmJubahBooking}
+                          disabled={!confirmActive || confirmingBooking}
+                          className="flex-1 flex items-center justify-center gap-2 bg-emerald-50 border border-emerald-200 text-emerald-600 hover:bg-emerald-100 active:scale-[0.98] font-extrabold py-3 rounded-2xl text-sm transition disabled:opacity-40 disabled:cursor-not-allowed">
+                          {confirmingBooking
+                            ? <span className="w-4 h-4 rounded-full border-2 border-emerald-300 border-t-emerald-600 animate-spin" />
+                            : <><BadgeCheck className="w-4 h-4" />{confirmLabel}</>}
+                        </button>
+                        <button
+                          onClick={async () => {
+                            setJubahAdminView('list');
+                            setJubahAdminSelected(null);
+                            await handleDeleteJubahBooking(b);
+                          }}
+                          disabled={deletingBooking === b.id}
+                          className="flex-1 flex items-center justify-center gap-2 border border-red-200 text-red-500 hover:bg-red-50 active:scale-[0.98] font-extrabold py-3 rounded-2xl text-sm transition disabled:opacity-50">
+                          {deletingBooking === b.id
+                            ? <span className="w-4 h-4 rounded-full border-2 border-red-300 border-t-red-500 animate-spin" />
+                            : <><Trash2 className="w-4 h-4" />Delete</>}
+                        </button>
+                      </div>
+                    );
+                  })()}
                 </div>
               );
             })()}
