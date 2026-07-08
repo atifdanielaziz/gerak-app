@@ -7,7 +7,7 @@ import {
   UserPlus, Mail, X, Send, ChevronDown, ChevronUp, ChevronRight, Megaphone, Plus, PlusCircle, MinusCircle, Minus, ToggleLeft, ToggleRight,
   FileImage, ShieldCheck, ShieldOff, ExternalLink, KeyRound,
   CalendarDays, Upload, Eye, Phone, ArrowLeftRight, Pencil, GraduationCap,
-  ChevronLeft, Download, MoreVertical, Copy, Check, TrendingUp, Bike, Settings, Info, Save,
+  ChevronLeft, Download, MoreVertical, Copy, Check, TrendingUp, Bike, Settings, Info,
 } from 'lucide-react';
 import { WaBtn, WaIcon, toWa } from '../lib/whatsapp';
 import { MonthDrumPicker, EarningsCard, computeEarnings, type EarningsRow } from '../components/EarningsCard';
@@ -996,8 +996,6 @@ export const AdminHome: React.FC = () => {
   const bannerFileRef = useRef<HTMLInputElement>(null);
   const [sampleDocsPage,   setSampleDocsPage]   = useState<{ key: string; label: string } | null>(null);
   const [docFields,        setDocFields]        = useState<DocField[]>([]);
-  const [docFieldDrafts,   setDocFieldDrafts]   = useState<Record<string, string>>({});
-  const [docSaved,         setDocSaved]         = useState(false);
   const [sampleUrls,       setSampleUrls]       = useState<Record<string, string>>({});
   const [sampleLoaded,     setSampleLoaded]     = useState<Record<string, boolean>>({});
   const [sampleUploading,  setSampleUploading]  = useState<string | null>(null);
@@ -1312,54 +1310,6 @@ export const AdminHome: React.FC = () => {
     load();
   }, [sampleDocsPage]);
 
-  const handleAddDocField = async () => {
-    if (!sampleDocsPage) return;
-    const maxPos = docFields.length > 0 ? Math.max(...docFields.map(f => f.position)) : 0;
-    const { data } = await supabase
-      .from('jubah_doc_fields')
-      .insert({ university_key: sampleDocsPage.key, label: 'New Document', hint: null, position: maxPos + 1 })
-      .select('id, label, hint, position')
-      .single();
-    if (!data) return;
-    setDocFields(prev => [...prev, data]);
-    setDocFieldDrafts(prev => ({ ...prev, [data.id]: data.label }));
-    const { data: u } = supabase.storage.from(BANNER_BUCKET).getPublicUrl(`samples/${sampleDocsPage.key}/${data.id}.jpg`);
-    setSampleUrls(prev => ({ ...prev, [data.id]: `${u.publicUrl}?t=${Date.now()}` }));
-  };
-
-  const handleDocLabelBlur = async (id: string) => {
-    const label = (docFieldDrafts[id] ?? '').trim();
-    if (!label) return;
-    await supabase.from('jubah_doc_fields').update({ label }).eq('id', id);
-    setDocFields(prev => prev.map(f => f.id === id ? { ...f, label } : f));
-  };
-
-  const handleSaveAllDocFields = async () => {
-    const pending = Object.entries(docFieldDrafts).filter(([, label]) => label.trim());
-    if (pending.length > 0) {
-      await Promise.all(
-        pending.map(([id, label]) =>
-          supabase.from('jubah_doc_fields').update({ label: label.trim() }).eq('id', id)
-        )
-      );
-      setDocFields(prev => prev.map(f => {
-        const draft = docFieldDrafts[f.id];
-        return draft !== undefined ? { ...f, label: draft.trim() } : f;
-      }));
-      setDocFieldDrafts({});
-    }
-    setDocSaved(true);
-    setTimeout(() => setDocSaved(false), 1200);
-  };
-
-  const handleRemoveDocField = async (id: string) => {
-    if (!sampleDocsPage) return;
-    await supabase.from('jubah_doc_fields').delete().eq('id', id);
-    await supabase.storage.from(BANNER_BUCKET).remove([`samples/${sampleDocsPage.key}/${id}.jpg`]);
-    setDocFields(prev => prev.filter(f => f.id !== id));
-    setDocFieldDrafts(prev => { const n = { ...prev }; delete n[id]; return n; });
-    setSampleLoaded(prev => { const n = { ...prev }; delete n[id]; return n; });
-  };
 
   const handleSampleUpload = async (file: File, fieldId: string) => {
     if (!sampleDocsPage) return;
@@ -2114,39 +2064,19 @@ export const AdminHome: React.FC = () => {
           <div className="mt-4 bg-white border border-slate-100 rounded-3xl p-5 shadow-sm flex flex-col gap-4"
             style={{ marginBottom: 'calc(6.5rem + env(safe-area-inset-bottom))' }}>
 
-            {/* Card header: back + title + add (+) */}
+            {/* Card header: back + title */}
             <div className="flex items-center gap-3">
               <button onClick={() => setSampleDocsPage(null)}
                 className="w-7 h-7 flex items-center justify-center rounded-xl bg-slate-100 text-slate-500 active:scale-90 transition shrink-0">
                 <ChevronLeft className="w-4 h-4" />
               </button>
               <h3 className="flex-1 text-xs font-black text-slate-400 uppercase tracking-widest">Upload Documents (Sample)</h3>
-              <button onClick={handleSaveAllDocFields}
-                className="w-7 h-7 flex items-center justify-center rounded-xl bg-emerald-50 text-emerald-500 active:scale-90 transition shrink-0">
-                {docSaved ? <Check className="w-4 h-4" /> : <Save className="w-4 h-4" />}
-              </button>
-              <button onClick={handleAddDocField}
-                className="w-7 h-7 flex items-center justify-center rounded-xl bg-blue-50 text-blue-500 active:scale-90 transition shrink-0">
-                <PlusCircle className="w-4 h-4" />
-              </button>
             </div>
 
-            {/* Dynamic doc fields */}
+            {/* Doc fields — upload sample image per field */}
             {docFields.map(field => (
               <div key={field.id} className="flex flex-col gap-1.5">
-                {/* Label row: red minus + editable input */}
-                <div className="flex items-center gap-2">
-                  <button onClick={() => handleRemoveDocField(field.id)}
-                    className="text-red-400 active:scale-90 transition shrink-0">
-                    <MinusCircle className="w-4 h-4" />
-                  </button>
-                  <input
-                    value={docFieldDrafts[field.id] ?? field.label}
-                    onChange={e => setDocFieldDrafts(prev => ({ ...prev, [field.id]: e.target.value }))}
-                    onBlur={() => handleDocLabelBlur(field.id)}
-                    className="flex-1 text-xs font-extrabold text-slate-600 uppercase tracking-wider bg-transparent border-b border-dashed border-slate-200 focus:border-blue-400 focus:outline-none py-0.5"
-                  />
-                </div>
+                <p className="text-xs font-extrabold text-slate-600 uppercase tracking-wider">{field.label}</p>
                 {/* Sample image upload */}
                 {sampleLoaded[field.id] ? (
                   <div className="flex items-center gap-3 bg-emerald-50 border border-emerald-100 rounded-xl p-2.5">
