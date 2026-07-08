@@ -3634,6 +3634,88 @@ export const AdminHome: React.FC = () => {
           {/* ── BANNER sub-tab ── */}
           {jubahSubTab === 'banner' && (
             <div className="flex flex-col gap-4">
+
+            {/* ── Sub-page: Upload Documents (Sample) ── */}
+            {sampleDocsPage ? (<>
+
+              {/* Back button + title — Sub-page Standard */}
+              <div className="mt-4 px-1 flex items-start gap-2">
+                <button
+                  onClick={() => setSampleDocsPage(null)}
+                  className="mt-0.5 w-7 h-7 flex items-center justify-center rounded-xl bg-slate-100 text-slate-500 active:scale-90 transition shrink-0">
+                  <ChevronLeft className="w-4 h-4" />
+                </button>
+                <div>
+                  <p className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest">Jubah · Sample Documents</p>
+                  <h2 className="text-xl font-black text-slate-800">{UNIV_SHORT[sampleDocsPage.key] ?? sampleDocsPage.key.toUpperCase()}</h2>
+                </div>
+              </div>
+
+              {/* Hidden file input */}
+              <input
+                type="file"
+                ref={sampleFileRef}
+                accept="image/jpeg,image/png,image/webp"
+                className="hidden"
+                onChange={async e => {
+                  const file = e.target.files?.[0];
+                  if (file && currentSampleDoc) await handleSampleUpload(file, currentSampleDoc);
+                  if (sampleFileRef.current) sampleFileRef.current.value = '';
+                }}
+              />
+
+              {/* Hidden image probes */}
+              <div className="hidden">
+                {SAMPLE_DOCS.map(({ key }) => sampleUrls[key] && (
+                  <img key={key} src={sampleUrls[key]}
+                    onLoad={() => setSampleLoaded(prev => ({ ...prev, [key]: true }))}
+                    onError={() => setSampleLoaded(prev => ({ ...prev, [key]: false }))}
+                  />
+                ))}
+              </div>
+
+              {/* Upload Documents (Sample) card */}
+              <div className="bg-white border border-slate-100 rounded-3xl p-5 shadow-sm flex flex-col gap-4"
+                style={{ marginBottom: 'calc(6.5rem + env(safe-area-inset-bottom))' }}>
+                <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest">Upload Documents (Sample)</h3>
+
+                {SAMPLE_DOCS.map(doc => (
+                  <div key={doc.key} className="flex flex-col gap-1">
+                    <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">{doc.label}</label>
+                    {'hint' in doc && <p className="text-xs text-slate-400 -mt-0.5">{doc.hint}</p>}
+                    {sampleLoaded[doc.key] ? (
+                      <div className="flex items-center gap-3 bg-emerald-50 border border-emerald-100 rounded-xl p-2.5">
+                        <img src={sampleUrls[doc.key]} alt={doc.label} className="w-10 h-10 rounded-lg object-cover shrink-0" />
+                        <div className="flex-1 min-w-0">
+                          <p className="text-xs font-bold text-emerald-700">Sample uploaded</p>
+                          <p className="text-xs text-emerald-500">Tap icons to replace or remove</p>
+                        </div>
+                        <button type="button"
+                          onClick={() => { setCurrentSampleDoc(doc.key); setTimeout(() => sampleFileRef.current?.click(), 0); }}
+                          className="text-slate-400 active:scale-90 transition shrink-0 p-1">
+                          <Upload className="w-4 h-4" />
+                        </button>
+                        <button type="button" onClick={() => handleSampleDelete(doc.key)}
+                          className="text-slate-400 active:scale-90 transition shrink-0 p-1">
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    ) : (
+                      <button type="button"
+                        disabled={sampleUploading === doc.key}
+                        onClick={() => { setCurrentSampleDoc(doc.key); setTimeout(() => sampleFileRef.current?.click(), 0); }}
+                        className="w-full border-2 border-dashed border-slate-200 rounded-xl py-3 flex items-center justify-center gap-2 text-slate-400 hover:border-blue-400 hover:text-blue-500 hover:bg-blue-50/30 transition cursor-pointer disabled:opacity-50">
+                        {sampleUploading === doc.key
+                          ? <span className="w-4 h-4 rounded-full border-2 border-slate-300 border-t-blue-500 animate-spin" />
+                          : <><Upload className="w-4 h-4" /><span className="text-xs font-bold">Upload {doc.label} Sample</span></>
+                        }
+                      </button>
+                    )}
+                  </div>
+                ))}
+              </div>
+
+            </>) : (<>
               <input
                 type="file"
                 ref={bannerFileRef}
@@ -3703,6 +3785,7 @@ export const AdminHome: React.FC = () => {
               ))}
             </div>
           )}
+          </>)}
         </div>
       )}
 
@@ -4365,103 +4448,6 @@ export const AdminHome: React.FC = () => {
                 : <><Send className="w-3.5 h-3.5" /> Yes, Send Invite</>}
             </button>
           </div>
-        </div>
-      </div>
-    )}
-
-    {/* ── Sample Docs Sub-page ── */}
-    {sampleDocsPage && (
-      <div className="absolute inset-0 z-[90] bg-slate-50 flex flex-col" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
-
-        {/* Scrollable content */}
-        <div className="flex-1 overflow-y-auto no-scrollbar px-4 flex flex-col gap-4"
-          style={{ paddingTop: '1rem', paddingBottom: 'calc(6.5rem + env(safe-area-inset-bottom))' }}>
-
-          {/* Header row — back button + title */}
-          <div className="flex items-start gap-2 px-1">
-            <button
-              onClick={() => setSampleDocsPage(null)}
-              className="mt-0.5 w-7 h-7 flex items-center justify-center rounded-xl bg-slate-100 text-slate-500 active:scale-90 transition shrink-0">
-              <ChevronLeft className="w-4 h-4" />
-            </button>
-            <div>
-              <p className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest">Jubah · Sample Documents</p>
-              <h2 className="text-sm font-black text-slate-800">{UNIV_SHORT[sampleDocsPage.key] ?? sampleDocsPage.key.toUpperCase()}</h2>
-            </div>
-          </div>
-
-          {/* Hidden file input */}
-          <input
-            type="file"
-            ref={sampleFileRef}
-            accept="image/jpeg,image/png,image/webp"
-            className="hidden"
-            onChange={async e => {
-              const file = e.target.files?.[0];
-              if (file && currentSampleDoc) await handleSampleUpload(file, currentSampleDoc);
-              if (sampleFileRef.current) sampleFileRef.current.value = '';
-            }}
-          />
-
-          {/* Hidden image probes — detect which samples already exist */}
-          <div className="hidden">
-            {SAMPLE_DOCS.map(({ key }) => sampleUrls[key] && (
-              <img key={key} src={sampleUrls[key]}
-                onLoad={() => setSampleLoaded(prev => ({ ...prev, [key]: true }))}
-                onError={() => setSampleLoaded(prev => ({ ...prev, [key]: false }))}
-              />
-            ))}
-          </div>
-
-          {/* Upload Documents (Sample) card */}
-          <div className="bg-white border border-slate-100 rounded-3xl p-5 shadow-sm flex flex-col gap-4">
-            <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest">Upload Documents (Sample)</h3>
-
-            {SAMPLE_DOCS.map(doc => (
-              <div key={doc.key} className="flex flex-col gap-1">
-                <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">{doc.label}</label>
-                {'hint' in doc && <p className="text-xs text-slate-400 -mt-0.5">{doc.hint}</p>}
-
-                {sampleLoaded[doc.key] ? (
-                  <div className="flex items-center gap-3 bg-emerald-50 border border-emerald-100 rounded-xl p-2.5">
-                    <img
-                      src={sampleUrls[doc.key]}
-                      alt={doc.label}
-                      className="w-10 h-10 rounded-lg object-cover shrink-0"
-                    />
-                    <div className="flex-1 min-w-0">
-                      <p className="text-xs font-bold text-emerald-700">Sample uploaded</p>
-                      <p className="text-xs text-emerald-500">Tap icons to replace or remove</p>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => { setCurrentSampleDoc(doc.key); setTimeout(() => sampleFileRef.current?.click(), 0); }}
-                      className="text-slate-400 active:scale-90 transition shrink-0 p-1">
-                      <Upload className="w-4 h-4" />
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => handleSampleDelete(doc.key)}
-                      className="text-slate-400 active:scale-90 transition shrink-0 p-1">
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  </div>
-                ) : (
-                  <button
-                    type="button"
-                    disabled={sampleUploading === doc.key}
-                    onClick={() => { setCurrentSampleDoc(doc.key); setTimeout(() => sampleFileRef.current?.click(), 0); }}
-                    className="w-full border-2 border-dashed border-slate-200 rounded-xl py-3 flex items-center justify-center gap-2 text-slate-400 hover:border-blue-400 hover:text-blue-500 hover:bg-blue-50/30 transition cursor-pointer disabled:opacity-50">
-                    {sampleUploading === doc.key
-                      ? <span className="w-4 h-4 rounded-full border-2 border-slate-300 border-t-blue-500 animate-spin" />
-                      : <><Upload className="w-4 h-4" /><span className="text-xs font-bold">Upload {doc.label} Sample</span></>
-                    }
-                  </button>
-                )}
-              </div>
-            ))}
-          </div>
-
         </div>
       </div>
     )}
