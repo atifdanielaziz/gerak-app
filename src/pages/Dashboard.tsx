@@ -231,7 +231,7 @@ export const Dashboard: React.FC = () => {
           className="bg-white border border-slate-100 rounded-3xl p-5 flex items-center justify-between cursor-pointer active:scale-[0.99] active:bg-slate-50 transition duration-200"
         >
           <div className="flex items-center gap-4">
-            <div className="w-12 h-12 rounded-2xl bg-slate-100 text-slate-500 flex items-center justify-center">
+            <div className="w-12 h-12 rounded-2xl bg-slate-100 text-slate-900 flex items-center justify-center">
               <Car className="w-6 h-6" />
             </div>
             <div>
@@ -252,7 +252,7 @@ export const Dashboard: React.FC = () => {
           }`}
         >
           <div className="flex items-center gap-4">
-            <div className="w-12 h-12 rounded-2xl bg-slate-100 text-slate-500 flex items-center justify-center">
+            <div className="w-12 h-12 rounded-2xl bg-slate-100 text-slate-900 flex items-center justify-center">
               <GraduationCap className="w-6 h-6" />
             </div>
             <div>
@@ -271,7 +271,7 @@ export const Dashboard: React.FC = () => {
         {/* C. Gerak Daily Module */}
         <div className="bg-white border border-slate-100 rounded-3xl p-5 flex items-center justify-between opacity-40 cursor-not-allowed">
           <div className="flex items-center gap-4">
-            <div className="w-12 h-12 rounded-2xl bg-slate-100 text-slate-500 flex items-center justify-center">
+            <div className="w-12 h-12 rounded-2xl bg-slate-100 text-slate-900 flex items-center justify-center">
               <ShoppingBasket className="w-6 h-6" />
             </div>
             <div>
@@ -290,8 +290,8 @@ export const Dashboard: React.FC = () => {
           className="bg-white border border-slate-100 rounded-3xl p-5 flex items-center justify-between cursor-pointer active:scale-[0.99] active:bg-slate-50 transition duration-200"
         >
           <div className="flex items-center gap-4">
-            <div className="w-12 h-12 rounded-2xl bg-slate-100 text-slate-500 flex items-center justify-center">
-              <KeyRound className="w-5 h-5" />
+            <div className="w-12 h-12 rounded-2xl bg-slate-100 text-slate-900 flex items-center justify-center">
+              <KeyRound className="w-6 h-6" />
             </div>
             <div>
               <h4 className="text-base font-semibold text-slate-800 m-0 leading-tight">Gerak Rental</h4>
@@ -309,7 +309,7 @@ export const Dashboard: React.FC = () => {
           className="bg-white border border-slate-100 rounded-3xl p-5 flex items-center justify-between cursor-pointer active:scale-[0.99] active:bg-slate-50 transition duration-200"
         >
           <div className="flex items-center gap-4">
-            <div className="w-12 h-12 rounded-2xl bg-slate-100 text-slate-500 flex items-center justify-center">
+            <div className="w-12 h-12 rounded-2xl bg-slate-100 text-slate-900 flex items-center justify-center">
               <Truck className="w-6 h-6" />
             </div>
             <div>

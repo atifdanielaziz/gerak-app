@@ -20,24 +20,15 @@ export const Header: React.FC = () => {
   if (!user.isLoggedIn) {
     return (
       <header
-        className="sticky top-0 z-40 bg-white border-b border-slate-100 px-4 py-3 flex items-center gap-1 shadow-sm"
+        className="sticky top-0 z-40 bg-white px-4 py-3 flex items-center gap-2"
         style={{ paddingTop: 'calc(1rem + env(safe-area-inset-top))' }}
       >
-        <button
-          onClick={() => setCurrentPage('login')}
-          className="w-10 h-10 flex items-center justify-center rounded-xl hover:bg-slate-100 active:scale-90 transition text-slate-600 mr-0.5"
-          aria-label="Back to login"
-        >
-          <ChevronLeft className="w-5 h-5" />
-        </button>
-        <div className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-lg bg-white shadow-sm border border-slate-100 flex items-center justify-center shrink-0">
-            <span style={{ fontFamily: 'Inter, sans-serif', fontSize: '1.3rem', color: '#0F172A', lineHeight: 1, fontWeight: 900 }}>g</span>
-          </div>
-          <h1 className="text-lg tracking-tight text-slate-800 m-0 leading-none" style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700 }}>
-            ger<span style={{ color: '#EF4444' }}>a</span>k
-          </h1>
+        <div className="w-8 h-8 rounded-lg bg-white border border-slate-100 flex items-center justify-center shrink-0">
+          <span style={{ fontFamily: 'Inter, sans-serif', fontSize: '1.3rem', color: '#0F172A', lineHeight: 1, fontWeight: 900 }}>g</span>
         </div>
+        <h1 className="text-lg tracking-tight text-slate-800 m-0 leading-none" style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700 }}>
+          ger<span style={{ color: '#EF4444' }}>a</span>k
+        </h1>
       </header>
     );
   }
@@ -47,7 +38,7 @@ export const Header: React.FC = () => {
   return (
     <>
       <header
-        className="sticky top-0 z-40 bg-white border-b border-slate-100 px-4 py-3 flex items-center justify-between shadow-sm"
+        className="sticky top-0 z-40 bg-white px-4 py-3 flex items-center justify-between"
         style={{ paddingTop: 'calc(1rem + env(safe-area-inset-top))' }}
       >
         {/* Left: Back button + Branding */}
