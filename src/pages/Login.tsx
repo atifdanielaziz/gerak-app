@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
 import { supabase } from '../lib/supabase';
 import { consumeSessionExpiredMessage } from '../lib/idleSession';
@@ -42,29 +42,29 @@ export const Login: React.FC = () => {
   };
 
   return (
-    <div className="flex-1 bg-slate-50 flex flex-col justify-between p-6 select-none animate-fade-in h-full">
+    <div className="flex-1 bg-white flex flex-col justify-between p-6 select-none animate-fade-in h-full">
       {/* Branding */}
       <div className="flex flex-col items-center text-center mt-6">
         <div
-          className="w-14 h-14 rounded-2xl bg-white shadow-lg shadow-primary/10 mb-3 animate-float flex items-center justify-center"
+          className="w-14 h-14 rounded-2xl bg-white border border-slate-100 mb-3 animate-float flex items-center justify-center"
         >
           <span style={{ fontFamily: 'Inter, sans-serif', fontSize: '2.4rem', color: '#0F172A', lineHeight: 1, fontWeight: 900 }}>g</span>
         </div>
         <h2 className="text-2xl font-normal text-slate-800 tracking-tight font-heading m-0">
           Sign In to <span style={{ fontFamily: 'Inter, sans-serif', fontSize: '2rem', lineHeight: 1, fontWeight: 700 }}>ger<span style={{ color: '#EF4444' }}>a</span>k</span>
         </h2>
-        <p className="text-slate-400 text-xs mt-1 font-semibold">
+        <p className="text-slate-400 text-xs mt-1 font-normal">
           Smart University Service Platform
         </p>
       </div>
 
       {/* Form */}
-      <div className="w-full bg-white rounded-3xl p-6 border border-slate-100 shadow-md">
+      <div className="w-full bg-white rounded-3xl p-6 border border-slate-100">
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
 
           {/* Email */}
           <div className="flex flex-col gap-1">
-            <label className="text-xs font-bold text-slate-500 uppercase tracking-wider pl-1">
+            <label className="text-xs font-semibold text-slate-400 pl-1">
               Email Address
             </label>
             <div className="relative">
@@ -76,7 +76,7 @@ export const Login: React.FC = () => {
                 inputMode="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value.trim())}
-                className="w-full bg-slate-50 border border-slate-200 rounded-xl py-3 pl-10 pr-4 text-sm text-slate-700 focus:outline-none focus:border-primary focus:bg-white transition"
+                className="w-full bg-white border border-slate-100 rounded-xl py-3 pl-10 pr-4 text-sm text-slate-700 focus:outline-none focus:border-primary focus:bg-white transition"
                 placeholder="smartcampus@gmail.com"
                 autoCapitalize="none"
                 autoCorrect="off"
@@ -89,7 +89,7 @@ export const Login: React.FC = () => {
 
           {/* Password */}
           <div className="flex flex-col gap-1">
-            <label className="text-xs font-bold text-slate-500 uppercase tracking-wider pl-1">
+            <label className="text-xs font-semibold text-slate-400 pl-1">
               Password
             </label>
             <div className="relative">
@@ -100,7 +100,7 @@ export const Login: React.FC = () => {
                 type={showPassword ? 'text' : 'password'}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full bg-slate-50 border border-slate-200 rounded-xl py-3 pl-10 pr-10 text-sm text-slate-700 focus:outline-none focus:border-primary focus:bg-white transition"
+                className="w-full bg-white border border-slate-100 rounded-xl py-3 pl-10 pr-10 text-sm text-slate-700 focus:outline-none focus:border-primary focus:bg-white transition"
                 placeholder="••••••••"
                 autoCapitalize="none"
                 autoCorrect="off"
@@ -120,7 +120,7 @@ export const Login: React.FC = () => {
 
           {/* Error */}
           {error && (
-            <div className="bg-danger/10 border border-danger/20 rounded-xl p-3 text-xs text-danger font-bold text-center">
+            <div className="bg-danger/10 border border-danger/20 rounded-xl p-3 text-xs text-danger font-semibold text-center">
               {error}
             </div>
           )}
@@ -129,7 +129,7 @@ export const Login: React.FC = () => {
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-primary hover:bg-primary-hover active:scale-[0.99] disabled:bg-slate-200 disabled:active:scale-100 text-white font-extrabold py-3.5 rounded-xl shadow-lg shadow-primary/20 transition flex items-center justify-center gap-2 mt-2"
+            className="w-full bg-primary hover:bg-primary-hover active:scale-[0.99] disabled:bg-slate-200 disabled:active:scale-100 text-white font-semibold py-3.5 rounded-xl transition flex items-center justify-center gap-2 mt-2"
           >
             {loading ? (
               <span className="w-5 h-5 rounded-full border-3 border-white border-t-transparent animate-spin" />
@@ -148,13 +148,13 @@ export const Login: React.FC = () => {
         <div className="w-full flex flex-col gap-2 -mt-2">
           <button
             onClick={() => setCurrentPage('jubah')}
-            className="w-full flex items-center justify-center gap-2 bg-blue-50 border border-blue-100 text-blue-600 font-extrabold text-xs py-3 rounded-2xl active:scale-[0.98] transition"
+            className="w-full flex items-center justify-center gap-2 bg-blue-50 border border-blue-100 text-blue-600 font-semibold text-xs py-3 rounded-2xl active:scale-[0.98] transition"
           >
             <GraduationCap className="w-4 h-4" /> Book Jubah Delivery as Guest
           </button>
           <button
             onClick={() => setCurrentPage('track-jubah')}
-            className="w-full flex items-center justify-center gap-2 bg-slate-50 border border-slate-200 text-slate-500 font-extrabold text-xs py-3 rounded-2xl active:scale-[0.98] transition"
+            className="w-full flex items-center justify-center gap-2 bg-white border border-slate-100 text-slate-500 font-semibold text-xs py-3 rounded-2xl active:scale-[0.98] transition"
           >
             <PackageSearch className="w-4 h-4" /> Track My Jubah Order
           </button>
@@ -173,7 +173,7 @@ export const Login: React.FC = () => {
           <span className="text-xs text-slate-400 font-semibold">New student on campus? </span>
           <button
             onClick={() => setCurrentPage('register')}
-            className="text-xs text-primary font-bold hover:underline active:scale-95 transition"
+            className="text-xs text-primary font-semibold hover:underline active:scale-95 transition"
           >
             Create Gerak Account
           </button>

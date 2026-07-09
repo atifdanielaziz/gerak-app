@@ -249,8 +249,8 @@ export const Dashboard: React.FC = () => {
         {/* B. Jubah Delivery Module */}
         <div
           onClick={() => jubahActive ? setCurrentPage('jubah') : null}
-          className={`group relative bg-white border border-slate-100 rounded-3xl p-5 flex items-center justify-between shadow-sm transition duration-200 ${
-            jubahActive ? 'cursor-pointer active:scale-[0.99] active:shadow-md' : 'opacity-40 cursor-not-allowed'
+          className={`group relative bg-white border border-slate-100 rounded-3xl p-5 flex items-center justify-between transition duration-200 ${
+            jubahActive ? 'cursor-pointer active:scale-[0.99]' : 'opacity-40 cursor-not-allowed'
           }`}
         >
           <div className={`absolute left-0 top-6 bottom-6 w-1 rounded-r-lg transition duration-300 ${jubahActive ? 'bg-blue-500 group-active:scale-y-110' : 'bg-slate-300'}`} />

@@ -1,4 +1,4 @@
-﻿import React, { useEffect } from 'react';
+import React, { useEffect } from 'react';
 import { useApp } from '../context/AppContext';
 import type { NotificationItem } from '../context/AppContext';
 import { BellRing, Check, Info, Car, GraduationCap, HelpCircle } from 'lucide-react';
@@ -39,18 +39,18 @@ export const NotificationsPage: React.FC = () => {
   };
 
   return (
-    <div className="flex-grow bg-slate-50/50 overflow-y-auto no-scrollbar pb-4 px-5 animate-fade-in flex flex-col gap-5">
-      
+    <div className="flex-grow bg-white overflow-y-auto no-scrollbar pb-4 px-5 animate-fade-in flex flex-col gap-5">
+
       {/* Page Header */}
       <div className="mt-4 flex items-center justify-between pl-1">
-        <h2 className="text-base font-black text-slate-800 flex items-center gap-2 m-0">
+        <h2 className="text-base font-bold text-slate-800 flex items-center gap-2 m-0">
           <BellRing className="w-5 h-5 text-primary" />
           Campus Inbox
         </h2>
-        
-        <button 
+
+        <button
           onClick={markAllNotificationsRead}
-          className="text-xs text-primary font-bold flex items-center gap-1 hover:underline p-1 active:scale-95 transition"
+          className="text-xs text-primary font-semibold flex items-center gap-1 hover:underline p-1 active:scale-95 transition"
         >
           <Check className="w-3.5 h-3.5" />
           Mark All Read
@@ -58,26 +58,26 @@ export const NotificationsPage: React.FC = () => {
       </div>
 
       {/* Notifications List */}
-      <div className="bg-white border border-slate-100 rounded-3xl p-5 shadow-sm flex flex-col gap-1">
+      <div className="bg-white border border-slate-100 rounded-3xl p-5 flex flex-col gap-1">
         {notifications.length === 0 ? (
           <div className="text-center py-12 flex flex-col items-center justify-center gap-3">
             <div className="w-12 h-12 bg-slate-50 border border-slate-100 rounded-full flex items-center justify-center text-slate-300">
               <BellRing className="w-6 h-6" />
             </div>
-            <p className="text-xs text-slate-400 italic font-semibold">
+            <p className="text-xs text-slate-400 italic font-normal">
               No campus notifications. Your inbox is clean!
             </p>
           </div>
         ) : (
           notifications.map((notif) => (
-            <div 
-              key={notif.id} 
+            <div
+              key={notif.id}
               className={`flex items-start gap-4 p-3 rounded-2xl transition hover:bg-slate-50 border border-transparent ${
                 !notif.isRead ? 'bg-primary-light/40 border-primary/5' : ''
               }`}
             >
               {/* Icon Bubble */}
-              <div className={`w-8 h-8 rounded-xl border flex items-center justify-center shrink-0 ${getIconBg(notif.type)} shadow-xs`}>
+              <div className={`w-8 h-8 rounded-xl border flex items-center justify-center shrink-0 ${getIconBg(notif.type)}`}>
                 {getIcon(notif.type)}
               </div>
 
@@ -85,13 +85,13 @@ export const NotificationsPage: React.FC = () => {
               <div className="flex-1 min-w-0">
                 <div className="flex justify-between items-start gap-2">
                   <h4 className={`text-xs text-slate-800 m-0 leading-tight ${
-                    !notif.isRead ? 'font-black' : 'font-bold'
+                    !notif.isRead ? 'font-semibold' : 'font-semibold'
                   }`}>
                     {notif.title}
                   </h4>
-                  <span className="text-[8px] text-slate-400 font-bold whitespace-nowrap">{notif.time}</span>
+                  <span className="text-[8px] text-slate-400 font-normal whitespace-nowrap">{notif.time}</span>
                 </div>
-                <p className="text-xs text-slate-500 leading-normal font-semibold mt-1">
+                <p className="text-xs text-slate-500 leading-normal font-normal mt-1">
                   {notif.description}
                 </p>
               </div>
@@ -110,7 +110,7 @@ export const NotificationsPage: React.FC = () => {
         <Info className="w-5 h-5 text-emerald-600 shrink-0" />
         <div>
           <h4 className="text-xs font-bold leading-tight m-0">Dynamic Inbox Feeds</h4>
-          <p className="text-xs text-emerald-700 leading-normal mt-1 font-semibold">
+          <p className="text-xs text-emerald-700 leading-normal mt-1 font-normal">
             Track and history logs update automatically. Verify alerts here for driver coordinates and gown shipments.
           </p>
         </div>

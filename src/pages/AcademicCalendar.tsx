@@ -151,7 +151,7 @@ const CFG: Record<EventType, { bar: string; bg: string; text: string; badge: str
   registration: { bar: 'bg-blue-500',    bg: 'bg-blue-50 border-blue-100',      text: 'text-blue-700',    badge: 'bg-blue-100 text-blue-600',    icon: GraduationCap, label: 'Registration' },
   orientation:  { bar: 'bg-purple-500',  bg: 'bg-purple-50 border-purple-100',  text: 'text-purple-700',  badge: 'bg-purple-100 text-purple-600', icon: BookOpen,      label: 'Orientation'  },
   lectures:     { bar: 'bg-emerald-500', bg: 'bg-emerald-50 border-emerald-100',text: 'text-emerald-700', badge: 'bg-emerald-100 text-emerald-600',icon: BookOpen,     label: 'Lectures'     },
-  break:        { bar: 'bg-slate-400',   bg: 'bg-slate-50 border-slate-200',    text: 'text-slate-600',   badge: 'bg-slate-100 text-slate-500',   icon: Coffee,        label: 'Break'        },
+  break:        { bar: 'bg-slate-400',   bg: 'bg-white border-slate-100',       text: 'text-slate-600',   badge: 'bg-slate-100 text-slate-500',   icon: Coffee,        label: 'Break'        },
   study:        { bar: 'bg-amber-500',   bg: 'bg-amber-50 border-amber-100',    text: 'text-amber-700',   badge: 'bg-amber-100 text-amber-600',   icon: Clock,         label: 'Study Week'   },
   exam:         { bar: 'bg-red-500',     bg: 'bg-red-50 border-red-100',        text: 'text-red-700',     badge: 'bg-red-100 text-red-600',       icon: AlertCircle,   label: 'Examination'  },
 };
@@ -163,7 +163,7 @@ const CAL_BG: Record<EventType, string> = {
   lectures:     'bg-emerald-100 text-emerald-800',
   break:        'bg-slate-200 text-slate-500',
   study:        'bg-amber-100 text-amber-800',
-  exam:         'bg-red-500 text-white font-extrabold',
+  exam:         'bg-red-500 text-white font-semibold',
 };
 
 const toDateStr = (d: Date) => d.toISOString().split('T')[0];
@@ -260,15 +260,15 @@ export const AcademicCalendar: React.FC = () => {
   const todayStr = toDateStr(new Date());
 
   return (
-    <div className="flex flex-col h-full bg-slate-50 overflow-y-auto no-scrollbar pb-4">
+    <div className="flex flex-col h-full bg-white overflow-y-auto no-scrollbar pb-4">
 
       {/* ── CALENDAR ── */}
-      <div className="bg-white border-b border-slate-100 shadow-sm">
+      <div className="bg-white border-b border-slate-100">
 
         {/* Year label */}
         <div className="px-4 pt-3 pb-1 flex items-center justify-between">
-          <p className="text-xs font-extrabold text-slate-400 uppercase tracking-widest">UMPSA Academic Calendar</p>
-          <span className="text-xs font-extrabold text-primary bg-primary/10 px-2 py-0.5 rounded-full">
+          <p className="text-sm font-bold text-slate-700">UMPSA Academic Calendar</p>
+          <span className="text-xs font-semibold text-primary bg-primary/10 px-2 py-0.5 rounded-full">
             {calYear ?? '2026/2027'}
           </span>
         </div>
@@ -279,7 +279,7 @@ export const AcademicCalendar: React.FC = () => {
             className="w-8 h-8 rounded-xl bg-slate-50 flex items-center justify-center text-slate-400 active:scale-90 transition">
             <ChevronLeft className="w-4 h-4" />
           </button>
-          <p className="text-sm font-extrabold text-slate-700">{monthLabel()}</p>
+          <p className="text-sm font-semibold text-slate-700">{monthLabel()}</p>
           <button onClick={nextMonth}
             className="w-8 h-8 rounded-xl bg-slate-50 flex items-center justify-center text-slate-400 active:scale-90 transition">
             <ChevronRight className="w-4 h-4" />
@@ -289,7 +289,7 @@ export const AcademicCalendar: React.FC = () => {
         {/* Day labels */}
         <div className="grid grid-cols-7 px-3 mb-1">
           {DAYS.map(d => (
-            <div key={d} className="text-center text-xs font-extrabold text-slate-400">{d}</div>
+            <div key={d} className="text-center text-xs font-semibold text-slate-400">{d}</div>
           ))}
         </div>
 
@@ -304,7 +304,7 @@ export const AcademicCalendar: React.FC = () => {
 
             return (
               <div key={dateStr}
-                className={`aspect-square flex flex-col items-center justify-center rounded-xl text-xs font-bold relative mx-0.5 my-0.5 transition ${cellCls} ${
+                className={`aspect-square flex flex-col items-center justify-center rounded-xl text-xs font-normal relative mx-0.5 my-0.5 transition ${cellCls} ${
                   isToday ? 'ring-2 ring-offset-1 ring-primary' : ''
                 }`}>
                 {parseInt(dateStr.split('-')[2])}
@@ -319,7 +319,7 @@ export const AcademicCalendar: React.FC = () => {
         {/* Legend */}
         <div className="flex flex-wrap gap-x-3 gap-y-1 px-4 pb-3">
           {(Object.keys(CFG) as EventType[]).map(t => (
-            <span key={t} className="flex items-center gap-1 text-xs font-bold text-slate-500">
+            <span key={t} className="flex items-center gap-1 text-xs font-normal text-slate-500">
               <span className={`w-2.5 h-2.5 rounded-sm ${CFG[t].bar}`} />
               {CFG[t].label}
             </span>
@@ -338,9 +338,9 @@ export const AcademicCalendar: React.FC = () => {
         <div className="flex gap-2 px-4 pt-3 pb-2 overflow-x-auto no-scrollbar">
           {SEMESTERS.map(s => (
             <button key={s.id} onClick={() => setActiveSem(s.id)}
-              className={`shrink-0 px-4 py-1.5 rounded-2xl text-xs font-extrabold border transition active:scale-95 ${
+              className={`shrink-0 px-4 py-1.5 rounded-2xl text-xs font-semibold border transition active:scale-95 ${
                 activeSem === s.id
-                  ? `${s.bg} text-white border-transparent shadow-sm`
+                  ? `${s.bg} text-white border-transparent`
                   : 'bg-white text-slate-500 border-slate-100'
               }`}>
               {s.short}
@@ -349,35 +349,35 @@ export const AcademicCalendar: React.FC = () => {
         </div>
 
         <div className="px-4 flex flex-col gap-4 pb-4">
-          <p className="text-xs font-extrabold text-slate-400 uppercase tracking-widest">{semester.label}</p>
+          <p className="text-sm font-bold text-slate-700">{semester.label}</p>
 
           {semester.events.map((ev, i) => {
             const cfg = CFG[ev.type];
             const Icon = cfg.icon;
             return (
-              <div key={i} className={`bg-white border rounded-2xl overflow-hidden shadow-sm ${cfg.bg}`}>
+              <div key={i} className={`bg-white border rounded-2xl overflow-hidden ${cfg.bg}`}>
                 <div className="flex">
                   <div className={`w-1 shrink-0 ${cfg.bar}`} />
                   <div className="flex-1 px-4 py-3 flex flex-col gap-1.5">
                     <div className="flex items-center justify-between gap-2">
-                      <span className={`flex items-center gap-1 text-xs font-extrabold uppercase tracking-wider ${cfg.text}`}>
+                      <span className={`flex items-center gap-1 text-xs font-semibold ${cfg.text}`}>
                         <Icon className="w-3 h-3" />
                         {cfg.label}
                       </span>
                       {ev.duration && (
-                        <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${cfg.badge}`}>
+                        <span className={`text-xs font-normal px-2 py-0.5 rounded-full ${cfg.badge}`}>
                           {ev.duration}
                         </span>
                       )}
                     </div>
-                    <p className="text-xs font-extrabold text-slate-800 leading-snug">{ev.title}</p>
-                    <p className="text-xs font-bold text-slate-500">{ev.date}</p>
+                    <p className="text-xs font-semibold text-slate-800 leading-snug">{ev.title}</p>
+                    <p className="text-xs font-normal text-slate-500">{ev.date}</p>
                     {ev.notes && (
                       <div className="mt-0.5 flex flex-col gap-1">
                         {ev.notes.map((note, j) => (
                           <div key={j} className="flex items-start gap-1.5">
                             <span className="w-1 h-1 rounded-full bg-slate-300 mt-1.5 shrink-0" />
-                            <p className="text-xs text-slate-400 font-semibold leading-tight">{note}</p>
+                            <p className="text-xs text-slate-400 font-normal leading-tight">{note}</p>
                           </div>
                         ))}
                       </div>
@@ -391,7 +391,7 @@ export const AcademicCalendar: React.FC = () => {
           {/* Disclaimer */}
           <div className="bg-amber-50 border border-amber-100 rounded-2xl px-4 py-3 flex gap-2 items-start">
             <AlertCircle className="w-3.5 h-3.5 text-amber-500 shrink-0 mt-0.5" />
-            <p className="text-xs text-amber-700 font-semibold leading-relaxed">
+            <p className="text-xs text-amber-700 font-normal leading-relaxed">
               Based on UMPSA Academic Calendar {calYear ?? '2026/2027'}. Subject to change — refer to official university announcements.
             </p>
           </div>

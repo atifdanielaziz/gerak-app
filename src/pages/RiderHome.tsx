@@ -207,7 +207,7 @@ export const RiderHome: React.FC = () => {
   if (!isAdminRole && user.docsStatus !== 'approved') {
     const bothUploaded = !!user.icUrl && !!user.licenseUrl;
     return (
-      <div className="flex-grow bg-slate-50 overflow-y-auto no-scrollbar pb-4 px-5 flex flex-col gap-5 animate-fade-in">
+      <div className="flex-grow bg-white overflow-y-auto no-scrollbar pb-4 px-5 flex flex-col gap-5 animate-fade-in">
         <div className="mt-6 flex flex-col items-center text-center gap-2">
           <div className={`w-16 h-16 rounded-full flex items-center justify-center border-2 ${
             user.docsStatus === 'rejected' ? 'bg-red-50 border-red-100' :
@@ -218,31 +218,31 @@ export const RiderHome: React.FC = () => {
              user.docsStatus === 'pending'  ? <ShieldCheck className="w-7 h-7 text-amber-400" /> :
              <ShieldCheck className="w-7 h-7 text-slate-300" />}
           </div>
-          <p className="text-sm font-black text-slate-800">
+          <p className="text-sm font-bold text-slate-800">
             {user.docsStatus === 'pending'  ? 'Documents Under Review' :
              user.docsStatus === 'rejected' ? 'Documents Rejected' :
              'Complete Verification'}
           </p>
-          <p className="text-xs text-slate-400 font-semibold leading-relaxed max-w-xs">
+          <p className="text-xs text-slate-400 font-normal leading-relaxed max-w-xs">
             {user.docsStatus === 'pending'  ? 'Your documents are being reviewed by admin. You will be notified once approved.' :
              user.docsStatus === 'rejected' ? `Reason: ${user.docsRejectReason || 'Please re-upload correct documents.'}` :
              'Upload your IC (MyKad) and Driving License to get verified as a Gerak Rider.'}
           </p>
         </div>
 
-        <div className="bg-white border border-slate-100 rounded-3xl p-5 shadow-sm flex flex-col gap-4">
-          <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest">Required Documents</h3>
+        <div className="bg-white border border-slate-100 rounded-3xl p-5 flex flex-col gap-4">
+          <h3 className="text-sm font-bold text-slate-700">Required Documents</h3>
 
           <div className="flex flex-col gap-2">
-            <label className="text-xs font-extrabold text-slate-500 uppercase tracking-wider">Identity Card (MyKad) *</label>
+            <label className="text-xs font-semibold text-slate-500">Identity Card (MyKad) *</label>
             <input ref={icDocRef} type="file" accept="image/*,.pdf" className="hidden" onChange={e => handleDocUpload(e, 'ic')} />
             {user.icUrl ? (
               <div className="flex items-center justify-between bg-emerald-50 border border-emerald-100 rounded-2xl px-4 py-3">
                 <div className="flex items-center gap-2">
                   <FileImage className="w-4 h-4 text-emerald-500" />
-                  <span className="text-xs font-extrabold text-emerald-700">IC Uploaded ✓</span>
+                  <span className="text-xs font-semibold text-emerald-700">IC Uploaded ✓</span>
                 </div>
-                <button onClick={() => icDocRef.current?.click()} className="text-xs font-extrabold text-slate-400 underline">
+                <button onClick={() => icDocRef.current?.click()} className="text-xs font-semibold text-slate-400 underline">
                   {uploadingDoc === 'ic' ? 'Uploading…' : 'Replace'}
                 </button>
               </div>
@@ -251,21 +251,21 @@ export const RiderHome: React.FC = () => {
                 className="w-full border-2 border-dashed border-slate-200 rounded-2xl py-4 flex items-center justify-center gap-2 text-slate-400 hover:border-primary hover:text-primary transition active:scale-95">
                 {uploadingDoc === 'ic'
                   ? <span className="w-4 h-4 rounded-full border-2 border-slate-300 border-t-primary animate-spin" />
-                  : <><Upload className="w-4 h-4" /><span className="text-xs font-bold">Upload IC (MyKad)</span></>}
+                  : <><Upload className="w-4 h-4" /><span className="text-xs font-semibold">Upload IC (MyKad)</span></>}
               </button>
             )}
           </div>
 
           <div className="flex flex-col gap-2">
-            <label className="text-xs font-extrabold text-slate-500 uppercase tracking-wider">Driving License *</label>
+            <label className="text-xs font-semibold text-slate-500">Driving License *</label>
             <input ref={licenseDocRef} type="file" accept="image/*,.pdf" className="hidden" onChange={e => handleDocUpload(e, 'license')} />
             {user.licenseUrl ? (
               <div className="flex items-center justify-between bg-emerald-50 border border-emerald-100 rounded-2xl px-4 py-3">
                 <div className="flex items-center gap-2">
                   <FileImage className="w-4 h-4 text-emerald-500" />
-                  <span className="text-xs font-extrabold text-emerald-700">License Uploaded ✓</span>
+                  <span className="text-xs font-semibold text-emerald-700">License Uploaded ✓</span>
                 </div>
-                <button onClick={() => licenseDocRef.current?.click()} className="text-xs font-extrabold text-slate-400 underline">
+                <button onClick={() => licenseDocRef.current?.click()} className="text-xs font-semibold text-slate-400 underline">
                   {uploadingDoc === 'license' ? 'Uploading…' : 'Replace'}
                 </button>
               </div>
@@ -274,22 +274,22 @@ export const RiderHome: React.FC = () => {
                 className="w-full border-2 border-dashed border-slate-200 rounded-2xl py-4 flex items-center justify-center gap-2 text-slate-400 hover:border-primary hover:text-primary transition active:scale-95">
                 {uploadingDoc === 'license'
                   ? <span className="w-4 h-4 rounded-full border-2 border-slate-300 border-t-primary animate-spin" />
-                  : <><Upload className="w-4 h-4" /><span className="text-xs font-bold">Upload Driving License</span></>}
+                  : <><Upload className="w-4 h-4" /><span className="text-xs font-semibold">Upload Driving License</span></>}
               </button>
             )}
           </div>
 
           {bothUploaded && user.docsStatus === 'none' && (
             <div className="bg-amber-50 border border-amber-100 rounded-2xl px-4 py-3 text-center">
-              <p className="text-xs font-extrabold text-amber-700">Documents submitted for review</p>
-              <p className="text-xs text-amber-500 font-semibold mt-0.5">Admin will verify your documents shortly.</p>
+              <p className="text-xs font-semibold text-amber-700">Documents submitted for review</p>
+              <p className="text-xs text-amber-500 font-normal mt-0.5">Admin will verify your documents shortly.</p>
             </div>
           )}
         </div>
 
-        <div className="bg-slate-50 border border-slate-100 rounded-2xl px-4 py-3">
-          <p className="text-xs text-slate-400 font-semibold text-center leading-relaxed">
-            Your Gerak ID: <span className="font-black text-slate-600">{user.gerakId}</span><br />
+        <div className="bg-white border border-slate-100 rounded-2xl px-4 py-3">
+          <p className="text-xs text-slate-400 font-normal text-center leading-relaxed">
+            Your Gerak ID: <span className="font-semibold text-slate-600">{user.gerakId}</span><br />
             Documents are reviewed within 24 hours.
           </p>
         </div>
@@ -300,19 +300,19 @@ export const RiderHome: React.FC = () => {
   // ── Gate 2: Monthly receipt (inactive) ───────────────────────────────────
   if (!isActive && !isAdminRole) {
     return (
-      <div className="flex-grow bg-slate-50 flex flex-col items-center justify-center px-8 gap-4 animate-fade-in">
+      <div className="flex-grow bg-white flex flex-col items-center justify-center px-8 gap-4 animate-fade-in">
         <div className="w-16 h-16 rounded-full bg-amber-50 border-2 border-amber-100 flex items-center justify-center">
           <ShoppingBasket className="w-7 h-7 text-amber-300" />
         </div>
         <div className="text-center">
-          <p className="text-sm font-black text-slate-800">Account Inactive</p>
-          <p className="text-xs text-slate-400 font-semibold mt-1 leading-relaxed">
+          <p className="text-sm font-bold text-slate-800">Account Inactive</p>
+          <p className="text-xs text-slate-400 font-normal mt-1 leading-relaxed">
             Pay your monthly fee and upload your receipt<br />in Profile to activate your Rider account.
           </p>
         </div>
         <div className="bg-amber-50 border border-amber-100 rounded-2xl px-4 py-3 text-center">
-          <p className="text-xs font-bold text-amber-400 uppercase tracking-wider">Gerak ID</p>
-          <p className="text-sm font-black text-amber-600 mt-0.5">{user.gerakId}</p>
+          <p className="text-xs font-semibold text-amber-400">Gerak ID</p>
+          <p className="text-sm font-semibold text-amber-600 mt-0.5">{user.gerakId}</p>
         </div>
       </div>
     );
@@ -327,7 +327,7 @@ export const RiderHome: React.FC = () => {
         </div>
       )}
 
-      <div className="flex-grow bg-slate-50 overflow-y-auto no-scrollbar pb-4 flex flex-col animate-fade-in">
+      <div className="flex-grow bg-white overflow-y-auto no-scrollbar pb-4 flex flex-col animate-fade-in">
 
         {/* Header */}
         <div className="px-4 pt-5 pb-3 flex items-center justify-between">
@@ -340,19 +340,19 @@ export const RiderHome: React.FC = () => {
             )}
             <div>
               <div className="flex items-center gap-2">
-                <h2 className="text-xl font-black text-slate-800 m-0">
+                <h2 className="text-xl font-bold text-slate-800 m-0">
                   {activeTab === 'jubah' && jubahView === 'card'    ? 'Job Details' :
                    activeTab === 'jubah' && jubahView === 'details' ? 'Customer Info' :
                    'Rider Hub'}
                 </h2>
                 {activeTab !== 'jubah' || jubahView === 'list' ? (
-                  <span className="flex items-center gap-1 bg-emerald-50 border border-emerald-100 text-emerald-600 text-xs font-extrabold px-2 py-0.5 rounded-full">
+                  <span className="flex items-center gap-1 bg-emerald-50 border border-emerald-100 text-emerald-600 text-xs font-semibold px-2 py-0.5 rounded-full">
                     <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
                     LIVE
                   </span>
                 ) : null}
               </div>
-              <p className="text-xs text-slate-400 font-semibold mt-0.5">
+              <p className="text-xs text-slate-400 font-normal mt-0.5">
                 {activeTab === 'jubah' && jubahView === 'card' && selectedJob
                   ? `${selectedJob.reference} · ${selectedJob.full_name}`
                   : activeTab === 'jubah' && jubahView === 'details' && selectedJob
@@ -372,7 +372,7 @@ export const RiderHome: React.FC = () => {
         {/* Tab Switcher — hide when in jubah sub-pages */}
         {(activeTab !== 'jubah' || jubahView === 'list') && (
           <div className="px-4 mb-4">
-            <div className="flex bg-white border border-slate-100 rounded-2xl p-1 gap-1 shadow-sm">
+            <div className="flex bg-white border border-slate-100 rounded-2xl p-1 gap-1">
               {([
                 { id: 'daily',    label: 'Daily Job',   icon: ShoppingBasket },
                 { id: 'jubah',    label: 'Jubah Job',   icon: GraduationCap },
@@ -382,8 +382,8 @@ export const RiderHome: React.FC = () => {
                 return (
                   <button key={tab.id}
                     onClick={() => { setActiveTab(tab.id); setJubahView('list'); setSelectedJob(null); }}
-                    className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-xs font-extrabold transition ${
-                      activeTab === tab.id ? 'bg-primary text-white shadow-sm' : 'text-slate-400'
+                    className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-xs font-semibold transition ${
+                      activeTab === tab.id ? 'bg-primary text-white' : 'text-slate-400'
                     }`}>
                     <Icon className="w-3.5 h-3.5" />
                     {tab.label}
@@ -400,8 +400,8 @@ export const RiderHome: React.FC = () => {
             <div className="w-16 h-16 rounded-3xl bg-violet-50 border border-violet-100 flex items-center justify-center">
               <ShoppingBasket className="w-7 h-7 text-violet-300" />
             </div>
-            <p className="text-sm font-black text-slate-700">No Daily Jobs Yet</p>
-            <p className="text-xs text-slate-400 font-semibold text-center leading-relaxed max-w-xs">
+            <p className="text-sm font-bold text-slate-700">No Daily Jobs Yet</p>
+            <p className="text-xs text-slate-400 font-normal text-center leading-relaxed max-w-xs">
               Gerak Daily job assignments will appear here. Stay active to receive jobs from customers.
             </p>
           </div>
@@ -413,8 +413,8 @@ export const RiderHome: React.FC = () => {
 
             {/* PAGE 1 — Assignment List */}
             {jubahView === 'list' && (
-              <div className="bg-white border border-slate-100 rounded-3xl p-5 shadow-sm flex flex-col gap-4">
-                <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest flex items-center justify-between">
+              <div className="bg-white border border-slate-100 rounded-3xl p-5 flex flex-col gap-4">
+                <h3 className="text-sm font-bold text-slate-700 flex items-center justify-between">
                   <span className="flex items-center gap-1.5"><GraduationCap className="w-4 h-4" /> My Assignments</span>
                   <span className="font-bold text-slate-300 normal-case tracking-normal">{jubahJobs.length} jobs</span>
                 </h3>
@@ -428,8 +428,8 @@ export const RiderHome: React.FC = () => {
                     <div className="w-14 h-14 rounded-3xl bg-blue-50 border border-blue-100 flex items-center justify-center">
                       <GraduationCap className="w-6 h-6 text-blue-300" />
                     </div>
-                    <p className="text-sm font-black text-slate-700">No Jubah Jobs Yet</p>
-                    <p className="text-xs text-slate-400 font-semibold text-center leading-relaxed max-w-xs">
+                    <p className="text-sm font-bold text-slate-700">No Jubah Jobs Yet</p>
+                    <p className="text-xs text-slate-400 font-normal text-center leading-relaxed max-w-xs">
                       Jubah delivery assignments from customers will appear here during convocation period.
                     </p>
                   </div>
@@ -437,7 +437,7 @@ export const RiderHome: React.FC = () => {
                   <div className="overflow-x-auto overflow-y-auto no-scrollbar max-h-[500px]">
                     <table className="min-w-full border-collapse text-left" style={{ minWidth: 360 }}>
                       <thead className="sticky top-0 bg-white">
-                        <tr className="text-xs font-extrabold text-slate-400 uppercase tracking-wider border-b border-slate-100">
+                        <tr className="text-xs font-semibold text-slate-400 border-b border-slate-100">
                           <th className="py-2 pr-4 whitespace-nowrap">Reference</th>
                           <th className="py-2 pr-4 whitespace-nowrap">Name</th>
                           <th className="py-2 pr-4 whitespace-nowrap">Remark</th>
@@ -451,10 +451,10 @@ export const RiderHome: React.FC = () => {
                             onClick={() => goToCard(job)}
                             className="border-b border-slate-50 text-xs hover:bg-slate-50 active:bg-slate-100 transition cursor-pointer">
                             <td className="py-2.5 pr-4 font-mono font-bold text-primary whitespace-nowrap">{job.reference}</td>
-                            <td className="py-2.5 pr-4 font-extrabold text-slate-800 whitespace-nowrap">{job.full_name}</td>
-                            <td className="py-2.5 pr-4 text-slate-500 font-semibold whitespace-nowrap">{job.remark}</td>
+                            <td className="py-2.5 pr-4 font-semibold text-slate-800 whitespace-nowrap">{job.full_name}</td>
+                            <td className="py-2.5 pr-4 text-slate-500 font-normal whitespace-nowrap">{job.remark}</td>
                             <td className="py-2.5 pr-4 whitespace-nowrap">
-                              <span className={`font-extrabold px-2 py-0.5 rounded-full border text-xs ${
+                              <span className={`font-semibold px-2 py-0.5 rounded-full border text-xs ${
                                 job.payment_mode === 'deposit' ? 'bg-amber-50 border-amber-100 text-amber-700' :
                                 job.payment_mode === 'postage' ? 'bg-blue-50 border-blue-100 text-blue-700' :
                                 'bg-slate-50 border-slate-200 text-slate-600'
@@ -463,7 +463,7 @@ export const RiderHome: React.FC = () => {
                               </span>
                             </td>
                             <td className="py-2.5 whitespace-nowrap">
-                              <span className={`font-extrabold px-2 py-0.5 rounded-full border text-xs ${STATUS_STYLE[job.status] ?? 'bg-slate-50 border-slate-200 text-slate-400'}`}>
+                              <span className={`font-semibold px-2 py-0.5 rounded-full border text-xs ${STATUS_STYLE[job.status] ?? 'bg-slate-50 border-slate-200 text-slate-400'}`}>
                                 {STATUS_LABEL[job.status] ?? job.status}
                               </span>
                             </td>
@@ -486,25 +486,25 @@ export const RiderHome: React.FC = () => {
                 <div className="flex flex-col gap-4">
 
                   {/* Status stepper card */}
-                  <div className="bg-white border border-slate-100 rounded-3xl p-5 shadow-sm flex flex-col gap-4">
+                  <div className="bg-white border border-slate-100 rounded-3xl p-5 flex flex-col gap-4">
 
                     {/* Customer summary */}
                     <div className="flex items-start justify-between gap-2">
                       <div>
-                        <p className="text-xs text-primary font-extrabold uppercase tracking-wider">{selectedJob.reference}</p>
-                        <h3 className="text-base font-black text-slate-800 mt-0.5">{selectedJob.full_name}</h3>
-                        <p className="text-xs text-slate-400 font-semibold mt-0.5">
+                        <p className="text-xs text-primary font-semibold">{selectedJob.reference}</p>
+                        <h3 className="text-base font-semibold text-slate-800 mt-0.5">{selectedJob.full_name}</h3>
+                        <p className="text-xs text-slate-400 font-normal mt-0.5">
                           {selectedJob.remark} · {selectedJob.faculty} · UMPSA {selectedJob.campus}
                         </p>
                       </div>
-                      <span className={`text-xs font-extrabold px-2.5 py-1 rounded-full border shrink-0 ${STATUS_STYLE[selectedJob.status] ?? ''}`}>
+                      <span className={`text-xs font-semibold px-2.5 py-1 rounded-full border shrink-0 ${STATUS_STYLE[selectedJob.status] ?? ''}`}>
                         {STATUS_LABEL[selectedJob.status] ?? selectedJob.status}
                       </span>
                     </div>
 
                     {/* HP + Mode */}
                     <div className="flex items-center gap-3">
-                      <div className="flex items-center gap-1.5 bg-slate-50 border border-slate-100 rounded-xl px-3 py-2 flex-1">
+                      <div className="flex items-center gap-1.5 bg-white border border-slate-100 rounded-xl px-3 py-2 flex-1">
                         <span className="text-xs font-semibold text-slate-600">{selectedJob.hp_number}</span>
                         <a href={`https://wa.me/${toWa(selectedJob.hp_number)}?text=${encodeURIComponent(
                           jubahWaMsg(selectedJob.full_name, selectedJob.status, selectedJob.reference, selectedJob.payment_mode, selectedJob.balance_paid, selectedJob.balance_due)
@@ -513,7 +513,7 @@ export const RiderHome: React.FC = () => {
                           <WaIcon className="w-4 h-4" />
                         </a>
                       </div>
-                      <span className={`text-xs font-extrabold px-3 py-2 rounded-xl border shrink-0 ${
+                      <span className={`text-xs font-semibold px-3 py-2 rounded-xl border shrink-0 ${
                         selectedJob.payment_mode === 'deposit' ? 'bg-amber-50 border-amber-100 text-amber-700' :
                         selectedJob.payment_mode === 'postage' ? 'bg-blue-50 border-blue-100 text-blue-700' :
                         'bg-slate-50 border-slate-200 text-slate-600'
@@ -527,7 +527,7 @@ export const RiderHome: React.FC = () => {
                       <div className="flex items-center gap-1">
                         {steps.map((step, i) => (
                           <React.Fragment key={step}>
-                            <div className={`w-5 h-5 rounded-full flex items-center justify-center shrink-0 text-[8px] font-extrabold border-2 transition ${
+                            <div className={`w-5 h-5 rounded-full flex items-center justify-center shrink-0 text-[8px] font-semibold border-2 transition ${
                               i < curStep  ? 'bg-primary border-primary text-white' :
                               i === curStep ? 'bg-white border-primary text-primary' :
                               'bg-white border-slate-200 text-slate-300'
@@ -542,7 +542,7 @@ export const RiderHome: React.FC = () => {
                       </div>
                       <div className="flex justify-between">
                         {steps.map(step => (
-                          <span key={step} className="text-[8px] font-extrabold text-slate-400 uppercase tracking-wide flex-1 text-center first:text-left last:text-right">
+                          <span key={step} className="text-[8px] font-semibold text-slate-400 flex-1 text-center first:text-left last:text-right">
                             {STATUS_LABEL[step]}
                           </span>
                         ))}
@@ -552,8 +552,8 @@ export const RiderHome: React.FC = () => {
                     {/* Delivery address (postage) */}
                     {selectedJob.payment_mode === 'postage' && selectedJob.delivery_address && (
                       <div className="bg-blue-50 border border-blue-100 rounded-xl p-3">
-                        <p className="text-[8px] font-extrabold text-blue-400 uppercase tracking-wider mb-1">Delivery Address</p>
-                        <p className="text-xs font-semibold text-blue-800 leading-relaxed">{selectedJob.delivery_address}</p>
+                        <p className="text-[8px] font-semibold text-blue-400 mb-1">Delivery Address</p>
+                        <p className="text-xs font-normal text-blue-800 leading-relaxed">{selectedJob.delivery_address}</p>
                       </div>
                     )}
 
@@ -565,7 +565,7 @@ export const RiderHome: React.FC = () => {
                         'bg-amber-50 border-amber-100'
                       }`}>
                         <div>
-                          <span className={`text-[8px] font-extrabold uppercase tracking-wider block ${
+                          <span className={`text-[8px] font-semibold block ${
                             selectedJob.balance_paid ? 'text-emerald-500' :
                             selectedJob.balance_proof_url ? 'text-violet-500' : 'text-amber-500'
                           }`}>
@@ -593,7 +593,7 @@ export const RiderHome: React.FC = () => {
                       <button
                         onClick={handleAdvanceStatus}
                         disabled={updatingStatus}
-                        className="w-full bg-primary hover:bg-primary-hover active:scale-[0.98] disabled:bg-slate-200 text-white font-extrabold py-3 rounded-2xl shadow-md transition flex items-center justify-center gap-2 text-sm"
+                        className="w-full bg-primary hover:bg-primary-hover active:scale-[0.98] disabled:bg-slate-200 text-white font-semibold py-3 rounded-2xl transition flex items-center justify-center gap-2 text-sm"
                       >
                         {updatingStatus
                           ? <span className="w-4 h-4 rounded-full border-2 border-white/40 border-t-white animate-spin" />
@@ -602,7 +602,7 @@ export const RiderHome: React.FC = () => {
                     )}
                     {isDone && selectedJob.status !== 'cancelled' && (
                       <div className="bg-emerald-50 border border-emerald-100 rounded-2xl px-4 py-3 text-center">
-                        <p className="text-xs font-extrabold text-emerald-700">✓ Job Complete</p>
+                        <p className="text-xs font-semibold text-emerald-700">✓ Job Complete</p>
                       </div>
                     )}
                   </div>
@@ -610,7 +610,7 @@ export const RiderHome: React.FC = () => {
                   {/* View Full Details button */}
                   <button
                     onClick={goToDetails}
-                    className="w-full bg-white border border-slate-200 text-slate-600 font-extrabold py-3 rounded-2xl text-sm transition hover:border-primary hover:text-primary active:scale-95"
+                    className="w-full bg-white border border-slate-200 text-slate-600 font-semibold py-3 rounded-2xl text-sm transition hover:border-primary hover:text-primary active:scale-95"
                   >
                     View Customer Details →
                   </button>
@@ -623,8 +623,8 @@ export const RiderHome: React.FC = () => {
               <div className="flex flex-col gap-4">
 
                 {/* Form fields card */}
-                <div className="bg-white border border-slate-100 rounded-3xl p-5 shadow-sm flex flex-col gap-4">
-                  <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest">Booking Information</h3>
+                <div className="bg-white border border-slate-100 rounded-3xl p-5 flex flex-col gap-4">
+                  <h3 className="text-sm font-bold text-slate-700">Booking Information</h3>
 
                   {([
                     { label: 'Full Name',        value: selectedJob.full_name },
@@ -643,15 +643,15 @@ export const RiderHome: React.FC = () => {
                     { label: 'Reference',         value: selectedJob.reference },
                   ] as { label: string; value: string }[]).map(({ label, value }) => (
                     <div key={label} className="flex flex-col gap-0.5 border-b border-slate-50 pb-3 last:border-0 last:pb-0">
-                      <span className="text-xs font-extrabold text-slate-400 uppercase tracking-wider">{label}</span>
+                      <span className="text-xs font-semibold text-slate-400 ">{label}</span>
                       <span className="text-sm font-bold text-slate-700 leading-relaxed">{value}</span>
                     </div>
                   ))}
                 </div>
 
                 {/* Documents download card */}
-                <div className="bg-white border border-slate-100 rounded-3xl p-5 shadow-sm flex flex-col gap-4">
-                  <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest">Documents</h3>
+                <div className="bg-white border border-slate-100 rounded-3xl p-5 flex flex-col gap-4">
+                  <h3 className="text-sm font-bold text-slate-700">Documents</h3>
 
                   {([
                     { label: 'Combined PDF',    url: selectedJob.drive_docs_url },

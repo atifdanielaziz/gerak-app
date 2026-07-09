@@ -202,7 +202,7 @@ const ProfileSheet: React.FC<{ u: ProfileUser; onClose: () => void }> = ({ u, on
 
   const Row = ({ label, value, children }: { label: string; value?: string | null; children?: React.ReactNode }) => (
     <div className="flex items-start justify-between py-2.5 border-b border-slate-50 last:border-0 gap-2">
-      <span className="text-xs font-extrabold text-slate-400 uppercase tracking-wider shrink-0 pt-0.5">{label}</span>
+      <span className="text-xs font-semibold text-slate-400 shrink-0 pt-0.5">{label}</span>
       <div className="text-right flex items-center gap-1.5 flex-wrap justify-end">
         {children ?? <span className={`text-xs font-semibold ${value ? 'text-slate-700' : 'text-slate-300'}`}>{value || '—'}</span>}
       </div>
@@ -226,7 +226,7 @@ const ProfileSheet: React.FC<{ u: ProfileUser; onClose: () => void }> = ({ u, on
 
         {/* Header */}
         <div className="flex items-center justify-between px-5 pt-2 pb-3 shrink-0">
-          <p className="text-xs font-extrabold text-slate-400 uppercase tracking-widest">Staff Profile</p>
+          <p className="text-sm font-bold text-slate-700">Staff Profile</p>
           <button onClick={onClose} className="w-7 h-7 flex items-center justify-center rounded-full bg-slate-100 text-slate-500 active:scale-90 transition">
             <X className="w-4 h-4" />
           </button>
@@ -236,14 +236,14 @@ const ProfileSheet: React.FC<{ u: ProfileUser; onClose: () => void }> = ({ u, on
 
           {/* Avatar + name */}
           <div className="flex flex-col items-center pb-5 gap-2">
-            <div className={`w-20 h-20 rounded-full flex items-center justify-center shadow-lg ${avatarBg}`}>
+            <div className={`w-20 h-20 rounded-full flex items-center justify-center ${avatarBg}`}>
               {u.role === 'driver' ? <Car className="w-9 h-9 text-white" /> :
                u.role === 'rider'  ? <Bike className="w-9 h-9 text-white" />  :
                <ShieldCheck className="w-9 h-9 text-white" />}
             </div>
             <div className="text-center">
               <p className="text-xl font-black text-slate-800">{u.name}</p>
-              <span className={`inline-flex items-center gap-1 mt-1 text-xs font-extrabold px-2.5 py-1 rounded-full border ${roleBadge}`}>
+              <span className={`inline-flex items-center gap-1 mt-1 text-xs font-semibold px-2.5 py-1 rounded-full border ${roleBadge}`}>
                 <ShieldCheck className="w-3 h-3" /> {u.role}
               </span>
             </div>
@@ -257,12 +257,12 @@ const ProfileSheet: React.FC<{ u: ProfileUser; onClose: () => void }> = ({ u, on
             <>
               {/* Identity */}
               <div className="bg-slate-50 border border-slate-100 rounded-2xl px-4 py-1 mb-3">
-                <Row label="Gerak ID"><span className="text-xs font-extrabold text-primary">{u.gerak_id}</span></Row>
+                <Row label="Gerak ID"><span className="text-xs font-semibold text-primary">{u.gerak_id}</span></Row>
                 <Row label="Campus" value={`UMPSA ${u.campus}`} />
                 <Row label="Matric No." value={merged.matric_no} />
                 <Row label="IC Number" value={merged.ic_number} />
                 <Row label="Status">
-                  <span className={`text-xs font-extrabold ${u.status === 'active' ? 'text-emerald-600' : 'text-red-500'}`}>{u.status}</span>
+                  <span className={`text-xs font-semibold ${u.status === 'active' ? 'text-emerald-600' : 'text-red-500'}`}>{u.status}</span>
                 </Row>
               </div>
 
@@ -286,7 +286,7 @@ const ProfileSheet: React.FC<{ u: ProfileUser; onClose: () => void }> = ({ u, on
                   <Row label="Vehicle" value={merged.vehicle} />
                   <Row label="Plate" value={merged.plate_number} />
                   <Row label="Receipt">
-                    <span className={`text-xs font-extrabold ${merged.fee_receipt_verified ? 'text-emerald-600' : 'text-amber-500'}`}>
+                    <span className={`text-xs font-semibold ${merged.fee_receipt_verified ? 'text-emerald-600' : 'text-amber-500'}`}>
                       {merged.fee_receipt_verified ? 'Verified ✓' : 'Pending'}
                     </span>
                   </Row>
@@ -297,7 +297,7 @@ const ProfileSheet: React.FC<{ u: ProfileUser; onClose: () => void }> = ({ u, on
               {isDriverOrRider && (
                 <div className="bg-slate-50 border border-slate-100 rounded-2xl px-4 py-1 mb-3">
                   <Row label="Docs Status">
-                    <span className={`text-xs font-extrabold capitalize ${
+                    <span className={`text-xs font-semibold capitalize ${
                       merged.docs_status === 'verified' ? 'text-emerald-600' :
                       merged.docs_status === 'rejected' ? 'text-red-500' :
                       merged.docs_status === 'pending'  ? 'text-amber-500' : 'text-slate-400'
@@ -306,7 +306,7 @@ const ProfileSheet: React.FC<{ u: ProfileUser; onClose: () => void }> = ({ u, on
                   <Row label="IC Photo">
                     {merged.ic_url
                       ? <a href={merged.ic_url} target="_blank" rel="noopener noreferrer"
-                          className="text-xs font-extrabold text-blue-600 bg-blue-50 border border-blue-100 px-2.5 py-1 rounded-lg active:scale-95 transition flex items-center gap-1">
+                          className="text-xs font-semibold text-blue-600 bg-blue-50 border border-blue-100 px-2.5 py-1 rounded-lg active:scale-95 transition flex items-center gap-1">
                           <ExternalLink className="w-3 h-3" /> View
                         </a>
                       : <span className="text-xs font-semibold text-slate-300">Not uploaded</span>}
@@ -314,7 +314,7 @@ const ProfileSheet: React.FC<{ u: ProfileUser; onClose: () => void }> = ({ u, on
                   <Row label="License">
                     {merged.license_url
                       ? <a href={merged.license_url} target="_blank" rel="noopener noreferrer"
-                          className="text-xs font-extrabold text-blue-600 bg-blue-50 border border-blue-100 px-2.5 py-1 rounded-lg active:scale-95 transition flex items-center gap-1">
+                          className="text-xs font-semibold text-blue-600 bg-blue-50 border border-blue-100 px-2.5 py-1 rounded-lg active:scale-95 transition flex items-center gap-1">
                           <ExternalLink className="w-3 h-3" /> View
                         </a>
                       : <span className="text-xs font-semibold text-slate-300">Not uploaded</span>}
@@ -329,7 +329,7 @@ const ProfileSheet: React.FC<{ u: ProfileUser; onClose: () => void }> = ({ u, on
         {u.phone && (
           <div className="px-4 pt-3 pb-6 flex gap-3 shrink-0 border-t border-slate-100">
             <a href={`tel:${u.phone}`}
-              className="flex-1 flex items-center justify-center gap-2 bg-slate-800 text-white font-extrabold text-xs py-3.5 rounded-2xl shadow-md active:scale-[0.98] transition">
+              className="flex-1 flex items-center justify-center gap-2 bg-slate-800 text-white font-semibold text-xs py-3.5 rounded-2xl active:scale-[0.98] transition">
               <Phone className="w-4 h-4" /> Call
             </a>
             <WaBtn phone={u.phone} variant="full" label="WhatsApp" />
@@ -391,7 +391,7 @@ const JubahRiderSheet: React.FC<{
       </div>
 
       <div className="flex items-center justify-between px-5 pt-2 pb-4 shrink-0">
-        <p className="text-xs font-extrabold text-slate-400 uppercase tracking-widest">Jubah Rider</p>
+        <p className="text-sm font-bold text-slate-700">Jubah Rider</p>
         <button
           onClick={onClose}
           className="w-7 h-7 flex items-center justify-center rounded-full bg-slate-100 text-slate-500 active:scale-90 transition"
@@ -408,7 +408,7 @@ const JubahRiderSheet: React.FC<{
           </div>
           <div className="text-center mt-1">
             <p className="text-xl font-black text-slate-800">{rider.name}</p>
-            <span className="inline-flex items-center gap-1 mt-1 text-xs font-extrabold px-2.5 py-1 rounded-full border bg-blue-50 border-blue-100 text-blue-600">
+            <span className="inline-flex items-center gap-1 mt-1 text-xs font-semibold px-2.5 py-1 rounded-full border bg-blue-50 border-blue-100 text-blue-600">
               <GraduationCap className="w-3 h-3" /> rider
             </span>
           </div>
@@ -441,7 +441,7 @@ const JubahRiderSheet: React.FC<{
             <div className="flex flex-col gap-1">
               {/* Label row: dynamic "Method" vs "Method 1" + icon buttons */}
               <div className="flex items-center justify-between">
-                <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">
+                <span className="text-xs font-semibold text-slate-400">
                   {(secondary.length > 0 || showAdd) ? 'Method 1' : 'Method'}
                 </span>
                 <div className="flex items-center gap-2">
@@ -483,7 +483,7 @@ const JubahRiderSheet: React.FC<{
             {/* METHOD 2+ — secondary (read-only) */}
             {secondary.map((a, i) => (
               <div key={a.id} className="flex flex-col gap-1">
-                <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">Method {i + 2}</span>
+                <span className="text-xs font-semibold text-slate-400">Method {i + 2}</span>
                 <div className="flex items-center gap-2">
                   {deleteMode && (
                     <button onClick={() => onDeleteAssignment(a.id)} className="text-red-500 active:scale-90 transition shrink-0">
@@ -500,7 +500,7 @@ const JubahRiderSheet: React.FC<{
             {/* New method input */}
             {showAdd && (
               <div className="flex flex-col gap-1">
-                <span className="text-[10px] font-extrabold text-indigo-400 uppercase tracking-wider">
+                <span className="text-xs font-semibold text-indigo-400">
                   Method {secondary.length + 2}
                 </span>
                 <div className="relative group">
@@ -529,7 +529,7 @@ const JubahRiderSheet: React.FC<{
 
             {/* DROP POINT 1 — primary (editable) */}
             <div className="flex flex-col gap-1">
-              <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">
+              <span className="text-xs font-semibold text-slate-400">
                 {(secondary.length > 0 || showAdd) ? 'Drop Point 1' : 'Drop Point'}
               </span>
               <div className="flex items-start gap-2">
@@ -540,7 +540,7 @@ const JubahRiderSheet: React.FC<{
                       <button
                         type="button"
                         onClick={() => setIsEditingDropPoint(v => !v)}
-                        className={`flex items-center gap-1 text-xs font-extrabold px-2 py-0.5 rounded-full border transition active:scale-95 ${
+                        className={`flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-full border transition active:scale-95 ${
                           isEditingDropPoint
                             ? 'bg-primary/10 border-primary/30 text-primary'
                             : 'bg-slate-100 border-slate-200 text-slate-500'
@@ -569,7 +569,7 @@ const JubahRiderSheet: React.FC<{
             {/* DROP POINT 2+ — secondary (read-only) */}
             {secondary.map((a, i) => (
               <div key={a.id} className="flex flex-col gap-1">
-                <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">Drop Point {i + 2}</span>
+                <span className="text-xs font-semibold text-slate-400">Drop Point {i + 2}</span>
                 <div className="flex items-center gap-2">
                   {deleteMode && <div className="w-4 shrink-0" />}
                   <div style={{ fontSize: '12px' }} className="flex-1 bg-slate-50 border border-slate-100 rounded-xl py-2.5 px-3 font-bold text-slate-600">
@@ -582,7 +582,7 @@ const JubahRiderSheet: React.FC<{
             {/* New drop point input */}
             {showAdd && (
               <div className="flex flex-col gap-1">
-                <span className="text-[10px] font-extrabold text-indigo-400 uppercase tracking-wider">
+                <span className="text-xs font-semibold text-indigo-400">
                   Drop Point {secondary.length + 2}
                 </span>
                 {addMethod !== 'postage' ? (
@@ -612,14 +612,14 @@ const JubahRiderSheet: React.FC<{
           <div className="flex gap-2">
             <button
               onClick={() => { setShowAdd(false); setAddDropPoint(''); setAddMethod('pickup'); }}
-              className="flex-1 bg-slate-100 text-slate-600 font-extrabold text-xs py-3.5 rounded-2xl active:scale-95 transition"
+              className="flex-1 bg-slate-100 text-slate-600 font-semibold text-xs py-3.5 rounded-2xl active:scale-95 transition"
             >
               Cancel
             </button>
             <button
               onClick={handleAdd}
               disabled={addSaving || (addMethod !== 'postage' && !addDropPoint.trim())}
-              className="flex-1 bg-indigo-600 text-white font-extrabold text-xs py-3.5 rounded-2xl shadow-md active:scale-[0.98] transition disabled:opacity-50 flex items-center justify-center gap-2"
+              className="flex-1 bg-indigo-600 text-white font-semibold text-xs py-3.5 rounded-2xl active:scale-[0.98] transition disabled:opacity-50 flex items-center justify-center gap-2"
             >
               {addSaving
                 ? <span className="w-4 h-4 rounded-full border-2 border-white border-t-transparent animate-spin" />
@@ -630,7 +630,7 @@ const JubahRiderSheet: React.FC<{
           <button
             onClick={() => { onSave(); setIsEditingDropPoint(false); }}
             disabled={saving || !method}
-            className="w-full bg-primary text-white font-extrabold text-xs py-3.5 rounded-2xl shadow-md active:scale-[0.98] transition disabled:opacity-50 flex items-center justify-center gap-2"
+            className="w-full bg-primary text-white font-semibold text-xs py-3.5 rounded-2xl active:scale-[0.98] transition disabled:opacity-50 flex items-center justify-center gap-2"
           >
             {saving
               ? <span className="w-4 h-4 rounded-full border-2 border-white border-t-transparent animate-spin" />
@@ -684,7 +684,7 @@ const UserCard: React.FC<{
               'text-slate-400'
             }`}>{u.role}</span>
             {u.status === 'inactive' && (
-              <span className="text-xs font-extrabold px-1.5 py-0.5 rounded-full bg-red-100 text-red-600 border border-red-200 uppercase shrink-0">
+              <span className="text-xs font-semibold px-1.5 py-0.5 rounded-full bg-red-100 text-red-600 border border-red-200 uppercase shrink-0">
                 Suspended
               </span>
             )}
@@ -711,13 +711,13 @@ const UserCard: React.FC<{
                 {u.role === 'driver' && onCapToggle && (
                   <>
                     <button onClick={() => { onCapToggle(u, !u.can_drive, u.can_rent ?? false); setShowMenu(false); }}
-                      className={`w-full flex items-center gap-3 px-4 py-3 text-left text-xs font-extrabold transition active:scale-95 ${u.can_drive ? 'bg-primary/5 text-primary' : 'text-slate-500 hover:bg-slate-50'}`}>
+                      className={`w-full flex items-center gap-3 px-4 py-3 text-left text-xs font-semibold transition active:scale-95 ${u.can_drive ? 'bg-primary/5 text-primary' : 'text-slate-500 hover:bg-slate-50'}`}>
                       <Car className="w-4 h-4 shrink-0" />
                       {u.can_drive ? 'Car ✓' : 'Car ✗'}
                       {togglingCap === u.id && <span className="ml-auto w-3 h-3 rounded-full border border-current border-t-transparent animate-spin" />}
                     </button>
                     <button onClick={() => { onCapToggle(u, u.can_drive ?? false, !u.can_rent); setShowMenu(false); }}
-                      className={`w-full flex items-center gap-3 px-4 py-3 text-left text-xs font-extrabold transition active:scale-95 ${u.can_rent ? 'bg-amber-50 text-amber-700' : 'text-slate-500 hover:bg-slate-50'}`}>
+                      className={`w-full flex items-center gap-3 px-4 py-3 text-left text-xs font-semibold transition active:scale-95 ${u.can_rent ? 'bg-amber-50 text-amber-700' : 'text-slate-500 hover:bg-slate-50'}`}>
                       <KeyRound className="w-4 h-4 shrink-0" />
                       {u.can_rent ? 'Rental ✓' : 'Rental ✗'}
                     </button>
@@ -728,13 +728,13 @@ const UserCard: React.FC<{
                 {u.role === 'rider' && onRiderCapToggle && (
                   <>
                     <button onClick={() => { onRiderCapToggle(u, !u.can_daily, u.can_robe ?? false); setShowMenu(false); }}
-                      className={`w-full flex items-center gap-3 px-4 py-3 text-left text-xs font-extrabold transition active:scale-95 ${u.can_daily ? 'bg-emerald-50 text-emerald-700' : 'text-slate-500 hover:bg-slate-50'}`}>
+                      className={`w-full flex items-center gap-3 px-4 py-3 text-left text-xs font-semibold transition active:scale-95 ${u.can_daily ? 'bg-emerald-50 text-emerald-700' : 'text-slate-500 hover:bg-slate-50'}`}>
                       <Bike className="w-4 h-4" />
                       {u.can_daily ? 'Daily ✓' : 'Daily ✗'}
                       {togglingCap === u.id && <span className="ml-auto w-3 h-3 rounded-full border border-current border-t-transparent animate-spin" />}
                     </button>
                     <button onClick={() => { onRiderCapToggle(u, u.can_daily ?? false, !u.can_robe); setShowMenu(false); }}
-                      className={`w-full flex items-center gap-3 px-4 py-3 text-left text-xs font-extrabold transition active:scale-95 ${u.can_robe ? 'bg-blue-50 text-blue-700' : 'text-slate-500 hover:bg-slate-50'}`}>
+                      className={`w-full flex items-center gap-3 px-4 py-3 text-left text-xs font-semibold transition active:scale-95 ${u.can_robe ? 'bg-blue-50 text-blue-700' : 'text-slate-500 hover:bg-slate-50'}`}>
                       <GraduationCap className="w-4 h-4" />
                       {u.can_robe ? 'Robe ✓' : 'Robe ✗'}
                     </button>
@@ -747,7 +747,7 @@ const UserCard: React.FC<{
                     <button key={c}
                       onClick={() => { if (u.campus !== c) onCampusChange(u, c); setShowMenu(false); }}
                       disabled={togglingCampus === u.id}
-                      className={`w-full flex items-center gap-3 px-4 py-3 text-left text-xs font-extrabold transition active:scale-95 disabled:opacity-40 ${u.campus === c ? 'bg-indigo-50 text-indigo-700' : 'text-slate-500 hover:bg-slate-50'}`}>
+                      className={`w-full flex items-center gap-3 px-4 py-3 text-left text-xs font-semibold transition active:scale-95 disabled:opacity-40 ${u.campus === c ? 'bg-indigo-50 text-indigo-700' : 'text-slate-500 hover:bg-slate-50'}`}>
                       <MapPin className="w-4 h-4 shrink-0" />
                       {c}
                       {u.campus === c && <span className="ml-auto text-[8px] bg-indigo-100 text-indigo-600 px-1.5 py-0.5 rounded-full">Active</span>}
@@ -759,7 +759,7 @@ const UserCard: React.FC<{
                 {/* Gate toggle */}
                 {isDriverOrRider && onGateToggle && canManage && (
                   <button onClick={() => { onGateToggle(u); setShowMenu(false); }}
-                    className={`w-full flex items-center gap-3 px-4 py-3 text-left text-xs font-extrabold transition active:scale-95 ${u.receipt_gate_exempt ? 'bg-violet-50 text-violet-700' : 'text-slate-500 hover:bg-slate-50'}`}>
+                    className={`w-full flex items-center gap-3 px-4 py-3 text-left text-xs font-semibold transition active:scale-95 ${u.receipt_gate_exempt ? 'bg-violet-50 text-violet-700' : 'text-slate-500 hover:bg-slate-50'}`}>
                     <ShieldCheck className="w-4 h-4 shrink-0" />
                     {u.receipt_gate_exempt ? 'Gate ✓' : 'Gate ✗'}
                     {togglingCap === u.id && <span className="ml-auto w-3 h-3 rounded-full border border-current border-t-transparent animate-spin" />}
@@ -769,14 +769,14 @@ const UserCard: React.FC<{
                 {/* Role toggle — superadmin only */}
                 {onRoleToggle && isDriverOrRider && (
                   <button onClick={() => { onRoleToggle(u, 'admin'); setShowMenu(false); }}
-                    className="w-full flex items-center gap-3 px-4 py-3 text-left text-xs font-extrabold text-indigo-600 hover:bg-indigo-50 transition active:scale-95">
+                    className="w-full flex items-center gap-3 px-4 py-3 text-left text-xs font-semibold text-indigo-600 hover:bg-indigo-50 transition active:scale-95">
                     <ShieldCheck className="w-4 h-4 shrink-0" />
                     Make Admin
                   </button>
                 )}
                 {onRoleToggle && u.role === 'admin' && (
                   <button onClick={() => { onRoleToggle(u, 'driver'); setShowMenu(false); }}
-                    className="w-full flex items-center gap-3 px-4 py-3 text-left text-xs font-extrabold text-red-500 hover:bg-red-50 transition active:scale-95">
+                    className="w-full flex items-center gap-3 px-4 py-3 text-left text-xs font-semibold text-red-500 hover:bg-red-50 transition active:scale-95">
                     <ShieldOff className="w-4 h-4 shrink-0" />
                     Remove Admin
                   </button>
@@ -803,7 +803,7 @@ const UserCard: React.FC<{
                     target="_blank"
                     rel="noopener noreferrer"
                     onClick={() => setShowMenu(false)}
-                    className="w-full flex items-center gap-3 px-4 py-3 text-left text-xs font-extrabold text-[#25D366] hover:bg-green-50 transition active:scale-95"
+                    className="w-full flex items-center gap-3 px-4 py-3 text-left text-xs font-semibold text-[#25D366] hover:bg-green-50 transition active:scale-95"
                   >
                     <WaIcon className="w-4 h-4 shrink-0" />
                   </a>
@@ -820,7 +820,7 @@ const UserCard: React.FC<{
           <button
             onClick={() => onToggle(u)}
             disabled={togglingStatus === u.id}
-            className={`flex-1 min-w-0 font-extrabold text-xs py-1.5 px-1 rounded-xl transition active:scale-95 disabled:opacity-50 flex items-center justify-center ${
+            className={`flex-1 min-w-0 font-semibold text-xs py-1.5 px-1 rounded-xl transition active:scale-95 disabled:opacity-50 flex items-center justify-center ${
               u.status === 'active'
                 ? 'bg-amber-50 border border-amber-200 text-amber-700'
                 : 'bg-emerald-50 border border-emerald-200 text-emerald-700'
@@ -833,7 +833,7 @@ const UserCard: React.FC<{
           <button
             onClick={() => onTerminate(u)}
             disabled={terminating === u.id}
-            className="flex-1 min-w-0 bg-red-50 border border-red-200 text-red-600 font-extrabold text-xs py-1.5 px-1 rounded-xl transition active:scale-95 disabled:opacity-50 flex items-center justify-center gap-0.5"
+            className="flex-1 min-w-0 bg-red-50 border border-red-200 text-red-600 font-semibold text-xs py-1.5 px-1 rounded-xl transition active:scale-95 disabled:opacity-50 flex items-center justify-center gap-0.5"
           >
             {terminating === u.id
               ? <span className="w-3 h-3 rounded-full border border-red-400 border-t-transparent animate-spin" />
@@ -1983,7 +1983,7 @@ export const AdminHome: React.FC = () => {
 
   return (
     <>
-    <div ref={mainScrollRef} className="flex-grow bg-slate-50/50 overflow-y-auto overflow-x-hidden no-scrollbar pb-4 px-4 animate-fade-in flex flex-col gap-4 touch-pan-y">
+    <div ref={mainScrollRef} className="flex-grow bg-white overflow-y-auto overflow-x-hidden no-scrollbar pb-4 px-4 animate-fade-in flex flex-col gap-4 touch-pan-y">
 
       {/* Toast */}
       {toast && (
@@ -2043,7 +2043,7 @@ export const AdminHome: React.FC = () => {
               onClick={e => e.stopPropagation()}>
               <div className="flex justify-center pt-3 pb-1"><div className="w-10 h-1 bg-slate-200 rounded-full" /></div>
               <div className="flex items-center justify-between px-5 pt-2 pb-4">
-                <p className="text-xs font-extrabold text-slate-400 uppercase tracking-widest">Representative</p>
+                <p className="text-sm font-bold text-slate-700">Representative</p>
                 <button onClick={() => setDirSheet(null)} className="w-7 h-7 flex items-center justify-center rounded-full bg-slate-100 text-slate-500 active:scale-90 transition">
                   <X className="w-4 h-4" />
                 </button>
@@ -2057,12 +2057,12 @@ export const AdminHome: React.FC = () => {
                     { label: 'I/C Number',           value: ic ?? '—' },
                   ].map(({ label, value }) => (
                     <div key={label} className="flex flex-col gap-0.5">
-                      <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">{label}</span>
+                      <span className="text-xs font-semibold text-slate-400">{label}</span>
                       <span className="font-bold text-slate-800">{value}</span>
                     </div>
                   ))}
                   <div className="flex flex-col gap-0.5">
-                    <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">H/P</span>
+                    <span className="text-xs font-semibold text-slate-400">H/P</span>
                     <div className="flex items-center gap-2">
                       <span className="font-bold text-slate-800">{dirSheet.phone || '—'}</span>
                       {dirSheet.phone && (
@@ -2103,7 +2103,7 @@ export const AdminHome: React.FC = () => {
           </div>
 
           {/* Upload Documents (Sample) card */}
-          <div className="mt-4 bg-white border border-slate-100 rounded-3xl p-5 shadow-sm flex flex-col gap-4"
+          <div className="mt-4 bg-white border border-slate-100 rounded-3xl p-5 flex flex-col gap-4"
             style={{ marginBottom: 'calc(6.5rem + env(safe-area-inset-bottom))' }}>
 
             {/* Card header: back + title */}
@@ -2112,13 +2112,13 @@ export const AdminHome: React.FC = () => {
                 className="w-7 h-7 flex items-center justify-center rounded-xl bg-slate-100 text-slate-500 active:scale-90 transition shrink-0">
                 <ChevronLeft className="w-4 h-4" />
               </button>
-              <h3 className="flex-1 text-xs font-black text-slate-400 uppercase tracking-widest">Upload Documents (Sample)</h3>
+              <h3 className="flex-1 text-sm font-bold text-slate-700">Upload Documents (Sample)</h3>
             </div>
 
             {/* Doc fields — upload sample image per field */}
             {docFields.map(field => (
               <div key={field.id} className="flex flex-col gap-1.5">
-                <p className="text-xs font-extrabold text-slate-600 uppercase tracking-wider">{field.label}</p>
+                <p className="text-xs font-semibold text-slate-600">{field.label}</p>
                 {/* Sample image upload */}
                 {sampleLoaded[field.id] ? (
                   <div className="flex items-center gap-3 bg-emerald-50 border border-emerald-100 rounded-xl p-2.5">
@@ -2162,7 +2162,7 @@ export const AdminHome: React.FC = () => {
           <div>
             <div className="flex items-center gap-2">
               <h2 className="text-xl font-black text-slate-800 m-0">Admin Panel</h2>
-              <span className="bg-primary/10 text-primary text-xs font-extrabold px-2 py-0.5 rounded-full uppercase tracking-wider">
+              <span className="bg-primary/10 text-primary text-xs font-semibold px-2 py-0.5 rounded-full uppercase tracking-wider">
                 {user.role}
               </span>
             </div>
@@ -2181,7 +2181,7 @@ export const AdminHome: React.FC = () => {
         </div>
 
         {/* Tab bar */}
-      <div className="flex bg-white border border-slate-100 rounded-2xl p-1 gap-1 shadow-sm overflow-x-auto no-scrollbar">
+      <div className="flex bg-white border border-slate-100 rounded-2xl p-1 gap-1 overflow-x-auto no-scrollbar">
         {([
           { id: 'orders',   label: 'Orders',    icon: BarChart3,       superadminOnly: false },
           { id: 'drivers',  label: 'Invite',    icon: Car,             superadminOnly: false },
@@ -2199,8 +2199,8 @@ export const AdminHome: React.FC = () => {
             <button key={tab.id}
               onMouseDown={(e) => e.preventDefault()}
               onClick={() => setActiveTab(tab.id)}
-              className={`shrink-0 px-4 py-2 rounded-xl text-xs font-extrabold transition flex items-center justify-center gap-1.5 ${
-                activeTab === tab.id ? 'bg-primary text-white shadow-sm' : 'text-slate-400'
+              className={`shrink-0 px-4 py-2 rounded-xl text-xs font-semibold transition flex items-center justify-center gap-1.5 ${
+                activeTab === tab.id ? 'bg-primary text-white' : 'text-slate-400'
               }`}
             >
               {tab.label}
@@ -2213,14 +2213,14 @@ export const AdminHome: React.FC = () => {
       {activeTab === 'drivers' && (
         <div className="flex flex-col gap-4">
           {/* Invite form */}
-          <div className="bg-white border border-slate-100 rounded-3xl p-5 shadow-sm flex flex-col gap-4">
-            <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest flex items-center gap-1.5">
+          <div className="bg-white border border-slate-100 rounded-3xl p-5 flex flex-col gap-4">
+            <h3 className="text-sm font-bold text-slate-700 flex items-center gap-1.5">
               <UserPlus className="w-4 h-4 text-primary" /> Invite Staff
             </h3>
 
             {/* Role selector */}
             <div>
-              <p className="text-xs font-extrabold text-slate-400 uppercase tracking-widest mb-2">Role</p>
+              <p className="text-sm font-bold text-slate-700 mb-2">Role</p>
               <div className="flex bg-slate-50 border border-slate-200 rounded-2xl p-1 gap-1">
                 {([
                   { id: 'driver', label: 'Driver', color: 'bg-primary text-white' },
@@ -2235,8 +2235,8 @@ export const AdminHome: React.FC = () => {
                       setInviteCanDaily(false);
                       setInviteCanRobe(false);
                     }}
-                    className={`flex-1 py-2 rounded-xl text-xs font-extrabold transition ${
-                      inviteRole === r.id ? r.color + ' shadow-sm' : 'text-slate-400'
+                    className={`flex-1 py-2 rounded-xl text-xs font-semibold transition ${
+                      inviteRole === r.id ? r.color : 'text-slate-400'
                     }`}>
                     {r.label}
                   </button>
@@ -2252,12 +2252,12 @@ export const AdminHome: React.FC = () => {
             {/* Campus picker — superadmin only; regular admin locked to their campus */}
             {isSuperAdmin ? (
               <div>
-                <p className="text-xs font-extrabold text-slate-400 uppercase tracking-widest mb-2">Campus</p>
+                <p className="text-sm font-bold text-slate-700 mb-2">Campus</p>
                 <div className="flex bg-slate-50 border border-slate-200 rounded-2xl p-1 gap-1">
                   {(['Gambang', 'Pekan'] as const).map(c => (
                     <button key={c} type="button" onClick={() => setInviteCampus(c)}
-                      className={`flex-1 py-2 rounded-xl text-xs font-extrabold transition ${
-                        inviteCampus === c ? 'bg-primary text-white shadow-sm' : 'text-slate-400'
+                      className={`flex-1 py-2 rounded-xl text-xs font-semibold transition ${
+                        inviteCampus === c ? 'bg-primary text-white' : 'text-slate-400'
                       }`}
                     >
                       {c}
@@ -2268,7 +2268,7 @@ export const AdminHome: React.FC = () => {
             ) : (
               <div className="flex items-center gap-2 bg-slate-50 border border-slate-200 rounded-2xl px-4 py-2.5">
                 <MapPin className="w-3.5 h-3.5 text-primary shrink-0" />
-                <p className="text-xs font-extrabold text-slate-700">UMPSA {adminCampus}</p>
+                <p className="text-xs font-semibold text-slate-700">UMPSA {adminCampus}</p>
                 <span className="text-xs font-bold text-slate-400 ml-auto">campus locked</span>
               </div>
             )}
@@ -2289,16 +2289,16 @@ export const AdminHome: React.FC = () => {
             {/* Capability toggles — driver */}
             {inviteRole === 'driver' && (
               <div>
-                <p className="text-xs font-extrabold text-slate-400 uppercase tracking-widest mb-2">Capabilities</p>
+                <p className="text-sm font-bold text-slate-700 mb-2">Capabilities</p>
                 <div className="flex gap-2">
                   <button type="button" onClick={() => setInviteCanDrive(v => !v)}
-                    className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl text-xs font-extrabold border transition active:scale-95 ${
+                    className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl text-xs font-semibold border transition active:scale-95 ${
                       inviteCanDrive ? 'bg-primary/10 border-primary/30 text-primary' : 'bg-slate-50 border-slate-200 text-slate-400'
                     }`}>
                     <Car className="w-3 h-3" /> Gerak Car {inviteCanDrive ? '✓' : '✗'}
                   </button>
                   <button type="button" onClick={() => setInviteCanRent(v => !v)}
-                    className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl text-xs font-extrabold border transition active:scale-95 ${
+                    className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl text-xs font-semibold border transition active:scale-95 ${
                       inviteCanRent ? 'bg-amber-50 border-amber-200 text-amber-700' : 'bg-slate-50 border-slate-200 text-slate-400'
                     }`}>
                     <KeyRound className="w-3 h-3" /> Rental {inviteCanRent ? '✓' : '✗'}
@@ -2310,16 +2310,16 @@ export const AdminHome: React.FC = () => {
             {/* Capability toggles — rider */}
             {inviteRole === 'rider' && (
               <div>
-                <p className="text-xs font-extrabold text-slate-400 uppercase tracking-widest mb-2">Capabilities</p>
+                <p className="text-sm font-bold text-slate-700 mb-2">Capabilities</p>
                 <div className="flex gap-2">
                   <button type="button" onClick={() => setInviteCanDaily(v => !v)}
-                    className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl text-xs font-extrabold border transition active:scale-95 ${
+                    className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl text-xs font-semibold border transition active:scale-95 ${
                       inviteCanDaily ? 'bg-emerald-50 border-emerald-200 text-emerald-700' : 'bg-slate-50 border-slate-200 text-slate-400'
                     }`}>
                     <Bike className="w-3.5 h-3.5" /> Daily {inviteCanDaily ? '✓' : '✗'}
                   </button>
                   <button type="button" onClick={() => setInviteCanRobe(v => !v)}
-                    className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl text-xs font-extrabold border transition active:scale-95 ${
+                    className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl text-xs font-semibold border transition active:scale-95 ${
                       inviteCanRobe ? 'bg-blue-50 border-blue-200 text-blue-700' : 'bg-slate-50 border-slate-200 text-slate-400'
                     }`}>
                     <GraduationCap className="w-3.5 h-3.5" /> Robe {inviteCanRobe ? '✓' : '✗'}
@@ -2335,15 +2335,15 @@ export const AdminHome: React.FC = () => {
                 setShowInviteConfirm(true);
               }}
               disabled={!inviteEmail.trim()}
-              className="flex items-center justify-center gap-2 bg-primary hover:bg-primary-hover text-white font-extrabold text-xs py-2.5 rounded-xl transition active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed shadow-md shadow-primary/20"
+              className="flex items-center justify-center gap-2 bg-primary hover:bg-primary-hover text-white font-semibold text-xs py-2.5 rounded-xl transition active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed shadow-md shadow-primary/20"
             >
               <Send className="w-3.5 h-3.5" /> Add Invite
             </button>
           </div>
 
           {/* Search */}
-          <div className="bg-white border border-slate-100 rounded-2xl p-3.5 shadow-sm flex flex-col gap-2">
-            <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest flex items-center gap-1.5">
+          <div className="bg-white border border-slate-100 rounded-2xl p-3.5 flex flex-col gap-2">
+            <h3 className="text-sm font-bold text-slate-700 flex items-center gap-1.5">
               <AlertCircle className="w-3.5 h-3.5" /> Find Staff
             </h3>
             <div className="flex gap-2">
@@ -2358,7 +2358,7 @@ export const AdminHome: React.FC = () => {
               <button
                 onClick={() => setInviteSearch('')}
                 disabled={!inviteSearch.trim()}
-                className="px-3.5 bg-primary text-white font-extrabold text-xs rounded-lg transition active:scale-95 disabled:opacity-50 flex items-center gap-1.5"
+                className="px-3.5 bg-primary text-white font-semibold text-xs rounded-lg transition active:scale-95 disabled:opacity-50 flex items-center gap-1.5"
               >
                 Clear
               </button>
@@ -2366,8 +2366,8 @@ export const AdminHome: React.FC = () => {
           </div>
 
           {/* Invite list */}
-          <div className="bg-white border border-slate-100 rounded-3xl p-5 shadow-sm flex flex-col gap-4">
-            <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest flex items-center gap-1.5">
+          <div className="bg-white border border-slate-100 rounded-3xl p-5 flex flex-col gap-4">
+            <h3 className="text-sm font-bold text-slate-700 flex items-center gap-1.5">
               <Mail className="w-4 h-4" /> Invite List
             </h3>
 
@@ -2388,17 +2388,17 @@ export const AdminHome: React.FC = () => {
                     <div className="flex-1 min-w-0">
                       <p className="text-xs font-bold text-slate-700 truncate">{inv.email}</p>
                       <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
-                        <span className="text-xs font-extrabold text-slate-400 uppercase">{inv.campus}</span>
+                        <span className="text-xs font-semibold text-slate-400 uppercase">{inv.campus}</span>
                         {inv.used
-                          ? <span className="text-xs font-extrabold text-emerald-600 bg-emerald-100 px-1.5 py-0.5 rounded-full">Registered</span>
-                          : <span className="text-xs font-extrabold text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded-full">Pending</span>}
+                          ? <span className="text-xs font-semibold text-emerald-600 bg-emerald-100 px-1.5 py-0.5 rounded-full">Registered</span>
+                          : <span className="text-xs font-semibold text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded-full">Pending</span>}
                         {inv.can_drive && (
-                          <span className="text-xs font-extrabold text-primary bg-primary/10 px-1.5 py-0.5 rounded-full flex items-center gap-0.5">
+                          <span className="text-xs font-semibold text-primary bg-primary/10 px-1.5 py-0.5 rounded-full flex items-center gap-0.5">
                             <Car className="w-2.5 h-2.5" /> Car
                           </span>
                         )}
                         {inv.can_rent && (
-                          <span className="text-xs font-extrabold text-amber-700 bg-amber-50 px-1.5 py-0.5 rounded-full flex items-center gap-0.5">
+                          <span className="text-xs font-semibold text-amber-700 bg-amber-50 px-1.5 py-0.5 rounded-full flex items-center gap-0.5">
                             <KeyRound className="w-2.5 h-2.5" /> Rental
                           </span>
                         )}
@@ -2425,8 +2425,8 @@ export const AdminHome: React.FC = () => {
         <div className="flex flex-col gap-4">
 
           {/* Admins & Drivers list */}
-          <div className="bg-white border border-slate-100 rounded-3xl p-5 shadow-sm flex flex-col gap-4">
-            <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest flex items-center gap-1.5">
+          <div className="bg-white border border-slate-100 rounded-3xl p-5 flex flex-col gap-4">
+            <h3 className="text-sm font-bold text-slate-700 flex items-center gap-1.5">
               <Users className="w-4 h-4" /> Admins and Staff
             </h3>
 
@@ -2443,7 +2443,7 @@ export const AdminHome: React.FC = () => {
               <button
                 onClick={() => setStaffSearch('')}
                 disabled={!staffSearch.trim()}
-                className="px-3.5 bg-primary text-white font-extrabold text-xs rounded-xl transition active:scale-95 disabled:opacity-50"
+                className="px-3.5 bg-primary text-white font-semibold text-xs rounded-xl transition active:scale-95 disabled:opacity-50"
               >
                 Clear
               </button>
@@ -2458,8 +2458,8 @@ export const AdminHome: React.FC = () => {
                 { id: 'admins',  label: 'Admins' },
               ] as const).map(f => (
                 <button key={f.id} onClick={() => setStaffFilter(f.id)}
-                  className={`shrink-0 px-4 py-1.5 rounded-xl text-xs font-extrabold transition ${
-                    staffFilter === f.id ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-400'
+                  className={`shrink-0 px-4 py-1.5 rounded-xl text-xs font-semibold transition ${
+                    staffFilter === f.id ? 'bg-white text-slate-800' : 'text-slate-400'
                   }`}>
                   {f.label}
                 </button>
@@ -2516,7 +2516,7 @@ export const AdminHome: React.FC = () => {
           {!showBannerForm && (
             <button
               onClick={() => setShowBannerForm(true)}
-              className="flex items-center justify-center gap-2 bg-primary hover:bg-primary-hover text-white font-extrabold text-xs py-3 rounded-2xl transition active:scale-95 shadow-md shadow-primary/20"
+              className="flex items-center justify-center gap-2 bg-primary hover:bg-primary-hover text-white font-semibold text-xs py-3 rounded-2xl transition active:scale-95 shadow-md shadow-primary/20"
             >
               <Plus className="w-4 h-4" /> New Banner
             </button>
@@ -2524,14 +2524,14 @@ export const AdminHome: React.FC = () => {
 
           {/* Banner form */}
           {showBannerForm && (
-            <div className="bg-white border border-slate-100 rounded-3xl p-5 shadow-sm flex flex-col gap-4">
-              <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest flex items-center gap-1.5">
+            <div className="bg-white border border-slate-100 rounded-3xl p-5 flex flex-col gap-4">
+              <h3 className="text-sm font-bold text-slate-700 flex items-center gap-1.5">
                 <Megaphone className="w-4 h-4 text-primary" /> New Announcement
               </h3>
 
               {/* Tag */}
               <div className="flex flex-col gap-1.5">
-                <label className="text-xs font-extrabold text-slate-500 uppercase tracking-widest">Tag (e.g. 🚗 Ride)</label>
+                <label className="text-xs font-semibold text-slate-400">Tag (e.g. 🚗 Ride)</label>
                 <input
                   type="text"
                   value={bannerTag}
@@ -2542,7 +2542,7 @@ export const AdminHome: React.FC = () => {
 
               {/* Title */}
               <div className="flex flex-col gap-1.5">
-                <label className="text-xs font-extrabold text-slate-500 uppercase tracking-widest">Title <span className="text-red-400">*</span></label>
+                <label className="text-xs font-semibold text-slate-400">Title <span className="text-red-400">*</span></label>
                 <input
                   type="text"
                   value={bannerTitle}
@@ -2554,7 +2554,7 @@ export const AdminHome: React.FC = () => {
 
               {/* Subtitle */}
               <div className="flex flex-col gap-1.5">
-                <label className="text-xs font-extrabold text-slate-500 uppercase tracking-widest">Subtitle</label>
+                <label className="text-xs font-semibold text-slate-400">Subtitle</label>
                 <textarea
                   value={bannerSubtitle}
                   onChange={e => setBannerSubtitle(e.target.value)}
@@ -2567,7 +2567,7 @@ export const AdminHome: React.FC = () => {
               {/* CTA label + page row */}
               <div className="flex gap-3">
                 <div className="flex-1 flex flex-col gap-1.5">
-                  <label className="text-xs font-extrabold text-slate-500 uppercase tracking-widest">CTA Label</label>
+                  <label className="text-xs font-semibold text-slate-400">CTA Label</label>
                   <input
                     type="text"
                     value={bannerCtaLabel}
@@ -2577,7 +2577,7 @@ export const AdminHome: React.FC = () => {
                   />
                 </div>
                 <div className="flex-1 flex flex-col gap-1.5">
-                  <label className="text-xs font-extrabold text-slate-500 uppercase tracking-widest">CTA Page</label>
+                  <label className="text-xs font-semibold text-slate-400">CTA Page</label>
                   <select
                     value={bannerCtaPage}
                     onChange={e => setBannerCtaPage(e.target.value)}
@@ -2592,7 +2592,7 @@ export const AdminHome: React.FC = () => {
 
               {/* Emoji */}
               <div className="flex flex-col gap-1.5">
-                <label className="text-xs font-extrabold text-slate-500 uppercase tracking-widest">Decorative Emoji</label>
+                <label className="text-xs font-semibold text-slate-400">Decorative Emoji</label>
                 <input
                   type="text"
                   value={bannerEmoji}
@@ -2604,14 +2604,14 @@ export const AdminHome: React.FC = () => {
 
               {/* Gradient picker */}
               <div className="flex flex-col gap-1.5">
-                <label className="text-xs font-extrabold text-slate-500 uppercase tracking-widest">Banner Colour</label>
+                <label className="text-xs font-semibold text-slate-400">Banner Colour</label>
                 <div className="flex flex-wrap gap-2">
                   {GRADIENTS.map(g => (
                     <button
                       key={g.value}
                       type="button"
                       onClick={() => setBannerGradient(g.value)}
-                      className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-extrabold text-white bg-gradient-to-r ${g.value} transition active:scale-95 ${
+                      className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold text-white bg-gradient-to-r ${g.value} transition active:scale-95 ${
                         bannerGradient === g.value ? 'ring-2 ring-offset-1 ring-slate-400' : ''
                       }`}
                     >
@@ -2625,7 +2625,7 @@ export const AdminHome: React.FC = () => {
               {bannerTitle && (
                 <div className={`relative overflow-hidden rounded-2xl bg-gradient-to-br ${bannerGradient} p-4 text-white`} style={{ height: 100 }}>
                   <div className="absolute -right-3 -top-3 text-6xl opacity-20 select-none pointer-events-none">{bannerEmoji}</div>
-                  <span className="self-start bg-white/20 border border-white/25 rounded-full px-2 py-0.5 text-xs font-extrabold tracking-wider">{bannerTag}</span>
+                  <span className="self-start bg-white/20 border border-white/25 rounded-full px-2 py-0.5 text-xs font-semibold tracking-wider">{bannerTag}</span>
                   <h4 className="text-sm font-black leading-tight mt-1 m-0">{bannerTitle}</h4>
                   {bannerSubtitle && <p className="text-xs text-white/80 font-medium leading-snug mt-0.5 line-clamp-2">{bannerSubtitle}</p>}
                 </div>
@@ -2635,14 +2635,14 @@ export const AdminHome: React.FC = () => {
               <div className="flex gap-2 pt-1">
                 <button
                   onClick={resetBannerForm}
-                  className="flex-1 bg-slate-100 text-slate-600 font-extrabold text-xs py-2.5 rounded-xl transition active:scale-95"
+                  className="flex-1 bg-slate-100 text-slate-600 font-semibold text-xs py-2.5 rounded-xl transition active:scale-95"
                 >
                   Cancel
                 </button>
                 <button
                   onClick={handleSaveBanner}
                   disabled={savingBanner || !bannerTitle.trim()}
-                  className="flex-1 bg-primary hover:bg-primary-hover text-white font-extrabold text-xs py-2.5 rounded-xl transition active:scale-95 disabled:opacity-50 flex items-center justify-center gap-1.5"
+                  className="flex-1 bg-primary hover:bg-primary-hover text-white font-semibold text-xs py-2.5 rounded-xl transition active:scale-95 disabled:opacity-50 flex items-center justify-center gap-1.5"
                 >
                   {savingBanner
                     ? <span className="w-4 h-4 rounded-full border-2 border-white border-t-transparent animate-spin" />
@@ -2653,8 +2653,8 @@ export const AdminHome: React.FC = () => {
           )}
 
           {/* Announcements list */}
-          <div className="bg-white border border-slate-100 rounded-3xl p-5 shadow-sm flex flex-col gap-4">
-            <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest flex items-center gap-1.5">
+          <div className="bg-white border border-slate-100 rounded-3xl p-5 flex flex-col gap-4">
+            <h3 className="text-sm font-bold text-slate-700 flex items-center gap-1.5">
               <Megaphone className="w-4 h-4" /> All Banners
             </h3>
 
@@ -2673,7 +2673,7 @@ export const AdminHome: React.FC = () => {
                     <div className={`relative overflow-hidden rounded-xl bg-gradient-to-br ${a.gradient} px-3 py-2 text-white flex items-center gap-2`}>
                       <span className="text-xl">{a.emoji}</span>
                       <div className="min-w-0">
-                        <p className="text-xs font-extrabold opacity-70 truncate">{a.tag}</p>
+                        <p className="text-xs font-semibold opacity-70 truncate">{a.tag}</p>
                         <p className="text-xs font-black truncate">{a.title}</p>
                       </div>
                     </div>
@@ -2688,7 +2688,7 @@ export const AdminHome: React.FC = () => {
                     <div className="flex gap-2">
                       <button
                         onClick={() => handleToggleBanner(a)}
-                        className={`flex-1 flex items-center justify-center gap-1.5 font-extrabold text-xs py-2 rounded-xl border transition active:scale-95 ${
+                        className={`flex-1 flex items-center justify-center gap-1.5 font-semibold text-xs py-2 rounded-xl border transition active:scale-95 ${
                           a.is_active
                             ? 'bg-emerald-50 border-emerald-100 text-emerald-700'
                             : 'bg-slate-100 border-slate-200 text-slate-500'
@@ -2700,7 +2700,7 @@ export const AdminHome: React.FC = () => {
                       </button>
                       <button
                         onClick={() => handleDeleteBanner(a.id)}
-                        className="px-3 bg-red-50 border border-red-100 text-red-400 hover:text-red-600 font-extrabold text-xs py-2 rounded-xl transition active:scale-95 flex items-center justify-center gap-1"
+                        className="px-3 bg-red-50 border border-red-100 text-red-400 hover:text-red-600 font-semibold text-xs py-2 rounded-xl transition active:scale-95 flex items-center justify-center gap-1"
                       >
                         <Trash2 className="w-3 h-3" /> Delete
                       </button>
@@ -2718,14 +2718,14 @@ export const AdminHome: React.FC = () => {
         <div className="flex flex-col gap-4">
       {/* Campus toggle — superadmin only */}
       {isSuperAdmin && (
-        <div className="flex bg-white border border-slate-100 rounded-2xl p-1 gap-1 shadow-sm">
+        <div className="flex bg-white border border-slate-100 rounded-2xl p-1 gap-1">
           {(['Gambang', 'Pekan'] as const).map(c => (
             <button
               key={c}
               onClick={() => setCampusView(c)}
-              className={`flex-1 py-2 rounded-xl text-xs font-extrabold transition ${
+              className={`flex-1 py-2 rounded-xl text-xs font-semibold transition ${
                 campusView === c
-                  ? 'bg-primary text-white shadow-sm'
+                  ? 'bg-primary text-white'
                   : 'text-slate-400 hover:text-slate-600'
               }`}
             >
@@ -2743,11 +2743,11 @@ export const AdminHome: React.FC = () => {
           className="w-full flex items-center justify-between bg-white border border-slate-200 rounded-2xl px-4 py-3 text-sm font-bold text-slate-700 transition hover:border-primary active:scale-[0.98]"
         >
           <span className="flex items-center gap-2">
-            <span className="text-slate-800 font-extrabold uppercase text-xs tracking-wide">
+            <span className="text-slate-800 font-semibold uppercase text-xs tracking-wide">
               {filter.replace('_', ' ')}
             </span>
             {filter !== 'all' && orders.filter(o => o.status === filter).length > 0 && (
-              <span className="bg-primary/10 text-primary text-xs font-extrabold px-1.5 py-0.5 rounded-full">
+              <span className="bg-primary/10 text-primary text-xs font-semibold px-1.5 py-0.5 rounded-full">
                 {orders.filter(o => o.status === filter).length}
               </span>
             )}
@@ -2769,13 +2769,13 @@ export const AdminHome: React.FC = () => {
                     i < arr.length - 1 ? 'border-b border-slate-50' : ''
                   } ${
                     filter === f
-                      ? 'bg-primary/10 text-primary font-extrabold'
+                      ? 'bg-primary/10 text-primary font-semibold'
                       : 'text-slate-700 hover:bg-slate-50'
                   }`}
                 >
                   <span className="uppercase text-xs tracking-wide">{f.replace('_', ' ')}</span>
                   {f !== 'all' && orders.filter(o => o.status === f).length > 0 && (
-                    <span className={`text-xs font-extrabold px-1.5 py-0.5 rounded-full ${
+                    <span className={`text-xs font-semibold px-1.5 py-0.5 rounded-full ${
                       filter === f ? 'bg-primary/20 text-primary' : 'bg-slate-100 text-slate-500'
                     }`}>
                       {orders.filter(o => o.status === f).length}
@@ -2789,10 +2789,10 @@ export const AdminHome: React.FC = () => {
       </div>
 
       {/* Orders list */}
-      <div className="bg-white border border-slate-100 rounded-3xl p-5 shadow-sm flex flex-col gap-4">
+      <div className="bg-white border border-slate-100 rounded-3xl p-5 flex flex-col gap-4">
         <div className="flex items-center gap-2">
           <BarChart3 className="w-4 h-4 text-slate-400" />
-          <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest">
+          <h3 className="text-sm font-bold text-slate-700">
             {filtered.length} Order{filtered.length !== 1 ? 's' : ''}
           </h3>
         </div>
@@ -2815,7 +2815,7 @@ export const AdminHome: React.FC = () => {
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
                       <p className="text-xs font-black text-slate-800 truncate">{order.customer_name}</p>
-                      <span className={`text-xs font-extrabold px-2 py-0.5 rounded-full border uppercase shrink-0 ${STATUS_COLORS[order.status]}`}>
+                      <span className={`text-xs font-semibold px-2 py-0.5 rounded-full border uppercase shrink-0 ${STATUS_COLORS[order.status]}`}>
                         {order.status.replace('_', ' ')}
                       </span>
                     </div>
@@ -2865,7 +2865,7 @@ export const AdminHome: React.FC = () => {
                   {order.status === 'pending' && (
                     <button
                       onClick={() => handleForceStatus(order.id, 'cancelled')}
-                      className="flex-1 bg-red-50 border border-red-100 text-red-500 font-extrabold text-xs py-2 rounded-xl transition active:scale-95 flex items-center justify-center gap-1"
+                      className="flex-1 bg-red-50 border border-red-100 text-red-500 font-semibold text-xs py-2 rounded-xl transition active:scale-95 flex items-center justify-center gap-1"
                     >
                       <Clock className="w-3 h-3" /> Cancel
                     </button>
@@ -2873,7 +2873,7 @@ export const AdminHome: React.FC = () => {
                   <button
                     onClick={() => handleDelete(order.id)}
                     disabled={deleting === order.id}
-                    className="px-3 bg-slate-50 border border-slate-200 text-slate-400 hover:text-red-500 font-extrabold text-xs py-2 rounded-xl transition active:scale-95 flex items-center justify-center gap-1 disabled:opacity-50"
+                    className="px-3 bg-slate-50 border border-slate-200 text-slate-400 hover:text-red-500 font-semibold text-xs py-2 rounded-xl transition active:scale-95 flex items-center justify-center gap-1 disabled:opacity-50"
                   >
                     {deleting === order.id
                       ? <span className="w-3 h-3 rounded-full border border-slate-400 border-t-transparent animate-spin" />
@@ -2894,11 +2894,11 @@ export const AdminHome: React.FC = () => {
 
           {/* Campus switcher — superadmin only */}
           {isSuperAdmin && (
-            <div className="flex bg-white border border-slate-100 rounded-2xl p-1 gap-1 shadow-sm">
+            <div className="flex bg-white border border-slate-100 rounded-2xl p-1 gap-1">
               {(['Gambang', 'Pekan'] as const).map(c => (
                 <button key={c} onClick={() => setCampusView(c)}
-                  className={`flex-1 py-2 rounded-xl text-xs font-extrabold transition ${
-                    campusView === c ? 'bg-primary text-white shadow-sm' : 'text-slate-400'
+                  className={`flex-1 py-2 rounded-xl text-xs font-semibold transition ${
+                    campusView === c ? 'bg-primary text-white' : 'text-slate-400'
                   }`}>
                   {c}
                 </button>
@@ -2909,20 +2909,20 @@ export const AdminHome: React.FC = () => {
           {/* Add button */}
           {!showRouteForm && (
             <button onClick={() => setShowRouteForm(true)}
-              className="flex items-center justify-center gap-2 bg-primary text-white font-extrabold text-xs py-3 rounded-2xl transition active:scale-95 shadow-md shadow-primary/20">
+              className="flex items-center justify-center gap-2 bg-primary text-white font-semibold text-xs py-3 rounded-2xl transition active:scale-95 shadow-md shadow-primary/20">
               <Plus className="w-4 h-4" /> Add Route
             </button>
           )}
 
           {/* Add / Edit form */}
           {showRouteForm && (
-            <div className="bg-white border border-slate-100 rounded-3xl p-5 shadow-sm flex flex-col gap-4">
-              <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest">
+            <div className="bg-white border border-slate-100 rounded-3xl p-5 flex flex-col gap-4">
+              <h3 className="text-sm font-bold text-slate-700">
                 {editingRoute ? 'Edit Route' : 'New Route'}
               </h3>
 
               <div className="flex flex-col gap-1.5">
-                <label className="text-xs font-extrabold text-slate-500 uppercase tracking-widest">Point A</label>
+                <label className="text-xs font-semibold text-slate-400">Point A</label>
                 <input
                   type="text"
                   value={routePointA}
@@ -2937,7 +2937,7 @@ export const AdminHome: React.FC = () => {
               </div>
 
               <div className="flex flex-col gap-1.5">
-                <label className="text-xs font-extrabold text-slate-500 uppercase tracking-widest">Point B</label>
+                <label className="text-xs font-semibold text-slate-400">Point B</label>
                 <input
                   type="text"
                   value={routePointB}
@@ -2948,7 +2948,7 @@ export const AdminHome: React.FC = () => {
               </div>
 
               <div className="flex flex-col gap-1.5">
-                <label className="text-xs font-extrabold text-slate-500 uppercase tracking-widest">Price (RM)</label>
+                <label className="text-xs font-semibold text-slate-400">Price (RM)</label>
                 <input
                   type="number"
                   min="0"
@@ -2962,12 +2962,12 @@ export const AdminHome: React.FC = () => {
 
               <div className="flex gap-2 pt-1">
                 <button onClick={resetRouteForm}
-                  className="flex-1 bg-slate-100 text-slate-600 font-extrabold text-xs py-2.5 rounded-xl transition active:scale-95">
+                  className="flex-1 bg-slate-100 text-slate-600 font-semibold text-xs py-2.5 rounded-xl transition active:scale-95">
                   Cancel
                 </button>
                 <button onClick={handleSaveRoute}
                   disabled={savingRoute || !routePointA.trim() || !routePointB.trim() || !routePrice.trim()}
-                  className="flex-1 bg-primary text-white font-extrabold text-xs py-2.5 rounded-xl transition active:scale-95 disabled:opacity-50 flex items-center justify-center gap-1.5">
+                  className="flex-1 bg-primary text-white font-semibold text-xs py-2.5 rounded-xl transition active:scale-95 disabled:opacity-50 flex items-center justify-center gap-1.5">
                   {savingRoute
                     ? <span className="w-4 h-4 rounded-full border-2 border-white border-t-transparent animate-spin" />
                     : editingRoute ? 'Save Changes' : 'Add Route'}
@@ -2977,8 +2977,8 @@ export const AdminHome: React.FC = () => {
           )}
 
           {/* Routes list */}
-          <div className="bg-white border border-slate-100 rounded-3xl p-5 shadow-sm flex flex-col gap-4">
-            <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest flex items-center gap-1.5">
+          <div className="bg-white border border-slate-100 rounded-3xl p-5 flex flex-col gap-4">
+            <h3 className="text-sm font-bold text-slate-700 flex items-center gap-1.5">
               <ArrowLeftRight className="w-4 h-4" /> Routes — UMPSA {isSuperAdmin ? campusView : adminCampus}
             </h3>
 
@@ -3015,12 +3015,12 @@ export const AdminHome: React.FC = () => {
                           setRoutePrice(String(r.price));
                           setShowRouteForm(true);
                         }}
-                        className="px-3 bg-slate-50 border border-slate-200 text-slate-500 font-extrabold text-xs py-2 rounded-xl transition active:scale-95 flex items-center justify-center gap-1">
+                        className="px-3 bg-slate-50 border border-slate-200 text-slate-500 font-semibold text-xs py-2 rounded-xl transition active:scale-95 flex items-center justify-center gap-1">
                         <Pencil className="w-3 h-3" /> Edit
                       </button>
                       <button
                         onClick={() => handleDeleteRoute(r.id)}
-                        className="px-3 bg-red-50 border border-red-100 text-red-400 font-extrabold text-xs py-2 rounded-xl transition active:scale-95 flex items-center justify-center gap-1">
+                        className="px-3 bg-red-50 border border-red-100 text-red-400 font-semibold text-xs py-2 rounded-xl transition active:scale-95 flex items-center justify-center gap-1">
                         <Trash2 className="w-3 h-3" />
                       </button>
                     </div>
@@ -3038,11 +3038,11 @@ export const AdminHome: React.FC = () => {
         <div className="flex flex-col gap-4">
 
           {/* Driver / Rider toggle */}
-          <div className="flex bg-white border border-slate-100 rounded-2xl p-1 gap-1 shadow-sm">
+          <div className="flex bg-white border border-slate-100 rounded-2xl p-1 gap-1">
             {(['driver', 'rider'] as const).map(r => (
               <button key={r} onClick={() => setVerifyFilter(r)}
-                className={`flex-1 py-2 rounded-xl text-xs font-extrabold transition ${
-                  verifyFilter === r ? 'bg-primary text-white shadow-sm' : 'text-slate-400'
+                className={`flex-1 py-2 rounded-xl text-xs font-semibold transition ${
+                  verifyFilter === r ? 'bg-primary text-white' : 'text-slate-400'
                 }`}>
                 {r === 'driver' ? 'Drivers' : 'Riders'}
               </button>
@@ -3050,8 +3050,8 @@ export const AdminHome: React.FC = () => {
           </div>
 
           {/* Search */}
-          <div className="bg-white border border-slate-100 rounded-2xl p-3.5 shadow-sm flex flex-col gap-2">
-            <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest flex items-center gap-1.5">
+          <div className="bg-white border border-slate-100 rounded-2xl p-3.5 flex flex-col gap-2">
+            <h3 className="text-sm font-bold text-slate-700 flex items-center gap-1.5">
               <AlertCircle className="w-3.5 h-3.5" /> Find {verifyFilter === 'driver' ? 'Driver' : 'Rider'}
             </h3>
             <div className="flex gap-2">
@@ -3066,7 +3066,7 @@ export const AdminHome: React.FC = () => {
               <button
                 onClick={() => setVerifySearch('')}
                 disabled={!verifySearch.trim()}
-                className="px-3.5 bg-primary text-white font-extrabold text-xs rounded-lg transition active:scale-95 disabled:opacity-50 flex items-center gap-1.5"
+                className="px-3.5 bg-primary text-white font-semibold text-xs rounded-lg transition active:scale-95 disabled:opacity-50 flex items-center gap-1.5"
               >
                 Clear
               </button>
@@ -3074,8 +3074,8 @@ export const AdminHome: React.FC = () => {
           </div>
 
           {/* Doc list */}
-          <div className="bg-white border border-slate-100 rounded-3xl p-5 shadow-sm flex flex-col gap-4">
-            <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest flex items-center gap-1.5">
+          <div className="bg-white border border-slate-100 rounded-3xl p-5 flex flex-col gap-4">
+            <h3 className="text-sm font-bold text-slate-700 flex items-center gap-1.5">
               <ShieldCheck className="w-4 h-4" /> Document Verification
             </h3>
 
@@ -3103,13 +3103,13 @@ export const AdminHome: React.FC = () => {
                     <p className="text-xs font-black text-slate-800 truncate">{d.name}</p>
                     <p className="text-xs text-slate-400 font-semibold mt-0.5">{d.gerak_id} · UMPSA {d.campus}</p>
                     {d.ic_number && (
-                      <p className="text-xs font-extrabold text-slate-500 mt-0.5">IC: {d.ic_number}</p>
+                      <p className="text-xs font-semibold text-slate-500 mt-0.5">IC: {d.ic_number}</p>
                     )}
                     {!d.ic_number && (
                       <p className="text-xs font-semibold text-amber-500 mt-0.5">IC number not set yet</p>
                     )}
                   </div>
-                  <span className={`text-xs font-extrabold px-2 py-1 rounded-full border shrink-0 ${
+                  <span className={`text-xs font-semibold px-2 py-1 rounded-full border shrink-0 ${
                     d.docs_status === 'approved' ? 'bg-emerald-50 border-emerald-100 text-emerald-700' :
                     d.docs_status === 'rejected' ? 'bg-red-50 border-red-100 text-red-600' :
                     d.docs_status === 'pending'  ? 'bg-amber-50 border-amber-100 text-amber-700' :
@@ -3131,13 +3131,13 @@ export const AdminHome: React.FC = () => {
                 {/* Document links */}
                 <div className="grid grid-cols-2 gap-2">
                   <a href={d.ic_url ?? '#'} target="_blank" rel="noopener noreferrer"
-                    className={`flex items-center justify-center gap-1.5 py-2 rounded-xl text-xs font-extrabold border transition ${
+                    className={`flex items-center justify-center gap-1.5 py-2 rounded-xl text-xs font-semibold border transition ${
                       d.ic_url ? 'bg-blue-50 border-blue-100 text-blue-600 active:scale-95' : 'bg-slate-50 border-slate-200 text-slate-300 pointer-events-none'
                     }`}>
                     <ExternalLink className="w-3 h-3" /> IC (MyKad)
                   </a>
                   <a href={d.license_url ?? '#'} target="_blank" rel="noopener noreferrer"
-                    className={`flex items-center justify-center gap-1.5 py-2 rounded-xl text-xs font-extrabold border transition ${
+                    className={`flex items-center justify-center gap-1.5 py-2 rounded-xl text-xs font-semibold border transition ${
                       d.license_url ? 'bg-blue-50 border-blue-100 text-blue-600 active:scale-95' : 'bg-slate-50 border-slate-200 text-slate-300 pointer-events-none'
                     }`}>
                     <ExternalLink className="w-3 h-3" /> License
@@ -3155,11 +3155,11 @@ export const AdminHome: React.FC = () => {
                     />
                     <div className="flex gap-2">
                       <button onClick={() => handleRejectDoc(d.id)}
-                        className="flex-1 bg-red-500 text-white text-xs font-extrabold py-2 rounded-xl active:scale-95 transition">
+                        className="flex-1 bg-red-500 text-white text-xs font-semibold py-2 rounded-xl active:scale-95 transition">
                         Confirm Reject
                       </button>
                       <button onClick={() => { setRejectingDoc(null); setRejectReason(''); }}
-                        className="flex-1 bg-slate-100 text-slate-500 text-xs font-extrabold py-2 rounded-xl active:scale-95 transition">
+                        className="flex-1 bg-slate-100 text-slate-500 text-xs font-semibold py-2 rounded-xl active:scale-95 transition">
                         Cancel
                       </button>
                     </div>
@@ -3170,11 +3170,11 @@ export const AdminHome: React.FC = () => {
                 {d.docs_status !== 'approved' && rejectingDoc !== d.id && (d.ic_url || d.license_url) && (
                   <div className="flex gap-2">
                     <button onClick={() => handleApproveDoc(d.id)}
-                      className="flex-1 flex items-center justify-center gap-1.5 bg-emerald-500 text-white text-xs font-extrabold py-2.5 rounded-xl active:scale-95 transition">
+                      className="flex-1 flex items-center justify-center gap-1.5 bg-emerald-500 text-white text-xs font-semibold py-2.5 rounded-xl active:scale-95 transition">
                       <ShieldCheck className="w-3.5 h-3.5" /> Approve
                     </button>
                     <button onClick={() => { setRejectingDoc(d.id); setRejectReason(''); }}
-                      className="flex-1 flex items-center justify-center gap-1.5 bg-red-50 border border-red-100 text-red-500 text-xs font-extrabold py-2.5 rounded-xl active:scale-95 transition">
+                      className="flex-1 flex items-center justify-center gap-1.5 bg-red-50 border border-red-100 text-red-500 text-xs font-semibold py-2.5 rounded-xl active:scale-95 transition">
                       <ShieldOff className="w-3.5 h-3.5" /> Reject
                     </button>
                   </div>
@@ -3182,7 +3182,7 @@ export const AdminHome: React.FC = () => {
 
                 {d.docs_status === 'approved' && (
                   <button onClick={() => { setRejectingDoc(d.id); setRejectReason(''); }}
-                    className="w-full flex items-center justify-center gap-1.5 bg-slate-50 border border-slate-200 text-slate-400 text-xs font-extrabold py-2 rounded-xl active:scale-95 transition">
+                    className="w-full flex items-center justify-center gap-1.5 bg-slate-50 border border-slate-200 text-slate-400 text-xs font-semibold py-2 rounded-xl active:scale-95 transition">
                     <ShieldOff className="w-3 h-3" /> Revoke Approval
                   </button>
                 )}
@@ -3199,7 +3199,7 @@ export const AdminHome: React.FC = () => {
 
           {/* Jubah Period Toggle + sub-tab switcher — hidden when inside customer sub-pages */}
           {!(jubahSubTab === 'customer' && jubahAdminView !== 'list') && (<>
-            <div className="bg-white border border-slate-100 rounded-3xl p-5 shadow-sm flex items-center justify-between gap-4">
+            <div className="bg-white border border-slate-100 rounded-3xl p-5 flex items-center justify-between gap-4">
               <div className="flex items-center gap-3">
                 <div className={`w-10 h-10 rounded-2xl flex items-center justify-center ${jubahActive ? 'bg-blue-50' : 'bg-slate-100'}`}>
                   <GraduationCap className="w-5 h-5" />
@@ -3212,7 +3212,7 @@ export const AdminHome: React.FC = () => {
                 </div>
               </div>
               <button onClick={handleToggleJubah} disabled={togglingJubah}
-                className={`shrink-0 px-4 py-2 rounded-xl text-xs font-extrabold border transition active:scale-95 disabled:opacity-50 ${
+                className={`shrink-0 px-4 py-2 rounded-xl text-xs font-semibold border transition active:scale-95 disabled:opacity-50 ${
                   jubahActive ? 'bg-blue-50 border-blue-200 text-blue-700' : 'bg-slate-50 border-slate-200 text-slate-500'
                 }`}>
                 {togglingJubah ? '…' : jubahActive ? <><span className="inline-block w-2 h-2 rounded-full bg-emerald-400 mr-1" />ON</> : <><span className="inline-block w-2 h-2 rounded-full bg-slate-400 mr-1" />OFF</>}
@@ -3220,7 +3220,7 @@ export const AdminHome: React.FC = () => {
             </div>
 
             {/* Customer | Rider | Price sub-tabs */}
-            <div className="flex bg-white border border-slate-100 rounded-2xl p-1 gap-1 shadow-sm">
+            <div className="flex bg-white border border-slate-100 rounded-2xl p-1 gap-1">
               {([
                 { id: 'rider',    label: 'Rider' },
                 { id: 'customer', label: 'Customer' },
@@ -3228,8 +3228,8 @@ export const AdminHome: React.FC = () => {
                 { id: 'banner',   label: 'Banner' },
               ] as const).map(t => (
                 <button key={t.id} onClick={() => { setJubahSubTab(t.id); setJubahAdminView('list'); setJubahAdminSelected(null); }}
-                  className={`flex-1 py-2 rounded-xl text-xs font-extrabold transition ${
-                    jubahSubTab === t.id ? 'bg-primary text-white shadow-sm' : 'text-slate-400'
+                  className={`flex-1 py-2 rounded-xl text-xs font-semibold transition ${
+                    jubahSubTab === t.id ? 'bg-primary text-white' : 'text-slate-400'
                   }`}>
                   {t.label}
                 </button>
@@ -3241,8 +3241,8 @@ export const AdminHome: React.FC = () => {
           {jubahSubTab === 'rider' && (<>
 
             {/* Rider cards — click to open assignment sheet */}
-            <div className="bg-white border border-slate-100 rounded-3xl p-5 shadow-sm flex flex-col gap-4">
-              <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest flex items-center gap-1.5">
+            <div className="bg-white border border-slate-100 rounded-3xl p-5 flex flex-col gap-4">
+              <h3 className="text-sm font-bold text-slate-700 flex items-center gap-1.5">
                 <GraduationCap className="w-4 h-4" /> Jubah Riders
               </h3>
               <div className="overflow-y-auto no-scrollbar max-h-[320px] flex flex-col gap-2">
@@ -3265,7 +3265,7 @@ export const AdminHome: React.FC = () => {
                       <p className="text-xs font-bold text-slate-700 truncate">{r.name}</p>
                       <p className="text-xs text-slate-400 font-semibold mt-0.5">{r.gerak_id} · UMPSA {r.campus}</p>
                     </div>
-                    <span className={`text-xs font-extrabold px-2 py-1 rounded-full border shrink-0 ${
+                    <span className={`text-xs font-semibold px-2 py-1 rounded-full border shrink-0 ${
                       r.status === 'active' ? 'bg-emerald-50 border-emerald-100 text-emerald-700' : 'bg-slate-50 border-slate-200 text-slate-400'
                     }`}>
                       {r.status === 'active' ? 'Active' : 'Inactive'}
@@ -3277,14 +3277,14 @@ export const AdminHome: React.FC = () => {
 
             {/* Rider directory table */}
             {jubahAssignments.length > 0 && (
-              <div className="bg-white border border-slate-100 rounded-3xl p-5 shadow-sm flex flex-col gap-4">
-                <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest flex items-center gap-1.5">
+              <div className="bg-white border border-slate-100 rounded-3xl p-5 flex flex-col gap-4">
+                <h3 className="text-sm font-bold text-slate-700 flex items-center gap-1.5">
                   <Users className="w-4 h-4" /> Representative Directory
                 </h3>
                 <div className="overflow-x-auto overflow-y-auto no-scrollbar max-h-[320px]">
                   <table className="text-left border-collapse" style={{ minWidth: 480 }}>
                     <thead className="sticky top-0 bg-white">
-                      <tr className="text-xs font-extrabold text-slate-400 uppercase tracking-wider border-b border-slate-100">
+                      <tr className="text-xs font-semibold text-slate-400 border-b border-slate-100">
                         <th className="py-2 pr-4 whitespace-nowrap">Method</th>
                         <th className="py-2 pr-4 whitespace-nowrap">Representative Name</th>
                         <th className="py-2 pr-4 whitespace-nowrap">I/C Number</th>
@@ -3300,7 +3300,7 @@ export const AdminHome: React.FC = () => {
                             <td className="py-2.5 pr-4 text-slate-600 font-semibold align-top whitespace-nowrap">
                               {a.drop_point || '—'}
                             </td>
-                            <td className="py-2.5 pr-4 font-extrabold text-slate-800 align-top">{a.name}</td>
+                            <td className="py-2.5 pr-4 font-semibold text-slate-800 align-top">{a.name}</td>
                             <td className="py-2.5 pr-4 font-mono text-slate-700 align-top whitespace-nowrap">{a.ic_number || '—'}</td>
                             <td className="py-2.5 text-slate-700 font-semibold align-top whitespace-nowrap">
                               <div className="flex items-center gap-1.5">
@@ -3330,7 +3330,7 @@ export const AdminHome: React.FC = () => {
             {jubahAdminView === 'list' && (<>
 
               {/* Search bar */}
-              <div className="bg-white border border-slate-100 rounded-2xl p-3.5 shadow-sm flex flex-col gap-2">
+              <div className="bg-white border border-slate-100 rounded-2xl p-3.5 flex flex-col gap-2">
                 <div className="flex gap-2">
                   <input type="text" value={jubahSearch} onChange={e => setJubahSearch(e.target.value)}
                     placeholder="Search by name, phone or reference…"
@@ -3339,7 +3339,7 @@ export const AdminHome: React.FC = () => {
                   />
                   <button onClick={() => { setJubahSearch(''); setJubahPayFilter('all'); }}
                     disabled={!jubahSearch.trim() && jubahPayFilter === 'all'}
-                    className="px-3.5 bg-primary text-white font-extrabold text-xs rounded-lg transition active:scale-95 disabled:opacity-40 flex items-center gap-1.5">
+                    className="px-3.5 bg-primary text-white font-semibold text-xs rounded-lg transition active:scale-95 disabled:opacity-40 flex items-center gap-1.5">
                     Clear
                   </button>
                   <button onClick={loadJubahData}
@@ -3356,8 +3356,8 @@ export const AdminHome: React.FC = () => {
                     { id: 'paid',   label: 'Paid' },
                   ] as const).map(f => (
                     <button key={f.id} onClick={() => setJubahPayFilter(f.id)}
-                      className={`flex-1 py-1.5 rounded-[10px] text-xs font-extrabold transition active:scale-95 ${
-                        jubahPayFilter === f.id ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-400'
+                      className={`flex-1 py-1.5 rounded-[10px] text-xs font-semibold transition active:scale-95 ${
+                        jubahPayFilter === f.id ? 'bg-white text-slate-800' : 'text-slate-400'
                       }`}>
                       {f.label}
                     </button>
@@ -3366,8 +3366,8 @@ export const AdminHome: React.FC = () => {
               </div>
 
               {/* Customer bookings table */}
-              <div className="bg-white border border-slate-100 rounded-3xl p-5 shadow-sm flex flex-col gap-4">
-                <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest flex items-center justify-between">
+              <div className="bg-white border border-slate-100 rounded-3xl p-5 flex flex-col gap-4">
+                <h3 className="text-sm font-bold text-slate-700 flex items-center justify-between">
                   <span className="flex items-center gap-1.5"><Users className="w-4 h-4" /> Customer Directory</span>
                   <span className="font-bold text-slate-300 normal-case tracking-normal">
                     {jubahBookings.filter(b => {
@@ -3388,7 +3388,7 @@ export const AdminHome: React.FC = () => {
                   <div className="overflow-x-auto overflow-y-auto no-scrollbar max-h-[600px]">
                     <table className="min-w-full border-collapse text-left" style={{ minWidth: 360 }}>
                       <thead className="sticky top-0 bg-white">
-                        <tr className="text-xs font-extrabold text-slate-400 uppercase tracking-wider border-b border-slate-100">
+                        <tr className="text-xs font-semibold text-slate-400 border-b border-slate-100">
                           <th className="py-2 pr-4 whitespace-nowrap">Reference</th>
                           <th className="py-2 pr-4 whitespace-nowrap">Name</th>
                           <th className="py-2 pr-4 whitespace-nowrap">Remark</th>
@@ -3411,10 +3411,10 @@ export const AdminHome: React.FC = () => {
                               onClick={() => goToAdminCard(b)}
                               className="border-b border-slate-50 text-xs hover:bg-slate-50 active:bg-slate-100 transition cursor-pointer">
                               <td className="py-2.5 pr-4 font-mono font-bold text-primary whitespace-nowrap">{b.reference}</td>
-                              <td className="py-2.5 pr-4 font-extrabold text-slate-800 whitespace-nowrap">{b.full_name}</td>
+                              <td className="py-2.5 pr-4 font-semibold text-slate-800 whitespace-nowrap">{b.full_name}</td>
                               <td className="py-2.5 pr-4 text-slate-500 font-semibold whitespace-nowrap">{b.remark}</td>
                               <td className="py-2.5 pr-4 whitespace-nowrap">
-                                <span className={`font-extrabold px-2 py-0.5 rounded-full border text-xs ${
+                                <span className={`font-semibold px-2 py-0.5 rounded-full border text-xs ${
                                   b.payment_mode === 'deposit' ? 'bg-amber-50 border-amber-100 text-amber-700' :
                                   b.payment_mode === 'postage' ? 'bg-blue-50 border-blue-100 text-blue-700' :
                                   'bg-slate-50 border-slate-200 text-slate-600'
@@ -3423,7 +3423,7 @@ export const AdminHome: React.FC = () => {
                                 </span>
                               </td>
                               <td className="py-2.5 pr-4 whitespace-nowrap">
-                                <span className={`font-extrabold px-2 py-0.5 rounded-full border text-xs ${
+                                <span className={`font-semibold px-2 py-0.5 rounded-full border text-xs ${
                                   isPaid ? 'bg-emerald-50 border-emerald-100 text-emerald-700' : 'bg-amber-50 border-amber-100 text-amber-700'
                                 }`}>
                                   {isPaid ? 'Paid' : 'Booked'}
@@ -3482,18 +3482,18 @@ export const AdminHome: React.FC = () => {
                   </div>
 
                   {/* Status stepper card */}
-                  <div className="bg-white border border-slate-100 rounded-3xl p-5 shadow-sm flex flex-col gap-4">
+                  <div className="bg-white border border-slate-100 rounded-3xl p-5 flex flex-col gap-4">
 
                     {/* Customer summary */}
                     <div className="flex items-start justify-between gap-2">
                       <div>
-                        <p className="text-xs text-primary font-extrabold uppercase tracking-wider">{b.reference}</p>
+                        <p className="text-xs text-primary font-semibold">{b.reference}</p>
                         <h3 className="text-base font-black text-slate-800 mt-0.5">{b.full_name}</h3>
                         <p className="text-xs text-slate-400 font-semibold mt-0.5">
                           {b.remark} · {b.faculty} · UMPSA {b.campus}
                         </p>
                       </div>
-                      <span className={`text-xs font-extrabold px-2.5 py-1 rounded-full border shrink-0 ${JUBAH_STATUS_STYLE[b.status] ?? ''}`}>
+                      <span className={`text-xs font-semibold px-2.5 py-1 rounded-full border shrink-0 ${JUBAH_STATUS_STYLE[b.status] ?? ''}`}>
                         {JUBAH_STATUS_LABEL[b.status] ?? b.status}
                       </span>
                     </div>
@@ -3510,7 +3510,7 @@ export const AdminHome: React.FC = () => {
                           <WaIcon className="w-4 h-4" />
                         </a>
                       </div>
-                      <span className={`text-xs font-extrabold px-3 py-2 rounded-xl border shrink-0 ${
+                      <span className={`text-xs font-semibold px-3 py-2 rounded-xl border shrink-0 ${
                         b.payment_mode === 'deposit' ? 'bg-amber-50 border-amber-100 text-amber-700' :
                         b.payment_mode === 'postage' ? 'bg-blue-50 border-blue-100 text-blue-700' :
                         'bg-slate-50 border-slate-200 text-slate-600'
@@ -3524,7 +3524,7 @@ export const AdminHome: React.FC = () => {
                       <div className="flex items-center gap-1">
                         {steps.map((step, i) => (
                           <React.Fragment key={step}>
-                            <div className={`w-5 h-5 rounded-full flex items-center justify-center shrink-0 text-[8px] font-extrabold border-2 transition ${
+                            <div className={`w-5 h-5 rounded-full flex items-center justify-center shrink-0 text-[8px] font-semibold border-2 transition ${
                               i < curStep  ? 'bg-primary border-primary text-white' :
                               i === curStep ? 'bg-white border-primary text-primary' :
                               'bg-white border-slate-200 text-slate-300'
@@ -3539,7 +3539,7 @@ export const AdminHome: React.FC = () => {
                       </div>
                       <div className="flex justify-between">
                         {steps.map(step => (
-                          <span key={step} className="text-[8px] font-extrabold text-slate-400 uppercase tracking-wide flex-1 text-center first:text-left last:text-right">
+                          <span key={step} className="text-[8px] font-semibold text-slate-400 flex-1 text-center first:text-left last:text-right">
                             {JUBAH_STATUS_LABEL[step]}
                           </span>
                         ))}
@@ -3549,7 +3549,7 @@ export const AdminHome: React.FC = () => {
                     {/* Delivery address (postage only) */}
                     {b.payment_mode === 'postage' && b.delivery_address && (
                       <div className="bg-blue-50 border border-blue-100 rounded-xl p-3">
-                        <p className="text-[8px] font-extrabold text-blue-400 uppercase tracking-wider mb-1">Delivery Address</p>
+                        <p className="text-[8px] font-semibold text-blue-400 mb-1">Delivery Address</p>
                         <p className="text-xs font-semibold text-blue-800 leading-relaxed">{b.delivery_address}</p>
                       </div>
                     )}
@@ -3560,7 +3560,7 @@ export const AdminHome: React.FC = () => {
                         b.balance_paid ? 'bg-emerald-50 border-emerald-100' : b.balance_proof_url ? 'bg-violet-50 border-violet-100' : 'bg-amber-50 border-amber-100'
                       }`}>
                         <div>
-                          <span className={`text-[8px] font-extrabold uppercase tracking-wider block ${
+                          <span className={`text-[8px] font-semibold uppercase tracking-wider block ${
                             b.balance_paid ? 'text-emerald-500' : b.balance_proof_url ? 'text-violet-500' : 'text-amber-500'
                           }`}>
                             {b.balance_paid ? 'Balance Paid' : b.balance_proof_url ? 'Proof Submitted — Review' : 'Balance Due'}
@@ -3587,7 +3587,7 @@ export const AdminHome: React.FC = () => {
                       <button
                         onClick={handleAdminAdvanceStatus}
                         disabled={jubahAdminUpdating}
-                        className="w-full bg-primary hover:bg-primary-hover active:scale-[0.98] disabled:bg-slate-200 text-white font-extrabold py-3 rounded-2xl shadow-md transition flex items-center justify-center gap-2 text-sm">
+                        className="w-full bg-primary hover:bg-primary-hover active:scale-[0.98] disabled:bg-slate-200 text-white font-semibold py-3 rounded-2xl transition flex items-center justify-center gap-2 text-sm">
                         {jubahAdminUpdating
                           ? <span className="w-4 h-4 rounded-full border-2 border-white/40 border-t-white animate-spin" />
                           : `→ ${JUBAH_NEXT_LABEL[nextStat ?? ''] ?? `Mark ${JUBAH_STATUS_LABEL[nextStat ?? '']}`}`}
@@ -3595,7 +3595,7 @@ export const AdminHome: React.FC = () => {
                     )}
                     {isDone && b.status !== 'cancelled' && (
                       <div className="bg-emerald-50 border border-emerald-100 rounded-2xl px-4 py-3 text-center">
-                        <p className="text-xs font-extrabold text-emerald-700">✓ Delivery Complete</p>
+                        <p className="text-xs font-semibold text-emerald-700">✓ Delivery Complete</p>
                       </div>
                     )}
 
@@ -3611,7 +3611,7 @@ export const AdminHome: React.FC = () => {
                             showToast('Balance marked as paid.');
                           }
                         }}
-                        className="w-full bg-emerald-600 hover:bg-emerald-700 active:scale-[0.98] text-white font-extrabold py-3 rounded-2xl text-sm transition">
+                        className="w-full bg-emerald-600 hover:bg-emerald-700 active:scale-[0.98] text-white font-semibold py-3 rounded-2xl text-sm transition">
                         ✓ Mark Balance Paid
                       </button>
                     )}
@@ -3620,7 +3620,7 @@ export const AdminHome: React.FC = () => {
                   {/* View Customer Details button */}
                   <button
                     onClick={goToAdminDetails}
-                    className="w-full bg-white border border-slate-200 text-slate-600 font-extrabold py-3 rounded-2xl text-sm transition hover:border-primary hover:text-primary active:scale-95">
+                    className="w-full bg-white border border-slate-200 text-slate-600 font-semibold py-3 rounded-2xl text-sm transition hover:border-primary hover:text-primary active:scale-95">
                     View Customer Details →
                   </button>
                 </div>
@@ -3645,8 +3645,8 @@ export const AdminHome: React.FC = () => {
                   </div>
 
                   {/* Form fields card */}
-                  <div className="bg-white border border-slate-100 rounded-3xl p-5 shadow-sm flex flex-col gap-4">
-                    <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest">Booking Information</h3>
+                  <div className="bg-white border border-slate-100 rounded-3xl p-5 flex flex-col gap-4">
+                    <h3 className="text-sm font-bold text-slate-700">Booking Information</h3>
 
                     {([
                       { label: 'Full Name',     value: b.full_name },
@@ -3665,15 +3665,15 @@ export const AdminHome: React.FC = () => {
                       { label: 'Reference',      value: b.reference },
                     ] as { label: string; value: string }[]).map(({ label, value }) => (
                       <div key={label} className="flex flex-col gap-0.5 border-b border-slate-50 pb-3 last:border-0 last:pb-0">
-                        <span className="text-xs font-extrabold text-slate-400 uppercase tracking-wider">{label}</span>
+                        <span className="text-xs font-semibold text-slate-400">{label}</span>
                         <span className="text-sm font-bold text-slate-700 leading-relaxed">{value}</span>
                       </div>
                     ))}
                   </div>
 
                   {/* Documents download card */}
-                  <div className="bg-white border border-slate-100 rounded-3xl p-5 shadow-sm flex flex-col gap-4">
-                    <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest">Documents</h3>
+                  <div className="bg-white border border-slate-100 rounded-3xl p-5 flex flex-col gap-4">
+                    <h3 className="text-sm font-bold text-slate-700">Documents</h3>
 
                     {([
                       { label: 'Combined PDF',  url: b.docs_path },
@@ -3733,7 +3733,7 @@ export const AdminHome: React.FC = () => {
                         <button
                           onClick={handleConfirmJubahBooking}
                           disabled={!confirmActive || confirmingBooking}
-                          className="flex-1 flex items-center justify-center gap-2 bg-emerald-50 border border-emerald-200 text-emerald-600 hover:bg-emerald-100 active:scale-[0.98] font-extrabold py-3 rounded-2xl text-sm transition disabled:opacity-40 disabled:cursor-not-allowed">
+                          className="flex-1 flex items-center justify-center gap-2 bg-emerald-50 border border-emerald-200 text-emerald-600 hover:bg-emerald-100 active:scale-[0.98] font-semibold py-3 rounded-2xl text-sm transition disabled:opacity-40 disabled:cursor-not-allowed">
                           {confirmingBooking
                             ? <span className="w-4 h-4 rounded-full border-2 border-emerald-300 border-t-emerald-600 animate-spin" />
                             : <><BadgeCheck className="w-4 h-4" />{confirmLabel}</>}
@@ -3745,7 +3745,7 @@ export const AdminHome: React.FC = () => {
                             await handleDeleteJubahBooking(b);
                           }}
                           disabled={deletingBooking === b.id}
-                          className="flex-1 flex items-center justify-center gap-2 border border-red-200 text-red-500 hover:bg-red-50 active:scale-[0.98] font-extrabold py-3 rounded-2xl text-sm transition disabled:opacity-50">
+                          className="flex-1 flex items-center justify-center gap-2 border border-red-200 text-red-500 hover:bg-red-50 active:scale-[0.98] font-semibold py-3 rounded-2xl text-sm transition disabled:opacity-50">
                           {deletingBooking === b.id
                             ? <span className="w-4 h-4 rounded-full border-2 border-red-300 border-t-red-500 animate-spin" />
                             : <><Trash2 className="w-4 h-4" />Delete</>}
@@ -3761,8 +3761,8 @@ export const AdminHome: React.FC = () => {
 
           {/* ── PRICE sub-tab ── */}
           {jubahSubTab === 'price' && (
-            <div className="bg-white border border-slate-100 rounded-3xl p-5 shadow-sm flex flex-col gap-4">
-              <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest flex items-center gap-1.5">
+            <div className="bg-white border border-slate-100 rounded-3xl p-5 flex flex-col gap-4">
+              <h3 className="text-sm font-bold text-slate-700 flex items-center gap-1.5">
                 <GraduationCap className="w-4 h-4" /> Jubah Pricing Matrix
               </h3>
               <p className="text-xs text-slate-400 font-semibold -mt-2">Set price per study level × service option. Tap Save after editing each value.</p>
@@ -3775,12 +3775,12 @@ export const AdminHome: React.FC = () => {
                       const key = `${remark}_${mode}`;
                       return (
                         <div key={mode} className="flex flex-col gap-1.5">
-                          <label className="text-xs font-extrabold text-slate-400 uppercase tracking-wider">
+                          <label className="text-xs font-semibold text-slate-400">
                             {mode === 'pickup' ? 'Self Pickup' : 'Pickup & Postage'}
                           </label>
                           <div className="flex gap-1.5">
                             <div className="flex items-center bg-slate-50 border border-slate-200 rounded-xl px-2 py-2 gap-1 flex-1 focus-within:border-primary transition">
-                              <span className="text-xs font-extrabold text-slate-400 shrink-0">RM</span>
+                              <span className="text-xs font-semibold text-slate-400 shrink-0">RM</span>
                               <input
                                 type="number"
                                 min="0"
@@ -3788,13 +3788,13 @@ export const AdminHome: React.FC = () => {
                                 value={priceDrafts[key] ?? ''}
                                 onChange={e => setPriceDrafts(prev => ({ ...prev, [key]: e.target.value }))}
                                 style={{ fontSize: '12px' }}
-                                className="flex-1 bg-transparent font-extrabold text-slate-700 focus:outline-none w-0"
+                                className="flex-1 bg-transparent font-semibold text-slate-700 focus:outline-none w-0"
                               />
                             </div>
                             <button
                               onClick={() => handleSavePrice(remark, mode)}
                               disabled={savingPrice === key}
-                              className="shrink-0 bg-primary text-white font-extrabold text-xs px-2.5 py-2 rounded-xl transition active:scale-95 disabled:opacity-50"
+                              className="shrink-0 bg-primary text-white font-semibold text-xs px-2.5 py-2 rounded-xl transition active:scale-95 disabled:opacity-50"
                             >
                               {savingPrice === key ? '…' : 'Save'}
                             </button>
@@ -3828,9 +3828,9 @@ export const AdminHome: React.FC = () => {
                 }}
               />
               {BANNER_ITEMS.map(item => (
-                <div key={item.key} className="bg-white border border-slate-100 rounded-3xl p-5 shadow-sm flex flex-col gap-4">
+                <div key={item.key} className="bg-white border border-slate-100 rounded-3xl p-5 flex flex-col gap-4">
                   <div className="flex items-start justify-between gap-2">
-                    <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest flex-1 min-w-0">{item.label}</h3>
+                    <h3 className="text-sm font-bold text-slate-700 flex-1 min-w-0">{item.label}</h3>
                     {item.key !== 'default' && (
                       <button
                         onClick={() => setSampleDocsPage({ key: item.key, label: item.label })}
@@ -3889,7 +3889,7 @@ export const AdminHome: React.FC = () => {
         <div className="flex flex-col gap-4">
 
           {/* Master Receipt Gate Toggle — superadmin only */}
-          <div className="bg-white border border-slate-100 rounded-3xl p-5 shadow-sm flex items-center justify-between gap-4">
+          <div className="bg-white border border-slate-100 rounded-3xl p-5 flex items-center justify-between gap-4">
             <div className="flex items-center gap-3">
               <div className={`w-10 h-10 rounded-2xl flex items-center justify-center ${receiptGateOn ? 'bg-emerald-50' : 'bg-slate-100'}`}>
                 <ShieldCheck className={`w-5 h-5 ${receiptGateOn ? 'text-emerald-500' : 'text-slate-400'}`} />
@@ -3902,7 +3902,7 @@ export const AdminHome: React.FC = () => {
               </div>
             </div>
             <button onClick={() => setShowGateMasterConfirm(true)} disabled={togglingReceiptGate}
-              className={`shrink-0 px-4 py-2 rounded-xl text-xs font-extrabold border transition active:scale-95 disabled:opacity-50 ${
+              className={`shrink-0 px-4 py-2 rounded-xl text-xs font-semibold border transition active:scale-95 disabled:opacity-50 ${
                 receiptGateOn
                   ? 'bg-emerald-50 border-emerald-200 text-emerald-700'
                   : 'bg-slate-50 border-slate-200 text-slate-500'
@@ -3912,11 +3912,11 @@ export const AdminHome: React.FC = () => {
           </div>
 
           {/* Driver / Rider toggle */}
-          <div className="flex bg-white border border-slate-100 rounded-2xl p-1 gap-1 shadow-sm">
+          <div className="flex bg-white border border-slate-100 rounded-2xl p-1 gap-1">
             {(['driver', 'rider'] as const).map(r => (
               <button key={r} onClick={() => setReceiptRoleFilter(r)}
-                className={`flex-1 py-2 rounded-xl text-xs font-extrabold transition ${
-                  receiptRoleFilter === r ? 'bg-primary text-white shadow-sm' : 'text-slate-400'
+                className={`flex-1 py-2 rounded-xl text-xs font-semibold transition ${
+                  receiptRoleFilter === r ? 'bg-primary text-white' : 'text-slate-400'
                 }`}>
                 {r === 'driver' ? 'Drivers' : 'Riders'}
               </button>
@@ -3942,15 +3942,15 @@ export const AdminHome: React.FC = () => {
                   }`}
                 >
                   <span className="text-lg font-black leading-none">{count}</span>
-                  <span className="text-xs font-extrabold uppercase tracking-wider capitalize">{s}</span>
+                  <span className="text-xs font-semibold uppercase tracking-wider capitalize">{s}</span>
                 </button>
               );
             })}
           </div>
 
           {/* Search */}
-          <div className="bg-white border border-slate-100 rounded-2xl p-3.5 shadow-sm flex flex-col gap-2">
-            <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest flex items-center gap-1.5">
+          <div className="bg-white border border-slate-100 rounded-2xl p-3.5 flex flex-col gap-2">
+            <h3 className="text-sm font-bold text-slate-700 flex items-center gap-1.5">
               <AlertCircle className="w-3.5 h-3.5" /> Find {receiptRoleFilter === 'driver' ? 'Driver' : 'Rider'}
             </h3>
             <div className="flex gap-2">
@@ -3965,7 +3965,7 @@ export const AdminHome: React.FC = () => {
               <button
                 onClick={() => setReceiptSearch('')}
                 disabled={!receiptSearch.trim()}
-                className="px-3.5 bg-primary text-white font-extrabold text-xs rounded-lg transition active:scale-95 disabled:opacity-50 flex items-center gap-1.5"
+                className="px-3.5 bg-primary text-white font-semibold text-xs rounded-lg transition active:scale-95 disabled:opacity-50 flex items-center gap-1.5"
               >
                 Clear
               </button>
@@ -3973,9 +3973,9 @@ export const AdminHome: React.FC = () => {
           </div>
 
           {/* Receipt list */}
-          <div className="bg-white border border-slate-100 rounded-3xl p-5 shadow-sm flex flex-col gap-4">
+          <div className="bg-white border border-slate-100 rounded-3xl p-5 flex flex-col gap-4">
             <div className="flex items-center justify-between">
-              <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest flex items-center gap-1.5">
+              <h3 className="text-sm font-bold text-slate-700 flex items-center gap-1.5">
                 <FileImage className="w-4 h-4" /> {receiptRoleFilter === 'driver' ? 'Driver' : 'Rider'} Receipts
               </h3>
               <button onClick={loadReceipts}
@@ -4009,7 +4009,7 @@ export const AdminHome: React.FC = () => {
                           <p className="text-xs font-black text-slate-800 truncate">{r.name}</p>
                           <p className="text-xs text-slate-400 font-semibold mt-0.5">{r.gerak_id} · {r.campus}</p>
                         </div>
-                        <span className={`text-xs font-extrabold px-2 py-1 rounded-full border uppercase shrink-0 flex items-center gap-1 ${RECEIPT_STATUS_STYLE[status]}`}>
+                        <span className={`text-xs font-semibold px-2 py-1 rounded-full border uppercase shrink-0 flex items-center gap-1 ${RECEIPT_STATUS_STYLE[status]}`}>
                           {status === 'verified' ? <ShieldCheck className="w-2.5 h-2.5" /> : <ShieldOff className="w-2.5 h-2.5" />}
                           {status}
                         </span>
@@ -4019,15 +4019,15 @@ export const AdminHome: React.FC = () => {
                       <div className="grid grid-cols-3 gap-2 text-xs">
                         <div className="bg-slate-50 rounded-xl px-3 py-2">
                           <p className="text-slate-400 font-semibold mb-0.5">Amount</p>
-                          <p className="font-extrabold text-slate-700">{r.fee_receipt_amount || '—'}</p>
+                          <p className="font-semibold text-slate-700">{r.fee_receipt_amount || '—'}</p>
                         </div>
                         <div className="bg-slate-50 rounded-xl px-3 py-2">
                           <p className="text-slate-400 font-semibold mb-0.5">Paid</p>
-                          <p className="font-extrabold text-slate-700">{r.fee_receipt_date || '—'}</p>
+                          <p className="font-semibold text-slate-700">{r.fee_receipt_date || '—'}</p>
                         </div>
                         <div className={`rounded-xl px-3 py-2 ${status === 'expired' ? 'bg-red-50' : 'bg-slate-50'}`}>
                           <p className="text-slate-400 font-semibold mb-0.5">Expires</p>
-                          <p className={`font-extrabold ${status === 'expired' ? 'text-red-500' : 'text-slate-700'}`}>
+                          <p className={`font-semibold ${status === 'expired' ? 'text-red-500' : 'text-slate-700'}`}>
                             {expLabel ?? '—'}
                           </p>
                         </div>
@@ -4044,7 +4044,7 @@ export const AdminHome: React.FC = () => {
                       {r.fee_receipt_url && (
                         <a href={r.fee_receipt_url} target="_blank" rel="noopener noreferrer"
                           onClick={e => e.stopPropagation()}
-                          className="flex items-center justify-center gap-1.5 bg-primary/5 border border-primary/20 text-primary font-extrabold text-xs py-2 rounded-xl hover:bg-primary/10 transition active:scale-95">
+                          className="flex items-center justify-center gap-1.5 bg-primary/5 border border-primary/20 text-primary font-semibold text-xs py-2 rounded-xl hover:bg-primary/10 transition active:scale-95">
                           <ExternalLink className="w-3 h-3" /> View Receipt
                         </a>
                       )}
@@ -4055,7 +4055,7 @@ export const AdminHome: React.FC = () => {
                           <button
                             onClick={() => handleApproveReceipt(r)}
                             disabled={approvingReceipt === r.id || rejectingReceipt === r.id}
-                            className="flex-1 flex items-center justify-center gap-1.5 bg-emerald-500 hover:bg-emerald-600 text-white font-extrabold text-xs py-2.5 rounded-xl transition active:scale-95 disabled:opacity-50"
+                            className="flex-1 flex items-center justify-center gap-1.5 bg-emerald-500 hover:bg-emerald-600 text-white font-semibold text-xs py-2.5 rounded-xl transition active:scale-95 disabled:opacity-50"
                           >
                             {approvingReceipt === r.id
                               ? <span className="w-3 h-3 rounded-full border-2 border-white border-t-transparent animate-spin" />
@@ -4064,7 +4064,7 @@ export const AdminHome: React.FC = () => {
                           <button
                             onClick={() => handleRejectReceipt(r)}
                             disabled={approvingReceipt === r.id || rejectingReceipt === r.id}
-                            className="flex-1 flex items-center justify-center gap-1.5 bg-red-50 border border-red-200 text-red-600 font-extrabold text-xs py-2.5 rounded-xl transition active:scale-95 disabled:opacity-50"
+                            className="flex-1 flex items-center justify-center gap-1.5 bg-red-50 border border-red-200 text-red-600 font-semibold text-xs py-2.5 rounded-xl transition active:scale-95 disabled:opacity-50"
                           >
                             {rejectingReceipt === r.id
                               ? <span className="w-3 h-3 rounded-full border-2 border-red-400 border-t-transparent animate-spin" />
@@ -4107,7 +4107,7 @@ export const AdminHome: React.FC = () => {
                 <ChevronLeft className="w-3.5 h-3.5" /> Back to leaderboard
               </button>
 
-              <div className="bg-white border border-slate-100 rounded-3xl p-5 shadow-sm">
+              <div className="bg-white border border-slate-100 rounded-3xl p-5">
                 <p className="text-sm font-black text-slate-800">{selectedDriver?.name ?? 'Driver'}</p>
                 <p className="text-xs text-slate-400 font-semibold mt-0.5">
                   {selectedDriver?.gerak_id} · UMPSA {selectedDriver?.campus}
@@ -4135,11 +4135,11 @@ export const AdminHome: React.FC = () => {
         return (
           <div className="flex flex-col gap-4">
             {/* Period toggle */}
-            <div className="flex bg-white border border-slate-100 rounded-2xl p-1 gap-1 shadow-sm">
+            <div className="flex bg-white border border-slate-100 rounded-2xl p-1 gap-1">
               {(['day', 'week', 'month', 'all'] as const).map(p => (
                 <button key={p} onClick={() => setEarningsPeriod(p)}
-                  className={`flex-1 py-2 rounded-xl text-xs font-extrabold transition ${
-                    earningsPeriod === p ? 'bg-primary text-white shadow-sm' : 'text-slate-400'
+                  className={`flex-1 py-2 rounded-xl text-xs font-semibold transition ${
+                    earningsPeriod === p ? 'bg-primary text-white' : 'text-slate-400'
                   }`}>
                   {p === 'day' ? 'Day' : p === 'week' ? 'Week' : p === 'month' ? 'Month' : 'All Time'}
                 </button>
@@ -4152,11 +4152,11 @@ export const AdminHome: React.FC = () => {
                 type="date"
                 value={earningsDay}
                 onChange={e => setEarningsDay(e.target.value)}
-                className="bg-white border border-slate-100 rounded-2xl px-4 py-3 text-sm font-bold text-slate-700 shadow-sm focus:outline-none focus:border-primary transition"
+                className="bg-white border border-slate-100 rounded-2xl px-4 py-3 text-sm font-normal text-slate-700 focus:outline-none focus:border-primary transition"
               />
             )}
             {earningsPeriod === 'week' && (
-              <div className="flex items-center justify-between bg-white border border-slate-100 rounded-2xl px-3 py-3 shadow-sm">
+              <div className="flex items-center justify-between bg-white border border-slate-100 rounded-2xl px-3 py-3">
                 <button onClick={() => setEarningsWeekStart(addDays(earningsWeekStart, -7))}
                   className="w-8 h-8 flex items-center justify-center rounded-xl text-slate-400 hover:text-primary transition active:scale-90">
                   <ChevronLeft className="w-4 h-4" />
@@ -4173,20 +4173,20 @@ export const AdminHome: React.FC = () => {
             )}
 
             {/* Summary */}
-            <div className="bg-white border border-slate-100 rounded-3xl p-5 shadow-sm flex gap-3">
+            <div className="bg-white border border-slate-100 rounded-3xl p-5 flex gap-3">
               <div className="flex-1 bg-slate-50 rounded-2xl px-3 py-2.5 text-center">
                 <p className="text-lg font-black text-slate-700">{driverCount}</p>
-                <p className="text-xs text-slate-400 font-semibold uppercase tracking-wider">Drivers Earning</p>
+                <p className="text-xs font-semibold text-slate-400">Drivers Earning</p>
               </div>
               <div className="flex-1 bg-emerald-50 rounded-2xl px-3 py-2.5 text-center">
                 <p className="text-lg font-black text-emerald-600">RM {totalEarnings.toFixed(2)}</p>
-                <p className="text-xs text-slate-400 font-semibold uppercase tracking-wider">Total Earnings</p>
+                <p className="text-xs font-semibold text-slate-400">Total Earnings</p>
               </div>
             </div>
 
             {/* Leaderboard */}
-            <div className="bg-white border border-slate-100 rounded-3xl p-5 shadow-sm flex flex-col gap-4">
-              <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest flex items-center gap-1.5">
+            <div className="bg-white border border-slate-100 rounded-3xl p-5 flex flex-col gap-4">
+              <h3 className="text-sm font-bold text-slate-700 flex items-center gap-1.5">
                 <TrendingUp className="w-4 h-4" /> Driver Leaderboard
               </h3>
 
@@ -4232,7 +4232,7 @@ export const AdminHome: React.FC = () => {
           <div className={`rounded-2xl p-5 flex items-center gap-3 ${calActiveYear ? 'bg-emerald-50 border border-emerald-100' : 'bg-slate-50 border border-slate-100'}`}>
             <CalendarDays className={`w-5 h-5 shrink-0 ${calActiveYear ? 'text-emerald-500' : 'text-slate-400'}`} />
             <div>
-              <p className="text-xs font-extrabold text-slate-700">Active Calendar</p>
+              <p className="text-xs font-semibold text-slate-700">Active Calendar</p>
               <p className={`text-xs font-semibold ${calActiveYear ? 'text-emerald-600' : 'text-slate-400'}`}>
                 {calActiveYear ? `UMPSA ${calActiveYear}` : 'No calendar uploaded yet'}
               </p>
@@ -4242,7 +4242,7 @@ export const AdminHome: React.FC = () => {
           {/* Upload section */}
           <div className="bg-white border border-slate-100 rounded-2xl p-5 flex flex-col gap-4">
             <div>
-              <p className="text-xs font-extrabold text-slate-700">Upload New Calendar PDF</p>
+              <p className="text-xs font-semibold text-slate-700">Upload New Calendar PDF</p>
               <p className="text-xs text-slate-400 font-semibold mt-0.5">Claude AI will parse the PDF and extract all semester events automatically.</p>
             </div>
 
@@ -4270,7 +4270,7 @@ export const AdminHome: React.FC = () => {
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <Eye className="w-4 h-4 text-primary" />
-                    <p className="text-xs font-extrabold text-slate-700">Preview — {calParsed.academic_year}</p>
+                    <p className="text-xs font-semibold text-slate-700">Preview — {calParsed.academic_year}</p>
                   </div>
                   <button onClick={() => setCalParsed(null)} className="w-6 h-6 flex items-center justify-center rounded-full bg-slate-100 text-slate-400 active:scale-90">
                     <X className="w-3 h-3" />
@@ -4281,7 +4281,7 @@ export const AdminHome: React.FC = () => {
                 <div className="flex gap-1.5 overflow-x-auto no-scrollbar">
                   {calParsed.semesters?.map((s: any, i: number) => (
                     <button key={s.id} onClick={() => setCalPreviewSem(i)}
-                      className={`shrink-0 px-3 py-1.5 rounded-xl text-xs font-extrabold transition ${calPreviewSem === i ? 'bg-primary text-white' : 'bg-slate-100 text-slate-500'}`}>
+                      className={`shrink-0 px-3 py-1.5 rounded-xl text-xs font-semibold transition ${calPreviewSem === i ? 'bg-primary text-white' : 'bg-slate-100 text-slate-500'}`}>
                       {s.short}
                     </button>
                   ))}
@@ -4292,7 +4292,7 @@ export const AdminHome: React.FC = () => {
                   {calParsed.semesters?.[calPreviewSem]?.events?.map((ev: any, i: number) => (
                     <div key={i} className="bg-slate-50 rounded-xl px-3 py-2.5 flex items-start justify-between gap-2">
                       <div>
-                        <span className={`text-[8px] font-extrabold uppercase tracking-wider px-1.5 py-0.5 rounded-full mr-1.5 ${
+                        <span className={`text-[8px] font-semibold uppercase tracking-wider px-1.5 py-0.5 rounded-full mr-1.5 ${
                           ev.type === 'exam'         ? 'bg-red-100 text-red-600' :
                           ev.type === 'study'        ? 'bg-amber-100 text-amber-600' :
                           ev.type === 'break'        ? 'bg-slate-200 text-slate-500' :
@@ -4316,13 +4316,13 @@ export const AdminHome: React.FC = () => {
                 {/* Actions */}
                 <div className="flex gap-2">
                   <button onClick={handleCalendarSave} disabled={calSaving}
-                    className="flex-1 bg-primary text-white text-xs font-extrabold py-3 rounded-2xl active:scale-95 transition disabled:opacity-50 flex items-center justify-center gap-2">
+                    className="flex-1 bg-primary text-white text-xs font-semibold py-3 rounded-2xl active:scale-95 transition disabled:opacity-50 flex items-center justify-center gap-2">
                     {calSaving
                       ? <><span className="w-3.5 h-3.5 rounded-full border-2 border-white border-t-transparent animate-spin" /> Saving…</>
                       : <><CheckCircle2 className="w-4 h-4" /> Confirm & Activate</>}
                   </button>
                   <button onClick={() => setCalParsed(null)}
-                    className="px-4 bg-slate-100 text-slate-500 text-xs font-extrabold py-3 rounded-2xl active:scale-95 transition">
+                    className="px-4 bg-slate-100 text-slate-500 text-xs font-semibold py-3 rounded-2xl active:scale-95 transition">
                     Cancel
                   </button>
                 </div>
@@ -4334,7 +4334,7 @@ export const AdminHome: React.FC = () => {
           <div className="bg-amber-50 border border-amber-100 rounded-2xl px-4 py-3 flex gap-2 items-start">
             <AlertCircle className="w-3.5 h-3.5 text-amber-500 shrink-0 mt-0.5" />
             <div className="text-xs text-amber-700 font-semibold leading-relaxed flex flex-col gap-0.5">
-              <p className="font-extrabold">How to update the calendar:</p>
+              <p className="font-semibold">How to update the calendar:</p>
               <p>1. Download the latest UMPSA Academic Calendar PDF from the university website.</p>
               <p>2. Tap "Choose PDF to Upload" above.</p>
               <p>3. Wait for AI parsing (~10–15 seconds).</p>
@@ -4394,11 +4394,11 @@ export const AdminHome: React.FC = () => {
             <p className="text-xs text-slate-400 font-semibold text-center mb-6">{desc}</p>
             <div className="flex gap-3">
               <button onClick={() => setPendingAction(null)}
-                className="flex-1 bg-slate-100 text-slate-600 font-extrabold text-xs py-3 rounded-2xl transition active:scale-95">
+                className="flex-1 bg-slate-100 text-slate-600 font-semibold text-xs py-3 rounded-2xl transition active:scale-95">
                 Cancel
               </button>
               <button onClick={executePendingAction}
-                className={`flex-1 font-extrabold text-xs py-3 rounded-2xl transition active:scale-95 text-white ${
+                className={`flex-1 font-semibold text-xs py-3 rounded-2xl transition active:scale-95 text-white ${
                   isTerminate ? 'bg-red-500' : isStop ? 'bg-amber-500' : 'bg-primary'
                 }`}>
                 Yes, Confirm
@@ -4433,11 +4433,11 @@ export const AdminHome: React.FC = () => {
           </p>
           <div className="flex gap-3">
             <button onClick={() => setShowGateMasterConfirm(false)}
-              className="flex-1 bg-slate-100 text-slate-600 font-extrabold text-xs py-3 rounded-2xl transition active:scale-95">
+              className="flex-1 bg-slate-100 text-slate-600 font-semibold text-xs py-3 rounded-2xl transition active:scale-95">
               Cancel
             </button>
             <button onClick={() => { handleToggleReceiptGate(); setShowGateMasterConfirm(false); }}
-              className={`flex-1 font-extrabold text-xs py-3 rounded-2xl transition active:scale-95 text-white ${
+              className={`flex-1 font-semibold text-xs py-3 rounded-2xl transition active:scale-95 text-white ${
                 receiptGateOn ? 'bg-amber-500' : 'bg-primary'
               }`}>
               Yes, Confirm
@@ -4472,46 +4472,46 @@ export const AdminHome: React.FC = () => {
             {/* Header stripe */}
             <div className={`px-4 py-3 flex items-center gap-2 ${inviteRole === 'admin' ? 'bg-violet-600' : inviteRole === 'rider' ? 'bg-emerald-600' : 'bg-primary'}`}>
               <Send className="w-3.5 h-3.5 text-white" />
-              <span className="text-white font-extrabold text-xs uppercase tracking-widest">{inviteRole === 'admin' ? 'Admin' : inviteRole === 'rider' ? 'Rider' : 'Driver'} Invite</span>
+              <span className="text-white font-semibold text-xs uppercase tracking-widest">{inviteRole === 'admin' ? 'Admin' : inviteRole === 'rider' ? 'Rider' : 'Driver'} Invite</span>
             </div>
 
             {/* Details */}
             <div className="px-4 py-4 flex flex-col gap-4">
               <div className="flex items-start justify-between gap-2">
-                <p className="text-xs font-extrabold text-slate-400 uppercase tracking-wider">Email</p>
-                <p className="text-xs font-extrabold text-slate-800 text-right break-all">{inviteEmail.trim().toLowerCase()}</p>
+                <p className="text-xs font-semibold text-slate-400">Email</p>
+                <p className="text-xs font-semibold text-slate-800 text-right break-all">{inviteEmail.trim().toLowerCase()}</p>
               </div>
 
               <div className="h-px bg-slate-100" />
 
               <div className="flex items-center justify-between gap-2">
-                <p className="text-xs font-extrabold text-slate-400 uppercase tracking-wider">Campus</p>
-                <span className="text-xs font-extrabold text-slate-800">UMPSA {inviteCampus}</span>
+                <p className="text-xs font-semibold text-slate-400">Campus</p>
+                <span className="text-xs font-semibold text-slate-800">UMPSA {inviteCampus}</span>
               </div>
 
               <div className="h-px bg-slate-100" />
 
               <div className="flex items-start justify-between gap-2">
-                <p className="text-xs font-extrabold text-slate-400 uppercase tracking-wider">Capabilities</p>
+                <p className="text-xs font-semibold text-slate-400">Capabilities</p>
                 <div className="flex flex-col items-end gap-1.5">
                   {inviteRole === 'driver' && (<>
-                    <span className={`flex items-center gap-1.5 text-xs font-extrabold px-2.5 py-1 rounded-full ${inviteCanDrive ? 'bg-primary/10 text-primary' : 'bg-slate-100 text-slate-400 line-through'}`}>
+                    <span className={`flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full ${inviteCanDrive ? 'bg-primary/10 text-primary' : 'bg-slate-100 text-slate-400 line-through'}`}>
                       <Car className="w-3 h-3" /> Gerak Car {inviteCanDrive ? '✓' : '✗'}
                     </span>
-                    <span className={`flex items-center gap-1.5 text-xs font-extrabold px-2.5 py-1 rounded-full ${inviteCanRent ? 'bg-amber-50 text-amber-700' : 'bg-slate-100 text-slate-400 line-through'}`}>
+                    <span className={`flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full ${inviteCanRent ? 'bg-amber-50 text-amber-700' : 'bg-slate-100 text-slate-400 line-through'}`}>
                       <KeyRound className="w-3 h-3" /> Gerak Rental {inviteCanRent ? '✓' : '✗'}
                     </span>
                   </>)}
                   {inviteRole === 'rider' && (<>
-                    <span className={`flex items-center gap-1.5 text-xs font-extrabold px-2.5 py-1 rounded-full ${inviteCanDaily ? 'bg-emerald-50 text-emerald-700' : 'bg-slate-100 text-slate-400 line-through'}`}>
+                    <span className={`flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full ${inviteCanDaily ? 'bg-emerald-50 text-emerald-700' : 'bg-slate-100 text-slate-400 line-through'}`}>
                       <Bike className="w-3 h-3" /> Gerak Daily {inviteCanDaily ? '✓' : '✗'}
                     </span>
-                    <span className={`flex items-center gap-1.5 text-xs font-extrabold px-2.5 py-1 rounded-full ${inviteCanRobe ? 'bg-blue-50 text-blue-700' : 'bg-slate-100 text-slate-400 line-through'}`}>
+                    <span className={`flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full ${inviteCanRobe ? 'bg-blue-50 text-blue-700' : 'bg-slate-100 text-slate-400 line-through'}`}>
                       <GraduationCap className="w-3 h-3" /> Robe Convocation {inviteCanRobe ? '✓' : '✗'}
                     </span>
                   </>)}
                   {inviteRole === 'admin' && (
-                    <span className="flex items-center gap-1.5 text-xs font-extrabold px-2.5 py-1 rounded-full bg-violet-50 text-violet-700">
+                    <span className="flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full bg-violet-50 text-violet-700">
                       <Settings className="w-3 h-3" /> Full Access
                     </span>
                   )}
@@ -4531,14 +4531,14 @@ export const AdminHome: React.FC = () => {
           <div className="flex gap-3">
             <button
               onClick={() => setShowInviteConfirm(false)}
-              className="flex-1 bg-slate-100 text-slate-600 font-extrabold text-xs py-3 rounded-2xl transition active:scale-95"
+              className="flex-1 bg-slate-100 text-slate-600 font-semibold text-xs py-3 rounded-2xl transition active:scale-95"
             >
               Cancel
             </button>
             <button
               onClick={() => { setShowInviteConfirm(false); handleSendInvite(); }}
               disabled={inviteSending}
-              className="flex-1 bg-primary hover:bg-primary-hover text-white font-extrabold text-xs py-3 rounded-2xl transition active:scale-95 disabled:opacity-50 flex items-center justify-center gap-2 shadow-md shadow-primary/20"
+              className="flex-1 bg-primary hover:bg-primary-hover text-white font-semibold text-xs py-3 rounded-2xl transition active:scale-95 disabled:opacity-50 flex items-center justify-center gap-2 shadow-md shadow-primary/20"
             >
               {inviteSending
                 ? <span className="w-4 h-4 rounded-full border-2 border-white border-t-transparent animate-spin" />

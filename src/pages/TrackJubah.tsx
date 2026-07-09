@@ -1,4 +1,4 @@
-﻿import React, { useState, useRef } from 'react';
+import React, { useState, useRef } from 'react';
 import { useApp } from '../context/AppContext';
 import { supabase } from '../lib/supabase';
 import { updateJubahBalanceProof } from '../lib/sheetsService';
@@ -125,7 +125,7 @@ export const TrackJubah: React.FC = () => {
   };
 
   return (
-    <div className="flex-grow bg-slate-50/50 overflow-y-auto no-scrollbar pb-4 px-5 animate-fade-in flex flex-col gap-5">
+    <div className="flex-grow bg-white overflow-y-auto no-scrollbar pb-4 px-5 animate-fade-in flex flex-col gap-5">
 
       {/* HEADER */}
       <div className="mt-4 px-1 flex items-center gap-2">
@@ -133,48 +133,48 @@ export const TrackJubah: React.FC = () => {
           <PackageSearch className="w-5 h-5 text-blue-500" />
         </div>
         <div>
-          <h2 className="text-xl font-black m-0 text-slate-800">Track My Order</h2>
-          <p className="text-xs text-slate-400 font-semibold uppercase tracking-wider mt-0.5">
+          <h2 className="text-xl font-bold m-0 text-slate-800">Track My Order</h2>
+          <p className="text-xs text-slate-400 font-normal mt-0.5">
             Jubah Delivery Status
           </p>
         </div>
       </div>
 
       {/* Search form */}
-      <form onSubmit={handleSearch} className="bg-white border border-slate-100 rounded-3xl p-5 shadow-sm flex flex-col gap-4">
+      <form onSubmit={handleSearch} className="bg-white border border-slate-100 rounded-3xl p-5 flex flex-col gap-4">
 
         <div className="flex flex-col gap-1.5">
-          <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Reference Number</label>
+          <label className="text-xs font-semibold text-slate-400">Reference Number</label>
           <input
             type="text"
             value={reference}
             onChange={e => setReference(e.target.value.toUpperCase())}
             placeholder="e.g. JUB-26-UMPSA-XK7F"
             style={{ fontSize: '16px' }}
-            className="bg-slate-50 border border-slate-200 rounded-xl py-2.5 px-3 text-sm font-bold text-slate-700 focus:outline-none focus:border-blue-500 transition placeholder:font-normal placeholder:text-slate-300"
+            className="bg-white border border-slate-100 rounded-xl py-2.5 px-3 text-sm font-normal text-slate-700 focus:outline-none focus:border-blue-500 transition placeholder:font-normal placeholder:text-slate-300"
           />
         </div>
 
         <div className="flex items-center gap-2">
           <div className="flex-1 h-px bg-slate-100" />
-          <span className="text-xs text-slate-300 font-extrabold uppercase">or</span>
+          <span className="text-xs text-slate-300 font-normal">or</span>
           <div className="flex-1 h-px bg-slate-100" />
         </div>
 
         <div className="flex flex-col gap-1.5">
-          <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Matric or IC Number</label>
+          <label className="text-xs font-semibold text-slate-400">Matric or IC Number</label>
           <input
             type="text"
             value={matric}
             onChange={e => setMatric(e.target.value)}
             placeholder="e.g. CB21110 or 980123-45-6789"
             style={{ fontSize: '16px' }}
-            className="bg-slate-50 border border-slate-200 rounded-xl py-2.5 px-3 text-sm font-bold text-slate-700 focus:outline-none focus:border-blue-500 transition placeholder:font-normal placeholder:text-slate-300"
+            className="bg-white border border-slate-100 rounded-xl py-2.5 px-3 text-sm font-normal text-slate-700 focus:outline-none focus:border-blue-500 transition placeholder:font-normal placeholder:text-slate-300"
           />
         </div>
 
         {error && (
-          <p className="text-xs text-danger font-bold text-center bg-danger/10 border border-danger/20 rounded-xl py-2.5">
+          <p className="text-xs text-danger font-semibold text-center bg-danger/10 border border-danger/20 rounded-xl py-2.5">
             {error}
           </p>
         )}
@@ -182,7 +182,7 @@ export const TrackJubah: React.FC = () => {
         <button
           type="submit"
           disabled={searching}
-          className="w-full bg-blue-600 hover:bg-blue-700 active:scale-[0.98] disabled:bg-slate-200 text-white font-extrabold py-3 rounded-2xl shadow-md transition flex items-center justify-center gap-2"
+          className="w-full bg-blue-600 hover:bg-blue-700 active:scale-[0.98] disabled:bg-slate-200 text-white font-semibold py-3 rounded-2xl transition flex items-center justify-center gap-2"
         >
           {searching
             ? <span className="w-4 h-4 rounded-full border-2 border-white border-t-transparent animate-spin" />
@@ -193,10 +193,10 @@ export const TrackJubah: React.FC = () => {
       {/* Results */}
       {searched && (
         results.length === 0 ? (
-          <div className="bg-white border border-slate-100 rounded-3xl p-8 shadow-sm flex flex-col items-center gap-3 text-center">
+          <div className="bg-white border border-slate-100 rounded-3xl p-8 flex flex-col items-center gap-3 text-center">
             <GraduationCap className="w-8 h-8 text-slate-300" />
-            <p className="text-xs font-bold text-slate-500">No booking found.</p>
-            <p className="text-xs text-slate-400">Double-check your reference number or matric / IC number and try again.</p>
+            <p className="text-xs font-semibold text-slate-500">No booking found.</p>
+            <p className="text-xs text-slate-400 font-normal">Double-check your reference number or matric / IC number and try again.</p>
           </div>
         ) : (
           <div className="flex flex-col gap-4">
@@ -212,23 +212,23 @@ export const TrackJubah: React.FC = () => {
               const isDone  = curStep === trackSteps.length - 1;
 
               return (
-              <div key={b.id} className="bg-white border border-slate-100 rounded-3xl p-5 shadow-sm flex flex-col gap-4">
+              <div key={b.id} className="bg-white border border-slate-100 rounded-3xl p-5 flex flex-col gap-4">
 
                 {/* Customer summary */}
                 <div className="flex items-start justify-between gap-2">
                   <div>
-                    <p className="text-xs text-blue-500 font-extrabold uppercase tracking-wider">{b.reference}</p>
-                    <h3 className="text-base font-black text-slate-800 mt-0.5">{b.full_name}</h3>
-                    <p className="text-xs text-slate-400 font-semibold mt-0.5">{b.remark} · {b.faculty} · UMPSA {b.campus}</p>
+                    <p className="text-xs text-blue-500 font-semibold">{b.reference}</p>
+                    <h3 className="text-base font-bold text-slate-800 mt-0.5">{b.full_name}</h3>
+                    <p className="text-xs text-slate-400 font-normal mt-0.5">{b.remark} · {b.faculty} · UMPSA {b.campus}</p>
                   </div>
-                  <span className={`text-xs font-extrabold px-2.5 py-1 rounded-full border shrink-0 ${STATUS_STYLE[b.status] ?? 'bg-slate-50 border-slate-200 text-slate-400'}`}>
+                  <span className={`text-xs font-semibold px-2.5 py-1 rounded-full border shrink-0 ${STATUS_STYLE[b.status] ?? 'bg-slate-50 border-slate-200 text-slate-400'}`}>
                     {STATUS_LABEL[b.status] ?? b.status}
                   </span>
                 </div>
 
                 {/* Rider phone + WA (to rider) + payment mode badge */}
                 <div className="flex items-center gap-3">
-                  <div className="flex items-center gap-1.5 bg-slate-50 border border-slate-100 rounded-xl px-3 py-2 flex-1 min-w-0">
+                  <div className="flex items-center gap-1.5 bg-white border border-slate-100 rounded-xl px-3 py-2 flex-1 min-w-0">
                     {b.rider_phone ? (
                       <>
                         <span className="text-xs font-semibold text-slate-600 truncate">{b.rider_phone}</span>
@@ -240,13 +240,13 @@ export const TrackJubah: React.FC = () => {
                         </a>
                       </>
                     ) : (
-                      <span className="text-xs font-semibold text-slate-400 italic">Rider not yet assigned</span>
+                      <span className="text-xs font-normal text-slate-400 italic">Rider not yet assigned</span>
                     )}
                   </div>
-                  <span className={`text-xs font-extrabold px-3 py-2 rounded-xl border shrink-0 ${
+                  <span className={`text-xs font-semibold px-3 py-2 rounded-xl border shrink-0 ${
                     b.payment_mode === 'deposit' ? 'bg-amber-50 border-amber-100 text-amber-700' :
                     b.payment_mode === 'postage' ? 'bg-blue-50 border-blue-100 text-blue-700' :
-                    'bg-slate-50 border-slate-200 text-slate-600'
+                    'bg-slate-50 border-slate-100 text-slate-600'
                   }`}>
                     {b.payment_mode === 'deposit' ? 'Deposit' : b.payment_mode === 'postage' ? 'Postage' : 'Pickup'}
                   </span>
@@ -257,7 +257,7 @@ export const TrackJubah: React.FC = () => {
                   <div className="flex items-center gap-1">
                     {trackSteps.map((step, i) => (
                       <React.Fragment key={step}>
-                        <div className={`w-5 h-5 rounded-full flex items-center justify-center shrink-0 text-[8px] font-extrabold border-2 transition ${
+                        <div className={`w-5 h-5 rounded-full flex items-center justify-center shrink-0 text-[8px] font-semibold border-2 transition ${
                           i < curStep   ? 'bg-blue-500 border-blue-500 text-white' :
                           i === curStep ? 'bg-white border-blue-500 text-blue-500' :
                           'bg-white border-slate-200 text-slate-300'
@@ -272,14 +272,14 @@ export const TrackJubah: React.FC = () => {
                   </div>
                   <div className="flex justify-between">
                     {trackSteps.map(step => (
-                      <span key={step} className="text-[8px] font-extrabold text-slate-400 uppercase tracking-wide flex-1 text-center first:text-left last:text-right">
+                      <span key={step} className="text-[8px] font-normal text-slate-400 flex-1 text-center first:text-left last:text-right">
                         {STEP_LABEL[step]}
                       </span>
                     ))}
                   </div>
                   {isDone && b.status !== 'cancelled' && (
                     <div className="bg-emerald-50 border border-emerald-100 rounded-2xl px-4 py-3 text-center">
-                      <p className="text-xs font-extrabold text-emerald-700">✓ Delivery Complete</p>
+                      <p className="text-xs font-semibold text-emerald-700">✓ Delivery Complete</p>
                     </div>
                   )}
                 </div>
@@ -294,7 +294,7 @@ export const TrackJubah: React.FC = () => {
                         : 'bg-amber-50 border-amber-100'
                     }`}>
                       <div>
-                        <span className={`text-[8px] font-extrabold uppercase tracking-wider block ${b.balance_paid ? 'text-emerald-500' : 'text-amber-500'}`}>
+                        <span className={`text-[8px] font-semibold block ${b.balance_paid ? 'text-emerald-500' : 'text-amber-500'}`}>
                           {b.balance_paid ? 'Balance Paid' : 'Balance Due on Collection'}
                         </span>
                         <span className={`text-base font-black ${b.balance_paid ? 'text-emerald-700' : 'text-amber-700'}`}>
@@ -310,7 +310,7 @@ export const TrackJubah: React.FC = () => {
 
                     {/* Submitted — under review */}
                     {b.balance_proof_url && !b.balance_paid && (
-                      <p className="text-xs text-amber-700 font-bold bg-amber-50 border border-amber-100 rounded-xl px-3 py-2">
+                      <p className="text-xs text-amber-700 font-semibold bg-amber-50 border border-amber-100 rounded-xl px-3 py-2">
                         Balance payment receipt submitted — admin will confirm shortly.
                       </p>
                     )}
@@ -318,7 +318,7 @@ export const TrackJubah: React.FC = () => {
                     {/* Pay balance upload */}
                     {!b.balance_paid && !b.balance_proof_url && (
                       <div className="flex flex-col gap-2">
-                        <p className="text-xs text-slate-500 font-semibold">
+                        <p className="text-xs text-slate-500 font-normal">
                           Ready to pay your balance? Upload proof of payment below.
                         </p>
                         <input
@@ -335,15 +335,15 @@ export const TrackJubah: React.FC = () => {
                             className="w-full border-2 border-dashed border-amber-200 rounded-xl py-3 flex items-center justify-center gap-2 text-amber-500 hover:border-amber-400 hover:bg-amber-50/50 transition"
                           >
                             <Upload className="w-4 h-4" />
-                            <span className="text-xs font-bold">Upload Balance Payment Receipt</span>
+                            <span className="text-xs font-semibold">Upload Balance Payment Receipt</span>
                           </button>
                         ) : (
                           <div className="flex flex-col gap-2">
                             <div className="flex items-center gap-3 bg-emerald-50 border border-emerald-100 rounded-xl p-2.5">
                               <FileText className="w-5 h-5 text-emerald-500 shrink-0" />
                               <div className="flex-1 min-w-0">
-                                <p className="text-xs font-bold text-emerald-700 truncate">{balanceProof.name}</p>
-                                <p className="text-xs text-emerald-500">{(balanceProof.size / 1024).toFixed(1)} KB</p>
+                                <p className="text-xs font-semibold text-emerald-700 truncate">{balanceProof.name}</p>
+                                <p className="text-xs text-emerald-500 font-normal">{(balanceProof.size / 1024).toFixed(1)} KB</p>
                               </div>
                               <button
                                 type="button"
@@ -357,7 +357,7 @@ export const TrackJubah: React.FC = () => {
                               type="button"
                               onClick={() => handleBalanceSubmit(b)}
                               disabled={submitting}
-                              className="w-full bg-amber-500 hover:bg-amber-600 active:scale-[0.99] disabled:bg-slate-200 text-white font-extrabold py-2.5 rounded-xl text-xs transition flex items-center justify-center gap-2"
+                              className="w-full bg-amber-500 hover:bg-amber-600 active:scale-[0.99] disabled:bg-slate-200 text-white font-semibold py-2.5 rounded-xl text-xs transition flex items-center justify-center gap-2"
                             >
                               {submitting
                                 ? <><span className="w-3.5 h-3.5 rounded-full border-2 border-white/40 border-t-white animate-spin" /> Submitting…</>
@@ -366,7 +366,7 @@ export const TrackJubah: React.FC = () => {
                           </div>
                         )}
                         {submitError && (
-                          <p className="text-xs text-danger font-bold">{submitError}</p>
+                          <p className="text-xs text-danger font-semibold">{submitError}</p>
                         )}
                       </div>
                     )}

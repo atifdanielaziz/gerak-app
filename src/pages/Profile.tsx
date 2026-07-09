@@ -218,12 +218,12 @@ export const Profile: React.FC = () => {
 
       {/* Page Title */}
       <div className="px-5 pt-6 pb-2 flex items-center justify-between">
-        <h1 className="text-2xl font-black text-slate-900 m-0">Edit profile</h1>
+        <h1 className="text-2xl font-bold text-slate-900 m-0">Edit profile</h1>
         <div className="flex items-center gap-2">
 
           {/* Driver status badge — read-only */}
           {isDriver && (
-            <span className={`flex items-center gap-1.5 text-xs font-extrabold px-3 py-1.5 rounded-full border ${
+            <span className={`flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-full border ${
               isActive
                 ? 'bg-emerald-50 border-emerald-200 text-emerald-600'
                 : 'bg-red-50 border-red-200 text-red-500'
@@ -284,24 +284,24 @@ export const Profile: React.FC = () => {
         {/* Gerak ID — read-only, assigned at registration */}
         <div className="flex items-center justify-between py-4 border-b border-slate-100">
           <div className="flex-1 min-w-0 pr-3">
-            <span className="text-xs font-bold text-slate-400 uppercase tracking-wider block">
+            <span className="text-xs font-semibold text-slate-400 block">
               Gerak ID
             </span>
-            <span className="text-sm font-medium text-slate-700 mt-1 block">{user.gerakId || '—'}</span>
+            <span className="text-sm font-normal text-slate-700 mt-1 block">{user.gerakId || '—'}</span>
           </div>
         </div>
 
         {/* Full Name * */}
         <div className="flex items-center justify-between py-4 border-b border-slate-100">
           <div className="flex-1 min-w-0 pr-3">
-            <span className="text-xs font-bold text-slate-400 uppercase tracking-wider block">
+            <span className="text-xs font-semibold text-slate-400 block">
               Full Name <span className="text-danger">*</span>
             </span>
             {editMode ? (
               <input value={draftName} onChange={e => setDraftName(e.target.value.replace(/\b\w/g, c => c.toUpperCase()))}
-                className="mt-1 w-full bg-slate-50 border border-slate-200 rounded-xl py-2 px-3 text-sm font-medium text-slate-700 focus:outline-none focus:border-primary transition"
+                className="mt-1 w-full bg-white border border-slate-100 rounded-xl py-2 px-3 text-sm font-normal text-slate-700 focus:outline-none focus:border-primary transition"
                 placeholder="Full name" />
-            ) : <span className="text-sm font-medium text-slate-700 mt-1 block">{user.name || '—'}</span>}
+            ) : <span className="text-sm font-normal text-slate-700 mt-1 block">{user.name || '—'}</span>}
           </div>
           {!editMode && <ChevronRight className="w-4 h-4 text-slate-300 shrink-0" />}
         </div>
@@ -309,14 +309,14 @@ export const Profile: React.FC = () => {
         {/* Matric Number * */}
         <div className="flex items-center justify-between py-4 border-b border-slate-100">
           <div className="flex-1 min-w-0 pr-3">
-            <span className="text-xs font-bold text-slate-400 uppercase tracking-wider block">
+            <span className="text-xs font-semibold text-slate-400 block">
               Matric Number <span className="text-danger">*</span>
             </span>
             {editMode ? (
               <input value={draftMatric} onChange={e => setDraftMatric(e.target.value.toUpperCase())}
-                className="mt-1 w-full bg-slate-50 border border-slate-200 rounded-xl py-2 px-3 text-sm font-medium text-slate-700 focus:outline-none focus:border-primary transition"
+                className="mt-1 w-full bg-white border border-slate-100 rounded-xl py-2 px-3 text-sm font-normal text-slate-700 focus:outline-none focus:border-primary transition"
                 placeholder="Matric number" />
-            ) : <span className="text-sm font-medium text-slate-700 mt-1 block">{user.matricNo || '—'}</span>}
+            ) : <span className="text-sm font-normal text-slate-700 mt-1 block">{user.matricNo || '—'}</span>}
           </div>
           {!editMode && <ChevronRight className="w-4 h-4 text-slate-300 shrink-0" />}
         </div>
@@ -324,14 +324,14 @@ export const Profile: React.FC = () => {
         {/* Mobile Number * */}
         <div className="flex items-center justify-between py-4 border-b border-slate-100">
           <div className="flex-1 min-w-0 pr-3">
-            <span className="text-xs font-bold text-slate-400 uppercase tracking-wider block">
+            <span className="text-xs font-semibold text-slate-400 block">
               Mobile Number <span className="text-danger">*</span>
             </span>
             {editMode ? (
               <input type="tel" value={draftPhone} onChange={e => setDraftPhone(formatPhone(e.target.value))}
-                className="mt-1 w-full bg-slate-50 border border-slate-200 rounded-xl py-2 px-3 text-sm font-medium text-slate-700 focus:outline-none focus:border-primary transition"
+                className="mt-1 w-full bg-white border border-slate-100 rounded-xl py-2 px-3 text-sm font-normal text-slate-700 focus:outline-none focus:border-primary transition"
                 placeholder="e.g. 012-34567890" />
-            ) : <span className="text-sm font-medium text-slate-700 mt-1 block">{user.phone || '—'}</span>}
+            ) : <span className="text-sm font-normal text-slate-700 mt-1 block">{user.phone || '—'}</span>}
           </div>
           {!editMode && <ChevronRight className="w-4 h-4 text-slate-300 shrink-0" />}
         </div>
@@ -340,18 +340,18 @@ export const Profile: React.FC = () => {
         <div className="flex items-center justify-between py-4 border-b border-slate-100">
           <div className="flex-1 min-w-0 pr-3">
             <div className="flex items-center gap-2">
-              <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">
+              <span className="text-xs font-semibold text-slate-400">
                 Email Address <span className="text-danger">*</span>
               </span>
-              <span className="flex items-center gap-0.5 bg-emerald-500 text-white text-[8px] font-extrabold px-1.5 py-0.5 rounded-full shrink-0">
+              <span className="flex items-center gap-0.5 bg-emerald-500 text-white text-[8px] font-semibold px-1.5 py-0.5 rounded-full shrink-0">
                 <CheckCircle2 className="w-2.5 h-2.5" /> VERIFIED
               </span>
             </div>
             {editMode ? (
               <input type="email" value={draftEmail} onChange={e => setDraftEmail(e.target.value)}
-                className="mt-1 w-full bg-slate-50 border border-slate-200 rounded-xl py-2 px-3 text-sm font-medium text-slate-700 focus:outline-none focus:border-primary transition"
+                className="mt-1 w-full bg-white border border-slate-100 rounded-xl py-2 px-3 text-sm font-normal text-slate-700 focus:outline-none focus:border-primary transition"
                 placeholder="Email address" />
-            ) : <span className="text-sm font-medium text-slate-700 mt-1 block">{user.email || '—'}</span>}
+            ) : <span className="text-sm font-normal text-slate-700 mt-1 block">{user.email || '—'}</span>}
           </div>
           {!editMode && <ChevronRight className="w-4 h-4 text-slate-300 shrink-0" />}
         </div>
@@ -360,7 +360,7 @@ export const Profile: React.FC = () => {
         {requiresIc && (
           <div className="flex items-center justify-between py-4 border-b border-slate-100">
             <div className="flex-1 min-w-0 pr-3">
-              <span className="text-xs font-bold text-slate-400 uppercase tracking-wider block">
+              <span className="text-xs font-semibold text-slate-400 block">
                 IC Number <span className="text-danger">*</span>
               </span>
               {editMode ? (
@@ -368,10 +368,10 @@ export const Profile: React.FC = () => {
                   value={draftIcNumber}
                   onChange={e => setDraftIcNumber(formatIcNumber(e.target.value))}
                   inputMode="numeric"
-                  className="mt-1 w-full bg-slate-50 border border-slate-200 rounded-xl py-2 px-3 text-sm font-medium text-slate-700 focus:outline-none focus:border-primary transition"
+                  className="mt-1 w-full bg-white border border-slate-100 rounded-xl py-2 px-3 text-sm font-normal text-slate-700 focus:outline-none focus:border-primary transition"
                   placeholder="e.g. 012345-67-8910" />
               ) : (
-                <span className="text-sm font-medium text-slate-700 mt-1 block">
+                <span className="text-sm font-normal text-slate-700 mt-1 block">
                   {user.icNumber || <span className="text-danger text-xs font-semibold">Not set — please update</span>}
                 </span>
               )}
@@ -386,14 +386,14 @@ export const Profile: React.FC = () => {
             {/* Car Type / Model */}
             <div className="flex items-center justify-between py-4 border-b border-slate-100">
               <div className="flex-1 min-w-0 pr-3">
-                <span className="text-xs font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1 block">
+                <span className="text-xs font-semibold text-slate-400 flex items-center gap-1 block">
                   <Car className="w-3 h-3" /> Car Type / Model
                 </span>
                 {editMode ? (
                   <input value={draftVehicle} onChange={e => setDraftVehicle(e.target.value)}
-                    className="mt-1 w-full bg-slate-50 border border-slate-200 rounded-xl py-2 px-3 text-sm font-medium text-slate-700 focus:outline-none focus:border-primary transition"
+                    className="mt-1 w-full bg-white border border-slate-100 rounded-xl py-2 px-3 text-sm font-normal text-slate-700 focus:outline-none focus:border-primary transition"
                     placeholder="e.g. Perodua Myvi 1.5" />
-                ) : <span className="text-sm font-medium text-slate-700 mt-1 block">{user.vehicle || '—'}</span>}
+                ) : <span className="text-sm font-normal text-slate-700 mt-1 block">{user.vehicle || '—'}</span>}
               </div>
               {!editMode && <ChevronRight className="w-4 h-4 text-slate-300 shrink-0" />}
             </div>
@@ -401,12 +401,12 @@ export const Profile: React.FC = () => {
             {/* Plate Number */}
             <div className="flex items-center justify-between py-4 border-b border-slate-100">
               <div className="flex-1 min-w-0 pr-3">
-                <span className="text-xs font-bold text-slate-400 uppercase tracking-wider block">Plate Number</span>
+                <span className="text-xs font-semibold text-slate-400 block">Plate Number</span>
                 {editMode ? (
                   <input value={draftPlate} onChange={e => setDraftPlate(e.target.value.toUpperCase())}
-                    className="mt-1 w-full bg-slate-50 border border-slate-200 rounded-xl py-2 px-3 text-sm font-medium text-slate-700 focus:outline-none focus:border-primary transition"
+                    className="mt-1 w-full bg-white border border-slate-100 rounded-xl py-2 px-3 text-sm font-normal text-slate-700 focus:outline-none focus:border-primary transition"
                     placeholder="e.g. WMY 1234" />
-                ) : <span className="text-sm font-medium text-slate-700 mt-1 block font-mono tracking-wider">{user.plateNumber || '—'}</span>}
+                ) : <span className="text-sm font-normal text-slate-700 mt-1 block font-mono tracking-wider">{user.plateNumber || '—'}</span>}
               </div>
               {!editMode && <ChevronRight className="w-4 h-4 text-slate-300 shrink-0" />}
             </div>
@@ -414,10 +414,10 @@ export const Profile: React.FC = () => {
             {/* ── Documents (IC + License) ── */}
             <div className="py-4 border-b border-slate-100 flex flex-col gap-4">
               <div className="flex items-center justify-between">
-                <span className="text-xs font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1">
+                <span className="text-xs font-semibold text-slate-400 flex items-center gap-1">
                   <ShieldCheck className="w-3 h-3" /> Documents
                 </span>
-                <span className={`text-xs font-extrabold px-2 py-0.5 rounded-full border ${
+                <span className={`text-xs font-semibold px-2 py-0.5 rounded-full border ${
                   user.docsStatus === 'approved' ? 'bg-emerald-50 border-emerald-100 text-emerald-700' :
                   user.docsStatus === 'rejected' ? 'bg-red-50 border-red-100 text-red-600' :
                   user.docsStatus === 'pending'  ? 'bg-amber-50 border-amber-100 text-amber-700' :
@@ -441,16 +441,16 @@ export const Profile: React.FC = () => {
 
               {/* IC Upload */}
               <div className="flex flex-col gap-1.5">
-                <span className="text-xs font-extrabold text-slate-500 uppercase tracking-wider">IC (MyKad)</span>
+                <span className="text-xs font-semibold text-slate-400">IC (MyKad)</span>
                 <input ref={icDocRef} type="file" accept="image/*,.pdf" className="hidden" onChange={e => handleDocUpload(e, 'ic')} />
                 {user.icUrl ? (
                   <div className="flex items-center justify-between bg-emerald-50 border border-emerald-100 rounded-xl px-3 py-2.5">
                     <div className="flex items-center gap-2">
                       <FileImage className="w-4 h-4 text-emerald-500 shrink-0" />
-                      <span className="text-xs font-extrabold text-emerald-700">IC Uploaded ✓</span>
+                      <span className="text-xs font-semibold text-emerald-700">IC Uploaded ✓</span>
                     </div>
                     <button onClick={() => icDocRef.current?.click()} disabled={uploadingDoc === 'ic'}
-                      className="text-xs font-extrabold text-slate-400 underline active:scale-95 transition">
+                      className="text-xs font-semibold text-slate-400 underline active:scale-95 transition">
                       {uploadingDoc === 'ic' ? 'Uploading…' : 'Replace'}
                     </button>
                   </div>
@@ -466,16 +466,16 @@ export const Profile: React.FC = () => {
 
               {/* License Upload */}
               <div className="flex flex-col gap-1.5">
-                <span className="text-xs font-extrabold text-slate-500 uppercase tracking-wider">Driving License</span>
+                <span className="text-xs font-semibold text-slate-400">Driving License</span>
                 <input ref={licenseDocRef} type="file" accept="image/*,.pdf" className="hidden" onChange={e => handleDocUpload(e, 'license')} />
                 {user.licenseUrl ? (
                   <div className="flex items-center justify-between bg-emerald-50 border border-emerald-100 rounded-xl px-3 py-2.5">
                     <div className="flex items-center gap-2">
                       <FileImage className="w-4 h-4 text-emerald-500 shrink-0" />
-                      <span className="text-xs font-extrabold text-emerald-700">License Uploaded ✓</span>
+                      <span className="text-xs font-semibold text-emerald-700">License Uploaded ✓</span>
                     </div>
                     <button onClick={() => licenseDocRef.current?.click()} disabled={uploadingDoc === 'license'}
-                      className="text-xs font-extrabold text-slate-400 underline active:scale-95 transition">
+                      className="text-xs font-semibold text-slate-400 underline active:scale-95 transition">
                       {uploadingDoc === 'license' ? 'Uploading…' : 'Replace'}
                     </button>
                   </div>
@@ -501,7 +501,7 @@ export const Profile: React.FC = () => {
             ) : (
             <div className="flex items-start justify-between py-4 border-b border-slate-100">
               <div className="flex-1 min-w-0 pr-3">
-                <span className="text-xs font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1 block">
+                <span className="text-xs font-semibold text-slate-400 flex items-center gap-1 block">
                   <FileImage className="w-3 h-3" /> Monthly Fee Receipt
                 </span>
 
@@ -510,7 +510,7 @@ export const Profile: React.FC = () => {
                   <div className="mt-2 flex items-center gap-3 bg-amber-50 border border-amber-100 rounded-xl px-4 py-3">
                     <span className="w-5 h-5 rounded-full border-2 border-amber-300 border-t-amber-600 animate-spin shrink-0" />
                     <div>
-                      <p className="text-xs font-extrabold text-amber-700">
+                      <p className="text-xs font-semibold text-amber-700">
                         {uploading ? 'Uploading receipt…' : 'AI is verifying your receipt…'}
                       </p>
                       <p className="text-xs text-amber-500 mt-0.5">This takes a few seconds</p>
@@ -522,17 +522,17 @@ export const Profile: React.FC = () => {
                 {!uploading && !verifying && isActive && (
                   <div className="mt-2">
                     <div className="flex-1 min-w-0">
-                      <span className="inline-flex items-center gap-1 bg-emerald-50 border border-emerald-100 text-emerald-600 text-xs font-extrabold px-2.5 py-1 rounded-full">
+                      <span className="inline-flex items-center gap-1 bg-emerald-50 border border-emerald-100 text-emerald-600 text-xs font-semibold px-2.5 py-1 rounded-full">
                         <ShieldCheck className="w-3 h-3" /> AI Verified
                       </span>
                       <div className="mt-1.5 space-y-0.5">
-                        <p className="text-xs text-slate-500 font-medium">
+                        <p className="text-xs text-slate-500 font-normal">
                           Amount: <span className="font-bold text-slate-700">{user.feeReceiptAmount}</span>
                         </p>
-                        <p className="text-xs text-slate-500 font-medium">
+                        <p className="text-xs text-slate-500 font-normal">
                           Paid: <span className="font-bold text-slate-700">{user.feeReceiptDate}</span>
                         </p>
-                        <p className="text-xs text-slate-500 font-medium flex items-center gap-1">
+                        <p className="text-xs text-slate-500 font-normal flex items-center gap-1">
                           <Clock className="w-3 h-3" />
                           Active until: <span className="font-bold text-emerald-600">{expiryLabel}</span>
                           {daysLeft !== null && daysLeft <= 7 && (
@@ -552,7 +552,7 @@ export const Profile: React.FC = () => {
                 {!uploading && !verifying && !isActive && isExpired && user.feeReceiptVerified && (
                   <div className="mt-2">
                     <div className="bg-red-50 border border-red-100 rounded-xl px-4 py-3 mb-2">
-                      <p className="text-xs font-extrabold text-red-600 flex items-center gap-1.5">
+                      <p className="text-xs font-semibold text-red-600 flex items-center gap-1.5">
                         <AlertTriangle className="w-3.5 h-3.5" /> Receipt expired
                       </p>
                       <p className="text-xs text-red-400 mt-0.5">
@@ -561,7 +561,7 @@ export const Profile: React.FC = () => {
                       </p>
                     </div>
                     <button onClick={() => fileInputRef.current?.click()}
-                      className="flex items-center gap-2 bg-primary text-white font-extrabold text-xs px-4 py-2.5 rounded-xl active:scale-95 transition cursor-pointer shadow-md shadow-primary/20">
+                      className="flex items-center gap-2 bg-primary text-white font-semibold text-xs px-4 py-2.5 rounded-xl active:scale-95 transition cursor-pointer shadow-md shadow-primary/20">
                       <Upload className="w-3.5 h-3.5" /> Upload new receipt
                     </button>
                   </div>
@@ -571,13 +571,13 @@ export const Profile: React.FC = () => {
                 {!uploading && !verifying && isRejected && (
                   <div className="mt-2">
                     <div className="bg-red-50 border border-red-100 rounded-xl px-4 py-3 mb-2">
-                      <p className="text-xs font-extrabold text-red-600 flex items-center gap-1.5 mb-1">
+                      <p className="text-xs font-semibold text-red-600 flex items-center gap-1.5 mb-1">
                         <AlertTriangle className="w-3.5 h-3.5" /> Receipt rejected
                       </p>
                       <p className="text-xs text-red-500 leading-relaxed">{user.feeReceiptRejectReason}</p>
                     </div>
                     <button onClick={() => fileInputRef.current?.click()}
-                      className="flex items-center gap-2 bg-primary text-white font-extrabold text-xs px-4 py-2.5 rounded-xl active:scale-95 transition cursor-pointer shadow-md shadow-primary/20">
+                      className="flex items-center gap-2 bg-primary text-white font-semibold text-xs px-4 py-2.5 rounded-xl active:scale-95 transition cursor-pointer shadow-md shadow-primary/20">
                       <Upload className="w-3.5 h-3.5" /> Try again
                     </button>
                   </div>
@@ -589,14 +589,14 @@ export const Profile: React.FC = () => {
                     <div className="bg-amber-50 border border-amber-100 rounded-xl px-4 py-3 mb-2 flex items-start gap-2">
                       <Clock className="w-3.5 h-3.5 text-amber-500 shrink-0 mt-0.5" />
                       <div>
-                        <p className="text-xs font-extrabold text-amber-700">Awaiting admin approval</p>
+                        <p className="text-xs font-semibold text-amber-700">Awaiting admin approval</p>
                         <p className="text-xs text-amber-500 mt-0.5 leading-relaxed">
                           Your receipt is under review. You will be notified once approved. If rejected, re-upload a clearer image.
                         </p>
                       </div>
                     </div>
                     <button onClick={() => fileInputRef.current?.click()}
-                      className="flex items-center gap-2 bg-primary text-white font-extrabold text-xs px-4 py-2.5 rounded-xl active:scale-95 transition cursor-pointer shadow-md shadow-primary/20">
+                      className="flex items-center gap-2 bg-primary text-white font-semibold text-xs px-4 py-2.5 rounded-xl active:scale-95 transition cursor-pointer shadow-md shadow-primary/20">
                       <Upload className="w-3.5 h-3.5" /> Re-upload receipt
                     </button>
                   </div>
@@ -610,7 +610,7 @@ export const Profile: React.FC = () => {
                       <Upload className="w-4 h-4" />
                       Upload receipt to activate account
                     </button>
-                    <p className="text-xs text-slate-400 font-medium mt-1.5 pl-1">
+                    <p className="text-xs text-slate-400 font-normal mt-1.5 pl-1">
                       JPG / PNG · Maybank, CIMB, DuitNow, TNG accepted
                     </p>
                   </div>
@@ -636,7 +636,7 @@ export const Profile: React.FC = () => {
           <div className="pt-4 flex flex-col gap-2">
             {saveError && <p className="text-xs text-danger font-bold text-center">{saveError}</p>}
             <button onClick={handleSave} disabled={saving}
-              className="w-full bg-primary hover:bg-primary-hover active:scale-[0.99] disabled:bg-slate-200 disabled:text-slate-400 text-white font-extrabold py-3 rounded-xl shadow-md shadow-primary/20 transition flex items-center justify-center gap-2 cursor-pointer">
+              className="w-full bg-primary hover:bg-primary-hover active:scale-[0.99] disabled:bg-slate-200 disabled:text-slate-400 text-white font-semibold py-3 rounded-xl shadow-md shadow-primary/20 transition flex items-center justify-center gap-2 cursor-pointer">
               {saving
                 ? <span className="w-4 h-4 rounded-full border-2 border-white border-t-transparent animate-spin" />
                 : 'Save Changes'}
@@ -647,12 +647,12 @@ export const Profile: React.FC = () => {
 
 
       {/* ── ACTIONS ── */}
-      <div className="mx-5 mt-5 bg-white border border-slate-100 rounded-3xl p-2.5 shadow-sm flex flex-col gap-1">
+      <div className="mx-5 mt-5 bg-white border border-slate-100 rounded-3xl p-2.5 flex flex-col gap-1">
         <button onClick={() => alert('Campus Information Guide: gerak connects robe booking portals and shuttle systems.')}
           className="w-full flex items-center justify-between p-3 rounded-2xl hover:bg-slate-50 active:scale-[0.99] transition text-left cursor-pointer">
           <div className="flex items-center gap-3">
             <HelpCircle className="w-4 h-4 text-slate-400" />
-            <span className="text-xs font-extrabold text-slate-700">Help &amp; User Guide</span>
+            <span className="text-xs font-semibold text-slate-700">Help &amp; User Guide</span>
           </div>
           <ChevronRight className="w-4 h-4 text-slate-300" />
         </button>
@@ -660,7 +660,7 @@ export const Profile: React.FC = () => {
           className="w-full flex items-center justify-between p-3 rounded-2xl hover:bg-slate-50 active:scale-[0.99] transition text-left border-t border-slate-50 cursor-pointer">
           <div className="flex items-center gap-3">
             <Heart className="w-4 h-4 text-slate-400" />
-            <span className="text-xs font-extrabold text-slate-700">Privacy &amp; Terms</span>
+            <span className="text-xs font-semibold text-slate-700">Privacy &amp; Terms</span>
           </div>
           <ChevronRight className="w-4 h-4 text-slate-300" />
         </button>
@@ -668,7 +668,7 @@ export const Profile: React.FC = () => {
           className="w-full flex items-center justify-between p-3 rounded-2xl hover:bg-danger/5 active:scale-[0.99] transition text-left border-t border-slate-50 group cursor-pointer">
           <div className="flex items-center gap-3">
             <LogOut className="w-4 h-4 text-slate-400 group-hover:text-danger" />
-            <span className="text-xs font-extrabold text-slate-700 group-hover:text-danger">Log Out Session</span>
+            <span className="text-xs font-semibold text-slate-700 group-hover:text-danger">Log Out Session</span>
           </div>
           <ChevronRight className="w-4 h-4 text-slate-300 group-hover:text-danger" />
         </button>
@@ -676,7 +676,7 @@ export const Profile: React.FC = () => {
 
       <div className="mt-8 text-center">
         <button onClick={handleDeleteAccount}
-          className="text-xs font-extrabold text-danger uppercase tracking-widest hover:underline active:scale-95 transition cursor-pointer">
+          className="text-xs font-semibold text-danger hover:underline active:scale-95 transition cursor-pointer">
           Delete Account
         </button>
       </div>

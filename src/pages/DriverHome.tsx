@@ -555,50 +555,50 @@ export const DriverHome: React.FC = () => {
   if (!isAdminRole && user.docsStatus !== 'approved') {
     const bothUploaded = !!user.icUrl && !!user.licenseUrl;
     return (
-      <div className="flex-grow bg-slate-50 overflow-y-auto no-scrollbar pb-4 px-5 flex flex-col gap-5 animate-fade-in">
+      <div className="flex-grow bg-white overflow-y-auto no-scrollbar pb-4 px-5 flex flex-col gap-5 animate-fade-in">
         <div className="mt-6 flex flex-col items-center text-center gap-2">
           <div className={`w-16 h-16 rounded-full flex items-center justify-center border-2 ${
             user.docsStatus === 'rejected' ? 'bg-red-50 border-red-100' :
             user.docsStatus === 'pending'  ? 'bg-amber-50 border-amber-100' :
-            'bg-slate-50 border-slate-200'
+            'bg-slate-50 border-slate-100'
           }`}>
             {user.docsStatus === 'rejected' ? <ShieldAlert className="w-7 h-7 text-red-400" /> :
              user.docsStatus === 'pending'  ? <ShieldCheck className="w-7 h-7 text-amber-400" /> :
              <ShieldCheck className="w-7 h-7 text-slate-300" />}
           </div>
-          <p className="text-sm font-black text-slate-800">
+          <p className="text-sm font-bold text-slate-800">
             {user.docsStatus === 'pending'  ? 'Documents Under Review' :
              user.docsStatus === 'rejected' ? 'Documents Rejected' :
              'Complete Verification'}
           </p>
-          <p className="text-xs text-slate-400 font-semibold leading-relaxed max-w-xs">
+          <p className="text-xs text-slate-400 font-normal leading-relaxed max-w-xs">
             {user.docsStatus === 'pending'  ? 'Your documents are being reviewed by admin. You will be notified once approved.' :
              user.docsStatus === 'rejected' ? `Reason: ${user.docsRejectReason || 'Please re-upload correct documents.'}` :
              'Upload your IC (MyKad) and Driving License to get verified as a Gerak Driver.'}
           </p>
         </div>
 
-        <div className="bg-white border border-slate-100 rounded-3xl p-5 shadow-sm flex flex-col gap-4">
-          <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest">Required Documents</h3>
+        <div className="bg-white border border-slate-100 rounded-3xl p-5 flex flex-col gap-4">
+          <h3 className="text-sm font-bold text-slate-700">Required Documents</h3>
 
           {/* IC Upload */}
           <div className="flex flex-col gap-2">
-            <label className="text-xs font-extrabold text-slate-500 uppercase tracking-wider">Identity Card (MyKad) *</label>
+            <label className="text-xs font-semibold text-slate-400">Identity Card (MyKad) *</label>
             <input ref={icDocRef} type="file" accept="image/*,.pdf" className="hidden" onChange={e => handleDocUpload(e, 'ic')} />
             {user.icUrl ? (
               <div className="flex items-center justify-between bg-emerald-50 border border-emerald-100 rounded-2xl px-4 py-3">
                 <div className="flex items-center gap-2">
                   <FileImage className="w-4 h-4 text-emerald-500" />
-                  <span className="text-xs font-extrabold text-emerald-700">IC Uploaded ✓</span>
+                  <span className="text-xs font-semibold text-emerald-700">IC Uploaded ✓</span>
                 </div>
                 <button onClick={() => icDocRef.current?.click()}
-                  className="text-xs font-extrabold text-slate-400 underline">
+                  className="text-xs font-semibold text-slate-400 underline">
                   {uploadingDoc === 'ic' ? 'Uploading…' : 'Replace'}
                 </button>
               </div>
             ) : (
               <button onClick={() => icDocRef.current?.click()} disabled={uploadingDoc === 'ic'}
-                className="w-full border-2 border-dashed border-slate-200 rounded-2xl py-4 flex items-center justify-center gap-2 text-slate-400 hover:border-primary hover:text-primary transition active:scale-95">
+                className="w-full border-2 border-dashed border-slate-100 rounded-2xl py-4 flex items-center justify-center gap-2 text-slate-400 hover:border-primary hover:text-primary transition active:scale-95">
                 {uploadingDoc === 'ic'
                   ? <span className="w-4 h-4 rounded-full border-2 border-slate-300 border-t-primary animate-spin" />
                   : <><Upload className="w-4 h-4" /><span className="text-xs font-bold">Upload IC (MyKad)</span></>}
@@ -608,22 +608,22 @@ export const DriverHome: React.FC = () => {
 
           {/* License Upload */}
           <div className="flex flex-col gap-2">
-            <label className="text-xs font-extrabold text-slate-500 uppercase tracking-wider">Driving License *</label>
+            <label className="text-xs font-semibold text-slate-400">Driving License *</label>
             <input ref={licenseDocRef} type="file" accept="image/*,.pdf" className="hidden" onChange={e => handleDocUpload(e, 'license')} />
             {user.licenseUrl ? (
               <div className="flex items-center justify-between bg-emerald-50 border border-emerald-100 rounded-2xl px-4 py-3">
                 <div className="flex items-center gap-2">
                   <FileImage className="w-4 h-4 text-emerald-500" />
-                  <span className="text-xs font-extrabold text-emerald-700">License Uploaded ✓</span>
+                  <span className="text-xs font-semibold text-emerald-700">License Uploaded ✓</span>
                 </div>
                 <button onClick={() => licenseDocRef.current?.click()}
-                  className="text-xs font-extrabold text-slate-400 underline">
+                  className="text-xs font-semibold text-slate-400 underline">
                   {uploadingDoc === 'license' ? 'Uploading…' : 'Replace'}
                 </button>
               </div>
             ) : (
               <button onClick={() => licenseDocRef.current?.click()} disabled={uploadingDoc === 'license'}
-                className="w-full border-2 border-dashed border-slate-200 rounded-2xl py-4 flex items-center justify-center gap-2 text-slate-400 hover:border-primary hover:text-primary transition active:scale-95">
+                className="w-full border-2 border-dashed border-slate-100 rounded-2xl py-4 flex items-center justify-center gap-2 text-slate-400 hover:border-primary hover:text-primary transition active:scale-95">
                 {uploadingDoc === 'license'
                   ? <span className="w-4 h-4 rounded-full border-2 border-slate-300 border-t-primary animate-spin" />
                   : <><Upload className="w-4 h-4" /><span className="text-xs font-bold">Upload Driving License</span></>}
@@ -633,15 +633,15 @@ export const DriverHome: React.FC = () => {
 
           {bothUploaded && user.docsStatus === 'none' && (
             <div className="bg-amber-50 border border-amber-100 rounded-2xl px-4 py-3 text-center">
-              <p className="text-xs font-extrabold text-amber-700">Documents submitted for review</p>
-              <p className="text-xs text-amber-500 font-semibold mt-0.5">Admin will verify your documents shortly.</p>
+              <p className="text-xs font-semibold text-amber-700">Documents submitted for review</p>
+              <p className="text-xs text-amber-500 font-normal mt-0.5">Admin will verify your documents shortly.</p>
             </div>
           )}
         </div>
 
-        <div className="bg-slate-50 border border-slate-100 rounded-2xl px-4 py-3">
-          <p className="text-xs text-slate-400 font-semibold text-center leading-relaxed">
-            Your Gerak ID: <span className="font-black text-slate-600">{user.gerakId}</span><br />
+        <div className="bg-white border border-slate-100 rounded-2xl px-4 py-3">
+          <p className="text-xs text-slate-400 font-normal text-center leading-relaxed">
+            Your Gerak ID: <span className="font-semibold text-slate-600">{user.gerakId}</span><br />
             Documents are reviewed within 24 hours.
           </p>
         </div>
@@ -652,19 +652,19 @@ export const DriverHome: React.FC = () => {
   // ── Suspended guard ──────────────────────────────────────────────────────────
   if (user.status === 'inactive' && user.role !== 'superadmin') {
     return (
-      <div className="flex-grow bg-slate-50 flex flex-col items-center justify-center px-8 gap-4 animate-fade-in">
+      <div className="flex-grow bg-white flex flex-col items-center justify-center px-8 gap-4 animate-fade-in">
         <div className="w-16 h-16 rounded-full bg-red-50 border-2 border-red-100 flex items-center justify-center">
           <Car className="w-7 h-7 text-red-300" />
         </div>
         <div className="text-center">
-          <p className="text-sm font-black text-slate-800">Account Suspended</p>
-          <p className="text-xs text-slate-400 font-semibold mt-1 leading-relaxed">
+          <p className="text-sm font-bold text-slate-800">Account Suspended</p>
+          <p className="text-xs text-slate-400 font-normal mt-1 leading-relaxed">
             Your driver account has been suspended.<br />Please contact your admin to reactivate.
           </p>
         </div>
         <div className="bg-red-50 border border-red-100 rounded-2xl px-4 py-3 text-center">
-          <p className="text-xs font-bold text-red-400 uppercase tracking-wider">Gerak ID</p>
-          <p className="text-sm font-black text-red-600 mt-0.5">{user.gerakId}</p>
+          <p className="text-xs font-semibold text-red-400">Gerak ID</p>
+          <p className="text-sm font-semibold text-red-600 mt-0.5">{user.gerakId}</p>
         </div>
       </div>
     );
@@ -679,19 +679,19 @@ export const DriverHome: React.FC = () => {
         showWhatsApp={sheetOrder.status === 'completed' || sheetOrder.status === 'cancelled'}
       />
     )}
-    <div className="flex-grow bg-slate-50 overflow-y-auto no-scrollbar pb-4 flex flex-col animate-fade-in">
+    <div className="flex-grow bg-white overflow-y-auto no-scrollbar pb-4 flex flex-col animate-fade-in">
 
       {/* ── Header ── */}
       <div className="px-4 pt-5 pb-3 flex items-center justify-between">
         <div>
           <div className="flex items-center gap-2">
-            <h2 className="text-xl font-black text-slate-800 m-0">Driver Hub</h2>
-            <span className="flex items-center gap-1 bg-emerald-50 border border-emerald-100 text-emerald-600 text-xs font-extrabold px-2 py-0.5 rounded-full">
+            <h2 className="text-xl font-bold text-slate-800 m-0">Driver Hub</h2>
+            <span className="flex items-center gap-1 bg-emerald-50 border border-emerald-100 text-emerald-600 text-xs font-semibold px-2 py-0.5 rounded-full">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
               LIVE
             </span>
           </div>
-          <p className="text-xs text-slate-400 font-semibold mt-0.5">
+          <p className="text-xs text-slate-400 font-normal mt-0.5">
             {user.name} · {user.gerakId} · UMPSA {user.campus}
           </p>
         </div>
@@ -712,20 +712,20 @@ export const DriverHome: React.FC = () => {
 
       {/* ── Tab Switcher ── */}
       <div className="px-4 mb-1">
-        <div className="flex bg-white border border-slate-100 rounded-2xl p-1 gap-1 shadow-sm">
+        <div className="flex bg-white border border-slate-100 rounded-2xl p-1 gap-1">
 
           {/* Pool tab — only if can_drive */}
           {effectiveCanDrive && (
             <button
               onClick={() => setActiveTab('pool')}
-              className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-xs font-extrabold transition relative ${
-                activeTab === 'pool' ? 'bg-primary text-white shadow-sm' : 'text-slate-400'
+              className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-xs font-semibold transition relative ${
+                activeTab === 'pool' ? 'bg-primary text-white' : 'text-slate-400'
               }`}
             >
               <ListOrdered className="w-3.5 h-3.5" />
               Job Pool
               {pendingOrders.length > 0 && (
-                <span className={`text-xs font-extrabold px-1.5 py-0.5 rounded-full min-w-[18px] text-center ${
+                <span className={`text-xs font-semibold px-1.5 py-0.5 rounded-full min-w-[18px] text-center ${
                   activeTab === 'pool'
                     ? 'bg-white/25 text-white'
                     : `bg-primary text-white ${newPing ? 'animate-bounce' : ''}`
@@ -740,8 +740,8 @@ export const DriverHome: React.FC = () => {
           {effectiveCanDrive && (
             <button
               onClick={() => setActiveTab('my-jobs')}
-              className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-xs font-extrabold transition relative ${
-                activeTab === 'my-jobs' ? 'bg-primary text-white shadow-sm' : 'text-slate-400'
+              className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-xs font-semibold transition relative ${
+                activeTab === 'my-jobs' ? 'bg-primary text-white' : 'text-slate-400'
               }`}
             >
               <Briefcase className="w-3.5 h-3.5" />
@@ -758,14 +758,14 @@ export const DriverHome: React.FC = () => {
           {effectiveCanRent && (
             <button
               onClick={() => setActiveTab('rental')}
-              className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-xs font-extrabold transition relative ${
-                activeTab === 'rental' ? 'bg-amber-500 text-white shadow-sm' : 'text-slate-400'
+              className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-xs font-semibold transition relative ${
+                activeTab === 'rental' ? 'bg-amber-500 text-white' : 'text-slate-400'
               }`}
             >
               <KeyRound className="w-3.5 h-3.5" />
               Rental
               {pendingRentals > 0 && (
-                <span className={`text-xs font-extrabold px-1.5 py-0.5 rounded-full min-w-[18px] text-center ${
+                <span className={`text-xs font-semibold px-1.5 py-0.5 rounded-full min-w-[18px] text-center ${
                   activeTab === 'rental' ? 'bg-white/25 text-white' : 'bg-amber-500 text-white'
                 }`}>
                   {pendingRentals}
@@ -778,8 +778,8 @@ export const DriverHome: React.FC = () => {
           {effectiveCanDrive && (
             <button
               onClick={() => setActiveTab('earnings')}
-              className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-xs font-extrabold transition ${
-                activeTab === 'earnings' ? 'bg-emerald-500 text-white shadow-sm' : 'text-slate-400'
+              className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-xs font-semibold transition ${
+                activeTab === 'earnings' ? 'bg-emerald-500 text-white' : 'text-slate-400'
               }`}
             >
               <TrendingUp className="w-3.5 h-3.5" />
@@ -808,8 +808,8 @@ export const DriverHome: React.FC = () => {
             <div className="bg-red-50 border border-red-200 rounded-2xl px-4 py-3 flex items-start gap-2.5">
               <ShieldOff className="w-4 h-4 text-red-400 shrink-0 mt-0.5" />
               <div>
-                <p className="text-xs font-extrabold text-red-600">Account inactive — cannot accept jobs</p>
-                <p className="text-xs text-red-400 font-medium mt-0.5 leading-relaxed">
+                <p className="text-xs font-semibold text-red-600">Account inactive — cannot accept jobs</p>
+                <p className="text-xs text-red-400 font-normal mt-0.5 leading-relaxed">
                   Upload your monthly fee receipt in <strong>Profile</strong> to activate your account.
                 </p>
               </div>
@@ -826,7 +826,7 @@ export const DriverHome: React.FC = () => {
           )}
 
           {pendingOrders.length === 0 ? (
-            <div className="bg-white border border-slate-100 rounded-3xl p-10 shadow-sm flex flex-col items-center gap-3 text-center">
+            <div className="bg-white border border-slate-100 rounded-3xl p-10 flex flex-col items-center gap-3 text-center">
               <div className="relative">
                 <div className="w-16 h-16 rounded-full bg-slate-50 flex items-center justify-center">
                   <Car className="w-7 h-7 text-slate-300" />
@@ -834,31 +834,31 @@ export const DriverHome: React.FC = () => {
                 <span className="absolute -top-0.5 -right-0.5 w-4 h-4 rounded-full bg-emerald-400 border-2 border-white animate-pulse" />
               </div>
               <div>
-                <p className="text-sm font-black text-slate-700">Queue is clear</p>
-                <p className="text-xs text-slate-400 font-semibold mt-1 leading-relaxed">
+                <p className="text-sm font-bold text-slate-700">Queue is clear</p>
+                <p className="text-xs text-slate-400 font-normal mt-1 leading-relaxed">
                   New orders appear here instantly,<br />sorted by booking time.
                 </p>
               </div>
               <div className="flex items-center gap-1.5 bg-emerald-50 border border-emerald-100 rounded-full px-3 py-1.5">
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                <span className="text-xs font-extrabold text-emerald-600">Connected · UMPSA {user.campus}</span>
+                <span className="text-xs font-semibold text-emerald-600">Connected · UMPSA {user.campus}</span>
               </div>
             </div>
           ) : (
             pendingOrders.map((order, idx) => (
-              <div key={order.id} className="bg-white border border-slate-100 rounded-3xl shadow-sm overflow-hidden cursor-pointer" onClick={() => setSheetOrder(order)}>
+              <div key={order.id} className="bg-white border border-slate-100 rounded-3xl overflow-hidden cursor-pointer" onClick={() => setSheetOrder(order)}>
 
                 {/* Queue position strip */}
-                <div className="bg-slate-50 border-b border-slate-100 px-4 py-2 flex items-center justify-between">
+                <div className="bg-white border-b border-slate-100 px-4 py-2 flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <span className="w-6 h-6 rounded-full bg-primary text-white text-xs font-extrabold flex items-center justify-center">
+                    <span className="w-6 h-6 rounded-full bg-primary text-white text-xs font-semibold flex items-center justify-center">
                       {idx + 1}
                     </span>
-                    <span className="text-xs font-extrabold text-slate-500 uppercase tracking-wider">
+                    <span className="text-xs font-semibold text-slate-400">
                       {idx === 0 ? 'Next in queue' : `Queue position ${idx + 1}`}
                     </span>
                   </div>
-                  <div className="flex items-center gap-1 text-xs text-blue-600 font-extrabold">
+                  <div className="flex items-center gap-1 text-xs text-blue-600 font-semibold">
                     <Clock className="w-3 h-3" />
                     {order.date} · {order.time}
                   </div>
@@ -867,8 +867,8 @@ export const DriverHome: React.FC = () => {
                 {/* Customer + fare */}
                 <div className="px-4 pt-3 pb-2 flex items-start justify-between gap-3">
                   <div>
-                    <p className="text-sm font-black text-slate-800">{order.customer_name}</p>
-                    <p className="text-xs text-slate-400 font-semibold mt-0.5 flex items-center gap-1.5">
+                    <p className="text-sm font-semibold text-slate-800">{order.customer_name}</p>
+                    <p className="text-xs text-slate-400 font-normal mt-0.5 flex items-center gap-1.5">
                       <Users className="w-3 h-3" /> {order.passengers} pax
                     </p>
                   </div>
@@ -892,12 +892,12 @@ export const DriverHome: React.FC = () => {
                     </div>
                     <div className="flex flex-col gap-2 flex-1 min-w-0">
                       <div>
-                        <p className="text-xs text-slate-400 font-bold uppercase tracking-wider">Pick-up</p>
-                        <p className="text-xs font-extrabold text-slate-700 leading-tight">{order.pickup}</p>
+                        <p className="text-xs text-slate-400 font-semibold">Pick-up</p>
+                        <p className="text-xs font-semibold text-slate-700 leading-tight">{order.pickup}</p>
                       </div>
                       <div>
-                        <p className="text-xs text-slate-400 font-bold uppercase tracking-wider">Drop-off</p>
-                        <p className="text-xs font-extrabold text-slate-700 leading-tight">{order.destination}</p>
+                        <p className="text-xs text-slate-400 font-semibold">Drop-off</p>
+                        <p className="text-xs font-semibold text-slate-700 leading-tight">{order.destination}</p>
                       </div>
                     </div>
                   </div>
@@ -905,12 +905,12 @@ export const DriverHome: React.FC = () => {
 
                 {/* Contact — hidden when driver is inactive */}
                 {isDriverActive && (
-                  <div className="mx-4 mb-3 flex items-center gap-2 text-xs text-slate-500 font-semibold">
+                  <div className="mx-4 mb-3 flex items-center gap-2 text-xs text-slate-500 font-normal">
                     <a
                       href={`https://wa.me/${order.contact.replace(/\D/g,'').replace(/^0/,'60')}`}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="flex items-center gap-1.5 bg-[#25D366]/10 text-[#25D366] font-extrabold px-3 py-1.5 rounded-full text-xs active:scale-95 transition"
+                      className="flex items-center gap-1.5 bg-[#25D366]/10 text-[#25D366] font-semibold px-3 py-1.5 rounded-full text-xs active:scale-95 transition"
                       onClick={e => e.stopPropagation()}
                     >
                       <WaIcon className="w-3 h-3" /> {order.contact}
@@ -929,7 +929,7 @@ export const DriverHome: React.FC = () => {
                   <button
                     onClick={() => isDriverActive && handleAccept(order.id)}
                     disabled={!isDriverActive || !!accepting || !!myJob}
-                    className="w-full bg-primary hover:bg-primary-hover text-white font-extrabold text-xs py-3 rounded-2xl transition active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed shadow-md shadow-primary/20 flex items-center justify-center gap-2"
+                    className="w-full bg-primary hover:bg-primary-hover text-white font-semibold text-xs py-3 rounded-2xl transition active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed shadow-md shadow-primary/20 flex items-center justify-center gap-2"
                   >
                     {accepting === order.id
                       ? <span className="w-4 h-4 rounded-full border-2 border-white border-t-transparent animate-spin" />
@@ -960,21 +960,21 @@ export const DriverHome: React.FC = () => {
               }`}>
                 <div className="flex items-center gap-2">
                   <Car className="w-4 h-4 text-white opacity-80" />
-                  <span className="text-white text-xs font-extrabold uppercase tracking-wide">
+                  <span className="text-white text-xs font-semibold uppercase tracking-wide">
                     {myJob.status === 'in_progress' ? 'Trip In Progress' : 'Job Accepted'}
                   </span>
                 </div>
-                <span className="text-white/70 text-xs font-bold">{myJob.date} · {myJob.time}</span>
+                <span className="text-white/70 text-xs font-normal">{myJob.date} · {myJob.time}</span>
               </div>
 
-              <div className="bg-white border border-slate-100 rounded-3xl shadow-sm overflow-hidden cursor-pointer" onClick={() => setSheetOrder(myJob)}>
+              <div className="bg-white border border-slate-100 rounded-3xl overflow-hidden cursor-pointer" onClick={() => setSheetOrder(myJob)}>
                 <div className="px-5 pt-5 pb-4 flex flex-col gap-0.5">
                   <div className="flex items-center justify-between gap-3">
-                    <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Customer</p>
-                    <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Fare</p>
+                    <p className="text-xs font-semibold text-slate-400">Customer</p>
+                    <p className="text-xs font-semibold text-slate-400">Fare</p>
                   </div>
                   <div className="flex items-center justify-between gap-3">
-                    <p className="text-sm font-black text-slate-800 leading-tight">{myJob.customer_name}</p>
+                    <p className="text-sm font-semibold text-slate-800 leading-tight">{myJob.customer_name}</p>
                     <p className="text-sm font-black text-slate-800 shrink-0">{fmt(myJob)}</p>
                   </div>
                   {myJob.night_charge > 0 && (
@@ -994,12 +994,12 @@ export const DriverHome: React.FC = () => {
                     </div>
                     <div className="flex flex-col gap-2.5 flex-1 min-w-0">
                       <div>
-                        <p className="text-xs font-bold text-slate-400 uppercase">Pickup</p>
-                        <p className="text-xs font-extrabold text-slate-700 leading-tight">{myJob.pickup}</p>
+                        <p className="text-xs font-semibold text-slate-400">Pickup</p>
+                        <p className="text-xs font-semibold text-slate-700 leading-tight">{myJob.pickup}</p>
                       </div>
                       <div>
-                        <p className="text-xs font-bold text-slate-400 uppercase">Destination</p>
-                        <p className="text-xs font-extrabold text-slate-700 leading-tight">{myJob.destination}</p>
+                        <p className="text-xs font-semibold text-slate-400">Destination</p>
+                        <p className="text-xs font-semibold text-slate-700 leading-tight">{myJob.destination}</p>
                       </div>
                     </div>
                   </div>
@@ -1019,7 +1019,7 @@ export const DriverHome: React.FC = () => {
                     <button
                       onClick={() => handleStatusUpdate(myJob.id, 'in_progress')}
                       disabled={updating}
-                      className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-extrabold text-xs py-3 rounded-2xl transition active:scale-95 disabled:opacity-50 shadow-md shadow-blue-500/25 flex items-center justify-center gap-1.5"
+                      className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs py-3 rounded-2xl transition active:scale-95 disabled:opacity-50 shadow-md shadow-blue-500/25 flex items-center justify-center gap-1.5"
                     >
                       {updating
                         ? <span className="w-4 h-4 rounded-full border-2 border-white border-t-transparent animate-spin" />
@@ -1030,7 +1030,7 @@ export const DriverHome: React.FC = () => {
                     <button
                       onClick={() => handleStatusUpdate(myJob.id, 'completed')}
                       disabled={updating}
-                      className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs py-3 rounded-2xl transition active:scale-95 disabled:opacity-50 shadow-md shadow-emerald-500/25 flex items-center justify-center gap-1.5"
+                      className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs py-3 rounded-2xl transition active:scale-95 disabled:opacity-50 shadow-md shadow-emerald-500/25 flex items-center justify-center gap-1.5"
                     >
                       {updating
                         ? <span className="w-4 h-4 rounded-full border-2 border-white border-t-transparent animate-spin" />
@@ -1071,7 +1071,7 @@ export const DriverHome: React.FC = () => {
                     <button
                       onClick={handleCancel}
                       disabled={updating}
-                      className="flex flex-col items-center justify-center bg-red-50 border border-red-100 text-red-500 font-extrabold text-xs px-3 py-2 rounded-2xl transition active:scale-95 disabled:opacity-50 shrink-0"
+                      className="flex flex-col items-center justify-center bg-red-50 border border-red-100 text-red-500 font-semibold text-xs px-3 py-2 rounded-2xl transition active:scale-95 disabled:opacity-50 shrink-0"
                     >
                       <XCircle className="w-3.5 h-3.5 mb-0.5" />
                       {fmtCountdown(cancelSecsLeft)}
@@ -1081,9 +1081,9 @@ export const DriverHome: React.FC = () => {
               </div>
             </div>
           ) : (
-            <div className="bg-slate-100/60 border border-slate-200/60 rounded-2xl px-4 py-3 flex items-center gap-2">
+            <div className="bg-slate-100/60 border border-slate-100/60 rounded-2xl px-4 py-3 flex items-center gap-2">
               <CheckCircle2 className="w-4 h-4 text-slate-400 shrink-0" />
-              <p className="text-xs font-semibold text-slate-500">No active trip right now. Accept a job from the Pool tab.</p>
+              <p className="text-xs font-normal text-slate-500">No active trip right now. Accept a job from the Pool tab.</p>
             </div>
           )}
 
@@ -1095,25 +1095,25 @@ export const DriverHome: React.FC = () => {
             );
             return visibleHistory.length > 0 && (
             <div className="flex flex-col gap-4">
-              <h3 className="text-xs font-extrabold text-slate-400 uppercase tracking-widest flex items-center gap-1.5 pt-1">
+              <h3 className="text-sm font-bold text-slate-700 flex items-center gap-1.5 pt-1">
                 <Clock className="w-3.5 h-3.5" /> Trip History
               </h3>
 
               {visibleHistory.map(order => {
                 const st = HISTORY_STATUS[order.status] ?? HISTORY_STATUS.cancelled;
                 return (
-                  <div key={order.id} className="bg-white border border-slate-100 rounded-3xl shadow-sm overflow-hidden cursor-pointer" onClick={() => setSheetOrder(order)}>
+                  <div key={order.id} className="bg-white border border-slate-100 rounded-3xl overflow-hidden cursor-pointer" onClick={() => setSheetOrder(order)}>
 
                     {/* Header row */}
                     <div className="px-4 pt-4 pb-3 flex items-start justify-between gap-3">
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 flex-wrap">
-                          <p className="text-xs font-black text-slate-800 truncate">{order.customer_name}</p>
-                          <span className={`text-xs font-extrabold px-2 py-0.5 rounded-full border shrink-0 ${st.cls}`}>
+                          <p className="text-xs font-semibold text-slate-800 truncate">{order.customer_name}</p>
+                          <span className={`text-xs font-semibold px-2 py-0.5 rounded-full border shrink-0 ${st.cls}`}>
                             {st.label}
                           </span>
                         </div>
-                        <p className="text-xs text-slate-400 font-semibold mt-0.5 flex items-center gap-1">
+                        <p className="text-xs text-slate-400 font-normal mt-0.5 flex items-center gap-1">
                           <Clock className="w-3 h-3" /> {order.date} · {order.time} &nbsp;·&nbsp;
                           <Users className="w-3 h-3" /> {order.passengers} pax
                         </p>
@@ -1127,11 +1127,11 @@ export const DriverHome: React.FC = () => {
                     <div className="mx-4 mb-4 bg-slate-50 rounded-2xl px-4 py-3 flex flex-col gap-1.5">
                       <div className="flex items-center gap-2 text-xs">
                         <MapPin className="w-3 h-3 text-blue-400 shrink-0" />
-                        <span className="font-semibold text-slate-500 truncate">{order.pickup}</span>
+                        <span className="font-normal text-slate-500 truncate">{order.pickup}</span>
                       </div>
                       <div className="flex items-center gap-2 text-xs">
                         <Navigation className="w-3 h-3 text-red-400 shrink-0" />
-                        <span className="font-semibold text-slate-500 truncate">{order.destination}</span>
+                        <span className="font-normal text-slate-500 truncate">{order.destination}</span>
                       </div>
                       {order.notes && (
                         <p className="text-xs text-slate-400 italic mt-1">"{order.notes}"</p>
@@ -1149,8 +1149,8 @@ export const DriverHome: React.FC = () => {
               <div className="w-14 h-14 rounded-full bg-slate-100 flex items-center justify-center">
                 <Briefcase className="w-6 h-6 text-slate-300" />
               </div>
-              <p className="text-sm font-black text-slate-600">No jobs yet</p>
-              <p className="text-xs text-slate-400 font-semibold">Your accepted and completed trips will appear here.</p>
+              <p className="text-sm font-bold text-slate-600">No jobs yet</p>
+              <p className="text-xs text-slate-400 font-normal">Your accepted and completed trips will appear here.</p>
             </div>
           )}
 
@@ -1190,7 +1190,7 @@ export const DriverHome: React.FC = () => {
         <div className="px-4 pt-2 flex flex-col gap-4">
 
           {/* Sub-view switcher — admin sees Orders only; owner sees all 4 */}
-          <div className="flex bg-white border border-slate-100 rounded-2xl p-1 gap-1 shadow-sm">
+          <div className="flex bg-white border border-slate-100 rounded-2xl p-1 gap-1">
             {([
               { v: 'orders',   Icon: Package,      label: 'Orders',   ownerOnly: false },
               { v: 'schedule', Icon: CalendarDays,  label: 'Schedule', ownerOnly: true  },
@@ -1200,8 +1200,8 @@ export const DriverHome: React.FC = () => {
               .filter(({ ownerOnly }) => !ownerOnly || !isAdminForRental)
               .map(({ v, Icon, label }) => (
                 <button key={v} onClick={() => setRentalSubView(v)}
-                  className={`flex-1 py-2 rounded-xl text-xs font-extrabold transition flex flex-col items-center gap-0.5 ${
-                    rentalSubView === v ? 'bg-amber-500 text-white shadow-sm' : 'text-slate-400'
+                  className={`flex-1 py-2 rounded-xl text-xs font-semibold transition flex flex-col items-center gap-0.5 ${
+                    rentalSubView === v ? 'bg-amber-500 text-white' : 'text-slate-400'
                   }`}>
                   <Icon className="w-3 h-3" />
                   {label}
@@ -1221,7 +1221,7 @@ export const DriverHome: React.FC = () => {
               {rentalBookings.length === 0 ? (
                 <div className="bg-white border border-slate-100 rounded-3xl p-8 text-center flex flex-col items-center gap-2">
                   <Package className="w-8 h-8 text-slate-200" />
-                  <p className="text-xs text-slate-400 font-semibold">No rental bookings yet.</p>
+                  <p className="text-xs text-slate-400 font-normal">No rental bookings yet.</p>
                 </div>
               ) : rentalBookings.map(bk => {
                 const statusStyle: Record<string, string> = {
@@ -1232,28 +1232,28 @@ export const DriverHome: React.FC = () => {
                 };
                 return (
                   <div key={bk.id} onClick={() => setRentalReceiptBk(bk)}
-                    className="bg-white border border-slate-100 rounded-3xl shadow-sm overflow-hidden cursor-pointer active:scale-[0.99] transition">
-                    <div className="bg-slate-50 border-b border-slate-100 px-4 py-2 flex items-center justify-between">
-                      <p className="text-xs font-extrabold text-slate-500">
+                    className="bg-white border border-slate-100 rounded-3xl overflow-hidden cursor-pointer active:scale-[0.99] transition">
+                    <div className="bg-white border-b border-slate-100 px-4 py-2 flex items-center justify-between">
+                      <p className="text-xs font-semibold text-slate-500">
                         {bk.booking_type === 'fullday' && bk.end_date && bk.end_date !== bk.date
                           ? `${bk.date} → ${bk.end_date} · Full Day`
                           : `${bk.date} · ${fmt12(bk.start_hour)} – ${fmt12(bk.start_hour + bk.duration)}`}
                       </p>
-                      <span className={`text-xs font-extrabold px-2 py-0.5 rounded-full border uppercase ${statusStyle[bk.status] ?? statusStyle.pending}`}>
+                      <span className={`text-xs font-semibold px-2 py-0.5 rounded-full border uppercase ${statusStyle[bk.status] ?? statusStyle.pending}`}>
                         {bk.status}
                       </span>
                     </div>
                     <div className="px-4 py-3 flex items-center justify-between gap-2">
                       <div className="min-w-0 flex-1">
-                        <p className="text-xs font-black text-slate-800 truncate">{bk.customer_name}</p>
+                        <p className="text-xs font-semibold text-slate-800 truncate">{bk.customer_name}</p>
                         {isAdminForRental && bk.owner_name && (
-                          <p className="text-xs text-slate-400 font-semibold truncate">
+                          <p className="text-xs text-slate-400 font-normal truncate">
                             Owner: {bk.owner_name} · {bk.vehicle_label}
                           </p>
                         )}
-                        <p className="text-xs text-slate-400 font-semibold flex items-center gap-2 flex-wrap">
+                        <p className="text-xs text-slate-400 font-normal flex items-center gap-2 flex-wrap">
                           {bk.persons} pax · {bk.duration}h
-                          {!bk.license_url && <span className="text-amber-500 font-extrabold">· License pending</span>}
+                          {!bk.license_url && <span className="text-amber-500 font-semibold">· License pending</span>}
                         </p>
                       </div>
                       <div className="flex items-center gap-2 shrink-0">
@@ -1281,7 +1281,7 @@ export const DriverHome: React.FC = () => {
             <div className="flex flex-col gap-4">
 
               {/* Calendar */}
-              <div className="bg-white border border-slate-100 rounded-3xl p-5 shadow-sm">
+              <div className="bg-white border border-slate-100 rounded-3xl p-5">
                 <div className="flex items-center justify-between mb-3">
                   <button onClick={() => setRentalMonth(m => {
                     const d = new Date(m.year, m.month - 1, 1);
@@ -1289,7 +1289,7 @@ export const DriverHome: React.FC = () => {
                   })} className="w-7 h-7 rounded-xl bg-slate-50 flex items-center justify-center text-slate-400 active:scale-90">
                     <ChevronLeft className="w-4 h-4" />
                   </button>
-                  <p className="text-xs font-extrabold text-slate-700">{rentalMonthLabel()}</p>
+                  <p className="text-xs font-semibold text-slate-700">{rentalMonthLabel()}</p>
                   <button onClick={() => setRentalMonth(m => {
                     const d = new Date(m.year, m.month + 1, 1);
                     return { year: d.getFullYear(), month: d.getMonth() };
@@ -1299,7 +1299,7 @@ export const DriverHome: React.FC = () => {
                 </div>
                 <div className="grid grid-cols-7 mb-1">
                   {['Su','Mo','Tu','We','Th','Fr','Sa'].map(d => (
-                    <div key={d} className="text-center text-xs font-extrabold text-slate-400">{d}</div>
+                    <div key={d} className="text-center text-xs font-semibold text-slate-400">{d}</div>
                   ))}
                 </div>
                 <div className="grid grid-cols-7 gap-0.5">
@@ -1312,7 +1312,7 @@ export const DriverHome: React.FC = () => {
                       <button key={dateStr} disabled={isPast}
                         onClick={() => setScheduleDate(dateStr)}
                         className={`aspect-square rounded-xl text-xs font-bold transition active:scale-90 ${
-                          isPicked   ? 'bg-amber-500 text-white font-extrabold' :
+                          isPicked   ? 'bg-amber-500 text-white font-semibold' :
                           isBlocked  ? 'bg-red-100 text-red-400' :
                           isPast     ? 'text-slate-200 cursor-not-allowed' :
                                        'text-slate-700 hover:bg-amber-50'
@@ -1322,7 +1322,7 @@ export const DriverHome: React.FC = () => {
                     );
                   })}
                 </div>
-                <div className="flex gap-3 mt-3 text-xs font-bold text-slate-400">
+                <div className="flex gap-3 mt-3 text-xs font-normal text-slate-400">
                   <span className="flex items-center gap-1"><span className="w-3 h-3 rounded bg-red-100 inline-block" /> Blocked</span>
                   <span className="flex items-center gap-1"><span className="w-3 h-3 rounded bg-amber-500 inline-block" /> Selected</span>
                 </div>
@@ -1330,16 +1330,16 @@ export const DriverHome: React.FC = () => {
 
               {/* Hour-level controls for selected date */}
               {scheduleDate && (
-                <div className="bg-white border border-slate-100 rounded-3xl p-5 shadow-sm">
+                <div className="bg-white border border-slate-100 rounded-3xl p-5">
                   <div className="flex items-center justify-between mb-3">
-                    <p className="text-xs font-extrabold text-slate-700">{scheduleDate}</p>
+                    <p className="text-xs font-semibold text-slate-700">{scheduleDate}</p>
                     <div className="flex gap-2">
                       <button onClick={() => blockFullDay(scheduleDate, true)}
-                        className="flex items-center gap-1 text-xs font-extrabold text-red-500 bg-red-50 border border-red-100 px-2.5 py-1.5 rounded-xl active:scale-95 transition">
+                        className="flex items-center gap-1 text-xs font-semibold text-red-500 bg-red-50 border border-red-100 px-2.5 py-1.5 rounded-xl active:scale-95 transition">
                         <Ban className="w-3 h-3" /> Block All
                       </button>
                       <button onClick={() => blockFullDay(scheduleDate, false)}
-                        className="flex items-center gap-1 text-xs font-extrabold text-emerald-600 bg-emerald-50 border border-emerald-100 px-2.5 py-1.5 rounded-xl active:scale-95 transition">
+                        className="flex items-center gap-1 text-xs font-semibold text-emerald-600 bg-emerald-50 border border-emerald-100 px-2.5 py-1.5 rounded-xl active:scale-95 transition">
                         <Unlock className="w-3 h-3" /> Open All
                       </button>
                     </div>
@@ -1359,7 +1359,7 @@ export const DriverHome: React.FC = () => {
                       );
                     })}
                   </div>
-                  <p className="text-xs text-slate-400 font-semibold text-center mt-3">
+                  <p className="text-xs text-slate-400 font-normal text-center mt-3">
                     Tap a slot to toggle. Red = blocked from customers.
                   </p>
                 </div>
@@ -1369,30 +1369,30 @@ export const DriverHome: React.FC = () => {
 
           {/* ── PRICING sub-view ── */}
           {!rentalLoading && rentalSubView === 'pricing' && (
-            <div className="bg-white border border-slate-100 rounded-3xl p-5 shadow-sm flex flex-col gap-5">
-              <p className="text-xs font-extrabold text-slate-400 uppercase tracking-widest">Pricing & Operating Hours</p>
+            <div className="bg-white border border-slate-100 rounded-3xl p-5 flex flex-col gap-5">
+              <p className="text-sm font-bold text-slate-700">Pricing & Operating Hours</p>
 
               {/* Hourly rate */}
               <div className="flex flex-col gap-1.5">
-                <label className="text-xs font-extrabold text-slate-500 uppercase tracking-wider">Hourly Rate (RM)</label>
+                <label className="text-xs font-semibold text-slate-400">Hourly Rate (RM)</label>
                 <input
                   type="number" min="1" step="0.50"
                   value={vehicleForm.price_hour ?? 10}
                   onChange={e => setVehicleForm(f => ({ ...f, price_hour: Number(e.target.value) }))}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-xs font-bold text-slate-700 focus:outline-none focus:border-amber-400 transition"
+                  className="w-full bg-white border border-slate-100 rounded-xl px-3 py-2.5 text-xs font-bold text-slate-700 focus:outline-none focus:border-amber-400 transition"
                 />
               </div>
 
               {/* Operating hours */}
               <div className="flex flex-col gap-2">
-                <label className="text-xs font-extrabold text-slate-500 uppercase tracking-wider">Operating Hours (Full-Day Bookings)</label>
+                <label className="text-xs font-semibold text-slate-400">Operating Hours (Full-Day Bookings)</label>
                 <div className="grid grid-cols-2 gap-3">
                   <div className="flex flex-col gap-1">
-                    <span className="text-xs font-bold text-slate-400">Pickup Time</span>
+                    <span className="text-xs font-semibold text-slate-400">Pickup Time</span>
                     <select
                       value={vehicleForm.operating_start ?? 8}
                       onChange={e => setVehicleForm(f => ({ ...f, operating_start: Number(e.target.value) }))}
-                      className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-xs font-bold text-slate-700 focus:outline-none focus:border-amber-400 transition"
+                      className="w-full bg-white border border-slate-100 rounded-xl px-3 py-2.5 text-xs font-bold text-slate-700 focus:outline-none focus:border-amber-400 transition"
                     >
                       {Array.from({ length: 24 }, (_, h) => (
                         <option key={h} value={h}>{h === 0 ? '12 AM' : h < 12 ? `${h} AM` : h === 12 ? '12 PM' : `${h - 12} PM`}</option>
@@ -1400,11 +1400,11 @@ export const DriverHome: React.FC = () => {
                     </select>
                   </div>
                   <div className="flex flex-col gap-1">
-                    <span className="text-xs font-bold text-slate-400">Return Time</span>
+                    <span className="text-xs font-semibold text-slate-400">Return Time</span>
                     <select
                       value={vehicleForm.operating_end ?? 22}
                       onChange={e => setVehicleForm(f => ({ ...f, operating_end: Number(e.target.value) }))}
-                      className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-xs font-bold text-slate-700 focus:outline-none focus:border-amber-400 transition"
+                      className="w-full bg-white border border-slate-100 rounded-xl px-3 py-2.5 text-xs font-bold text-slate-700 focus:outline-none focus:border-amber-400 transition"
                     >
                       {Array.from({ length: 24 }, (_, h) => (
                         <option key={h} value={h}>{h === 0 ? '12 AM' : h < 12 ? `${h} AM` : h === 12 ? '12 PM' : `${h - 12} PM`}</option>
@@ -1412,7 +1412,7 @@ export const DriverHome: React.FC = () => {
                     </select>
                   </div>
                 </div>
-                <p className="text-xs text-slate-400 font-semibold">
+                <p className="text-xs text-slate-400 font-normal">
                   Full-day bookings will use these times as pickup and return.
                 </p>
               </div>
@@ -1421,10 +1421,10 @@ export const DriverHome: React.FC = () => {
               <div className="flex flex-col gap-4">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-xs font-extrabold text-slate-700 flex items-center gap-1.5">
+                    <p className="text-xs font-semibold text-slate-700 flex items-center gap-1.5">
                       <Moon className="w-3.5 h-3.5 text-indigo-400" /> Night Surcharge
                     </p>
-                    <p className="text-xs text-slate-400 font-semibold mt-0.5">Applies 10 PM – 5 AM for hourly bookings</p>
+                    <p className="text-xs text-slate-400 font-normal mt-0.5">Applies 10 PM – 5 AM for hourly bookings</p>
                   </div>
                   <button
                     onClick={() => setVehicleForm(f => ({ ...f, night_surcharge_on: !f.night_surcharge_on }))}
@@ -1439,15 +1439,15 @@ export const DriverHome: React.FC = () => {
                 </div>
                 {vehicleForm.night_surcharge_on && (
                   <div className="flex flex-col gap-1.5">
-                    <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Extra Rate / Hour (RM)</label>
+                    <label className="text-xs font-semibold text-slate-400">Extra Rate / Hour (RM)</label>
                     <input
                       type="number" min="0" step="0.50"
                       value={vehicleForm.night_surcharge_rate ?? 0}
                       onChange={e => setVehicleForm(f => ({ ...f, night_surcharge_rate: Number(e.target.value) }))}
                       placeholder="e.g. 5.00"
-                      className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-xs font-bold text-slate-700 focus:outline-none focus:border-amber-400 transition"
+                      className="w-full bg-white border border-slate-100 rounded-xl px-3 py-2.5 text-xs font-bold text-slate-700 focus:outline-none focus:border-amber-400 transition"
                     />
-                    <p className="text-xs text-slate-400 font-semibold">
+                    <p className="text-xs text-slate-400 font-normal">
                       Night hours = normal rate + this extra amount per hour.
                     </p>
                   </div>
@@ -1455,7 +1455,7 @@ export const DriverHome: React.FC = () => {
               </div>
 
               <button onClick={saveVehicle} disabled={vehicleSaving}
-                className="w-full bg-amber-500 hover:bg-amber-600 text-white font-extrabold text-xs py-3 rounded-2xl transition active:scale-95 disabled:opacity-50 flex items-center justify-center gap-2">
+                className="w-full bg-amber-500 hover:bg-amber-600 text-white font-semibold text-xs py-3 rounded-2xl transition active:scale-95 disabled:opacity-50 flex items-center justify-center gap-2">
                 {vehicleSaving
                   ? <span className="w-4 h-4 rounded-full border-2 border-white border-t-transparent animate-spin" />
                   : <><CheckCircle2 className="w-4 h-4" /> Save Pricing</>}
@@ -1465,8 +1465,8 @@ export const DriverHome: React.FC = () => {
 
           {/* ── VEHICLE sub-view ── */}
           {!rentalLoading && rentalSubView === 'vehicle' && (
-            <div className="bg-white border border-slate-100 rounded-3xl p-5 shadow-sm flex flex-col gap-4">
-              <p className="text-xs font-extrabold text-slate-400 uppercase tracking-widest">Vehicle Information</p>
+            <div className="bg-white border border-slate-100 rounded-3xl p-5 flex flex-col gap-4">
+              <p className="text-sm font-bold text-slate-700">Vehicle Information</p>
 
               {[
                 { label: 'Car Type / Model', key: 'car_type' as const, placeholder: 'e.g. Perodua Myvi' },
@@ -1474,51 +1474,51 @@ export const DriverHome: React.FC = () => {
                 { label: 'Color', key: 'color' as const, placeholder: 'e.g. Silver' },
               ].map(({ label, key, placeholder }) => (
                 <div key={key} className="flex flex-col gap-1.5">
-                  <label className="text-xs font-extrabold text-slate-500 uppercase tracking-wider">{label}</label>
+                  <label className="text-xs font-semibold text-slate-400">{label}</label>
                   <input
                     value={vehicleForm[key] as string ?? ''}
                     onChange={e => setVehicleForm(f => ({ ...f, [key]: e.target.value }))}
                     placeholder={placeholder}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-xs text-slate-700 focus:outline-none focus:border-amber-400 transition"
+                    className="w-full bg-white border border-slate-100 rounded-xl px-3 py-2.5 text-xs text-slate-700 focus:outline-none focus:border-amber-400 transition"
                   />
                 </div>
               ))}
 
               <div className="grid grid-cols-2 gap-3">
                 <div className="flex flex-col gap-1.5">
-                  <label className="text-xs font-extrabold text-slate-500 uppercase tracking-wider">Seats</label>
+                  <label className="text-xs font-semibold text-slate-400">Seats</label>
                   <div className="flex items-center gap-2">
                     <button onClick={() => setVehicleForm(f => ({ ...f, seats: Math.max(1, (f.seats ?? 5) - 1) }))}
-                      className="w-8 h-8 rounded-xl bg-slate-100 text-slate-600 font-black flex items-center justify-center active:scale-90">−</button>
-                    <span className="flex-1 text-center text-sm font-black text-slate-800">{vehicleForm.seats ?? 5}</span>
+                      className="w-8 h-8 rounded-xl bg-slate-100 text-slate-600 font-semibold flex items-center justify-center active:scale-90">−</button>
+                    <span className="flex-1 text-center text-sm font-bold text-slate-800">{vehicleForm.seats ?? 5}</span>
                     <button onClick={() => setVehicleForm(f => ({ ...f, seats: Math.min(15, (f.seats ?? 5) + 1) }))}
-                      className="w-8 h-8 rounded-xl bg-slate-100 text-slate-600 font-black flex items-center justify-center active:scale-90">+</button>
+                      className="w-8 h-8 rounded-xl bg-slate-100 text-slate-600 font-semibold flex items-center justify-center active:scale-90">+</button>
                   </div>
                 </div>
                 <div className="flex flex-col gap-1.5">
-                  <label className="text-xs font-extrabold text-slate-500 uppercase tracking-wider">Price/Hour (RM)</label>
+                  <label className="text-xs font-semibold text-slate-400">Price/Hour (RM)</label>
                   <input
                     type="number" min="1" step="0.50"
                     value={vehicleForm.price_hour ?? 10}
                     onChange={e => setVehicleForm(f => ({ ...f, price_hour: Number(e.target.value) }))}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-xs text-slate-700 focus:outline-none focus:border-amber-400 transition"
+                    className="w-full bg-white border border-slate-100 rounded-xl px-3 py-2.5 text-xs text-slate-700 focus:outline-none focus:border-amber-400 transition"
                   />
                 </div>
               </div>
 
               <div className="flex flex-col gap-1.5">
-                <label className="text-xs font-extrabold text-slate-500 uppercase tracking-wider">Description (optional)</label>
+                <label className="text-xs font-semibold text-slate-400">Description (optional)</label>
                 <textarea
                   value={vehicleForm.description ?? ''}
                   onChange={e => setVehicleForm(f => ({ ...f, description: e.target.value }))}
                   rows={2}
                   placeholder="Any details customers should know..."
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-xs text-slate-700 focus:outline-none focus:border-amber-400 transition resize-none"
+                  className="w-full bg-white border border-slate-100 rounded-xl px-3 py-2.5 text-xs text-slate-700 focus:outline-none focus:border-amber-400 transition resize-none"
                 />
               </div>
 
               <button onClick={saveVehicle} disabled={vehicleSaving}
-                className="w-full bg-amber-500 hover:bg-amber-600 text-white font-extrabold text-xs py-3 rounded-2xl transition active:scale-95 disabled:opacity-50 flex items-center justify-center gap-2">
+                className="w-full bg-amber-500 hover:bg-amber-600 text-white font-semibold text-xs py-3 rounded-2xl transition active:scale-95 disabled:opacity-50 flex items-center justify-center gap-2">
                 {vehicleSaving
                   ? <span className="w-4 h-4 rounded-full border-2 border-white border-t-transparent animate-spin" />
                   : <><CheckCircle2 className="w-4 h-4" /> Save Vehicle Info</>}
@@ -1543,7 +1543,7 @@ export const DriverHome: React.FC = () => {
         <div className="fixed inset-0 z-50 flex items-end justify-center"
           onClick={() => setRentalReceiptBk(null)}>
           <div className="absolute inset-0 bg-black/40" />
-          <div className="relative w-full max-w-sm rounded-t-3xl bg-white overflow-hidden shadow-2xl animate-slide-up"
+          <div className="relative w-full max-w-sm rounded-t-3xl bg-white overflow-hidden animate-slide-up"
             onClick={e => e.stopPropagation()}>
 
             {/* Close handle */}
@@ -1554,21 +1554,21 @@ export const DriverHome: React.FC = () => {
             {/* Receipt header */}
             <div className="bg-amber-500 mx-4 mt-2 mb-0 rounded-2xl px-5 pt-4 pb-4 flex items-start justify-between">
               <div>
-                <p className="text-xs font-extrabold text-amber-100 uppercase tracking-widest">Rental Booking</p>
-                <p className="text-lg font-black text-white leading-tight mt-0.5">
+                <p className="text-xs font-semibold text-amber-100">Rental Booking</p>
+                <p className="text-lg font-semibold text-white leading-tight mt-0.5">
                   {bk.vehicle_label ?? rentalVehicle?.car_type ?? 'Vehicle'}
                 </p>
                 {!bk.vehicle_label && (
-                  <p className="text-xs text-amber-100 font-semibold">
+                  <p className="text-xs text-amber-100 font-normal">
                     {rentalVehicle?.plate_no} · {rentalVehicle?.color}
                   </p>
                 )}
                 {isAdminForRental && bk.owner_name && (
-                  <p className="text-xs text-amber-100 font-semibold">Owner: {bk.owner_name}</p>
+                  <p className="text-xs text-amber-100 font-normal">Owner: {bk.owner_name}</p>
                 )}
               </div>
               <div className="flex flex-col items-end gap-1.5">
-                <span className={`text-xs font-extrabold px-2.5 py-1 rounded-full border uppercase ${statusStyle[bk.status] ?? statusStyle.pending}`}>
+                <span className={`text-xs font-semibold px-2.5 py-1 rounded-full border uppercase ${statusStyle[bk.status] ?? statusStyle.pending}`}>
                   {bk.status}
                 </span>
                 <button onClick={() => setRentalReceiptBk(null)}
@@ -1585,14 +1585,14 @@ export const DriverHome: React.FC = () => {
                 <div className="grid grid-cols-2 gap-2">
                   <div className="bg-slate-50 rounded-2xl px-3 py-2.5 text-center">
                     <p className="text-xs text-slate-400 font-bold mb-0.5">From</p>
-                    <p className="text-xs font-extrabold text-slate-700 leading-tight">
+                    <p className="text-xs font-semibold text-slate-700 leading-tight">
                       {new Date(bk.date + 'T00:00:00').toLocaleDateString('en-MY', { day: '2-digit', month: 'short' })}
                     </p>
                     <p className="text-xs text-slate-400">{fmt12(bk.start_hour)}</p>
                   </div>
                   <div className="bg-slate-50 rounded-2xl px-3 py-2.5 text-center">
                     <p className="text-xs text-slate-400 font-bold mb-0.5">To</p>
-                    <p className="text-xs font-extrabold text-slate-700 leading-tight">
+                    <p className="text-xs font-semibold text-slate-700 leading-tight">
                       {new Date(bk.end_date + 'T00:00:00').toLocaleDateString('en-MY', { day: '2-digit', month: 'short' })}
                     </p>
                     <p className="text-xs text-slate-400">{fmt12(bk.start_hour)}</p>
@@ -1602,20 +1602,20 @@ export const DriverHome: React.FC = () => {
                 <div className="grid grid-cols-3 gap-2">
                   <div className="bg-slate-50 rounded-2xl px-3 py-2.5 text-center">
                     <p className="text-xs text-slate-400 font-bold mb-0.5">Date</p>
-                    <p className="text-xs font-extrabold text-slate-700 leading-tight">
+                    <p className="text-xs font-semibold text-slate-700 leading-tight">
                       {new Date(bk.date + 'T00:00:00').toLocaleDateString('en-MY', { day: '2-digit', month: 'short', year: 'numeric' })}
                     </p>
                   </div>
                   <div className="bg-slate-50 rounded-2xl px-3 py-2.5 text-center">
                     <p className="text-xs text-slate-400 font-bold mb-0.5">Time</p>
-                    <p className="text-xs font-extrabold text-slate-700 leading-tight">
+                    <p className="text-xs font-semibold text-slate-700 leading-tight">
                       {fmt12(bk.start_hour)}<br />
                       <span className="text-xs text-slate-400">→ {fmt12(bk.start_hour + bk.duration)}</span>
                     </p>
                   </div>
                   <div className="bg-slate-50 rounded-2xl px-3 py-2.5 text-center">
                     <p className="text-xs text-slate-400 font-bold mb-0.5">Duration</p>
-                    <p className="text-xs font-extrabold text-slate-700 leading-tight">{bk.duration} hr{bk.duration > 1 ? 's' : ''}</p>
+                    <p className="text-xs font-semibold text-slate-700 leading-tight">{bk.duration} hr{bk.duration > 1 ? 's' : ''}</p>
                   </div>
                 </div>
               )}
@@ -1623,9 +1623,9 @@ export const DriverHome: React.FC = () => {
               {/* Customer info */}
               <div className="bg-slate-50 rounded-2xl px-4 py-3 flex items-center justify-between gap-3">
                 <div className="min-w-0">
-                  <p className="text-xs text-slate-400 font-bold uppercase tracking-widest">Customer</p>
-                  <p className="text-xs font-extrabold text-slate-800 truncate">{bk.customer_name}</p>
-                  <p className="text-xs text-slate-500 font-semibold">{bk.persons} pax</p>
+                  <p className="text-xs text-slate-400 font-semibold">Customer</p>
+                  <p className="text-xs font-semibold text-slate-800 truncate">{bk.customer_name}</p>
+                  <p className="text-xs text-slate-500 font-normal">{bk.persons} pax</p>
                 </div>
                 {bk.customer_phone && bk.customer_phone !== '—' && (
                   <a href={`https://wa.me/${toWa(bk.customer_phone)}?text=${encodeURIComponent(`Hi ${bk.customer_name}, regarding your rental booking #${String(bk.booking_no).padStart(5, '0')} — just confirming your details. Please let me know if you have any questions!`)}`}
@@ -1648,7 +1648,7 @@ export const DriverHome: React.FC = () => {
                   <span className="font-bold text-slate-600">{bk.duration} hour{bk.duration > 1 ? 's' : ''}</span>
                 </div>
                 <div className="mt-1 pt-2 border-t border-dashed border-slate-100 flex items-center justify-between">
-                  <span className="text-xs font-extrabold text-slate-700">Total</span>
+                  <span className="text-xs font-semibold text-slate-700">Total</span>
                   <span className="text-base font-black text-amber-500">RM{Number(bk.total_price).toFixed(2)}</span>
                 </div>
               </div>
@@ -1658,8 +1658,8 @@ export const DriverHome: React.FC = () => {
                 <div className="flex items-center gap-2 min-w-0">
                   <FileText className={`w-4 h-4 shrink-0 ${bk.license_url ? 'text-emerald-500' : 'text-amber-400'}`} />
                   <div>
-                    <p className="text-xs font-extrabold uppercase tracking-widest text-slate-400">Driver's License</p>
-                    <p className={`text-xs font-extrabold ${bk.license_url ? 'text-emerald-700' : 'text-amber-600'}`}>
+                    <p className="text-xs font-semibold text-slate-400">Driver's License</p>
+                    <p className={`text-xs font-semibold ${bk.license_url ? 'text-emerald-700' : 'text-amber-600'}`}>
                       {bk.license_url ? 'Uploaded ✓' : 'Not yet uploaded'}
                     </p>
                   </div>
@@ -1667,7 +1667,7 @@ export const DriverHome: React.FC = () => {
                 {bk.license_url && (
                   <a href={bk.license_url} target="_blank" rel="noreferrer"
                     onClick={e => e.stopPropagation()}
-                    className="flex items-center gap-1 text-xs font-extrabold text-emerald-600 bg-white border border-emerald-200 px-3 py-1.5 rounded-xl active:scale-95 transition shrink-0">
+                    className="flex items-center gap-1 text-xs font-semibold text-emerald-600 bg-white border border-emerald-200 px-3 py-1.5 rounded-xl active:scale-95 transition shrink-0">
                     <ExternalLink className="w-3 h-3" /> View
                   </a>
                 )}
@@ -1676,7 +1676,7 @@ export const DriverHome: React.FC = () => {
               {/* Notes */}
               {bk.notes && (
                 <div className="bg-slate-50 rounded-xl px-3 py-2">
-                  <p className="text-xs text-slate-400 font-bold mb-0.5">Note from customer</p>
+                  <p className="text-xs text-slate-400 font-semibold mb-0.5">Note from customer</p>
                   <p className="text-xs text-slate-500 italic">"{bk.notes}"</p>
                 </div>
               )}
@@ -1684,8 +1684,8 @@ export const DriverHome: React.FC = () => {
               {/* Booking ref */}
               <div className="flex items-center gap-1.5 px-1">
                 <Hash className="w-3 h-3 text-slate-300" />
-                <p className="text-xs text-slate-400 font-mono font-bold tracking-wider">{String(bk.booking_no).padStart(5, '0')}</p>
-                <span className="ml-auto text-xs text-slate-300 font-semibold">
+                <p className="text-xs text-slate-400 font-mono font-semibold">{String(bk.booking_no).padStart(5, '0')}</p>
+                <span className="ml-auto text-xs text-slate-300 font-normal">
                   {new Date(bk.created_at).toLocaleDateString('en-MY', { day: '2-digit', month: 'short', year: 'numeric' })}
                 </span>
               </div>
@@ -1780,7 +1780,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
                 };
                 return (
                   <button onClick={handlePdf}
-                    className="w-full flex items-center justify-center gap-2 bg-slate-50 border border-slate-200 text-slate-500 text-xs font-extrabold py-2.5 rounded-2xl active:scale-95 transition hover:bg-slate-100">
+                    className="w-full flex items-center justify-center gap-2 bg-white border border-slate-100 text-slate-500 text-xs font-semibold py-2.5 rounded-2xl active:scale-95 transition hover:bg-slate-100">
                     <FileDown className="w-3.5 h-3.5" /> Save as PDF
                   </button>
                 );
@@ -1790,18 +1790,18 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
               {bk.status === 'pending' && (
                 <div className="flex gap-2 pt-1">
                   <button onClick={() => { updateBookingStatus(bk.id, 'confirmed'); setRentalReceiptBk(null); }}
-                    className="flex-1 bg-emerald-500 text-white text-xs font-extrabold py-3 rounded-2xl active:scale-95 transition">
+                    className="flex-1 bg-emerald-500 text-white text-xs font-semibold py-3 rounded-2xl active:scale-95 transition">
                     Confirm
                   </button>
                   <button onClick={() => { updateBookingStatus(bk.id, 'cancelled'); setRentalReceiptBk(null); }}
-                    className="flex-1 bg-red-50 border border-red-200 text-red-500 text-xs font-extrabold py-3 rounded-2xl active:scale-95 transition">
+                    className="flex-1 bg-red-50 border border-red-200 text-red-500 text-xs font-semibold py-3 rounded-2xl active:scale-95 transition">
                     Decline
                   </button>
                 </div>
               )}
               {bk.status === 'confirmed' && (
                 <button onClick={() => { updateBookingStatus(bk.id, 'completed'); setRentalReceiptBk(null); }}
-                  className="w-full bg-slate-800 text-white text-xs font-extrabold py-3 rounded-2xl active:scale-95 transition">
+                  className="w-full bg-slate-800 text-white text-xs font-semibold py-3 rounded-2xl active:scale-95 transition">
                   Mark Completed
                 </button>
               )}
