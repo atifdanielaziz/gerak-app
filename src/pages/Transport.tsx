@@ -90,7 +90,7 @@ const CAMPUS_FROM: Record<string, string[]> = {
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export const Transport: React.FC = () => {
-  const { user, setCurrentPage } = useApp();
+  const { user, setCurrentPage, showAuthGate } = useApp();
 
   // Page state
   const [campus,   setCampus]   = useState<'pekan' | 'gambang'>(
@@ -193,6 +193,7 @@ export const Transport: React.FC = () => {
 
   const handleBook = async (e: React.SyntheticEvent) => {
     e.preventDefault();
+    if (!user.isLoggedIn) { showAuthGate(); return; }
     if (!canBook) return;
     setBooking(true);
     setEditBlocked(false);

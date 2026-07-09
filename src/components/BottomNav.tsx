@@ -6,7 +6,7 @@ import { Home, UserCircle, Briefcase, LayoutDashboard, CalendarDays } from 'luci
 type Bubble = { id: number; x: number; y: number; btnId: string };
 
 export const BottomNav: React.FC = () => {
-  const { currentPage, setCurrentPage, user, isPreviewMode, activeRole, isSheetOpen } = useApp();
+  const { currentPage, setCurrentPage, user, isPreviewMode, activeRole, isSheetOpen, showAuthGate } = useApp();
   const [bubbles, setBubbles] = useState<Bubble[]>([]);
 
   const addBubble = (e: React.MouseEvent<HTMLButtonElement>, btnId: string) => {
@@ -22,7 +22,6 @@ export const BottomNav: React.FC = () => {
     return null;
   }
 
-  if (!user.isLoggedIn) return null;
   if (isSheetOpen) return null;
 
   const role = isPreviewMode ? 'customer' : (activeRole === 'driver' ? 'driver' : user.role);
@@ -85,7 +84,11 @@ export const BottomNav: React.FC = () => {
             return (
               <button
                 key={item.id}
-                onClick={(e) => { addBubble(e, item.id); setCurrentPage(item.id); }}
+                onClick={(e) => {
+                  addBubble(e, item.id);
+                  if (!user.isLoggedIn && item.id === 'profile') { showAuthGate(); return; }
+                  setCurrentPage(item.id);
+                }}
                 className="relative flex flex-col items-center justify-center py-1 px-3 min-w-[64px] transition-all duration-300 rounded-2xl active:scale-90 overflow-hidden"
                 aria-label={item.label}
               >

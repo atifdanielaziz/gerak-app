@@ -84,7 +84,7 @@ const statusStyle: Record<string, string> = {
 };
 
 export const GerakRental: React.FC = () => {
-  const { user } = useApp();
+  const { user, showAuthGate } = useApp();
 
   const [owners, setOwners]           = useState<RentalOwner[]>([]);
   const [selected, setSelected]       = useState<RentalOwner | null>(null);
@@ -362,6 +362,7 @@ export const GerakRental: React.FC = () => {
 
   // ── Submit booking ─────────────────────────────────────────────────────────
   const handleBook = async () => {
+    if (!user.isLoggedIn) { showAuthGate(); return; }
     if (!selected || !rangeStart) return;
     if (bookingType === 'hourly' && (startHour === null || !canBookSlot(rangeStart, startHour, duration))) {
       showToast('Selected slot is no longer available.'); return;

@@ -50,7 +50,7 @@ const formatPhone = (val: string) => {
 };
 
 export const Jubah: React.FC = () => {
-  const { user, jubahBooking, bookJubah, cancelJubahBooking, setCurrentPage, setSheetOpen } = useApp();
+  const { user, jubahBooking, bookJubah, cancelJubahBooking, setCurrentPage, setSheetOpen, showAuthGate } = useApp();
 
   const [landingUniversity, setLandingUniversity] = useState('');
 
@@ -289,6 +289,7 @@ export const Jubah: React.FC = () => {
 
   const handleBook = async (e: React.SyntheticEvent) => {
     e.preventDefault();
+    if (!user.isLoggedIn) { showAuthGate(); return; }
     if (!university) { alert('Please select your university.'); return; }
     if (!faculty) { alert('Please select your faculty.'); return; }
     if (!selectedRiderId) { alert('Please select a rider.'); return; }

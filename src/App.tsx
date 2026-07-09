@@ -2,6 +2,7 @@
 import { AppProvider, useApp } from './context/AppContext';
 import { Header } from './components/Header';
 import { BottomNav } from './components/BottomNav';
+import { AuthGateModal } from './components/AuthGateModal';
 // Critical path — loaded immediately
 import { SplashScreen } from './pages/SplashScreen';
 import { Login } from './pages/Login';
@@ -311,6 +312,7 @@ const AppContent: React.FC = () => {
 
   return (
     <div className="mobile-container flex flex-col h-full bg-white select-none">
+      <AuthGateModal />
       <Header />
       <div key={currentPage} className="flex-1 flex flex-col overflow-hidden page-transition">
         <Suspense fallback={<div className="flex-1 flex items-center justify-center"><span className="w-6 h-6 rounded-full border-2 border-primary border-t-transparent animate-spin" /></div>}>

@@ -8,7 +8,7 @@ export const SplashScreen: React.FC = () => {
   useEffect(() => {
     const t1 = setTimeout(() => setPhase('idle'),  400);
     const t2 = setTimeout(() => setPhase('exit'),  2000);
-    const t3 = setTimeout(() => setCurrentPage('login'), 2600);
+    const t3 = setTimeout(() => setCurrentPage('dashboard'), 2600);
     return () => { clearTimeout(t1); clearTimeout(t2); clearTimeout(t3); };
   }, [setCurrentPage]);
 
