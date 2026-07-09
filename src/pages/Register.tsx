@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
 import { supabase } from '../lib/supabase';
-import { ShieldAlert, User, Mail, Lock, Eye, EyeOff, Phone, ArrowRight, Building2, MapPin, IdCard, Car } from 'lucide-react';
+import { ShieldAlert, User, Mail, Lock, Eye, EyeOff, Phone, ArrowRight, Building2, MapPin, IdCard, Car, X } from 'lucide-react';
 
 type InviteStatus = null | 'checking' | { isDriver: boolean; campus: string; role: string };
 
@@ -76,8 +76,18 @@ export const Register: React.FC = () => {
   return (
     <div className="flex-1 bg-white flex flex-col p-6 gap-4 select-none animate-fade-in h-full overflow-hidden touch-pan-y">
 
+      {/* Close button */}
+      <div className="pt-0">
+        <button
+          onClick={() => setCurrentPage('dashboard')}
+          className="w-8 h-8 flex items-center justify-center rounded-full bg-slate-100 text-slate-500 active:scale-90 transition"
+        >
+          <X className="w-4 h-4" />
+        </button>
+      </div>
+
       {/* Header */}
-      <div className="flex flex-col items-center text-center mt-4">
+      <div className="flex flex-col items-center text-center mt-0">
         <div
           className="w-12 h-12 rounded-xl bg-white border border-slate-100 mb-2 flex items-center justify-center"
         >

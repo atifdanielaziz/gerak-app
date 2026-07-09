@@ -128,6 +128,8 @@ interface AppContextType {
   authGateVisible: boolean;
   showAuthGate: () => void;
   hideAuthGate: () => void;
+  guestCampus: string;
+  setGuestCampus: (campus: string) => void;
 
   // Notifications
   notifications: NotificationItem[];
@@ -204,6 +206,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [authGateVisible, setAuthGateVisible] = useState(false);
   const showAuthGate = () => setAuthGateVisible(true);
   const hideAuthGate = () => setAuthGateVisible(false);
+  const [guestCampus, setGuestCampus] = useState('');
   useEffect(() => {
     supabase.from('app_settings').select('value').eq('key', 'receipt_gate_active').single()
       .then(({ data }) => { if (data) setReceiptGateActive(data.value === 'true'); });
@@ -801,6 +804,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         authGateVisible,
         showAuthGate,
         hideAuthGate,
+        guestCampus,
+        setGuestCampus,
         notifications,
         addNotification,
         markAllNotificationsRead,
