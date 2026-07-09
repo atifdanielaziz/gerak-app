@@ -298,7 +298,7 @@ export const RiderHome: React.FC = () => {
   }
 
   // ── Gate 2: Monthly receipt (inactive) ───────────────────────────────────
-  if (!isActive && !isAdminRole) {
+  if (!isActive) {
     return (
       <div className="flex-grow bg-white flex flex-col items-center justify-center px-8 gap-4 animate-fade-in">
         <div className="w-16 h-16 rounded-full bg-amber-50 border-2 border-amber-100 flex items-center justify-center">

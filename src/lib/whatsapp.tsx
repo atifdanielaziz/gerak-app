@@ -18,8 +18,6 @@ export const WaIcon: React.FC<{ className?: string }> = ({ className }) => (
 interface WaBtnProps {
   phone: string;
   message?: string;
-  variant?: 'icon' | 'full'; // kept for compatibility, ignored
-  label?: string;             // kept for compatibility, ignored
   iconClass?: string;
 }
 

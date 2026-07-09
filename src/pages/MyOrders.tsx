@@ -120,8 +120,6 @@ const DriverSheet: React.FC<DriverSheetProps> = ({ order, onClose }) => (
           </a>
           <WaBtn
             phone={order.driver_contact}
-            variant="full"
-            label="WhatsApp"
             message={`Hi ${order.driver_name ?? 'Driver'}, I'm your Gerak passenger for the ride on ${order.date} at ${order.time}. 👋`}
           />
         </div>

@@ -1,7 +1,7 @@
 ﻿import React, { useState, useMemo, useRef, useEffect, lazy, Suspense } from 'react';
 import { useApp } from '../context/AppContext';
 import { supabase } from '../lib/supabase';
-import type { PinLocation } from '../components/MapPicker';
+interface PinLocation { address: string; coords: [number, number]; }
 
 const MapboxRideMap = lazy(() => import('../components/MapboxRideMap').then(m => ({ default: m.MapboxRideMap })));
 import {

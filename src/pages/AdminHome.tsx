@@ -332,7 +332,7 @@ const ProfileSheet: React.FC<{ u: ProfileUser; onClose: () => void }> = ({ u, on
               className="flex-1 flex items-center justify-center gap-2 bg-slate-800 text-white font-semibold text-xs py-3.5 rounded-2xl active:scale-[0.98] transition">
               <Phone className="w-4 h-4" /> Call
             </a>
-            <WaBtn phone={u.phone} variant="full" label="WhatsApp" />
+            <WaBtn phone={u.phone} />
           </div>
         )}
       </div>
