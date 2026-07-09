@@ -63,6 +63,8 @@ $$;
 GRANT EXECUTE ON FUNCTION public.mark_jubah_balance_paid(uuid) TO authenticated;
 
 -- ── Update track_jubah_booking to return deposit fields ───────────────────────
+DROP FUNCTION IF EXISTS public.track_jubah_booking(text, text);
+
 CREATE OR REPLACE FUNCTION public.track_jubah_booking(
   p_reference text DEFAULT NULL,
   p_hp_number text DEFAULT NULL
