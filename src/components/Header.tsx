@@ -25,8 +25,8 @@ export const Header: React.FC = () => {
     return null;
   }
 
-  // Guest mode — header with campus selector + bell
-  if (!user.isLoggedIn) {
+  // Guest mode OR admin customer-preview — same header
+  if (!user.isLoggedIn || isPreviewMode) {
     if (currentPage === 'profile') return null;
     const openSheet = () => { setSheetStep('university'); setTempUni(''); setShowCampusSheet(true); };
     const closeSheet = () => { setShowCampusSheet(false); setSheetStep('university'); setTempUni(''); };
@@ -51,14 +51,53 @@ export const Header: React.FC = () => {
             <ChevronDown className="w-4 h-4 text-slate-400 shrink-0" />
           </button>
 
-          {/* Bell */}
-          <button
-            onClick={() => showAuthGate()}
-            className="relative p-2.5 text-slate-600 rounded-full hover:bg-slate-50 active:scale-90 transition"
-            aria-label="Notifications"
-          >
-            <Bell className="w-5 h-5" />
-          </button>
+          <div className="flex items-center gap-2">
+            {/* Admin escape hatch — red 3-dots to exit preview */}
+            {isPreviewMode && (
+              <div className="relative">
+                <button
+                  onClick={() => setShowRoleMenu(p => !p)}
+                  className="w-8 h-8 flex items-center justify-center rounded-xl bg-red-500 text-white shadow-md shadow-red-500/40 active:scale-90 transition"
+                >
+                  <MoreHorizontal className="w-4 h-4" />
+                </button>
+                {showRoleMenu && (
+                  <>
+                    <div className="fixed inset-0 z-40" onClick={() => setShowRoleMenu(false)} />
+                    <div className="absolute right-0 top-full mt-2 z-50 bg-white border border-slate-100 rounded-2xl shadow-xl overflow-hidden min-w-[180px]">
+                      <button
+                        onClick={() => { switchToAdminMode(); setShowRoleMenu(false); }}
+                        className="w-full flex items-center gap-3 px-4 py-3 text-left text-xs font-extrabold text-slate-600 hover:bg-slate-50 transition active:scale-95"
+                      >
+                        <ShieldCheck className="w-4 h-4 shrink-0" /> Exit Preview → Admin
+                      </button>
+                      <button
+                        onClick={() => { switchToDriverMode(); setShowRoleMenu(false); }}
+                        className="w-full flex items-center gap-3 px-4 py-3 text-left text-xs font-extrabold text-slate-600 hover:bg-slate-50 transition active:scale-95"
+                      >
+                        <Car className="w-4 h-4 shrink-0" /> Switch to Driver
+                      </button>
+                      <button
+                        onClick={() => { switchToRiderMode(); setShowRoleMenu(false); }}
+                        className="w-full flex items-center gap-3 px-4 py-3 text-left text-xs font-extrabold text-slate-600 hover:bg-slate-50 transition active:scale-95"
+                      >
+                        <Bike className="w-4 h-4 shrink-0" /> Switch to Rider
+                      </button>
+                    </div>
+                  </>
+                )}
+              </div>
+            )}
+
+            {/* Bell */}
+            <button
+              onClick={() => showAuthGate()}
+              className="relative p-2.5 text-slate-600 rounded-full hover:bg-slate-50 active:scale-90 transition"
+              aria-label="Notifications"
+            >
+              <Bell className="w-5 h-5" />
+            </button>
+          </div>
         </header>
 
         {/* Campus selection sheet */}

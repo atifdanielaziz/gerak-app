@@ -21,7 +21,7 @@ export const driverIsActive = (
   ));
 
 export const Profile: React.FC = () => {
-  const { user, logout, updateProfile, refreshUserData, receiptGateActive, showConfirmModal, setCurrentPage } = useApp();
+  const { user, logout, updateProfile, refreshUserData, receiptGateActive, showConfirmModal, setCurrentPage, isPreviewMode } = useApp();
 
   const isDriver = user.role === 'driver' || user.role === 'rider';
   const isActive = driverIsActive(user, receiptGateActive);
@@ -214,8 +214,8 @@ export const Profile: React.FC = () => {
   const hasReceipt = !!user.feeReceiptUrl;
   const isRejected = hasReceipt && !user.feeReceiptVerified && !!user.feeReceiptRejectReason;
 
-  /* ── GUEST VIEW ── */
-  if (!user.isLoggedIn) {
+  /* ── GUEST VIEW (also shown in admin customer-preview mode) ── */
+  if (!user.isLoggedIn || isPreviewMode) {
     const prefRows    = [{ icon: Languages, label: 'Language' }, { icon: Moon, label: 'Appearance' }];
     const supportRows = [{ icon: HelpCircle, label: 'Help Center' }, { icon: FileText, label: 'Terms & Conditions' }, { icon: Lock, label: 'Privacy Policy' }];
     const otherRows   = [{ icon: Info, label: 'About Gerak' }, { icon: Star, label: 'Rate App' }, { icon: Share2, label: 'Share App' }];
