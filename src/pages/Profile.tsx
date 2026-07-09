@@ -5,6 +5,7 @@ import {
   ChevronRight, CheckCircle2, HelpCircle, Heart, LogOut,
   Pencil, X, Car, Upload, FileImage,
   ShieldCheck, ShieldOff, AlertTriangle, Clock, RefreshCw,
+  Headset, Languages, Moon, FileText, Lock, Info, Star, Share2,
 } from 'lucide-react';
 
 /* Derive active status from verified + non-expired receipt, with gate bypass */
@@ -20,7 +21,7 @@ export const driverIsActive = (
   ));
 
 export const Profile: React.FC = () => {
-  const { user, logout, updateProfile, refreshUserData, receiptGateActive, showConfirmModal } = useApp();
+  const { user, logout, updateProfile, refreshUserData, receiptGateActive, showConfirmModal, setCurrentPage } = useApp();
 
   const isDriver = user.role === 'driver' || user.role === 'rider';
   const isActive = driverIsActive(user, receiptGateActive);
@@ -212,6 +213,88 @@ export const Profile: React.FC = () => {
   /* Receipt section state */
   const hasReceipt = !!user.feeReceiptUrl;
   const isRejected = hasReceipt && !user.feeReceiptVerified && !!user.feeReceiptRejectReason;
+
+  /* ── GUEST VIEW ── */
+  if (!user.isLoggedIn) {
+    const prefRows    = [{ icon: Languages, label: 'Language' }, { icon: Moon, label: 'Appearance' }];
+    const supportRows = [{ icon: HelpCircle, label: 'Help Center' }, { icon: FileText, label: 'Terms & Conditions' }, { icon: Lock, label: 'Privacy Policy' }];
+    const otherRows   = [{ icon: Info, label: 'About Gerak' }, { icon: Star, label: 'Rate App' }, { icon: Share2, label: 'Share App' }];
+
+    const SettingRow = ({ icon: Icon, label, last = false }: { icon: React.ElementType; label: string; last?: boolean }) => (
+      <div>
+        <div className="flex items-center justify-between px-4 py-4">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-xl bg-slate-100 flex items-center justify-center shrink-0">
+              <Icon className="w-4 h-4 text-slate-900" />
+            </div>
+            <span className="text-sm font-semibold text-slate-800">{label}</span>
+          </div>
+          <ChevronRight className="w-4 h-4 text-slate-300" />
+        </div>
+        {!last && <div className="border-t border-slate-100" />}
+      </div>
+    );
+
+    return (
+      <div
+        className="flex-grow bg-white overflow-y-auto no-scrollbar animate-fade-in"
+        style={{ paddingBottom: 'calc(6.5rem + env(safe-area-inset-bottom))' }}
+      >
+        {/* Headset support button */}
+        <div className="flex justify-end px-5 pt-4">
+          <button className="w-9 h-9 rounded-xl bg-slate-100 text-slate-900 flex items-center justify-center active:scale-90 transition shrink-0">
+            <Headset className="w-4 h-4" />
+          </button>
+        </div>
+
+        {/* Branding */}
+        <div className="flex flex-col items-center text-center px-6 pt-3 pb-6">
+          <div className="w-16 h-16 rounded-2xl bg-white border border-slate-100 mb-4 flex items-center justify-center">
+            <span style={{ fontFamily: 'Inter, sans-serif', fontSize: '2.6rem', color: '#0F172A', lineHeight: 1, fontWeight: 900 }}>g</span>
+          </div>
+          <h2 className="text-2xl font-normal text-slate-800 tracking-tight font-heading m-0">
+            Sign In to{' '}
+            <span style={{ fontFamily: 'Inter, sans-serif', fontSize: '1.5rem', lineHeight: 1, fontWeight: 700 }}>
+              ger<span style={{ color: '#EF4444' }}>a</span>k
+            </span>
+          </h2>
+          <p className="text-slate-400 text-xs mt-1.5 font-normal">Smart University Service Platform</p>
+        </div>
+
+        {/* Hi there + CTA */}
+        <div className="px-5 flex flex-col items-center gap-2 mb-8">
+          <h3 className="text-2xl font-bold text-slate-800 m-0">Hi there!</h3>
+          <p className="text-sm font-normal text-slate-500 text-center leading-relaxed">
+            Sign in to access your bookings and all Gerak services.
+          </p>
+          <button
+            onClick={() => setCurrentPage('login')}
+            className="w-full bg-primary text-white font-semibold text-sm tracking-widest py-4 rounded-2xl active:scale-[0.99] transition mt-3 uppercase shadow-md shadow-primary/25"
+          >
+            Login to Continue
+          </button>
+        </div>
+
+        {/* Settings sections */}
+        <div className="px-5 flex flex-col gap-2">
+          <p className="text-xs font-semibold text-slate-400 pl-1 mb-1">Preferences</p>
+          <div className="bg-white border border-slate-100 rounded-3xl overflow-hidden mb-3">
+            {prefRows.map((r, i) => <SettingRow key={r.label} {...r} last={i === prefRows.length - 1} />)}
+          </div>
+
+          <p className="text-xs font-semibold text-slate-400 pl-1 mb-1">Support</p>
+          <div className="bg-white border border-slate-100 rounded-3xl overflow-hidden mb-3">
+            {supportRows.map((r, i) => <SettingRow key={r.label} {...r} last={i === supportRows.length - 1} />)}
+          </div>
+
+          <p className="text-xs font-semibold text-slate-400 pl-1 mb-1">Others</p>
+          <div className="bg-white border border-slate-100 rounded-3xl overflow-hidden">
+            {otherRows.map((r, i) => <SettingRow key={r.label} {...r} last={i === otherRows.length - 1} />)}
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col h-full w-full bg-white overflow-y-auto no-scrollbar animate-fade-in pb-4">
