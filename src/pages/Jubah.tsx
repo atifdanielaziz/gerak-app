@@ -1,6 +1,6 @@
 ﻿import React, { useState, useRef, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
-import { CheckCircle2, X, Upload, FileText, ShieldAlert, Download, ChevronDown, ChevronLeft, User, Pencil, MapPin, Copy, Check, Info, GraduationCap, Eye } from 'lucide-react';
+import { CheckCircle2, X, Upload, FileText, ShieldAlert, Download, ChevronDown, ChevronLeft, User, Pencil, MapPin, Copy, Check, Info, GraduationCap, Eye, PackageSearch } from 'lucide-react';
 import { submitJubahToSheets } from '../lib/sheetsService';
 import { JubahLanding } from '../components/JubahLanding';
 import { supabase } from '../lib/supabase';
@@ -50,7 +50,7 @@ const formatPhone = (val: string) => {
 };
 
 export const Jubah: React.FC = () => {
-  const { user, jubahBooking, bookJubah, cancelJubahBooking, setCurrentPage, setSheetOpen, showAuthGate } = useApp();
+  const { user, jubahBooking, bookJubah, cancelJubahBooking, setCurrentPage, setSheetOpen } = useApp();
 
   const [landingUniversity, setLandingUniversity] = useState('');
 
@@ -289,7 +289,6 @@ export const Jubah: React.FC = () => {
 
   const handleBook = async (e: React.SyntheticEvent) => {
     e.preventDefault();
-    if (!user.isLoggedIn) { showAuthGate(); return; }
     if (!university) { alert('Please select your university.'); return; }
     if (!faculty) { alert('Please select your faculty.'); return; }
     if (!selectedRiderId) { alert('Please select a rider.'); return; }
@@ -537,6 +536,15 @@ export const Jubah: React.FC = () => {
                 </select>
               </div>
             </div>
+
+            {/* Track existing order */}
+            <button
+              type="button"
+              onClick={() => setCurrentPage('track-jubah')}
+              className="w-full flex items-center justify-center gap-2 bg-white border border-slate-100 text-slate-500 font-semibold text-xs py-3 rounded-xl active:scale-[0.98] active:bg-slate-50 transition"
+            >
+              <PackageSearch className="w-4 h-4" /> Track My Jubah Order
+            </button>
 
             {/* Faculty — list changes based on selected university */}
             <div className="flex flex-col gap-1.5">

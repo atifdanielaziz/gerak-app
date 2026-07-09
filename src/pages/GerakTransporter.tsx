@@ -45,7 +45,7 @@ Boleh saya dapatkan maklumat harga & ketersediaan? Terima kasih 🙏`
   );
 
 export const GerakTransporter: React.FC = () => {
-  const { setCurrentPage } = useApp();
+  const { setCurrentPage, user, showAuthGate } = useApp();
   const [serviceType, setServiceType] = useState<'Penghantaran Motosikal' | 'Pindah Barang'>('Penghantaran Motosikal');
   const [showFeatures, setShowFeatures] = useState(false);
 
@@ -222,9 +222,10 @@ export const GerakTransporter: React.FC = () => {
 
         {/* ── MAIN BOOK BUTTON ── */}
         <a
-          href={`https://wa.me/6${PROVIDER.phone}?text=${buildWaMsg(serviceType)}`}
-          target="_blank"
+          href={user.isLoggedIn ? `https://wa.me/6${PROVIDER.phone}?text=${buildWaMsg(serviceType)}` : '#'}
+          target={user.isLoggedIn ? '_blank' : '_self'}
           rel="noopener noreferrer"
+          onClick={e => { if (!user.isLoggedIn) { e.preventDefault(); showAuthGate(); } }}
           className="flex items-center justify-between bg-slate-900 hover:bg-slate-800 active:scale-[0.98] text-white font-semibold py-4 px-5 rounded-3xl text-sm transition shadow-lg shadow-slate-900/30"
         >
           <div className="flex items-center gap-3">

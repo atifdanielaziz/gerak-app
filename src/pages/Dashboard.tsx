@@ -1,7 +1,7 @@
 ﻿import React, { useState, useEffect, useRef } from 'react';
 import { useApp } from '../context/AppContext';
 import { supabase } from '../lib/supabase';
-import { Car, GraduationCap, ArrowRight, Sparkles, KeyRound, ShoppingBasket, Truck } from 'lucide-react';
+import { Car, GraduationCap, ArrowRight, ChevronRight, Sparkles, KeyRound, ShoppingBasket, Truck } from 'lucide-react';
 
 const toTitleCase = (str: string) =>
   str.toLowerCase().replace(/\b\w/g, c => c.toUpperCase());
@@ -228,12 +228,10 @@ export const Dashboard: React.FC = () => {
         {/* A. Transportation Module */}
         <div
           onClick={() => setCurrentPage('transport')}
-          className="group relative bg-white border border-slate-100 rounded-3xl p-5 flex items-center justify-between cursor-pointer active:scale-[0.99] transition duration-200"
+          className="bg-white border border-slate-100 rounded-3xl p-5 flex items-center justify-between cursor-pointer active:scale-[0.99] active:bg-slate-50 transition duration-200"
         >
-          <div className="absolute left-0 top-6 bottom-6 w-1 bg-primary rounded-r-lg group-active:scale-y-110 transition duration-300" />
-
-          <div className="flex items-center gap-4 pl-1">
-            <div className="w-12 h-12 rounded-2xl bg-emerald-50 text-primary flex items-center justify-center group-active:bg-primary group-active:text-white transition duration-300">
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 rounded-2xl bg-slate-100 text-slate-500 flex items-center justify-center">
               <Car className="w-6 h-6" />
             </div>
             <div>
@@ -243,22 +241,18 @@ export const Dashboard: React.FC = () => {
               </p>
             </div>
           </div>
-          <ArrowRight className="w-5 h-5 text-slate-300 group-active:text-primary group-active:translate-x-1 transition" />
+          <ChevronRight className="w-5 h-5 text-slate-300 shrink-0" />
         </div>
 
         {/* B. Jubah Delivery Module */}
         <div
           onClick={() => jubahActive ? setCurrentPage('jubah') : null}
-          className={`group relative bg-white border border-slate-100 rounded-3xl p-5 flex items-center justify-between transition duration-200 ${
-            jubahActive ? 'cursor-pointer active:scale-[0.99]' : 'opacity-40 cursor-not-allowed'
+          className={`bg-white border border-slate-100 rounded-3xl p-5 flex items-center justify-between transition duration-200 ${
+            jubahActive ? 'cursor-pointer active:scale-[0.99] active:bg-slate-50' : 'opacity-40 cursor-not-allowed'
           }`}
         >
-          <div className={`absolute left-0 top-6 bottom-6 w-1 rounded-r-lg transition duration-300 ${jubahActive ? 'bg-blue-500 group-active:scale-y-110' : 'bg-slate-300'}`} />
-
-          <div className="flex items-center gap-4 pl-1">
-            <div className={`w-12 h-12 rounded-2xl flex items-center justify-center transition duration-300 ${
-              jubahActive ? 'bg-blue-50 text-blue-500 group-active:bg-blue-500 group-active:text-white' : 'bg-slate-100 text-slate-300'
-            }`}>
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 rounded-2xl bg-slate-100 text-slate-500 flex items-center justify-center">
               <GraduationCap className="w-6 h-6" />
             </div>
             <div>
@@ -271,17 +265,13 @@ export const Dashboard: React.FC = () => {
               </p>
             </div>
           </div>
-          {jubahActive && <ArrowRight className="w-5 h-5 text-slate-300 group-active:text-blue-500 group-active:translate-x-1 transition" />}
+          {jubahActive && <ChevronRight className="w-5 h-5 text-slate-300 shrink-0" />}
         </div>
 
         {/* C. Gerak Daily Module */}
-        <div
-          className="group relative bg-white border border-slate-100 rounded-3xl p-5 flex items-center justify-between cursor-pointer active:scale-[0.99] transition duration-200"
-        >
-          <div className="absolute left-0 top-6 bottom-6 w-1 bg-violet-500 rounded-r-lg group-active:scale-y-110 transition duration-300" />
-
-          <div className="flex items-center gap-4 pl-1">
-            <div className="w-12 h-12 rounded-2xl bg-violet-50 text-violet-500 flex items-center justify-center group-active:bg-violet-500 group-active:text-white transition duration-300">
+        <div className="bg-white border border-slate-100 rounded-3xl p-5 flex items-center justify-between opacity-40 cursor-not-allowed">
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 rounded-2xl bg-slate-100 text-slate-500 flex items-center justify-center">
               <ShoppingBasket className="w-6 h-6" />
             </div>
             <div>
@@ -291,18 +281,16 @@ export const Dashboard: React.FC = () => {
               </p>
             </div>
           </div>
-          <ArrowRight className="w-5 h-5 text-slate-300 group-active:text-violet-500 group-active:translate-x-1 transition" />
+          <ChevronRight className="w-5 h-5 text-slate-300 shrink-0" />
         </div>
 
         {/* D. Gerak Rental Module */}
         <div
           onClick={() => setCurrentPage('gerak-rental')}
-          className="group relative bg-white border border-slate-100 rounded-3xl p-5 flex items-center justify-between cursor-pointer active:scale-[0.99] transition duration-200"
+          className="bg-white border border-slate-100 rounded-3xl p-5 flex items-center justify-between cursor-pointer active:scale-[0.99] active:bg-slate-50 transition duration-200"
         >
-          <div className="absolute left-0 top-6 bottom-6 w-1 bg-amber-500 rounded-r-lg group-active:scale-y-110 transition duration-300" />
-
-          <div className="flex items-center gap-4 pl-1">
-            <div className="w-12 h-12 rounded-2xl bg-amber-50 text-amber-500 flex items-center justify-center group-active:bg-amber-500 group-active:text-white transition duration-300">
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 rounded-2xl bg-slate-100 text-slate-500 flex items-center justify-center">
               <KeyRound className="w-5 h-5" />
             </div>
             <div>
@@ -312,18 +300,16 @@ export const Dashboard: React.FC = () => {
               </p>
             </div>
           </div>
-          <ArrowRight className="w-5 h-5 text-slate-300 group-active:text-amber-500 group-active:translate-x-1 transition" />
+          <ChevronRight className="w-5 h-5 text-slate-300 shrink-0" />
         </div>
 
         {/* E. Gerak Transporter Module */}
         <div
           onClick={() => setCurrentPage('gerak-transporter')}
-          className="group relative bg-white border border-slate-100 rounded-3xl p-5 flex items-center justify-between cursor-pointer active:scale-[0.99] transition duration-200"
+          className="bg-white border border-slate-100 rounded-3xl p-5 flex items-center justify-between cursor-pointer active:scale-[0.99] active:bg-slate-50 transition duration-200"
         >
-          <div className="absolute left-0 top-6 bottom-6 w-1 bg-orange-500 rounded-r-lg group-active:scale-y-110 transition duration-300" />
-
-          <div className="flex items-center gap-4 pl-1">
-            <div className="w-12 h-12 rounded-2xl bg-orange-50 text-orange-500 flex items-center justify-center group-active:bg-orange-500 group-active:text-white transition duration-300">
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 rounded-2xl bg-slate-100 text-slate-500 flex items-center justify-center">
               <Truck className="w-6 h-6" />
             </div>
             <div>
@@ -333,7 +319,7 @@ export const Dashboard: React.FC = () => {
               </p>
             </div>
           </div>
-          <ArrowRight className="w-5 h-5 text-slate-300 group-active:text-orange-500 group-active:translate-x-1 transition" />
+          <ChevronRight className="w-5 h-5 text-slate-300 shrink-0" />
         </div>
 
       </div>
