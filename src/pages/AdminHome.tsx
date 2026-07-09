@@ -3298,7 +3298,7 @@ export const AdminHome: React.FC = () => {
                             onClick={() => setDirSheet(a)}
                             className="border-b border-slate-50 text-xs cursor-pointer hover:bg-slate-50 active:bg-slate-100 transition">
                             <td className="py-2.5 pr-4 text-slate-600 font-semibold align-top whitespace-nowrap">
-                              {a.drop_point || '—'}
+                              {a.method === 'pickup' ? 'Self Pickup' : a.method === 'postage' ? 'Pickup & Postage' : '—'}
                             </td>
                             <td className="py-2.5 pr-4 font-semibold text-slate-800 align-top">{a.name}</td>
                             <td className="py-2.5 pr-4 font-mono text-slate-700 align-top whitespace-nowrap">{a.ic_number || '—'}</td>
