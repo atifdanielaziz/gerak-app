@@ -20,7 +20,7 @@ export const driverIsActive = (
   ));
 
 export const Profile: React.FC = () => {
-  const { user, logout, updateProfile, refreshUserData, receiptGateActive } = useApp();
+  const { user, logout, updateProfile, refreshUserData, receiptGateActive, showConfirmModal } = useApp();
 
   const isDriver = user.role === 'driver' || user.role === 'rider';
   const isActive = driverIsActive(user, receiptGateActive);
@@ -664,7 +664,7 @@ export const Profile: React.FC = () => {
           </div>
           <ChevronRight className="w-4 h-4 text-slate-300" />
         </button>
-        <button onClick={logout}
+        <button onClick={() => showConfirmModal({ title: 'Logout', message: 'Are you sure you want to logout?', onConfirm: logout })}
           className="w-full flex items-center justify-between p-3 rounded-2xl hover:bg-danger/5 active:scale-[0.99] transition text-left border-t border-slate-50 group cursor-pointer">
           <div className="flex items-center gap-3">
             <LogOut className="w-4 h-4 text-slate-400 group-hover:text-danger" />

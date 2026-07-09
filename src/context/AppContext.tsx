@@ -103,6 +103,14 @@ export interface JubahBooking {
   returnTime?: string;
 }
 
+export interface ConfirmModalOptions {
+  title: string;
+  message: string;
+  onConfirm: () => void;
+  confirmLabel?: string;
+  cancelLabel?: string;
+}
+
 interface AppContextType {
   // Navigation & Session
   currentPage: ActivePage;
@@ -125,9 +133,10 @@ interface AppContextType {
   receiptGateActive: boolean;
   isSheetOpen: boolean;
   setSheetOpen: (open: boolean) => void;
-  authGateVisible: boolean;
+  confirmModal: ConfirmModalOptions | null;
+  showConfirmModal: (opts: ConfirmModalOptions) => void;
+  hideConfirmModal: () => void;
   showAuthGate: () => void;
-  hideAuthGate: () => void;
   guestCampus: string;
   setGuestCampus: (campus: string) => void;
 
@@ -203,9 +212,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   // while true, sidestepping any device-specific stacking-context quirks
   // where a fixed-position sheet might not reliably paint above it.
   const [isSheetOpen, setSheetOpen] = useState(false);
-  const [authGateVisible, setAuthGateVisible] = useState(false);
-  const showAuthGate = () => setAuthGateVisible(true);
-  const hideAuthGate = () => setAuthGateVisible(false);
+  const [confirmModal, setConfirmModal] = useState<ConfirmModalOptions | null>(null);
+  const showConfirmModal = (opts: ConfirmModalOptions) => setConfirmModal(opts);
+  const hideConfirmModal = () => setConfirmModal(null);
+  const showAuthGate = () => setConfirmModal({
+    title: 'Login Required',
+    message: 'Sign in to book rides and access all Gerak services.',
+    onConfirm: () => { setConfirmModal(null); _setCurrentPage('login'); },
+  });
   const [guestCampus, setGuestCampus] = useState('');
   useEffect(() => {
     supabase.from('app_settings').select('value').eq('key', 'receipt_gate_active').single()
@@ -801,9 +815,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         receiptGateActive,
         isSheetOpen,
         setSheetOpen,
-        authGateVisible,
+        confirmModal,
+        showConfirmModal,
+        hideConfirmModal,
         showAuthGate,
-        hideAuthGate,
         guestCampus,
         setGuestCampus,
         notifications,
