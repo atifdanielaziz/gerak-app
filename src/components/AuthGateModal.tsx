@@ -14,22 +14,30 @@ export const AuthGateModal: React.FC = () => {
 
   return (
     <div
-      className="fixed inset-0 z-[9999] flex items-center justify-center px-6"
+      className="fixed inset-0 z-[9999] flex items-end justify-center pb-24 px-6"
       style={{
-        background: 'rgba(0,0,0,0.35)',
-        backdropFilter: 'blur(12px)',
-        WebkitBackdropFilter: 'blur(12px)',
+        background: 'rgba(0,0,0,0.25)',
+        backdropFilter: 'blur(24px)',
+        WebkitBackdropFilter: 'blur(24px)',
       }}
       onClick={hideAuthGate}
     >
       <div
-        className="w-full max-w-[320px] bg-white rounded-3xl p-6 flex flex-col items-center gap-4 animate-scale-in"
+        className="w-full max-w-[360px] bg-white rounded-3xl p-6 flex flex-col items-center gap-4 animate-scale-in"
         onClick={e => e.stopPropagation()}
       >
-        {/* Icon — outer halo + inner solid circle */}
-        <div className="w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center mt-1">
-          <div className="w-14 h-14 rounded-full bg-primary flex items-center justify-center">
-            <TriangleAlert className="w-6 h-6 text-white" />
+        {/* Icon — radial glow halo + solid inner circle */}
+        <div className="relative flex items-center justify-center mt-2 mb-1">
+          {/* Outer radial glow ring */}
+          <div
+            className="absolute w-24 h-24 rounded-full"
+            style={{
+              background: 'radial-gradient(circle, rgba(239,68,68,0.18) 0%, rgba(239,68,68,0.06) 55%, transparent 75%)',
+            }}
+          />
+          {/* Inner solid circle */}
+          <div className="relative w-16 h-16 rounded-full bg-primary flex items-center justify-center shadow-lg shadow-primary/30">
+            <TriangleAlert className="w-7 h-7 text-white" />
           </div>
         </div>
 
@@ -45,15 +53,15 @@ export const AuthGateModal: React.FC = () => {
         <div className="flex gap-3 w-full mt-1">
           <button
             onClick={hideAuthGate}
-            className="flex-1 py-3.5 rounded-2xl border border-slate-200 text-slate-700 font-semibold text-sm active:scale-95 transition active:bg-slate-50"
+            className="flex-1 py-3.5 rounded-2xl border border-primary text-primary font-semibold text-sm tracking-wide active:scale-95 transition active:bg-primary/5"
           >
-            Cancel
+            CANCEL
           </button>
           <button
             onClick={handleConfirm}
-            className="flex-1 py-3.5 rounded-2xl bg-primary text-white font-semibold text-sm active:scale-95 transition shadow-md shadow-primary/20"
+            className="flex-1 py-3.5 rounded-2xl bg-primary text-white font-semibold text-sm tracking-wide active:scale-95 transition shadow-md shadow-primary/25"
           >
-            Sign In
+            CONFIRM
           </button>
         </div>
       </div>
