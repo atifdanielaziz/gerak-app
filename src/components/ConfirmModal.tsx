@@ -37,7 +37,7 @@ export const ConfirmModal: React.FC = () => {
             {confirmModal.cancelLabel ?? 'CANCEL'}
           </button>
           <button
-            onClick={confirmModal.onConfirm}
+            onClick={() => { hideConfirmModal(); confirmModal.onConfirm(); }}
             className="flex-1 py-3.5 rounded-2xl bg-primary text-white font-semibold text-sm tracking-wide active:scale-95 transition shadow-md shadow-primary/25"
           >
             {confirmModal.confirmLabel ?? 'CONFIRM'}
