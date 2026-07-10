@@ -84,8 +84,7 @@ export const MapboxRideMap: React.FC<Props> = ({ campusCenter, onPickupChange, o
       try {
         const res  = await fetch(
           `${OSRM}/${pickupCoords[0]},${pickupCoords[1]};${destCoords[0]},${destCoords[1]}` +
-          `?overview=full&geometries=geojson`,
-          { headers: { 'User-Agent': UA } }
+          `?overview=full&geometries=geojson`
         );
         const json = await res.json();
         const route = json.routes?.[0];
