@@ -5,8 +5,8 @@ interface PinLocation { address: string; coords: [number, number]; }
 
 const MapboxRideMap = lazy(() => import('../components/MapboxRideMap').then(m => ({ default: m.MapboxRideMap })));
 import {
-  Map, List, ChevronDown, ChevronUp,
-  Info, CheckCircle2, RotateCcw, Users, Clock, CalendarDays, Phone, ClipboardList,
+  Map, List, ChevronDown,
+  Info, CheckCircle2, RotateCcw, Users, Clock, CalendarDays, Phone, ClipboardList, X,
 } from 'lucide-react';
 import { submitRideToSheets } from '../lib/sheetsService';
 
@@ -97,7 +97,7 @@ export const Transport: React.FC = () => {
     user.campus?.toLowerCase() === 'pekan' ? 'pekan' : 'gambang'
   );
   const [bookMode, setBookMode] = useState<'quick' | 'map'>('quick');
-  const [showInfo, setShowInfo] = useState(true);
+  const [showTerms, setShowTerms] = useState(false);
 
   // Quick-route state
   const [selectedFrom,  setSelectedFrom]  = useState('');
@@ -403,39 +403,22 @@ export const Transport: React.FC = () => {
           </div>
         )}
 
-        <button
-          onClick={() => setCurrentPage('my-orders')}
-          className="self-end flex items-center gap-1.5 text-xs font-normal text-slate-400 hover:text-primary transition"
-        >
-          <ClipboardList className="w-3.5 h-3.5" />
-          My Orders
-        </button>
-      </div>
-
-      {/* Info notice */}
-      <div className="px-4 mt-3">
-        <div className="border border-slate-100 rounded-2xl overflow-hidden">
+        <div className="flex items-center justify-between">
           <button
             type="button"
-            onClick={() => setShowInfo(v => !v)}
-            className="w-full flex items-center justify-between px-4 py-2.5 text-left"
+            onClick={() => setShowTerms(true)}
+            className="flex items-center gap-1.5 text-xs font-normal text-slate-400 hover:text-primary transition"
           >
-            <div className="flex items-center gap-2">
-              <Info className="w-3.5 h-3.5 text-amber-400 shrink-0" />
-              <span className="text-xs font-semibold text-slate-500">
-                Booking Info & Prices
-              </span>
-            </div>
-            {showInfo ? <ChevronUp className="w-3.5 h-3.5 text-slate-300" /> : <ChevronDown className="w-3.5 h-3.5 text-slate-300" />}
+            <Info className="w-3.5 h-3.5" />
+            Booking Terms
           </button>
-          {showInfo && (
-            <div className="px-4 pb-3 text-xs text-slate-500 font-normal leading-relaxed space-y-1 border-t border-slate-50">
-              <p>• Bookings between <strong className="text-slate-700">12am–7am</strong> must be placed <strong className="text-slate-700">before 10pm</strong>.</p>
-              <p>• Night ride (12am–7am) attracts an extra <strong className="text-amber-500">RM5 charge</strong> — applied automatically.</p>
-              <p>• Maximum <strong className="text-slate-700">4 passengers</strong> per trip. Exceeding this may incur extra charge.</p>
-              {campus === 'gambang' && <p>• Peak hours may also incur additional charges.</p>}
-            </div>
-          )}
+          <button
+            onClick={() => setCurrentPage('my-orders')}
+            className="flex items-center gap-1.5 text-xs font-normal text-slate-400 hover:text-primary transition"
+          >
+            <ClipboardList className="w-3.5 h-3.5" />
+            My Orders
+          </button>
         </div>
       </div>
 
@@ -754,6 +737,48 @@ export const Transport: React.FC = () => {
           </p>
         )}
       </form>
+
+      {/* Booking Terms — Drawer Standard */}
+      {showTerms && (
+        <div
+          className="fixed inset-0 z-50 flex items-end justify-center"
+          style={{ background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(2px)' }}
+          onClick={() => setShowTerms(false)}
+        >
+          <div
+            className="w-full max-w-[480px] max-h-[calc(100dvh-3rem)] bg-white rounded-t-3xl shadow-2xl animate-slide-up flex flex-col"
+            onClick={e => e.stopPropagation()}
+          >
+            {/* Drag pill */}
+            <div className="flex justify-center pt-3 pb-1 shrink-0">
+              <div className="w-10 h-1 bg-slate-200 rounded-full" />
+            </div>
+
+            {/* Header */}
+            <div className="flex items-center justify-between px-5 pt-2 pb-4 shrink-0">
+              <p className="text-xs font-extrabold text-slate-400 uppercase tracking-widest">BOOKING TERMS</p>
+              <button
+                onClick={() => setShowTerms(false)}
+                className="w-7 h-7 flex items-center justify-center rounded-full bg-slate-100 text-slate-500 active:scale-90 transition"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Scrollable content */}
+            <div className="flex-1 min-h-0 overflow-y-auto no-scrollbar">
+              <div className="px-5 flex flex-col gap-3" style={{ paddingBottom: 'calc(6.5rem + env(safe-area-inset-bottom))' }}>
+                <div className="border border-slate-100 rounded-2xl p-4 flex flex-col gap-3 text-xs text-slate-500 font-normal leading-relaxed">
+                  <p>• Bookings between <strong className="text-slate-700">12am–7am</strong> must be placed <strong className="text-slate-700">before 10pm</strong>.</p>
+                  <p>• Night ride (12am–7am) attracts an extra <strong className="text-amber-500">RM5 charge</strong> — applied automatically.</p>
+                  <p>• Maximum <strong className="text-slate-700">4 passengers</strong> per trip. Exceeding this may incur extra charge.</p>
+                  {campus === 'gambang' && <p>• Peak hours may also incur additional charges.</p>}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
