@@ -646,43 +646,39 @@ export const Transport: React.FC = () => {
             )}
           </div>
 
-          {/* Contact — overlay: transparent real input, 12px display div, red caret */}
+          {/* Contact */}
           <div className="flex flex-col gap-0.5">
             <label className="text-xs font-normal text-slate-400 pl-1 flex items-center gap-1">
               <Phone className="w-3 h-3" /> Contact Number
             </label>
-            <div className="relative h-9 group">
-              <div className="absolute inset-0 bg-white border border-slate-100 rounded-xl px-2.5 flex items-center pointer-events-none group-focus-within:border-primary transition">
-                <span className={`text-xs font-semibold ${contact ? 'text-slate-700' : 'text-slate-400'}`}>
-                  {contact || 'e.g. 0123456789'}
-                </span>
-              </div>
-              <input type="tel" required value={contact}
-                onChange={e => setContact(e.target.value)}
-                className="absolute inset-0 w-full h-full rounded-xl bg-transparent focus:outline-none cursor-text"
-                style={{ fontSize: '16px', color: 'transparent', caretColor: '#EF4444' }}
-                autoComplete="tel" />
-            </div>
+            <input
+              type="tel"
+              required
+              value={contact}
+              onChange={e => setContact(e.target.value)}
+              placeholder="e.g. 0123456789"
+              className="w-full h-9 bg-white border border-slate-100 rounded-xl px-3 font-semibold text-slate-700 placeholder:font-normal placeholder:text-slate-400 focus:outline-none focus:border-primary transition"
+              style={{ fontSize: '16px' }}
+              autoComplete="tel"
+            />
           </div>
 
-          {/* Remark — same overlay pattern */}
+          {/* Remark */}
           <div className="flex flex-col gap-0.5">
             <label className="text-xs font-normal text-slate-400 pl-1">
               Remark for Driver (optional)
             </label>
-            <div className="relative h-9 group">
-              <div className="absolute inset-0 bg-white border border-slate-100 rounded-xl px-2.5 flex items-center pointer-events-none group-focus-within:border-primary transition">
-                <span className={`text-xs font-semibold truncate ${notes ? 'text-slate-700' : 'text-slate-400'}`}>
-                  {notes || 'e.g. luggage, wheelchair, main gate...'}
-                </span>
-              </div>
-              <input type="text" value={notes}
-                onChange={e => setNotes(e.target.value.slice(0, 500))}
-                maxLength={500}
-                className="absolute inset-0 w-full h-full rounded-xl bg-transparent focus:outline-none cursor-text"
-                style={{ fontSize: '16px', color: 'transparent', caretColor: '#EF4444' }}
-                autoComplete="off" autoCorrect="off" />
-            </div>
+            <input
+              type="text"
+              value={notes}
+              onChange={e => setNotes(e.target.value.slice(0, 500))}
+              maxLength={500}
+              placeholder="e.g. luggage, wheelchair, main gate..."
+              className="w-full h-9 bg-white border border-slate-100 rounded-xl px-3 font-semibold text-slate-700 placeholder:font-normal placeholder:text-slate-400 focus:outline-none focus:border-primary transition"
+              style={{ fontSize: '16px' }}
+              autoComplete="off"
+              autoCorrect="off"
+            />
           </div>
         </div>
 
