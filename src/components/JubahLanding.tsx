@@ -86,28 +86,12 @@ export const JubahLanding: React.FC<Props> = ({ onProceed }) => {
     if (!key) { setRiderDir([]); return; }
     const campusList = CAMPUS_LIST[key] ?? [key];
 
-    // Same two-step query as admin Jubah tab — guaranteed to always match
-    supabase.from('profiles')
-      .select('id, name, ic_number, phone')
-      .eq('role', 'rider')
-      .eq('can_robe', true)
-      .eq('status', 'active')
-      .in('campus', campusList)
-      .then(({ data: ridersData }) => {
-        const riderIds = (ridersData ?? []).map(r => r.id);
-        if (!riderIds.length) { setRiderDir([]); return; }
-        const profileMap = Object.fromEntries((ridersData ?? []).map(r => [r.id, r as { name: string; ic_number: string | null; phone: string | null }]));
-        supabase.from('jubah_rider_assignments')
-          .select('id, rider_id, drop_point, method, campus')
-          .in('rider_id', riderIds)
-          .eq('is_active', true)
-          .order('created_at')
-          .then(({ data: assignData }) => {
-            setRiderDir((assignData ?? []).map(a => {
-              const p = profileMap[a.rider_id];
-              return { id: a.id, name: p?.name ?? '—', drop_point: a.drop_point as string | null, method: a.method as string | null, ic_number: p?.ic_number ?? null, phone: p?.phone ?? null };
-            }));
-          });
+    // SECURITY DEFINER RPC — works for anon/guest (direct profiles query is blocked by RLS)
+    supabase.rpc('get_jubah_riders_directory_v2', { p_campuses: campusList })
+      .then(({ data }) => {
+        setRiderDir((data ?? []).map((r: { id: string; name: string; drop_point: string | null; method: string | null; ic_number: string | null; phone: string | null }) => ({
+          id: r.id, name: r.name, drop_point: r.drop_point, method: r.method, ic_number: r.ic_number, phone: r.phone,
+        })));
       });
   };
 
