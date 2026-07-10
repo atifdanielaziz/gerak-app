@@ -144,57 +144,68 @@ const InstallPrompt: React.FC = () => {
 const SwipeBackGesture: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { goBack, canGoBack } = useApp();
 
-  const [renderDragX, setRenderDragX] = useState(0);
-  const dragXRef    = useRef(0);
-  const isDragRef   = useRef(false);
-  const startXRef   = useRef(0);
-  const startYRef   = useRef(0);
-  const dirLockRef  = useRef<'h' | 'v' | null>(null);
+  const [dragX,      setDragX]      = useState(0);
+  const [gestureOn,  setGestureOn]  = useState(false); // finger is down → no CSS transition
+  const [showBackUI, setShowBackUI] = useState(false); // show shadow + arrow (back mode only)
+
+  const dragXRef     = useRef(0);
+  const modeRef      = useRef<'none' | 'back' | 'bounce'>('none');
+  const startXRef    = useRef(0);
+  const startYRef    = useRef(0);
+  const dirLockRef   = useRef<'h' | 'v' | null>(null);
   const canGoBackRef = useRef(canGoBack);
   const goBackRef    = useRef(goBack);
 
   useEffect(() => { canGoBackRef.current = canGoBack; }, [canGoBack]);
   useEffect(() => { goBackRef.current = goBack; }, [goBack]);
 
-  const EDGE    = 40;  // px from left edge to start gesture
-  const TRIGGER = 90;  // px drag distance to trigger back
+  const EDGE       = 40;   // px from left edge to activate gesture
+  const TRIGGER    = 90;   // px drag to commit back navigation
+  const BOUNCE_MAX = 55;   // max px elastic bounce when at floor
 
   useEffect(() => {
     const onStart = (e: TouchEvent) => {
       const t = e.touches[0];
+      if (t.clientX >= EDGE) return;
       startXRef.current  = t.clientX;
       startYRef.current  = t.clientY;
-      isDragRef.current  = t.clientX < EDGE && canGoBackRef.current;
       dirLockRef.current = null;
       dragXRef.current   = 0;
+      modeRef.current    = canGoBackRef.current ? 'back' : 'bounce';
     };
 
     const onMove = (e: TouchEvent) => {
-      if (!isDragRef.current) return;
+      if (modeRef.current === 'none') return;
       const t  = e.touches[0];
       const dx = t.clientX - startXRef.current;
       const dy = Math.abs(t.clientY - startYRef.current);
 
       if (!dirLockRef.current) {
-        if (Math.abs(dx) > 6 || dy > 6) {
-          dirLockRef.current = Math.abs(dx) >= dy ? 'h' : 'v';
-        } else return;
+        if (Math.abs(dx) < 6 && dy < 6) return;
+        dirLockRef.current = Math.abs(dx) >= dy ? 'h' : 'v';
       }
-      if (dirLockRef.current === 'v') { isDragRef.current = false; return; }
+      if (dirLockRef.current === 'v') { modeRef.current = 'none'; return; }
+      if (dx <= 0) return;
 
-      if (dx > 0) {
-        dragXRef.current = Math.min(dx, window.innerWidth * 0.85);
-        setRenderDragX(dragXRef.current);
-        e.preventDefault();
-      }
+      e.preventDefault(); // block native browser gesture
+      dragXRef.current = modeRef.current === 'back'
+        ? Math.min(dx, window.innerWidth * 0.85)
+        : Math.min(dx * 0.28, BOUNCE_MAX); // elastic resistance at floor
+
+      setGestureOn(true);
+      setDragX(dragXRef.current);
+      setShowBackUI(modeRef.current === 'back');
     };
 
     const onEnd = () => {
-      if (!isDragRef.current) return;
-      isDragRef.current = false;
-      if (dragXRef.current >= TRIGGER) goBackRef.current();
+      if (modeRef.current === 'none') return;
+      const triggered = modeRef.current === 'back' && dragXRef.current >= TRIGGER;
+      modeRef.current  = 'none';
       dragXRef.current = 0;
-      setRenderDragX(0);
+      setGestureOn(false);
+      setDragX(0);
+      setShowBackUI(false);
+      if (triggered) goBackRef.current();
     };
 
     window.addEventListener('touchstart', onStart, { passive: true });
@@ -207,17 +218,16 @@ const SwipeBackGesture: React.FC<{ children: React.ReactNode }> = ({ children })
     };
   }, []);
 
-  const progress = Math.min(renderDragX / TRIGGER, 1);
-  const dragging = renderDragX > 0;
+  const progress = Math.min(dragX / TRIGGER, 1);
 
   return (
     <>
-      {/* Shadow layer revealed behind the sliding page */}
-      {dragging && (
+      {/* Shadow behind page — back drag only */}
+      {showBackUI && dragX > 0 && (
         <div
           style={{
             position: 'fixed', inset: 0, zIndex: 9990,
-            background: `linear-gradient(to right, rgba(0,0,0,0.08), rgba(0,0,0,0.18))`,
+            background: 'linear-gradient(to right, rgba(0,0,0,0.08), rgba(0,0,0,0.18))',
             pointerEvents: 'none',
           }}
         />
@@ -226,8 +236,8 @@ const SwipeBackGesture: React.FC<{ children: React.ReactNode }> = ({ children })
       {/* Sliding page */}
       <div
         style={{
-          transform: dragging ? `translateX(${renderDragX}px)` : 'translateX(0)',
-          transition: dragging ? 'none' : 'transform 0.28s cubic-bezier(0.25,0.46,0.45,0.94)',
+          transform: dragX > 0 ? `translateX(${dragX}px)` : 'translateX(0)',
+          transition: gestureOn ? 'none' : 'transform 0.28s cubic-bezier(0.25,0.46,0.45,0.94)',
           position: 'relative', zIndex: 9991,
           width: '100%', flex: 1,
         }}
@@ -235,12 +245,12 @@ const SwipeBackGesture: React.FC<{ children: React.ReactNode }> = ({ children })
         {children}
       </div>
 
-      {/* Back arrow circle that floats on left edge */}
-      {dragging && (
+      {/* Back arrow circle — back drag only */}
+      {showBackUI && dragX > 0 && (
         <div
           style={{
             position: 'fixed',
-            left: Math.max(8, renderDragX - 30),
+            left: Math.max(8, dragX - 30),
             top: '50%',
             transform: `translateY(-50%) scale(${0.55 + progress * 0.45})`,
             width: 44, height: 44,
@@ -311,7 +321,7 @@ const AppContent: React.FC = () => {
   };
 
   return (
-    <div className="mobile-container flex flex-col h-full bg-white select-none">
+    <div className="mobile-container flex flex-col h-full bg-white select-none overscroll-x-none">
       <ConfirmModal />
       <Header />
       <div key={currentPage} className="flex-1 flex flex-col overflow-hidden page-transition">
@@ -325,15 +335,6 @@ const AppContent: React.FC = () => {
 };
 
 function App() {
-  useEffect(() => {
-    // Trap iOS Safari swipe-back: keep a dummy history entry so the native
-    // gesture never navigates outside the PWA, regardless of role or page.
-    history.pushState(null, '');
-    const onPop = () => history.pushState(null, '');
-    window.addEventListener('popstate', onPop);
-    return () => window.removeEventListener('popstate', onPop);
-  }, []);
-
   return (
     <AppProvider>
       <InstallPrompt />

@@ -39,16 +39,27 @@ export const Header: React.FC = () => {
           style={{ paddingTop: 'calc(1rem + env(safe-area-inset-top))' }}
         >
           {/* Campus selector — plain, no pill */}
-          <button
-            onClick={openSheet}
-            className="flex items-center gap-1.5 active:opacity-70 transition active:scale-95"
-          >
-            <MapPin className="w-4 h-4 text-slate-500 shrink-0" />
-            <span className="text-sm font-semibold text-slate-800 max-w-[200px] truncate">
-              {guestCampus || 'Select Campus'}
-            </span>
-            <ChevronDown className="w-4 h-4 text-slate-400 shrink-0" />
-          </button>
+          <div className="flex items-center gap-1">
+            {canGoBack && (
+              <button
+                onClick={goBack}
+                className="w-10 h-10 flex items-center justify-center rounded-xl hover:bg-slate-100 active:scale-90 transition text-slate-600 mr-0.5"
+                aria-label="Go back"
+              >
+                <ChevronLeft className="w-5 h-5" />
+              </button>
+            )}
+            <button
+              onClick={openSheet}
+              className="flex items-center gap-1.5 active:opacity-70 transition active:scale-95"
+            >
+              <MapPin className="w-4 h-4 text-slate-500 shrink-0" />
+              <span className="text-sm font-semibold text-slate-800 max-w-[200px] truncate">
+                {guestCampus || 'Select Campus'}
+              </span>
+              <ChevronDown className="w-4 h-4 text-slate-400 shrink-0" />
+            </button>
+          </div>
 
           <div className="flex items-center gap-2">
             {/* Admin escape hatch — red 3-dots to exit preview */}
