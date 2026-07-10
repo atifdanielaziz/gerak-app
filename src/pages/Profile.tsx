@@ -671,7 +671,7 @@ export const Profile: React.FC = () => {
   return (
     <div className="flex-grow bg-white overflow-y-auto no-scrollbar animate-fade-in pb-8">
 
-      {/* Logout icon — mirrors guest headset position */}
+      {/* Logout icon */}
       <div className="flex justify-end px-5 pt-4">
         <button
           onClick={() => showConfirmModal({ title: 'Logout', message: 'Are you sure you want to logout?', onConfirm: logout })}
@@ -681,16 +681,8 @@ export const Profile: React.FC = () => {
         </button>
       </div>
 
-      {/* Gerak wordmark — mirrors guest page exactly */}
-      <div className="flex flex-col items-center text-center px-6 pt-3 pb-4">
-        <h1 className="m-0 leading-none" style={{ fontFamily: 'Inter, sans-serif', fontSize: '2.8rem', fontWeight: 900, color: '#0F172A' }}>
-          ger<span style={{ color: '#EF4444' }}>a</span>k
-        </h1>
-        <p className="text-slate-400 text-xs mt-2 font-normal">Smart University Service Platform</p>
-      </div>
-
       {/* Avatar + Name + Gerak ID */}
-      <div className="flex flex-col items-center px-6 pb-6">
+      <div className="flex flex-col items-center px-6 pt-4 pb-6">
         <div className="w-20 h-20 rounded-full overflow-hidden mb-4">
           {user.avatarUrl ? (
             <img src={user.avatarUrl} alt="avatar" className="w-full h-full object-cover" />
