@@ -201,19 +201,16 @@ export const Profile: React.FC = () => {
     const supportRows = [{ icon: HelpCircle, label: 'Help Center' }, { icon: FileText, label: 'Terms & Conditions' }, { icon: Lock, label: 'Privacy Policy' }];
     const otherRows   = [{ icon: Info, label: 'About Gerak' }, { icon: Star, label: 'Rate App' }, { icon: Share2, label: 'Share App' }];
 
-    const SettingRow = ({ icon: Icon, label, last = false }: { icon: React.ElementType; label: string; last?: boolean }) => (
-      <div>
-        <div className="flex items-center justify-between px-4 py-4">
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-slate-100 flex items-center justify-center shrink-0">
-              <Icon className="w-4 h-4 text-slate-900" />
-            </div>
-            <span className="text-sm font-semibold text-slate-800">{label}</span>
+    const SettingRow = ({ icon: Icon, label }: { icon: React.ElementType; label: string }) => (
+      <button className="w-full bg-white border border-slate-100 rounded-2xl flex items-center justify-between px-4 py-4 active:bg-slate-50 active:scale-[0.99] transition text-left cursor-pointer">
+        <div className="flex items-center gap-3">
+          <div className="w-9 h-9 rounded-xl bg-slate-100 flex items-center justify-center shrink-0">
+            <Icon className="w-4 h-4 text-slate-900" />
           </div>
-          <ChevronRight className="w-4 h-4 text-slate-300" />
+          <span className="text-sm font-semibold text-slate-800">{label}</span>
         </div>
-        {!last && <div className="border-t border-slate-100" />}
-      </div>
+        <ChevronRight className="w-4 h-4 text-slate-300" />
+      </button>
     );
 
     return (
@@ -244,18 +241,18 @@ export const Profile: React.FC = () => {
           </button>
         </div>
 
-        <div className="px-5 flex flex-col gap-2 mt-auto pb-4">
-          <p className="text-xs font-semibold text-slate-400 pl-1 mb-1">Preferences</p>
-          <div className="bg-white border border-slate-100 rounded-3xl overflow-hidden mb-3">
-            {prefRows.map((r, i) => <SettingRow key={r.label} {...r} last={i === prefRows.length - 1} />)}
+        <div className="px-5 flex flex-col gap-5 mt-auto pb-4">
+          <div>
+            <p className="text-xs font-semibold text-slate-400 pl-1 mb-2">Preferences</p>
+            <div className="flex flex-col gap-2">{prefRows.map(r => <SettingRow key={r.label} {...r} />)}</div>
           </div>
-          <p className="text-xs font-semibold text-slate-400 pl-1 mb-1">Support</p>
-          <div className="bg-white border border-slate-100 rounded-3xl overflow-hidden mb-3">
-            {supportRows.map((r, i) => <SettingRow key={r.label} {...r} last={i === supportRows.length - 1} />)}
+          <div>
+            <p className="text-xs font-semibold text-slate-400 pl-1 mb-2">Support</p>
+            <div className="flex flex-col gap-2">{supportRows.map(r => <SettingRow key={r.label} {...r} />)}</div>
           </div>
-          <p className="text-xs font-semibold text-slate-400 pl-1 mb-1">Others</p>
-          <div className="bg-white border border-slate-100 rounded-3xl overflow-hidden">
-            {otherRows.map((r, i) => <SettingRow key={r.label} {...r} last={i === otherRows.length - 1} />)}
+          <div>
+            <p className="text-xs font-semibold text-slate-400 pl-1 mb-2">Others</p>
+            <div className="flex flex-col gap-2">{otherRows.map(r => <SettingRow key={r.label} {...r} />)}</div>
           </div>
         </div>
       </div>
@@ -743,27 +740,19 @@ export const Profile: React.FC = () => {
       </div>
 
       {/* Account section */}
-      <div className="px-5 mb-4">
-        <p className="text-sm font-bold text-slate-700 mb-3">Account</p>
-        <div className="bg-white border border-slate-100 rounded-3xl overflow-hidden">
-          <button
-            onClick={() => setProfileView('edit')}
-            className="w-full flex items-center justify-between px-4 py-4 active:bg-slate-50 active:scale-[0.99] transition text-left"
-          >
+      <div className="px-5 mb-5">
+        <p className="text-sm font-bold text-slate-700 mb-2">Account</p>
+        <div className="flex flex-col gap-2">
+          <button onClick={() => setProfileView('edit')} className="w-full bg-white border border-slate-100 rounded-2xl flex items-center justify-between px-4 py-4 active:bg-slate-50 active:scale-[0.99] transition text-left">
             <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-xl bg-slate-100 flex items-center justify-center shrink-0">
-                <User className="w-4 h-4 text-slate-900" />
-              </div>
+              <div className="w-9 h-9 rounded-xl bg-slate-100 flex items-center justify-center shrink-0"><User className="w-4 h-4 text-slate-900" /></div>
               <span className="text-sm font-semibold text-slate-800">My Profile</span>
             </div>
             <ChevronRight className="w-4 h-4 text-slate-300" />
           </button>
-          <div className="border-t border-slate-100" />
-          <button className="w-full flex items-center justify-between px-4 py-4 active:bg-slate-50 active:scale-[0.99] transition text-left cursor-pointer">
+          <button className="w-full bg-white border border-slate-100 rounded-2xl flex items-center justify-between px-4 py-4 active:bg-slate-50 active:scale-[0.99] transition text-left cursor-pointer">
             <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-xl bg-slate-100 flex items-center justify-center shrink-0">
-                <ShieldCheck className="w-4 h-4 text-slate-900" />
-              </div>
+              <div className="w-9 h-9 rounded-xl bg-slate-100 flex items-center justify-center shrink-0"><ShieldCheck className="w-4 h-4 text-slate-900" /></div>
               <span className="text-sm font-semibold text-slate-800">Security Settings</span>
             </div>
             <ChevronRight className="w-4 h-4 text-slate-300" />
@@ -772,66 +761,57 @@ export const Profile: React.FC = () => {
       </div>
 
       {/* Preferences */}
-      <div className="px-5 mb-4">
-        <p className="text-xs font-semibold text-slate-400 pl-1 mb-1">Preferences</p>
-        <div className="bg-white border border-slate-100 rounded-3xl overflow-hidden">
-          {([{ icon: Languages, label: 'Language' }, { icon: Moon, label: 'Appearance' }] as { icon: React.ElementType; label: string }[]).map(({ icon: Icon, label }, i, arr) => (
-            <React.Fragment key={label}>
-              <button className="w-full flex items-center justify-between px-4 py-4 active:bg-slate-50 active:scale-[0.99] transition text-left cursor-pointer">
-                <div className="flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-xl bg-slate-100 flex items-center justify-center shrink-0"><Icon className="w-4 h-4 text-slate-900" /></div>
-                  <span className="text-sm font-semibold text-slate-800">{label}</span>
-                </div>
-                <ChevronRight className="w-4 h-4 text-slate-300" />
-              </button>
-              {i < arr.length - 1 && <div className="border-t border-slate-100" />}
-            </React.Fragment>
+      <div className="px-5 mb-5">
+        <p className="text-xs font-semibold text-slate-400 pl-1 mb-2">Preferences</p>
+        <div className="flex flex-col gap-2">
+          {([{ icon: Languages, label: 'Language' }, { icon: Moon, label: 'Appearance' }] as { icon: React.ElementType; label: string }[]).map(({ icon: Icon, label }) => (
+            <button key={label} className="w-full bg-white border border-slate-100 rounded-2xl flex items-center justify-between px-4 py-4 active:bg-slate-50 active:scale-[0.99] transition text-left cursor-pointer">
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-xl bg-slate-100 flex items-center justify-center shrink-0"><Icon className="w-4 h-4 text-slate-900" /></div>
+                <span className="text-sm font-semibold text-slate-800">{label}</span>
+              </div>
+              <ChevronRight className="w-4 h-4 text-slate-300" />
+            </button>
           ))}
         </div>
       </div>
 
       {/* Support */}
-      <div className="px-5 mb-4">
-        <p className="text-xs font-semibold text-slate-400 pl-1 mb-1">Support</p>
-        <div className="bg-white border border-slate-100 rounded-3xl overflow-hidden">
+      <div className="px-5 mb-5">
+        <p className="text-xs font-semibold text-slate-400 pl-1 mb-2">Support</p>
+        <div className="flex flex-col gap-2">
           {([
             { icon: HelpCircle, label: 'Help Center' },
             { icon: FileText, label: 'Terms & Conditions' },
             { icon: Lock, label: 'Privacy Policy' },
-          ] as { icon: React.ElementType; label: string }[]).map(({ icon: Icon, label }, i, arr) => (
-            <React.Fragment key={label}>
-              <button className="w-full flex items-center justify-between px-4 py-4 active:bg-slate-50 active:scale-[0.99] transition text-left cursor-pointer">
-                <div className="flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-xl bg-slate-100 flex items-center justify-center shrink-0"><Icon className="w-4 h-4 text-slate-900" /></div>
-                  <span className="text-sm font-semibold text-slate-800">{label}</span>
-                </div>
-                <ChevronRight className="w-4 h-4 text-slate-300" />
-              </button>
-              {i < arr.length - 1 && <div className="border-t border-slate-100" />}
-            </React.Fragment>
+          ] as { icon: React.ElementType; label: string }[]).map(({ icon: Icon, label }) => (
+            <button key={label} className="w-full bg-white border border-slate-100 rounded-2xl flex items-center justify-between px-4 py-4 active:bg-slate-50 active:scale-[0.99] transition text-left cursor-pointer">
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-xl bg-slate-100 flex items-center justify-center shrink-0"><Icon className="w-4 h-4 text-slate-900" /></div>
+                <span className="text-sm font-semibold text-slate-800">{label}</span>
+              </div>
+              <ChevronRight className="w-4 h-4 text-slate-300" />
+            </button>
           ))}
         </div>
       </div>
 
       {/* Others */}
       <div className="px-5">
-        <p className="text-xs font-semibold text-slate-400 pl-1 mb-1">Others</p>
-        <div className="bg-white border border-slate-100 rounded-3xl overflow-hidden">
+        <p className="text-xs font-semibold text-slate-400 pl-1 mb-2">Others</p>
+        <div className="flex flex-col gap-2">
           {([
             { icon: Info, label: 'About Gerak' },
             { icon: Star, label: 'Rate App' },
             { icon: Share2, label: 'Share App' },
-          ] as { icon: React.ElementType; label: string }[]).map(({ icon: Icon, label }, i, arr) => (
-            <React.Fragment key={label}>
-              <button className="w-full flex items-center justify-between px-4 py-4 active:bg-slate-50 active:scale-[0.99] transition text-left cursor-pointer">
-                <div className="flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-xl bg-slate-100 flex items-center justify-center shrink-0"><Icon className="w-4 h-4 text-slate-900" /></div>
-                  <span className="text-sm font-semibold text-slate-800">{label}</span>
-                </div>
-                <ChevronRight className="w-4 h-4 text-slate-300" />
-              </button>
-              {i < arr.length - 1 && <div className="border-t border-slate-100" />}
-            </React.Fragment>
+          ] as { icon: React.ElementType; label: string }[]).map(({ icon: Icon, label }) => (
+            <button key={label} className="w-full bg-white border border-slate-100 rounded-2xl flex items-center justify-between px-4 py-4 active:bg-slate-50 active:scale-[0.99] transition text-left cursor-pointer">
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-xl bg-slate-100 flex items-center justify-center shrink-0"><Icon className="w-4 h-4 text-slate-900" /></div>
+                <span className="text-sm font-semibold text-slate-800">{label}</span>
+              </div>
+              <ChevronRight className="w-4 h-4 text-slate-300" />
+            </button>
           ))}
         </div>
       </div>
