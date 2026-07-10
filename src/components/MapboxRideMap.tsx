@@ -3,10 +3,10 @@ import maplibregl from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import { LocateFixed, Search, X } from 'lucide-react';
 
-const MAPBOX_TOKEN = import.meta.env.VITE_MAPBOX_TOKEN as string;
-const MAP_STYLE    = 'https://tiles.openfreemap.org/styles/liberty';
-const NOMINATIM    = 'https://nominatim.openstreetmap.org';
-const UA           = 'GerakApp/1.0';
+const MAP_STYLE = 'https://tiles.openfreemap.org/styles/liberty';
+const NOMINATIM = 'https://nominatim.openstreetmap.org';
+const OSRM      = 'https://router.project-osrm.org/route/v1/driving';
+const UA        = 'GerakApp/1.0';
 
 interface NominatimResult {
   place_id: number;
@@ -38,6 +38,7 @@ export const MapboxRideMap: React.FC<Props> = ({ campusCenter, onPickupChange, o
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [locating,        setLocating]        = useState(false);
   const [searching,       setSearching]       = useState(false);
+  const [routeInfo,       setRouteInfo]       = useState<{ distanceKm: string; durationMin: string } | null>(null);
 
   // ── Init map ────────────────────────────────────────────────────────────────
   useEffect(() => {
@@ -82,14 +83,20 @@ export const MapboxRideMap: React.FC<Props> = ({ campusCenter, onPickupChange, o
       let routeCoords: [number, number][] = [pickupCoords, destCoords];
       try {
         const res  = await fetch(
-          `https://api.mapbox.com/directions/v5/mapbox/driving/` +
-          `${pickupCoords[0]},${pickupCoords[1]};${destCoords[0]},${destCoords[1]}` +
-          `?geometries=geojson&overview=full&access_token=${MAPBOX_TOKEN}`
+          `${OSRM}/${pickupCoords[0]},${pickupCoords[1]};${destCoords[0]},${destCoords[1]}` +
+          `?overview=full&geometries=geojson`,
+          { headers: { 'User-Agent': UA } }
         );
         const json = await res.json();
-        if (json.routes?.[0]?.geometry?.coordinates?.length)
-          routeCoords = json.routes[0].geometry.coordinates;
-      } catch { /* straight-line fallback */ }
+        const route = json.routes?.[0];
+        if (route?.geometry?.coordinates?.length) {
+          routeCoords = route.geometry.coordinates;
+          setRouteInfo({
+            distanceKm: (route.distance / 1000).toFixed(1),
+            durationMin: Math.ceil(route.duration / 60).toString(),
+          });
+        }
+      } catch { setRouteInfo(null); /* straight-line fallback */ }
 
       const draw = () => {
         if (m.getLayer('route-line'))        m.removeLayer('route-line');
@@ -210,6 +217,7 @@ export const MapboxRideMap: React.FC<Props> = ({ campusCenter, onPickupChange, o
     setQuery('');
     setDestName('');
     setDestCoords(null);
+    setRouteInfo(null);
     onDestinationChange('');
     setSuggestions([]);
     setShowSuggestions(false);
@@ -284,25 +292,40 @@ export const MapboxRideMap: React.FC<Props> = ({ campusCenter, onPickupChange, o
 
       {/* Pin status row */}
       <div className="flex gap-2">
-        <div className="flex-1 flex items-center gap-2 p-3 rounded-xl bg-blue-50 border border-blue-100 min-w-0">
+        <div className="flex-1 flex items-center gap-2 p-3 rounded-2xl bg-blue-50 border border-blue-100 min-w-0">
           <div className="w-2.5 h-2.5 rounded-full bg-blue-500 shrink-0" />
           <div className="min-w-0">
-            <p className="text-xs font-extrabold text-blue-400 uppercase tracking-wider">Pickup</p>
-            <p className="text-xs font-bold text-slate-700 truncate mt-0.5">
+            <p className="text-xs font-semibold text-blue-400">Pickup</p>
+            <p className="text-xs font-semibold text-slate-700 truncate mt-0.5">
               {locating ? 'Detecting location…' : pickupName || 'Allow location access'}
             </p>
           </div>
         </div>
-        <div className="flex-1 flex items-center gap-2 p-3 rounded-xl bg-red-50 border border-red-100 min-w-0">
+        <div className="flex-1 flex items-center gap-2 p-3 rounded-2xl bg-red-50 border border-red-100 min-w-0">
           <div className="w-2.5 h-2.5 rounded-full bg-red-500 shrink-0" />
           <div className="min-w-0">
-            <p className="text-xs font-extrabold text-red-400 uppercase tracking-wider">Destination</p>
-            <p className="text-xs font-bold text-slate-700 truncate mt-0.5">
+            <p className="text-xs font-semibold text-red-400">Destination</p>
+            <p className="text-xs font-semibold text-slate-700 truncate mt-0.5">
               {destName || 'Search above'}
             </p>
           </div>
         </div>
       </div>
+
+      {/* Route info strip — distance + ETA from OSRM */}
+      {routeInfo && (
+        <div className="flex items-center justify-center gap-4 py-2 px-4 bg-white border border-slate-100 rounded-2xl">
+          <div className="flex flex-col items-center">
+            <span className="text-base font-black text-slate-800">{routeInfo.distanceKm} km</span>
+            <span className="text-xs font-normal text-slate-400">Distance</span>
+          </div>
+          <div className="w-px h-8 bg-slate-100" />
+          <div className="flex flex-col items-center">
+            <span className="text-base font-black text-slate-800">{routeInfo.durationMin} min</span>
+            <span className="text-xs font-normal text-slate-400">Est. drive time</span>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
