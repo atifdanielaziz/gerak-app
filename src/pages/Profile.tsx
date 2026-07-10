@@ -237,8 +237,7 @@ export const Profile: React.FC = () => {
 
     return (
       <div
-        className="flex-grow bg-white overflow-y-auto no-scrollbar animate-fade-in"
-        style={{ paddingBottom: 'calc(6.5rem + env(safe-area-inset-bottom))' }}
+        className="flex-1 min-h-0 flex flex-col bg-white overflow-y-auto no-scrollbar animate-fade-in"
       >
         {/* Headset support button */}
         <div className="flex justify-end px-5 pt-4">
@@ -269,8 +268,8 @@ export const Profile: React.FC = () => {
           </button>
         </div>
 
-        {/* Settings sections */}
-        <div className="px-5 flex flex-col gap-2">
+        {/* Settings sections — mt-auto pushes this to the bottom so gap appears above, not below */}
+        <div className="px-5 flex flex-col gap-2 mt-auto pb-4">
           <p className="text-xs font-semibold text-slate-400 pl-1 mb-1">Preferences</p>
           <div className="bg-white border border-slate-100 rounded-3xl overflow-hidden mb-3">
             {prefRows.map((r, i) => <SettingRow key={r.label} {...r} last={i === prefRows.length - 1} />)}
