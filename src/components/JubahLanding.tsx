@@ -4,7 +4,7 @@ import { useApp } from '../context/AppContext';
 import { ChevronRight, Image as ImageIcon, X, Users } from 'lucide-react';
 import { WaIcon, toWa } from '../lib/whatsapp';
 
-type RiderDir = { id: string; name: string; jubah_drop_point: string | null; ic_number: string | null; phone: string | null };
+type RiderDir = { id: string; name: string; drop_point: string | null; method: string | null; ic_number: string | null; phone: string | null };
 
 const maskIc = (ic: string | null) => {
   if (!ic) return '—';
@@ -13,20 +13,6 @@ const maskIc = (ic: string | null) => {
   return `${digits.slice(0, 6)}-XX-XXXX`;
 };
 
-const IcMasked: React.FC<{ ic: string | null }> = ({ ic }) => {
-  if (!ic) return <span className="text-slate-800 font-bold text-sm">—</span>;
-  const digits = ic.replace(/\D/g, '');
-  if (digits.length < 6) return <span className="text-slate-800 font-bold text-sm">{ic}</span>;
-  return (
-    <span className="font-bold text-sm font-mono">
-      <span className="text-slate-800">{digits.slice(0, 6)}</span>
-      <span className="text-slate-800">-</span>
-      <span className="text-red-500">XX</span>
-      <span className="text-slate-800">-</span>
-      <span className="text-red-500">XXXX</span>
-    </span>
-  );
-};
 
 const UNIVERSITIES = [
   { key: 'umpsa', label: 'Universiti Malaysia Pahang Al-Sultan Abdullah (UMPSA)' },
@@ -57,13 +43,13 @@ export const JubahLanding: React.FC<Props> = ({ onProceed }) => {
   const openRider  = (r: RiderDir) => { setSelectedRider(r); setSheetOpen(true); };
   const closeRider = ()            => { setSelectedRider(null); setSheetOpen(false); };
 
-  // Campus mapping for the directory RPC — '' returns all campuses for that university key
-  const CAMPUS_MAP: Record<string, string> = {
-    umpsa: '',   // '' = all UMPSA campuses (Pekan + Gambang)
-    uitm:  'UiTM',
-    umk:   'UMK',
-    ukm:   'UKM',
-    uiam:  'UIAM',
+  // Campus list per university key — matches what admin uses in jubah_rider_assignments
+  const CAMPUS_LIST: Record<string, string[]> = {
+    umpsa: ['Pekan', 'Gambang'],
+    uitm:  ['UiTM'],
+    umk:   ['UMK'],
+    ukm:   ['UKM'],
+    uiam:  ['UIAM'],
   };
 
   const UNIV_SHORT: Record<string, string> = {
@@ -91,9 +77,31 @@ export const JubahLanding: React.FC<Props> = ({ onProceed }) => {
     if (collapseRef.current) clearTimeout(collapseRef.current);
     if (key) collapseRef.current = setTimeout(() => setBtnCollapsed(true), 1500);
     if (!key) { setRiderDir([]); return; }
-    const campus = CAMPUS_MAP[key] ?? key;
-    supabase.rpc('get_jubah_riders_directory', { p_campus: campus })
-      .then(({ data }) => setRiderDir((data as RiderDir[]) ?? []));
+    const campusList = CAMPUS_LIST[key] ?? [key];
+
+    // Same two-step query as admin Jubah tab — guaranteed to always match
+    supabase.from('profiles')
+      .select('id, name, ic_number, phone')
+      .eq('role', 'rider')
+      .eq('can_robe', true)
+      .eq('status', 'active')
+      .in('campus', campusList)
+      .then(({ data: ridersData }) => {
+        const riderIds = (ridersData ?? []).map(r => r.id);
+        if (!riderIds.length) { setRiderDir([]); return; }
+        const profileMap = Object.fromEntries((ridersData ?? []).map(r => [r.id, r as { name: string; ic_number: string | null; phone: string | null }]));
+        supabase.from('jubah_rider_assignments')
+          .select('id, rider_id, drop_point, method, campus')
+          .in('rider_id', riderIds)
+          .eq('is_active', true)
+          .order('created_at')
+          .then(({ data: assignData }) => {
+            setRiderDir((assignData ?? []).map(a => {
+              const p = profileMap[a.rider_id];
+              return { id: a.id, name: p?.name ?? '—', drop_point: a.drop_point as string | null, method: a.method as string | null, ic_number: p?.ic_number ?? null, phone: p?.phone ?? null };
+            }));
+          });
+      });
   };
 
   const showDefault    = !selectedKey || imgError[selectedKey];
@@ -199,7 +207,7 @@ export const JubahLanding: React.FC<Props> = ({ onProceed }) => {
                   <tr key={r.id} onClick={() => openRider(r)}
                     className="border-b border-slate-50 text-xs cursor-pointer hover:bg-slate-50 active:bg-slate-100 transition">
                     <td className="py-2.5 pr-4 text-slate-600 font-semibold align-top whitespace-nowrap">
-                      {r.jubah_drop_point || '—'}
+                      {r.method === 'pickup' ? 'Self Pickup' : r.method === 'postage' ? 'Pickup & Postage' : '—'}
                     </td>
                     <td className="py-2.5 pr-4 font-semibold text-slate-800 align-top">
                       {r.name}
@@ -250,49 +258,41 @@ export const JubahLanding: React.FC<Props> = ({ onProceed }) => {
               </button>
             </div>
 
-            {/* Fields */}
-            <div className="px-5 flex flex-col gap-5"
+            {/* Fields — mirrors admin Jubah representative sheet */}
+            <div className="px-5 flex flex-col gap-4"
               style={{ paddingBottom: 'calc(1.5rem + env(safe-area-inset-bottom))' }}>
-
-              {/* Method */}
-              <div className="flex flex-col gap-1">
-                <span className="text-xs font-semibold text-slate-400">Method</span>
-                <span className="text-sm font-bold text-slate-800">{selectedRider.jubah_drop_point || '—'}</span>
-              </div>
-
-              {/* Representative Name */}
-              <div className="flex flex-col gap-1">
-                <span className="text-xs font-semibold text-slate-400">Representative Name</span>
-                <span className="text-sm font-bold text-slate-800">{selectedRider.name}</span>
-              </div>
-
-              {/* IC Number */}
-              <div className="flex flex-col gap-1">
-                <span className="text-xs font-semibold text-slate-400">I/C Number</span>
-                <IcMasked ic={selectedRider.ic_number} />
-              </div>
-
-              {/* H/P Number */}
-              <div className="flex flex-col gap-1">
-                <span className="text-xs font-semibold text-slate-400">H/P Number</span>
-                <div className="flex items-center gap-2">
-                  <span className="text-sm font-bold text-slate-800">{selectedRider.phone || '—'}</span>
-                  {selectedRider.phone && (
-                    <a
-                      href={`https://wa.me/${toWa(selectedRider.phone)}?text=${encodeURIComponent(
-                        `Asslammualaikum Jubah rider, saya perlukan 6 digit IC ${selectedRider.ic_number ? selectedRider.ic_number.replace(/\D/g,'').slice(0,6) + '-XX-XXXX' : 'XXXXXX-XX-XXXX'} terakhir awak untuk pengisian representative jubah ${UNIV_SHORT[selectedKey] ?? selectedKey.toUpperCase()}`
-                      )}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      onClick={e => e.stopPropagation()}
-                      className="text-[#25D366] active:scale-90 transition shrink-0"
-                    >
-                      <WaIcon className="w-5 h-5" />
-                    </a>
-                  )}
+              <div className="bg-slate-50 border border-slate-100 rounded-2xl p-4 flex flex-col gap-3 text-xs">
+                {[
+                  { label: 'Representative Name', value: selectedRider.name },
+                  { label: 'Drop Point',           value: selectedRider.drop_point || '—' },
+                  { label: 'Method',               value: selectedRider.method === 'pickup' ? 'Self Pickup' : selectedRider.method === 'postage' ? 'Pickup & Postage' : '—' },
+                  { label: 'I/C Number',           value: maskIc(selectedRider.ic_number) },
+                ].map(({ label, value }) => (
+                  <div key={label} className="flex flex-col gap-0.5">
+                    <span className="text-xs font-semibold text-slate-400">{label}</span>
+                    <span className="font-bold text-slate-800">{value}</span>
+                  </div>
+                ))}
+                <div className="flex flex-col gap-0.5">
+                  <span className="text-xs font-semibold text-slate-400">H/P</span>
+                  <div className="flex items-center gap-2">
+                    <span className="font-bold text-slate-800">{selectedRider.phone || '—'}</span>
+                    {selectedRider.phone && (
+                      <a
+                        href={`https://wa.me/${toWa(selectedRider.phone)}?text=${encodeURIComponent(
+                          `Asslammualaikum Jubah rider, saya perlukan 6 digit IC ${selectedRider.ic_number ? selectedRider.ic_number.replace(/\D/g,'').slice(0,6) + '-XX-XXXX' : 'XXXXXX-XX-XXXX'} terakhir awak untuk pengisian representative jubah ${UNIV_SHORT[selectedKey] ?? selectedKey.toUpperCase()}`
+                        )}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        onClick={e => e.stopPropagation()}
+                        className="text-[#25D366] active:scale-90 transition shrink-0"
+                      >
+                        <WaIcon className="w-5 h-5" />
+                      </a>
+                    )}
+                  </div>
                 </div>
               </div>
-
             </div>
           </div>
         </>
