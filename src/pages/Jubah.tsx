@@ -437,7 +437,7 @@ export const Jubah: React.FC = () => {
 
           {/* ── PERSONAL INFORMATION ── */}
           <div className="bg-white border border-slate-100 rounded-3xl p-5 flex flex-col gap-4">
-            <h3 className="text-sm font-bold text-slate-700">Personal Information</h3>
+            <h3 className="text-sm font-semibold text-slate-700">Personal Information</h3>
 
             {/* Full Name */}
             <div className="flex flex-col gap-1">
@@ -451,7 +451,7 @@ export const Jubah: React.FC = () => {
                 onChange={e => setFullName(e.target.value.toUpperCase())}
                 placeholder="FULL NAME AS PER IC"
                 required
-                className="bg-white border border-slate-100 rounded-xl py-2.5 px-3 text-xs font-bold text-slate-700 focus:outline-none focus:border-blue-500 transition placeholder:font-normal placeholder:text-slate-300"
+                className="bg-white border border-slate-100 rounded-xl py-2.5 px-3 text-xs font-semibold text-slate-700 focus:outline-none focus:border-blue-500 transition placeholder:font-normal placeholder:text-slate-300"
               />
             </div>
 
@@ -469,7 +469,7 @@ export const Jubah: React.FC = () => {
                 placeholder="980123-45-6789"
                 maxLength={14}
                 required
-                className="bg-white border border-slate-100 rounded-xl py-2.5 px-3 text-xs font-bold text-slate-700 focus:outline-none focus:border-blue-500 transition placeholder:font-normal placeholder:text-slate-300"
+                className="bg-white border border-slate-100 rounded-xl py-2.5 px-3 text-xs font-semibold text-slate-700 focus:outline-none focus:border-blue-500 transition placeholder:font-normal placeholder:text-slate-300"
               />
             </div>
 
@@ -487,7 +487,7 @@ export const Jubah: React.FC = () => {
                 placeholder="012-34567890"
                 maxLength={12}
                 required
-                className="bg-white border border-slate-100 rounded-xl py-2.5 px-3 text-xs font-bold text-slate-700 focus:outline-none focus:border-blue-500 transition placeholder:font-normal placeholder:text-slate-300"
+                className="bg-white border border-slate-100 rounded-xl py-2.5 px-3 text-xs font-semibold text-slate-700 focus:outline-none focus:border-blue-500 transition placeholder:font-normal placeholder:text-slate-300"
               />
             </div>
 
@@ -503,14 +503,14 @@ export const Jubah: React.FC = () => {
                 onChange={e => setMatricId(e.target.value.toUpperCase())}
                 placeholder="HB19021"
                 required
-                className="bg-white border border-slate-100 rounded-xl py-2.5 px-3 text-xs font-bold text-slate-700 focus:outline-none focus:border-blue-500 transition placeholder:font-normal placeholder:text-slate-300"
+                className="bg-white border border-slate-100 rounded-xl py-2.5 px-3 text-xs font-semibold text-slate-700 focus:outline-none focus:border-blue-500 transition placeholder:font-normal placeholder:text-slate-300"
               />
             </div>
           </div>
 
           {/* ── ACADEMIC INFORMATION ── */}
           <div className="bg-white border border-slate-100 rounded-3xl p-5 flex flex-col gap-4">
-            <h3 className="text-sm font-bold text-slate-700">Academic Information</h3>
+            <h3 className="text-sm font-semibold text-slate-700">Academic Information</h3>
 
             {/* University */}
             <div className="flex flex-col gap-1.5">
@@ -519,7 +519,7 @@ export const Jubah: React.FC = () => {
               </label>
               <div className="relative group">
                 <div className="bg-white border border-slate-100 rounded-xl py-2.5 px-3 flex items-center justify-between pointer-events-none group-focus-within:border-blue-500 transition">
-                  <span className={`text-xs ${university ? 'font-bold text-slate-700' : 'font-normal text-slate-300'}`}>
+                  <span className={`text-xs ${university ? 'font-semibold text-slate-700' : 'font-normal text-slate-300'}`}>
                     {university
                       ? (university.includes('Pekan') ? 'UMPSA Pekan' : 'UMPSA Gambang')
                       : 'Select your campus...'}
@@ -548,7 +548,7 @@ export const Jubah: React.FC = () => {
               </label>
               <div className={`relative group ${!university ? 'opacity-50 pointer-events-none' : ''}`}>
                 <div className="bg-white border border-slate-100 rounded-xl py-2.5 px-3 flex items-center justify-between pointer-events-none group-focus-within:border-blue-500 transition">
-                  <span className={`text-xs ${faculty ? 'font-bold text-slate-700' : 'font-normal text-slate-300'}`}>
+                  <span className={`text-xs ${faculty ? 'font-semibold text-slate-700' : 'font-normal text-slate-300'}`}>
                     {faculty || (university ? 'Select your faculty...' : 'Select a university first')}
                   </span>
                   <ChevronDown className="w-3 h-3 text-slate-400 shrink-0" />
@@ -582,7 +582,7 @@ export const Jubah: React.FC = () => {
                     key={r}
                     type="button"
                     onClick={() => setRemark(r)}
-                    className={`py-2 rounded-xl text-xs font-bold border transition ${
+                    className={`py-2 rounded-xl text-xs font-semibold border transition ${
                       remark === r
                         ? 'border-blue-500 bg-blue-50 text-blue-600'
                         : 'border-slate-200 text-slate-600 hover:bg-slate-50'
@@ -597,13 +597,13 @@ export const Jubah: React.FC = () => {
 
           {/* ── SERVICE OPTION ── */}
           <div className="bg-white border border-slate-100 rounded-3xl p-5 flex flex-col gap-4">
-            <h3 className="text-sm font-bold text-slate-700">Service Option</h3>
+            <h3 className="text-sm font-semibold text-slate-700">Service Option</h3>
 
             {/* Deposit */}
             <label className={`flex items-start gap-3 p-3.5 rounded-2xl border cursor-pointer transition ${paymentMode === 'deposit' ? 'border-blue-400 bg-blue-50/60' : 'border-slate-200 hover:bg-slate-50'}`}>
               <input type="radio" name="paymentMode" value="deposit" checked={paymentMode === 'deposit'} onChange={() => setPaymentMode('deposit')} className="mt-0.5 accent-blue-600 shrink-0" />
               <div className="flex-1">
-                <span className={`text-xs font-bold block ${paymentMode === 'deposit' ? 'text-blue-700' : 'text-slate-700'}`}>
+                <span className={`text-xs font-semibold block ${paymentMode === 'deposit' ? 'text-blue-700' : 'text-slate-700'}`}>
                   Deposit (RM{DEPOSIT_AMOUNT}) — Pay RM{balanceDue} before robe Collection date
                 </span>
                 <span className="text-xs text-slate-400 leading-relaxed block mt-0.5">
@@ -623,8 +623,8 @@ export const Jubah: React.FC = () => {
                           : 'border-slate-100 bg-white text-slate-600'
                       }`}
                     >
-                      <span>Self Pickup</span>
-                      <span className={`font-semibold text-xs ${depositMethod === 'pickup' ? 'text-blue-600' : 'text-slate-400'}`}>
+                      <span className="flex-1 text-left">Self Pickup</span>
+                      <span className={`shrink-0 ml-2 font-normal text-xs ${depositMethod === 'pickup' ? 'text-blue-600' : 'text-slate-400'}`}>
                         Balance RM{pickupPrice - DEPOSIT_AMOUNT}
                       </span>
                     </button>
@@ -656,8 +656,8 @@ export const Jubah: React.FC = () => {
                                 : 'border-slate-100 bg-white text-slate-600'
                             }`}
                           >
-                            <span>{zone === 'SM' ? 'SM — Semenanjung Malaysia' : 'SS — Sabah & Sarawak'}</span>
-                            <span className={`font-semibold text-xs ${postageZone === zone ? 'text-blue-600' : 'text-slate-400'}`}>
+                            <span className="flex-1 text-left">{zone === 'SM' ? 'SM — Semenanjung Malaysia' : 'SS — Sabah & Sarawak'}</span>
+                            <span className={`shrink-0 ml-2 font-normal text-xs ${postageZone === zone ? 'text-blue-600' : 'text-slate-400'}`}>
                               Balance RM{postagePrice + (zone === 'SS' ? 10 : 0) - DEPOSIT_AMOUNT}
                             </span>
                           </button>
@@ -673,7 +673,7 @@ export const Jubah: React.FC = () => {
             <label className={`flex items-start gap-3 p-3.5 rounded-2xl border cursor-pointer transition ${paymentMode === 'pickup' ? 'border-blue-400 bg-blue-50/60' : 'border-slate-200 hover:bg-slate-50'}`}>
               <input type="radio" name="paymentMode" value="pickup" checked={paymentMode === 'pickup'} onChange={() => setPaymentMode('pickup')} className="mt-0.5 accent-blue-600 shrink-0" />
               <div>
-                <span className={`text-xs font-bold block ${paymentMode === 'pickup' ? 'text-blue-700' : 'text-slate-700'}`}>
+                <span className={`text-xs font-semibold block ${paymentMode === 'pickup' ? 'text-blue-700' : 'text-slate-700'}`}>
                   Full Payment (RM{pickupPrice}) — Self Pickup
                 </span>
                 <span className="text-xs text-slate-400 leading-relaxed block mt-0.5">
@@ -686,7 +686,7 @@ export const Jubah: React.FC = () => {
             <label className={`flex items-start gap-3 p-3.5 rounded-2xl border cursor-pointer transition ${paymentMode === 'postage' ? 'border-blue-400 bg-blue-50/60' : 'border-slate-200 hover:bg-slate-50'}`}>
               <input type="radio" name="paymentMode" value="postage" checked={paymentMode === 'postage'} onChange={() => setPaymentMode('postage')} className="mt-0.5 accent-blue-600 shrink-0" />
               <div className="flex-1">
-                <span className={`text-xs font-bold block ${paymentMode === 'postage' ? 'text-blue-700' : 'text-slate-700'}`}>
+                <span className={`text-xs font-semibold block ${paymentMode === 'postage' ? 'text-blue-700' : 'text-slate-700'}`}>
                   Postage (RM{postagePrice + (postageZone === 'SS' ? 10 : 0)}) — Pickup &amp; Postage {postageZone}
                 </span>
                 <span className="text-xs text-slate-400 leading-relaxed block mt-0.5">
@@ -699,15 +699,15 @@ export const Jubah: React.FC = () => {
                         key={zone}
                         type="button"
                         onClick={e => { e.preventDefault(); setPostageZone(zone); }}
-                        className={`flex items-center justify-between px-3 py-1.5 rounded-xl border text-xs font-bold transition ${
+                        className={`w-full flex items-center justify-between px-3 py-2.5 rounded-2xl border text-xs font-semibold transition active:scale-[0.99] ${
                           postageZone === zone
-                            ? 'bg-blue-600 border-blue-600 text-white'
-                            : 'bg-white border-slate-200 text-slate-500 hover:border-blue-300'
+                            ? 'border-blue-300 bg-blue-50 text-blue-700'
+                            : 'border-slate-100 bg-white text-slate-600'
                         }`}
                       >
-                        <span>{zone === 'SM' ? 'SM — Semenanjung Malaysia' : 'SS — Sabah & Sarawak'}</span>
-                        <span className={`text-xs font-extrabold ${postageZone === zone ? 'text-blue-200' : 'text-slate-400'}`}>
-                          {zone === 'SM' ? `RM${postagePrice}` : `RM${postagePrice} + RM10`}
+                        <span className="flex-1 text-left">{zone === 'SM' ? 'SM — Semenanjung Malaysia' : 'SS — Sabah & Sarawak'}</span>
+                        <span className={`shrink-0 ml-2 font-normal text-xs ${postageZone === zone ? 'text-blue-600' : 'text-slate-400'}`}>
+                          {zone === 'SM' ? `RM${postagePrice}` : `RM${postagePrice}+RM10`}
                         </span>
                       </button>
                     ))}
@@ -729,13 +729,13 @@ export const Jubah: React.FC = () => {
 
           {/* ── RIDER SELECTION ── */}
           <div className="bg-white border border-slate-100 rounded-3xl p-5 flex flex-col gap-4">
-            <h3 className="text-sm font-bold text-slate-700 flex items-center gap-1.5">
+            <h3 className="text-sm font-semibold text-slate-700 flex items-center gap-1.5">
               <User className="w-3.5 h-3.5" /> Select Rider
             </h3>
             <div className="flex items-center gap-2">
               <div className={`relative group flex-1 ${!university ? 'opacity-50 pointer-events-none' : ''}`}>
                 <div className="bg-white border border-slate-100 rounded-xl py-2.5 px-3 flex items-center justify-between pointer-events-none group-focus-within:border-blue-500 transition">
-                  <span className={`text-xs ${selectedRiderId ? 'font-bold text-slate-700' : 'font-normal text-slate-300'}`}>
+                  <span className={`text-xs ${selectedRiderId ? 'font-semibold text-slate-700' : 'font-normal text-slate-300'}`}>
                     {ridersLoading
                       ? 'Loading riders...'
                       : selectedRiderId
@@ -783,7 +783,7 @@ export const Jubah: React.FC = () => {
               <div className="flex flex-col gap-1">
                 <label className="text-xs font-semibold text-slate-400">Drop Point</label>
                 <div className="bg-white border border-slate-100 rounded-xl py-2.5 px-3">
-                  <span className="text-xs font-bold text-slate-700">
+                  <span className="text-xs font-semibold text-slate-700">
                     {riders.find(r => r.id === selectedRiderId)?.jubah_drop_point || 'Not set yet — contact admin'}
                   </span>
                 </div>
@@ -794,7 +794,7 @@ export const Jubah: React.FC = () => {
           {/* ── DELIVERY ADDRESS (postage or deposit+postage) ── */}
           {isPostageDelivery && (
             <div className="bg-white border border-slate-100 rounded-3xl p-5 flex flex-col gap-4">
-              <h3 className="text-sm font-bold text-slate-700">Delivery Address <span className="text-danger">*</span></h3>
+              <h3 className="text-sm font-semibold text-slate-700">Delivery Address <span className="text-danger">*</span></h3>
               {fullAddress ? (
                 <button type="button" onClick={openAddressSheet}
                   className="w-full text-left bg-white border border-slate-100 rounded-xl px-3 py-3 flex items-start justify-between gap-2 active:bg-slate-50 transition">
@@ -823,7 +823,7 @@ export const Jubah: React.FC = () => {
 
           {/* ── DOCUMENT UPLOAD — dynamic from jubah_doc_fields ── */}
           <div className="bg-white border border-slate-100 rounded-3xl p-5 flex flex-col gap-4">
-            <h3 className="text-sm font-bold text-slate-700">Upload Documents</h3>
+            <h3 className="text-sm font-semibold text-slate-700">Upload Documents</h3>
 
             {docFields.map(field => {
               const file = docFiles[field.id] ?? null;
@@ -850,13 +850,13 @@ export const Jubah: React.FC = () => {
                   {!file ? (
                     <button type="button" onClick={() => docRefs.current[field.id]?.click()}
                       className="w-full border-2 border-dashed border-slate-200 rounded-xl py-3 flex items-center justify-center gap-2 text-slate-400 hover:border-blue-400 hover:text-blue-500 hover:bg-blue-50/30 transition cursor-pointer">
-                      <Upload className="w-4 h-4" /><span className="text-xs font-bold">Upload {field.label}</span>
+                      <Upload className="w-4 h-4" /><span className="text-xs font-semibold">Upload {field.label}</span>
                     </button>
                   ) : (
                     <div className="flex items-center gap-3 bg-emerald-50 border border-emerald-100 rounded-xl p-2.5">
                       <FileText className="w-5 h-5 text-emerald-500 shrink-0" />
                       <div className="flex-1 min-w-0">
-                        <p className="text-xs font-bold text-emerald-700 truncate">{file.name}</p>
+                        <p className="text-xs font-semibold text-emerald-700 truncate">{file.name}</p>
                         <p className="text-xs text-emerald-500">{(file.size / 1024).toFixed(1)} KB</p>
                       </div>
                       <button type="button"
@@ -871,7 +871,7 @@ export const Jubah: React.FC = () => {
             })}
 
             {fileError && (
-              <p className="text-xs text-danger font-bold flex items-center gap-1">
+              <p className="text-xs text-danger font-semibold flex items-center gap-1">
                 <ShieldAlert className="w-3.5 h-3.5" /> {fileError}
               </p>
             )}
@@ -879,14 +879,14 @@ export const Jubah: React.FC = () => {
 
           {/* ── COMBINED DOCUMENT ── */}
           <div className="bg-white border border-slate-100 rounded-3xl p-5 flex flex-col gap-4">
-            <h3 className="text-sm font-bold text-slate-700">Combined Document</h3>
+            <h3 className="text-sm font-semibold text-slate-700">Combined Document</h3>
             <p className="text-xs text-slate-500 leading-relaxed">
               Once all documents are uploaded, generate a single combined PDF to download and review.
             </p>
             {!allFilesReady ? (
               <div className="bg-slate-50 border border-dashed border-slate-200 rounded-2xl py-4 flex items-center justify-center gap-2 text-slate-300">
                 <FileText className="w-5 h-5" />
-                <span className="text-xs font-bold">Upload all {docFields.length} documents above first</span>
+                <span className="text-xs font-semibold">Upload all {docFields.length} documents above first</span>
               </div>
             ) : combining ? (
               <div className="flex items-center justify-center gap-2 py-4 text-slate-400">
@@ -910,7 +910,7 @@ export const Jubah: React.FC = () => {
 
           {/* ── PROOF OF PAYMENT ── */}
           <div className="bg-white border border-slate-100 rounded-3xl p-5 flex flex-col gap-4">
-            <h3 className="text-sm font-bold text-slate-700">
+            <h3 className="text-sm font-semibold text-slate-700">
               {paymentMode === 'deposit' ? `Proof of Deposit (RM${DEPOSIT_AMOUNT})` : 'Proof of Payment'}
             </h3>
             <p className="text-xs text-slate-500 leading-relaxed">
@@ -930,14 +930,14 @@ export const Jubah: React.FC = () => {
                 className="w-full border-2 border-dashed border-slate-200 rounded-xl py-4 flex flex-col items-center gap-2 text-slate-400 hover:border-blue-400 hover:text-blue-500 hover:bg-blue-50/30 transition cursor-pointer"
               >
                 <Upload className="w-5 h-5" />
-                <span className="text-xs font-bold">Upload Receipt</span>
+                <span className="text-xs font-semibold">Upload Receipt</span>
                 <span className="text-xs">PDF · JPG · PNG accepted</span>
               </button>
             ) : (
               <div className="flex items-center gap-3 bg-emerald-50 border border-emerald-100 rounded-xl p-2.5">
                 <FileText className="w-5 h-5 text-emerald-500 shrink-0" />
                 <div className="flex-1 min-w-0">
-                  <p className="text-xs font-bold text-emerald-700 truncate">{paymentProof.name}</p>
+                  <p className="text-xs font-semibold text-emerald-700 truncate">{paymentProof.name}</p>
                   <p className="text-xs text-emerald-500 mt-0.5">{(paymentProof.size / 1024).toFixed(1)} KB</p>
                 </div>
                 <button
@@ -1055,7 +1055,7 @@ export const Jubah: React.FC = () => {
             )}
 
             {/* Progress steps — wired to real DB status */}
-            <h4 className="text-sm font-bold text-slate-700">Robe Preparation</h4>
+            <h4 className="text-sm font-semibold text-slate-700">Robe Preparation</h4>
             <div className="flex flex-col gap-4 pl-2">
               {(() => {
                 const isPostage = jubahBooking.paymentMode === 'postage';
@@ -1133,7 +1133,7 @@ export const Jubah: React.FC = () => {
                     onChange={e => f.set(e.target.value)}
                     placeholder={f.placeholder}
                     style={{ fontSize: '12px' }}
-                    className="bg-white border border-slate-100 rounded-xl py-2.5 px-3 font-bold text-slate-700 focus:outline-none focus:border-blue-500 transition placeholder:font-normal placeholder:text-slate-300"
+                    className="bg-white border border-slate-100 rounded-xl py-2.5 px-3 font-semibold text-slate-700 focus:outline-none focus:border-blue-500 transition placeholder:font-normal placeholder:text-slate-300"
                   />
                 </div>
               ))}
