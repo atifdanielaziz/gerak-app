@@ -1,11 +1,12 @@
-﻿import React, { useRef, useState } from 'react';
+import React, { useRef, useState } from 'react';
 import { useApp } from '../context/AppContext';
 import { supabase } from '../lib/supabase';
 import {
-  ChevronRight, CheckCircle2, HelpCircle, Heart, LogOut,
+  ChevronRight, ChevronLeft, CheckCircle2, HelpCircle, Heart, LogOut,
   Pencil, X, Car, Upload, FileImage,
   ShieldCheck, ShieldOff, AlertTriangle, Clock, RefreshCw,
   Headset, Languages, Moon, FileText, Lock, Info, Star, Share2,
+  Wallet, MessageCircle, MapPin, User,
 } from 'lucide-react';
 
 /* Derive active status from verified + non-expired receipt, with gate bypass */
@@ -27,7 +28,8 @@ export const Profile: React.FC = () => {
   const isActive = driverIsActive(user, receiptGateActive);
   const docsApproved = user.docsStatus === 'approved' || user.role === 'admin' || user.role === 'superadmin';
 
-  const [editMode, setEditMode]         = useState(false);
+  const [profileView, setProfileView]     = useState<'hub' | 'edit'>('hub');
+  const [editMode, setEditMode]           = useState(false);
   const [draftName, setDraftName]         = useState('');
   const [draftMatric, setDraftMatric]     = useState('');
   const [draftEmail, setDraftEmail]       = useState('');
@@ -136,22 +138,15 @@ export const Profile: React.FC = () => {
     const { data: { user: authUser } } = await supabase.auth.getUser();
     if (!authUser) { setUploading(false); return; }
 
-    // 1. Delete ALL existing files in this driver's folder (any extension)
-    const { data: existingFiles } = await supabase.storage
-      .from('driver-receipts')
-      .list(authUser.id);
+    const { data: existingFiles } = await supabase.storage.from('driver-receipts').list(authUser.id);
     if (existingFiles && existingFiles.length > 0) {
       const oldPaths = existingFiles.map((f: { name: string }) => `${authUser.id}/${f.name}`);
       await supabase.storage.from('driver-receipts').remove(oldPaths);
     }
 
-    // 2. Upload new file
     const ext  = file.name.split('.').pop() ?? 'jpg';
     const path = `${authUser.id}/monthly_receipt.${ext}`;
-
-    const { error: upErr } = await supabase.storage
-      .from('driver-receipts')
-      .upload(path, file, { upsert: true });
+    const { error: upErr } = await supabase.storage.from('driver-receipts').upload(path, file, { upsert: true });
 
     if (upErr) {
       setUploading(false);
@@ -159,15 +154,11 @@ export const Profile: React.FC = () => {
       return;
     }
 
-    // 3. Store signed URL
-    const { data: signed } = await supabase.storage
-      .from('driver-receipts')
-      .createSignedUrl(path, 60 * 60 * 24 * 30);
+    const { data: signed } = await supabase.storage.from('driver-receipts').createSignedUrl(path, 60 * 60 * 24 * 30);
     const url = signed?.signedUrl ?? '';
     await updateProfile({ feeReceiptUrl: url });
     setUploading(false);
 
-    // 4. If upload day is 4th or later — skip AI, go straight to PENDING for admin approval
     const uploadDay = new Date().getDate();
     if (uploadDay >= 4) {
       if (fileInputRef.current) fileInputRef.current.value = '';
@@ -176,7 +167,6 @@ export const Profile: React.FC = () => {
       return;
     }
 
-    // 5. 1st–3rd: Call AI verification Edge Function
     setVerifying(true);
     const { data: session } = await supabase.auth.getSession();
     const result = await supabase.functions.invoke('verify-receipt', {
@@ -186,12 +176,7 @@ export const Profile: React.FC = () => {
 
     setVerifying(false);
     if (fileInputRef.current) fileInputRef.current.value = '';
-
-    if (result.error) {
-      setVerifyMsg('Verification service error. Please try again.');
-      return;
-    }
-
+    if (result.error) { setVerifyMsg('Verification service error. Please try again.'); return; }
     await refreshUserData();
     setVerifyMsg('');
   };
@@ -205,16 +190,12 @@ export const Profile: React.FC = () => {
   /* ── Expiry display helpers ── */
   const expiryDate  = user.feeReceiptExpiry ? new Date(user.feeReceiptExpiry) : null;
   const isExpired   = expiryDate ? expiryDate <= new Date() : false;
-  const daysLeft    = expiryDate
-    ? Math.ceil((expiryDate.getTime() - Date.now()) / 86_400_000)
-    : null;
+  const daysLeft    = expiryDate ? Math.ceil((expiryDate.getTime() - Date.now()) / 86_400_000) : null;
   const expiryLabel = expiryDate?.toLocaleDateString('en-MY', { day: 'numeric', month: 'long', year: 'numeric' });
+  const hasReceipt  = !!user.feeReceiptUrl;
+  const isRejected  = hasReceipt && !user.feeReceiptVerified && !!user.feeReceiptRejectReason;
 
-  /* Receipt section state */
-  const hasReceipt = !!user.feeReceiptUrl;
-  const isRejected = hasReceipt && !user.feeReceiptVerified && !!user.feeReceiptRejectReason;
-
-  /* ── GUEST VIEW (also shown in admin customer-preview mode) ── */
+  /* ── GUEST VIEW ── */
   if (!user.isLoggedIn || isPreviewMode) {
     const prefRows    = [{ icon: Languages, label: 'Language' }, { icon: Moon, label: 'Appearance' }];
     const supportRows = [{ icon: HelpCircle, label: 'Help Center' }, { icon: FileText, label: 'Terms & Conditions' }, { icon: Lock, label: 'Privacy Policy' }];
@@ -236,17 +217,13 @@ export const Profile: React.FC = () => {
     );
 
     return (
-      <div
-        className="flex-1 min-h-0 flex flex-col bg-white overflow-y-auto no-scrollbar animate-fade-in"
-      >
-        {/* Headset support button */}
+      <div className="flex-1 min-h-0 flex flex-col bg-white overflow-y-auto no-scrollbar animate-fade-in">
         <div className="flex justify-end px-5 pt-4">
           <button className="w-9 h-9 rounded-xl bg-slate-100 text-slate-900 flex items-center justify-center active:scale-90 transition shrink-0">
             <Headset className="w-4 h-4" />
           </button>
         </div>
 
-        {/* Branding */}
         <div className="flex flex-col items-center text-center px-6 pt-3 pb-6">
           <h1 className="m-0 leading-none" style={{ fontFamily: 'Inter, sans-serif', fontSize: '2.8rem', fontWeight: 900, color: '#0F172A' }}>
             ger<span style={{ color: '#EF4444' }}>a</span>k
@@ -254,7 +231,6 @@ export const Profile: React.FC = () => {
           <p className="text-slate-400 text-xs mt-2 font-normal">Smart University Service Platform</p>
         </div>
 
-        {/* Hi there + CTA */}
         <div className="px-5 flex flex-col items-center gap-2 mb-8">
           <h3 className="text-2xl font-bold text-slate-800 m-0">Hi there!</h3>
           <p className="text-sm font-normal text-slate-500 text-center leading-relaxed">
@@ -268,18 +244,15 @@ export const Profile: React.FC = () => {
           </button>
         </div>
 
-        {/* Settings sections — mt-auto pushes this to the bottom so gap appears above, not below */}
         <div className="px-5 flex flex-col gap-2 mt-auto pb-4">
           <p className="text-xs font-semibold text-slate-400 pl-1 mb-1">Preferences</p>
           <div className="bg-white border border-slate-100 rounded-3xl overflow-hidden mb-3">
             {prefRows.map((r, i) => <SettingRow key={r.label} {...r} last={i === prefRows.length - 1} />)}
           </div>
-
           <p className="text-xs font-semibold text-slate-400 pl-1 mb-1">Support</p>
           <div className="bg-white border border-slate-100 rounded-3xl overflow-hidden mb-3">
             {supportRows.map((r, i) => <SettingRow key={r.label} {...r} last={i === supportRows.length - 1} />)}
           </div>
-
           <p className="text-xs font-semibold text-slate-400 pl-1 mb-1">Others</p>
           <div className="bg-white border border-slate-100 rounded-3xl overflow-hidden">
             {otherRows.map((r, i) => <SettingRow key={r.label} {...r} last={i === otherRows.length - 1} />)}
@@ -289,15 +262,22 @@ export const Profile: React.FC = () => {
     );
   }
 
-  return (
-    <div className="flex flex-col h-full w-full bg-white overflow-y-auto no-scrollbar animate-fade-in pb-4">
+  const initial = (user.name?.[0] || user.email?.[0] || 'U').toUpperCase();
 
-      {/* Page Title */}
-      <div className="px-5 pt-6 pb-2 flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-slate-900 m-0">Edit profile</h1>
-        <div className="flex items-center gap-2">
+  /* ── MY PROFILE SUB-PAGE ── */
+  if (profileView === 'edit') {
+    return (
+      <div className="flex-grow bg-white overflow-y-auto no-scrollbar animate-fade-in pb-8">
 
-          {/* Driver status badge — read-only */}
+        {/* Sub-page header */}
+        <div className="px-5 pt-5 pb-2 flex items-center gap-3">
+          <button
+            onClick={() => { setEditMode(false); setSaveError(''); setProfileView('hub'); }}
+            className="w-9 h-9 flex items-center justify-center rounded-xl bg-slate-100 text-slate-700 active:scale-90 transition shrink-0"
+          >
+            <ChevronLeft className="w-5 h-5" />
+          </button>
+          <h1 className="text-xl font-bold text-slate-900 m-0 flex-1">My Profile</h1>
           {isDriver && (
             <span className={`flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-full border ${
               isActive
@@ -308,453 +288,510 @@ export const Profile: React.FC = () => {
               {isActive ? 'Active' : 'Inactive'}
             </span>
           )}
-
           {!editMode ? (
-            <button onClick={enterEdit}
-              className="flex items-center gap-1.5 text-primary text-xs font-bold hover:underline active:scale-95 transition cursor-pointer">
+            <button onClick={enterEdit} className="flex items-center gap-1.5 text-primary text-xs font-bold active:scale-95 transition cursor-pointer">
               <Pencil className="w-3.5 h-3.5" /> Edit
             </button>
           ) : (
-            <button onClick={cancelEdit}
-              className="flex items-center gap-1 text-slate-400 text-xs font-bold hover:underline active:scale-95 transition cursor-pointer">
+            <button onClick={cancelEdit} className="flex items-center gap-1 text-slate-400 text-xs font-bold active:scale-95 transition cursor-pointer">
               <X className="w-3.5 h-3.5" /> Cancel
             </button>
           )}
         </div>
-      </div>
 
-      {/* Inactive hint */}
-      {isDriver && !isActive && !isExpired && (
-        <div className="mx-5 mt-2 bg-red-50 border border-red-100 rounded-2xl px-4 py-3 flex items-start gap-2">
-          <ShieldOff className="w-4 h-4 text-red-400 shrink-0 mt-0.5" />
-          <p className="text-xs font-semibold text-red-500 leading-relaxed">
-            Account <strong>inactive</strong>. Upload your monthly fee receipt below to activate and accept jobs.
-          </p>
-        </div>
-      )}
-
-      {/* Expiry warning */}
-      {isDriver && isActive && daysLeft !== null && daysLeft <= 3 && (
-        <div className="mx-5 mt-2 bg-amber-50 border border-amber-200 rounded-2xl px-4 py-3 flex items-start gap-2">
-          <AlertTriangle className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
-          <p className="text-xs font-semibold text-amber-700 leading-relaxed">
-            Your account expires on <strong>{expiryLabel}</strong> ({daysLeft} day{daysLeft === 1 ? '' : 's'} left).
-            Pay RM25 on 1st–3rd of next month and re-upload your receipt.
-          </p>
-        </div>
-      )}
-
-      {/* Expired warning */}
-      {isDriver && isExpired && user.feeReceiptVerified && (
-        <div className="mx-5 mt-2 bg-red-50 border border-red-200 rounded-2xl px-4 py-3 flex items-start gap-2">
-          <AlertTriangle className="w-4 h-4 text-red-400 shrink-0 mt-0.5" />
-          <p className="text-xs font-semibold text-red-600 leading-relaxed">
-            Your monthly fee <strong>expired</strong> on {expiryLabel}. Upload a new receipt to reactivate.
-          </p>
-        </div>
-      )}
-
-      {/* ── PROFILE FIELDS ── */}
-      <div className="px-5 mt-2">
-
-        {/* Gerak ID — read-only, assigned at registration */}
-        <div className="flex items-center justify-between py-4 border-b border-slate-100">
-          <div className="flex-1 min-w-0 pr-3">
-            <span className="text-xs font-semibold text-slate-400 block">
-              Gerak ID
-            </span>
-            <span className="text-sm font-normal text-slate-700 mt-1 block">{user.gerakId || '—'}</span>
+        {/* Inactive hint */}
+        {isDriver && !isActive && !isExpired && (
+          <div className="mx-5 mt-2 bg-red-50 border border-red-100 rounded-2xl px-4 py-3 flex items-start gap-2">
+            <ShieldOff className="w-4 h-4 text-red-400 shrink-0 mt-0.5" />
+            <p className="text-xs font-semibold text-red-500 leading-relaxed">
+              Account <strong>inactive</strong>. Upload your monthly fee receipt below to activate and accept jobs.
+            </p>
           </div>
-        </div>
+        )}
 
-        {/* Full Name * */}
-        <div className="flex items-center justify-between py-4 border-b border-slate-100">
-          <div className="flex-1 min-w-0 pr-3">
-            <span className="text-xs font-semibold text-slate-400 block">
-              Full Name <span className="text-danger">*</span>
-            </span>
-            {editMode ? (
-              <input value={draftName} onChange={e => setDraftName(e.target.value.replace(/\b\w/g, c => c.toUpperCase()))}
-                className="mt-1 w-full bg-white border border-slate-100 rounded-xl py-2 px-3 text-sm font-normal text-slate-700 focus:outline-none focus:border-primary transition"
-                placeholder="Full name" />
-            ) : <span className="text-sm font-normal text-slate-700 mt-1 block">{user.name || '—'}</span>}
+        {/* Expiry warning */}
+        {isDriver && isActive && daysLeft !== null && daysLeft <= 3 && (
+          <div className="mx-5 mt-2 bg-amber-50 border border-amber-200 rounded-2xl px-4 py-3 flex items-start gap-2">
+            <AlertTriangle className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
+            <p className="text-xs font-semibold text-amber-700 leading-relaxed">
+              Your account expires on <strong>{expiryLabel}</strong> ({daysLeft} day{daysLeft === 1 ? '' : 's'} left).
+              Pay RM25 on 1st–3rd of next month and re-upload your receipt.
+            </p>
           </div>
-          {!editMode && <ChevronRight className="w-4 h-4 text-slate-300 shrink-0" />}
-        </div>
+        )}
 
-        {/* Matric Number * */}
-        <div className="flex items-center justify-between py-4 border-b border-slate-100">
-          <div className="flex-1 min-w-0 pr-3">
-            <span className="text-xs font-semibold text-slate-400 block">
-              Matric Number <span className="text-danger">*</span>
-            </span>
-            {editMode ? (
-              <input value={draftMatric} onChange={e => setDraftMatric(e.target.value.toUpperCase())}
-                className="mt-1 w-full bg-white border border-slate-100 rounded-xl py-2 px-3 text-sm font-normal text-slate-700 focus:outline-none focus:border-primary transition"
-                placeholder="Matric number" />
-            ) : <span className="text-sm font-normal text-slate-700 mt-1 block">{user.matricNo || '—'}</span>}
+        {/* Expired warning */}
+        {isDriver && isExpired && user.feeReceiptVerified && (
+          <div className="mx-5 mt-2 bg-red-50 border border-red-200 rounded-2xl px-4 py-3 flex items-start gap-2">
+            <AlertTriangle className="w-4 h-4 text-red-400 shrink-0 mt-0.5" />
+            <p className="text-xs font-semibold text-red-600 leading-relaxed">
+              Your monthly fee <strong>expired</strong> on {expiryLabel}. Upload a new receipt to reactivate.
+            </p>
           </div>
-          {!editMode && <ChevronRight className="w-4 h-4 text-slate-300 shrink-0" />}
-        </div>
+        )}
 
-        {/* Mobile Number * */}
-        <div className="flex items-center justify-between py-4 border-b border-slate-100">
-          <div className="flex-1 min-w-0 pr-3">
-            <span className="text-xs font-semibold text-slate-400 block">
-              Mobile Number <span className="text-danger">*</span>
-            </span>
-            {editMode ? (
-              <input type="tel" value={draftPhone} onChange={e => setDraftPhone(formatPhone(e.target.value))}
-                className="mt-1 w-full bg-white border border-slate-100 rounded-xl py-2 px-3 text-sm font-normal text-slate-700 focus:outline-none focus:border-primary transition"
-                placeholder="e.g. 012-34567890" />
-            ) : <span className="text-sm font-normal text-slate-700 mt-1 block">{user.phone || '—'}</span>}
-          </div>
-          {!editMode && <ChevronRight className="w-4 h-4 text-slate-300 shrink-0" />}
-        </div>
+        {/* ── PROFILE FIELDS ── */}
+        <div className="px-5 mt-2">
 
-        {/* Email Address * */}
-        <div className="flex items-center justify-between py-4 border-b border-slate-100">
-          <div className="flex-1 min-w-0 pr-3">
-            <div className="flex items-center gap-2">
-              <span className="text-xs font-semibold text-slate-400">
-                Email Address <span className="text-danger">*</span>
-              </span>
-              <span className="flex items-center gap-0.5 bg-emerald-500 text-white text-[8px] font-semibold px-1.5 py-0.5 rounded-full shrink-0">
-                <CheckCircle2 className="w-2.5 h-2.5" /> VERIFIED
-              </span>
+          {/* Gerak ID */}
+          <div className="flex items-center justify-between py-4 border-b border-slate-100">
+            <div className="flex-1 min-w-0 pr-3">
+              <span className="text-xs font-semibold text-slate-400 block">Gerak ID</span>
+              <span className="text-sm font-normal text-slate-700 mt-1 block">{user.gerakId || '—'}</span>
             </div>
-            {editMode ? (
-              <input type="email" value={draftEmail} onChange={e => setDraftEmail(e.target.value)}
-                className="mt-1 w-full bg-white border border-slate-100 rounded-xl py-2 px-3 text-sm font-normal text-slate-700 focus:outline-none focus:border-primary transition"
-                placeholder="Email address" />
-            ) : <span className="text-sm font-normal text-slate-700 mt-1 block">{user.email || '—'}</span>}
           </div>
-          {!editMode && <ChevronRight className="w-4 h-4 text-slate-300 shrink-0" />}
-        </div>
 
-        {/* IC Number * — required for driver/rider/admin/superadmin */}
-        {requiresIc && (
+          {/* Full Name */}
           <div className="flex items-center justify-between py-4 border-b border-slate-100">
             <div className="flex-1 min-w-0 pr-3">
               <span className="text-xs font-semibold text-slate-400 block">
-                IC Number <span className="text-danger">*</span>
+                Full Name <span className="text-danger">*</span>
               </span>
               {editMode ? (
-                <input
-                  value={draftIcNumber}
-                  onChange={e => setDraftIcNumber(formatIcNumber(e.target.value))}
-                  inputMode="numeric"
+                <input value={draftName} onChange={e => setDraftName(e.target.value.replace(/\b\w/g, c => c.toUpperCase()))}
                   className="mt-1 w-full bg-white border border-slate-100 rounded-xl py-2 px-3 text-sm font-normal text-slate-700 focus:outline-none focus:border-primary transition"
-                  placeholder="e.g. 012345-67-8910" />
-              ) : (
-                <span className="text-sm font-normal text-slate-700 mt-1 block">
-                  {user.icNumber || <span className="text-danger text-xs font-semibold">Not set — please update</span>}
-                </span>
-              )}
+                  placeholder="Full name" />
+              ) : <span className="text-sm font-normal text-slate-700 mt-1 block">{user.name || '—'}</span>}
             </div>
             {!editMode && <ChevronRight className="w-4 h-4 text-slate-300 shrink-0" />}
           </div>
-        )}
 
-        {/* ── Driver-only fields ── */}
-        {isDriver && (
-          <>
-            {/* Car Type / Model */}
+          {/* Matric Number */}
+          <div className="flex items-center justify-between py-4 border-b border-slate-100">
+            <div className="flex-1 min-w-0 pr-3">
+              <span className="text-xs font-semibold text-slate-400 block">
+                Matric Number <span className="text-danger">*</span>
+              </span>
+              {editMode ? (
+                <input value={draftMatric} onChange={e => setDraftMatric(e.target.value.toUpperCase())}
+                  className="mt-1 w-full bg-white border border-slate-100 rounded-xl py-2 px-3 text-sm font-normal text-slate-700 focus:outline-none focus:border-primary transition"
+                  placeholder="Matric number" />
+              ) : <span className="text-sm font-normal text-slate-700 mt-1 block">{user.matricNo || '—'}</span>}
+            </div>
+            {!editMode && <ChevronRight className="w-4 h-4 text-slate-300 shrink-0" />}
+          </div>
+
+          {/* Mobile Number */}
+          <div className="flex items-center justify-between py-4 border-b border-slate-100">
+            <div className="flex-1 min-w-0 pr-3">
+              <span className="text-xs font-semibold text-slate-400 block">
+                Mobile Number <span className="text-danger">*</span>
+              </span>
+              {editMode ? (
+                <input type="tel" value={draftPhone} onChange={e => setDraftPhone(formatPhone(e.target.value))}
+                  className="mt-1 w-full bg-white border border-slate-100 rounded-xl py-2 px-3 text-sm font-normal text-slate-700 focus:outline-none focus:border-primary transition"
+                  placeholder="e.g. 012-34567890" />
+              ) : <span className="text-sm font-normal text-slate-700 mt-1 block">{user.phone || '—'}</span>}
+            </div>
+            {!editMode && <ChevronRight className="w-4 h-4 text-slate-300 shrink-0" />}
+          </div>
+
+          {/* Email Address */}
+          <div className="flex items-center justify-between py-4 border-b border-slate-100">
+            <div className="flex-1 min-w-0 pr-3">
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-semibold text-slate-400">
+                  Email Address <span className="text-danger">*</span>
+                </span>
+                <span className="flex items-center gap-0.5 bg-emerald-500 text-white text-[8px] font-semibold px-1.5 py-0.5 rounded-full shrink-0">
+                  <CheckCircle2 className="w-2.5 h-2.5" /> VERIFIED
+                </span>
+              </div>
+              {editMode ? (
+                <input type="email" value={draftEmail} onChange={e => setDraftEmail(e.target.value)}
+                  className="mt-1 w-full bg-white border border-slate-100 rounded-xl py-2 px-3 text-sm font-normal text-slate-700 focus:outline-none focus:border-primary transition"
+                  placeholder="Email address" />
+              ) : <span className="text-sm font-normal text-slate-700 mt-1 block">{user.email || '—'}</span>}
+            </div>
+            {!editMode && <ChevronRight className="w-4 h-4 text-slate-300 shrink-0" />}
+          </div>
+
+          {/* IC Number */}
+          {requiresIc && (
             <div className="flex items-center justify-between py-4 border-b border-slate-100">
               <div className="flex-1 min-w-0 pr-3">
-                <span className="text-xs font-semibold text-slate-400 flex items-center gap-1 block">
-                  <Car className="w-3 h-3" /> Car Type / Model
+                <span className="text-xs font-semibold text-slate-400 block">
+                  IC Number <span className="text-danger">*</span>
                 </span>
                 {editMode ? (
-                  <input value={draftVehicle} onChange={e => setDraftVehicle(e.target.value)}
+                  <input
+                    value={draftIcNumber}
+                    onChange={e => setDraftIcNumber(formatIcNumber(e.target.value))}
+                    inputMode="numeric"
                     className="mt-1 w-full bg-white border border-slate-100 rounded-xl py-2 px-3 text-sm font-normal text-slate-700 focus:outline-none focus:border-primary transition"
-                    placeholder="e.g. Perodua Myvi 1.5" />
-                ) : <span className="text-sm font-normal text-slate-700 mt-1 block">{user.vehicle || '—'}</span>}
+                    placeholder="e.g. 012345-67-8910" />
+                ) : (
+                  <span className="text-sm font-normal text-slate-700 mt-1 block">
+                    {user.icNumber || <span className="text-danger text-xs font-semibold">Not set — please update</span>}
+                  </span>
+                )}
               </div>
               {!editMode && <ChevronRight className="w-4 h-4 text-slate-300 shrink-0" />}
             </div>
+          )}
 
-            {/* Plate Number */}
-            <div className="flex items-center justify-between py-4 border-b border-slate-100">
-              <div className="flex-1 min-w-0 pr-3">
-                <span className="text-xs font-semibold text-slate-400 block">Plate Number</span>
-                {editMode ? (
-                  <input value={draftPlate} onChange={e => setDraftPlate(e.target.value.toUpperCase())}
-                    className="mt-1 w-full bg-white border border-slate-100 rounded-xl py-2 px-3 text-sm font-normal text-slate-700 focus:outline-none focus:border-primary transition"
-                    placeholder="e.g. WMY 1234" />
-                ) : <span className="text-sm font-normal text-slate-700 mt-1 block font-mono tracking-wider">{user.plateNumber || '—'}</span>}
-              </div>
-              {!editMode && <ChevronRight className="w-4 h-4 text-slate-300 shrink-0" />}
-            </div>
-
-            {/* ── Documents (IC + License) ── */}
-            <div className="py-4 border-b border-slate-100 flex flex-col gap-4">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-semibold text-slate-400 flex items-center gap-1">
-                  <ShieldCheck className="w-3 h-3" /> Documents
-                </span>
-                <span className={`text-xs font-semibold px-2 py-0.5 rounded-full border ${
-                  user.docsStatus === 'approved' ? 'bg-emerald-50 border-emerald-100 text-emerald-700' :
-                  user.docsStatus === 'rejected' ? 'bg-red-50 border-red-100 text-red-600' :
-                  user.docsStatus === 'pending'  ? 'bg-amber-50 border-amber-100 text-amber-700' :
-                  'bg-slate-50 border-slate-200 text-slate-400'
-                }`}>
-                  {user.docsStatus === 'approved' ? '✓ Verified' :
-                   user.docsStatus === 'rejected' ? '✗ Rejected' :
-                   user.docsStatus === 'pending'  ? '⏳ Under Review' : 'Not Uploaded'}
-                </span>
+          {/* ── Driver-only fields ── */}
+          {isDriver && (
+            <>
+              {/* Car Type / Model */}
+              <div className="flex items-center justify-between py-4 border-b border-slate-100">
+                <div className="flex-1 min-w-0 pr-3">
+                  <span className="text-xs font-semibold text-slate-400 flex items-center gap-1 block">
+                    <Car className="w-3 h-3" /> Car Type / Model
+                  </span>
+                  {editMode ? (
+                    <input value={draftVehicle} onChange={e => setDraftVehicle(e.target.value)}
+                      className="mt-1 w-full bg-white border border-slate-100 rounded-xl py-2 px-3 text-sm font-normal text-slate-700 focus:outline-none focus:border-primary transition"
+                      placeholder="e.g. Perodua Myvi 1.5" />
+                  ) : <span className="text-sm font-normal text-slate-700 mt-1 block">{user.vehicle || '—'}</span>}
+                </div>
+                {!editMode && <ChevronRight className="w-4 h-4 text-slate-300 shrink-0" />}
               </div>
 
-              {user.docsStatus === 'rejected' && user.docsRejectReason && (
-                <p className="text-xs text-red-500 font-semibold bg-red-50 rounded-xl px-3 py-2">
-                  Reason: {user.docsRejectReason}
-                </p>
-              )}
-
-              {docMsg && (
-                <p className="text-xs text-emerald-600 font-semibold bg-emerald-50 rounded-xl px-3 py-2">{docMsg}</p>
-              )}
-
-              {/* IC Upload */}
-              <div className="flex flex-col gap-1.5">
-                <span className="text-xs font-semibold text-slate-400">IC (MyKad)</span>
-                <input ref={icDocRef} type="file" accept="image/*,.pdf" className="hidden" onChange={e => handleDocUpload(e, 'ic')} />
-                {user.icUrl ? (
-                  <div className="flex items-center justify-between bg-emerald-50 border border-emerald-100 rounded-xl px-3 py-2.5">
-                    <div className="flex items-center gap-2">
-                      <FileImage className="w-4 h-4 text-emerald-500 shrink-0" />
-                      <span className="text-xs font-semibold text-emerald-700">IC Uploaded ✓</span>
-                    </div>
-                    <button onClick={() => icDocRef.current?.click()} disabled={uploadingDoc === 'ic'}
-                      className="text-xs font-semibold text-slate-400 underline active:scale-95 transition">
-                      {uploadingDoc === 'ic' ? 'Uploading…' : 'Replace'}
-                    </button>
-                  </div>
-                ) : (
-                  <button onClick={() => icDocRef.current?.click()} disabled={uploadingDoc === 'ic'}
-                    className="w-full border-2 border-dashed border-slate-200 rounded-xl py-3 flex items-center justify-center gap-2 text-slate-400 hover:border-primary hover:text-primary transition active:scale-95">
-                    {uploadingDoc === 'ic'
-                      ? <span className="w-4 h-4 rounded-full border-2 border-slate-300 border-t-primary animate-spin" />
-                      : <><Upload className="w-3.5 h-3.5" /><span className="text-xs font-bold">Upload IC (MyKad)</span></>}
-                  </button>
-                )}
+              {/* Plate Number */}
+              <div className="flex items-center justify-between py-4 border-b border-slate-100">
+                <div className="flex-1 min-w-0 pr-3">
+                  <span className="text-xs font-semibold text-slate-400 block">Plate Number</span>
+                  {editMode ? (
+                    <input value={draftPlate} onChange={e => setDraftPlate(e.target.value.toUpperCase())}
+                      className="mt-1 w-full bg-white border border-slate-100 rounded-xl py-2 px-3 text-sm font-normal text-slate-700 focus:outline-none focus:border-primary transition"
+                      placeholder="e.g. WMY 1234" />
+                  ) : <span className="text-sm font-normal text-slate-700 mt-1 block font-mono tracking-wider">{user.plateNumber || '—'}</span>}
+                </div>
+                {!editMode && <ChevronRight className="w-4 h-4 text-slate-300 shrink-0" />}
               </div>
 
-              {/* License Upload */}
-              <div className="flex flex-col gap-1.5">
-                <span className="text-xs font-semibold text-slate-400">Driving License</span>
-                <input ref={licenseDocRef} type="file" accept="image/*,.pdf" className="hidden" onChange={e => handleDocUpload(e, 'license')} />
-                {user.licenseUrl ? (
-                  <div className="flex items-center justify-between bg-emerald-50 border border-emerald-100 rounded-xl px-3 py-2.5">
-                    <div className="flex items-center gap-2">
-                      <FileImage className="w-4 h-4 text-emerald-500 shrink-0" />
-                      <span className="text-xs font-semibold text-emerald-700">License Uploaded ✓</span>
-                    </div>
-                    <button onClick={() => licenseDocRef.current?.click()} disabled={uploadingDoc === 'license'}
-                      className="text-xs font-semibold text-slate-400 underline active:scale-95 transition">
-                      {uploadingDoc === 'license' ? 'Uploading…' : 'Replace'}
-                    </button>
-                  </div>
-                ) : (
-                  <button onClick={() => licenseDocRef.current?.click()} disabled={uploadingDoc === 'license'}
-                    className="w-full border-2 border-dashed border-slate-200 rounded-xl py-3 flex items-center justify-center gap-2 text-slate-400 hover:border-primary hover:text-primary transition active:scale-95">
-                    {uploadingDoc === 'license'
-                      ? <span className="w-4 h-4 rounded-full border-2 border-slate-300 border-t-primary animate-spin" />
-                      : <><Upload className="w-3.5 h-3.5" /><span className="text-xs font-bold">Upload Driving License</span></>}
-                  </button>
-                )}
-              </div>
-            </div>
+              {/* Documents */}
+              <div className="py-4 border-b border-slate-100 flex flex-col gap-4">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-semibold text-slate-400 flex items-center gap-1">
+                    <ShieldCheck className="w-3 h-3" /> Documents
+                  </span>
+                  <span className={`text-xs font-semibold px-2 py-0.5 rounded-full border ${
+                    user.docsStatus === 'approved' ? 'bg-emerald-50 border-emerald-100 text-emerald-700' :
+                    user.docsStatus === 'rejected' ? 'bg-red-50 border-red-100 text-red-600' :
+                    user.docsStatus === 'pending'  ? 'bg-amber-50 border-amber-100 text-amber-700' :
+                    'bg-slate-50 border-slate-200 text-slate-400'
+                  }`}>
+                    {user.docsStatus === 'approved' ? '✓ Verified' :
+                     user.docsStatus === 'rejected' ? '✗ Rejected' :
+                     user.docsStatus === 'pending'  ? '⏳ Under Review' : 'Not Uploaded'}
+                  </span>
+                </div>
 
-            {/* ── Monthly Fee Receipt — Gate 2: only visible after Gate 1 (docs) approved ── */}
-            {!docsApproved ? (
-              <div className="flex items-center gap-3 py-4 border-b border-slate-100">
-                <ShieldOff className="w-4 h-4 text-slate-300 shrink-0" />
-                <p className="text-xs text-slate-400 font-semibold leading-relaxed">
-                  Monthly fee activation is available after your documents are verified by admin.
-                </p>
-              </div>
-            ) : (
-            <div className="flex items-start justify-between py-4 border-b border-slate-100">
-              <div className="flex-1 min-w-0 pr-3">
-                <span className="text-xs font-semibold text-slate-400 flex items-center gap-1 block">
-                  <FileImage className="w-3 h-3" /> Monthly Fee Receipt
-                </span>
-
-                {/* Verifying spinner */}
-                {(uploading || verifying) && (
-                  <div className="mt-2 flex items-center gap-3 bg-amber-50 border border-amber-100 rounded-xl px-4 py-3">
-                    <span className="w-5 h-5 rounded-full border-2 border-amber-300 border-t-amber-600 animate-spin shrink-0" />
-                    <div>
-                      <p className="text-xs font-semibold text-amber-700">
-                        {uploading ? 'Uploading receipt…' : 'AI is verifying your receipt…'}
-                      </p>
-                      <p className="text-xs text-amber-500 mt-0.5">This takes a few seconds</p>
-                    </div>
-                  </div>
-                )}
-
-                {/* Verified + active */}
-                {!uploading && !verifying && isActive && (
-                  <div className="mt-2">
-                    <div className="flex-1 min-w-0">
-                      <span className="inline-flex items-center gap-1 bg-emerald-50 border border-emerald-100 text-emerald-600 text-xs font-semibold px-2.5 py-1 rounded-full">
-                        <ShieldCheck className="w-3 h-3" /> AI Verified
-                      </span>
-                      <div className="mt-1.5 space-y-0.5">
-                        <p className="text-xs text-slate-500 font-normal">
-                          Amount: <span className="font-bold text-slate-700">{user.feeReceiptAmount}</span>
-                        </p>
-                        <p className="text-xs text-slate-500 font-normal">
-                          Paid: <span className="font-bold text-slate-700">{user.feeReceiptDate}</span>
-                        </p>
-                        <p className="text-xs text-slate-500 font-normal flex items-center gap-1">
-                          <Clock className="w-3 h-3" />
-                          Active until: <span className="font-bold text-emerald-600">{expiryLabel}</span>
-                          {daysLeft !== null && daysLeft <= 7 && (
-                            <span className="text-amber-500 font-bold">({daysLeft}d left)</span>
-                          )}
-                        </p>
-                      </div>
-                      <button onClick={() => fileInputRef.current?.click()}
-                        className="mt-2 text-xs font-bold text-primary flex items-center gap-1 cursor-pointer">
-                        <RefreshCw className="w-3 h-3" /> Upload new receipt
-                      </button>
-                    </div>
-                  </div>
-                )}
-
-                {/* Verified but expired */}
-                {!uploading && !verifying && !isActive && isExpired && user.feeReceiptVerified && (
-                  <div className="mt-2">
-                    <div className="bg-red-50 border border-red-100 rounded-xl px-4 py-3 mb-2">
-                      <p className="text-xs font-semibold text-red-600 flex items-center gap-1.5">
-                        <AlertTriangle className="w-3.5 h-3.5" /> Receipt expired
-                      </p>
-                      <p className="text-xs text-red-400 mt-0.5">
-                        Previously paid {user.feeReceiptAmount} on {user.feeReceiptDate}.
-                        Pay RM25 on 1st–3rd of this month to renew.
-                      </p>
-                    </div>
-                    <button onClick={() => fileInputRef.current?.click()}
-                      className="flex items-center gap-2 bg-primary text-white font-semibold text-xs px-4 py-2.5 rounded-xl active:scale-95 transition cursor-pointer shadow-md shadow-primary/20">
-                      <Upload className="w-3.5 h-3.5" /> Upload new receipt
-                    </button>
-                  </div>
-                )}
-
-                {/* Rejected */}
-                {!uploading && !verifying && isRejected && (
-                  <div className="mt-2">
-                    <div className="bg-red-50 border border-red-100 rounded-xl px-4 py-3 mb-2">
-                      <p className="text-xs font-semibold text-red-600 flex items-center gap-1.5 mb-1">
-                        <AlertTriangle className="w-3.5 h-3.5" /> Receipt rejected
-                      </p>
-                      <p className="text-xs text-red-500 leading-relaxed">{user.feeReceiptRejectReason}</p>
-                    </div>
-                    <button onClick={() => fileInputRef.current?.click()}
-                      className="flex items-center gap-2 bg-primary text-white font-semibold text-xs px-4 py-2.5 rounded-xl active:scale-95 transition cursor-pointer shadow-md shadow-primary/20">
-                      <Upload className="w-3.5 h-3.5" /> Try again
-                    </button>
-                  </div>
-                )}
-
-                {/* Uploaded but pending verification (e.g. network failed mid-verify, or page refreshed) */}
-                {!uploading && !verifying && hasReceipt && !user.feeReceiptVerified && !user.feeReceiptRejectReason && !isActive && (
-                  <div className="mt-2">
-                    <div className="bg-amber-50 border border-amber-100 rounded-xl px-4 py-3 mb-2 flex items-start gap-2">
-                      <Clock className="w-3.5 h-3.5 text-amber-500 shrink-0 mt-0.5" />
-                      <div>
-                        <p className="text-xs font-semibold text-amber-700">Awaiting admin approval</p>
-                        <p className="text-xs text-amber-500 mt-0.5 leading-relaxed">
-                          Your receipt is under review. You will be notified once approved. If rejected, re-upload a clearer image.
-                        </p>
-                      </div>
-                    </div>
-                    <button onClick={() => fileInputRef.current?.click()}
-                      className="flex items-center gap-2 bg-primary text-white font-semibold text-xs px-4 py-2.5 rounded-xl active:scale-95 transition cursor-pointer shadow-md shadow-primary/20">
-                      <Upload className="w-3.5 h-3.5" /> Re-upload receipt
-                    </button>
-                  </div>
-                )}
-
-                {/* Not uploaded yet */}
-                {!uploading && !verifying && !hasReceipt && !isRejected && (
-                  <div>
-                    <button onClick={() => fileInputRef.current?.click()}
-                      className="mt-2 flex items-center gap-2 bg-red-50 border border-dashed border-red-200 rounded-xl px-4 py-3 text-xs font-bold text-red-400 hover:border-red-400 transition active:scale-95 cursor-pointer w-full">
-                      <Upload className="w-4 h-4" />
-                      Upload receipt to activate account
-                    </button>
-                    <p className="text-xs text-slate-400 font-normal mt-1.5 pl-1">
-                      JPG / PNG · Maybank, CIMB, DuitNow, TNG accepted
-                    </p>
-                  </div>
-                )}
-
-                {/* Verify error message */}
-                {verifyMsg && !uploading && !verifying && (
-                  <p className="mt-2 text-xs font-bold text-red-500 bg-red-50 px-3 py-2 rounded-xl">
-                    {verifyMsg}
+                {user.docsStatus === 'rejected' && user.docsRejectReason && (
+                  <p className="text-xs text-red-500 font-semibold bg-red-50 rounded-xl px-3 py-2">
+                    Reason: {user.docsRejectReason}
                   </p>
                 )}
+                {docMsg && (
+                  <p className="text-xs text-emerald-600 font-semibold bg-emerald-50 rounded-xl px-3 py-2">{docMsg}</p>
+                )}
 
-                <input ref={fileInputRef} type="file" accept="image/jpeg,image/png,image/webp"
-                  className="hidden" onChange={handleReceiptUpload} />
+                {/* IC Upload */}
+                <div className="flex flex-col gap-1.5">
+                  <span className="text-xs font-semibold text-slate-400">IC (MyKad)</span>
+                  <input ref={icDocRef} type="file" accept="image/*,.pdf" className="hidden" onChange={e => handleDocUpload(e, 'ic')} />
+                  {user.icUrl ? (
+                    <div className="flex items-center justify-between bg-emerald-50 border border-emerald-100 rounded-xl px-3 py-2.5">
+                      <div className="flex items-center gap-2">
+                        <FileImage className="w-4 h-4 text-emerald-500 shrink-0" />
+                        <span className="text-xs font-semibold text-emerald-700">IC Uploaded ✓</span>
+                      </div>
+                      <button onClick={() => icDocRef.current?.click()} disabled={uploadingDoc === 'ic'}
+                        className="text-xs font-semibold text-slate-400 underline active:scale-95 transition">
+                        {uploadingDoc === 'ic' ? 'Uploading…' : 'Replace'}
+                      </button>
+                    </div>
+                  ) : (
+                    <button onClick={() => icDocRef.current?.click()} disabled={uploadingDoc === 'ic'}
+                      className="w-full border-2 border-dashed border-slate-200 rounded-xl py-3 flex items-center justify-center gap-2 text-slate-400 hover:border-primary hover:text-primary transition active:scale-95">
+                      {uploadingDoc === 'ic'
+                        ? <span className="w-4 h-4 rounded-full border-2 border-slate-300 border-t-primary animate-spin" />
+                        : <><Upload className="w-3.5 h-3.5" /><span className="text-xs font-bold">Upload IC (MyKad)</span></>}
+                    </button>
+                  )}
+                </div>
+
+                {/* License Upload */}
+                <div className="flex flex-col gap-1.5">
+                  <span className="text-xs font-semibold text-slate-400">Driving License</span>
+                  <input ref={licenseDocRef} type="file" accept="image/*,.pdf" className="hidden" onChange={e => handleDocUpload(e, 'license')} />
+                  {user.licenseUrl ? (
+                    <div className="flex items-center justify-between bg-emerald-50 border border-emerald-100 rounded-xl px-3 py-2.5">
+                      <div className="flex items-center gap-2">
+                        <FileImage className="w-4 h-4 text-emerald-500 shrink-0" />
+                        <span className="text-xs font-semibold text-emerald-700">License Uploaded ✓</span>
+                      </div>
+                      <button onClick={() => licenseDocRef.current?.click()} disabled={uploadingDoc === 'license'}
+                        className="text-xs font-semibold text-slate-400 underline active:scale-95 transition">
+                        {uploadingDoc === 'license' ? 'Uploading…' : 'Replace'}
+                      </button>
+                    </div>
+                  ) : (
+                    <button onClick={() => licenseDocRef.current?.click()} disabled={uploadingDoc === 'license'}
+                      className="w-full border-2 border-dashed border-slate-200 rounded-xl py-3 flex items-center justify-center gap-2 text-slate-400 hover:border-primary hover:text-primary transition active:scale-95">
+                      {uploadingDoc === 'license'
+                        ? <span className="w-4 h-4 rounded-full border-2 border-slate-300 border-t-primary animate-spin" />
+                        : <><Upload className="w-3.5 h-3.5" /><span className="text-xs font-bold">Upload Driving License</span></>}
+                    </button>
+                  )}
+                </div>
               </div>
+
+              {/* Monthly Fee Receipt */}
+              {!docsApproved ? (
+                <div className="flex items-center gap-3 py-4 border-b border-slate-100">
+                  <ShieldOff className="w-4 h-4 text-slate-300 shrink-0" />
+                  <p className="text-xs text-slate-400 font-semibold leading-relaxed">
+                    Monthly fee activation is available after your documents are verified by admin.
+                  </p>
+                </div>
+              ) : (
+                <div className="flex items-start justify-between py-4 border-b border-slate-100">
+                  <div className="flex-1 min-w-0 pr-3">
+                    <span className="text-xs font-semibold text-slate-400 flex items-center gap-1 block">
+                      <FileImage className="w-3 h-3" /> Monthly Fee Receipt
+                    </span>
+
+                    {(uploading || verifying) && (
+                      <div className="mt-2 flex items-center gap-3 bg-amber-50 border border-amber-100 rounded-xl px-4 py-3">
+                        <span className="w-5 h-5 rounded-full border-2 border-amber-300 border-t-amber-600 animate-spin shrink-0" />
+                        <div>
+                          <p className="text-xs font-semibold text-amber-700">
+                            {uploading ? 'Uploading receipt…' : 'AI is verifying your receipt…'}
+                          </p>
+                          <p className="text-xs text-amber-500 mt-0.5">This takes a few seconds</p>
+                        </div>
+                      </div>
+                    )}
+
+                    {!uploading && !verifying && isActive && (
+                      <div className="mt-2">
+                        <span className="inline-flex items-center gap-1 bg-emerald-50 border border-emerald-100 text-emerald-600 text-xs font-semibold px-2.5 py-1 rounded-full">
+                          <ShieldCheck className="w-3 h-3" /> AI Verified
+                        </span>
+                        <div className="mt-1.5 space-y-0.5">
+                          <p className="text-xs text-slate-500 font-normal">Amount: <span className="font-bold text-slate-700">{user.feeReceiptAmount}</span></p>
+                          <p className="text-xs text-slate-500 font-normal">Paid: <span className="font-bold text-slate-700">{user.feeReceiptDate}</span></p>
+                          <p className="text-xs text-slate-500 font-normal flex items-center gap-1">
+                            <Clock className="w-3 h-3" />
+                            Active until: <span className="font-bold text-emerald-600">{expiryLabel}</span>
+                            {daysLeft !== null && daysLeft <= 7 && <span className="text-amber-500 font-bold">({daysLeft}d left)</span>}
+                          </p>
+                        </div>
+                        <button onClick={() => fileInputRef.current?.click()}
+                          className="mt-2 text-xs font-bold text-primary flex items-center gap-1 cursor-pointer">
+                          <RefreshCw className="w-3 h-3" /> Upload new receipt
+                        </button>
+                      </div>
+                    )}
+
+                    {!uploading && !verifying && !isActive && isExpired && user.feeReceiptVerified && (
+                      <div className="mt-2">
+                        <div className="bg-red-50 border border-red-100 rounded-xl px-4 py-3 mb-2">
+                          <p className="text-xs font-semibold text-red-600 flex items-center gap-1.5">
+                            <AlertTriangle className="w-3.5 h-3.5" /> Receipt expired
+                          </p>
+                          <p className="text-xs text-red-400 mt-0.5">
+                            Previously paid {user.feeReceiptAmount} on {user.feeReceiptDate}.
+                            Pay RM25 on 1st–3rd of this month to renew.
+                          </p>
+                        </div>
+                        <button onClick={() => fileInputRef.current?.click()}
+                          className="flex items-center gap-2 bg-primary text-white font-semibold text-xs px-4 py-2.5 rounded-xl active:scale-95 transition cursor-pointer shadow-md shadow-primary/20">
+                          <Upload className="w-3.5 h-3.5" /> Upload new receipt
+                        </button>
+                      </div>
+                    )}
+
+                    {!uploading && !verifying && isRejected && (
+                      <div className="mt-2">
+                        <div className="bg-red-50 border border-red-100 rounded-xl px-4 py-3 mb-2">
+                          <p className="text-xs font-semibold text-red-600 flex items-center gap-1.5 mb-1">
+                            <AlertTriangle className="w-3.5 h-3.5" /> Receipt rejected
+                          </p>
+                          <p className="text-xs text-red-500 leading-relaxed">{user.feeReceiptRejectReason}</p>
+                        </div>
+                        <button onClick={() => fileInputRef.current?.click()}
+                          className="flex items-center gap-2 bg-primary text-white font-semibold text-xs px-4 py-2.5 rounded-xl active:scale-95 transition cursor-pointer shadow-md shadow-primary/20">
+                          <Upload className="w-3.5 h-3.5" /> Try again
+                        </button>
+                      </div>
+                    )}
+
+                    {!uploading && !verifying && hasReceipt && !user.feeReceiptVerified && !user.feeReceiptRejectReason && !isActive && (
+                      <div className="mt-2">
+                        <div className="bg-amber-50 border border-amber-100 rounded-xl px-4 py-3 mb-2 flex items-start gap-2">
+                          <Clock className="w-3.5 h-3.5 text-amber-500 shrink-0 mt-0.5" />
+                          <div>
+                            <p className="text-xs font-semibold text-amber-700">Awaiting admin approval</p>
+                            <p className="text-xs text-amber-500 mt-0.5 leading-relaxed">
+                              Your receipt is under review. You will be notified once approved.
+                            </p>
+                          </div>
+                        </div>
+                        <button onClick={() => fileInputRef.current?.click()}
+                          className="flex items-center gap-2 bg-primary text-white font-semibold text-xs px-4 py-2.5 rounded-xl active:scale-95 transition cursor-pointer shadow-md shadow-primary/20">
+                          <Upload className="w-3.5 h-3.5" /> Re-upload receipt
+                        </button>
+                      </div>
+                    )}
+
+                    {!uploading && !verifying && !hasReceipt && !isRejected && (
+                      <div>
+                        <button onClick={() => fileInputRef.current?.click()}
+                          className="mt-2 flex items-center gap-2 bg-red-50 border border-dashed border-red-200 rounded-xl px-4 py-3 text-xs font-bold text-red-400 hover:border-red-400 transition active:scale-95 cursor-pointer w-full">
+                          <Upload className="w-4 h-4" />
+                          Upload receipt to activate account
+                        </button>
+                        <p className="text-xs text-slate-400 font-normal mt-1.5 pl-1">
+                          JPG / PNG · Maybank, CIMB, DuitNow, TNG accepted
+                        </p>
+                      </div>
+                    )}
+
+                    {verifyMsg && !uploading && !verifying && (
+                      <p className="mt-2 text-xs font-bold text-red-500 bg-red-50 px-3 py-2 rounded-xl">{verifyMsg}</p>
+                    )}
+
+                    <input ref={fileInputRef} type="file" accept="image/jpeg,image/png,image/webp"
+                      className="hidden" onChange={handleReceiptUpload} />
+                  </div>
+                </div>
+              )}
+            </>
+          )}
+
+          {/* Save button */}
+          {editMode && (
+            <div className="pt-4 flex flex-col gap-2">
+              {saveError && <p className="text-xs text-danger font-bold text-center">{saveError}</p>}
+              <button onClick={handleSave} disabled={saving}
+                className="w-full bg-primary hover:bg-primary-hover active:scale-[0.99] disabled:bg-slate-200 disabled:text-slate-400 text-white font-semibold py-3 rounded-xl shadow-md shadow-primary/20 transition flex items-center justify-center gap-2 cursor-pointer">
+                {saving
+                  ? <span className="w-4 h-4 rounded-full border-2 border-white border-t-transparent animate-spin" />
+                  : 'Save Changes'}
+              </button>
             </div>
-            )}
-          </>
-        )}
+          )}
+        </div>
 
-        {/* Save button */}
-        {editMode && (
-          <div className="pt-4 flex flex-col gap-2">
-            {saveError && <p className="text-xs text-danger font-bold text-center">{saveError}</p>}
-            <button onClick={handleSave} disabled={saving}
-              className="w-full bg-primary hover:bg-primary-hover active:scale-[0.99] disabled:bg-slate-200 disabled:text-slate-400 text-white font-semibold py-3 rounded-xl shadow-md shadow-primary/20 transition flex items-center justify-center gap-2 cursor-pointer">
-              {saving
-                ? <span className="w-4 h-4 rounded-full border-2 border-white border-t-transparent animate-spin" />
-                : 'Save Changes'}
-            </button>
-          </div>
-        )}
+        <div className="mt-8 text-center">
+          <button onClick={handleDeleteAccount}
+            className="text-xs font-semibold text-danger hover:underline active:scale-95 transition cursor-pointer">
+            Delete Account
+          </button>
+        </div>
       </div>
+    );
+  }
 
+  /* ── LOGGED-IN: HUB VIEW ── */
+  return (
+    <div className="flex-grow bg-white overflow-y-auto no-scrollbar animate-fade-in pb-8">
 
-      {/* ── ACTIONS ── */}
-      <div className="mx-5 mt-5 bg-white border border-slate-100 rounded-3xl p-2.5 flex flex-col gap-1">
-        <button onClick={() => alert('Campus Information Guide: gerak connects robe booking portals and shuttle systems.')}
-          className="w-full flex items-center justify-between p-3 rounded-2xl hover:bg-slate-50 active:scale-[0.99] transition text-left cursor-pointer">
-          <div className="flex items-center gap-3">
-            <HelpCircle className="w-4 h-4 text-slate-400" />
-            <span className="text-xs font-semibold text-slate-700">Help &amp; User Guide</span>
-          </div>
-          <ChevronRight className="w-4 h-4 text-slate-300" />
-        </button>
-        <button onClick={() => alert('Simulated Terms of Campus Services')}
-          className="w-full flex items-center justify-between p-3 rounded-2xl hover:bg-slate-50 active:scale-[0.99] transition text-left border-t border-slate-50 cursor-pointer">
-          <div className="flex items-center gap-3">
-            <Heart className="w-4 h-4 text-slate-400" />
-            <span className="text-xs font-semibold text-slate-700">Privacy &amp; Terms</span>
-          </div>
-          <ChevronRight className="w-4 h-4 text-slate-300" />
-        </button>
-        <button onClick={() => showConfirmModal({ title: 'Logout', message: 'Are you sure you want to logout?', onConfirm: logout })}
-          className="w-full flex items-center justify-between p-3 rounded-2xl hover:bg-danger/5 active:scale-[0.99] transition text-left border-t border-slate-50 group cursor-pointer">
-          <div className="flex items-center gap-3">
-            <LogOut className="w-4 h-4 text-slate-400 group-hover:text-danger" />
-            <span className="text-xs font-semibold text-slate-700 group-hover:text-danger">Log Out Session</span>
-          </div>
-          <ChevronRight className="w-4 h-4 text-slate-300 group-hover:text-danger" />
+      {/* Logout icon */}
+      <div className="flex justify-end px-5 pt-5">
+        <button
+          onClick={() => showConfirmModal({ title: 'Logout', message: 'Are you sure you want to logout?', onConfirm: logout })}
+          className="w-9 h-9 flex items-center justify-center rounded-xl bg-slate-100 text-slate-700 active:scale-90 transition"
+        >
+          <LogOut className="w-4 h-4" />
         </button>
       </div>
 
-      <div className="mt-8 text-center">
-        <button onClick={handleDeleteAccount}
-          className="text-xs font-semibold text-danger hover:underline active:scale-95 transition cursor-pointer">
-          Delete Account
-        </button>
+      {/* Avatar + Name + Gerak ID */}
+      <div className="flex flex-col items-center px-6 pt-2 pb-8">
+        <div className="w-20 h-20 rounded-full bg-slate-900 flex items-center justify-center mb-4">
+          <span style={{ fontFamily: 'Inter, sans-serif', fontSize: '2rem', fontWeight: 900, color: '#FFFFFF' }}>
+            {initial}
+          </span>
+        </div>
+        <h2 className="text-xl font-bold text-slate-900 m-0">{user.name || 'User'}</h2>
+        {user.gerakId && <p className="text-xs font-normal text-slate-400 mt-1">{user.gerakId}</p>}
+      </div>
+
+      {/* Quick Actions */}
+      <div className="px-5 mb-6">
+        <p className="text-sm font-bold text-slate-700 mb-3">Quick Actions</p>
+        <div className="flex gap-3 overflow-x-auto no-scrollbar pb-1">
+          {([
+            { icon: Wallet, label: 'My Finance' },
+            { icon: MessageCircle, label: 'Chat' },
+            { icon: MapPin, label: 'Addresses' },
+          ] as { icon: React.ElementType; label: string }[]).map(({ icon: Icon, label }) => (
+            <div
+              key={label}
+              className="flex-shrink-0 flex flex-col items-center gap-2 border border-slate-100 rounded-2xl p-4 w-24 active:bg-slate-50 active:scale-[0.98] transition cursor-pointer"
+            >
+              <div className="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center">
+                <Icon className="w-5 h-5 text-slate-900" />
+              </div>
+              <span className="text-xs font-semibold text-slate-700 text-center leading-tight">{label}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Account section */}
+      <div className="px-5 mb-4">
+        <p className="text-sm font-bold text-slate-700 mb-3">Account</p>
+        <div className="bg-white border border-slate-100 rounded-3xl overflow-hidden">
+          <button
+            onClick={() => setProfileView('edit')}
+            className="w-full flex items-center justify-between px-4 py-4 active:bg-slate-50 active:scale-[0.99] transition text-left"
+          >
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded-xl bg-slate-100 flex items-center justify-center shrink-0">
+                <User className="w-4 h-4 text-slate-900" />
+              </div>
+              <span className="text-sm font-semibold text-slate-800">My Profile</span>
+            </div>
+            <ChevronRight className="w-4 h-4 text-slate-300" />
+          </button>
+          <div className="border-t border-slate-100" />
+          <button className="w-full flex items-center justify-between px-4 py-4 active:bg-slate-50 active:scale-[0.99] transition text-left cursor-pointer">
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded-xl bg-slate-100 flex items-center justify-center shrink-0">
+                <ShieldCheck className="w-4 h-4 text-slate-900" />
+              </div>
+              <span className="text-sm font-semibold text-slate-800">Security Settings</span>
+            </div>
+            <ChevronRight className="w-4 h-4 text-slate-300" />
+          </button>
+        </div>
+      </div>
+
+      {/* Support section */}
+      <div className="px-5">
+        <div className="bg-white border border-slate-100 rounded-3xl overflow-hidden">
+          <button
+            onClick={() => alert('Campus Information Guide: gerak connects robe booking portals and shuttle systems.')}
+            className="w-full flex items-center justify-between px-4 py-4 active:bg-slate-50 active:scale-[0.99] transition text-left cursor-pointer"
+          >
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded-xl bg-slate-100 flex items-center justify-center shrink-0">
+                <HelpCircle className="w-4 h-4 text-slate-900" />
+              </div>
+              <span className="text-sm font-semibold text-slate-800">Help &amp; User Guide</span>
+            </div>
+            <ChevronRight className="w-4 h-4 text-slate-300" />
+          </button>
+          <div className="border-t border-slate-100" />
+          <button
+            onClick={() => alert('Simulated Terms of Campus Services')}
+            className="w-full flex items-center justify-between px-4 py-4 active:bg-slate-50 active:scale-[0.99] transition text-left cursor-pointer"
+          >
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded-xl bg-slate-100 flex items-center justify-center shrink-0">
+                <Heart className="w-4 h-4 text-slate-900" />
+              </div>
+              <span className="text-sm font-semibold text-slate-800">Privacy &amp; Terms</span>
+            </div>
+            <ChevronRight className="w-4 h-4 text-slate-300" />
+          </button>
+        </div>
       </div>
     </div>
   );
