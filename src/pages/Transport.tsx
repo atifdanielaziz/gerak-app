@@ -422,34 +422,44 @@ export const Transport: React.FC = () => {
         </div>
       </div>
 
-      {/* Mode tabs */}
-      <div className="px-4 mt-3">
-        <div className="flex bg-slate-100 rounded-xl p-1 gap-1">
-          <button
-            type="button"
-            onClick={() => setBookMode('quick')}
-            className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-xs font-semibold transition-all ${
-              bookMode === 'quick'
-                ? 'bg-white text-primary'
-                : 'text-slate-500 hover:text-slate-700'
-            }`}
-          >
-            <List className="w-3.5 h-3.5" />
+      {/* Mode selector — Mode Selector Standard */}
+      <div className="px-4 mt-3 flex gap-2">
+        <button
+          type="button"
+          onClick={() => setBookMode('quick')}
+          className={`flex-1 flex items-center gap-2.5 p-3 rounded-2xl border transition-colors active:scale-[0.98] ${
+            bookMode === 'quick'
+              ? 'border-primary/30 bg-primary/5'
+              : 'border-slate-100 bg-white'
+          }`}
+        >
+          <div className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 ${
+            bookMode === 'quick' ? 'bg-primary/10' : 'bg-slate-100'
+          }`}>
+            <List className={`w-4 h-4 ${bookMode === 'quick' ? 'text-primary' : 'text-slate-500'}`} />
+          </div>
+          <span className={`text-xs font-semibold ${bookMode === 'quick' ? 'text-primary' : 'text-slate-600'}`}>
             Quick Routes
-          </button>
-          <button
-            type="button"
-            onClick={() => setBookMode('map')}
-            className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-xs font-semibold transition-all ${
-              bookMode === 'map'
-                ? 'bg-white text-primary'
-                : 'text-slate-500 hover:text-slate-700'
-            }`}
-          >
-            <Map className="w-3.5 h-3.5" />
+          </span>
+        </button>
+        <button
+          type="button"
+          onClick={() => setBookMode('map')}
+          className={`flex-1 flex items-center gap-2.5 p-3 rounded-2xl border transition-colors active:scale-[0.98] ${
+            bookMode === 'map'
+              ? 'border-primary/30 bg-primary/5'
+              : 'border-slate-100 bg-white'
+          }`}
+        >
+          <div className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 ${
+            bookMode === 'map' ? 'bg-primary/10' : 'bg-slate-100'
+          }`}>
+            <Map className={`w-4 h-4 ${bookMode === 'map' ? 'text-primary' : 'text-slate-500'}`} />
+          </div>
+          <span className={`text-xs font-semibold ${bookMode === 'map' ? 'text-primary' : 'text-slate-600'}`}>
             Search Routes
-          </button>
-        </div>
+          </span>
+        </button>
       </div>
 
       {/* ── Quick Routes ── */}
