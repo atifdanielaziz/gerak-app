@@ -6,13 +6,20 @@ import { WaIcon, toWa } from '../lib/whatsapp';
 
 type RiderDir = { id: string; name: string; drop_point: string | null; method: string | null; ic_number: string | null; phone: string | null };
 
-const maskIc = (ic: string | null) => {
-  if (!ic) return '—';
+const IcMasked: React.FC<{ ic: string | null }> = ({ ic }) => {
+  if (!ic) return <span className="font-semibold text-slate-700">—</span>;
   const digits = ic.replace(/\D/g, '');
-  if (digits.length < 6) return ic;
-  return `${digits.slice(0, 6)}-XX-XXXX`;
+  if (digits.length < 6) return <span className="font-semibold text-slate-700 font-mono">{ic}</span>;
+  return (
+    <span className="font-semibold font-mono">
+      <span className="text-slate-700">{digits.slice(0, 6)}</span>
+      <span className="text-slate-700">-</span>
+      <span className="text-red-500">XX</span>
+      <span className="text-slate-700">-</span>
+      <span className="text-red-500">XXXX</span>
+    </span>
+  );
 };
-
 
 const UNIVERSITIES = [
   { key: 'umpsa', label: 'Universiti Malaysia Pahang Al-Sultan Abdullah (UMPSA)' },
@@ -212,8 +219,8 @@ export const JubahLanding: React.FC<Props> = ({ onProceed }) => {
                     <td className="py-2.5 pr-4 font-semibold text-slate-800 align-top">
                       {r.name}
                     </td>
-                    <td className="py-2.5 pr-4 font-mono text-slate-700 align-top whitespace-nowrap">
-                      {maskIc(r.ic_number)}
+                    <td className="py-2.5 pr-4 align-top whitespace-nowrap">
+                      <IcMasked ic={r.ic_number} />
                     </td>
                     <td className="py-2.5 font-semibold text-slate-700 align-top whitespace-nowrap">
                       <div className="flex items-center gap-1.5">
@@ -266,13 +273,16 @@ export const JubahLanding: React.FC<Props> = ({ onProceed }) => {
                   { label: 'Representative Name', value: selectedRider.name },
                   { label: 'Drop Point',           value: selectedRider.drop_point || '—' },
                   { label: 'Method',               value: selectedRider.method === 'pickup' ? 'Self Pickup' : selectedRider.method === 'postage' ? 'Pickup & Postage' : '—' },
-                  { label: 'I/C Number',           value: maskIc(selectedRider.ic_number) },
                 ].map(({ label, value }) => (
                   <div key={label} className="flex flex-col gap-0.5">
                     <span className="text-xs font-semibold text-slate-400">{label}</span>
                     <span className="font-bold text-slate-800">{value}</span>
                   </div>
                 ))}
+                <div className="flex flex-col gap-0.5">
+                  <span className="text-xs font-semibold text-slate-400">I/C Number</span>
+                  <IcMasked ic={selectedRider.ic_number} />
+                </div>
                 <div className="flex flex-col gap-0.5">
                   <span className="text-xs font-semibold text-slate-400">H/P</span>
                   <div className="flex items-center gap-2">
