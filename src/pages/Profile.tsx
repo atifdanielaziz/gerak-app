@@ -2,7 +2,7 @@ import React, { useRef, useState } from 'react';
 import { useApp } from '../context/AppContext';
 import { supabase } from '../lib/supabase';
 import {
-  ChevronRight, ChevronLeft, CheckCircle2, HelpCircle, Heart, LogOut,
+  ChevronRight, ChevronLeft, CheckCircle2, HelpCircle, LogOut,
   Pencil, X, Car, Upload, FileImage,
   ShieldCheck, ShieldOff, AlertTriangle, Clock, RefreshCw,
   Headset, Languages, Moon, FileText, Lock, Info, Star, Share2,
