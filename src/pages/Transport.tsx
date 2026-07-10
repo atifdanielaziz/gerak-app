@@ -305,10 +305,10 @@ export const Transport: React.FC = () => {
           </div>
 
           {/* Order summary */}
-          <div className="bg-slate-50 border border-slate-100 rounded-2xl p-4 text-xs font-mono text-slate-700 space-y-1 leading-relaxed">
-            <p className="font-black text-slate-800 mb-2">Order Summary</p>
-            <p><span className="text-slate-400">Date:</span> <span className="text-blue-600 font-bold">{date}</span></p>
-            <p><span className="text-slate-400">Time:</span> <span className="text-blue-600 font-bold">{time}</span>{isNight ? ' (Night — +RM5)' : ''}</p>
+          <div className="bg-white border border-slate-100 rounded-2xl p-4 text-xs font-mono text-slate-700 space-y-1 leading-relaxed">
+            <p className="font-semibold text-slate-800 mb-2">Order Summary</p>
+            <p><span className="text-slate-400">Date:</span> <span className="text-blue-600 font-semibold">{date}</span></p>
+            <p><span className="text-slate-400">Time:</span> <span className="text-blue-600 font-semibold">{time}</span>{isNight ? ' (Night — +RM5)' : ''}</p>
             <p><span className="text-slate-400">Campus:</span> {campus === 'pekan' ? 'UMPSA Pekan' : 'UMPSA Gambang'}</p>
             <p><span className="text-slate-400">Pick-up:</span> {pickupLabel}</p>
             <p><span className="text-slate-400">Destination:</span> {destLabel}</p>
@@ -328,14 +328,14 @@ export const Transport: React.FC = () => {
             {!editBlocked && (
               <button
                 onClick={handleEditBooking}
-                className="flex-1 flex items-center justify-center gap-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold py-3 rounded-xl transition active:scale-[0.99]"
+                className="flex-1 flex items-center justify-center gap-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold py-3 rounded-2xl transition active:scale-[0.99]"
               >
                 Edit Booking
               </button>
             )}
             <button
               onClick={handleNewBooking}
-              className="flex-1 flex items-center justify-center gap-2 bg-primary hover:bg-primary-hover text-white font-semibold py-3 rounded-xl shadow-md shadow-primary/20 transition active:scale-[0.99]"
+              className="flex-1 flex items-center justify-center gap-2 bg-primary hover:bg-primary-hover text-white font-semibold py-3 rounded-2xl shadow-md shadow-primary/20 transition active:scale-[0.99]"
             >
               <RotateCcw className="w-4 h-4" />
               New Booking
@@ -387,7 +387,7 @@ export const Transport: React.FC = () => {
                 onClick={() => switchCampus(c)}
                 className={`flex-1 py-2 rounded-xl text-xs font-semibold transition-all ${
                   campus === c
-                    ? 'bg-white text-primary shadow-sm'
+                    ? 'bg-white text-primary'
                     : 'text-slate-500 hover:text-slate-700'
                 }`}
               >
@@ -429,7 +429,7 @@ export const Transport: React.FC = () => {
             {showInfo ? <ChevronUp className="w-3.5 h-3.5 text-slate-300" /> : <ChevronDown className="w-3.5 h-3.5 text-slate-300" />}
           </button>
           {showInfo && (
-            <div className="px-4 pb-3 text-xs text-slate-500 font-medium leading-relaxed space-y-1 border-t border-slate-50">
+            <div className="px-4 pb-3 text-xs text-slate-500 font-normal leading-relaxed space-y-1 border-t border-slate-50">
               <p>• Bookings between <strong className="text-slate-700">12am–7am</strong> must be placed <strong className="text-slate-700">before 10pm</strong>.</p>
               <p>• Night ride (12am–7am) attracts an extra <strong className="text-amber-500">RM5 charge</strong> — applied automatically.</p>
               <p>• Maximum <strong className="text-slate-700">4 passengers</strong> per trip. Exceeding this may incur extra charge.</p>
@@ -447,7 +447,7 @@ export const Transport: React.FC = () => {
             onClick={() => setBookMode('quick')}
             className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-xs font-semibold transition-all ${
               bookMode === 'quick'
-                ? 'bg-white text-primary shadow-sm'
+                ? 'bg-white text-primary'
                 : 'text-slate-500 hover:text-slate-700'
             }`}
           >
@@ -459,7 +459,7 @@ export const Transport: React.FC = () => {
             onClick={() => setBookMode('map')}
             className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-xs font-semibold transition-all ${
               bookMode === 'map'
-                ? 'bg-white text-primary shadow-sm'
+                ? 'bg-white text-primary'
                 : 'text-slate-500 hover:text-slate-700'
             }`}
           >
@@ -477,7 +477,7 @@ export const Transport: React.FC = () => {
             <button
               type="button"
               onClick={() => setShowFromDropdown(v => !v)}
-              className="w-full flex items-center justify-between bg-white border border-slate-200 rounded-2xl px-4 py-3 text-sm font-semibold text-slate-700 transition hover:border-primary active:scale-[0.98]"
+              className="w-full flex items-center justify-between bg-white border border-slate-100 rounded-2xl px-4 py-3 text-sm font-semibold text-slate-700 transition hover:border-primary active:scale-[0.98]"
             >
               <span className={selectedFrom ? 'text-slate-800' : 'text-slate-400 font-normal'}>
                 {selectedFrom || 'Select pickup location…'}
@@ -535,7 +535,7 @@ export const Transport: React.FC = () => {
                     {selectedRoute.from} → {selectedRoute.to}
                   </p>
                   {selectedRoute.maxPax && (
-                    <p className="text-xs text-amber-600 font-bold mt-0.5">Max {selectedRoute.maxPax} pax</p>
+                    <p className="text-xs text-amber-600 font-normal mt-0.5">Max {selectedRoute.maxPax} pax</p>
                   )}
                 </div>
               </div>
@@ -604,7 +604,7 @@ export const Transport: React.FC = () => {
       {/* ── Order form ── */}
       <form onSubmit={handleBook} className="px-4 mt-2 flex flex-col gap-2">
         <div className="bg-white border border-slate-100 rounded-2xl p-3 flex flex-col gap-2.5">
-          <h3 className="text-sm font-bold text-slate-700 flex items-center gap-1.5">
+          <h3 className="text-sm font-semibold text-slate-700 flex items-center gap-1.5">
             <CalendarDays className="w-4 h-4 text-slate-400" /> Order Details
           </h3>
 
@@ -613,8 +613,8 @@ export const Transport: React.FC = () => {
             <div className="flex flex-col gap-0.5">
               <label className="text-xs font-normal text-slate-400 pl-1">Date</label>
               <div className="relative h-9 group">
-                <div className="absolute inset-0 bg-white border border-slate-100 rounded-lg px-2.5 flex items-center justify-between pointer-events-none group-focus-within:border-primary transition">
-                  <span className={`text-xs font-bold ${date ? 'text-slate-700' : 'text-slate-400'}`}>
+                <div className="absolute inset-0 bg-white border border-slate-100 rounded-xl px-2.5 flex items-center justify-between pointer-events-none group-focus-within:border-primary transition">
+                  <span className={`text-xs font-semibold ${date ? 'text-slate-700' : 'text-slate-400'}`}>
                     {date ? new Date(date + 'T00:00:00').toLocaleDateString('en-MY', { day: 'numeric', month: 'short', year: 'numeric' }) : 'Select date'}
                   </span>
                   <CalendarDays className="w-3 h-3 text-slate-400 shrink-0" />
@@ -629,13 +629,13 @@ export const Transport: React.FC = () => {
             <div className="flex flex-col gap-0.5">
               <label className="text-xs font-normal text-slate-400 pl-1 flex items-center gap-1">
                 <Clock className="w-3 h-3" /> Time
-                {isNight && <span className="text-amber-500 font-extrabold ml-1">+RM5</span>}
+                {isNight && <span className="text-amber-500 font-semibold ml-1">+RM5</span>}
               </label>
               <div className="relative h-9 group">
-                <div className={`absolute inset-0 border rounded-lg px-2.5 flex items-center justify-between pointer-events-none group-focus-within:border-primary transition ${
+                <div className={`absolute inset-0 border rounded-xl px-2.5 flex items-center justify-between pointer-events-none group-focus-within:border-primary transition ${
                   isNight ? 'border-amber-200 bg-amber-50/50' : 'bg-white border-slate-100'
                 }`}>
-                  <span className={`text-xs font-bold ${!time ? 'text-slate-400' : isNight ? 'text-amber-700' : 'text-slate-700'}`}>
+                  <span className={`text-xs font-semibold ${!time ? 'text-slate-400' : isNight ? 'text-amber-700' : 'text-slate-700'}`}>
                     {time || 'Select time'}
                   </span>
                   <Clock className="w-3 h-3 text-slate-400 shrink-0" />
@@ -650,15 +650,15 @@ export const Transport: React.FC = () => {
 
           {/* Passengers stepper */}
           <div className="flex flex-col gap-0.5">
-            <label className="text-xs font-semibold text-slate-400 pl-1 flex items-center gap-1">
+            <label className="text-xs font-normal text-slate-400 pl-1 flex items-center gap-1">
               <Users className="w-3 h-3" /> Number of Passengers
             </label>
             <div className="flex items-center gap-2">
               <button type="button" onClick={() => setPassengers(p => Math.max(1, p - 1))}
-                className="w-10 h-10 rounded-xl border border-slate-200 bg-slate-50 text-slate-700 font-extrabold text-sm active:bg-slate-100 active:scale-95 transition flex items-center justify-center shrink-0">−</button>
+                className="w-10 h-10 rounded-xl border border-slate-100 bg-white text-slate-700 font-semibold text-sm active:bg-slate-50 active:scale-95 transition flex items-center justify-center shrink-0">−</button>
               <span className="flex-1 text-center font-black text-xs text-slate-800">{passengers}</span>
               <button type="button" onClick={() => setPassengers(p => Math.min(8, p + 1))}
-                className="w-10 h-10 rounded-xl border border-slate-200 bg-slate-50 text-slate-700 font-extrabold text-sm active:bg-slate-100 active:scale-95 transition flex items-center justify-center shrink-0">+</button>
+                className="w-10 h-10 rounded-xl border border-slate-100 bg-white text-slate-700 font-semibold text-sm active:bg-slate-50 active:scale-95 transition flex items-center justify-center shrink-0">+</button>
             </div>
             {passengers > 4 && (
               <p className="text-xs text-amber-600 font-normal pl-1">Over 4 pax — extra charge may apply</p>
@@ -667,18 +667,18 @@ export const Transport: React.FC = () => {
 
           {/* Contact — overlay: transparent real input, 12px display div, red caret */}
           <div className="flex flex-col gap-0.5">
-            <label className="text-xs font-semibold text-slate-400 pl-1 flex items-center gap-1">
+            <label className="text-xs font-normal text-slate-400 pl-1 flex items-center gap-1">
               <Phone className="w-3 h-3" /> Contact Number
             </label>
             <div className="relative h-9 group">
-              <div className="absolute inset-0 bg-white border border-slate-100 rounded-lg px-2.5 flex items-center pointer-events-none group-focus-within:border-primary transition">
-                <span className={`text-xs font-bold ${contact ? 'text-slate-700' : 'text-slate-400'}`}>
+              <div className="absolute inset-0 bg-white border border-slate-100 rounded-xl px-2.5 flex items-center pointer-events-none group-focus-within:border-primary transition">
+                <span className={`text-xs font-semibold ${contact ? 'text-slate-700' : 'text-slate-400'}`}>
                   {contact || 'e.g. 0123456789'}
                 </span>
               </div>
               <input type="tel" required value={contact}
                 onChange={e => setContact(e.target.value)}
-                className="absolute inset-0 w-full h-full rounded-lg bg-transparent focus:outline-none cursor-text"
+                className="absolute inset-0 w-full h-full rounded-xl bg-transparent focus:outline-none cursor-text"
                 style={{ fontSize: '16px', color: 'transparent', caretColor: '#EF4444' }}
                 autoComplete="tel" />
             </div>
@@ -686,19 +686,19 @@ export const Transport: React.FC = () => {
 
           {/* Remark — same overlay pattern */}
           <div className="flex flex-col gap-0.5">
-            <label className="text-xs font-semibold text-slate-400 pl-1">
+            <label className="text-xs font-normal text-slate-400 pl-1">
               Remark for Driver (optional)
             </label>
             <div className="relative h-9 group">
-              <div className="absolute inset-0 bg-white border border-slate-100 rounded-lg px-2.5 flex items-center pointer-events-none group-focus-within:border-primary transition">
-                <span className={`text-xs font-bold truncate ${notes ? 'text-slate-700' : 'text-slate-400'}`}>
+              <div className="absolute inset-0 bg-white border border-slate-100 rounded-xl px-2.5 flex items-center pointer-events-none group-focus-within:border-primary transition">
+                <span className={`text-xs font-semibold truncate ${notes ? 'text-slate-700' : 'text-slate-400'}`}>
                   {notes || 'e.g. luggage, wheelchair, main gate...'}
                 </span>
               </div>
               <input type="text" value={notes}
                 onChange={e => setNotes(e.target.value.slice(0, 500))}
                 maxLength={500}
-                className="absolute inset-0 w-full h-full rounded-lg bg-transparent focus:outline-none cursor-text"
+                className="absolute inset-0 w-full h-full rounded-xl bg-transparent focus:outline-none cursor-text"
                 style={{ fontSize: '16px', color: 'transparent', caretColor: '#EF4444' }}
                 autoComplete="off" autoCorrect="off" />
             </div>
@@ -706,7 +706,7 @@ export const Transport: React.FC = () => {
         </div>
 
         {/* Fare summary */}
-        <div className="bg-white border border-slate-100 rounded-xl px-3.5 py-2.5 flex items-center justify-between">
+        <div className="bg-white border border-slate-100 rounded-2xl px-3.5 py-2.5 flex items-center justify-between">
           <div>
             <span className="text-xs text-slate-400 font-normal block">Estimated Fare</span>
             <div className="flex items-baseline gap-1.5 mt-0.5">
@@ -721,7 +721,7 @@ export const Transport: React.FC = () => {
         </div>
 
         {bookingError && (
-          <div className="bg-danger/10 border border-danger/20 rounded-xl px-4 py-3 text-xs text-danger font-bold text-center">
+          <div className="bg-danger/10 border border-danger/20 rounded-xl px-4 py-3 text-xs text-danger font-semibold text-center">
             {bookingError}
           </div>
         )}
@@ -730,9 +730,9 @@ export const Transport: React.FC = () => {
         <button
           type="submit"
           disabled={!canBook || booking}
-          className={`mx-auto flex items-center gap-2 text-white text-sm font-semibold px-8 py-2 rounded-full transition-all duration-300 active:scale-95 ${
+          className={`w-full flex items-center justify-center gap-2 text-white text-sm font-semibold py-3 rounded-2xl transition-all duration-300 active:scale-[0.99] ${
             canBook && !booking
-              ? 'bg-primary hover:bg-primary-hover shadow-lg shadow-primary/50 ring-2 ring-primary/40 animate-pulse-glow cursor-pointer'
+              ? 'bg-primary hover:bg-primary-hover shadow-lg shadow-primary/30 cursor-pointer'
               : 'bg-slate-200 text-slate-400 cursor-not-allowed shadow-none'
           }`}
         >
