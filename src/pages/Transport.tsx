@@ -465,9 +465,7 @@ export const Transport: React.FC = () => {
               <span className={selectedFrom ? 'text-slate-800' : 'text-slate-400 font-normal'}>
                 {selectedFrom || 'Select pickup location…'}
               </span>
-              {showFromDropdown
-                ? <ChevronUp className="w-4 h-4 text-slate-400 shrink-0" />
-                : <ChevronDown className="w-4 h-4 text-slate-400 shrink-0" />}
+              <ChevronDown className={`w-4 h-4 text-slate-400 shrink-0 transition-transform ${showFromDropdown ? 'rotate-180' : ''}`} />
             </button>
 
             {showFromDropdown && (
