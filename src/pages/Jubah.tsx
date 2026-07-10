@@ -60,8 +60,9 @@ export const Jubah: React.FC = () => {
   const [university, setUniversity]   = useState('');
   const [faculty, setFaculty]         = useState('');
   const [matricId, setMatricId]       = useState('');
-  const [paymentMode, setPaymentMode] = useState<'pickup' | 'postage' | 'deposit'>('pickup');
-  const [postageZone, setPostageZone] = useState<'SM' | 'SS'>('SM');
+  const [paymentMode, setPaymentMode]   = useState<'pickup' | 'postage' | 'deposit'>('pickup');
+  const [postageZone, setPostageZone]   = useState<'SM' | 'SS'>('SM');
+  const [depositMethod, setDepositMethod] = useState<'pickup' | 'postage'>('pickup');
   const [remark, setRemark]           = useState<typeof REMARKS[number]>('Degree');
   type JubahDocField = { id: string; label: string; hint: string | null; position: number };
   const FALLBACK_DOC_FIELDS: JubahDocField[] = [
@@ -142,11 +143,14 @@ export const Jubah: React.FC = () => {
     return () => { supabase.removeChannel(channel); };
   }, []);
 
-  const DEPOSIT_AMOUNT = 25;
-  const pickupPrice  = pricing[remark]?.['pickup']  ?? 70;
-  const postagePrice = pricing[remark]?.['postage'] ?? 90;
-  const balanceDue   = pickupPrice - DEPOSIT_AMOUNT;
-  const ssCharge     = paymentMode === 'postage' && postageZone === 'SS' ? 10 : 0;
+  const DEPOSIT_AMOUNT    = 25;
+  const pickupPrice       = pricing[remark]?.['pickup']  ?? 70;
+  const postagePrice      = pricing[remark]?.['postage'] ?? 90;
+  const isPostageDelivery = paymentMode === 'postage' || (paymentMode === 'deposit' && depositMethod === 'postage');
+  const ssCharge          = isPostageDelivery && postageZone === 'SS' ? 10 : 0;
+  const balanceDue        = paymentMode === 'deposit'
+    ? (depositMethod === 'postage' ? postagePrice + ssCharge : pickupPrice) - DEPOSIT_AMOUNT
+    : 0;
   const cost = paymentMode === 'deposit' ? DEPOSIT_AMOUNT : paymentMode === 'postage' ? postagePrice + ssCharge : pickupPrice;
 
   // Fetch active riders whenever campus or service option (Pickup/Postage) changes
@@ -156,9 +160,9 @@ export const Jubah: React.FC = () => {
     setRidersLoading(true);
     setSelectedRiderId('');
     supabase
-      .rpc('get_active_jubah_riders', { p_campus: campus, p_method: paymentMode === 'deposit' ? 'pickup' : paymentMode })
+      .rpc('get_active_jubah_riders', { p_campus: campus, p_method: paymentMode === 'deposit' ? depositMethod : paymentMode })
       .then(({ data }) => { setRiders(data ?? []); setRidersLoading(false); });
-  }, [university, paymentMode]);
+  }, [university, paymentMode, depositMethod]);
 
   // Load doc fields for the selected university; fall back to UMPSA then hardcoded defaults
   useEffect(() => {
@@ -292,7 +296,7 @@ export const Jubah: React.FC = () => {
     if (!university) { alert('Please select your university.'); return; }
     if (!faculty) { alert('Please select your faculty.'); return; }
     if (!selectedRiderId) { alert('Please select a rider.'); return; }
-    if (paymentMode === 'postage' && !fullAddress) { alert('Please enter your delivery address.'); return; }
+    if (isPostageDelivery && !fullAddress) { alert('Please enter your delivery address.'); return; }
     if (!allFilesReady) { setFileError('Please upload all required documents.'); return; }
     if (!paymentProof) { setFileError('Please upload your proof of payment.'); return; }
 
@@ -306,7 +310,7 @@ export const Jubah: React.FC = () => {
     const selectedRider = riders.find(r => r.id === selectedRiderId);
     const bookingCampus = university.includes('Pekan') ? 'Pekan' : 'Gambang';
     const zonePrefix = postageZone === 'SS' ? '[SS - Sabah & Sarawak]\n' : '';
-    const addr = paymentMode === 'postage' ? `${zonePrefix}${fullAddress}` : undefined;
+    const addr = isPostageDelivery ? `${zonePrefix}${fullAddress}` : undefined;
 
     setBooking(true);
     let docsPath: string | undefined;
@@ -598,13 +602,70 @@ export const Jubah: React.FC = () => {
             {/* Deposit */}
             <label className={`flex items-start gap-3 p-3.5 rounded-2xl border cursor-pointer transition ${paymentMode === 'deposit' ? 'border-blue-400 bg-blue-50/60' : 'border-slate-200 hover:bg-slate-50'}`}>
               <input type="radio" name="paymentMode" value="deposit" checked={paymentMode === 'deposit'} onChange={() => setPaymentMode('deposit')} className="mt-0.5 accent-blue-600 shrink-0" />
-              <div>
+              <div className="flex-1">
                 <span className={`text-xs font-bold block ${paymentMode === 'deposit' ? 'text-blue-700' : 'text-slate-700'}`}>
-                  Deposit (RM{DEPOSIT_AMOUNT}) — Pay RM{balanceDue} on Collection
+                  Deposit (RM{DEPOSIT_AMOUNT}) — Pay RM{balanceDue} before robe Collection date
                 </span>
                 <span className="text-xs text-slate-400 leading-relaxed block mt-0.5">
                   Pay RM{DEPOSIT_AMOUNT} now to secure your booking. Pay the remaining RM{balanceDue} <span className="font-bold text-slate-500">1 day before collection day</span> via Track My Order. Cancellation is locked 1 week before collection — deposit is forfeited if cancelled after that.
                 </span>
+
+                {/* Sub-choices: Self Pickup or Pickup & Postage */}
+                {paymentMode === 'deposit' && (
+                  <div className="flex flex-col gap-1 mt-3" onClick={e => e.preventDefault()}>
+                    {/* Self Pickup */}
+                    <button
+                      type="button"
+                      onClick={() => setDepositMethod('pickup')}
+                      className={`w-full flex items-center justify-between px-3 py-2.5 rounded-2xl border text-xs font-semibold transition active:scale-[0.99] ${
+                        depositMethod === 'pickup'
+                          ? 'border-blue-300 bg-blue-50 text-blue-700'
+                          : 'border-slate-100 bg-white text-slate-600'
+                      }`}
+                    >
+                      <span>Self Pickup</span>
+                      <span className={`font-semibold text-xs ${depositMethod === 'pickup' ? 'text-blue-600' : 'text-slate-400'}`}>
+                        Balance RM{pickupPrice - DEPOSIT_AMOUNT}
+                      </span>
+                    </button>
+
+                    {/* Pickup & Postage */}
+                    <button
+                      type="button"
+                      onClick={() => setDepositMethod('postage')}
+                      className={`w-full flex items-center justify-between px-3 py-2.5 rounded-2xl border text-xs font-semibold transition active:scale-[0.99] ${
+                        depositMethod === 'postage'
+                          ? 'border-blue-300 bg-blue-50 text-blue-700'
+                          : 'border-slate-100 bg-white text-slate-600'
+                      }`}
+                    >
+                      <span>Pickup &amp; Postage</span>
+                    </button>
+
+                    {/* SM / SS sub-choice under Pickup & Postage */}
+                    {depositMethod === 'postage' && (
+                      <div className="flex flex-col gap-1 ml-2 mt-0.5">
+                        {(['SM', 'SS'] as const).map(zone => (
+                          <button
+                            key={zone}
+                            type="button"
+                            onClick={() => setPostageZone(zone)}
+                            className={`w-full flex items-center justify-between px-3 py-2.5 rounded-2xl border text-xs font-semibold transition active:scale-[0.99] ${
+                              postageZone === zone
+                                ? 'border-blue-300 bg-blue-50 text-blue-700'
+                                : 'border-slate-100 bg-white text-slate-600'
+                            }`}
+                          >
+                            <span>{zone === 'SM' ? 'SM — Semenanjung Malaysia' : 'SS — Sabah & Sarawak'}</span>
+                            <span className={`font-semibold text-xs ${postageZone === zone ? 'text-blue-600' : 'text-slate-400'}`}>
+                              Balance RM{postagePrice + (zone === 'SS' ? 10 : 0) - DEPOSIT_AMOUNT}
+                            </span>
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
             </label>
 
@@ -659,7 +720,7 @@ export const Jubah: React.FC = () => {
             <div className="border border-slate-100 rounded-2xl p-3.5 mt-1">
               <span className="text-xs text-slate-400 font-semibold block">Service Fee</span>
               <span className="text-xl font-black text-slate-800">RM{cost}.00</span>
-              {paymentMode === 'postage' && postageZone === 'SS' && (
+              {isPostageDelivery && postageZone === 'SS' && (
                 <span className="text-xs text-slate-400 block mt-0.5">Includes +RM10 SS surcharge</span>
               )}
             </div>
@@ -713,12 +774,12 @@ export const Jubah: React.FC = () => {
             </div>
             {university && !ridersLoading && riders.length === 0 && (
               <p className="text-xs text-slate-400 font-semibold text-center -mt-2">
-                No {paymentMode === 'postage' ? 'postage' : 'self-pickup'} riders available for this campus at the moment.
+                No {isPostageDelivery ? 'postage' : 'self-pickup'} riders available for this campus at the moment.
               </p>
             )}
 
             {/* Drop Point — read-only, set by admin for the selected rider */}
-            {selectedRiderId && paymentMode !== 'postage' && (
+            {selectedRiderId && !isPostageDelivery && (
               <div className="flex flex-col gap-1">
                 <label className="text-xs font-semibold text-slate-400">Drop Point</label>
                 <div className="bg-white border border-slate-100 rounded-xl py-2.5 px-3">
@@ -730,8 +791,8 @@ export const Jubah: React.FC = () => {
             )}
           </div>
 
-          {/* ── DELIVERY ADDRESS (postage only) ── */}
-          {paymentMode === 'postage' && (
+          {/* ── DELIVERY ADDRESS (postage or deposit+postage) ── */}
+          {isPostageDelivery && (
             <div className="bg-white border border-slate-100 rounded-3xl p-5 flex flex-col gap-4">
               <h3 className="text-sm font-bold text-slate-700">Delivery Address <span className="text-danger">*</span></h3>
               {fullAddress ? (
