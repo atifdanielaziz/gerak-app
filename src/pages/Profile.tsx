@@ -37,10 +37,7 @@ export const Profile: React.FC = () => {
   const [draftPlate, setDraftPlate]       = useState('');
   const [draftIcNumber, setDraftIcNumber] = useState('');
 
-  type EditField = 'name' | 'ic' | 'matric' | 'phone' | 'email' | 'vehicle' | 'plate' | null;
-  const [editingField, setEditingField] = useState<EditField>(null);
-  const [savingField, setSavingField]   = useState(false);
-  const [fieldError, setFieldError]     = useState('');
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
 
   const requiresIc = ['driver', 'rider', 'admin', 'superadmin'].includes(user.role);
@@ -88,47 +85,46 @@ export const Profile: React.FC = () => {
     setDocMsg(type === 'ic' ? 'IC uploaded — pending admin review.' : 'License uploaded — pending admin review.');
   };
 
-  const openField = (field: EditField) => {
-    setFieldError('');
-    if (field === 'name')    setDraftName(user.name);
-    if (field === 'ic')      setDraftIcNumber(user.icNumber ?? '');
-    if (field === 'matric')  setDraftMatric(user.matricNo);
-    if (field === 'phone')   setDraftPhone(user.phone);
-    if (field === 'email')   setDraftEmail(user.email);
-    if (field === 'vehicle') setDraftVehicle(user.vehicle);
-    if (field === 'plate')   setDraftPlate(user.plateNumber);
-    setEditingField(field);
+  const initSubPage = () => {
+    setDraftName(user.name);
+    setDraftMatric(user.matricNo);
+    setDraftEmail(user.email);
+    setDraftPhone(user.phone);
+    setDraftVehicle(user.vehicle);
+    setDraftPlate(user.plateNumber);
+    setDraftIcNumber(user.icNumber ?? '');
+    setFieldErrors({});
+    setProfileView('edit');
   };
 
-  const saveField = async (field: EditField) => {
-    setFieldError('');
+  const autoSave = async (field: string) => {
     let updates: Parameters<typeof updateProfile>[0] = {};
+    let err = '';
     if (field === 'name') {
-      if (!draftName.trim()) { setFieldError('Full name is required.'); return; }
-      updates = { name: draftName.trim() };
+      if (!draftName.trim()) err = 'Full name is required.';
+      else updates = { name: draftName.trim() };
     } else if (field === 'ic') {
       const digits = draftIcNumber.replace(/\D/g, '');
-      if (requiresIc && digits.length !== 12) { setFieldError('Must be 12 digits.'); return; }
-      if (digits.length > 0 && digits.length !== 12) { setFieldError('Must be 12 digits.'); return; }
-      updates = { icNumber: draftIcNumber.trim() || undefined };
+      if (requiresIc && digits.length !== 12) err = 'Must be 12 digits (e.g. 012345-67-8910).';
+      else if (digits.length > 0 && digits.length !== 12) err = 'Must be 12 digits.';
+      else updates = { icNumber: draftIcNumber.trim() || undefined };
     } else if (field === 'matric') {
-      if (!draftMatric.trim()) { setFieldError('Matric number is required.'); return; }
-      updates = { matricNo: draftMatric.trim() };
+      if (!draftMatric.trim()) err = 'Matric number is required.';
+      else updates = { matricNo: draftMatric.trim() };
     } else if (field === 'phone') {
-      if (!draftPhone.trim()) { setFieldError('Mobile number is required.'); return; }
-      updates = { phone: draftPhone.trim() };
+      if (!draftPhone.trim()) err = 'Mobile number is required.';
+      else updates = { phone: draftPhone.trim() };
     } else if (field === 'email') {
-      if (!draftEmail.trim()) { setFieldError('Email is required.'); return; }
-      updates = { email: draftEmail.trim() };
+      if (!draftEmail.trim()) err = 'Email is required.';
+      else updates = { email: draftEmail.trim() };
     } else if (field === 'vehicle') {
       updates = { vehicle: draftVehicle.trim() };
     } else if (field === 'plate') {
       updates = { plateNumber: draftPlate.trim().toUpperCase() };
     }
-    setSavingField(true);
-    const { error } = await updateProfile(updates);
-    setSavingField(false);
-    if (error) { setFieldError(error); } else { setEditingField(null); }
+    if (err) { setFieldErrors(prev => ({ ...prev, [field]: err })); return; }
+    setFieldErrors(prev => ({ ...prev, [field]: '' }));
+    if (Object.keys(updates).length) await updateProfile(updates);
   };
 
   const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -288,31 +284,13 @@ export const Profile: React.FC = () => {
 
   /* ── MY PROFILE SUB-PAGE ── */
   if (profileView === 'edit') {
-
-    /* helper: renders the inline save/cancel row */
-    const FieldActions = ({ field }: { field: EditField }) => (
-      <div className="mt-3 flex items-center justify-between gap-2">
-        <span className="text-xs text-danger font-semibold flex-1">{fieldError}</span>
-        <div className="flex gap-2 shrink-0">
-          <button onClick={() => { setEditingField(null); setFieldError(''); }}
-            className="text-xs font-semibold text-slate-400 px-3 py-1.5 rounded-xl active:scale-95 transition">
-            Cancel
-          </button>
-          <button onClick={() => saveField(field)} disabled={savingField}
-            className="text-xs font-bold text-white bg-primary px-4 py-1.5 rounded-xl active:scale-95 transition disabled:bg-slate-200 disabled:text-slate-400 flex items-center gap-1">
-            {savingField ? <span className="w-3 h-3 rounded-full border-2 border-white border-t-transparent animate-spin" /> : 'Save'}
-          </button>
-        </div>
-      </div>
-    );
-
     return (
       <div className="flex-grow bg-white overflow-y-auto no-scrollbar animate-fade-in pb-8">
 
         {/* Sub-page header */}
         <div className="px-5 pt-5 pb-2 flex items-center gap-3">
           <button
-            onClick={() => { setEditingField(null); setFieldError(''); setProfileView('hub'); }}
+            onClick={() => setProfileView('hub')}
             className="w-9 h-9 flex items-center justify-center rounded-xl bg-slate-100 text-slate-700 active:scale-90 transition shrink-0"
           >
             <ChevronLeft className="w-5 h-5" />
@@ -390,158 +368,89 @@ export const Profile: React.FC = () => {
           </div>
 
           {/* Full Name */}
-          <div className={`border rounded-2xl px-4 py-3 transition ${editingField === 'name' ? 'border-primary' : 'border-slate-100'}`}>
-            <div className="flex items-start justify-between gap-2">
-              <div className="flex-1 min-w-0">
-                <span className="text-xs font-semibold text-slate-400 block">Full Name <span className="text-danger">*</span></span>
-                {editingField === 'name' ? (
-                  <input autoFocus value={draftName} onChange={e => setDraftName(e.target.value.replace(/\b\w/g, c => c.toUpperCase()))}
-                    className="mt-1 w-full bg-transparent text-sm font-normal text-slate-700 focus:outline-none"
-                    placeholder="Full name" />
-                ) : <span className="text-sm font-normal text-slate-700 mt-1 block">{user.name || '—'}</span>}
-              </div>
-              {editingField !== 'name' && (
-                <button onClick={() => openField('name')} className="shrink-0 pt-1 active:scale-90 transition">
-                  <ChevronRight className="w-4 h-4 text-slate-300" />
-                </button>
-              )}
-            </div>
-            {editingField === 'name' && <FieldActions field="name" />}
+          <div className="border border-slate-100 rounded-2xl px-4 py-3">
+            <span className="text-xs font-semibold text-slate-400 block">Full Name <span className="text-danger">*</span></span>
+            <input value={draftName}
+              onChange={e => setDraftName(e.target.value.replace(/\b\w/g, c => c.toUpperCase()))}
+              onBlur={() => autoSave('name')}
+              className="mt-1 w-full bg-transparent text-sm font-normal text-slate-700 focus:outline-none"
+              placeholder="Full name" />
+            {fieldErrors.name && <p className="text-xs text-danger font-semibold mt-1">{fieldErrors.name}</p>}
           </div>
 
           {/* I/C Number */}
-          <div className={`border rounded-2xl px-4 py-3 transition ${editingField === 'ic' ? 'border-primary' : 'border-slate-100'}`}>
-            <div className="flex items-start justify-between gap-2">
-              <div className="flex-1 min-w-0">
-                <span className="text-xs font-semibold text-slate-400 block">
-                  I/C Number {requiresIc && <span className="text-danger">*</span>}
-                </span>
-                {editingField === 'ic' ? (
-                  <input autoFocus value={draftIcNumber} onChange={e => setDraftIcNumber(formatIcNumber(e.target.value))}
-                    inputMode="numeric"
-                    className="mt-1 w-full bg-transparent text-sm font-normal text-slate-700 focus:outline-none font-mono"
-                    placeholder="e.g. 012345-67-8910" />
-                ) : (
-                  <span className="text-sm font-normal text-slate-700 mt-1 block font-mono">
-                    {user.icNumber || <span className="text-danger text-xs font-semibold not-italic">Not set — tap to update</span>}
-                  </span>
-                )}
-              </div>
-              {editingField !== 'ic' && (
-                <button onClick={() => openField('ic')} className="shrink-0 pt-1 active:scale-90 transition">
-                  <ChevronRight className="w-4 h-4 text-slate-300" />
-                </button>
-              )}
-            </div>
-            {editingField === 'ic' && <FieldActions field="ic" />}
+          <div className="border border-slate-100 rounded-2xl px-4 py-3">
+            <span className="text-xs font-semibold text-slate-400 block">
+              I/C Number {requiresIc && <span className="text-danger">*</span>}
+            </span>
+            <input value={draftIcNumber}
+              onChange={e => setDraftIcNumber(formatIcNumber(e.target.value))}
+              onBlur={() => autoSave('ic')}
+              inputMode="numeric"
+              className="mt-1 w-full bg-transparent text-sm font-normal text-slate-700 focus:outline-none font-mono"
+              placeholder="e.g. 012345-67-8910" />
+            {fieldErrors.ic && <p className="text-xs text-danger font-semibold mt-1">{fieldErrors.ic}</p>}
           </div>
 
           {/* Matric Number */}
-          <div className={`border rounded-2xl px-4 py-3 transition ${editingField === 'matric' ? 'border-primary' : 'border-slate-100'}`}>
-            <div className="flex items-start justify-between gap-2">
-              <div className="flex-1 min-w-0">
-                <span className="text-xs font-semibold text-slate-400 block">Matric Number <span className="text-danger">*</span></span>
-                {editingField === 'matric' ? (
-                  <input autoFocus value={draftMatric} onChange={e => setDraftMatric(e.target.value.toUpperCase())}
-                    className="mt-1 w-full bg-transparent text-sm font-normal text-slate-700 focus:outline-none"
-                    placeholder="Matric number" />
-                ) : <span className="text-sm font-normal text-slate-700 mt-1 block">{user.matricNo || '—'}</span>}
-              </div>
-              {editingField !== 'matric' && (
-                <button onClick={() => openField('matric')} className="shrink-0 pt-1 active:scale-90 transition">
-                  <ChevronRight className="w-4 h-4 text-slate-300" />
-                </button>
-              )}
-            </div>
-            {editingField === 'matric' && <FieldActions field="matric" />}
+          <div className="border border-slate-100 rounded-2xl px-4 py-3">
+            <span className="text-xs font-semibold text-slate-400 block">Matric Number <span className="text-danger">*</span></span>
+            <input value={draftMatric}
+              onChange={e => setDraftMatric(e.target.value.toUpperCase())}
+              onBlur={() => autoSave('matric')}
+              className="mt-1 w-full bg-transparent text-sm font-normal text-slate-700 focus:outline-none"
+              placeholder="Matric number" />
+            {fieldErrors.matric && <p className="text-xs text-danger font-semibold mt-1">{fieldErrors.matric}</p>}
           </div>
 
           {/* Mobile Number */}
-          <div className={`border rounded-2xl px-4 py-3 transition ${editingField === 'phone' ? 'border-primary' : 'border-slate-100'}`}>
-            <div className="flex items-start justify-between gap-2">
-              <div className="flex-1 min-w-0">
-                <span className="text-xs font-semibold text-slate-400 block">Mobile Number <span className="text-danger">*</span></span>
-                {editingField === 'phone' ? (
-                  <input autoFocus type="tel" value={draftPhone} onChange={e => setDraftPhone(formatPhone(e.target.value))}
-                    className="mt-1 w-full bg-transparent text-sm font-normal text-slate-700 focus:outline-none"
-                    placeholder="e.g. 012-34567890" />
-                ) : <span className="text-sm font-normal text-slate-700 mt-1 block">{user.phone || '—'}</span>}
-              </div>
-              {editingField !== 'phone' && (
-                <button onClick={() => openField('phone')} className="shrink-0 pt-1 active:scale-90 transition">
-                  <ChevronRight className="w-4 h-4 text-slate-300" />
-                </button>
-              )}
-            </div>
-            {editingField === 'phone' && <FieldActions field="phone" />}
+          <div className="border border-slate-100 rounded-2xl px-4 py-3">
+            <span className="text-xs font-semibold text-slate-400 block">Mobile Number <span className="text-danger">*</span></span>
+            <input type="tel" value={draftPhone}
+              onChange={e => setDraftPhone(formatPhone(e.target.value))}
+              onBlur={() => autoSave('phone')}
+              className="mt-1 w-full bg-transparent text-sm font-normal text-slate-700 focus:outline-none"
+              placeholder="e.g. 012-34567890" />
+            {fieldErrors.phone && <p className="text-xs text-danger font-semibold mt-1">{fieldErrors.phone}</p>}
           </div>
 
           {/* Email Address */}
-          <div className={`border rounded-2xl px-4 py-3 transition ${editingField === 'email' ? 'border-primary' : 'border-slate-100'}`}>
-            <div className="flex items-start justify-between gap-2">
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2">
-                  <span className="text-xs font-semibold text-slate-400">Email Address <span className="text-danger">*</span></span>
-                  <span className="flex items-center gap-0.5 bg-emerald-500 text-white text-[8px] font-semibold px-1.5 py-0.5 rounded-full shrink-0">
-                    <CheckCircle2 className="w-2.5 h-2.5" /> VERIFIED
-                  </span>
-                </div>
-                {editingField === 'email' ? (
-                  <input autoFocus type="email" value={draftEmail} onChange={e => setDraftEmail(e.target.value)}
-                    className="mt-1 w-full bg-transparent text-sm font-normal text-slate-700 focus:outline-none"
-                    placeholder="Email address" />
-                ) : <span className="text-sm font-normal text-slate-700 mt-1 block">{user.email || '—'}</span>}
-              </div>
-              {editingField !== 'email' && (
-                <button onClick={() => openField('email')} className="shrink-0 pt-1 active:scale-90 transition">
-                  <ChevronRight className="w-4 h-4 text-slate-300" />
-                </button>
-              )}
+          <div className="border border-slate-100 rounded-2xl px-4 py-3">
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-semibold text-slate-400">Email Address <span className="text-danger">*</span></span>
+              <span className="flex items-center gap-0.5 bg-emerald-500 text-white text-[8px] font-semibold px-1.5 py-0.5 rounded-full shrink-0">
+                <CheckCircle2 className="w-2.5 h-2.5" /> VERIFIED
+              </span>
             </div>
-            {editingField === 'email' && <FieldActions field="email" />}
+            <input type="email" value={draftEmail}
+              onChange={e => setDraftEmail(e.target.value)}
+              onBlur={() => autoSave('email')}
+              className="mt-1 w-full bg-transparent text-sm font-normal text-slate-700 focus:outline-none"
+              placeholder="Email address" />
+            {fieldErrors.email && <p className="text-xs text-danger font-semibold mt-1">{fieldErrors.email}</p>}
           </div>
 
           {/* ── Driver-only fields ── */}
           {isDriver && (
             <>
               {/* Car Type / Model */}
-              <div className={`border rounded-2xl px-4 py-3 transition ${editingField === 'vehicle' ? 'border-primary' : 'border-slate-100'}`}>
-                <div className="flex items-start justify-between gap-2">
-                  <div className="flex-1 min-w-0">
-                    <span className="text-xs font-semibold text-slate-400 flex items-center gap-1 block"><Car className="w-3 h-3" /> Car Type / Model</span>
-                    {editingField === 'vehicle' ? (
-                      <input autoFocus value={draftVehicle} onChange={e => setDraftVehicle(e.target.value)}
-                        className="mt-1 w-full bg-transparent text-sm font-normal text-slate-700 focus:outline-none"
-                        placeholder="e.g. Perodua Myvi 1.5" />
-                    ) : <span className="text-sm font-normal text-slate-700 mt-1 block">{user.vehicle || '—'}</span>}
-                  </div>
-                  {editingField !== 'vehicle' && (
-                    <button onClick={() => openField('vehicle')} className="shrink-0 pt-1 active:scale-90 transition">
-                      <ChevronRight className="w-4 h-4 text-slate-300" />
-                    </button>
-                  )}
-                </div>
-                {editingField === 'vehicle' && <FieldActions field="vehicle" />}
+              <div className="border border-slate-100 rounded-2xl px-4 py-3">
+                <span className="text-xs font-semibold text-slate-400 flex items-center gap-1 block"><Car className="w-3 h-3" /> Car Type / Model</span>
+                <input value={draftVehicle}
+                  onChange={e => setDraftVehicle(e.target.value)}
+                  onBlur={() => autoSave('vehicle')}
+                  className="mt-1 w-full bg-transparent text-sm font-normal text-slate-700 focus:outline-none"
+                  placeholder="e.g. Perodua Myvi 1.5" />
               </div>
 
               {/* Plate Number */}
-              <div className={`border rounded-2xl px-4 py-3 transition ${editingField === 'plate' ? 'border-primary' : 'border-slate-100'}`}>
-                <div className="flex items-start justify-between gap-2">
-                  <div className="flex-1 min-w-0">
-                    <span className="text-xs font-semibold text-slate-400 block">Plate Number</span>
-                    {editingField === 'plate' ? (
-                      <input autoFocus value={draftPlate} onChange={e => setDraftPlate(e.target.value.toUpperCase())}
-                        className="mt-1 w-full bg-transparent text-sm font-normal text-slate-700 focus:outline-none font-mono tracking-wider"
-                        placeholder="e.g. WMY 1234" />
-                    ) : <span className="text-sm font-normal text-slate-700 mt-1 block font-mono tracking-wider">{user.plateNumber || '—'}</span>}
-                  </div>
-                  {editingField !== 'plate' && (
-                    <button onClick={() => openField('plate')} className="shrink-0 pt-1 active:scale-90 transition">
-                      <ChevronRight className="w-4 h-4 text-slate-300" />
-                    </button>
-                  )}
-                </div>
-                {editingField === 'plate' && <FieldActions field="plate" />}
+              <div className="border border-slate-100 rounded-2xl px-4 py-3">
+                <span className="text-xs font-semibold text-slate-400 block">Plate Number</span>
+                <input value={draftPlate}
+                  onChange={e => setDraftPlate(e.target.value.toUpperCase())}
+                  onBlur={() => autoSave('plate')}
+                  className="mt-1 w-full bg-transparent text-sm font-normal text-slate-700 focus:outline-none font-mono tracking-wider"
+                  placeholder="e.g. WMY 1234" />
               </div>
 
               {/* Documents */}
@@ -821,7 +730,7 @@ export const Profile: React.FC = () => {
       <div className="px-5 mb-5">
         <p className="text-sm font-bold text-slate-700 mb-2">Account</p>
         <div className="flex flex-col gap-2">
-          <button onClick={() => setProfileView('edit')} className="w-full bg-white border border-slate-100 rounded-2xl flex items-center justify-between px-4 py-4 active:bg-slate-50 active:scale-[0.99] transition text-left">
+          <button onClick={initSubPage} className="w-full bg-white border border-slate-100 rounded-2xl flex items-center justify-between px-4 py-4 active:bg-slate-50 active:scale-[0.99] transition text-left">
             <div className="flex items-center gap-3">
               <div className="w-9 h-9 rounded-xl bg-slate-100 flex items-center justify-center shrink-0"><User className="w-4 h-4 text-slate-900" /></div>
               <span className="text-sm font-semibold text-slate-800">My Profile</span>
