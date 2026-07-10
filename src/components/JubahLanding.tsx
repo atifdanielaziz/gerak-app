@@ -150,15 +150,6 @@ export const JubahLanding: React.FC<Props> = ({ onProceed }) => {
           ))}
         </select>
 
-        {/* Track existing order */}
-        <button
-          type="button"
-          onClick={() => setCurrentPage('track-jubah')}
-          className="w-full flex items-center justify-center gap-2 bg-white border border-slate-100 text-slate-500 font-semibold text-xs py-3 rounded-xl active:scale-[0.98] active:bg-slate-50 transition"
-        >
-          <PackageSearch className="w-4 h-4" /> Track My Jubah Order
-        </button>
-
         {/* Banner area — dynamic height (Option A) */}
         <div className="w-full rounded-2xl overflow-hidden border border-slate-100 bg-slate-50 relative">
           {currentBanner && !hasBannerError ? (
@@ -185,6 +176,15 @@ export const JubahLanding: React.FC<Props> = ({ onProceed }) => {
         </div>
 
       </div>
+
+      {/* Track existing order — standalone ghost button */}
+      <button
+        type="button"
+        onClick={() => setCurrentPage('track-jubah')}
+        className="w-full flex items-center justify-center gap-2 text-slate-400 font-semibold text-xs py-1 active:scale-[0.98] active:text-slate-600 transition"
+      >
+        <PackageSearch className="w-4 h-4" /> Track My Jubah Order
+      </button>
 
       {/* Rider Directory Table */}
       {riderDir.length > 0 && (
