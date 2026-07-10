@@ -1,7 +1,7 @@
 ﻿import React, { useState, useEffect, useRef } from 'react';
 import { supabase } from '../lib/supabase';
 import { useApp } from '../context/AppContext';
-import { ChevronRight, Image as ImageIcon, X, Users } from 'lucide-react';
+import { ChevronRight, Image as ImageIcon, X, Users, PackageSearch } from 'lucide-react';
 import { WaIcon, toWa } from '../lib/whatsapp';
 
 type RiderDir = { id: string; name: string; drop_point: string | null; method: string | null; ic_number: string | null; phone: string | null };
@@ -36,7 +36,7 @@ interface Props {
 }
 
 export const JubahLanding: React.FC<Props> = ({ onProceed }) => {
-  const { setSheetOpen, user } = useApp();
+  const { setSheetOpen, user, setCurrentPage } = useApp();
   const isAdmin = user.role === 'admin' || user.role === 'superadmin';
 
   const [selectedKey, setSelectedKey]   = useState('');
@@ -149,6 +149,15 @@ export const JubahLanding: React.FC<Props> = ({ onProceed }) => {
             <option key={u.key} value={u.key}>{u.label}</option>
           ))}
         </select>
+
+        {/* Track existing order */}
+        <button
+          type="button"
+          onClick={() => setCurrentPage('track-jubah')}
+          className="w-full flex items-center justify-center gap-2 bg-white border border-slate-100 text-slate-500 font-semibold text-xs py-3 rounded-xl active:scale-[0.98] active:bg-slate-50 transition"
+        >
+          <PackageSearch className="w-4 h-4" /> Track My Jubah Order
+        </button>
 
         {/* Banner area — dynamic height (Option A) */}
         <div className="w-full rounded-2xl overflow-hidden border border-slate-100 bg-slate-50 relative">

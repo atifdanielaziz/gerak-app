@@ -1,5 +1,4 @@
 import React, { useState, useRef } from 'react';
-import { useApp } from '../context/AppContext';
 import { supabase } from '../lib/supabase';
 import { updateJubahBalanceProof } from '../lib/sheetsService';
 import { PackageSearch, Search, GraduationCap, Upload, FileText, X, Clock, CheckCircle2 } from 'lucide-react';
@@ -47,7 +46,6 @@ const STATUS_STYLE: Record<string, string> = {
 };
 
 export const TrackJubah: React.FC = () => {
-  const { setCurrentPage } = useApp();
   const [reference, setReference] = useState('');
   const [matric, setMatric]       = useState('');
   const [searching, setSearching] = useState(false);
@@ -379,13 +377,6 @@ export const TrackJubah: React.FC = () => {
         )
       )}
 
-      {/* Back to login */}
-      <button
-        onClick={() => setCurrentPage('login')}
-        className="text-xs text-slate-400 font-semibold hover:text-primary active:scale-95 transition text-center mt-2"
-      >
-        ← Back to Login
-      </button>
     </div>
   );
 };
