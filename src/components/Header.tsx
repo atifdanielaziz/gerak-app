@@ -21,13 +21,12 @@ export const Header: React.FC = () => {
   const [tempUni, setTempUni] = useState('');
   const unreadCount = notifications.filter(n => !n.isRead).length;
 
-  if (currentPage === 'splash' || currentPage === 'login' || currentPage === 'register' || currentPage === 'forgot-password' || currentPage === 'reset-password') {
+  if (currentPage === 'splash' || currentPage === 'login' || currentPage === 'register' || currentPage === 'forgot-password' || currentPage === 'reset-password' || currentPage === 'profile') {
     return null;
   }
 
   // Guest mode OR admin customer-preview — same header
   if (!user.isLoggedIn || isPreviewMode) {
-    if (currentPage === 'profile') return null;
     const openSheet = () => { setSheetStep('university'); setTempUni(''); setShowCampusSheet(true); };
     const closeSheet = () => { setShowCampusSheet(false); setSheetStep('university'); setTempUni(''); };
     const selectUni = (uni: string) => { setTempUni(uni); setSheetStep('campus'); };

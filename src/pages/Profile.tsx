@@ -331,10 +331,10 @@ export const Profile: React.FC = () => {
         )}
 
         {/* ── PROFILE FIELDS ── */}
-        <div className="px-5 mt-2">
+        <div className="px-5 mt-4 flex flex-col gap-3">
 
           {/* Gerak ID */}
-          <div className="flex items-center justify-between py-4 border-b border-slate-100">
+          <div className="border border-slate-100 rounded-2xl px-4 py-3 flex items-center justify-between">
             <div className="flex-1 min-w-0 pr-3">
               <span className="text-xs font-semibold text-slate-400 block">Gerak ID</span>
               <span className="text-sm font-normal text-slate-700 mt-1 block">{user.gerakId || '—'}</span>
@@ -342,7 +342,7 @@ export const Profile: React.FC = () => {
           </div>
 
           {/* Full Name */}
-          <div className="flex items-center justify-between py-4 border-b border-slate-100">
+          <div className="border border-slate-100 rounded-2xl px-4 py-3 flex items-center justify-between">
             <div className="flex-1 min-w-0 pr-3">
               <span className="text-xs font-semibold text-slate-400 block">
                 Full Name <span className="text-danger">*</span>
@@ -357,7 +357,7 @@ export const Profile: React.FC = () => {
           </div>
 
           {/* Matric Number */}
-          <div className="flex items-center justify-between py-4 border-b border-slate-100">
+          <div className="border border-slate-100 rounded-2xl px-4 py-3 flex items-center justify-between">
             <div className="flex-1 min-w-0 pr-3">
               <span className="text-xs font-semibold text-slate-400 block">
                 Matric Number <span className="text-danger">*</span>
@@ -372,7 +372,7 @@ export const Profile: React.FC = () => {
           </div>
 
           {/* Mobile Number */}
-          <div className="flex items-center justify-between py-4 border-b border-slate-100">
+          <div className="border border-slate-100 rounded-2xl px-4 py-3 flex items-center justify-between">
             <div className="flex-1 min-w-0 pr-3">
               <span className="text-xs font-semibold text-slate-400 block">
                 Mobile Number <span className="text-danger">*</span>
@@ -387,7 +387,7 @@ export const Profile: React.FC = () => {
           </div>
 
           {/* Email Address */}
-          <div className="flex items-center justify-between py-4 border-b border-slate-100">
+          <div className="border border-slate-100 rounded-2xl px-4 py-3 flex items-center justify-between">
             <div className="flex-1 min-w-0 pr-3">
               <div className="flex items-center gap-2">
                 <span className="text-xs font-semibold text-slate-400">
@@ -408,7 +408,7 @@ export const Profile: React.FC = () => {
 
           {/* IC Number */}
           {requiresIc && (
-            <div className="flex items-center justify-between py-4 border-b border-slate-100">
+            <div className="border border-slate-100 rounded-2xl px-4 py-3 flex items-center justify-between">
               <div className="flex-1 min-w-0 pr-3">
                 <span className="text-xs font-semibold text-slate-400 block">
                   IC Number <span className="text-danger">*</span>
@@ -434,7 +434,7 @@ export const Profile: React.FC = () => {
           {isDriver && (
             <>
               {/* Car Type / Model */}
-              <div className="flex items-center justify-between py-4 border-b border-slate-100">
+              <div className="border border-slate-100 rounded-2xl px-4 py-3 flex items-center justify-between">
                 <div className="flex-1 min-w-0 pr-3">
                   <span className="text-xs font-semibold text-slate-400 flex items-center gap-1 block">
                     <Car className="w-3 h-3" /> Car Type / Model
@@ -449,7 +449,7 @@ export const Profile: React.FC = () => {
               </div>
 
               {/* Plate Number */}
-              <div className="flex items-center justify-between py-4 border-b border-slate-100">
+              <div className="border border-slate-100 rounded-2xl px-4 py-3 flex items-center justify-between">
                 <div className="flex-1 min-w-0 pr-3">
                   <span className="text-xs font-semibold text-slate-400 block">Plate Number</span>
                   {editMode ? (
@@ -462,7 +462,7 @@ export const Profile: React.FC = () => {
               </div>
 
               {/* Documents */}
-              <div className="py-4 border-b border-slate-100 flex flex-col gap-4">
+              <div className="border border-slate-100 rounded-2xl px-4 py-3 flex flex-col gap-4">
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-semibold text-slate-400 flex items-center gap-1">
                     <ShieldCheck className="w-3 h-3" /> Documents
@@ -541,14 +541,14 @@ export const Profile: React.FC = () => {
 
               {/* Monthly Fee Receipt */}
               {!docsApproved ? (
-                <div className="flex items-center gap-3 py-4 border-b border-slate-100">
+                <div className="border border-slate-100 rounded-2xl px-4 py-3 flex items-center gap-3">
                   <ShieldOff className="w-4 h-4 text-slate-300 shrink-0" />
                   <p className="text-xs text-slate-400 font-semibold leading-relaxed">
                     Monthly fee activation is available after your documents are verified by admin.
                   </p>
                 </div>
               ) : (
-                <div className="flex items-start justify-between py-4 border-b border-slate-100">
+                <div className="border border-slate-100 rounded-2xl px-4 py-3 flex items-start justify-between">
                   <div className="flex-1 min-w-0 pr-3">
                     <span className="text-xs font-semibold text-slate-400 flex items-center gap-1 block">
                       <FileImage className="w-3 h-3" /> Monthly Fee Receipt
@@ -691,8 +691,8 @@ export const Profile: React.FC = () => {
   return (
     <div className="flex-grow bg-white overflow-y-auto no-scrollbar animate-fade-in pb-8">
 
-      {/* Logout icon */}
-      <div className="flex justify-end px-5 pt-5">
+      {/* Logout icon — mirrors guest headset position */}
+      <div className="flex justify-end px-5 pt-4">
         <button
           onClick={() => showConfirmModal({ title: 'Logout', message: 'Are you sure you want to logout?', onConfirm: logout })}
           className="w-9 h-9 flex items-center justify-center rounded-xl bg-slate-100 text-slate-700 active:scale-90 transition"
@@ -701,8 +701,16 @@ export const Profile: React.FC = () => {
         </button>
       </div>
 
+      {/* Gerak wordmark — mirrors guest page exactly */}
+      <div className="flex flex-col items-center text-center px-6 pt-3 pb-4">
+        <h1 className="m-0 leading-none" style={{ fontFamily: 'Inter, sans-serif', fontSize: '2.8rem', fontWeight: 900, color: '#0F172A' }}>
+          ger<span style={{ color: '#EF4444' }}>a</span>k
+        </h1>
+        <p className="text-slate-400 text-xs mt-2 font-normal">Smart University Service Platform</p>
+      </div>
+
       {/* Avatar + Name + Gerak ID */}
-      <div className="flex flex-col items-center px-6 pt-2 pb-8">
+      <div className="flex flex-col items-center px-6 pb-6">
         <div className="w-20 h-20 rounded-full bg-slate-900 flex items-center justify-center mb-4">
           <span style={{ fontFamily: 'Inter, sans-serif', fontSize: '2rem', fontWeight: 900, color: '#FFFFFF' }}>
             {initial}
@@ -763,34 +771,68 @@ export const Profile: React.FC = () => {
         </div>
       </div>
 
-      {/* Support section */}
-      <div className="px-5">
+      {/* Preferences */}
+      <div className="px-5 mb-4">
+        <p className="text-xs font-semibold text-slate-400 pl-1 mb-1">Preferences</p>
         <div className="bg-white border border-slate-100 rounded-3xl overflow-hidden">
-          <button
-            onClick={() => alert('Campus Information Guide: gerak connects robe booking portals and shuttle systems.')}
-            className="w-full flex items-center justify-between px-4 py-4 active:bg-slate-50 active:scale-[0.99] transition text-left cursor-pointer"
-          >
-            <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-xl bg-slate-100 flex items-center justify-center shrink-0">
-                <HelpCircle className="w-4 h-4 text-slate-900" />
-              </div>
-              <span className="text-sm font-semibold text-slate-800">Help &amp; User Guide</span>
-            </div>
-            <ChevronRight className="w-4 h-4 text-slate-300" />
-          </button>
-          <div className="border-t border-slate-100" />
-          <button
-            onClick={() => alert('Simulated Terms of Campus Services')}
-            className="w-full flex items-center justify-between px-4 py-4 active:bg-slate-50 active:scale-[0.99] transition text-left cursor-pointer"
-          >
-            <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-xl bg-slate-100 flex items-center justify-center shrink-0">
-                <Heart className="w-4 h-4 text-slate-900" />
-              </div>
-              <span className="text-sm font-semibold text-slate-800">Privacy &amp; Terms</span>
-            </div>
-            <ChevronRight className="w-4 h-4 text-slate-300" />
-          </button>
+          {([{ icon: Languages, label: 'Language' }, { icon: Moon, label: 'Appearance' }] as { icon: React.ElementType; label: string }[]).map(({ icon: Icon, label }, i, arr) => (
+            <React.Fragment key={label}>
+              <button className="w-full flex items-center justify-between px-4 py-4 active:bg-slate-50 active:scale-[0.99] transition text-left cursor-pointer">
+                <div className="flex items-center gap-3">
+                  <div className="w-9 h-9 rounded-xl bg-slate-100 flex items-center justify-center shrink-0"><Icon className="w-4 h-4 text-slate-900" /></div>
+                  <span className="text-sm font-semibold text-slate-800">{label}</span>
+                </div>
+                <ChevronRight className="w-4 h-4 text-slate-300" />
+              </button>
+              {i < arr.length - 1 && <div className="border-t border-slate-100" />}
+            </React.Fragment>
+          ))}
+        </div>
+      </div>
+
+      {/* Support */}
+      <div className="px-5 mb-4">
+        <p className="text-xs font-semibold text-slate-400 pl-1 mb-1">Support</p>
+        <div className="bg-white border border-slate-100 rounded-3xl overflow-hidden">
+          {([
+            { icon: HelpCircle, label: 'Help Center' },
+            { icon: FileText, label: 'Terms & Conditions' },
+            { icon: Lock, label: 'Privacy Policy' },
+          ] as { icon: React.ElementType; label: string }[]).map(({ icon: Icon, label }, i, arr) => (
+            <React.Fragment key={label}>
+              <button className="w-full flex items-center justify-between px-4 py-4 active:bg-slate-50 active:scale-[0.99] transition text-left cursor-pointer">
+                <div className="flex items-center gap-3">
+                  <div className="w-9 h-9 rounded-xl bg-slate-100 flex items-center justify-center shrink-0"><Icon className="w-4 h-4 text-slate-900" /></div>
+                  <span className="text-sm font-semibold text-slate-800">{label}</span>
+                </div>
+                <ChevronRight className="w-4 h-4 text-slate-300" />
+              </button>
+              {i < arr.length - 1 && <div className="border-t border-slate-100" />}
+            </React.Fragment>
+          ))}
+        </div>
+      </div>
+
+      {/* Others */}
+      <div className="px-5">
+        <p className="text-xs font-semibold text-slate-400 pl-1 mb-1">Others</p>
+        <div className="bg-white border border-slate-100 rounded-3xl overflow-hidden">
+          {([
+            { icon: Info, label: 'About Gerak' },
+            { icon: Star, label: 'Rate App' },
+            { icon: Share2, label: 'Share App' },
+          ] as { icon: React.ElementType; label: string }[]).map(({ icon: Icon, label }, i, arr) => (
+            <React.Fragment key={label}>
+              <button className="w-full flex items-center justify-between px-4 py-4 active:bg-slate-50 active:scale-[0.99] transition text-left cursor-pointer">
+                <div className="flex items-center gap-3">
+                  <div className="w-9 h-9 rounded-xl bg-slate-100 flex items-center justify-center shrink-0"><Icon className="w-4 h-4 text-slate-900" /></div>
+                  <span className="text-sm font-semibold text-slate-800">{label}</span>
+                </div>
+                <ChevronRight className="w-4 h-4 text-slate-300" />
+              </button>
+              {i < arr.length - 1 && <div className="border-t border-slate-100" />}
+            </React.Fragment>
+          ))}
         </div>
       </div>
     </div>
