@@ -191,7 +191,7 @@ export const Header: React.FC = () => {
         className="sticky top-0 z-40 bg-white px-4 py-3 flex items-center justify-between"
         style={{ paddingTop: 'calc(1rem + env(safe-area-inset-top))' }}
       >
-        {/* Left: Back button + Branding */}
+        {/* Left: Back button + Campus name (read-only) */}
         <div className="flex items-center gap-1">
           {canGoBack && (
             <button
@@ -202,22 +202,11 @@ export const Header: React.FC = () => {
               <ChevronLeft className="w-5 h-5" />
             </button>
           )}
-          <div
-            className="flex items-center gap-2 cursor-pointer transition active:scale-95"
-            onClick={() => {
-              if (activeRole === 'driver') setCurrentPage('driver-home');
-              else if (activeRole === 'admin') setCurrentPage('admin-home');
-              else if (user.role === 'driver') setCurrentPage('driver-home');
-              else if (user.role === 'admin' || user.role === 'superadmin') setCurrentPage('admin-home');
-              else setCurrentPage('dashboard');
-            }}
-          >
-            <div className="w-8 h-8 rounded-lg bg-white shadow-sm border border-slate-100 flex items-center justify-center shrink-0">
-              <span style={{ fontFamily: 'Inter, sans-serif', fontSize: '1.3rem', color: '#0F172A', lineHeight: 1, fontWeight: 900 }}>g</span>
-            </div>
-            <h1 className="text-lg tracking-tight text-slate-800 m-0 leading-none" style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700 }}>
-              ger<span style={{ color: '#EF4444' }}>a</span>k
-            </h1>
+          <div className="flex items-center gap-1.5">
+            <MapPin className="w-4 h-4 text-slate-500 shrink-0" />
+            <span className="text-sm font-semibold text-slate-800 max-w-[200px] truncate">
+              {user.campus ? `${user.university} ${user.campus}`.trim() : 'Campus'}
+            </span>
           </div>
         </div>
 
