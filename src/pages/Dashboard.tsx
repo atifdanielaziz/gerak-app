@@ -230,10 +230,8 @@ export const Dashboard: React.FC = () => {
           onClick={() => setCurrentPage('transport')}
           className="bg-white border border-slate-100 rounded-3xl p-5 flex items-center justify-between cursor-pointer active:scale-[0.99] active:bg-slate-50 transition duration-200"
         >
-          <div className="flex items-center gap-4">
-            <div className="w-12 h-12 rounded-2xl bg-slate-100 text-slate-900 flex items-center justify-center">
-              <Car className="w-6 h-6" />
-            </div>
+          <div className="flex items-center gap-3">
+            <Car className="w-5 h-5 text-slate-400 shrink-0" />
             <div>
               <h4 className="text-base font-semibold text-slate-800 m-0 leading-tight">Gerak Car</h4>
               <p className="text-xs text-slate-400 font-normal mt-0.5">
@@ -251,10 +249,8 @@ export const Dashboard: React.FC = () => {
             jubahActive ? 'cursor-pointer active:scale-[0.99] active:bg-slate-50' : 'opacity-40 cursor-not-allowed'
           }`}
         >
-          <div className="flex items-center gap-4">
-            <div className="w-12 h-12 rounded-2xl bg-slate-100 text-slate-900 flex items-center justify-center">
-              <GraduationCap className="w-6 h-6" />
-            </div>
+          <div className="flex items-center gap-3">
+            <GraduationCap className="w-5 h-5 text-slate-400 shrink-0" />
             <div>
               <div className="flex items-center gap-2">
                 <h4 className="text-base font-semibold text-slate-800 m-0 leading-tight">Jubah Delivery</h4>
@@ -270,10 +266,8 @@ export const Dashboard: React.FC = () => {
 
         {/* C. Gerak Daily Module */}
         <div className="bg-white border border-slate-100 rounded-3xl p-5 flex items-center justify-between opacity-40 cursor-not-allowed">
-          <div className="flex items-center gap-4">
-            <div className="w-12 h-12 rounded-2xl bg-slate-100 text-slate-900 flex items-center justify-center">
-              <ShoppingBasket className="w-6 h-6" />
-            </div>
+          <div className="flex items-center gap-3">
+            <ShoppingBasket className="w-5 h-5 text-slate-400 shrink-0" />
             <div>
               <h4 className="text-base font-semibold text-slate-800 m-0 leading-tight">Gerak Daily</h4>
               <p className="text-xs text-slate-400 font-normal mt-0.5">
@@ -289,10 +283,8 @@ export const Dashboard: React.FC = () => {
           onClick={() => setCurrentPage('gerak-rental')}
           className="bg-white border border-slate-100 rounded-3xl p-5 flex items-center justify-between cursor-pointer active:scale-[0.99] active:bg-slate-50 transition duration-200"
         >
-          <div className="flex items-center gap-4">
-            <div className="w-12 h-12 rounded-2xl bg-slate-100 text-slate-900 flex items-center justify-center">
-              <KeyRound className="w-6 h-6" />
-            </div>
+          <div className="flex items-center gap-3">
+            <KeyRound className="w-5 h-5 text-slate-400 shrink-0" />
             <div>
               <h4 className="text-base font-semibold text-slate-800 m-0 leading-tight">Gerak Rental</h4>
               <p className="text-xs text-slate-400 font-normal mt-0.5">
@@ -308,10 +300,8 @@ export const Dashboard: React.FC = () => {
           onClick={() => setCurrentPage('gerak-transporter')}
           className="bg-white border border-slate-100 rounded-3xl p-5 flex items-center justify-between cursor-pointer active:scale-[0.99] active:bg-slate-50 transition duration-200"
         >
-          <div className="flex items-center gap-4">
-            <div className="w-12 h-12 rounded-2xl bg-slate-100 text-slate-900 flex items-center justify-center">
-              <Truck className="w-6 h-6" />
-            </div>
+          <div className="flex items-center gap-3">
+            <Truck className="w-5 h-5 text-slate-400 shrink-0" />
             <div>
               <h4 className="text-base font-semibold text-slate-800 m-0 leading-tight">Gerak Transporter</h4>
               <p className="text-xs text-slate-400 font-normal mt-0.5">
