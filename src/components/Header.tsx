@@ -1,6 +1,6 @@
 ﻿import React, { useState } from 'react';
 import { useApp } from '../context/AppContext';
-import { Bell, ChevronLeft, ShieldCheck, Car, Bike, MoreHorizontal, Eye, ChevronDown, X, MapPin } from 'lucide-react';
+import { Bell, ChevronLeft, ShieldCheck, Car, Bike, MoreHorizontal, Eye, ChevronDown, X, MapPin, LogIn } from 'lucide-react';
 
 const UNI_CAMPUSES: Record<string, string[]> = {
   'UMPSA': ['Pekan', 'Gambang'],
@@ -25,8 +25,44 @@ export const Header: React.FC = () => {
     return null;
   }
 
-  // Guest mode OR admin customer-preview — same header
-  if (!user.isLoggedIn || isPreviewMode) {
+  // Guest (not logged in) — Sign in button only
+  if (!user.isLoggedIn) {
+    return (
+      <header
+        className="sticky top-0 z-40 bg-white px-4 py-3 flex items-center justify-between"
+        style={{ paddingTop: 'calc(1rem + env(safe-area-inset-top))' }}
+      >
+        <div className="flex items-center gap-1">
+          {canGoBack && (
+            <button
+              onClick={goBack}
+              className="w-10 h-10 flex items-center justify-center rounded-xl hover:bg-slate-100 active:scale-90 transition text-slate-600 mr-0.5"
+              aria-label="Go back"
+            >
+              <ChevronLeft className="w-5 h-5" />
+            </button>
+          )}
+          <button
+            onClick={() => setCurrentPage('login')}
+            className="flex items-center gap-1.5 active:opacity-70 transition active:scale-95"
+          >
+            <LogIn className="w-4 h-4 text-slate-600 shrink-0" />
+            <span className="text-sm font-semibold text-slate-800">Sign in</span>
+          </button>
+        </div>
+        <button
+          onClick={() => showAuthGate()}
+          className="relative p-2.5 text-slate-600 rounded-full hover:bg-slate-50 active:scale-90 transition"
+          aria-label="Notifications"
+        >
+          <Bell className="w-5 h-5" />
+        </button>
+      </header>
+    );
+  }
+
+  // Admin customer-preview mode — campus selector so admin can test different campuses
+  if (isPreviewMode) {
     const openSheet = () => { setSheetStep('university'); setTempUni(''); setShowCampusSheet(true); };
     const closeSheet = () => { setShowCampusSheet(false); setSheetStep('university'); setTempUni(''); };
     const selectUni = (uni: string) => { setTempUni(uni); setSheetStep('campus'); };
@@ -38,7 +74,6 @@ export const Header: React.FC = () => {
           className="sticky top-0 z-40 bg-white px-4 py-3 flex items-center justify-between"
           style={{ paddingTop: 'calc(1rem + env(safe-area-inset-top))' }}
         >
-          {/* Campus selector — plain, no pill */}
           <div className="flex items-center gap-1">
             {canGoBack && (
               <button

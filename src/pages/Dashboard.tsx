@@ -1,7 +1,7 @@
 ﻿import React, { useState, useEffect, useRef } from 'react';
 import { useApp } from '../context/AppContext';
 import { supabase } from '../lib/supabase';
-import { Car, GraduationCap, ArrowRight, ChevronRight, Sparkles, KeyRound, ShoppingBasket, Truck } from 'lucide-react';
+import { Car, GraduationCap, ArrowRight, ChevronRight, ShieldCheck, KeyRound, ShoppingBasket, Truck } from 'lucide-react';
 
 const toTitleCase = (str: string) =>
   str.toLowerCase().replace(/\b\w/g, c => c.toUpperCase());
@@ -111,41 +111,46 @@ export const Dashboard: React.FC = () => {
       {/* Greeting + Active Ride + Carousel */}
       <div className="px-4">
 
-      {/* 1. Student Greeting Panel */}
-      <div className="mt-4 mb-4 bg-gradient-to-r from-red-700 to-red-500 text-white rounded-3xl p-5 relative overflow-hidden">
-        {/* Abstract background shapes */}
-        <div className="absolute -right-6 -bottom-6 w-32 h-32 bg-white/10 rounded-full blur-xl pointer-events-none" />
-        <div className="absolute right-12 -top-12 w-20 h-20 bg-white/10 rounded-full blur-lg pointer-events-none" />
-        
-        <div className="flex items-center justify-between mb-3 relative z-10">
-          <div className="flex items-center gap-1 bg-white/10 backdrop-blur-xs border border-white/20 rounded-full px-2.5 py-0.5 text-xs font-semibold">
-            <Sparkles className="w-2.5 h-2.5 text-amber-300 animate-spin" />
-            Verified Campus Account
-          </div>
-          <span className="text-xs text-white/70 font-normal">{user.matricNo}</span>
-        </div>
-
-        <h2 className="text-xl font-bold font-heading m-0 leading-none">
-          Hello, {toTitleCase(user.name).split(' ')[0]}!
-        </h2>
-        <p className="text-xs text-white/80 font-normal mt-1 mb-3">
-          Where would you like to gerak today?
-        </p>
-
+      {/* 1. Hero Panel */}
+      <div className="mt-4 mb-4 bg-white border border-slate-100 rounded-3xl p-5">
+        {user.isLoggedIn ? (
+          <>
+            <div className="flex items-center justify-between mb-2">
+              <span className="flex items-center gap-1.5 text-xs font-normal text-emerald-600">
+                <ShieldCheck className="w-3.5 h-3.5 shrink-0" />
+                Verified Campus Account
+              </span>
+              <span className="text-xs text-slate-400 font-normal">{user.matricNo}</span>
+            </div>
+            <h2 className="text-xl font-bold text-slate-800 m-0 leading-tight">
+              Hello, {toTitleCase(user.name).split(' ')[0]}!
+            </h2>
+            <p className="text-xs text-slate-400 font-normal mt-1">
+              Smart {user.university || 'University'} Service Platform
+            </p>
+          </>
+        ) : (
+          <>
+            <p style={{ fontFamily: 'Inter, sans-serif', fontWeight: 300, fontSize: '1.5rem', color: '#0F172A', lineHeight: 1 }}>
+              ger<span style={{ color: '#EF4444' }}>a</span>k
+            </p>
+            <p className="text-xs text-slate-400 font-normal mt-2">Smart University Service Platform</p>
+          </>
+        )}
       </div>
 
       {/* 2. Floating Tickers for Active Tasks */}
       {(activeRide !== null && activeRide.status !== 'completed') && (
         <div 
           onClick={() => setCurrentPage('transport')}
-          className="mb-4 bg-blue-50 border border-blue-100 active:bg-blue-100/50 rounded-2xl p-3 flex items-center justify-between cursor-pointer animate-pulse-glow active:scale-[0.99] transition"
+          className="mb-4 bg-white border border-primary/20 active:bg-primary/5 rounded-2xl p-3 flex items-center justify-between cursor-pointer animate-pulse-glow active:scale-[0.99] transition"
         >
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-blue-500 text-white flex items-center justify-center">
-              <Car className="w-5 h-5 animate-bounce" />
+            <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
+              <Car className="w-5 h-5 text-primary animate-bounce" />
             </div>
             <div>
-              <div className="text-xs text-blue-600 font-semibold">Active Shuttle Booking</div>
+              <div className="text-xs text-primary font-semibold">Active Shuttle Booking</div>
               <div className="text-xs font-semibold text-slate-800">
                 {activeRide.status === 'searching' && 'Searching for Driver'}
                 {activeRide.status === 'assigned' && 'Driver Assigned'}
@@ -154,13 +159,13 @@ export const Dashboard: React.FC = () => {
               </div>
             </div>
           </div>
-          <ArrowRight className="w-4 h-4 text-blue-500" />
+          <ArrowRight className="w-4 h-4 text-primary" />
         </div>
       )}
 
       {/* 3. Promo Banner Carousel */}
       <div
-        className="mb-6 relative overflow-hidden rounded-3xl"
+        className="mb-6 relative overflow-hidden rounded-3xl border border-slate-100"
         style={{ height: 148 }}
         onTouchStart={onTouchStart}
         onTouchEnd={onTouchEnd}
@@ -168,31 +173,31 @@ export const Dashboard: React.FC = () => {
         {banners.map((ban, idx) => (
           <div
             key={idx}
-            className={`absolute inset-0 bg-gradient-to-br ${ban.gradient} p-4 text-white flex flex-col justify-between transition-all duration-500 ${
+            className={`absolute inset-0 bg-white p-4 flex flex-col justify-between transition-all duration-500 ${
               idx === activeBanner ? 'opacity-100 translate-x-0' : 'opacity-0 translate-x-full pointer-events-none'
             }`}
           >
             {/* Decorative emoji blob */}
-            <div className="absolute -right-4 -top-4 text-7xl opacity-20 select-none pointer-events-none">
+            <div className="absolute -right-4 -top-4 text-7xl opacity-[0.06] select-none pointer-events-none text-slate-900">
               {ban.emoji}
             </div>
 
             {/* Tag */}
-            <span className="self-start bg-white/20 border border-white/25 rounded-full px-2.5 py-0.5 text-xs font-semibold">
+            <span className="self-start bg-slate-100 text-slate-500 rounded-xl px-2.5 py-0.5 text-xs font-semibold">
               {ban.tag}
             </span>
 
             {/* Content + CTA */}
             <div className="flex items-end justify-between gap-3">
               <div className="flex-1 min-w-0">
-                <h4 className="text-base font-bold leading-tight m-0">{ban.title}</h4>
-                <p className="text-xs text-white/80 font-normal leading-snug mt-1 line-clamp-2">
+                <h4 className="text-sm font-semibold text-slate-800 leading-tight m-0">{ban.title}</h4>
+                <p className="text-xs text-slate-400 font-normal leading-snug mt-1 line-clamp-2">
                   {ban.subtitle}
                 </p>
               </div>
               <button
                 onClick={() => setCurrentPage(ban.page)}
-                className="shrink-0 bg-white/20 active:bg-white/30 border border-white/30 rounded-xl px-3 py-2 text-xs font-semibold whitespace-nowrap active:scale-95 transition flex items-center gap-1"
+                className="shrink-0 bg-primary text-white rounded-xl px-3 py-2 text-xs font-semibold whitespace-nowrap active:scale-95 transition flex items-center gap-1"
               >
                 {ban.cta} <ArrowRight className="w-3 h-3" />
               </button>
@@ -200,14 +205,14 @@ export const Dashboard: React.FC = () => {
           </div>
         ))}
 
-        {/* Dot indicators — clickable */}
+        {/* Dot indicators */}
         <div className="absolute bottom-3 left-4 flex gap-1.5 z-10">
           {banners.map((_, idx) => (
             <button
               key={idx}
               onClick={() => setActiveBanner(idx)}
               className={`h-1.5 rounded-full transition-all duration-300 ${
-                idx === activeBanner ? 'w-5 bg-white' : 'w-1.5 bg-white/40'
+                idx === activeBanner ? 'w-5 bg-primary' : 'w-1.5 bg-slate-200'
               }`}
             />
           ))}
