@@ -116,11 +116,21 @@ export const Transport: React.FC = () => {
     return () => document.removeEventListener('mousedown', handler);
   }, []);
 
+  // Sync date/time to "now" whenever user picks "Now"
+  useEffect(() => {
+    if (bookWhen !== 'now') return;
+    const now = new Date();
+    setDate(now.toISOString().slice(0, 10));
+    const rounded = new Date(Math.ceil(now.getTime() / (15 * 60000)) * (15 * 60000));
+    setTime(`${String(rounded.getHours()).padStart(2, '0')}:${String(rounded.getMinutes()).padStart(2, '0')}`);
+  }, [bookWhen]);
+
   // Map-pin state
   const [pickupPin,  setPickupPin]  = useState<PinLocation | null>(null);
   const [destPin,    setDestPin]    = useState<PinLocation | null>(null);
 
   // Order form
+  const [bookWhen,   setBookWhen]   = useState<'now' | 'later'>('now');
   const [date,       setDate]       = useState(() => {
     const now = new Date();
     return now.toISOString().slice(0, 10); // yyyy-MM-dd
@@ -603,6 +613,26 @@ export const Transport: React.FC = () => {
             <CalendarDays className="w-4 h-4 text-slate-400" /> Order Details
           </h3>
 
+          {/* Now / Later toggle — Mode Selector Standard */}
+          <div className="flex gap-2">
+            <button type="button" onClick={() => setBookWhen('now')}
+              className={`flex-1 flex items-center gap-2 p-3 rounded-2xl border transition-colors active:scale-[0.98] ${
+                bookWhen === 'now' ? 'border-primary/30 bg-primary/5' : 'border-slate-100 bg-white'
+              }`}
+            >
+              <Clock className={`w-4 h-4 shrink-0 ${bookWhen === 'now' ? 'text-primary' : 'text-slate-400'}`} />
+              <span className={`text-xs font-semibold ${bookWhen === 'now' ? 'text-primary' : 'text-slate-600'}`}>Now</span>
+            </button>
+            <button type="button" onClick={() => setBookWhen('later')}
+              className={`flex-1 flex items-center gap-2 p-3 rounded-2xl border transition-colors active:scale-[0.98] ${
+                bookWhen === 'later' ? 'border-primary/30 bg-primary/5' : 'border-slate-100 bg-white'
+              }`}
+            >
+              <CalendarDays className={`w-4 h-4 shrink-0 ${bookWhen === 'later' ? 'text-primary' : 'text-slate-400'}`} />
+              <span className={`text-xs font-semibold ${bookWhen === 'later' ? 'text-primary' : 'text-slate-600'}`}>Later</span>
+            </button>
+          </div>
+
           {/* Date + Time — overlay trick: display div at 12px, real input invisible on top */}
           <div className="grid grid-cols-2 gap-2">
             <div className="flex flex-col gap-0.5">
@@ -614,11 +644,13 @@ export const Transport: React.FC = () => {
                   </span>
                   <CalendarDays className="w-3 h-3 text-slate-400 shrink-0" />
                 </div>
-                <input type="date" required value={date}
-                  min={new Date().toISOString().split('T')[0]}
-                  onChange={e => setDate(e.target.value)}
-                  className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                  style={{ fontSize: '16px' }} />
+                {bookWhen === 'later' && (
+                  <input type="date" required value={date}
+                    min={new Date().toISOString().split('T')[0]}
+                    onChange={e => setDate(e.target.value)}
+                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                    style={{ fontSize: '16px' }} />
+                )}
               </div>
             </div>
             <div className="flex flex-col gap-0.5">
@@ -635,10 +667,12 @@ export const Transport: React.FC = () => {
                   </span>
                   <Clock className="w-3 h-3 text-slate-400 shrink-0" />
                 </div>
-                <input type="time" required value={time}
-                  onChange={e => setTime(e.target.value)}
-                  className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                  style={{ fontSize: '16px' }} />
+                {bookWhen === 'later' && (
+                  <input type="time" required value={time}
+                    onChange={e => setTime(e.target.value)}
+                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                    style={{ fontSize: '16px' }} />
+                )}
               </div>
             </div>
           </div>

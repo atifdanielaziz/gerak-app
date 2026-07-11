@@ -1,25 +1,34 @@
-﻿import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import maplibregl from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import { LocateFixed, Search, X } from 'lucide-react';
 
-const MAP_STYLE = 'https://tiles.openfreemap.org/styles/liberty';
-const NOMINATIM = 'https://nominatim.openstreetmap.org';
-const OSRM      = 'https://router.project-osrm.org/route/v1/driving';
-const UA        = 'GerakApp/1.0';
+const MAP_STYLE   = 'https://tiles.openfreemap.org/styles/liberty';
+const NOMINATIM   = 'https://nominatim.openstreetmap.org';
+const OSRM        = 'https://router.project-osrm.org/route/v1/driving';
+const GOOGLE_KEY  = import.meta.env.VITE_GOOGLE_PLACES_KEY as string | undefined;
+const PLACES_AUTO = 'https://places.googleapis.com/v1/places:autocomplete';
+const PLACES_DET  = 'https://places.googleapis.com/v1/places';
 
-interface NominatimResult {
-  place_id: number;
-  display_name: string;
-  lat: string;
-  lon: string;
+interface GoogleSuggestion {
+  placeId:       string;
+  mainText:      string;
+  secondaryText: string;
 }
 
 interface Props {
-  campusCenter: [number, number]; // [lng, lat]
-  onPickupChange: (name: string) => void;
+  campusCenter:        [number, number]; // [lng, lat]
+  onPickupChange:      (name: string) => void;
   onDestinationChange: (name: string) => void;
 }
+
+// Format raw minutes → "45 min" or "1 hr 2 min"
+const formatDuration = (minutes: number): string => {
+  if (minutes < 60) return `${minutes} min`;
+  const h = Math.floor(minutes / 60);
+  const m = minutes % 60;
+  return m === 0 ? `${h} hr` : `${h} hr ${m} min`;
+};
 
 export const MapboxRideMap: React.FC<Props> = ({ campusCenter, onPickupChange, onDestinationChange }) => {
   const mapContainer = useRef<HTMLDivElement>(null);
@@ -34,11 +43,11 @@ export const MapboxRideMap: React.FC<Props> = ({ campusCenter, onPickupChange, o
   const [destName,     setDestName]     = useState('');
 
   const [query,           setQuery]           = useState('');
-  const [suggestions,     setSuggestions]     = useState<NominatimResult[]>([]);
+  const [suggestions,     setSuggestions]     = useState<GoogleSuggestion[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [locating,        setLocating]        = useState(false);
   const [searching,       setSearching]       = useState(false);
-  const [routeInfo,       setRouteInfo]       = useState<{ distanceKm: string; durationMin: string } | null>(null);
+  const [routeInfo, setRouteInfo] = useState<{ distanceKm: string; durationMin: number } | null>(null);
 
   // ── Init map ────────────────────────────────────────────────────────────────
   useEffect(() => {
@@ -92,10 +101,10 @@ export const MapboxRideMap: React.FC<Props> = ({ campusCenter, onPickupChange, o
           routeCoords = route.geometry.coordinates;
           setRouteInfo({
             distanceKm: (route.distance / 1000).toFixed(1),
-            durationMin: Math.ceil(route.duration / 60).toString(),
+            durationMin: Math.ceil(route.duration / 60),
           });
         }
-      } catch { setRouteInfo(null); /* straight-line fallback */ }
+      } catch { setRouteInfo(null); }
 
       const draw = () => {
         if (m.getLayer('route-line'))        m.removeLayer('route-line');
@@ -137,12 +146,9 @@ export const MapboxRideMap: React.FC<Props> = ({ campusCenter, onPickupChange, o
         const coords: [number, number] = [longitude, latitude];
         placePickupMarker(coords);
         map.current?.flyTo({ center: coords, zoom: 15 });
-
-        // Reverse geocode via Nominatim
         try {
           const res  = await fetch(
-            `${NOMINATIM}/reverse?lat=${latitude}&lon=${longitude}&format=json&accept-language=en`,
-            { headers: { 'User-Agent': UA } }
+            `${NOMINATIM}/reverse?lat=${latitude}&lon=${longitude}&format=json&accept-language=en`
           );
           const json = await res.json();
           const name = (json.display_name as string | undefined) ?? 'Current Location';
@@ -175,41 +181,74 @@ export const MapboxRideMap: React.FC<Props> = ({ campusCenter, onPickupChange, o
       .addTo(map.current!);
   };
 
-  // ── Nominatim search ──────────────────────────────────────────────────────────
+  // ── Google Places autocomplete ────────────────────────────────────────────────
   const searchPlaces = async (q: string) => {
+    if (!GOOGLE_KEY) return;
     setSearching(true);
     try {
-      const res  = await fetch(
-        `${NOMINATIM}/search?q=${encodeURIComponent(q)}&format=json&countrycodes=my&limit=6&addressdetails=0&accept-language=en`,
-        { headers: { 'User-Agent': UA } }
-      );
-      const json: NominatimResult[] = await res.json();
-      setSuggestions(json);
-      setShowSuggestions(json.length > 0);
+      const res  = await fetch(PLACES_AUTO, {
+        method: 'POST',
+        headers: {
+          'Content-Type':  'application/json',
+          'X-Goog-Api-Key': GOOGLE_KEY,
+        },
+        body: JSON.stringify({
+          input: q,
+          languageCode: 'en',
+          includedRegionCodes: ['my'],
+          locationBias: {
+            circle: {
+              center: { latitude: campusCenter[1], longitude: campusCenter[0] },
+              radius: 100000, // 100 km bias around campus
+            },
+          },
+        }),
+      });
+      const json = await res.json();
+      const raw: GoogleSuggestion[] = (json.suggestions ?? []).map((s: any) => ({
+        placeId:       s.placePrediction?.placeId ?? '',
+        mainText:      s.placePrediction?.structuredFormat?.mainText?.text ?? s.placePrediction?.text?.text ?? '',
+        secondaryText: s.placePrediction?.structuredFormat?.secondaryText?.text ?? '',
+      })).filter((s: GoogleSuggestion) => s.placeId);
+      setSuggestions(raw);
+      setShowSuggestions(raw.length > 0);
     } catch {
       setSuggestions([]);
     }
     setSearching(false);
   };
 
-  // ── Select destination ────────────────────────────────────────────────────────
-  const selectDestination = (result: NominatimResult) => {
-    const coords: [number, number] = [parseFloat(result.lon), parseFloat(result.lat)];
-    const name = result.display_name;
-
-    setDestCoords(coords);
-    setDestName(name);
-    onDestinationChange(name);
-    setQuery(name);
+  // ── Select a Google Place as destination ─────────────────────────────────────
+  const selectPlace = async (suggestion: GoogleSuggestion) => {
+    if (!GOOGLE_KEY) return;
+    const label = suggestion.mainText + (suggestion.secondaryText ? `, ${suggestion.secondaryText}` : '');
+    setQuery(label);
     setShowSuggestions(false);
+    setSearching(true);
+    try {
+      const res  = await fetch(
+        `${PLACES_DET}/${suggestion.placeId}?fields=location`,
+        { headers: { 'X-Goog-Api-Key': GOOGLE_KEY, 'X-Goog-FieldMask': 'location' } }
+      );
+      const json = await res.json();
+      const lat: number = json.location?.latitude;
+      const lng: number = json.location?.longitude;
+      if (!lat || !lng) { setSearching(false); return; }
 
-    if (destMarker.current) destMarker.current.remove();
-    const el = Object.assign(document.createElement('div'), {
-      className: 'w-4 h-4 rounded-full bg-red-500 border-2 border-white shadow-md',
-    });
-    destMarker.current = new maplibregl.Marker({ element: el })
-      .setLngLat(coords)
-      .addTo(map.current!);
+      const coords: [number, number] = [lng, lat];
+      setDestCoords(coords);
+      setDestName(label);
+      onDestinationChange(label);
+
+      if (destMarker.current) destMarker.current.remove();
+      const el = Object.assign(document.createElement('div'), {
+        className: 'w-4 h-4 rounded-full bg-red-500 border-2 border-white shadow-md',
+      });
+      destMarker.current = new maplibregl.Marker({ element: el })
+        .setLngLat(coords)
+        .addTo(map.current!);
+    } catch { /* keep existing pins */ }
+    setSearching(false);
   };
 
   const clearDestination = () => {
@@ -240,8 +279,9 @@ export const MapboxRideMap: React.FC<Props> = ({ campusCenter, onPickupChange, o
             type="text"
             value={query}
             onChange={e => { setQuery(e.target.value); if (!e.target.value) clearDestination(); }}
-            placeholder="Search destination… e.g. KLCC, LRT Masjid Jamek"
-            className="w-full bg-white border border-slate-200 rounded-2xl py-3 pl-10 pr-9 text-sm font-semibold text-slate-700 placeholder:font-normal placeholder:text-slate-400 focus:outline-none focus:border-primary transition shadow-sm"
+            placeholder="Search destination… e.g. KLCC, UMP Pekan"
+            className="w-full bg-white border border-slate-100 rounded-2xl py-3 pl-10 pr-9 text-sm font-semibold text-slate-700 placeholder:font-normal placeholder:text-slate-400 focus:outline-none focus:border-primary transition"
+            style={{ fontSize: '16px' }}
           />
           {query ? (
             <button type="button" onClick={clearDestination}
@@ -257,31 +297,28 @@ export const MapboxRideMap: React.FC<Props> = ({ campusCenter, onPickupChange, o
         {showSuggestions && suggestions.length > 0 && (
           <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-slate-100 rounded-2xl shadow-xl z-50 overflow-hidden">
             <div className="max-h-52 overflow-y-auto">
-              {suggestions.map((r, i) => {
-                const parts = r.display_name.split(',');
-                return (
-                  <button key={r.place_id} type="button" onClick={() => selectDestination(r)}
-                    className={`w-full text-left px-4 py-3 transition hover:bg-slate-50 ${
-                      i < suggestions.length - 1 ? 'border-b border-slate-50' : ''
-                    }`}
-                  >
-                    <p className="text-xs font-bold text-slate-800 truncate">{parts[0]}</p>
-                    <p className="text-xs text-slate-400 truncate mt-0.5">
-                      {parts.slice(1).join(',').trim()}
-                    </p>
-                  </button>
-                );
-              })}
+              {suggestions.map((s, i) => (
+                <button key={s.placeId} type="button" onClick={() => selectPlace(s)}
+                  className={`w-full text-left px-4 py-3 transition hover:bg-slate-50 ${
+                    i < suggestions.length - 1 ? 'border-b border-slate-50' : ''
+                  }`}
+                >
+                  <p className="text-xs font-semibold text-slate-800 truncate">{s.mainText}</p>
+                  {s.secondaryText && (
+                    <p className="text-xs text-slate-400 font-normal truncate mt-0.5">{s.secondaryText}</p>
+                  )}
+                </button>
+              ))}
             </div>
           </div>
         )}
       </div>
 
       {/* Map */}
-      <div className="relative rounded-2xl overflow-hidden border border-slate-200 shadow-sm" style={{ height: 260 }}>
+      <div className="relative rounded-2xl overflow-hidden border border-slate-100" style={{ height: 260 }}>
         <div ref={mapContainer} className="w-full h-full" />
         <button type="button" onClick={locateUser} disabled={locating}
-          className="absolute top-3 right-3 z-10 w-9 h-9 bg-white border border-slate-100 rounded-xl shadow flex items-center justify-center text-slate-600 hover:text-primary transition active:scale-90 disabled:opacity-50"
+          className="absolute top-3 right-3 z-10 w-9 h-9 bg-white border border-slate-100 rounded-xl flex items-center justify-center text-slate-600 hover:text-primary transition active:scale-90 disabled:opacity-50"
         >
           {locating
             ? <span className="w-4 h-4 rounded-full border-2 border-primary border-t-transparent animate-spin" />
@@ -291,19 +328,19 @@ export const MapboxRideMap: React.FC<Props> = ({ campusCenter, onPickupChange, o
 
       {/* Pin status row */}
       <div className="flex gap-2">
-        <div className="flex-1 flex items-center gap-2 p-3 rounded-2xl bg-blue-50 border border-blue-100 min-w-0">
+        <div className="flex-1 flex items-center gap-2 p-3 rounded-2xl bg-white border border-slate-100 min-w-0">
           <div className="w-2.5 h-2.5 rounded-full bg-blue-500 shrink-0" />
           <div className="min-w-0">
-            <p className="text-xs font-semibold text-blue-400">Pickup</p>
+            <p className="text-xs font-normal text-slate-400">Pickup</p>
             <p className="text-xs font-semibold text-slate-700 truncate mt-0.5">
               {locating ? 'Detecting location…' : pickupName || 'Allow location access'}
             </p>
           </div>
         </div>
-        <div className="flex-1 flex items-center gap-2 p-3 rounded-2xl bg-red-50 border border-red-100 min-w-0">
+        <div className="flex-1 flex items-center gap-2 p-3 rounded-2xl bg-white border border-slate-100 min-w-0">
           <div className="w-2.5 h-2.5 rounded-full bg-red-500 shrink-0" />
           <div className="min-w-0">
-            <p className="text-xs font-semibold text-red-400">Destination</p>
+            <p className="text-xs font-normal text-slate-400">Destination</p>
             <p className="text-xs font-semibold text-slate-700 truncate mt-0.5">
               {destName || 'Search above'}
             </p>
@@ -311,7 +348,7 @@ export const MapboxRideMap: React.FC<Props> = ({ campusCenter, onPickupChange, o
         </div>
       </div>
 
-      {/* Route info strip — distance + ETA from OSRM */}
+      {/* Route info strip */}
       {routeInfo && (
         <div className="flex items-center justify-center gap-4 py-2 px-4 bg-white border border-slate-100 rounded-2xl">
           <div className="flex flex-col items-center">
@@ -320,7 +357,7 @@ export const MapboxRideMap: React.FC<Props> = ({ campusCenter, onPickupChange, o
           </div>
           <div className="w-px h-8 bg-slate-100" />
           <div className="flex flex-col items-center">
-            <span className="text-base font-black text-slate-800">{routeInfo.durationMin} min</span>
+            <span className="text-base font-black text-slate-800">{formatDuration(routeInfo.durationMin)}</span>
             <span className="text-xs font-normal text-slate-400">Est. drive time</span>
           </div>
         </div>
