@@ -96,7 +96,7 @@ export const Transport: React.FC = () => {
   const [campus,   setCampus]   = useState<'pekan' | 'gambang'>(
     user.campus?.toLowerCase() === 'pekan' ? 'pekan' : 'gambang'
   );
-  const [bookMode, setBookMode] = useState<'quick' | 'map'>('quick');
+  const [bookMode, setBookMode] = useState<'quick' | 'map'>(user.isLoggedIn ? 'quick' : 'map');
   const [showTerms, setShowTerms] = useState(false);
 
   // Quick-route state
@@ -376,31 +376,33 @@ export const Transport: React.FC = () => {
   return (
     <div className="flex-grow bg-white overflow-y-auto no-scrollbar pb-4 animate-fade-in">
 
-      {/* Campus toggle — superadmin only; customers see their fixed campus */}
+      {/* Campus toggle — logged-in only */}
       <div className="px-4 pt-4 flex flex-col gap-2">
-        {user.role === 'superadmin' ? (
-          <div className="flex bg-slate-100 rounded-2xl p-1 gap-1">
-            {(['gambang', 'pekan'] as const).map(c => (
-              <button
-                key={c}
-                type="button"
-                onClick={() => switchCampus(c)}
-                className={`flex-1 py-2 rounded-xl text-xs font-semibold transition-all ${
-                  campus === c
-                    ? 'bg-white text-primary'
-                    : 'text-slate-500 hover:text-slate-700'
-                }`}
-              >
-                {c === 'gambang' ? 'UMPSA Gambang' : 'UMPSA Pekan'}
-              </button>
-            ))}
-          </div>
-        ) : (
-          <div className="bg-primary/10 rounded-2xl px-4 py-2.5 text-center">
-            <span className="text-xs font-semibold text-primary">
-              UMPSA {user.campus}
-            </span>
-          </div>
+        {user.isLoggedIn && (
+          user.role === 'superadmin' ? (
+            <div className="flex bg-slate-100 rounded-2xl p-1 gap-1">
+              {(['gambang', 'pekan'] as const).map(c => (
+                <button
+                  key={c}
+                  type="button"
+                  onClick={() => switchCampus(c)}
+                  className={`flex-1 py-2 rounded-xl text-xs font-semibold transition-all ${
+                    campus === c
+                      ? 'bg-white text-primary'
+                      : 'text-slate-500 hover:text-slate-700'
+                  }`}
+                >
+                  {c === 'gambang' ? 'UMPSA Gambang' : 'UMPSA Pekan'}
+                </button>
+              ))}
+            </div>
+          ) : (
+            <div className="bg-primary/10 rounded-2xl px-4 py-2.5 text-center">
+              <span className="text-xs font-semibold text-primary">
+                UMPSA {user.campus}
+              </span>
+            </div>
+          )
         )}
 
         <div className="flex items-center justify-between">
@@ -423,44 +425,46 @@ export const Transport: React.FC = () => {
       </div>
 
       {/* Mode selector — Mode Selector Standard */}
-      <div className="px-4 mt-3 flex gap-2">
-        <button
-          type="button"
-          onClick={() => setBookMode('quick')}
-          className={`flex-1 flex items-center gap-2.5 p-3 rounded-2xl border transition-colors active:scale-[0.98] ${
-            bookMode === 'quick'
-              ? 'border-primary/30 bg-primary/5'
-              : 'border-slate-100 bg-white'
-          }`}
-        >
-          <div className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 ${
-            bookMode === 'quick' ? 'bg-primary/10' : 'bg-slate-100'
-          }`}>
-            <List className={`w-4 h-4 ${bookMode === 'quick' ? 'text-primary' : 'text-slate-500'}`} />
-          </div>
-          <span className={`text-xs font-semibold ${bookMode === 'quick' ? 'text-primary' : 'text-slate-600'}`}>
-            Quick Routes
-          </span>
-        </button>
-        <button
-          type="button"
-          onClick={() => setBookMode('map')}
-          className={`flex-1 flex items-center gap-2.5 p-3 rounded-2xl border transition-colors active:scale-[0.98] ${
-            bookMode === 'map'
-              ? 'border-primary/30 bg-primary/5'
-              : 'border-slate-100 bg-white'
-          }`}
-        >
-          <div className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 ${
-            bookMode === 'map' ? 'bg-primary/10' : 'bg-slate-100'
-          }`}>
-            <Map className={`w-4 h-4 ${bookMode === 'map' ? 'text-primary' : 'text-slate-500'}`} />
-          </div>
-          <span className={`text-xs font-semibold ${bookMode === 'map' ? 'text-primary' : 'text-slate-600'}`}>
-            Search Routes
-          </span>
-        </button>
-      </div>
+      {user.isLoggedIn && (
+        <div className="px-4 mt-3 flex gap-2">
+          <button
+            type="button"
+            onClick={() => setBookMode('quick')}
+            className={`flex-1 flex items-center gap-2.5 p-3 rounded-2xl border transition-colors active:scale-[0.98] ${
+              bookMode === 'quick'
+                ? 'border-primary/30 bg-primary/5'
+                : 'border-slate-100 bg-white'
+            }`}
+          >
+            <div className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 ${
+              bookMode === 'quick' ? 'bg-primary/10' : 'bg-slate-100'
+            }`}>
+              <List className={`w-4 h-4 ${bookMode === 'quick' ? 'text-primary' : 'text-slate-500'}`} />
+            </div>
+            <span className={`text-xs font-semibold ${bookMode === 'quick' ? 'text-primary' : 'text-slate-600'}`}>
+              Quick Routes
+            </span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setBookMode('map')}
+            className={`flex-1 flex items-center gap-2.5 p-3 rounded-2xl border transition-colors active:scale-[0.98] ${
+              bookMode === 'map'
+                ? 'border-primary/30 bg-primary/5'
+                : 'border-slate-100 bg-white'
+            }`}
+          >
+            <div className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 ${
+              bookMode === 'map' ? 'bg-primary/10' : 'bg-slate-100'
+            }`}>
+              <Map className={`w-4 h-4 ${bookMode === 'map' ? 'text-primary' : 'text-slate-500'}`} />
+            </div>
+            <span className={`text-xs font-semibold ${bookMode === 'map' ? 'text-primary' : 'text-slate-600'}`}>
+              Search Routes
+            </span>
+          </button>
+        </div>
+      )}
 
       {/* ── Quick Routes ── */}
       {bookMode === 'quick' && (

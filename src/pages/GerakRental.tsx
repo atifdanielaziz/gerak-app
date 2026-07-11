@@ -528,12 +528,6 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
       {/* Header */}
       <div className="px-4 pt-5 pb-3 flex items-center justify-between">
         <div className="flex items-center gap-2">
-          {(selected || view === 'my-bookings') && (
-            <button onClick={() => { setSelected(null); setRangeStart(''); setRangeEnd(''); setStartHour(null); setView('list'); }}
-              className="w-8 h-8 flex items-center justify-center rounded-xl text-slate-500 hover:bg-slate-100 transition active:scale-90">
-              <ChevronLeft className="w-5 h-5" />
-            </button>
-          )}
           <div>
             <h2 className="text-xl font-bold text-slate-800 m-0 flex items-center gap-2">
               <KeyRound className="w-5 h-5 text-amber-500" /> Gerak Rental

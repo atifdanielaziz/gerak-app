@@ -1,6 +1,6 @@
 ﻿import React, { useState, useRef, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
-import { CheckCircle2, X, Upload, FileText, ShieldAlert, Download, ChevronDown, ChevronLeft, User, Pencil, MapPin, Copy, Check, Info, GraduationCap, Eye } from 'lucide-react';
+import { CheckCircle2, X, Upload, FileText, ShieldAlert, Download, ChevronDown, User, Pencil, MapPin, Copy, Check, Info, GraduationCap, Eye } from 'lucide-react';
 import { submitJubahToSheets } from '../lib/sheetsService';
 import { JubahLanding } from '../components/JubahLanding';
 import { supabase } from '../lib/supabase';
@@ -400,9 +400,9 @@ export const Jubah: React.FC = () => {
           </div>
           <button
             onClick={() => setLandingUniversity('')}
-            className="mt-2 flex items-center gap-2 bg-blue-600 hover:bg-blue-700 active:scale-95 text-white text-xs font-extrabold px-6 py-2.5 rounded-full shadow-md shadow-blue-500/25 transition cursor-pointer"
+            className="mt-2 text-xs font-normal text-slate-400 hover:text-primary transition active:scale-95"
           >
-            ← Back to University Selection
+            ← Change university
           </button>
         </div>
       </div>
@@ -414,22 +414,20 @@ export const Jubah: React.FC = () => {
     <div className="flex-grow bg-white overflow-y-auto overflow-x-hidden no-scrollbar pb-4 px-5 animate-fade-in flex flex-col gap-5">
 
       {/* HEADER */}
-      <div className="mt-4 px-1 flex items-start gap-2">
+      <div className="mt-4 px-1">
+        <h2 className="text-xl font-black m-0 text-slate-800">Convocation Robe Service</h2>
+        <p className="text-xs text-slate-400 font-semibold mt-1">
+          {UNIVERSITY_LABELS[landingUniversity]} · Official Robe Bookings
+        </p>
         {!jubahBooking && (
           <button
             type="button"
             onClick={() => setLandingUniversity('')}
-            className="mt-0.5 w-7 h-7 flex items-center justify-center rounded-xl bg-slate-100 text-slate-500 active:scale-90 transition shrink-0"
+            className="mt-1 text-xs font-normal text-slate-400 hover:text-primary transition active:scale-95"
           >
-            <ChevronLeft className="w-4 h-4" />
+            ← Change university
           </button>
         )}
-        <div>
-          <h2 className="text-xl font-black m-0 text-slate-800">Convocation Robe Service</h2>
-          <p className="text-xs text-slate-400 font-semibold mt-1">
-            {UNIVERSITY_LABELS[landingUniversity]} · Official Robe Bookings
-          </p>
-        </div>
       </div>
 
       {!jubahBooking ? (
