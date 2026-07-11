@@ -86,10 +86,10 @@ const InstallPrompt: React.FC = () => {
         {/* App card */}
         <div className="flex items-center gap-4 px-6 py-4 border-b border-slate-100">
           <div className="w-14 h-14 rounded-2xl bg-white border border-slate-100 shadow-md shrink-0 flex items-center justify-center">
-            <span style={{ fontFamily: 'Inter, sans-serif', fontSize: '2.4rem', color: '#0F172A', lineHeight: 1, fontWeight: 900 }}>g</span>
+            <span style={{ fontFamily: 'Inter, sans-serif', fontSize: '2.4rem', color: '#0F172A', lineHeight: 1, fontWeight: 300 }}>g</span>
           </div>
           <div>
-            <p className="text-sm text-slate-900 m-0" style={{ fontFamily: 'Inter, sans-serif', fontWeight: 700 }}>
+            <p className="text-sm text-slate-900 m-0" style={{ fontFamily: 'Inter, sans-serif', fontWeight: 300 }}>
               ger<span style={{ color: '#EF4444' }}>a</span>k
             </p>
             <p className="text-xs text-slate-400 font-semibold mt-0.5">Smart Campus Platform · UMPSA</p>
