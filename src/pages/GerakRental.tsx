@@ -819,13 +819,13 @@ ${row('Owner ID', bk.owner_gerak_id ?? '—')}
 
           {/* Booking type toggle — Mode Selector Standard */}
           <div className="flex gap-2">
-            <button onClick={() => switchBookingType('hourly')}
+            <button onPointerDown={(e) => { e.preventDefault(); switchBookingType('hourly'); }}
               className={`flex-1 flex items-center justify-center gap-1.5 py-3 rounded-2xl border text-xs font-semibold transition-colors active:scale-[0.98] ${
                 bookingType === 'hourly' ? 'border-amber-300 bg-amber-50 text-amber-700' : 'border-slate-100 bg-white text-slate-400'
               }`}>
               <Clock className="w-3.5 h-3.5" /> Hourly
             </button>
-            <button onClick={() => switchBookingType('fullday')}
+            <button onPointerDown={(e) => { e.preventDefault(); switchBookingType('fullday'); }}
               className={`flex-1 flex items-center justify-center gap-1.5 py-3 rounded-2xl border text-xs font-semibold transition-colors active:scale-[0.98] ${
                 bookingType === 'fullday' ? 'border-amber-300 bg-amber-50 text-amber-700' : 'border-slate-100 bg-white text-slate-400'
               }`}>
@@ -847,11 +847,11 @@ ${row('Owner ID', bk.owner_gerak_id ?? '—')}
           {/* Calendar */}
           <div className="bg-white border border-slate-100 rounded-3xl p-5">
             <div className="flex items-center justify-between mb-3">
-              <button onClick={prevMonth} className="w-7 h-7 rounded-xl border border-slate-100 flex items-center justify-center text-slate-400 active:scale-90">
+              <button onPointerDown={(e) => { e.preventDefault(); prevMonth(); }} className="w-7 h-7 rounded-xl border border-slate-100 flex items-center justify-center text-slate-400 active:scale-90">
                 <ChevronLeft className="w-4 h-4" />
               </button>
               <p className="text-xs font-semibold text-slate-700">{monthLabel()}</p>
-              <button onClick={nextMonth} className="w-7 h-7 rounded-xl border border-slate-100 flex items-center justify-center text-slate-400 active:scale-90">
+              <button onPointerDown={(e) => { e.preventDefault(); nextMonth(); }} className="w-7 h-7 rounded-xl border border-slate-100 flex items-center justify-center text-slate-400 active:scale-90">
                 <ChevronRight className="w-4 h-4" />
               </button>
             </div>
@@ -874,7 +874,7 @@ ${row('Owner ID', bk.owner_gerak_id ?? '—')}
                 return (
                   <button key={dateStr}
                     disabled={isPast || isBlocked}
-                    onClick={() => handleDateTap(dateStr)}
+                    onPointerDown={(e) => { if (isPast || isBlocked) return; e.preventDefault(); handleDateTap(dateStr); }}
                     className={`aspect-square text-xs font-normal transition active:scale-90 ${
                       isSelected  ? 'bg-primary text-white font-semibold rounded-xl' :
                       isInRange   ? 'bg-primary/15 text-primary rounded-sm' :
@@ -914,7 +914,7 @@ ${row('Owner ID', bk.owner_gerak_id ?? '—')}
                   const isNight = h >= 22 || h < 5;
                   return (
                     <button key={h} disabled={!avail}
-                      onClick={() => setStartHour(h)}
+                      onPointerDown={(e) => { if (!avail) return; e.preventDefault(); setStartHour(h); }}
                       className={`py-2 rounded-xl text-xs font-semibold transition-transform active:scale-95 relative ${
                         picked   ? 'bg-primary text-white' :
                         !avail   ? 'bg-slate-100 text-slate-300 cursor-not-allowed' :
