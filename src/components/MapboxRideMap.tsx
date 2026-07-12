@@ -47,6 +47,7 @@ export const MapboxRideMap: React.FC<Props> = ({ campusCenter, onPickupChange, o
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [locating,        setLocating]        = useState(false);
   const [searching,       setSearching]       = useState(false);
+  const [searchError,     setSearchError]     = useState<string | null>(null);
   const [routeInfo, setRouteInfo] = useState<{ distanceKm: string; durationMin: number } | null>(null);
 
   // ── Init map ────────────────────────────────────────────────────────────────
@@ -183,13 +184,14 @@ export const MapboxRideMap: React.FC<Props> = ({ campusCenter, onPickupChange, o
 
   // ── Google Places autocomplete ────────────────────────────────────────────────
   const searchPlaces = async (q: string) => {
-    if (!GOOGLE_KEY) return;
+    setSearchError(null);
+    if (!GOOGLE_KEY) { setSearchError('API key missing'); return; }
     setSearching(true);
     try {
       const res  = await fetch(PLACES_AUTO, {
         method: 'POST',
         headers: {
-          'Content-Type':  'application/json',
+          'Content-Type':   'application/json',
           'X-Goog-Api-Key': GOOGLE_KEY,
         },
         body: JSON.stringify({
@@ -199,12 +201,13 @@ export const MapboxRideMap: React.FC<Props> = ({ campusCenter, onPickupChange, o
           locationBias: {
             circle: {
               center: { latitude: campusCenter[1], longitude: campusCenter[0] },
-              radius: 100000, // 100 km bias around campus
+              radius: 100000,
             },
           },
         }),
       });
       const json = await res.json();
+      if (json.error) { setSearchError(`API error: ${json.error.message}`); setSearching(false); return; }
       const raw: GoogleSuggestion[] = (json.suggestions ?? []).map((s: any) => ({
         placeId:       s.placePrediction?.placeId ?? '',
         mainText:      s.placePrediction?.structuredFormat?.mainText?.text ?? s.placePrediction?.text?.text ?? '',
@@ -212,7 +215,9 @@ export const MapboxRideMap: React.FC<Props> = ({ campusCenter, onPickupChange, o
       })).filter((s: GoogleSuggestion) => s.placeId);
       setSuggestions(raw);
       setShowSuggestions(raw.length > 0);
-    } catch {
+      if (raw.length === 0) setSearchError('No results');
+    } catch (e: any) {
+      setSearchError(e?.message ?? 'Network error');
       setSuggestions([]);
     }
     setSearching(false);
@@ -292,6 +297,11 @@ export const MapboxRideMap: React.FC<Props> = ({ campusCenter, onPickupChange, o
             <span className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 rounded-full border-2 border-primary border-t-transparent animate-spin" />
           ) : null}
         </div>
+
+        {/* Debug error */}
+        {searchError && !showSuggestions && (
+          <p className="text-xs text-red-500 font-normal px-1 mt-1">{searchError}</p>
+        )}
 
         {/* Suggestions dropdown */}
         {showSuggestions && suggestions.length > 0 && (
