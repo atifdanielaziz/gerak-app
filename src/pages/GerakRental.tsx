@@ -950,10 +950,10 @@ ${row('Owner ID', bk.owner_gerak_id ?? '—')}
                   </p>
                 </div>
                 <div className="flex items-center gap-3">
-                  <button onClick={() => setDuration(d => Math.max(0.5, +(d - 0.5).toFixed(1)))}
+                  <button onClick={() => setDuration(d => Math.max(1, d - 1))}
                     className="w-8 h-8 rounded-xl bg-slate-100 text-slate-600 font-black text-lg flex items-center justify-center active:scale-90">−</button>
                   <span className="text-sm font-black text-slate-800 w-10 text-center">{fmtDuration(duration)}</span>
-                  <button onClick={() => setDuration(d => Math.min(12, +(d + 0.5).toFixed(1)))}
+                  <button onClick={() => setDuration(d => Math.min(12, d + 1))}
                     className="w-8 h-8 rounded-xl bg-slate-100 text-slate-600 font-black text-lg flex items-center justify-center active:scale-90">+</button>
                 </div>
               </div>
