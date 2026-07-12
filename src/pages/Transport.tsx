@@ -105,12 +105,14 @@ export const Transport: React.FC = () => {
   const [showRouteList, setShowRouteList] = useState(false);
   const [showFromDropdown, setShowFromDropdown] = useState(false);
   const fromDropdownRef = useRef<HTMLDivElement>(null);
+  const routeListRef    = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const handler = (e: MouseEvent) => {
-      if (fromDropdownRef.current && !fromDropdownRef.current.contains(e.target as Node)) {
+      if (fromDropdownRef.current && !fromDropdownRef.current.contains(e.target as Node))
         setShowFromDropdown(false);
-      }
+      if (routeListRef.current && !routeListRef.current.contains(e.target as Node))
+        setShowRouteList(false);
     };
     document.addEventListener('mousedown', handler);
     return () => document.removeEventListener('mousedown', handler);
@@ -551,7 +553,7 @@ export const Transport: React.FC = () => {
             </button>
           ) : (
             /* Expanded: full scrollable list */
-            <div className="flex flex-col gap-2 max-h-[272px] overflow-y-auto no-scrollbar pr-0.5">
+            <div ref={routeListRef} className="flex flex-col gap-2 max-h-[272px] overflow-y-auto no-scrollbar pr-0.5">
               {filteredRoutes.map((route, i) => {
                 const isSelected = selectedRoute === route;
                 return (
@@ -639,10 +641,10 @@ export const Transport: React.FC = () => {
               <label className="text-xs font-normal text-slate-400 pl-1">Date</label>
               <div className="relative h-9 group">
                 <div className="absolute inset-0 bg-white border border-slate-100 rounded-xl px-2.5 flex items-center justify-between pointer-events-none group-focus-within:border-primary transition">
-                  <span className={`text-xs font-semibold ${date ? 'text-slate-700' : 'text-slate-400'}`}>
+                  <span className={`text-xs font-semibold ${bookWhen === 'now' ? 'text-slate-300' : date ? 'text-slate-700' : 'text-slate-400'}`}>
                     {date ? new Date(date + 'T00:00:00').toLocaleDateString('en-MY', { day: 'numeric', month: 'short', year: 'numeric' }) : 'Select date'}
                   </span>
-                  <CalendarDays className="w-3 h-3 text-slate-400 shrink-0" />
+                  <CalendarDays className={`w-3 h-3 shrink-0 ${bookWhen === 'now' ? 'text-slate-200' : 'text-slate-400'}`} />
                 </div>
                 {bookWhen === 'later' && (
                   <input type="date" required value={date}
@@ -662,10 +664,10 @@ export const Transport: React.FC = () => {
                 <div className={`absolute inset-0 border rounded-xl px-2.5 flex items-center justify-between pointer-events-none group-focus-within:border-primary transition ${
                   isNight ? 'border-amber-200 bg-amber-50/50' : 'bg-white border-slate-100'
                 }`}>
-                  <span className={`text-xs font-semibold ${!time ? 'text-slate-400' : isNight ? 'text-amber-700' : 'text-slate-700'}`}>
+                  <span className={`text-xs font-semibold ${bookWhen === 'now' ? 'text-slate-300' : !time ? 'text-slate-400' : isNight ? 'text-amber-700' : 'text-slate-700'}`}>
                     {time || 'Select time'}
                   </span>
-                  <Clock className="w-3 h-3 text-slate-400 shrink-0" />
+                  <Clock className={`w-3 h-3 shrink-0 ${bookWhen === 'now' ? 'text-slate-200' : 'text-slate-400'}`} />
                 </div>
                 {bookWhen === 'later' && (
                   <input type="time" required value={time}
