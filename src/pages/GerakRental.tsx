@@ -425,93 +425,65 @@ export const GerakRental: React.FC = () => {
   };
 
   const generatePdf = (bk: RentalBooking) => {
-    const dateLabel = bk.booking_type === 'fullday' ? 'Date Range' : 'Date';
-    const durLabel = bk.booking_type === 'fullday' && bk.end_date
-      ? `${getDatesInRange(bk.date, bk.end_date).length} day(s)`
-      : `${bk.duration}h`;
-    const timeCell = bk.booking_type !== 'fullday'
-      ? `<div class="cell full"><div class="cell-label">Time</div><div class="cell-value">${fmt12(bk.start_hour)} → ${fmt12(bk.start_hour + bk.duration)}</div></div>`
-      : '';
-    const notesBlock = bk.notes
-      ? `<div class="notes"><div class="notes-label">Note</div><div class="notes-text">"${bk.notes}"</div></div>`
-      : '';
+    const isFullDay = bk.booking_type === 'fullday';
+    const days = isFullDay && bk.end_date ? getDatesInRange(bk.date, bk.end_date).length : null;
+    const ref = `#${String(bk.booking_no ?? '').padStart(5, '0')}`;
     const bookingDate = new Date(bk.created_at).toLocaleDateString('en-MY', { day: '2-digit', month: 'short', year: 'numeric' });
+    const printDate  = new Date().toLocaleDateString('en-MY', { day: '2-digit', month: 'short', year: 'numeric' });
 
-    const html = `<!DOCTYPE html><html><head><meta charset="utf-8">
-<title>Gerak Rental Receipt #${String(bk.booking_no ?? '').padStart(5, '0')}</title>
+    const row = (label: string, value: string) =>
+      `<div class="row"><span class="lbl">${label}</span><span class="val">${value}</span></div>`;
+
+    const html = `<!DOCTYPE html><html><head><meta charset="utf-8"/>
+<title>Gerak Rental Receipt ${ref}</title>
 <style>
-*{margin:0;padding:0;box-sizing:border-box}
-body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f8fafc;display:flex;justify-content:center;padding:40px 20px}
-.card{background:white;border-radius:20px;overflow:hidden;width:100%;max-width:420px;box-shadow:0 4px 24px rgba(0,0,0,.08)}
-.header{background:#f59e0b;padding:20px 24px 16px}
-.header-top{display:flex;justify-content:space-between;align-items:flex-start}
-.header-label{font-size:9px;font-weight:800;color:rgba(255,255,255,.7);letter-spacing:.1em;text-transform:uppercase}
-.header-vehicle{font-size:22px;font-weight:900;color:white;margin:4px 0 2px}
-.header-plate{font-size:11px;color:rgba(255,255,255,.8);font-weight:600}
-.badge{background:rgba(255,255,255,.25);border:1px solid rgba(255,255,255,.4);color:white;font-size:9px;font-weight:800;padding:4px 10px;border-radius:20px;text-transform:uppercase;white-space:nowrap}
-.divider{border:none;border-top:1.5px dashed #e2e8f0;margin:0 24px}
-.grid{display:grid;grid-template-columns:2fr 1fr;gap:8px;padding:16px 24px 8px}
-.cell{background:#f8fafc;border-radius:12px;padding:10px 12px;text-align:center}
-.cell.full{grid-column:1/-1}
-.cell-label{font-size:9px;color:#94a3b8;font-weight:700;margin-bottom:3px}
-.cell-value{font-size:11px;font-weight:800;color:#334155}
-.breakdown{padding:12px 24px}
-.row{display:flex;justify-content:space-between;font-size:10px;margin-bottom:6px}
-.row-label{color:#94a3b8;font-weight:600}
-.row-value{color:#475569;font-weight:700}
-.total-row{display:flex;justify-content:space-between;align-items:center;padding-top:10px;margin-top:4px;border-top:1.5px dashed #e2e8f0}
-.total-label{font-size:13px;font-weight:800;color:#1e293b}
-.total-amount{font-size:22px;font-weight:900;color:#f59e0b}
-.notes{margin:0 24px 12px;background:#f8fafc;border-radius:10px;padding:10px 12px}
-.notes-label{font-size:9px;color:#94a3b8;font-weight:700;margin-bottom:3px}
-.notes-text{font-size:10px;color:#64748b;font-style:italic}
-.owner{padding:12px 24px}
-.owner-label{font-size:9px;color:#94a3b8;font-weight:700;text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px}
-.owner-name{font-size:12px;font-weight:800;color:#1e293b}
-.owner-id{font-size:10px;color:#94a3b8;font-weight:600;margin-top:1px}
-.footer{background:#f8fafc;padding:10px 24px;display:flex;align-items:center;justify-content:space-between}
-.footer-ref{font-size:9px;color:#94a3b8;font-weight:700;font-family:monospace;letter-spacing:.05em}
-.footer-date{font-size:9px;color:#94a3b8;font-weight:600}
-@media print{body{padding:0;background:white}.card{box-shadow:none;border-radius:0;max-width:100%}}
+body{font-family:monospace;font-size:13px;color:#1e293b;max-width:400px;margin:40px auto;padding:0 20px}
+h1{font-size:20px;font-weight:300;margin:0 0 2px}h1 span{color:#ef4444}
+.sub{font-size:11px;color:#94a3b8;margin-bottom:24px}
+.row{display:flex;justify-content:space-between;margin-bottom:6px;gap:8px}
+.lbl{color:#94a3b8;flex-shrink:0}.val{font-weight:700;text-align:right}
+hr{border:none;border-top:1px dashed #cbd5e1;margin:12px 0}
+.total{font-size:16px}
+.ref{font-size:10px;color:#94a3b8;text-align:center;margin-top:24px}
+@media print{body{margin:20px auto}}
 </style></head><body>
-<div class="card">
-  <div class="header"><div class="header-top">
-    <div><div class="header-label">Gerak Rental Receipt</div><div class="header-vehicle">${bk.car_type}</div><div class="header-plate">${bk.plate_no} · ${bk.color}</div></div>
-    <span class="badge">${bk.status}</span>
-  </div></div>
-  <hr class="divider"/>
-  <div class="grid">
-    <div class="cell"><div class="cell-label">${dateLabel}</div><div class="cell-value">${fmtDateRange(bk)}</div></div>
-    <div class="cell"><div class="cell-label">${bk.booking_type === 'fullday' ? 'Days' : 'Duration'}</div><div class="cell-value">${durLabel}</div></div>
-    ${timeCell}
-  </div>
-  <div class="breakdown">
-    <div class="row"><span class="row-label">Rate</span><span class="row-value">RM${bk.price_hour.toFixed(2)} / hour</span></div>
-    <div class="row"><span class="row-label">Total hours</span><span class="row-value">${bk.duration}h</span></div>
-    <div class="row"><span class="row-label">Persons</span><span class="row-value">${bk.persons} pax</span></div>
-    <div class="row"><span class="row-label">Renter</span><span class="row-value">${user.name}</span></div>
-    <div class="row"><span class="row-label">Phone</span><span class="row-value">${user.phone}</span></div>
-    <div class="total-row"><span class="total-label">Total</span><span class="total-amount">RM${Number(bk.total_price).toFixed(2)}</span></div>
-  </div>
-  ${notesBlock}
-  <hr class="divider"/>
-  <div class="owner"><div class="owner-label">Vehicle Owner</div><div class="owner-name">${bk.owner_name}</div><div class="owner-id">${bk.owner_gerak_id}</div></div>
-  <div class="footer"><span class="footer-ref"># ${String(bk.booking_no ?? '').padStart(5, '0')}</span><span class="footer-date">${bookingDate}</span></div>
-</div>
-<script>window.onload=function(){window.print();window.onafterprint=function(){window.close()}}<\/script>
+<h1>ger<span>a</span>k</h1>
+<div class="sub">Gerak Rental — Booking Receipt</div>
+${row('Booking Ref', ref)}
+${row('Status', bk.status.toUpperCase())}
+<hr/>
+${row('Vehicle', bk.car_type)}
+${row('Plate No.', bk.plate_no)}
+${row('Colour', bk.color)}
+<hr/>
+${isFullDay
+  ? row('Date Range', fmtDateRange(bk)) + row('Duration', `${days} day${days === 1 ? '' : 's'}`)
+  : row('Date', fmtDateRange(bk)) + row('Time', `${fmt12(bk.start_hour)} → ${fmt12(bk.start_hour + bk.duration)}`) + row('Duration', `${bk.duration}h`)
+}
+${row('Persons', `${bk.persons} pax`)}
+<hr/>
+${isFullDay
+  ? row('Rate', `RM${Number(bk.total_price).toFixed(2)} / ${days} day${days === 1 ? '' : 's'}`)
+  : row('Rate', `RM${bk.price_hour.toFixed(2)} / hour`) + row('Total Hours', `${bk.duration}h`)
+}
+${bk.notes ? row('Note', `"${bk.notes}"`) : ''}
+<div class="row total"><span class="lbl">Total</span><span class="val">RM${Number(bk.total_price).toFixed(2)}</span></div>
+<hr/>
+${row('Renter', user.name ?? '—')}
+${row('Phone', user.phone ?? '—')}
+<hr/>
+${row('Vehicle Owner', bk.owner_name)}
+${row('Owner ID', bk.owner_gerak_id ?? '—')}
+<div class="ref">Generated by Gerak · ${printDate} · ${bookingDate} booked</div>
 </body></html>`;
 
     const iframe = document.createElement('iframe');
-    iframe.style.cssText = 'position:fixed;width:0;height:0;border:none;visibility:hidden;';
+    iframe.style.cssText = 'position:fixed;width:0;height:0;border:none;opacity:0';
     document.body.appendChild(iframe);
     const doc = iframe.contentDocument ?? iframe.contentWindow?.document;
     if (doc) {
       doc.open(); doc.write(html); doc.close();
-      setTimeout(() => {
-        iframe.contentWindow?.focus();
-        iframe.contentWindow?.print();
-        setTimeout(() => document.body.removeChild(iframe), 1000);
-      }, 300);
+      setTimeout(() => { iframe.contentWindow?.print(); setTimeout(() => document.body.removeChild(iframe), 1000); }, 300);
     }
   };
 
