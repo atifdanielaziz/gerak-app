@@ -1032,8 +1032,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
                 </div>
                 {!user.isLoggedIn ? (
                   <button onClick={() => showAuthGate()}
-                    className="bg-primary text-white font-semibold text-xs px-4 py-3 rounded-2xl transition active:scale-95 flex items-center gap-2">
-                    Sign in to book
+                    className="bg-amber-500 hover:bg-amber-600 text-white font-semibold text-xs px-5 py-3 rounded-2xl transition active:scale-95 flex items-center gap-2">
+                    <CheckCircle2 className="w-4 h-4" /> Book
                   </button>
                 ) : bookingDone ? (
                   <span className="bg-slate-100 text-slate-500 text-xs font-semibold px-4 py-3 rounded-2xl flex items-center gap-1.5">
@@ -1106,8 +1106,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
                 </div>
                 {!user.isLoggedIn ? (
                   <button onClick={() => showAuthGate()}
-                    className="bg-primary text-white font-semibold text-xs px-4 py-3 rounded-2xl transition active:scale-95 flex items-center gap-2">
-                    Sign in to book
+                    className="bg-amber-500 hover:bg-amber-600 text-white font-semibold text-xs px-5 py-3 rounded-2xl transition active:scale-95 flex items-center gap-2">
+                    <CheckCircle2 className="w-4 h-4" /> Book
                   </button>
                 ) : bookingDone ? (
                   <span className="bg-slate-100 text-slate-500 text-xs font-semibold px-4 py-3 rounded-2xl flex items-center gap-1.5">
