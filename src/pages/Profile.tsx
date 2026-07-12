@@ -246,7 +246,7 @@ export const Profile: React.FC = () => {
           <h1 className="m-0 leading-none" style={{ fontFamily: 'Inter, sans-serif', fontSize: '2.8rem', fontWeight: 300, color: '#0F172A' }}>
             ger<span style={{ color: '#EF4444' }}>a</span>k
           </h1>
-          <p className="text-slate-400 text-xs mt-2 font-normal">Smart University Service Platform</p>
+          <p className="text-slate-400 text-xs mt-2 font-normal">Smart In-Campus Service Platform</p>
         </div>
 
         <div className="px-5 flex flex-col items-center gap-2 mb-8">

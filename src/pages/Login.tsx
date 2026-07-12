@@ -47,13 +47,10 @@ export const Login: React.FC = () => {
 
       {/* Branding */}
       <div className="flex flex-col items-center text-center mt-6 mb-8 px-6">
-        <div className="w-16 h-16 rounded-2xl bg-white border border-slate-100 mb-4 animate-float flex items-center justify-center">
-          <span style={{ fontFamily: 'Inter, sans-serif', fontSize: '2.6rem', color: '#0F172A', lineHeight: 1, fontWeight: 300 }}>g</span>
-        </div>
-        <h2 className="text-2xl font-normal text-slate-800 tracking-tight font-heading m-0">
-          Sign In to <span style={{ fontFamily: 'Inter, sans-serif', fontSize: '1.5rem', lineHeight: 1, fontWeight: 300 }}>ger<span style={{ color: '#EF4444' }}>a</span>k</span>
-        </h2>
-        <p className="text-slate-400 text-xs mt-1.5 font-normal">Smart University Service Platform</p>
+        <p style={{ fontFamily: 'Inter, sans-serif', fontWeight: 300, fontSize: '2.5rem', color: '#0F172A', lineHeight: 1 }}>
+          ger<span style={{ color: '#EF4444' }}>a</span>k
+        </p>
+        <p className="text-slate-400 text-xs mt-2 font-normal">Smart In-Campus Service Platform</p>
       </div>
 
       {/* Form */}
