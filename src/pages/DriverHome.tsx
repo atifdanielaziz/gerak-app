@@ -566,7 +566,7 @@ export const DriverHome: React.FC = () => {
              user.docsStatus === 'pending'  ? <ShieldCheck className="w-7 h-7 text-amber-400" /> :
              <ShieldCheck className="w-7 h-7 text-slate-300" />}
           </div>
-          <p className="text-sm font-bold text-slate-800">
+          <p className="text-sm font-semibold text-slate-800">
             {user.docsStatus === 'pending'  ? 'Documents Under Review' :
              user.docsStatus === 'rejected' ? 'Documents Rejected' :
              'Complete Verification'}
@@ -579,7 +579,7 @@ export const DriverHome: React.FC = () => {
         </div>
 
         <div className="bg-white border border-slate-100 rounded-3xl p-5 flex flex-col gap-4">
-          <h3 className="text-sm font-bold text-slate-700">Required Documents</h3>
+          <h3 className="text-sm font-semibold text-slate-700">Required Documents</h3>
 
           {/* IC Upload */}
           <div className="flex flex-col gap-2">
@@ -601,7 +601,7 @@ export const DriverHome: React.FC = () => {
                 className="w-full border-2 border-dashed border-slate-100 rounded-2xl py-4 flex items-center justify-center gap-2 text-slate-400 hover:border-primary hover:text-primary transition active:scale-95">
                 {uploadingDoc === 'ic'
                   ? <span className="w-4 h-4 rounded-full border-2 border-slate-300 border-t-primary animate-spin" />
-                  : <><Upload className="w-4 h-4" /><span className="text-xs font-bold">Upload IC (MyKad)</span></>}
+                  : <><Upload className="w-4 h-4" /><span className="text-xs font-semibold">Upload IC (MyKad)</span></>}
               </button>
             )}
           </div>
@@ -626,7 +626,7 @@ export const DriverHome: React.FC = () => {
                 className="w-full border-2 border-dashed border-slate-100 rounded-2xl py-4 flex items-center justify-center gap-2 text-slate-400 hover:border-primary hover:text-primary transition active:scale-95">
                 {uploadingDoc === 'license'
                   ? <span className="w-4 h-4 rounded-full border-2 border-slate-300 border-t-primary animate-spin" />
-                  : <><Upload className="w-4 h-4" /><span className="text-xs font-bold">Upload Driving License</span></>}
+                  : <><Upload className="w-4 h-4" /><span className="text-xs font-semibold">Upload Driving License</span></>}
               </button>
             )}
           </div>
@@ -657,7 +657,7 @@ export const DriverHome: React.FC = () => {
           <Car className="w-7 h-7 text-red-300" />
         </div>
         <div className="text-center">
-          <p className="text-sm font-bold text-slate-800">Account Suspended</p>
+          <p className="text-sm font-semibold text-slate-800">Account Suspended</p>
           <p className="text-xs text-slate-400 font-normal mt-1 leading-relaxed">
             Your driver account has been suspended.<br />Please contact your admin to reactivate.
           </p>
@@ -685,7 +685,7 @@ export const DriverHome: React.FC = () => {
       <div className="px-4 pt-5 pb-3 flex items-center justify-between">
         <div>
           <div className="flex items-center gap-2">
-            <h2 className="text-xl font-bold text-slate-800 m-0">Driver Hub</h2>
+            <h2 className="text-xl font-semibold text-slate-800 m-0">Driver Hub</h2>
             <span className="flex items-center gap-1 bg-emerald-50 border border-emerald-100 text-emerald-600 text-xs font-semibold px-2 py-0.5 rounded-full">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
               LIVE
@@ -819,7 +819,7 @@ export const DriverHome: React.FC = () => {
           {myJob && isDriverActive && (
             <div className="bg-amber-50 border border-amber-200 rounded-2xl px-4 py-3 flex items-center gap-2">
               <Clock className="w-4 h-4 text-amber-500 shrink-0" />
-              <p className="text-xs font-bold text-amber-700">
+              <p className="text-xs font-semibold text-amber-700">
                 You have an active trip. Complete it before accepting a new job.
               </p>
             </div>
@@ -834,7 +834,7 @@ export const DriverHome: React.FC = () => {
                 <span className="absolute -top-0.5 -right-0.5 w-4 h-4 rounded-full bg-emerald-400 border-2 border-white animate-pulse" />
               </div>
               <div>
-                <p className="text-sm font-bold text-slate-700">Queue is clear</p>
+                <p className="text-sm font-semibold text-slate-700">Queue is clear</p>
                 <p className="text-xs text-slate-400 font-normal mt-1 leading-relaxed">
                   New orders appear here instantly,<br />sorted by booking time.
                 </p>
@@ -892,11 +892,11 @@ export const DriverHome: React.FC = () => {
                     </div>
                     <div className="flex flex-col gap-2 flex-1 min-w-0">
                       <div>
-                        <p className="text-xs text-slate-400 font-semibold">Pick-up</p>
+                        <p className="text-xs text-slate-400 font-normal">Pick-up</p>
                         <p className="text-xs font-semibold text-slate-700 leading-tight">{order.pickup}</p>
                       </div>
                       <div>
-                        <p className="text-xs text-slate-400 font-semibold">Drop-off</p>
+                        <p className="text-xs text-slate-400 font-normal">Drop-off</p>
                         <p className="text-xs font-semibold text-slate-700 leading-tight">{order.destination}</p>
                       </div>
                     </div>
@@ -970,8 +970,8 @@ export const DriverHome: React.FC = () => {
               <div className="bg-white border border-slate-100 rounded-3xl overflow-hidden cursor-pointer" onClick={() => setSheetOrder(myJob)}>
                 <div className="px-5 pt-5 pb-4 flex flex-col gap-0.5">
                   <div className="flex items-center justify-between gap-3">
-                    <p className="text-xs font-semibold text-slate-400">Customer</p>
-                    <p className="text-xs font-semibold text-slate-400">Fare</p>
+                    <p className="text-xs font-normal text-slate-400">Customer</p>
+                    <p className="text-xs font-normal text-slate-400">Fare</p>
                   </div>
                   <div className="flex items-center justify-between gap-3">
                     <p className="text-sm font-semibold text-slate-800 leading-tight">{myJob.customer_name}</p>
@@ -994,11 +994,11 @@ export const DriverHome: React.FC = () => {
                     </div>
                     <div className="flex flex-col gap-2.5 flex-1 min-w-0">
                       <div>
-                        <p className="text-xs font-semibold text-slate-400">Pickup</p>
+                        <p className="text-xs font-normal text-slate-400">Pickup</p>
                         <p className="text-xs font-semibold text-slate-700 leading-tight">{myJob.pickup}</p>
                       </div>
                       <div>
-                        <p className="text-xs font-semibold text-slate-400">Destination</p>
+                        <p className="text-xs font-normal text-slate-400">Destination</p>
                         <p className="text-xs font-semibold text-slate-700 leading-tight">{myJob.destination}</p>
                       </div>
                     </div>
@@ -1095,7 +1095,7 @@ export const DriverHome: React.FC = () => {
             );
             return visibleHistory.length > 0 && (
             <div className="flex flex-col gap-4">
-              <h3 className="text-sm font-bold text-slate-700 flex items-center gap-1.5 pt-1">
+              <h3 className="text-sm font-semibold text-slate-700 flex items-center gap-1.5 pt-1">
                 <Clock className="w-3.5 h-3.5" /> Trip History
               </h3>
 
@@ -1149,7 +1149,7 @@ export const DriverHome: React.FC = () => {
               <div className="w-14 h-14 rounded-full bg-slate-100 flex items-center justify-center">
                 <Briefcase className="w-6 h-6 text-slate-300" />
               </div>
-              <p className="text-sm font-bold text-slate-600">No jobs yet</p>
+              <p className="text-sm font-semibold text-slate-600">No jobs yet</p>
               <p className="text-xs text-slate-400 font-normal">Your accepted and completed trips will appear here.</p>
             </div>
           )}
@@ -1311,8 +1311,8 @@ export const DriverHome: React.FC = () => {
                     return (
                       <button key={dateStr} disabled={isPast}
                         onClick={() => setScheduleDate(dateStr)}
-                        className={`aspect-square rounded-xl text-xs font-bold transition active:scale-90 ${
-                          isPicked   ? 'bg-amber-500 text-white font-semibold' :
+                        className={`aspect-square rounded-xl text-xs font-semibold transition active:scale-90 ${
+                          isPicked   ? 'bg-amber-500 text-white' :
                           isBlocked  ? 'bg-red-100 text-red-400' :
                           isPast     ? 'text-slate-200 cursor-not-allowed' :
                                        'text-slate-700 hover:bg-amber-50'
@@ -1349,7 +1349,7 @@ export const DriverHome: React.FC = () => {
                       const blocked = blockedHoursOn(scheduleDate).includes(h);
                       return (
                         <button key={h} onClick={() => toggleHourBlock(scheduleDate, h)}
-                          className={`py-2 rounded-xl text-xs font-bold transition active:scale-95 ${
+                          className={`py-2 rounded-xl text-xs font-semibold transition active:scale-95 ${
                             blocked
                               ? 'bg-red-100 text-red-500 border border-red-200'
                               : 'bg-slate-50 text-slate-600 hover:bg-amber-50 hover:text-amber-700'
@@ -1370,7 +1370,7 @@ export const DriverHome: React.FC = () => {
           {/* ── PRICING sub-view ── */}
           {!rentalLoading && rentalSubView === 'pricing' && (
             <div className="bg-white border border-slate-100 rounded-3xl p-5 flex flex-col gap-5">
-              <p className="text-sm font-bold text-slate-700">Pricing & Operating Hours</p>
+              <p className="text-sm font-semibold text-slate-700">Pricing & Operating Hours</p>
 
               {/* Hourly rate */}
               <div className="flex flex-col gap-1.5">
@@ -1466,7 +1466,7 @@ export const DriverHome: React.FC = () => {
           {/* ── VEHICLE sub-view ── */}
           {!rentalLoading && rentalSubView === 'vehicle' && (
             <div className="bg-white border border-slate-100 rounded-3xl p-5 flex flex-col gap-4">
-              <p className="text-sm font-bold text-slate-700">Vehicle Information</p>
+              <p className="text-sm font-semibold text-slate-700">Vehicle Information</p>
 
               {[
                 { label: 'Car Type / Model', key: 'car_type' as const, placeholder: 'e.g. Perodua Myvi' },
@@ -1490,7 +1490,7 @@ export const DriverHome: React.FC = () => {
                   <div className="flex items-center gap-2">
                     <button onClick={() => setVehicleForm(f => ({ ...f, seats: Math.max(1, (f.seats ?? 5) - 1) }))}
                       className="w-8 h-8 rounded-xl bg-slate-100 text-slate-600 font-semibold flex items-center justify-center active:scale-90">−</button>
-                    <span className="flex-1 text-center text-sm font-bold text-slate-800">{vehicleForm.seats ?? 5}</span>
+                    <span className="flex-1 text-center text-sm font-semibold text-slate-800">{vehicleForm.seats ?? 5}</span>
                     <button onClick={() => setVehicleForm(f => ({ ...f, seats: Math.min(15, (f.seats ?? 5) + 1) }))}
                       className="w-8 h-8 rounded-xl bg-slate-100 text-slate-600 font-semibold flex items-center justify-center active:scale-90">+</button>
                   </div>
@@ -1584,14 +1584,14 @@ export const DriverHome: React.FC = () => {
               {bk.booking_type === 'fullday' && bk.end_date && bk.end_date !== bk.date ? (
                 <div className="grid grid-cols-2 gap-2">
                   <div className="bg-slate-50 rounded-2xl px-3 py-2.5 text-center">
-                    <p className="text-xs text-slate-400 font-bold mb-0.5">From</p>
+                    <p className="text-xs text-slate-400 font-normal mb-0.5">From</p>
                     <p className="text-xs font-semibold text-slate-700 leading-tight">
                       {new Date(bk.date + 'T00:00:00').toLocaleDateString('en-MY', { day: '2-digit', month: 'short' })}
                     </p>
                     <p className="text-xs text-slate-400">{fmt12(bk.start_hour)}</p>
                   </div>
                   <div className="bg-slate-50 rounded-2xl px-3 py-2.5 text-center">
-                    <p className="text-xs text-slate-400 font-bold mb-0.5">To</p>
+                    <p className="text-xs text-slate-400 font-normal mb-0.5">To</p>
                     <p className="text-xs font-semibold text-slate-700 leading-tight">
                       {new Date(bk.end_date + 'T00:00:00').toLocaleDateString('en-MY', { day: '2-digit', month: 'short' })}
                     </p>
@@ -1601,20 +1601,20 @@ export const DriverHome: React.FC = () => {
               ) : (
                 <div className="grid grid-cols-3 gap-2">
                   <div className="bg-slate-50 rounded-2xl px-3 py-2.5 text-center">
-                    <p className="text-xs text-slate-400 font-bold mb-0.5">Date</p>
+                    <p className="text-xs text-slate-400 font-normal mb-0.5">Date</p>
                     <p className="text-xs font-semibold text-slate-700 leading-tight">
                       {new Date(bk.date + 'T00:00:00').toLocaleDateString('en-MY', { day: '2-digit', month: 'short', year: 'numeric' })}
                     </p>
                   </div>
                   <div className="bg-slate-50 rounded-2xl px-3 py-2.5 text-center">
-                    <p className="text-xs text-slate-400 font-bold mb-0.5">Time</p>
+                    <p className="text-xs text-slate-400 font-normal mb-0.5">Time</p>
                     <p className="text-xs font-semibold text-slate-700 leading-tight">
                       {fmt12(bk.start_hour)}<br />
                       <span className="text-xs text-slate-400">→ {fmt12(bk.start_hour + bk.duration)}</span>
                     </p>
                   </div>
                   <div className="bg-slate-50 rounded-2xl px-3 py-2.5 text-center">
-                    <p className="text-xs text-slate-400 font-bold mb-0.5">Duration</p>
+                    <p className="text-xs text-slate-400 font-normal mb-0.5">Duration</p>
                     <p className="text-xs font-semibold text-slate-700 leading-tight">{bk.duration} hr{bk.duration > 1 ? 's' : ''}</p>
                   </div>
                 </div>
@@ -1623,7 +1623,7 @@ export const DriverHome: React.FC = () => {
               {/* Customer info */}
               <div className="bg-slate-50 rounded-2xl px-4 py-3 flex items-center justify-between gap-3">
                 <div className="min-w-0">
-                  <p className="text-xs text-slate-400 font-semibold">Customer</p>
+                  <p className="text-xs text-slate-400 font-normal">Customer</p>
                   <p className="text-xs font-semibold text-slate-800 truncate">{bk.customer_name}</p>
                   <p className="text-xs text-slate-500 font-normal">{bk.persons} pax</p>
                 </div>
@@ -1640,12 +1640,12 @@ export const DriverHome: React.FC = () => {
               {/* Price breakdown */}
               <div className="flex flex-col gap-1.5 px-1">
                 <div className="flex items-center justify-between text-xs">
-                  <span className="text-slate-400 font-semibold">Rate</span>
-                  <span className="font-bold text-slate-600">RM{Number(priceHour).toFixed(2)} / hour</span>
+                  <span className="text-slate-400 font-normal">Rate</span>
+                  <span className="font-semibold text-slate-600">RM{Number(priceHour).toFixed(2)} / hour</span>
                 </div>
                 <div className="flex items-center justify-between text-xs">
-                  <span className="text-slate-400 font-semibold">Duration</span>
-                  <span className="font-bold text-slate-600">{bk.duration} hour{bk.duration > 1 ? 's' : ''}</span>
+                  <span className="text-slate-400 font-normal">Duration</span>
+                  <span className="font-semibold text-slate-600">{bk.duration} hour{bk.duration > 1 ? 's' : ''}</span>
                 </div>
                 <div className="mt-1 pt-2 border-t border-dashed border-slate-100 flex items-center justify-between">
                   <span className="text-xs font-semibold text-slate-700">Total</span>
@@ -1676,7 +1676,7 @@ export const DriverHome: React.FC = () => {
               {/* Notes */}
               {bk.notes && (
                 <div className="bg-slate-50 rounded-xl px-3 py-2">
-                  <p className="text-xs text-slate-400 font-semibold mb-0.5">Note from customer</p>
+                  <p className="text-xs text-slate-400 font-normal mb-0.5">Note from customer</p>
                   <p className="text-xs text-slate-500 italic">"{bk.notes}"</p>
                 </div>
               )}
@@ -1703,63 +1703,54 @@ export const DriverHome: React.FC = () => {
                 const bookingDate = new Date(bk.created_at).toLocaleDateString('en-MY', { day: '2-digit', month: 'short', year: 'numeric' });
                 const ownerLabel = isAdminForRental && bk.owner_name ? bk.owner_name : (user.name ?? '');
 
+                const row = (label: string, value: string) => `<div class="row"><span class="lbl">${label}</span><span class="val">${value}</span></div>`;
+                const daysCount = isFullDay && bk.end_date
+                  ? Math.round((new Date(bk.end_date + 'T00:00:00').getTime() - new Date(bk.date + 'T00:00:00').getTime()) / 86400000) + 1
+                  : null;
                 const html = `<!DOCTYPE html><html><head><meta charset="utf-8">
 <title>Gerak Rental Receipt #${String(bk.booking_no).padStart(5, '0')}</title>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
-body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f8fafc;display:flex;justify-content:center;padding:40px 20px}
-.card{background:white;border-radius:20px;overflow:hidden;width:100%;max-width:420px;box-shadow:0 4px 24px rgba(0,0,0,.08)}
-.header{background:#f59e0b;padding:20px 24px 16px}
-.header-top{display:flex;justify-content:space-between;align-items:flex-start}
-.header-label{font-size:9px;font-weight:800;color:rgba(255,255,255,.7);letter-spacing:.1em;text-transform:uppercase}
-.header-vehicle{font-size:22px;font-weight:900;color:white;margin:4px 0 2px}
-.header-plate{font-size:11px;color:rgba(255,255,255,.8);font-weight:600}
-.badge{background:rgba(255,255,255,.25);border:1px solid rgba(255,255,255,.4);color:white;font-size:9px;font-weight:800;padding:4px 10px;border-radius:20px;text-transform:uppercase;white-space:nowrap}
-.divider{border:none;border-top:1.5px dashed #e2e8f0;margin:0 24px}
-.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;padding:16px 24px 8px}
-.cell{background:#f8fafc;border-radius:12px;padding:10px 12px;text-align:center}
-.cell-label{font-size:9px;color:#94a3b8;font-weight:700;margin-bottom:3px}
-.cell-value{font-size:11px;font-weight:800;color:#334155}
-.cell-sub{font-size:9px;color:#94a3b8;margin-top:2px}
-.breakdown{padding:12px 24px}
-.row{display:flex;justify-content:space-between;font-size:10px;margin-bottom:6px}
-.row-label{color:#94a3b8;font-weight:600}
-.row-value{color:#475569;font-weight:700}
-.total-row{display:flex;justify-content:space-between;align-items:center;padding-top:10px;margin-top:4px;border-top:1.5px dashed #e2e8f0}
-.total-label{font-size:13px;font-weight:800;color:#1e293b}
-.total-amount{font-size:22px;font-weight:900;color:#f59e0b}
-.parties{display:flex;flex-direction:column;padding:12px 24px;gap:10px}
-.party-label{font-size:9px;color:#94a3b8;font-weight:700;text-transform:uppercase;letter-spacing:.05em;margin-bottom:3px}
-.party-name{font-size:12px;font-weight:800;color:#1e293b}
-.party-sub{font-size:10px;color:#94a3b8;font-weight:600;margin-top:1px}
-.footer{background:#f8fafc;padding:10px 24px;display:flex;align-items:center;justify-content:space-between}
-.footer-ref{font-size:9px;color:#94a3b8;font-weight:700;font-family:monospace;letter-spacing:.05em}
-.footer-date{font-size:9px;color:#94a3b8;font-weight:600}
-@media print{body{padding:0;background:white}.card{box-shadow:none;border-radius:0;max-width:100%}}
-</style></head><body>
-<div class="card">
-  <div class="header"><div class="header-top">
-    <div><div class="header-label">Gerak Rental Receipt</div><div class="header-vehicle">${vehicleName}</div>${plateColor ? `<div class="header-plate">${plateColor}</div>` : ''}</div>
-    <span class="badge">${bk.status}</span>
-  </div></div>
-  <hr class="divider"/>
-  <div class="grid">
-    <div class="cell"><div class="cell-label">${isFullDay ? 'Date Range' : 'Date'}</div><div class="cell-value" style="font-size:10px">${dateStr}</div></div>
-    ${timeStr ? `<div class="cell"><div class="cell-label">Time</div><div class="cell-value">${fmt12(bk.start_hour)}</div><div class="cell-sub">→ ${fmt12(bk.start_hour + bk.duration)}</div></div>` : '<div class="cell"><div class="cell-label">Type</div><div class="cell-value">Full Day</div></div>'}
-    <div class="cell"><div class="cell-label">Duration</div><div class="cell-value">${bk.duration}h</div></div>
-  </div>
-  <div class="breakdown">
-    <div class="row"><span class="row-label">Rate</span><span class="row-value">RM${Number(priceH).toFixed(2)} / hour</span></div>
-    <div class="row"><span class="row-label">Duration</span><span class="row-value">${bk.duration} hour${bk.duration > 1 ? 's' : ''}</span></div>
-    <div class="row"><span class="row-label">Persons</span><span class="row-value">${bk.persons} pax</span></div>
-    <div class="total-row"><span class="total-label">Total</span><span class="total-amount">RM${Number(bk.total_price).toFixed(2)}</span></div>
-  </div>
-  <hr class="divider"/>
-  <div class="parties">
-    <div class="party"><div class="party-label">Customer</div><div class="party-name">${bk.customer_name}</div><div class="party-sub">${bk.customer_phone !== '—' ? bk.customer_phone : ''}</div></div>
-    <div class="party"><div class="party-label">Vehicle Owner</div><div class="party-name">${ownerLabel}</div></div>
-  </div>
-  <div class="footer"><span class="footer-ref"># ${String(bk.booking_no).padStart(5, '0')}</span><span class="footer-date">${bookingDate}</span></div>
+body{font-family:'Courier New',Courier,monospace;background:#fff;display:flex;justify-content:center;padding:32px 16px;font-size:12px;color:#1e293b}
+.wrap{width:100%;max-width:400px}
+.wordmark{font-size:22px;font-weight:300;letter-spacing:-0.5px;margin-bottom:2px}
+.wordmark .a{color:#ef4444}
+.subtitle{font-size:10px;color:#64748b;margin-bottom:16px}
+hr{border:none;border-top:1px dashed #cbd5e1;margin:12px 0}
+.row{display:flex;justify-content:space-between;margin-bottom:5px;gap:8px}
+.lbl{color:#64748b;white-space:nowrap}
+.val{font-weight:700;text-align:right}
+.total-row{display:flex;justify-content:space-between;margin-top:4px}
+.total-lbl{font-size:13px;font-weight:700}
+.total-val{font-size:20px;font-weight:900}
+.footer{margin-top:16px;font-size:9px;color:#94a3b8;text-align:center}
+@media print{body{padding:0}}
+</style></head><body><div class="wrap">
+<div class="wordmark">ger<span class="a">a</span>k</div>
+<div class="subtitle">Gerak Rental — Booking Receipt</div>
+${row('Booking Ref', `#${String(bk.booking_no).padStart(5, '0')}`)}
+${row('Status', bk.status.toUpperCase())}
+${row('Booked On', bookingDate)}
+<hr/>
+${row('Vehicle', vehicleName)}
+${plateColor ? row('Plate / Colour', plateColor) : ''}
+<hr/>
+${row(isFullDay ? 'Date Range' : 'Date', dateStr)}
+${timeStr ? row('Time', timeStr) : row('Type', 'Full Day')}
+${daysCount ? row('Duration', `${daysCount} day${daysCount > 1 ? 's' : ''}`) : row('Duration', `${bk.duration} hour${bk.duration > 1 ? 's' : ''}`)}
+${row('Persons', `${bk.persons} pax`)}
+<hr/>
+${isFullDay
+  ? row('Total', `RM${Number(bk.total_price).toFixed(2)}`)
+  : row('Rate', `RM${Number(priceH).toFixed(2)} / hour`) +
+    row('Duration', `${bk.duration} hour${bk.duration > 1 ? 's' : ''}`) +
+    `<hr/>`}
+<div class="total-row"><span class="total-lbl">Total</span><span class="total-val">RM${Number(bk.total_price).toFixed(2)}</span></div>
+<hr/>
+${row('Customer', bk.customer_name)}
+${bk.customer_phone && bk.customer_phone !== '—' ? row('Phone', bk.customer_phone) : ''}
+${row('Vehicle Owner', ownerLabel)}
+<div class="footer">Generated by Gerak · ${bookingDate}</div>
 </div>
 <script>window.onload=function(){window.print();window.onafterprint=function(){window.close()}}<\/script>
 </body></html>`;
