@@ -201,7 +201,7 @@ export const MapboxRideMap: React.FC<Props> = ({ campusCenter, onPickupChange, o
           locationBias: {
             circle: {
               center: { latitude: campusCenter[1], longitude: campusCenter[0] },
-              radius: 100000,
+              radius: 50000,
             },
           },
         }),
