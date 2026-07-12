@@ -111,8 +111,11 @@ export const Transport: React.FC = () => {
     const handler = (e: MouseEvent) => {
       if (fromDropdownRef.current && !fromDropdownRef.current.contains(e.target as Node))
         setShowFromDropdown(false);
-      if (routeListRef.current && !routeListRef.current.contains(e.target as Node))
+      if (routeListRef.current && !routeListRef.current.contains(e.target as Node)) {
         setShowRouteList(false);
+        setSelectedFrom('');
+        setSelectedRoute(null);
+      }
     };
     document.addEventListener('mousedown', handler);
     return () => document.removeEventListener('mousedown', handler);

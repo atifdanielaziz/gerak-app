@@ -1012,12 +1012,14 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
                 placeholder="Any notes for the owner? (optional)"
                 className="w-full bg-white border border-slate-100 rounded-xl px-3 py-2.5 text-xs text-slate-700 focus:outline-none focus:border-amber-400 transition resize-none" />
 
-              {/* Profile auto-fill display */}
-              <div className="border border-slate-100 rounded-xl px-3 py-2.5 flex flex-col gap-0.5">
-                <p className="text-xs font-normal text-slate-400">Booking as</p>
-                <p className="text-xs font-semibold text-slate-700">{user.name}</p>
-                <p className="text-xs text-slate-400 font-normal">{user.phone}</p>
-              </div>
+              {/* Profile auto-fill display — logged in only */}
+              {user.isLoggedIn && (
+                <div className="border border-slate-100 rounded-xl px-3 py-2.5 flex flex-col gap-0.5">
+                  <p className="text-xs font-normal text-slate-400">Booking as</p>
+                  <p className="text-xs font-semibold text-slate-700">{user.name}</p>
+                  <p className="text-xs text-slate-400 font-normal">{user.phone}</p>
+                </div>
+              )}
 
               {/* Total + Book */}
               <div className="bg-amber-50 border border-amber-100 rounded-2xl p-5 flex items-center justify-between">
@@ -1028,7 +1030,12 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
                     {duration}h × RM{selected.price_hour.toFixed(2)}{nightSurcharge > 0 ? ` + RM${nightSurcharge.toFixed(2)} night` : ''}
                   </p>
                 </div>
-                {bookingDone ? (
+                {!user.isLoggedIn ? (
+                  <button onClick={() => showAuthGate()}
+                    className="bg-primary text-white font-semibold text-xs px-4 py-3 rounded-2xl transition active:scale-95 flex items-center gap-2">
+                    Sign in to book
+                  </button>
+                ) : bookingDone ? (
                   <span className="bg-slate-100 text-slate-500 text-xs font-semibold px-4 py-3 rounded-2xl flex items-center gap-1.5">
                     <CheckCircle2 className="w-4 h-4 text-slate-400" /> Booked
                   </span>
@@ -1079,12 +1086,14 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
                 placeholder="Any notes for the owner? (optional)"
                 className="w-full bg-white border border-slate-100 rounded-xl px-3 py-2.5 text-xs text-slate-700 focus:outline-none focus:border-amber-400 transition resize-none" />
 
-              {/* Profile auto-fill display */}
-              <div className="border border-slate-100 rounded-xl px-3 py-2.5 flex flex-col gap-0.5">
-                <p className="text-xs font-normal text-slate-400">Booking as</p>
-                <p className="text-xs font-semibold text-slate-700">{user.name}</p>
-                <p className="text-xs text-slate-400 font-normal">{user.phone}</p>
-              </div>
+              {/* Profile auto-fill display — logged in only */}
+              {user.isLoggedIn && (
+                <div className="border border-slate-100 rounded-xl px-3 py-2.5 flex flex-col gap-0.5">
+                  <p className="text-xs font-normal text-slate-400">Booking as</p>
+                  <p className="text-xs font-semibold text-slate-700">{user.name}</p>
+                  <p className="text-xs text-slate-400 font-normal">{user.phone}</p>
+                </div>
+              )}
 
               {/* Total + Book */}
               <div className="bg-amber-50 border border-amber-100 rounded-2xl p-5 flex items-center justify-between">
@@ -1095,7 +1104,12 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
                     {numDays}d ×{selected.operating_end - selected.operating_start}h × RM{selected.price_hour.toFixed(2)}
                   </p>
                 </div>
-                {bookingDone ? (
+                {!user.isLoggedIn ? (
+                  <button onClick={() => showAuthGate()}
+                    className="bg-primary text-white font-semibold text-xs px-4 py-3 rounded-2xl transition active:scale-95 flex items-center gap-2">
+                    Sign in to book
+                  </button>
+                ) : bookingDone ? (
                   <span className="bg-slate-100 text-slate-500 text-xs font-semibold px-4 py-3 rounded-2xl flex items-center gap-1.5">
                     <CheckCircle2 className="w-4 h-4 text-slate-400" /> Booked
                   </span>
@@ -1111,25 +1125,27 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
             </div>
           )}
 
-          {/* Owner contact info */}
-          <div className="border border-slate-100 rounded-2xl p-5 flex items-center justify-between gap-3">
-            <div className="flex items-start gap-2 min-w-0">
-              <Info className="w-4 h-4 text-slate-400 shrink-0 mt-0.5" />
-              <div className="min-w-0">
-                <p className="text-xs font-semibold text-slate-700 truncate">Owner — {selected.name}</p>
-                <p className="text-xs text-slate-400 font-normal mt-0.5">
-                  {selected.gerak_id} · {selected.phone}
-                </p>
+          {/* Owner contact info — logged in only */}
+          {user.isLoggedIn && (
+            <div className="border border-slate-100 rounded-2xl p-5 flex items-center justify-between gap-3">
+              <div className="flex items-start gap-2 min-w-0">
+                <Info className="w-4 h-4 text-slate-400 shrink-0 mt-0.5" />
+                <div className="min-w-0">
+                  <p className="text-xs font-semibold text-slate-700 truncate">Owner — {selected.name}</p>
+                  <p className="text-xs text-slate-400 font-normal mt-0.5">
+                    {selected.gerak_id} · {selected.phone}
+                  </p>
+                </div>
               </div>
+              {selected.phone && (
+                <a href={`https://wa.me/${toWa(selected.phone)}`}
+                  target="_blank" rel="noreferrer"
+                  className="flex items-center gap-1.5 bg-emerald-500 text-white text-xs font-semibold px-3 py-2 rounded-xl transition active:scale-95 shrink-0">
+                  <WaIcon className="w-3 h-3" /> WhatsApp
+                </a>
+              )}
             </div>
-            {selected.phone && (
-              <a href={`https://wa.me/${toWa(selected.phone)}`}
-                target="_blank" rel="noreferrer"
-                className="flex items-center gap-1.5 bg-emerald-500 text-white text-xs font-semibold px-3 py-2 rounded-xl transition active:scale-95 shrink-0">
-                <WaIcon className="w-3 h-3" /> WhatsApp
-              </a>
-            )}
-          </div>
+          )}
         </div>
       )}
     </div>
