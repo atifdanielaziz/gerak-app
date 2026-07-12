@@ -218,7 +218,7 @@ export const RiderHome: React.FC = () => {
              user.docsStatus === 'pending'  ? <ShieldCheck className="w-7 h-7 text-amber-400" /> :
              <ShieldCheck className="w-7 h-7 text-slate-300" />}
           </div>
-          <p className="text-sm font-bold text-slate-800">
+          <p className="text-sm font-semibold text-slate-800">
             {user.docsStatus === 'pending'  ? 'Documents Under Review' :
              user.docsStatus === 'rejected' ? 'Documents Rejected' :
              'Complete Verification'}
@@ -231,7 +231,7 @@ export const RiderHome: React.FC = () => {
         </div>
 
         <div className="bg-white border border-slate-100 rounded-3xl p-5 flex flex-col gap-4">
-          <h3 className="text-sm font-bold text-slate-700">Required Documents</h3>
+          <h3 className="text-sm font-semibold text-slate-700">Required Documents</h3>
 
           <div className="flex flex-col gap-2">
             <label className="text-xs font-semibold text-slate-500">Identity Card (MyKad) *</label>
@@ -305,7 +305,7 @@ export const RiderHome: React.FC = () => {
           <ShoppingBasket className="w-7 h-7 text-amber-300" />
         </div>
         <div className="text-center">
-          <p className="text-sm font-bold text-slate-800">Account Inactive</p>
+          <p className="text-sm font-semibold text-slate-800">Account Inactive</p>
           <p className="text-xs text-slate-400 font-normal mt-1 leading-relaxed">
             Pay your monthly fee and upload your receipt<br />in Profile to activate your Rider account.
           </p>
@@ -340,7 +340,7 @@ export const RiderHome: React.FC = () => {
             )}
             <div>
               <div className="flex items-center gap-2">
-                <h2 className="text-xl font-bold text-slate-800 m-0">
+                <h2 className="text-xl font-semibold text-slate-800 m-0">
                   {activeTab === 'jubah' && jubahView === 'card'    ? 'Job Details' :
                    activeTab === 'jubah' && jubahView === 'details' ? 'Customer Info' :
                    'Rider Hub'}
@@ -400,7 +400,7 @@ export const RiderHome: React.FC = () => {
             <div className="w-16 h-16 rounded-3xl bg-violet-50 border border-violet-100 flex items-center justify-center">
               <ShoppingBasket className="w-7 h-7 text-violet-300" />
             </div>
-            <p className="text-sm font-bold text-slate-700">No Daily Jobs Yet</p>
+            <p className="text-sm font-semibold text-slate-700">No Daily Jobs Yet</p>
             <p className="text-xs text-slate-400 font-normal text-center leading-relaxed max-w-xs">
               Gerak Daily job assignments will appear here. Stay active to receive jobs from customers.
             </p>
@@ -414,9 +414,9 @@ export const RiderHome: React.FC = () => {
             {/* PAGE 1 — Assignment List */}
             {jubahView === 'list' && (
               <div className="bg-white border border-slate-100 rounded-3xl p-5 flex flex-col gap-4">
-                <h3 className="text-sm font-bold text-slate-700 flex items-center justify-between">
+                <h3 className="text-sm font-semibold text-slate-700 flex items-center justify-between">
                   <span className="flex items-center gap-1.5"><GraduationCap className="w-4 h-4" /> My Assignments</span>
-                  <span className="font-bold text-slate-300 normal-case tracking-normal">{jubahJobs.length} jobs</span>
+                  <span className="font-normal text-slate-300 normal-case tracking-normal">{jubahJobs.length} jobs</span>
                 </h3>
 
                 {jubahLoading ? (
@@ -428,7 +428,7 @@ export const RiderHome: React.FC = () => {
                     <div className="w-14 h-14 rounded-3xl bg-blue-50 border border-blue-100 flex items-center justify-center">
                       <GraduationCap className="w-6 h-6 text-blue-300" />
                     </div>
-                    <p className="text-sm font-bold text-slate-700">No Jubah Jobs Yet</p>
+                    <p className="text-sm font-semibold text-slate-700">No Jubah Jobs Yet</p>
                     <p className="text-xs text-slate-400 font-normal text-center leading-relaxed max-w-xs">
                       Jubah delivery assignments from customers will appear here during convocation period.
                     </p>
@@ -610,7 +610,7 @@ export const RiderHome: React.FC = () => {
                   {/* View Full Details button */}
                   <button
                     onClick={goToDetails}
-                    className="w-full bg-white border border-slate-200 text-slate-600 font-semibold py-3 rounded-2xl text-sm transition hover:border-primary hover:text-primary active:scale-95"
+                    className="w-full bg-white border border-slate-100 text-slate-600 font-semibold py-3 rounded-2xl text-sm transition active:scale-95 active:bg-slate-50"
                   >
                     View Customer Details →
                   </button>
@@ -624,7 +624,7 @@ export const RiderHome: React.FC = () => {
 
                 {/* Form fields card */}
                 <div className="bg-white border border-slate-100 rounded-3xl p-5 flex flex-col gap-4">
-                  <h3 className="text-sm font-bold text-slate-700">Booking Information</h3>
+                  <h3 className="text-sm font-semibold text-slate-700">Booking Information</h3>
 
                   {([
                     { label: 'Full Name',        value: selectedJob.full_name },
@@ -642,16 +642,16 @@ export const RiderHome: React.FC = () => {
                     { label: 'Rider Assigned',   value: selectedJob.rider_name ?? '—' },
                     { label: 'Reference',         value: selectedJob.reference },
                   ] as { label: string; value: string }[]).map(({ label, value }) => (
-                    <div key={label} className="flex flex-col gap-0.5 border-b border-slate-50 pb-3 last:border-0 last:pb-0">
-                      <span className="text-xs font-semibold text-slate-400 ">{label}</span>
-                      <span className="text-sm font-bold text-slate-700 leading-relaxed">{value}</span>
+                    <div key={label} className="flex flex-col gap-0.5 border-b border-slate-100 pb-3 last:border-0 last:pb-0">
+                      <span className="text-xs font-normal text-slate-400">{label}</span>
+                      <span className="text-sm font-semibold text-slate-700 leading-relaxed">{value}</span>
                     </div>
                   ))}
                 </div>
 
                 {/* Documents download card */}
                 <div className="bg-white border border-slate-100 rounded-3xl p-5 flex flex-col gap-4">
-                  <h3 className="text-sm font-bold text-slate-700">Documents</h3>
+                  <h3 className="text-sm font-semibold text-slate-700">Documents</h3>
 
                   {([
                     { label: 'Combined PDF',    url: selectedJob.drive_docs_url },
@@ -661,7 +661,7 @@ export const RiderHome: React.FC = () => {
                     { label: 'Konvo Slip',      url: selectedJob.drive_konvo_url },
                     { label: 'IC Copy',         url: selectedJob.drive_ic_url },
                   ] as { label: string; url: string | null }[]).map(({ label, url }) => (
-                    <div key={label} className="flex items-center justify-between gap-3 border-b border-slate-50 pb-3 last:border-0 last:pb-0">
+                    <div key={label} className="flex items-center justify-between gap-3 border-b border-slate-100 pb-3 last:border-0 last:pb-0">
                       <span className="text-sm font-semibold text-slate-700">{label}</span>
                       <button
                         type="button"
@@ -693,8 +693,8 @@ export const RiderHome: React.FC = () => {
             <div className="w-16 h-16 rounded-3xl bg-emerald-50 border border-emerald-100 flex items-center justify-center">
               <TrendingUp className="w-7 h-7 text-emerald-300" />
             </div>
-            <p className="text-sm font-black text-slate-700">No Earnings Yet</p>
-            <p className="text-xs text-slate-400 font-semibold text-center leading-relaxed max-w-xs">
+            <p className="text-sm font-semibold text-slate-700">No Earnings Yet</p>
+            <p className="text-xs text-slate-400 font-normal text-center leading-relaxed max-w-xs">
               Your completed job earnings will be tracked here.
             </p>
           </div>
