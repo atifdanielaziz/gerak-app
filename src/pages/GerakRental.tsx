@@ -80,7 +80,7 @@ const statusStyle: Record<string, string> = {
   pending:   'bg-amber-50 text-amber-700 border-amber-200',
   confirmed: 'bg-emerald-50 text-emerald-700 border-emerald-200',
   cancelled: 'bg-red-50 text-red-500 border-red-200',
-  completed: 'bg-slate-100 text-slate-500 border-slate-200',
+  completed: 'bg-slate-100 text-slate-500 border-slate-100',
 };
 
 export const GerakRental: React.FC = () => {
@@ -492,7 +492,7 @@ ${row('Owner ID', bk.owner_gerak_id ?? '—')}
 
       {/* Toast */}
       {toast && (
-        <div className="fixed top-16 left-4 right-4 z-50 bg-slate-800 text-white text-xs font-bold px-4 py-2.5 rounded-2xl shadow-lg text-center">
+        <div className="fixed top-16 left-4 right-4 z-50 bg-slate-800 text-white text-xs font-semibold px-4 py-2.5 rounded-2xl shadow-lg text-center">
           {toast}
         </div>
       )}
@@ -501,7 +501,7 @@ ${row('Owner ID', bk.owner_gerak_id ?? '—')}
       <div className="px-4 pt-5 pb-3 flex items-center justify-between">
         <div className="flex items-center gap-2">
           <div>
-            <h2 className="text-xl font-bold text-slate-800 m-0 flex items-center gap-2">
+            <h2 className="text-xl font-semibold text-slate-800 m-0 flex items-center gap-2">
               <KeyRound className="w-5 h-5 text-amber-500" /> Gerak Rental
             </h2>
             <p className="text-xs text-slate-400 font-normal mt-0.5">
@@ -545,7 +545,7 @@ ${row('Owner ID', bk.owner_gerak_id ?? '—')}
                 </span>
               </div>
 
-              <div className="mx-5 border-t border-dashed border-slate-200" />
+              <div className="mx-5 border-t border-dashed border-slate-100" />
 
               {/* Date & time block */}
               <div className="px-5 pt-4 pb-2 grid grid-cols-3 gap-2">
@@ -667,7 +667,7 @@ ${row('Owner ID', bk.owner_gerak_id ?? '—')}
                 </div>
               )}
 
-              <div className="mx-5 border-t border-dashed border-slate-200" />
+              <div className="mx-5 border-t border-dashed border-slate-100" />
 
               {/* Booked By → Vehicle Owner stacked, WA icon at owner name level */}
               <div className="px-5 py-3 flex flex-col gap-4">
@@ -745,7 +745,7 @@ ${row('Owner ID', bk.owner_gerak_id ?? '—')}
             </div>
           ) : owners.map(o => (
             <div key={o.id} onClick={() => { setSelected(o); setView('book'); }}
-              className="bg-white border border-slate-100 rounded-3xl p-5 cursor-pointer hover:border-slate-200 active:scale-[0.99] transition flex flex-col gap-4">
+              className="bg-white border border-slate-100 rounded-3xl p-5 cursor-pointer active:scale-[0.99] transition flex flex-col gap-4">
               <div className="flex items-start justify-between gap-3">
                 <div className="w-12 h-12 rounded-2xl bg-amber-50 flex items-center justify-center shrink-0">
                   <Car className="w-6 h-6 text-amber-500" />
@@ -786,7 +786,7 @@ ${row('Owner ID', bk.owner_gerak_id ?? '—')}
                 <p className="text-xs text-slate-400 font-normal leading-relaxed">{o.description}</p>
               )}
 
-              <div className="flex items-center justify-between pt-1 border-t border-slate-50">
+              <div className="flex items-center justify-between pt-1 border-t border-slate-100">
                 <p className="text-xs text-slate-400 font-normal">ID: {o.gerak_id}</p>
                 <span className="text-xs text-amber-500 font-semibold">Tap to book →</span>
               </div>
@@ -811,19 +811,19 @@ ${row('Owner ID', bk.owner_gerak_id ?? '—')}
             <p className="text-sm font-black text-amber-600 shrink-0">RM{selected.price_hour.toFixed(2)}/h</p>
           </div>
 
-          {/* Booking type toggle */}
-          <div className="flex bg-white border border-slate-100 rounded-2xl p-1 gap-1">
+          {/* Booking type toggle — Mode Selector Standard */}
+          <div className="flex gap-2">
             <button onClick={() => switchBookingType('hourly')}
-              className={`flex-1 py-2 rounded-xl text-xs font-semibold transition flex items-center justify-center gap-1.5 ${
-                bookingType === 'hourly' ? 'bg-amber-500 text-white' : 'text-slate-400'
+              className={`flex-1 flex items-center justify-center gap-1.5 py-3 rounded-2xl border text-xs font-semibold transition-colors active:scale-[0.98] ${
+                bookingType === 'hourly' ? 'border-amber-300 bg-amber-50 text-amber-700' : 'border-slate-100 bg-white text-slate-400'
               }`}>
-              <Clock className="w-3 h-3" /> Hourly
+              <Clock className="w-3.5 h-3.5" /> Hourly
             </button>
             <button onClick={() => switchBookingType('fullday')}
-              className={`flex-1 py-2 rounded-xl text-xs font-semibold transition flex items-center justify-center gap-1.5 ${
-                bookingType === 'fullday' ? 'bg-amber-500 text-white' : 'text-slate-400'
+              className={`flex-1 flex items-center justify-center gap-1.5 py-3 rounded-2xl border text-xs font-semibold transition-colors active:scale-[0.98] ${
+                bookingType === 'fullday' ? 'border-amber-300 bg-amber-50 text-amber-700' : 'border-slate-100 bg-white text-slate-400'
               }`}>
-              <CalendarDays className="w-3 h-3" /> Full Day / Multi-Day
+              <CalendarDays className="w-3.5 h-3.5" /> Full Day / Multi-Day
             </button>
           </div>
 
@@ -852,7 +852,7 @@ ${row('Owner ID', bk.owner_gerak_id ?? '—')}
 
             <div className="grid grid-cols-7 mb-1">
               {['Su','Mo','Tu','We','Th','Fr','Sa'].map(d => (
-                <div key={d} className="text-center text-xs font-semibold text-slate-400">{d}</div>
+                <div key={d} className="text-center text-xs font-normal text-slate-400">{d}</div>
               ))}
             </div>
 
@@ -894,7 +894,7 @@ ${row('Owner ID', bk.owner_gerak_id ?? '—')}
           {/* Hourly: time slot picker */}
           {bookingType === 'hourly' && rangeStart && (
             <div className="bg-white border border-slate-100 rounded-3xl p-5">
-              <p className="text-sm font-bold text-slate-700 mb-1">
+              <p className="text-sm font-semibold text-slate-700 mb-1">
                 Available Hours — {rangeStart}
               </p>
               <p className="text-xs text-slate-400 font-normal mb-3">
@@ -909,7 +909,7 @@ ${row('Owner ID', bk.owner_gerak_id ?? '—')}
                   return (
                     <button key={h} disabled={!avail}
                       onClick={() => setStartHour(h)}
-                      className={`py-2 rounded-xl text-xs font-bold transition active:scale-95 relative ${
+                      className={`py-2 rounded-xl text-xs font-semibold transition active:scale-95 relative ${
                         picked   ? 'bg-primary text-white' :
                         inSlot   ? 'bg-primary/20 text-primary' :
                         !avail   ? 'bg-slate-100 text-slate-300 cursor-not-allowed' :
