@@ -915,7 +915,7 @@ ${row('Owner ID', bk.owner_gerak_id ?? '—')}
                   return (
                     <button key={h} disabled={!avail}
                       onClick={() => setStartHour(h)}
-                      className={`py-2 rounded-xl text-xs font-semibold transition active:scale-95 relative ${
+                      className={`py-2 rounded-xl text-xs font-semibold transition-transform active:scale-95 relative ${
                         picked   ? 'bg-primary text-white' :
                         !avail   ? 'bg-slate-100 text-slate-300 cursor-not-allowed' :
                         inSlot   ? 'bg-primary/20 text-primary' :
