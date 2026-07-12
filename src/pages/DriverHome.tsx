@@ -56,7 +56,16 @@ interface RentalBlock {
 }
 
 const HOURS = Array.from({ length: 24 }, (_, i) => i);
-const fmt12 = (h: number) => h === 0 ? '12 AM' : h < 12 ? `${h} AM` : h === 12 ? '12 PM' : `${h - 12} PM`;
+const fmt12 = (h: number) => {
+  const total = ((h % 24) + 24) % 24;
+  const hh  = Math.floor(total);
+  const mm  = total % 1 !== 0 ? ':30' : ':00';
+  const p   = hh < 12 ? 'AM' : 'PM';
+  const dh  = hh === 0 ? 12 : hh > 12 ? hh - 12 : hh;
+  return `${dh}${mm} ${p}`;
+};
+const fmtDuration = (h: number) =>
+  h < 1 ? '30 min' : Number.isInteger(h) ? `${h}h` : `${Math.floor(h)}h 30m`;
 const toDateStr = (d: Date) => d.toISOString().split('T')[0];
 const todayStr  = () => toDateStr(new Date());
 
@@ -1615,7 +1624,7 @@ export const DriverHome: React.FC = () => {
                   </div>
                   <div className="bg-slate-50 rounded-2xl px-3 py-2.5 text-center">
                     <p className="text-xs text-slate-400 font-normal mb-0.5">Duration</p>
-                    <p className="text-xs font-semibold text-slate-700 leading-tight">{bk.duration} hr{bk.duration > 1 ? 's' : ''}</p>
+                    <p className="text-xs font-semibold text-slate-700 leading-tight">{fmtDuration(bk.duration)}</p>
                   </div>
                 </div>
               )}
@@ -1737,13 +1746,13 @@ ${plateColor ? row('Plate / Colour', plateColor) : ''}
 <hr/>
 ${row(isFullDay ? 'Date Range' : 'Date', dateStr)}
 ${timeStr ? row('Time', timeStr) : row('Type', 'Full Day')}
-${daysCount ? row('Duration', `${daysCount} day${daysCount > 1 ? 's' : ''}`) : row('Duration', `${bk.duration} hour${bk.duration > 1 ? 's' : ''}`)}
+${daysCount ? row('Duration', `${daysCount} day${daysCount > 1 ? 's' : ''}`) : row('Duration', fmtDuration(bk.duration))}
 ${row('Persons', `${bk.persons} pax`)}
 <hr/>
 ${isFullDay
   ? row('Total', `RM${Number(bk.total_price).toFixed(2)}`)
   : row('Rate', `RM${Number(priceH).toFixed(2)} / hour`) +
-    row('Duration', `${bk.duration} hour${bk.duration > 1 ? 's' : ''}`) +
+    row('Duration', fmtDuration(bk.duration)) +
     `<hr/>`}
 <div class="total-row"><span class="total-lbl">Total</span><span class="total-val">RM${Number(bk.total_price).toFixed(2)}</span></div>
 <hr/>

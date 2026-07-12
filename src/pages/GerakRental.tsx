@@ -57,11 +57,17 @@ interface RentalBooking {
 
 const ALLOWED_LICENSE_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'application/pdf'];
 
-const HOURS = Array.from({ length: 24 }, (_, i) => i);
+const HOURS = Array.from({ length: 48 }, (_, i) => i * 0.5);
 const fmt12 = (h: number) => {
-  const hh = ((h % 24) + 24) % 24;
-  return hh === 0 ? '12 AM' : hh < 12 ? `${hh} AM` : hh === 12 ? '12 PM' : `${hh - 12} PM`;
+  const total = ((h % 24) + 24) % 24;
+  const hh  = Math.floor(total);
+  const mm  = total % 1 !== 0 ? ':30' : ':00';
+  const p   = hh < 12 ? 'AM' : 'PM';
+  const dh  = hh === 0 ? 12 : hh > 12 ? hh - 12 : hh;
+  return `${dh}${mm} ${p}`;
 };
+const fmtDuration = (h: number) =>
+  h < 1 ? '30 min' : Number.isInteger(h) ? `${h}h` : `${Math.floor(h)}h 30m`;
 const toDateStr = (d: Date) => d.toISOString().split('T')[0];
 const today = () => toDateStr(new Date());
 
@@ -237,8 +243,8 @@ export const GerakRental: React.FC = () => {
     existingBooks
       .filter(bk => bk.date === dateStr && bk.booking_type !== 'fullday')
       .forEach(bk => {
-        for (let h = bk.start_hour; h < bk.start_hour + bk.duration; h++) set.add(h);
-        set.add(bk.start_hour + bk.duration); // 30-min buffer after each booking
+        for (let h = bk.start_hour; h < bk.start_hour + bk.duration; h += 0.5) set.add(h);
+        set.add(bk.start_hour + bk.duration); // 30-min buffer slot after each booking
       });
     return set;
   };
@@ -257,7 +263,7 @@ export const GerakRental: React.FC = () => {
   };
 
   const canBookSlot = (dateStr: string, start: number, dur: number): boolean => {
-    for (let h = start; h < start + dur; h++) {
+    for (let h = start; h < start + dur; h += 0.5) {
       if (!isHourAvailable(dateStr, h)) return false;
     }
     // Also check that the buffer hour after is not someone else's booking start
@@ -275,12 +281,12 @@ export const GerakRental: React.FC = () => {
   // ── Night surcharge ────────────────────────────────────────────────────────
   const calcNightSurcharge = (start: number, dur: number, owner: RentalOwner): number => {
     if (!owner.night_surcharge_on || owner.night_surcharge_rate <= 0) return 0;
-    let nightHours = 0;
-    for (let i = 0; i < dur; i++) {
+    let nightHalfSlots = 0;
+    for (let i = 0; i < dur; i += 0.5) {
       const h = (start + i) % 24;
-      if (h >= 22 || h < 5) nightHours++;
+      if (h >= 22 || h < 5) nightHalfSlots++;
     }
-    return nightHours * owner.night_surcharge_rate;
+    return (nightHalfSlots * 0.5) * owner.night_surcharge_rate;
   };
 
   // ── Calendar helpers ───────────────────────────────────────────────────────
@@ -458,13 +464,13 @@ ${row('Colour', bk.color)}
 <hr/>
 ${isFullDay
   ? row('Date Range', fmtDateRange(bk)) + row('Duration', `${days} day${days === 1 ? '' : 's'}`)
-  : row('Date', fmtDateRange(bk)) + row('Time', `${fmt12(bk.start_hour)} → ${fmt12(bk.start_hour + bk.duration)}`) + row('Duration', `${bk.duration}h`)
+  : row('Date', fmtDateRange(bk)) + row('Time', `${fmt12(bk.start_hour)} → ${fmt12(bk.start_hour + bk.duration)}`) + row('Duration', fmtDuration(bk.duration))
 }
 ${row('Persons', `${bk.persons} pax`)}
 <hr/>
 ${isFullDay
   ? row('Rate', `RM${Number(bk.total_price).toFixed(2)} / ${days} day${days === 1 ? '' : 's'}`)
-  : row('Rate', `RM${bk.price_hour.toFixed(2)} / hour`) + row('Total Hours', `${bk.duration}h`)
+  : row('Rate', `RM${bk.price_hour.toFixed(2)} / hour`) + row('Duration', fmtDuration(bk.duration))
 }
 ${bk.notes ? row('Note', `"${bk.notes}"`) : ''}
 <div class="row total"><span class="lbl">Total</span><span class="val">RM${Number(bk.total_price).toFixed(2)}</span></div>
@@ -562,7 +568,7 @@ ${row('Owner ID', bk.owner_gerak_id ?? '—')}
                   <p className="text-xs font-semibold text-slate-700 leading-tight">
                     {bk.booking_type === 'fullday' && bk.end_date
                       ? `${getDatesInRange(bk.date, bk.end_date).length}d`
-                      : `${bk.duration}h`}
+                      : fmtDuration(bk.duration)}
                   </p>
                 </div>
               </div>
@@ -586,8 +592,8 @@ ${row('Owner ID', bk.owner_gerak_id ?? '—')}
                   <span className="font-semibold text-slate-600">RM{bk.price_hour.toFixed(2)} / hour</span>
                 </div>
                 <div className="flex items-center justify-between text-xs">
-                  <span className="text-slate-400 font-normal">Total hours</span>
-                  <span className="font-semibold text-slate-600">{bk.duration}h</span>
+                  <span className="text-slate-400 font-normal">Duration</span>
+                  <span className="font-semibold text-slate-600">{fmtDuration(bk.duration)}</span>
                 </div>
                 <div className="flex items-center justify-between text-xs">
                   <span className="text-slate-400 font-normal">Persons</span>
@@ -901,10 +907,10 @@ ${row('Owner ID', bk.owner_gerak_id ?? '—')}
                 Grey = booked or buffered (30-min gap between bookings)
               </p>
               <div className="grid grid-cols-4 gap-1.5">
-                {HOURS.map(h => {
-                  const avail  = isHourAvailable(rangeStart, h);
-                  const picked = startHour === h;
-                  const inSlot = startHour !== null && h > startHour && h < startHour + duration;
+                {HOURS.filter(h => h >= selected.operating_start && h <= selected.operating_end - 0.5).map(h => {
+                  const avail   = isHourAvailable(rangeStart, h);
+                  const picked  = startHour === h;
+                  const inSlot  = startHour !== null && h > startHour && h < startHour + duration;
                   const isNight = h >= 22 || h < 5;
                   return (
                     <button key={h} disabled={!avail}
@@ -940,14 +946,14 @@ ${row('Owner ID', bk.owner_gerak_id ?? '—')}
                     <Clock className="w-3.5 h-3.5 text-amber-500" /> Duration
                   </p>
                   <p className="text-xs text-slate-400 font-normal mt-0.5">
-                    {fmt12(startHour)} → {fmt12(startHour + duration)}
+                    {fmt12(startHour)} → {fmt12(+(startHour + duration).toFixed(1))}
                   </p>
                 </div>
                 <div className="flex items-center gap-3">
-                  <button onClick={() => setDuration(d => Math.max(1, d - 1))}
+                  <button onClick={() => setDuration(d => Math.max(0.5, +(d - 0.5).toFixed(1)))}
                     className="w-8 h-8 rounded-xl bg-slate-100 text-slate-600 font-black text-lg flex items-center justify-center active:scale-90">−</button>
-                  <span className="text-sm font-black text-slate-800 w-6 text-center">{duration}h</span>
-                  <button onClick={() => setDuration(d => Math.min(12, d + 1))}
+                  <span className="text-sm font-black text-slate-800 w-10 text-center">{fmtDuration(duration)}</span>
+                  <button onClick={() => setDuration(d => Math.min(12, +(d + 0.5).toFixed(1)))}
                     className="w-8 h-8 rounded-xl bg-slate-100 text-slate-600 font-black text-lg flex items-center justify-center active:scale-90">+</button>
                 </div>
               </div>
@@ -999,7 +1005,7 @@ ${row('Owner ID', bk.owner_gerak_id ?? '—')}
                   <p className="text-xs text-amber-600 font-normal">Total</p>
                   <p className="text-xl font-black text-slate-800">RM{totalPrice.toFixed(2)}</p>
                   <p className="text-xs text-slate-400 font-normal">
-                    {duration}h × RM{selected.price_hour.toFixed(2)}{nightSurcharge > 0 ? ` + RM${nightSurcharge.toFixed(2)} night` : ''}
+                    {fmtDuration(duration)} × RM{selected.price_hour.toFixed(2)}{nightSurcharge > 0 ? ` + RM${nightSurcharge.toFixed(2)} night` : ''}
                   </p>
                 </div>
                 {!user.isLoggedIn ? (
