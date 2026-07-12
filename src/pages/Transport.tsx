@@ -5,7 +5,7 @@ interface PinLocation { address: string; coords: [number, number]; }
 
 const MapboxRideMap = lazy(() => import('../components/MapboxRideMap').then(m => ({ default: m.MapboxRideMap })));
 import {
-  Map, List, ChevronDown,
+  Map, List, ChevronDown, PencilLine,
   Info, CheckCircle2, RotateCcw, Users, Clock, CalendarDays, Phone, ClipboardList, X,
 } from 'lucide-react';
 import { submitRideToSheets } from '../lib/sheetsService';
@@ -96,7 +96,7 @@ export const Transport: React.FC = () => {
   const [campus,   setCampus]   = useState<'pekan' | 'gambang'>(
     user.campus?.toLowerCase() === 'pekan' ? 'pekan' : 'gambang'
   );
-  const [bookMode, setBookMode] = useState<'quick' | 'map'>(user.isLoggedIn ? 'quick' : 'map');
+  const [bookMode, setBookMode] = useState<'quick' | 'custom' | 'map'>(user.isLoggedIn ? 'quick' : 'map');
   const [showTerms, setShowTerms] = useState(false);
 
   // Quick-route state
@@ -122,11 +122,20 @@ export const Transport: React.FC = () => {
   }, []);
 
   // Map-pin state
-  const [pickupPin,  setPickupPin]  = useState<PinLocation | null>(null);
-  const [destPin,    setDestPin]    = useState<PinLocation | null>(null);
+  const [pickupPin,    setPickupPin]    = useState<PinLocation | null>(null);
+  const [destPin,      setDestPin]      = useState<PinLocation | null>(null);
+
+  // Custom mode state
+  const [customPickup, setCustomPickup] = useState('');
+  const [customDest,   setCustomDest]   = useState('');
 
   // Order form
   const [bookWhen,   setBookWhen]   = useState<'now' | 'later'>('now');
+
+  // Pre-fill contact when user logs in mid-session
+  useEffect(() => {
+    if (user.phone && !contact) setContact(user.phone);
+  }, [user.phone]);
 
   // Sync date/time to "now" whenever user picks "Now"
   useEffect(() => {
@@ -184,15 +193,21 @@ export const Transport: React.FC = () => {
 
   const pickupLabel = bookMode === 'quick'
     ? (selectedRoute ? selectedRoute.from : '')
+    : bookMode === 'custom'
+    ? customPickup
     : (pickupPin?.address ?? '');
 
   const destLabel = bookMode === 'quick'
     ? (selectedRoute ? selectedRoute.to : '')
+    : bookMode === 'custom'
+    ? customDest
     : (destPin?.address ?? '');
 
   const canBook =
     !!date && !!time && !!contact &&
-    (bookMode === 'quick' ? !!selectedRoute : !!(pickupPin && destPin));
+    (bookMode === 'quick'  ? !!selectedRoute :
+     bookMode === 'custom' ? !!(customPickup.trim() && customDest.trim()) :
+     !!(pickupPin && destPin));
 
   // ── Handlers ────────────────────────────────────────────────────────────────
 
@@ -293,6 +308,8 @@ export const Transport: React.FC = () => {
     setSelectedFrom('');
     setPickupPin(null);
     setDestPin(null);
+    setCustomPickup('');
+    setCustomDest('');
     const now = new Date();
     setDate(now.toISOString().slice(0, 10));
     const rounded = new Date(Math.ceil(now.getTime() / (15 * 60000)) * (15 * 60000));
@@ -439,45 +456,25 @@ export const Transport: React.FC = () => {
         </div>
       </div>
 
-      {/* Mode selector — Mode Selector Standard */}
+      {/* Mode selector — 3 modes */}
       {user.isLoggedIn && (
         <div className="px-4 mt-3 flex gap-2">
-          <button
-            type="button"
-            onClick={() => setBookMode('quick')}
-            className={`flex-1 flex items-center gap-2.5 p-3 rounded-2xl border transition-colors active:scale-[0.98] ${
-              bookMode === 'quick'
-                ? 'border-primary/30 bg-primary/5'
-                : 'border-slate-100 bg-white'
-            }`}
-          >
-            <div className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 ${
-              bookMode === 'quick' ? 'bg-primary/10' : 'bg-slate-100'
-            }`}>
-              <List className={`w-4 h-4 ${bookMode === 'quick' ? 'text-primary' : 'text-slate-500'}`} />
-            </div>
-            <span className={`text-xs font-semibold ${bookMode === 'quick' ? 'text-primary' : 'text-slate-600'}`}>
-              Quick Routes
-            </span>
-          </button>
-          <button
-            type="button"
-            onClick={() => setBookMode('map')}
-            className={`flex-1 flex items-center gap-2.5 p-3 rounded-2xl border transition-colors active:scale-[0.98] ${
-              bookMode === 'map'
-                ? 'border-primary/30 bg-primary/5'
-                : 'border-slate-100 bg-white'
-            }`}
-          >
-            <div className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 ${
-              bookMode === 'map' ? 'bg-primary/10' : 'bg-slate-100'
-            }`}>
-              <Map className={`w-4 h-4 ${bookMode === 'map' ? 'text-primary' : 'text-slate-500'}`} />
-            </div>
-            <span className={`text-xs font-semibold ${bookMode === 'map' ? 'text-primary' : 'text-slate-600'}`}>
-              Search Routes
-            </span>
-          </button>
+          {([
+            { key: 'quick',  icon: List,        label: 'Quick Routes'  },
+            { key: 'custom', icon: PencilLine,  label: 'Custom'        },
+            { key: 'map',    icon: Map,         label: 'Search Routes' },
+          ] as const).map(({ key, icon: Icon, label }) => (
+            <button key={key} type="button" onClick={() => setBookMode(key)}
+              className={`flex-1 flex flex-col items-center gap-1.5 p-2.5 rounded-2xl border transition-colors active:scale-[0.98] ${
+                bookMode === key ? 'border-primary/30 bg-primary/5' : 'border-slate-100 bg-white'
+              }`}
+            >
+              <Icon className={`w-4 h-4 ${bookMode === key ? 'text-primary' : 'text-slate-400'}`} />
+              <span className={`text-[10px] font-semibold leading-tight text-center ${bookMode === key ? 'text-primary' : 'text-slate-500'}`}>
+                {label}
+              </span>
+            </button>
+          ))}
         </div>
       )}
 
@@ -592,6 +589,42 @@ export const Transport: React.FC = () => {
               })}
             </div>
           )}
+        </div>
+      )}
+
+      {/* ── Custom Mode ── */}
+      {bookMode === 'custom' && (
+        <div className="px-4 mt-3">
+          <div className="bg-white border border-slate-100 rounded-2xl p-3 flex flex-col gap-2.5">
+            <h3 className="text-sm font-semibold text-slate-700 flex items-center gap-1.5">
+              <PencilLine className="w-4 h-4 text-slate-400" /> Custom Route
+            </h3>
+            <div className="flex flex-col gap-2">
+              <div className="flex flex-col gap-0.5">
+                <label className="text-xs font-normal text-slate-400 pl-1">Point A — Pickup</label>
+                <input
+                  type="text"
+                  value={customPickup}
+                  onChange={e => setCustomPickup(e.target.value)}
+                  placeholder="e.g. Kolej Kediaman 3, Block B"
+                  className="bg-white border border-slate-100 rounded-xl px-3 py-2.5 text-xs text-slate-700 focus:outline-none focus:border-primary transition"
+                />
+              </div>
+              <div className="flex flex-col gap-0.5">
+                <label className="text-xs font-normal text-slate-400 pl-1">Point B — Destination</label>
+                <input
+                  type="text"
+                  value={customDest}
+                  onChange={e => setCustomDest(e.target.value)}
+                  placeholder="e.g. FTKMA, Dewan Sri Damai"
+                  className="bg-white border border-slate-100 rounded-xl px-3 py-2.5 text-xs text-slate-700 focus:outline-none focus:border-primary transition"
+                />
+              </div>
+            </div>
+            <p className="text-xs text-slate-400 font-normal text-center italic">
+              Fare for custom routes will be confirmed by your driver
+            </p>
+          </div>
         </div>
       )}
 
@@ -744,7 +777,7 @@ export const Transport: React.FC = () => {
                 {totalFare === 'TBC' ? 'TBC' : `RM${totalFare.toFixed(2)}`}
               </span>
               {isNight && baseFare !== 'TBC' && (
-                <span className="text-xs font-normal text-amber-500">incl. night +RM5</span>
+                <span className="text-xs font-normal text-amber-500">including midnight surcharge +RM5</span>
               )}
             </div>
           </div>
