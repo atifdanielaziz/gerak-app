@@ -245,14 +245,14 @@ export const GerakRental: React.FC = () => {
     return isDateCoveredByFullDay(dateStr);
   };
 
-  // Booked hours + 30-min buffer (blocks the hour immediately after each booking)
+  // Booking slots inclusive of end time; next available = end + 0.5 (30-min gap)
   const bookedHoursOn = (dateStr: string): Set<number> => {
     const set = new Set<number>();
     existingBooks
       .filter(bk => bk.date === dateStr && bk.booking_type !== 'fullday')
       .forEach(bk => {
-        for (let h = bk.start_hour; h < bk.start_hour + bk.duration; h += 0.5) set.add(h);
-        set.add(bk.start_hour + bk.duration); // 30-min buffer slot after each booking
+        const end = bk.start_hour + bk.duration;
+        for (let h = bk.start_hour; h <= end; h += 0.5) set.add(h);
       });
     return set;
   };
@@ -271,17 +271,9 @@ export const GerakRental: React.FC = () => {
   };
 
   const canBookSlot = (dateStr: string, start: number, dur: number): boolean => {
-    for (let h = start; h < start + dur; h += 0.5) {
+    const end = start + dur;
+    for (let h = start; h <= end; h += 0.5) {
       if (!isHourAvailable(dateStr, h)) return false;
-    }
-    // Also check that the buffer hour after is not someone else's booking start
-    const booked = bookedHoursOn(dateStr);
-    if (booked.has(start + dur)) {
-      // Buffer conflicts only if it's someone else's start, not just our own buffer
-      const existingStarts = existingBooks
-        .filter(bk => bk.date === dateStr && bk.booking_type !== 'fullday')
-        .map(bk => bk.start_hour);
-      if (existingStarts.includes(start + dur)) return false;
     }
     return true;
   };
@@ -918,15 +910,15 @@ ${row('Owner ID', bk.owner_gerak_id ?? '—')}
                 {HOURS.filter(h => h >= selected.operating_start && h <= selected.operating_end - 0.5).map(h => {
                   const avail   = isHourAvailable(rangeStart, h);
                   const picked  = startHour === h;
-                  const inSlot  = startHour !== null && h > startHour && h < startHour + duration;
+                  const inSlot  = startHour !== null && h > startHour && h <= startHour + duration;
                   const isNight = h >= 22 || h < 5;
                   return (
                     <button key={h} disabled={!avail}
                       onClick={() => setStartHour(h)}
                       className={`py-2 rounded-xl text-xs font-semibold transition active:scale-95 relative ${
                         picked   ? 'bg-primary text-white' :
-                        inSlot   ? 'bg-primary/20 text-primary' :
                         !avail   ? 'bg-slate-100 text-slate-300 cursor-not-allowed' :
+                        inSlot   ? 'bg-primary/20 text-primary' :
                         isNight  ? 'bg-indigo-50 text-indigo-600 hover:bg-indigo-100' :
                                    'bg-slate-50 text-slate-600 hover:bg-amber-50 hover:text-amber-700'
                       }`}>
