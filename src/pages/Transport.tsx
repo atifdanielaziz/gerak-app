@@ -116,6 +116,13 @@ export const Transport: React.FC = () => {
     return () => document.removeEventListener('mousedown', handler);
   }, []);
 
+  // Map-pin state
+  const [pickupPin,  setPickupPin]  = useState<PinLocation | null>(null);
+  const [destPin,    setDestPin]    = useState<PinLocation | null>(null);
+
+  // Order form
+  const [bookWhen,   setBookWhen]   = useState<'now' | 'later'>('now');
+
   // Sync date/time to "now" whenever user picks "Now"
   useEffect(() => {
     if (bookWhen !== 'now') return;
@@ -124,13 +131,6 @@ export const Transport: React.FC = () => {
     const rounded = new Date(Math.ceil(now.getTime() / (15 * 60000)) * (15 * 60000));
     setTime(`${String(rounded.getHours()).padStart(2, '0')}:${String(rounded.getMinutes()).padStart(2, '0')}`);
   }, [bookWhen]);
-
-  // Map-pin state
-  const [pickupPin,  setPickupPin]  = useState<PinLocation | null>(null);
-  const [destPin,    setDestPin]    = useState<PinLocation | null>(null);
-
-  // Order form
-  const [bookWhen,   setBookWhen]   = useState<'now' | 'later'>('now');
   const [date,       setDate]       = useState(() => {
     const now = new Date();
     return now.toISOString().slice(0, 10); // yyyy-MM-dd
