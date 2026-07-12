@@ -64,8 +64,10 @@ const fmt12 = (h: number) => {
   const dh  = hh === 0 ? 12 : hh > 12 ? hh - 12 : hh;
   return `${dh}${mm} ${p}`;
 };
-const fmtDuration = (h: number) =>
-  h < 1 ? '30 min' : Number.isInteger(h) ? `${h}h` : `${Math.floor(h)}h 30m`;
+const fmtDuration = (h: number | string) => {
+  const n = Number(h);
+  return n < 1 ? '30 min' : Number.isInteger(n) ? `${n}h` : `${Math.floor(n)}h 30m`;
+};
 const toDateStr = (d: Date) => d.toISOString().split('T')[0];
 const todayStr  = () => toDateStr(new Date());
 
@@ -189,6 +191,8 @@ export const DriverHome: React.FC = () => {
           const v  = vehicles?.find(v => v.owner_id === b.owner_id);
           return {
             ...b,
+            start_hour:           Number(b.start_hour),
+            duration:             Number(b.duration),
             customer_name:        cp?.name  ?? '—',
             customer_phone:       cp?.phone ?? '—',
             owner_name:           op?.name  ?? '—',
@@ -224,7 +228,13 @@ export const DriverHome: React.FC = () => {
         .from('profiles').select('id, name, phone').in('id', customerIds);
       enriched = bookings.map(b => {
         const p = profiles?.find(p => p.id === b.customer_id);
-        return { ...b, customer_name: p?.name ?? '—', customer_phone: p?.phone ?? '—' };
+        return {
+          ...b,
+          start_hour:     Number(b.start_hour),
+          duration:       Number(b.duration),
+          customer_name:  p?.name  ?? '—',
+          customer_phone: p?.phone ?? '—',
+        };
       });
     }
 
@@ -1261,7 +1271,7 @@ export const DriverHome: React.FC = () => {
                           </p>
                         )}
                         <p className="text-xs text-slate-400 font-normal flex items-center gap-2 flex-wrap">
-                          {bk.persons} pax · {bk.duration}h
+                          {bk.persons} pax · {fmtDuration(bk.duration)}
                           {!bk.license_url && <span className="text-amber-500 font-semibold">· License pending</span>}
                         </p>
                       </div>

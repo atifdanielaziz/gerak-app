@@ -66,8 +66,10 @@ const fmt12 = (h: number) => {
   const dh  = hh === 0 ? 12 : hh > 12 ? hh - 12 : hh;
   return `${dh}${mm} ${p}`;
 };
-const fmtDuration = (h: number) =>
-  h < 1 ? '30 min' : Number.isInteger(h) ? `${h}h` : `${Math.floor(h)}h 30m`;
+const fmtDuration = (h: number | string) => {
+  const n = Number(h);
+  return n < 1 ? '30 min' : Number.isInteger(n) ? `${n}h` : `${Math.floor(n)}h 30m`;
+};
 const toDateStr = (d: Date) => d.toISOString().split('T')[0];
 const today = () => toDateStr(new Date());
 
@@ -175,7 +177,11 @@ export const GerakRental: React.FC = () => {
     ]);
 
     setBlocks(b ?? []);
-    setExisting((bk ?? []) as RentalBooking[]);
+    setExisting((bk ?? []).map(r => ({
+      ...r,
+      start_hour: Number(r.start_hour),
+      duration:   Number(r.duration),
+    })) as RentalBooking[]);
   }, []);
 
   // ── Load customer's own bookings ───────────────────────────────────────────
@@ -201,6 +207,8 @@ export const GerakRental: React.FC = () => {
       const v = vehicles?.find(v => v.owner_id === r.owner_id);
       return {
         ...r,
+        start_hour:     Number(r.start_hour),
+        duration:       Number(r.duration),
         license_url:    r.license_url    ?? '',
         end_date:       r.end_date       ?? null,
         booking_type:   r.booking_type   ?? 'hourly',
