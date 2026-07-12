@@ -201,8 +201,8 @@ const ProfileSheet: React.FC<{ u: ProfileUser; onClose: () => void }> = ({ u, on
                               'bg-emerald-50 border-emerald-100 text-emerald-600';
 
   const Row = ({ label, value, children }: { label: string; value?: string | null; children?: React.ReactNode }) => (
-    <div className="flex items-start justify-between py-2.5 border-b border-slate-50 last:border-0 gap-2">
-      <span className="text-xs font-semibold text-slate-400 shrink-0 pt-0.5">{label}</span>
+    <div className="flex items-start justify-between py-2.5 border-b border-slate-100 last:border-0 gap-2">
+      <span className="text-xs font-normal text-slate-400 shrink-0 pt-0.5">{label}</span>
       <div className="text-right flex items-center gap-1.5 flex-wrap justify-end">
         {children ?? <span className={`text-xs font-semibold ${value ? 'text-slate-700' : 'text-slate-300'}`}>{value || '—'}</span>}
       </div>
@@ -226,7 +226,7 @@ const ProfileSheet: React.FC<{ u: ProfileUser; onClose: () => void }> = ({ u, on
 
         {/* Header */}
         <div className="flex items-center justify-between px-5 pt-2 pb-3 shrink-0">
-          <p className="text-sm font-bold text-slate-700">Staff Profile</p>
+          <p className="text-sm font-semibold text-slate-700">Staff Profile</p>
           <button onClick={onClose} className="w-7 h-7 flex items-center justify-center rounded-full bg-slate-100 text-slate-500 active:scale-90 transition">
             <X className="w-4 h-4" />
           </button>
@@ -391,7 +391,7 @@ const JubahRiderSheet: React.FC<{
       </div>
 
       <div className="flex items-center justify-between px-5 pt-2 pb-4 shrink-0">
-        <p className="text-sm font-bold text-slate-700">Jubah Rider</p>
+        <p className="text-sm font-semibold text-slate-700">Jubah Rider</p>
         <button
           onClick={onClose}
           className="w-7 h-7 flex items-center justify-center rounded-full bg-slate-100 text-slate-500 active:scale-90 transition"
@@ -416,7 +416,7 @@ const JubahRiderSheet: React.FC<{
 
         {/* Info block */}
         <div className="mx-4 mb-4 bg-slate-50 border border-slate-100 rounded-2xl p-4 text-xs font-mono text-slate-700 space-y-1.5 leading-relaxed">
-          <p><span className="text-slate-400">Gerak ID:</span> <span className="text-blue-600 font-bold">{rider.gerak_id}</span></p>
+          <p><span className="text-slate-400">Gerak ID:</span> <span className="text-blue-600 font-semibold">{rider.gerak_id}</span></p>
           <p><span className="text-slate-400">Campus:</span> UMPSA {rider.campus}</p>
           <p><span className="text-slate-400">IC Number:</span> {rider.ic_number || '—'}</p>
           <div className="flex items-center gap-2">
@@ -441,7 +441,7 @@ const JubahRiderSheet: React.FC<{
             <div className="flex flex-col gap-1">
               {/* Label row: dynamic "Method" vs "Method 1" + icon buttons */}
               <div className="flex items-center justify-between">
-                <span className="text-xs font-semibold text-slate-400">
+                <span className="text-xs font-normal text-slate-400">
                   {(secondary.length > 0 || showAdd) ? 'Method 1' : 'Method'}
                 </span>
                 <div className="flex items-center gap-2">
@@ -461,7 +461,7 @@ const JubahRiderSheet: React.FC<{
                 {deleteMode && <Minus className="w-4 h-4 text-slate-200 shrink-0" />}
                 <div className="relative group flex-1">
                   <div className="bg-slate-50 border border-slate-200 rounded-xl py-2.5 px-3 flex items-center justify-between pointer-events-none group-focus-within:border-primary transition">
-                    <span style={{ fontSize: '12px' }} className={method ? 'font-bold text-slate-700' : 'font-normal text-slate-300'}>
+                    <span style={{ fontSize: '12px' }} className={method ? 'font-semibold text-slate-700' : 'font-normal text-slate-300'}>
                       {method === 'pickup' ? 'Self Pickup' : method === 'postage' ? 'Pickup & Postage' : 'Select method...'}
                     </span>
                     <ChevronDown className="w-3 h-3 text-slate-400 shrink-0" />
@@ -483,14 +483,14 @@ const JubahRiderSheet: React.FC<{
             {/* METHOD 2+ — secondary (read-only) */}
             {secondary.map((a, i) => (
               <div key={a.id} className="flex flex-col gap-1">
-                <span className="text-xs font-semibold text-slate-400">Method {i + 2}</span>
+                <span className="text-xs font-normal text-slate-400">Method {i + 2}</span>
                 <div className="flex items-center gap-2">
                   {deleteMode && (
                     <button onClick={() => onDeleteAssignment(a.id)} className="text-red-500 active:scale-90 transition shrink-0">
                       <Minus className="w-4 h-4" />
                     </button>
                   )}
-                  <div style={{ fontSize: '12px' }} className="flex-1 bg-slate-50 border border-slate-100 rounded-xl py-2.5 px-3 font-bold text-slate-600">
+                  <div style={{ fontSize: '12px' }} className="flex-1 bg-slate-50 border border-slate-100 rounded-xl py-2.5 px-3 font-semibold text-slate-600">
                     {a.method === 'pickup' ? 'Self Pickup' : 'Pickup & Postage'}
                   </div>
                 </div>
@@ -505,7 +505,7 @@ const JubahRiderSheet: React.FC<{
                 </span>
                 <div className="relative group">
                   <div className="bg-indigo-50/50 border border-indigo-200 rounded-xl py-2.5 px-3 flex items-center justify-between pointer-events-none transition">
-                    <span style={{ fontSize: '12px' }} className="font-bold text-slate-700">
+                    <span style={{ fontSize: '12px' }} className="font-semibold text-slate-700">
                       {addMethod === 'pickup' ? 'Self Pickup' : 'Pickup & Postage'}
                     </span>
                     <ChevronDown className="w-3 h-3 text-slate-400 shrink-0" />
@@ -529,7 +529,7 @@ const JubahRiderSheet: React.FC<{
 
             {/* DROP POINT 1 — primary (editable) */}
             <div className="flex flex-col gap-1">
-              <span className="text-xs font-semibold text-slate-400">
+              <span className="text-xs font-normal text-slate-400">
                 {(secondary.length > 0 || showAdd) ? 'Drop Point 1' : 'Drop Point'}
               </span>
               <div className="flex items-start gap-2">
@@ -557,7 +557,7 @@ const JubahRiderSheet: React.FC<{
                     placeholder="e.g. UMP Gambang Counter"
                     disabled={dropPointDisabled}
                     style={{ fontSize: '12px' }}
-                    className="bg-slate-50 border border-slate-200 rounded-xl py-2.5 px-3 font-bold text-slate-700 focus:outline-none focus:border-primary transition placeholder:font-normal disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="bg-slate-50 border border-slate-200 rounded-xl py-2.5 px-3 font-semibold text-slate-700 focus:outline-none focus:border-primary transition placeholder:font-normal disabled:opacity-50 disabled:cursor-not-allowed"
                   />
                   {method === 'postage' && (
                     <p className="text-xs text-slate-400 font-semibold">Not applicable — robe is couriered, no physical drop point needed.</p>
@@ -569,10 +569,10 @@ const JubahRiderSheet: React.FC<{
             {/* DROP POINT 2+ — secondary (read-only) */}
             {secondary.map((a, i) => (
               <div key={a.id} className="flex flex-col gap-1">
-                <span className="text-xs font-semibold text-slate-400">Drop Point {i + 2}</span>
+                <span className="text-xs font-normal text-slate-400">Drop Point {i + 2}</span>
                 <div className="flex items-center gap-2">
                   {deleteMode && <div className="w-4 shrink-0" />}
-                  <div style={{ fontSize: '12px' }} className="flex-1 bg-slate-50 border border-slate-100 rounded-xl py-2.5 px-3 font-bold text-slate-600">
+                  <div style={{ fontSize: '12px' }} className="flex-1 bg-slate-50 border border-slate-100 rounded-xl py-2.5 px-3 font-semibold text-slate-600">
                     {a.drop_point && a.drop_point !== '-' ? a.drop_point : '— (Postage, no drop point)'}
                   </div>
                 </div>
@@ -592,7 +592,7 @@ const JubahRiderSheet: React.FC<{
                     onChange={e => setAddDropPoint(e.target.value)}
                     placeholder="e.g. Kolej Kediaman 3, Lobby A"
                     style={{ fontSize: '12px' }}
-                    className="bg-indigo-50/50 border border-indigo-200 rounded-xl py-2.5 px-3 font-bold text-slate-700 focus:outline-none focus:border-indigo-400 transition placeholder:font-normal placeholder:text-slate-300"
+                    className="bg-indigo-50/50 border border-indigo-200 rounded-xl py-2.5 px-3 font-semibold text-slate-700 focus:outline-none focus:border-indigo-400 transition placeholder:font-normal placeholder:text-slate-300"
                     autoFocus
                   />
                 ) : (
@@ -1987,7 +1987,7 @@ export const AdminHome: React.FC = () => {
 
       {/* Toast */}
       {toast && (
-        <div className="fixed top-16 left-4 right-4 z-50 bg-slate-800 text-white text-xs font-bold px-4 py-2.5 rounded-2xl shadow-lg text-center animate-fade-in">
+        <div className="fixed top-16 left-4 right-4 z-50 bg-slate-800 text-white text-xs font-semibold px-4 py-2.5 rounded-2xl shadow-lg text-center animate-fade-in">
           {toast}
         </div>
       )}
@@ -2043,7 +2043,7 @@ export const AdminHome: React.FC = () => {
               onClick={e => e.stopPropagation()}>
               <div className="flex justify-center pt-3 pb-1"><div className="w-10 h-1 bg-slate-200 rounded-full" /></div>
               <div className="flex items-center justify-between px-5 pt-2 pb-4">
-                <p className="text-sm font-bold text-slate-700">Representative</p>
+                <p className="text-sm font-semibold text-slate-700">Representative</p>
                 <button onClick={() => setDirSheet(null)} className="w-7 h-7 flex items-center justify-center rounded-full bg-slate-100 text-slate-500 active:scale-90 transition">
                   <X className="w-4 h-4" />
                 </button>
@@ -2057,14 +2057,14 @@ export const AdminHome: React.FC = () => {
                     { label: 'I/C Number',           value: ic ?? '—' },
                   ].map(({ label, value }) => (
                     <div key={label} className="flex flex-col gap-0.5">
-                      <span className="text-xs font-semibold text-slate-400">{label}</span>
-                      <span className="font-bold text-slate-800">{value}</span>
+                      <span className="text-xs font-normal text-slate-400">{label}</span>
+                      <span className="font-semibold text-slate-800">{value}</span>
                     </div>
                   ))}
                   <div className="flex flex-col gap-0.5">
-                    <span className="text-xs font-semibold text-slate-400">H/P</span>
+                    <span className="text-xs font-normal text-slate-400">H/P</span>
                     <div className="flex items-center gap-2">
-                      <span className="font-bold text-slate-800">{dirSheet.phone || '—'}</span>
+                      <span className="font-semibold text-slate-800">{dirSheet.phone || '—'}</span>
                       {dirSheet.phone && (
                         <a href={`https://wa.me/${toWa(dirSheet.phone)}?text=${encodeURIComponent(waMsg)}`}
                           target="_blank" rel="noopener noreferrer" className="text-[#25D366] active:scale-90 transition shrink-0">
@@ -2112,7 +2112,7 @@ export const AdminHome: React.FC = () => {
                 className="w-7 h-7 flex items-center justify-center rounded-xl bg-slate-100 text-slate-500 active:scale-90 transition shrink-0">
                 <ChevronLeft className="w-4 h-4" />
               </button>
-              <h3 className="flex-1 text-sm font-bold text-slate-700">Upload Documents (Sample)</h3>
+              <h3 className="flex-1 text-sm font-semibold text-slate-700">Upload Documents (Sample)</h3>
             </div>
 
             {/* Doc fields — upload sample image per field */}
@@ -2124,7 +2124,7 @@ export const AdminHome: React.FC = () => {
                   <div className="flex items-center gap-3 bg-emerald-50 border border-emerald-100 rounded-xl p-2.5">
                     <img src={sampleUrls[field.id]} alt={field.label} className="w-10 h-10 rounded-lg object-cover shrink-0" />
                     <div className="flex-1 min-w-0">
-                      <p className="text-xs font-bold text-emerald-700">Sample uploaded</p>
+                      <p className="text-xs font-semibold text-emerald-700">Sample uploaded</p>
                       <p className="text-xs text-emerald-500">Tap to replace or remove</p>
                     </div>
                     <button type="button"
@@ -2144,7 +2144,7 @@ export const AdminHome: React.FC = () => {
                     className="w-full border-2 border-dashed border-slate-200 rounded-xl py-3 flex items-center justify-center gap-2 text-slate-400 hover:border-blue-400 hover:text-blue-500 hover:bg-blue-50/30 transition cursor-pointer disabled:opacity-50">
                     {sampleUploading === field.id
                       ? <span className="w-4 h-4 rounded-full border-2 border-slate-300 border-t-blue-500 animate-spin" />
-                      : <><Upload className="w-4 h-4" /><span className="text-xs font-bold">Upload {field.label} Sample</span></>
+                      : <><Upload className="w-4 h-4" /><span className="text-xs font-semibold">Upload {field.label} Sample</span></>
                     }
                   </button>
                 )}
@@ -2214,13 +2214,13 @@ export const AdminHome: React.FC = () => {
         <div className="flex flex-col gap-4">
           {/* Invite form */}
           <div className="bg-white border border-slate-100 rounded-3xl p-5 flex flex-col gap-4">
-            <h3 className="text-sm font-bold text-slate-700 flex items-center gap-1.5">
+            <h3 className="text-sm font-semibold text-slate-700 flex items-center gap-1.5">
               <UserPlus className="w-4 h-4 text-primary" /> Invite Staff
             </h3>
 
             {/* Role selector */}
             <div>
-              <p className="text-sm font-bold text-slate-700 mb-2">Role</p>
+              <p className="text-sm font-semibold text-slate-700 mb-2">Role</p>
               <div className="flex bg-slate-50 border border-slate-200 rounded-2xl p-1 gap-1">
                 {([
                   { id: 'driver', label: 'Driver', color: 'bg-primary text-white' },
@@ -2252,7 +2252,7 @@ export const AdminHome: React.FC = () => {
             {/* Campus picker — superadmin only; regular admin locked to their campus */}
             {isSuperAdmin ? (
               <div>
-                <p className="text-sm font-bold text-slate-700 mb-2">Campus</p>
+                <p className="text-sm font-semibold text-slate-700 mb-2">Campus</p>
                 <div className="flex bg-slate-50 border border-slate-200 rounded-2xl p-1 gap-1">
                   {(['Gambang', 'Pekan'] as const).map(c => (
                     <button key={c} type="button" onClick={() => setInviteCampus(c)}
@@ -2269,7 +2269,7 @@ export const AdminHome: React.FC = () => {
               <div className="flex items-center gap-2 bg-slate-50 border border-slate-200 rounded-2xl px-4 py-2.5">
                 <MapPin className="w-3.5 h-3.5 text-primary shrink-0" />
                 <p className="text-xs font-semibold text-slate-700">UMPSA {adminCampus}</p>
-                <span className="text-xs font-bold text-slate-400 ml-auto">campus locked</span>
+                <span className="text-xs font-normal text-slate-400 ml-auto">campus locked</span>
               </div>
             )}
 
@@ -2289,7 +2289,7 @@ export const AdminHome: React.FC = () => {
             {/* Capability toggles — driver */}
             {inviteRole === 'driver' && (
               <div>
-                <p className="text-sm font-bold text-slate-700 mb-2">Capabilities</p>
+                <p className="text-sm font-semibold text-slate-700 mb-2">Capabilities</p>
                 <div className="flex gap-2">
                   <button type="button" onClick={() => setInviteCanDrive(v => !v)}
                     className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl text-xs font-semibold border transition active:scale-95 ${
@@ -2310,7 +2310,7 @@ export const AdminHome: React.FC = () => {
             {/* Capability toggles — rider */}
             {inviteRole === 'rider' && (
               <div>
-                <p className="text-sm font-bold text-slate-700 mb-2">Capabilities</p>
+                <p className="text-sm font-semibold text-slate-700 mb-2">Capabilities</p>
                 <div className="flex gap-2">
                   <button type="button" onClick={() => setInviteCanDaily(v => !v)}
                     className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl text-xs font-semibold border transition active:scale-95 ${
@@ -2343,7 +2343,7 @@ export const AdminHome: React.FC = () => {
 
           {/* Search */}
           <div className="bg-white border border-slate-100 rounded-2xl p-3.5 flex flex-col gap-2">
-            <h3 className="text-sm font-bold text-slate-700 flex items-center gap-1.5">
+            <h3 className="text-sm font-semibold text-slate-700 flex items-center gap-1.5">
               <AlertCircle className="w-3.5 h-3.5" /> Find Staff
             </h3>
             <div className="flex gap-2">
@@ -2353,7 +2353,7 @@ export const AdminHome: React.FC = () => {
                 onChange={e => setInviteSearch(e.target.value)}
                 placeholder="Search by email"
                 style={{ fontSize: '12px' }}
-                className="flex-1 bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 font-bold text-slate-700 focus:outline-none focus:border-primary transition placeholder:font-normal"
+                className="flex-1 bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 font-semibold text-slate-700 focus:outline-none focus:border-primary transition placeholder:font-normal"
               />
               <button
                 onClick={() => setInviteSearch('')}
@@ -2367,7 +2367,7 @@ export const AdminHome: React.FC = () => {
 
           {/* Invite list */}
           <div className="bg-white border border-slate-100 rounded-3xl p-5 flex flex-col gap-4">
-            <h3 className="text-sm font-bold text-slate-700 flex items-center gap-1.5">
+            <h3 className="text-sm font-semibold text-slate-700 flex items-center gap-1.5">
               <Mail className="w-4 h-4" /> Invite List
             </h3>
 
@@ -2386,9 +2386,9 @@ export const AdminHome: React.FC = () => {
                     inv.used ? 'bg-emerald-50 border-emerald-100' : 'bg-white border-slate-100'
                   }`}>
                     <div className="flex-1 min-w-0">
-                      <p className="text-xs font-bold text-slate-700 truncate">{inv.email}</p>
+                      <p className="text-xs font-semibold text-slate-700 truncate">{inv.email}</p>
                       <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
-                        <span className="text-xs font-semibold text-slate-400 uppercase">{inv.campus}</span>
+                        <span className="text-xs font-normal text-slate-400 uppercase">{inv.campus}</span>
                         {inv.used
                           ? <span className="text-xs font-semibold text-emerald-600 bg-emerald-100 px-1.5 py-0.5 rounded-full">Registered</span>
                           : <span className="text-xs font-semibold text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded-full">Pending</span>}
@@ -2426,7 +2426,7 @@ export const AdminHome: React.FC = () => {
 
           {/* Admins & Drivers list */}
           <div className="bg-white border border-slate-100 rounded-3xl p-5 flex flex-col gap-4">
-            <h3 className="text-sm font-bold text-slate-700 flex items-center gap-1.5">
+            <h3 className="text-sm font-semibold text-slate-700 flex items-center gap-1.5">
               <Users className="w-4 h-4" /> Admins and Staff
             </h3>
 
@@ -2438,7 +2438,7 @@ export const AdminHome: React.FC = () => {
                 onChange={e => setStaffSearch(e.target.value)}
                 placeholder="Name or Gerak ID"
                 style={{ fontSize: '12px' }}
-                className="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 font-bold text-slate-700 focus:outline-none focus:border-primary transition placeholder:font-normal placeholder:text-slate-400"
+                className="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 font-semibold text-slate-700 focus:outline-none focus:border-primary transition placeholder:font-normal placeholder:text-slate-400"
               />
               <button
                 onClick={() => setStaffSearch('')}
@@ -2525,13 +2525,13 @@ export const AdminHome: React.FC = () => {
           {/* Banner form */}
           {showBannerForm && (
             <div className="bg-white border border-slate-100 rounded-3xl p-5 flex flex-col gap-4">
-              <h3 className="text-sm font-bold text-slate-700 flex items-center gap-1.5">
+              <h3 className="text-sm font-semibold text-slate-700 flex items-center gap-1.5">
                 <Megaphone className="w-4 h-4 text-primary" /> New Announcement
               </h3>
 
               {/* Tag */}
               <div className="flex flex-col gap-1.5">
-                <label className="text-xs font-semibold text-slate-400">Tag (e.g. 🚗 Ride)</label>
+                <label className="text-xs font-normal text-slate-400">Tag (e.g. 🚗 Ride)</label>
                 <input
                   type="text"
                   value={bannerTag}
@@ -2542,7 +2542,7 @@ export const AdminHome: React.FC = () => {
 
               {/* Title */}
               <div className="flex flex-col gap-1.5">
-                <label className="text-xs font-semibold text-slate-400">Title <span className="text-red-400">*</span></label>
+                <label className="text-xs font-normal text-slate-400">Title <span className="text-red-400">*</span></label>
                 <input
                   type="text"
                   value={bannerTitle}
@@ -2554,7 +2554,7 @@ export const AdminHome: React.FC = () => {
 
               {/* Subtitle */}
               <div className="flex flex-col gap-1.5">
-                <label className="text-xs font-semibold text-slate-400">Subtitle</label>
+                <label className="text-xs font-normal text-slate-400">Subtitle</label>
                 <textarea
                   value={bannerSubtitle}
                   onChange={e => setBannerSubtitle(e.target.value)}
@@ -2567,7 +2567,7 @@ export const AdminHome: React.FC = () => {
               {/* CTA label + page row */}
               <div className="flex gap-3">
                 <div className="flex-1 flex flex-col gap-1.5">
-                  <label className="text-xs font-semibold text-slate-400">CTA Label</label>
+                  <label className="text-xs font-normal text-slate-400">CTA Label</label>
                   <input
                     type="text"
                     value={bannerCtaLabel}
@@ -2577,7 +2577,7 @@ export const AdminHome: React.FC = () => {
                   />
                 </div>
                 <div className="flex-1 flex flex-col gap-1.5">
-                  <label className="text-xs font-semibold text-slate-400">CTA Page</label>
+                  <label className="text-xs font-normal text-slate-400">CTA Page</label>
                   <select
                     value={bannerCtaPage}
                     onChange={e => setBannerCtaPage(e.target.value)}
@@ -2592,7 +2592,7 @@ export const AdminHome: React.FC = () => {
 
               {/* Emoji */}
               <div className="flex flex-col gap-1.5">
-                <label className="text-xs font-semibold text-slate-400">Decorative Emoji</label>
+                <label className="text-xs font-normal text-slate-400">Decorative Emoji</label>
                 <input
                   type="text"
                   value={bannerEmoji}
@@ -2604,7 +2604,7 @@ export const AdminHome: React.FC = () => {
 
               {/* Gradient picker */}
               <div className="flex flex-col gap-1.5">
-                <label className="text-xs font-semibold text-slate-400">Banner Colour</label>
+                <label className="text-xs font-normal text-slate-400">Banner Colour</label>
                 <div className="flex flex-wrap gap-2">
                   {GRADIENTS.map(g => (
                     <button
@@ -2654,7 +2654,7 @@ export const AdminHome: React.FC = () => {
 
           {/* Announcements list */}
           <div className="bg-white border border-slate-100 rounded-3xl p-5 flex flex-col gap-4">
-            <h3 className="text-sm font-bold text-slate-700 flex items-center gap-1.5">
+            <h3 className="text-sm font-semibold text-slate-700 flex items-center gap-1.5">
               <Megaphone className="w-4 h-4" /> All Banners
             </h3>
 
@@ -2740,7 +2740,7 @@ export const AdminHome: React.FC = () => {
         <button
           type="button"
           onClick={() => setShowFilterDropdown(v => !v)}
-          className="w-full flex items-center justify-between bg-white border border-slate-200 rounded-2xl px-4 py-3 text-sm font-bold text-slate-700 transition hover:border-primary active:scale-[0.98]"
+          className="w-full flex items-center justify-between bg-white border border-slate-100 rounded-2xl px-4 py-3 text-sm font-semibold text-slate-700 transition active:scale-[0.98]"
         >
           <span className="flex items-center gap-2">
             <span className="text-slate-800 font-semibold uppercase text-xs tracking-wide">
@@ -2766,7 +2766,7 @@ export const AdminHome: React.FC = () => {
                   type="button"
                   onClick={() => { setFilter(f); setShowFilterDropdown(false); }}
                   className={`w-full flex items-center justify-between px-4 py-3 text-sm font-semibold transition ${
-                    i < arr.length - 1 ? 'border-b border-slate-50' : ''
+                    i < arr.length - 1 ? 'border-b border-slate-100' : ''
                   } ${
                     filter === f
                       ? 'bg-primary/10 text-primary font-semibold'
@@ -2792,7 +2792,7 @@ export const AdminHome: React.FC = () => {
       <div className="bg-white border border-slate-100 rounded-3xl p-5 flex flex-col gap-4">
         <div className="flex items-center gap-2">
           <BarChart3 className="w-4 h-4 text-slate-400" />
-          <h3 className="text-sm font-bold text-slate-700">
+          <h3 className="text-sm font-semibold text-slate-700">
             {filtered.length} Order{filtered.length !== 1 ? 's' : ''}
           </h3>
         </div>
@@ -2847,7 +2847,7 @@ export const AdminHome: React.FC = () => {
                     <AlertCircle className="w-3 h-3" /> {order.contact}
                   </span>
                   {order.night_charge > 0 && (
-                    <span className="text-amber-500 font-bold">Night +RM{order.night_charge}</span>
+                    <span className="text-amber-500 font-semibold">Night +RM{order.night_charge}</span>
                   )}
                   {order.driver_name && (
                     <span className="flex items-center gap-1 text-blue-500 font-semibold">
@@ -2917,12 +2917,12 @@ export const AdminHome: React.FC = () => {
           {/* Add / Edit form */}
           {showRouteForm && (
             <div className="bg-white border border-slate-100 rounded-3xl p-5 flex flex-col gap-4">
-              <h3 className="text-sm font-bold text-slate-700">
+              <h3 className="text-sm font-semibold text-slate-700">
                 {editingRoute ? 'Edit Route' : 'New Route'}
               </h3>
 
               <div className="flex flex-col gap-1.5">
-                <label className="text-xs font-semibold text-slate-400">Point A</label>
+                <label className="text-xs font-normal text-slate-400">Point A</label>
                 <input
                   type="text"
                   value={routePointA}
@@ -2937,7 +2937,7 @@ export const AdminHome: React.FC = () => {
               </div>
 
               <div className="flex flex-col gap-1.5">
-                <label className="text-xs font-semibold text-slate-400">Point B</label>
+                <label className="text-xs font-normal text-slate-400">Point B</label>
                 <input
                   type="text"
                   value={routePointB}
@@ -2948,7 +2948,7 @@ export const AdminHome: React.FC = () => {
               </div>
 
               <div className="flex flex-col gap-1.5">
-                <label className="text-xs font-semibold text-slate-400">Price (RM)</label>
+                <label className="text-xs font-normal text-slate-400">Price (RM)</label>
                 <input
                   type="number"
                   min="0"
@@ -2978,7 +2978,7 @@ export const AdminHome: React.FC = () => {
 
           {/* Routes list */}
           <div className="bg-white border border-slate-100 rounded-3xl p-5 flex flex-col gap-4">
-            <h3 className="text-sm font-bold text-slate-700 flex items-center gap-1.5">
+            <h3 className="text-sm font-semibold text-slate-700 flex items-center gap-1.5">
               <ArrowLeftRight className="w-4 h-4" /> Routes — UMPSA {isSuperAdmin ? campusView : adminCampus}
             </h3>
 
@@ -3051,7 +3051,7 @@ export const AdminHome: React.FC = () => {
 
           {/* Search */}
           <div className="bg-white border border-slate-100 rounded-2xl p-3.5 flex flex-col gap-2">
-            <h3 className="text-sm font-bold text-slate-700 flex items-center gap-1.5">
+            <h3 className="text-sm font-semibold text-slate-700 flex items-center gap-1.5">
               <AlertCircle className="w-3.5 h-3.5" /> Find {verifyFilter === 'driver' ? 'Driver' : 'Rider'}
             </h3>
             <div className="flex gap-2">
@@ -3061,7 +3061,7 @@ export const AdminHome: React.FC = () => {
                 onChange={e => setVerifySearch(e.target.value)}
                 placeholder="Name or Gerak ID"
                 style={{ fontSize: '12px' }}
-                className="flex-1 bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 font-bold text-slate-700 focus:outline-none focus:border-primary transition placeholder:font-normal"
+                className="flex-1 bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 font-semibold text-slate-700 focus:outline-none focus:border-primary transition placeholder:font-normal"
               />
               <button
                 onClick={() => setVerifySearch('')}
@@ -3075,7 +3075,7 @@ export const AdminHome: React.FC = () => {
 
           {/* Doc list */}
           <div className="bg-white border border-slate-100 rounded-3xl p-5 flex flex-col gap-4">
-            <h3 className="text-sm font-bold text-slate-700 flex items-center gap-1.5">
+            <h3 className="text-sm font-semibold text-slate-700 flex items-center gap-1.5">
               <ShieldCheck className="w-4 h-4" /> Document Verification
             </h3>
 
@@ -3242,7 +3242,7 @@ export const AdminHome: React.FC = () => {
 
             {/* Rider cards — click to open assignment sheet */}
             <div className="bg-white border border-slate-100 rounded-3xl p-5 flex flex-col gap-4">
-              <h3 className="text-sm font-bold text-slate-700 flex items-center gap-1.5">
+              <h3 className="text-sm font-semibold text-slate-700 flex items-center gap-1.5">
                 <GraduationCap className="w-4 h-4" /> Jubah Riders
               </h3>
               <div className="overflow-y-auto no-scrollbar max-h-[320px] flex flex-col gap-2">
@@ -3262,7 +3262,7 @@ export const AdminHome: React.FC = () => {
                     className="flex items-center justify-between gap-3 px-3 py-2.5 rounded-2xl border border-slate-100 bg-white active:opacity-70 transition text-left"
                   >
                     <div className="flex-1 min-w-0">
-                      <p className="text-xs font-bold text-slate-700 truncate">{r.name}</p>
+                      <p className="text-xs font-semibold text-slate-700 truncate">{r.name}</p>
                       <p className="text-xs text-slate-400 font-semibold mt-0.5">{r.gerak_id} · UMPSA {r.campus}</p>
                     </div>
                     <span className={`text-xs font-semibold px-2 py-1 rounded-full border shrink-0 ${
@@ -3278,13 +3278,13 @@ export const AdminHome: React.FC = () => {
             {/* Rider directory table */}
             {jubahAssignments.length > 0 && (
               <div className="bg-white border border-slate-100 rounded-3xl p-5 flex flex-col gap-4">
-                <h3 className="text-sm font-bold text-slate-700 flex items-center gap-1.5">
+                <h3 className="text-sm font-semibold text-slate-700 flex items-center gap-1.5">
                   <Users className="w-4 h-4" /> Representative Directory
                 </h3>
                 <div className="overflow-x-auto overflow-y-auto no-scrollbar max-h-[320px]">
                   <table className="text-left border-collapse" style={{ minWidth: 480 }}>
                     <thead className="sticky top-0 bg-white">
-                      <tr className="text-xs font-semibold text-slate-400 border-b border-slate-100">
+                      <tr className="text-xs font-normal text-slate-400 border-b border-slate-100">
                         <th className="py-2 pr-4 whitespace-nowrap">Method</th>
                         <th className="py-2 pr-4 whitespace-nowrap">Representative Name</th>
                         <th className="py-2 pr-4 whitespace-nowrap">I/C Number</th>
@@ -3296,7 +3296,7 @@ export const AdminHome: React.FC = () => {
                         return (
                           <tr key={a.id}
                             onClick={() => setDirSheet(a)}
-                            className="border-b border-slate-50 text-xs cursor-pointer hover:bg-slate-50 active:bg-slate-100 transition">
+                            className="border-b border-slate-100 text-xs cursor-pointer hover:bg-slate-50 active:bg-slate-100 transition">
                             <td className="py-2.5 pr-4 text-slate-600 font-semibold align-top whitespace-nowrap">
                               {a.method === 'pickup' ? 'Self Pickup' : a.method === 'postage' ? 'Pickup & Postage' : '—'}
                             </td>
@@ -3335,7 +3335,7 @@ export const AdminHome: React.FC = () => {
                   <input type="text" value={jubahSearch} onChange={e => setJubahSearch(e.target.value)}
                     placeholder="Search by name, phone or reference…"
                     style={{ fontSize: '12px' }}
-                    className="flex-1 bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 font-bold text-slate-700 focus:outline-none focus:border-primary transition placeholder:font-normal placeholder:text-slate-300"
+                    className="flex-1 bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 font-semibold text-slate-700 focus:outline-none focus:border-primary transition placeholder:font-normal placeholder:text-slate-300"
                   />
                   <button onClick={() => { setJubahSearch(''); setJubahPayFilter('all'); }}
                     disabled={!jubahSearch.trim() && jubahPayFilter === 'all'}
@@ -3367,9 +3367,9 @@ export const AdminHome: React.FC = () => {
 
               {/* Customer bookings table */}
               <div className="bg-white border border-slate-100 rounded-3xl p-5 flex flex-col gap-4">
-                <h3 className="text-sm font-bold text-slate-700 flex items-center justify-between">
+                <h3 className="text-sm font-semibold text-slate-700 flex items-center justify-between">
                   <span className="flex items-center gap-1.5"><Users className="w-4 h-4" /> Customer Directory</span>
-                  <span className="font-bold text-slate-300 normal-case tracking-normal">
+                  <span className="font-normal text-slate-300 normal-case tracking-normal">
                     {jubahBookings.filter(b => {
                       const isPaid = b.payment_mode !== 'deposit' || b.balance_paid;
                       const matchFilter = jubahPayFilter === 'all' ? true : jubahPayFilter === 'paid' ? isPaid : !isPaid;
@@ -3388,7 +3388,7 @@ export const AdminHome: React.FC = () => {
                   <div className="overflow-x-auto overflow-y-auto no-scrollbar max-h-[600px]">
                     <table className="min-w-full border-collapse text-left" style={{ minWidth: 360 }}>
                       <thead className="sticky top-0 bg-white">
-                        <tr className="text-xs font-semibold text-slate-400 border-b border-slate-100">
+                        <tr className="text-xs font-normal text-slate-400 border-b border-slate-100">
                           <th className="py-2 pr-4 whitespace-nowrap">Reference</th>
                           <th className="py-2 pr-4 whitespace-nowrap">Name</th>
                           <th className="py-2 pr-4 whitespace-nowrap">Remark</th>
@@ -3409,8 +3409,8 @@ export const AdminHome: React.FC = () => {
                           return (
                             <tr key={b.id}
                               onClick={() => goToAdminCard(b)}
-                              className="border-b border-slate-50 text-xs hover:bg-slate-50 active:bg-slate-100 transition cursor-pointer">
-                              <td className="py-2.5 pr-4 font-mono font-bold text-primary whitespace-nowrap">{b.reference}</td>
+                              className="border-b border-slate-100 text-xs hover:bg-slate-50 active:bg-slate-100 transition cursor-pointer">
+                              <td className="py-2.5 pr-4 font-mono font-semibold text-primary whitespace-nowrap">{b.reference}</td>
                               <td className="py-2.5 pr-4 font-semibold text-slate-800 whitespace-nowrap">{b.full_name}</td>
                               <td className="py-2.5 pr-4 text-slate-500 font-semibold whitespace-nowrap">{b.remark}</td>
                               <td className="py-2.5 pr-4 whitespace-nowrap">
@@ -3574,7 +3574,7 @@ export const AdminHome: React.FC = () => {
                         <div className="flex items-center gap-2">
                           {b.balance_proof_url && (
                             <a href={b.balance_proof_url} target="_blank" rel="noopener noreferrer"
-                              className="text-xs text-blue-500 font-bold flex items-center gap-0.5 hover:underline">
+                              className="text-xs text-blue-500 font-semibold flex items-center gap-0.5 hover:underline">
                               <ExternalLink className="w-2.5 h-2.5" /> proof
                             </a>
                           )}
@@ -3620,7 +3620,7 @@ export const AdminHome: React.FC = () => {
                   {/* View Customer Details button */}
                   <button
                     onClick={goToAdminDetails}
-                    className="w-full bg-white border border-slate-200 text-slate-600 font-semibold py-3 rounded-2xl text-sm transition hover:border-primary hover:text-primary active:scale-95">
+                    className="w-full bg-white border border-slate-100 text-slate-600 font-semibold py-3 rounded-2xl text-sm transition active:scale-95 active:bg-slate-50">
                     View Customer Details →
                   </button>
                 </div>
@@ -3646,7 +3646,7 @@ export const AdminHome: React.FC = () => {
 
                   {/* Form fields card */}
                   <div className="bg-white border border-slate-100 rounded-3xl p-5 flex flex-col gap-4">
-                    <h3 className="text-sm font-bold text-slate-700">Booking Information</h3>
+                    <h3 className="text-sm font-semibold text-slate-700">Booking Information</h3>
 
                     {([
                       { label: 'Full Name',     value: b.full_name },
@@ -3664,16 +3664,16 @@ export const AdminHome: React.FC = () => {
                       { label: 'Rider Assigned', value: b.rider_name ?? '—' },
                       { label: 'Reference',      value: b.reference },
                     ] as { label: string; value: string }[]).map(({ label, value }) => (
-                      <div key={label} className="flex flex-col gap-0.5 border-b border-slate-50 pb-3 last:border-0 last:pb-0">
-                        <span className="text-xs font-semibold text-slate-400">{label}</span>
-                        <span className="text-sm font-bold text-slate-700 leading-relaxed">{value}</span>
+                      <div key={label} className="flex flex-col gap-0.5 border-b border-slate-100 pb-3 last:border-0 last:pb-0">
+                        <span className="text-xs font-normal text-slate-400">{label}</span>
+                        <span className="text-sm font-semibold text-slate-700 leading-relaxed">{value}</span>
                       </div>
                     ))}
                   </div>
 
                   {/* Documents download card */}
                   <div className="bg-white border border-slate-100 rounded-3xl p-5 flex flex-col gap-4">
-                    <h3 className="text-sm font-bold text-slate-700">Documents</h3>
+                    <h3 className="text-sm font-semibold text-slate-700">Documents</h3>
 
                     {([
                       { label: 'Combined PDF',  url: b.docs_path },
@@ -3684,7 +3684,7 @@ export const AdminHome: React.FC = () => {
                       { label: 'IC Copy',       url: b.ic_path },
                       ...(b.payment_mode === 'deposit' ? [{ label: 'Balance Proof', url: b.balance_proof_url }] : []),
                     ] as { label: string; url: string | null }[]).map(({ label, url }) => (
-                      <div key={label} className="flex items-center justify-between gap-3 border-b border-slate-50 pb-3 last:border-0 last:pb-0">
+                      <div key={label} className="flex items-center justify-between gap-3 border-b border-slate-100 pb-3 last:border-0 last:pb-0">
                         <span className="text-sm font-semibold text-slate-700">{label}</span>
                         <div className="flex items-center gap-2 shrink-0">
                           {/* View — signed URL generated on demand, not stored */}
@@ -3762,7 +3762,7 @@ export const AdminHome: React.FC = () => {
           {/* ── PRICE sub-tab ── */}
           {jubahSubTab === 'price' && (
             <div className="bg-white border border-slate-100 rounded-3xl p-5 flex flex-col gap-4">
-              <h3 className="text-sm font-bold text-slate-700 flex items-center gap-1.5">
+              <h3 className="text-sm font-semibold text-slate-700 flex items-center gap-1.5">
                 <GraduationCap className="w-4 h-4" /> Jubah Pricing Matrix
               </h3>
               <p className="text-xs text-slate-400 font-semibold -mt-2">Set price per study level × service option. Tap Save after editing each value.</p>
@@ -3775,12 +3775,12 @@ export const AdminHome: React.FC = () => {
                       const key = `${remark}_${mode}`;
                       return (
                         <div key={mode} className="flex flex-col gap-1.5">
-                          <label className="text-xs font-semibold text-slate-400">
+                          <label className="text-xs font-normal text-slate-400">
                             {mode === 'pickup' ? 'Self Pickup' : 'Pickup & Postage'}
                           </label>
                           <div className="flex gap-1.5">
                             <div className="flex items-center bg-slate-50 border border-slate-200 rounded-xl px-2 py-2 gap-1 flex-1 focus-within:border-primary transition">
-                              <span className="text-xs font-semibold text-slate-400 shrink-0">RM</span>
+                              <span className="text-xs font-normal text-slate-400 shrink-0">RM</span>
                               <input
                                 type="number"
                                 min="0"
@@ -3830,7 +3830,7 @@ export const AdminHome: React.FC = () => {
               {BANNER_ITEMS.map(item => (
                 <div key={item.key} className="bg-white border border-slate-100 rounded-3xl p-5 flex flex-col gap-4">
                   <div className="flex items-start justify-between gap-2">
-                    <h3 className="text-sm font-bold text-slate-700 flex-1 min-w-0">{item.label}</h3>
+                    <h3 className="text-sm font-semibold text-slate-700 flex-1 min-w-0">{item.label}</h3>
                     {item.key !== 'default' && (
                       <button
                         onClick={() => setSampleDocsPage({ key: item.key, label: item.label })}
@@ -3851,7 +3851,7 @@ export const AdminHome: React.FC = () => {
                     ) : (
                       <div className="min-h-[120px] flex flex-col items-center justify-center gap-2 text-slate-300 p-4 text-center">
                         <FileImage className="w-10 h-10" />
-                        <span className="text-xs font-bold">No banner uploaded yet</span>
+                        <span className="text-xs font-semibold">No banner uploaded yet</span>
                       </div>
                     )}
                   </div>
@@ -3860,7 +3860,7 @@ export const AdminHome: React.FC = () => {
                       type="button"
                       disabled={bannerUploading === item.key}
                       onClick={() => { setBannerUploadKey(item.key); setTimeout(() => bannerFileRef.current?.click(), 0); }}
-                      className="flex-1 flex items-center justify-center gap-2 border-2 border-dashed border-slate-200 rounded-xl py-2.5 text-slate-400 hover:border-blue-400 hover:text-blue-500 hover:bg-blue-50/30 transition text-xs font-bold disabled:opacity-50"
+                      className="flex-1 flex items-center justify-center gap-2 border-2 border-dashed border-slate-200 rounded-xl py-2.5 text-slate-400 hover:border-blue-400 hover:text-blue-500 hover:bg-blue-50/30 transition text-xs font-semibold disabled:opacity-50"
                     >
                       {bannerUploading === item.key ? (
                         <><span className="w-3.5 h-3.5 rounded-full border-2 border-slate-300 border-t-blue-500 animate-spin" /> Uploading…</>
@@ -3950,7 +3950,7 @@ export const AdminHome: React.FC = () => {
 
           {/* Search */}
           <div className="bg-white border border-slate-100 rounded-2xl p-3.5 flex flex-col gap-2">
-            <h3 className="text-sm font-bold text-slate-700 flex items-center gap-1.5">
+            <h3 className="text-sm font-semibold text-slate-700 flex items-center gap-1.5">
               <AlertCircle className="w-3.5 h-3.5" /> Find {receiptRoleFilter === 'driver' ? 'Driver' : 'Rider'}
             </h3>
             <div className="flex gap-2">
@@ -3960,7 +3960,7 @@ export const AdminHome: React.FC = () => {
                 onChange={e => setReceiptSearch(e.target.value)}
                 placeholder="Name or Gerak ID"
                 style={{ fontSize: '12px' }}
-                className="flex-1 bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 font-bold text-slate-700 focus:outline-none focus:border-primary transition placeholder:font-normal"
+                className="flex-1 bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 font-semibold text-slate-700 focus:outline-none focus:border-primary transition placeholder:font-normal"
               />
               <button
                 onClick={() => setReceiptSearch('')}
@@ -3975,7 +3975,7 @@ export const AdminHome: React.FC = () => {
           {/* Receipt list */}
           <div className="bg-white border border-slate-100 rounded-3xl p-5 flex flex-col gap-4">
             <div className="flex items-center justify-between">
-              <h3 className="text-sm font-bold text-slate-700 flex items-center gap-1.5">
+              <h3 className="text-sm font-semibold text-slate-700 flex items-center gap-1.5">
                 <FileImage className="w-4 h-4" /> {receiptRoleFilter === 'driver' ? 'Driver' : 'Rider'} Receipts
               </h3>
               <button onClick={loadReceipts}
@@ -4102,7 +4102,7 @@ export const AdminHome: React.FC = () => {
             <div className="flex flex-col gap-4">
               <button
                 onClick={() => { setEarningsDriverId(null); setEarningsHistory([]); }}
-                className="flex items-center gap-1 text-slate-500 text-xs font-bold hover:underline active:scale-95 transition self-start"
+                className="flex items-center gap-1 text-slate-500 text-xs font-semibold hover:underline active:scale-95 transition self-start"
               >
                 <ChevronLeft className="w-3.5 h-3.5" /> Back to leaderboard
               </button>
@@ -4176,17 +4176,17 @@ export const AdminHome: React.FC = () => {
             <div className="bg-white border border-slate-100 rounded-3xl p-5 flex gap-3">
               <div className="flex-1 bg-slate-50 rounded-2xl px-3 py-2.5 text-center">
                 <p className="text-lg font-black text-slate-700">{driverCount}</p>
-                <p className="text-xs font-semibold text-slate-400">Drivers Earning</p>
+                <p className="text-xs font-normal text-slate-400">Drivers Earning</p>
               </div>
               <div className="flex-1 bg-emerald-50 rounded-2xl px-3 py-2.5 text-center">
                 <p className="text-lg font-black text-emerald-600">RM {totalEarnings.toFixed(2)}</p>
-                <p className="text-xs font-semibold text-slate-400">Total Earnings</p>
+                <p className="text-xs font-normal text-slate-400">Total Earnings</p>
               </div>
             </div>
 
             {/* Leaderboard */}
             <div className="bg-white border border-slate-100 rounded-3xl p-5 flex flex-col gap-4">
-              <h3 className="text-sm font-bold text-slate-700 flex items-center gap-1.5">
+              <h3 className="text-sm font-semibold text-slate-700 flex items-center gap-1.5">
                 <TrendingUp className="w-4 h-4" /> Driver Leaderboard
               </h3>
 
@@ -4249,7 +4249,7 @@ export const AdminHome: React.FC = () => {
             <input ref={calUploadRef} type="file" accept="application/pdf" className="hidden" onChange={handleCalendarUpload} />
 
             <button onClick={() => calUploadRef.current?.click()} disabled={calParsing}
-              className="flex items-center justify-center gap-2 w-full border-2 border-dashed border-slate-200 rounded-xl py-3 text-slate-500 hover:border-primary hover:text-primary hover:bg-primary/5 transition text-xs font-bold disabled:opacity-50">
+              className="flex items-center justify-center gap-2 w-full border-2 border-dashed border-slate-200 rounded-xl py-3 text-slate-500 hover:border-primary hover:text-primary hover:bg-primary/5 transition text-xs font-semibold disabled:opacity-50">
               {calParsing ? (
                 <>
                   <span className="w-4 h-4 rounded-full border-2 border-slate-300 border-t-primary animate-spin" />
@@ -4300,10 +4300,10 @@ export const AdminHome: React.FC = () => {
                           ev.type === 'orientation'  ? 'bg-purple-100 text-purple-600' :
                                                        'bg-blue-100 text-blue-600'
                         }`}>{ev.type}</span>
-                        <span className="text-xs font-bold text-slate-700">{ev.title}</span>
+                        <span className="text-xs font-semibold text-slate-700">{ev.title}</span>
                         <p className="text-xs text-slate-400 font-semibold mt-0.5">{ev.date}</p>
                       </div>
-                      {ev.duration && <span className="text-xs bg-white border border-slate-100 text-slate-400 font-bold px-1.5 py-0.5 rounded-full shrink-0">{ev.duration}</span>}
+                      {ev.duration && <span className="text-xs bg-white border border-slate-100 text-slate-400 font-semibold px-1.5 py-0.5 rounded-full shrink-0">{ev.duration}</span>}
                     </div>
                   ))}
                 </div>
@@ -4478,21 +4478,21 @@ export const AdminHome: React.FC = () => {
             {/* Details */}
             <div className="px-4 py-4 flex flex-col gap-4">
               <div className="flex items-start justify-between gap-2">
-                <p className="text-xs font-semibold text-slate-400">Email</p>
+                <p className="text-xs font-normal text-slate-400">Email</p>
                 <p className="text-xs font-semibold text-slate-800 text-right break-all">{inviteEmail.trim().toLowerCase()}</p>
               </div>
 
               <div className="h-px bg-slate-100" />
 
               <div className="flex items-center justify-between gap-2">
-                <p className="text-xs font-semibold text-slate-400">Campus</p>
+                <p className="text-xs font-normal text-slate-400">Campus</p>
                 <span className="text-xs font-semibold text-slate-800">UMPSA {inviteCampus}</span>
               </div>
 
               <div className="h-px bg-slate-100" />
 
               <div className="flex items-start justify-between gap-2">
-                <p className="text-xs font-semibold text-slate-400">Capabilities</p>
+                <p className="text-xs font-normal text-slate-400">Capabilities</p>
                 <div className="flex flex-col items-end gap-1.5">
                   {inviteRole === 'driver' && (<>
                     <span className={`flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full ${inviteCanDrive ? 'bg-primary/10 text-primary' : 'bg-slate-100 text-slate-400 line-through'}`}>
