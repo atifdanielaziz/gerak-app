@@ -226,21 +226,33 @@ export const Jubah: React.FC = () => {
     const entries = docFields.map(f => ({ field: f, file: docFiles[f.id] ?? null }));
     if (entries.some(e => !e.file)) return null;
     try {
-      const { PDFDocument, StandardFonts, rgb } = await import('pdf-lib');
+      const { PDFDocument, StandardFonts, rgb, degrees } = await import('pdf-lib');
       const merged  = await PDFDocument.create();
-      const wmFont  = await merged.embedFont(StandardFonts.Helvetica);
-      const wmText  = `Gerak Convocation Robe Delivery - ${uniAbbrev}`;
-      const wmSize  = 9;
-      const wmColor = rgb(0.5, 0.5, 0.5);
+      const wmFont  = await merged.embedFont(StandardFonts.HelveticaBold);
+      const wmText  = `UNTUK KEGUNAAN MAJLIS KONVOKESYEN ${uniAbbrev} SAHAJA`;
+      const wmColor = rgb(0.12, 0.12, 0.12);
+      const wmAngle = 26;
 
-      // Faint corner label — visible but never opaque enough to hide the
-      // card underneath. Only stamped on the IC page, not other documents.
+      // Single diagonal band crossing the card, sized to the page so it
+      // scales with whatever resolution the photo was taken at — not two
+      // corner labels. Opacity stays low enough that the card underneath
+      // (photo, chip, text fields) stays fully legible through it. Only
+      // stamped on the IC page, not the other documents.
       const stampWatermark = (page: PDFPage) => {
-        const { width } = page.getSize();
-        const textWidth = wmFont.widthOfTextAtSize(wmText, wmSize);
-        const margin = 12;
-        page.drawText(wmText, { x: margin, y: margin, size: wmSize, font: wmFont, color: wmColor, opacity: 0.35 });
-        page.drawText(wmText, { x: width - margin - textWidth, y: margin, size: wmSize, font: wmFont, color: wmColor, opacity: 0.35 });
+        const { width, height } = page.getSize();
+        const baseSize    = 20;
+        const rawWidth    = wmFont.widthOfTextAtSize(wmText, baseSize);
+        const targetWidth = width * 0.85;
+        const fontSize    = Math.max(8, Math.min(40, baseSize * (targetWidth / rawWidth)));
+        page.drawText(wmText, {
+          x: width * 0.06,
+          y: height * 0.25,
+          size: fontSize,
+          font: wmFont,
+          color: wmColor,
+          opacity: 0.4,
+          rotate: degrees(wmAngle),
+        });
       };
 
       const addFile = async ({ field, file: f }: { field: JubahDocField; file: File | null }) => {
