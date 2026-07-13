@@ -1,6 +1,6 @@
 ﻿import React, { useState, useRef, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
-import { CheckCircle2, X, Upload, FileText, ShieldAlert, Download, ChevronDown, User, Pencil, MapPin, Copy, Check, Info, GraduationCap, Eye, FileDown } from 'lucide-react';
+import { CheckCircle2, X, Upload, FileText, ShieldAlert, Download, ChevronDown, User, Pencil, MapPin, Copy, Check, Info, GraduationCap, FileUser, FileDown } from 'lucide-react';
 import { submitJubahToSheets } from '../lib/sheetsService';
 import { JubahLanding } from '../components/JubahLanding';
 import { supabase } from '../lib/supabase';
@@ -904,7 +904,7 @@ ${riderBlock}
                     <button type="button"
                       onClick={() => sampleLoaded[field.id] ? setSamplePreview(sampleUrls[field.id]) : setFileError(`No sample uploaded for ${field.label} yet.`)}
                       className={`w-6 h-6 flex items-center justify-center rounded-lg transition shrink-0 active:scale-90 ${sampleLoaded[field.id] ? 'text-blue-400' : 'text-slate-300'}`}>
-                      <Eye className="w-3.5 h-3.5" />
+                      <FileUser className="w-3.5 h-3.5" />
                     </button>
                   </div>
                   {field.hint && <p className="text-xs text-slate-400 -mt-0.5">{field.hint}</p>}
