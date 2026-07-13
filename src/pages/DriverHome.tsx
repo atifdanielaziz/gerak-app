@@ -4,7 +4,7 @@ import { supabase } from '../lib/supabase';
 import {
   Car, MapPin, Navigation, Users, Clock,
   CheckCircle2, RefreshCw, Briefcase,
-  ListOrdered, XCircle, ShieldOff, KeyRound,
+  ListOrdered, ShieldOff, KeyRound,
   ChevronLeft, ChevronRight, Settings, CalendarDays,
   Package, Ban, Unlock, Hash, X, TrendingUp,
   Upload, FileImage, ShieldCheck, ShieldAlert,
@@ -999,9 +999,20 @@ export const DriverHome: React.FC = () => {
                   {myJob.night_charge > 0 && (
                     <p className="text-xs text-amber-500 font-bold text-right">Night +RM{myJob.night_charge}</p>
                   )}
-                  <p className="text-xs text-slate-400 mt-0.5 flex items-center gap-1">
-                    <Users className="w-3 h-3" /> {myJob.passengers} passenger{myJob.passengers > 1 ? 's' : ''}
-                  </p>
+                  <div className="flex items-center justify-between gap-3 mt-0.5">
+                    <p className="text-xs text-slate-400 font-normal flex items-center gap-1">
+                      <Users className="w-3 h-3" /> {myJob.passengers} passenger{myJob.passengers > 1 ? 's' : ''}
+                    </p>
+                    {myJob.status !== 'in_progress' && cancelSecsLeft > 0 && (
+                      <button
+                        onClick={e => { e.stopPropagation(); handleCancel(); }}
+                        disabled={updating}
+                        className="text-xs text-slate-400 font-normal flex items-center gap-1 active:opacity-60 transition disabled:opacity-50"
+                      >
+                        <Clock className="w-3 h-3" /> {fmtCountdown(cancelSecsLeft)}
+                      </button>
+                    )}
+                  </div>
                 </div>
 
                 <div className="mx-4 mb-4 bg-slate-50 rounded-2xl px-4 py-3 flex flex-col gap-2.5">
@@ -1030,7 +1041,7 @@ export const DriverHome: React.FC = () => {
                   </p>
                 )}
 
-                {/* Single action row: primary action + WhatsApp + cancel */}
+                {/* Action row: primary action + WhatsApp */}
                 <div className="px-4 pb-5 flex gap-2" onClick={e => e.stopPropagation()}>
 
                   {/* Primary — Start Trip or Complete Trip */}
@@ -1038,7 +1049,7 @@ export const DriverHome: React.FC = () => {
                     <button
                       onClick={() => handleStatusUpdate(myJob.id, 'in_progress')}
                       disabled={updating}
-                      className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs py-3 rounded-2xl transition active:scale-95 disabled:opacity-50 shadow-md shadow-blue-500/25 flex items-center justify-center gap-1.5"
+                      className="flex-1 bg-primary hover:bg-primary-hover text-white font-semibold text-xs py-3 rounded-2xl transition active:scale-95 disabled:opacity-50 shadow-lg shadow-primary/30 flex items-center justify-center gap-1.5"
                     >
                       {updating
                         ? <span className="w-4 h-4 rounded-full border-2 border-white border-t-transparent animate-spin" />
@@ -1049,7 +1060,7 @@ export const DriverHome: React.FC = () => {
                     <button
                       onClick={() => handleStatusUpdate(myJob.id, 'completed')}
                       disabled={updating}
-                      className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs py-3 rounded-2xl transition active:scale-95 disabled:opacity-50 shadow-md shadow-emerald-500/25 flex items-center justify-center gap-1.5"
+                      className="flex-1 bg-primary hover:bg-primary-hover text-white font-semibold text-xs py-3 rounded-2xl transition active:scale-95 disabled:opacity-50 shadow-lg shadow-primary/30 flex items-center justify-center gap-1.5"
                     >
                       {updating
                         ? <span className="w-4 h-4 rounded-full border-2 border-white border-t-transparent animate-spin" />
@@ -1082,20 +1093,8 @@ export const DriverHome: React.FC = () => {
                     className="text-[#25D366] active:scale-90 transition shrink-0"
                     aria-label="WhatsApp customer"
                   >
-                    <WaIcon className="w-9 h-9" />
+                    <WaIcon className="w-5 h-5" />
                   </a>
-
-                  {/* Cancel — only within 3-min window, only before trip starts */}
-                  {myJob.status !== 'in_progress' && cancelSecsLeft > 0 && (
-                    <button
-                      onClick={handleCancel}
-                      disabled={updating}
-                      className="flex flex-col items-center justify-center bg-red-50 border border-red-100 text-red-500 font-semibold text-xs px-3 py-2 rounded-2xl transition active:scale-95 disabled:opacity-50 shrink-0"
-                    >
-                      <XCircle className="w-3.5 h-3.5 mb-0.5" />
-                      {fmtCountdown(cancelSecsLeft)}
-                    </button>
-                  )}
                 </div>
               </div>
             </div>
