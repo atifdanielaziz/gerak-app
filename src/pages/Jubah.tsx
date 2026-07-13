@@ -6,6 +6,7 @@ import { JubahLanding } from '../components/JubahLanding';
 import { supabase } from '../lib/supabase';
 import { WaIcon, toWa } from '../lib/whatsapp';
 import { compressImage } from '../lib/imageCompress';
+import type { PDFPage } from 'pdf-lib';
 
 const IcMasked: React.FC<{ ic: string | null }> = ({ ic }) => {
   if (!ic) return <span className="text-slate-800 font-bold text-sm">—</span>;
@@ -59,6 +60,11 @@ export const Jubah: React.FC = () => {
   const [icNumber, setIcNumber]       = useState('');
   const [hpNumber, setHpNumber]       = useState('');
   const [university, setUniversity]   = useState('');
+  const uniAbbrev = university.includes('Pahang') ? 'UMPSA'
+    : university.includes('UiTM') || university.includes('MARA') ? 'UiTM'
+    : university.includes('Kelantan') ? 'UMK'
+    : university.includes('Kebangsaan') ? 'UKM'
+    : 'UIA';
   const [faculty, setFaculty]         = useState('');
   const [matricId, setMatricId]       = useState('');
   const [paymentMode, setPaymentMode]   = useState<'pickup' | 'postage' | 'deposit'>('pickup');
@@ -217,17 +223,34 @@ export const Jubah: React.FC = () => {
   };
 
   const generateCombinedBlob = async (): Promise<Blob | null> => {
-    const files = docFields.map(f => docFiles[f.id]).filter((f): f is File => !!f);
-    if (files.length !== docFields.length) return null;
+    const entries = docFields.map(f => ({ field: f, file: docFiles[f.id] ?? null }));
+    if (entries.some(e => !e.file)) return null;
     try {
-      const { PDFDocument } = await import('pdf-lib');
-      const merged = await PDFDocument.create();
-      const addFile = async (f: File) => {
+      const { PDFDocument, StandardFonts, rgb } = await import('pdf-lib');
+      const merged  = await PDFDocument.create();
+      const wmFont  = await merged.embedFont(StandardFonts.Helvetica);
+      const wmText  = `Gerak Convocation Robe Delivery - ${uniAbbrev}`;
+      const wmSize  = 9;
+      const wmColor = rgb(0.5, 0.5, 0.5);
+
+      // Faint corner label — visible but never opaque enough to hide the
+      // card underneath. Only stamped on the IC page, not other documents.
+      const stampWatermark = (page: PDFPage) => {
+        const { width } = page.getSize();
+        const textWidth = wmFont.widthOfTextAtSize(wmText, wmSize);
+        const margin = 12;
+        page.drawText(wmText, { x: margin, y: margin, size: wmSize, font: wmFont, color: wmColor, opacity: 0.35 });
+        page.drawText(wmText, { x: width - margin - textWidth, y: margin, size: wmSize, font: wmFont, color: wmColor, opacity: 0.35 });
+      };
+
+      const addFile = async ({ field, file: f }: { field: JubahDocField; file: File | null }) => {
+        if (!f) return;
         const bytes = await f.arrayBuffer();
         if (f.type === 'application/pdf') {
           const doc = await PDFDocument.load(bytes);
           const pages = await merged.copyPages(doc, doc.getPageIndices());
           pages.forEach(p => merged.addPage(p));
+          if (field.id === 'ic') pages.forEach(stampWatermark);
         } else {
           const page = merged.addPage();
           const img = f.type === 'image/png'
@@ -236,9 +259,10 @@ export const Jubah: React.FC = () => {
           const { width, height } = img.scale(1);
           page.setSize(width, height);
           page.drawImage(img, { x: 0, y: 0, width, height });
+          if (field.id === 'ic') stampWatermark(page);
         }
       };
-      for (const f of files) await addFile(f);
+      for (const entry of entries) await addFile(entry);
       const pdfBytes = await merged.save();
       return new Blob([pdfBytes.buffer as ArrayBuffer], { type: 'application/pdf' });
     } catch (err) {
@@ -372,11 +396,6 @@ ${riderBlock}
     if (!allFilesReady) { setFileError('Please upload all required documents.'); return; }
     if (!paymentProof) { setFileError('Please upload your proof of payment.'); return; }
 
-    const uniAbbrev = university.includes('Pahang') ? 'UMPSA'
-      : university.includes('UiTM') || university.includes('MARA') ? 'UiTM'
-      : university.includes('Kelantan') ? 'UMK'
-      : university.includes('Kebangsaan') ? 'UKM'
-      : 'UIA';
     const reference = `JUB-${new Date().getFullYear().toString().slice(-2)}-${uniAbbrev}-${Math.random().toString(36).slice(2, 6).toUpperCase()}`;
     const combinedFileName = `${(fullName || 'combined').replace(/\s+/g, '_')}_combined.pdf`;
     const selectedRider = riders.find(r => r.id === selectedRiderId);
