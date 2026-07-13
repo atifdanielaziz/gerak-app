@@ -7,6 +7,7 @@ import {
   Hash, Moon, Upload, FileText, XCircle, ExternalLink, FileDown,
 } from 'lucide-react';
 import { WaIcon, toWa } from '../lib/whatsapp';
+import { fmt12, fmtDuration, toDateStr, todayStr as today } from '../lib/format';
 
 interface RentalOwner {
   id: string;
@@ -58,20 +59,6 @@ interface RentalBooking {
 const ALLOWED_LICENSE_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'application/pdf'];
 
 const HOURS = Array.from({ length: 48 }, (_, i) => i * 0.5);
-const fmt12 = (h: number) => {
-  const total = ((h % 24) + 24) % 24;
-  const hh  = Math.floor(total);
-  const mm  = total % 1 !== 0 ? ':30' : ':00';
-  const p   = hh < 12 ? 'AM' : 'PM';
-  const dh  = hh === 0 ? 12 : hh > 12 ? hh - 12 : hh;
-  return `${dh}${mm} ${p}`;
-};
-const fmtDuration = (h: number | string) => {
-  const n = Number(h);
-  return n < 1 ? '30 min' : Number.isInteger(n) ? `${n}h` : `${Math.floor(n)}h 30m`;
-};
-const toDateStr = (d: Date) => d.toISOString().split('T')[0];
-const today = () => toDateStr(new Date());
 
 const getDatesInRange = (start: string, end: string): string[] => {
   const dates: string[] = [];

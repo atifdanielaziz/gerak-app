@@ -14,6 +14,7 @@ import { WaIcon, toWa } from '../lib/whatsapp';
 import { OrderReceiptSheet } from '../components/OrderReceiptSheet';
 import { FareModal } from '../components/FareModal';
 import { MonthDrumPicker, EarningsCard, computeEarnings } from '../components/EarningsCard';
+import { fmt12, fmtDuration, todayStr } from '../lib/format';
 
 interface RentalVehicle {
   owner_id: string;
@@ -57,20 +58,6 @@ interface RentalBlock {
 }
 
 const HOURS = Array.from({ length: 24 }, (_, i) => i);
-const fmt12 = (h: number) => {
-  const total = ((h % 24) + 24) % 24;
-  const hh  = Math.floor(total);
-  const mm  = total % 1 !== 0 ? ':30' : ':00';
-  const p   = hh < 12 ? 'AM' : 'PM';
-  const dh  = hh === 0 ? 12 : hh > 12 ? hh - 12 : hh;
-  return `${dh}${mm} ${p}`;
-};
-const fmtDuration = (h: number | string) => {
-  const n = Number(h);
-  return n < 1 ? '30 min' : Number.isInteger(n) ? `${n}h` : `${Math.floor(n)}h 30m`;
-};
-const toDateStr = (d: Date) => d.toISOString().split('T')[0];
-const todayStr  = () => toDateStr(new Date());
 
 interface RideOrder {
   id: string;

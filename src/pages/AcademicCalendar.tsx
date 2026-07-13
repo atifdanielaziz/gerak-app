@@ -4,6 +4,7 @@ import {
   BookOpen, Clock, GraduationCap, Coffee, AlertCircle,
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
+import { toDateStr } from '../lib/format';
 
 // ── Types ──────────────────────────────────────────────────────────────────
 type EventType = 'registration' | 'orientation' | 'lectures' | 'break' | 'study' | 'exam';
@@ -166,7 +167,6 @@ const CAL_BG: Record<EventType, string> = {
   exam:         'bg-red-500 text-white font-semibold',
 };
 
-const toDateStr = (d: Date) => d.toISOString().split('T')[0];
 
 // ── Build date → eventType map ────────────────────────────────────────────
 function buildDateMap(src: Semester[] = SEMESTERS): Map<string, EventType> {
