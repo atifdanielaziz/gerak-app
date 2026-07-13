@@ -736,8 +736,8 @@ export const DriverHome: React.FC = () => {
           {/* Pool tab — only if can_drive */}
           {effectiveCanDrive && (
             <button
-              onClick={() => setActiveTab('pool')}
-              className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-xs font-semibold transition relative ${
+              onPointerDown={(e) => { e.preventDefault(); setActiveTab('pool'); }}
+              className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-xs font-semibold transition-transform relative ${
                 activeTab === 'pool' ? 'bg-primary text-white' : 'text-slate-400'
               }`}
             >
@@ -758,8 +758,8 @@ export const DriverHome: React.FC = () => {
           {/* My Jobs tab — only if can_drive */}
           {effectiveCanDrive && (
             <button
-              onClick={() => setActiveTab('my-jobs')}
-              className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-xs font-semibold transition relative ${
+              onPointerDown={(e) => { e.preventDefault(); setActiveTab('my-jobs'); }}
+              className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-xs font-semibold transition-transform relative ${
                 activeTab === 'my-jobs' ? 'bg-primary text-white' : 'text-slate-400'
               }`}
             >
@@ -776,8 +776,8 @@ export const DriverHome: React.FC = () => {
           {/* Rental tab — owners + admins */}
           {effectiveCanRent && (
             <button
-              onClick={() => setActiveTab('rental')}
-              className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-xs font-semibold transition relative ${
+              onPointerDown={(e) => { e.preventDefault(); setActiveTab('rental'); }}
+              className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-xs font-semibold transition-transform relative ${
                 activeTab === 'rental' ? 'bg-primary text-white' : 'text-slate-400'
               }`}
             >
@@ -796,8 +796,8 @@ export const DriverHome: React.FC = () => {
           {/* Earnings tab — only if can_drive */}
           {effectiveCanDrive && (
             <button
-              onClick={() => setActiveTab('earnings')}
-              className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-xs font-semibold transition ${
+              onPointerDown={(e) => { e.preventDefault(); setActiveTab('earnings'); }}
+              className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-xs font-semibold transition-transform ${
                 activeTab === 'earnings' ? 'bg-primary text-white' : 'text-slate-400'
               }`}
             >
@@ -1218,8 +1218,8 @@ export const DriverHome: React.FC = () => {
             ] as const)
               .filter(({ ownerOnly }) => !ownerOnly || !isAdminForRental)
               .map(({ v, Icon, label }) => (
-                <button key={v} onClick={() => setRentalSubView(v)}
-                  className={`flex-1 py-2 rounded-xl text-xs font-semibold transition flex flex-col items-center gap-0.5 ${
+                <button key={v} onPointerDown={(e) => { e.preventDefault(); setRentalSubView(v); }}
+                  className={`flex-1 py-2 rounded-xl text-xs font-semibold transition-transform flex flex-col items-center gap-0.5 ${
                     rentalSubView === v ? 'bg-primary text-white' : 'text-slate-400'
                   }`}>
                   <Icon className="w-3 h-3" />
@@ -1329,8 +1329,8 @@ export const DriverHome: React.FC = () => {
                     const isPicked  = dateStr === scheduleDate;
                     return (
                       <button key={dateStr} disabled={isPast}
-                        onClick={() => setScheduleDate(dateStr)}
-                        className={`aspect-square rounded-xl text-xs font-semibold transition active:scale-90 ${
+                        onPointerDown={(e) => { if (isPast) return; e.preventDefault(); setScheduleDate(dateStr); }}
+                        className={`aspect-square rounded-xl text-xs font-semibold transition-transform active:scale-90 ${
                           isPicked   ? 'bg-primary text-white' :
                           isBlocked  ? 'bg-red-100 text-red-400' :
                           isPast     ? 'text-slate-200 cursor-not-allowed' :
@@ -1446,7 +1446,7 @@ export const DriverHome: React.FC = () => {
                     <p className="text-xs text-slate-400 font-normal mt-0.5">Applies 10 PM – 5 AM for hourly bookings</p>
                   </div>
                   <button
-                    onClick={() => setVehicleForm(f => ({ ...f, night_surcharge_on: !f.night_surcharge_on }))}
+                    onPointerDown={(e) => { e.preventDefault(); setVehicleForm(f => ({ ...f, night_surcharge_on: !f.night_surcharge_on })); }}
                     className={`relative w-11 h-6 rounded-full transition-colors duration-200 ${
                       vehicleForm.night_surcharge_on ? 'bg-primary' : 'bg-slate-200'
                     }`}

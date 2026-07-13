@@ -66,7 +66,7 @@ export const GerakTransporter: React.FC = () => {
               <button
                 key={s}
                 type="button"
-                onClick={() => setServiceType(s)}
+                onPointerDown={(e) => { e.preventDefault(); setServiceType(s); }}
                 className={`flex-1 flex items-center gap-2.5 p-3 rounded-2xl border bg-white transition-transform active:scale-[0.99] active:bg-slate-50 ${
                   active ? 'border-slate-900' : 'border-slate-100'
                 }`}

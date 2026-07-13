@@ -123,7 +123,7 @@ export const Header: React.FC = () => {
                         <Car className="w-4 h-4 shrink-0" /> Switch to Driver
                       </button>
                       <button
-                        onClick={() => { switchToRiderMode(); setShowRoleMenu(false); }}
+                        onPointerDown={(e) => { e.preventDefault(); switchToRiderMode(); setShowRoleMenu(false); }}
                         className="w-full flex items-center gap-3 px-4 py-3 text-left text-xs font-extrabold text-slate-600 hover:bg-slate-50 transition active:scale-95"
                       >
                         <Bike className="w-4 h-4 shrink-0" /> Switch to Rider
@@ -202,8 +202,8 @@ export const Header: React.FC = () => {
                     return (
                       <button
                         key={campus}
-                        onClick={() => selectCampus(campus)}
-                        className={`w-full flex items-center justify-between px-4 py-4 border rounded-2xl bg-white active:bg-slate-50 active:scale-[0.99] transition ${
+                        onPointerDown={(e) => { e.preventDefault(); selectCampus(campus); }}
+                        className={`w-full flex items-center justify-between px-4 py-4 border rounded-2xl bg-white active:bg-slate-50 active:scale-[0.99] transition-transform ${
                           selected ? 'border-slate-900' : 'border-slate-100'
                         }`}
                       >
@@ -276,8 +276,8 @@ export const Header: React.FC = () => {
                   <div className="fixed inset-0 z-40" onClick={() => setShowRoleMenu(false)} />
                   <div className="absolute right-0 top-full mt-2 z-50 bg-white border border-slate-100 rounded-2xl shadow-xl overflow-hidden min-w-[180px]">
                     <button
-                      onClick={() => { switchToAdminMode(); setShowRoleMenu(false); }}
-                      className={`w-full flex items-center gap-3 px-4 py-3 text-left text-xs font-extrabold transition active:scale-95 ${
+                      onPointerDown={(e) => { e.preventDefault(); switchToAdminMode(); setShowRoleMenu(false); }}
+                      className={`w-full flex items-center gap-3 px-4 py-3 text-left text-xs font-extrabold transition-transform active:scale-95 ${
                         !isNotAdmin ? 'bg-slate-100 text-slate-900' : 'text-slate-600 hover:bg-slate-50'
                       }`}
                     >
@@ -287,8 +287,8 @@ export const Header: React.FC = () => {
                     </button>
 
                     <button
-                      onClick={() => { switchToDriverMode(); setShowRoleMenu(false); }}
-                      className={`w-full flex items-center gap-3 px-4 py-3 text-left text-xs font-extrabold transition active:scale-95 ${
+                      onPointerDown={(e) => { e.preventDefault(); switchToDriverMode(); setShowRoleMenu(false); }}
+                      className={`w-full flex items-center gap-3 px-4 py-3 text-left text-xs font-extrabold transition-transform active:scale-95 ${
                         activeRole === 'driver' ? 'bg-slate-100 text-slate-900' : 'text-slate-600 hover:bg-slate-50'
                       }`}
                     >
@@ -298,7 +298,7 @@ export const Header: React.FC = () => {
                     </button>
 
                     <button
-                      onClick={() => { switchToRiderMode(); setShowRoleMenu(false); }}
+                      onPointerDown={(e) => { e.preventDefault(); switchToRiderMode(); setShowRoleMenu(false); }}
                       className={`w-full flex items-center gap-3 px-4 py-3 text-left text-xs font-extrabold transition active:scale-95 ${
                         activeRole === 'rider' ? 'bg-amber-50 text-amber-600' : 'text-slate-600 hover:bg-slate-50'
                       }`}
@@ -327,8 +327,8 @@ export const Header: React.FC = () => {
           {user.role === 'admin' && user.canDrive && (
             <div className="flex bg-slate-100 rounded-xl p-0.5 gap-0.5">
               <button
-                onClick={switchToAdminMode}
-                className={`flex items-center gap-1 px-2.5 py-1.5 rounded-[10px] text-xs font-extrabold transition active:scale-95 ${
+                onPointerDown={(e) => { e.preventDefault(); switchToAdminMode(); }}
+                className={`flex items-center gap-1 px-2.5 py-1.5 rounded-[10px] text-xs font-extrabold transition-transform active:scale-95 ${
                   activeRole !== 'driver' ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-400 hover:text-slate-600'
                 }`}
               >
@@ -336,8 +336,8 @@ export const Header: React.FC = () => {
                 Admin
               </button>
               <button
-                onClick={switchToDriverMode}
-                className={`flex items-center gap-1 px-2.5 py-1.5 rounded-[10px] text-xs font-extrabold transition active:scale-95 ${
+                onPointerDown={(e) => { e.preventDefault(); switchToDriverMode(); }}
+                className={`flex items-center gap-1 px-2.5 py-1.5 rounded-[10px] text-xs font-extrabold transition-transform active:scale-95 ${
                   activeRole === 'driver' ? 'bg-primary text-white shadow-sm' : 'text-slate-400 hover:text-slate-600'
                 }`}
               >

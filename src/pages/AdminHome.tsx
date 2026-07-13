@@ -539,8 +539,8 @@ const JubahRiderSheet: React.FC<{
                     {method !== 'postage' && (
                       <button
                         type="button"
-                        onClick={() => setIsEditingDropPoint(v => !v)}
-                        className={`flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-full border transition active:scale-95 ${
+                        onPointerDown={(e) => { e.preventDefault(); setIsEditingDropPoint(v => !v); }}
+                        className={`flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-full border transition-transform active:scale-95 ${
                           isEditingDropPoint
                             ? 'bg-primary/10 border-primary/30 text-primary'
                             : 'bg-slate-100 border-slate-200 text-slate-500'
@@ -2197,9 +2197,8 @@ export const AdminHome: React.FC = () => {
           .filter(t => !t.superadminOnly || user.role === 'superadmin')
           .map(tab => (
             <button key={tab.id}
-              onMouseDown={(e) => e.preventDefault()}
-              onClick={() => setActiveTab(tab.id)}
-              className={`shrink-0 px-4 py-2 rounded-xl text-xs font-semibold transition flex items-center justify-center gap-1.5 ${
+              onPointerDown={(e) => { e.preventDefault(); setActiveTab(tab.id); }}
+              className={`shrink-0 px-4 py-2 rounded-xl text-xs font-semibold transition-transform flex items-center justify-center gap-1.5 ${
                 activeTab === tab.id ? 'bg-primary text-white' : 'text-slate-400'
               }`}
             >
@@ -2255,8 +2254,8 @@ export const AdminHome: React.FC = () => {
                 <p className="text-sm font-semibold text-slate-700 mb-2">Campus</p>
                 <div className="flex bg-slate-50 border border-slate-200 rounded-2xl p-1 gap-1">
                   {(['Gambang', 'Pekan'] as const).map(c => (
-                    <button key={c} type="button" onClick={() => setInviteCampus(c)}
-                      className={`flex-1 py-2 rounded-xl text-xs font-semibold transition ${
+                    <button key={c} type="button" onPointerDown={(e) => { e.preventDefault(); setInviteCampus(c); }}
+                      className={`flex-1 py-2 rounded-xl text-xs font-semibold transition-transform ${
                         inviteCampus === c ? 'bg-primary text-white' : 'text-slate-400'
                       }`}
                     >
@@ -2291,14 +2290,14 @@ export const AdminHome: React.FC = () => {
               <div>
                 <p className="text-sm font-semibold text-slate-700 mb-2">Capabilities</p>
                 <div className="flex gap-2">
-                  <button type="button" onClick={() => setInviteCanDrive(v => !v)}
-                    className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl text-xs font-semibold border transition active:scale-95 ${
+                  <button type="button" onPointerDown={(e) => { e.preventDefault(); setInviteCanDrive(v => !v); }}
+                    className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl text-xs font-semibold border transition-transform active:scale-95 ${
                       inviteCanDrive ? 'bg-white border-slate-900 text-slate-900' : 'bg-slate-50 border-slate-200 text-slate-400'
                     }`}>
                     <Car className="w-3 h-3" /> Gerak Car {inviteCanDrive ? '✓' : '✗'}
                   </button>
-                  <button type="button" onClick={() => setInviteCanRent(v => !v)}
-                    className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl text-xs font-semibold border transition active:scale-95 ${
+                  <button type="button" onPointerDown={(e) => { e.preventDefault(); setInviteCanRent(v => !v); }}
+                    className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl text-xs font-semibold border transition-transform active:scale-95 ${
                       inviteCanRent ? 'bg-white border-slate-900 text-slate-900' : 'bg-slate-50 border-slate-200 text-slate-400'
                     }`}>
                     <KeyRound className="w-3 h-3" /> Rental {inviteCanRent ? '✓' : '✗'}
@@ -2312,14 +2311,14 @@ export const AdminHome: React.FC = () => {
               <div>
                 <p className="text-sm font-semibold text-slate-700 mb-2">Capabilities</p>
                 <div className="flex gap-2">
-                  <button type="button" onClick={() => setInviteCanDaily(v => !v)}
-                    className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl text-xs font-semibold border transition active:scale-95 ${
+                  <button type="button" onPointerDown={(e) => { e.preventDefault(); setInviteCanDaily(v => !v); }}
+                    className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl text-xs font-semibold border transition-transform active:scale-95 ${
                       inviteCanDaily ? 'bg-white border-slate-900 text-slate-900' : 'bg-slate-50 border-slate-200 text-slate-400'
                     }`}>
                     <Bike className="w-3.5 h-3.5" /> Daily {inviteCanDaily ? '✓' : '✗'}
                   </button>
-                  <button type="button" onClick={() => setInviteCanRobe(v => !v)}
-                    className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl text-xs font-semibold border transition active:scale-95 ${
+                  <button type="button" onPointerDown={(e) => { e.preventDefault(); setInviteCanRobe(v => !v); }}
+                    className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl text-xs font-semibold border transition-transform active:scale-95 ${
                       inviteCanRobe ? 'bg-white border-slate-900 text-slate-900' : 'bg-slate-50 border-slate-200 text-slate-400'
                     }`}>
                     <GraduationCap className="w-3.5 h-3.5" /> Robe {inviteCanRobe ? '✓' : '✗'}
@@ -2722,8 +2721,8 @@ export const AdminHome: React.FC = () => {
           {(['Gambang', 'Pekan'] as const).map(c => (
             <button
               key={c}
-              onClick={() => setCampusView(c)}
-              className={`flex-1 py-2 rounded-xl text-xs font-semibold transition ${
+              onPointerDown={(e) => { e.preventDefault(); setCampusView(c); }}
+              className={`flex-1 py-2 rounded-xl text-xs font-semibold transition-transform ${
                 campusView === c
                   ? 'bg-primary text-white'
                   : 'text-slate-400 hover:text-slate-600'
@@ -2896,8 +2895,8 @@ export const AdminHome: React.FC = () => {
           {isSuperAdmin && (
             <div className="flex bg-white border border-slate-100 rounded-2xl p-1 gap-1">
               {(['Gambang', 'Pekan'] as const).map(c => (
-                <button key={c} onClick={() => setCampusView(c)}
-                  className={`flex-1 py-2 rounded-xl text-xs font-semibold transition ${
+                <button key={c} onPointerDown={(e) => { e.preventDefault(); setCampusView(c); }}
+                  className={`flex-1 py-2 rounded-xl text-xs font-semibold transition-transform ${
                     campusView === c ? 'bg-primary text-white' : 'text-slate-400'
                   }`}>
                   {c}
@@ -3040,8 +3039,8 @@ export const AdminHome: React.FC = () => {
           {/* Driver / Rider toggle */}
           <div className="flex bg-white border border-slate-100 rounded-2xl p-1 gap-1">
             {(['driver', 'rider'] as const).map(r => (
-              <button key={r} onClick={() => setVerifyFilter(r)}
-                className={`flex-1 py-2 rounded-xl text-xs font-semibold transition ${
+              <button key={r} onPointerDown={(e) => { e.preventDefault(); setVerifyFilter(r); }}
+                className={`flex-1 py-2 rounded-xl text-xs font-semibold transition-transform ${
                   verifyFilter === r ? 'bg-primary text-white' : 'text-slate-400'
                 }`}>
                 {r === 'driver' ? 'Drivers' : 'Riders'}
@@ -3227,8 +3226,8 @@ export const AdminHome: React.FC = () => {
                 { id: 'price',    label: 'Price' },
                 { id: 'banner',   label: 'Banner' },
               ] as const).map(t => (
-                <button key={t.id} onClick={() => { setJubahSubTab(t.id); setJubahAdminView('list'); setJubahAdminSelected(null); }}
-                  className={`flex-1 py-2 rounded-xl text-xs font-semibold transition ${
+                <button key={t.id} onPointerDown={(e) => { e.preventDefault(); setJubahSubTab(t.id); setJubahAdminView('list'); setJubahAdminSelected(null); }}
+                  className={`flex-1 py-2 rounded-xl text-xs font-semibold transition-transform ${
                     jubahSubTab === t.id ? 'bg-primary text-white' : 'text-slate-400'
                   }`}>
                   {t.label}

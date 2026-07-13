@@ -417,8 +417,8 @@ export const Transport: React.FC = () => {
                 <button
                   key={c}
                   type="button"
-                  onClick={() => switchCampus(c)}
-                  className={`flex-1 py-2 rounded-xl text-xs font-semibold transition-all ${
+                  onPointerDown={(e) => { e.preventDefault(); switchCampus(c); }}
+                  className={`flex-1 py-2 rounded-xl text-xs font-semibold transition-transform ${
                     campus === c
                       ? 'bg-white text-primary'
                       : 'text-slate-500 hover:text-slate-700'
@@ -464,7 +464,7 @@ export const Transport: React.FC = () => {
             { key: 'custom', icon: PencilLine,  label: 'Custom'        },
             { key: 'map',    icon: Map,         label: 'Search Routes' },
           ] as const).map(({ key, icon: Icon, label }) => (
-            <button key={key} type="button" onClick={() => setBookMode(key)}
+            <button key={key} type="button" onPointerDown={(e) => { e.preventDefault(); setBookMode(key); }}
               className={`flex-1 flex flex-col items-center gap-1.5 p-2.5 rounded-2xl border bg-white transition-transform active:scale-[0.99] active:bg-slate-50 ${
                 bookMode === key ? 'border-slate-900' : 'border-slate-100'
               }`}
@@ -653,7 +653,7 @@ export const Transport: React.FC = () => {
 
           {/* Now / Later toggle — Mode Selector Standard */}
           <div className="flex gap-2">
-            <button type="button" onClick={() => setBookWhen('now')}
+            <button type="button" onPointerDown={(e) => { e.preventDefault(); setBookWhen('now'); }}
               className={`flex-1 flex items-center gap-2 p-3 rounded-2xl border bg-white transition-transform active:scale-[0.99] active:bg-slate-50 ${
                 bookWhen === 'now' ? 'border-slate-900' : 'border-slate-100'
               }`}
@@ -661,7 +661,7 @@ export const Transport: React.FC = () => {
               <Clock className={`w-4 h-4 shrink-0 ${bookWhen === 'now' ? 'text-slate-900' : 'text-slate-400'}`} />
               <span className={`text-xs font-semibold ${bookWhen === 'now' ? 'text-slate-900' : 'text-slate-600'}`}>Now</span>
             </button>
-            <button type="button" onClick={() => setBookWhen('later')}
+            <button type="button" onPointerDown={(e) => { e.preventDefault(); setBookWhen('later'); }}
               className={`flex-1 flex items-center gap-2 p-3 rounded-2xl border bg-white transition-transform active:scale-[0.99] active:bg-slate-50 ${
                 bookWhen === 'later' ? 'border-slate-900' : 'border-slate-100'
               }`}

@@ -381,8 +381,8 @@ export const RiderHome: React.FC = () => {
                 const Icon = tab.icon;
                 return (
                   <button key={tab.id}
-                    onClick={() => { setActiveTab(tab.id); setJubahView('list'); setSelectedJob(null); }}
-                    className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-xs font-semibold transition ${
+                    onPointerDown={(e) => { e.preventDefault(); setActiveTab(tab.id); setJubahView('list'); setSelectedJob(null); }}
+                    className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-xs font-semibold transition-transform ${
                       activeTab === tab.id ? 'bg-primary text-white' : 'text-slate-400'
                     }`}>
                     <Icon className="w-3.5 h-3.5" />

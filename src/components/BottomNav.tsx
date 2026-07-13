@@ -84,7 +84,8 @@ export const BottomNav: React.FC = () => {
             return (
               <button
                 key={item.id}
-                onClick={(e) => {
+                onPointerDown={(e) => {
+                  e.preventDefault();
                   addBubble(e, item.id);
                   setCurrentPage(item.id);
                 }}

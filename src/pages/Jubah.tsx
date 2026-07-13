@@ -649,7 +649,7 @@ ${riderBlock}
                   <button
                     key={r}
                     type="button"
-                    onClick={() => setRemark(r)}
+                    onPointerDown={(e) => { e.preventDefault(); setRemark(r); }}
                     className={`py-2 rounded-xl text-xs font-semibold border bg-white transition-transform active:scale-[0.99] active:bg-slate-50 ${
                       remark === r
                         ? 'border-slate-900 text-slate-900'
@@ -684,7 +684,7 @@ ${riderBlock}
                     {/* Self Pickup */}
                     <button
                       type="button"
-                      onClick={() => setDepositMethod('pickup')}
+                      onPointerDown={(e) => { e.preventDefault(); setDepositMethod('pickup'); }}
                       className={`w-full flex items-center justify-between px-3 py-2.5 rounded-2xl border text-xs font-semibold transition active:scale-[0.99] ${
                         depositMethod === 'pickup'
                           ? 'border-slate-900 bg-white text-slate-900'
@@ -700,7 +700,7 @@ ${riderBlock}
                     {/* Pickup & Postage */}
                     <button
                       type="button"
-                      onClick={() => setDepositMethod('postage')}
+                      onPointerDown={(e) => { e.preventDefault(); setDepositMethod('postage'); }}
                       className={`w-full flex items-center justify-between px-3 py-2.5 rounded-2xl border text-xs font-semibold transition active:scale-[0.99] ${
                         depositMethod === 'postage'
                           ? 'border-slate-900 bg-white text-slate-900'
@@ -717,7 +717,7 @@ ${riderBlock}
                           <button
                             key={zone}
                             type="button"
-                            onClick={() => setPostageZone(zone)}
+                            onPointerDown={(e) => { e.preventDefault(); setPostageZone(zone); }}
                             className={`w-full flex items-center justify-between px-3 py-2.5 rounded-2xl border text-xs font-semibold transition active:scale-[0.99] ${
                               postageZone === zone
                                 ? 'border-slate-900 bg-white text-slate-900'
@@ -766,7 +766,7 @@ ${riderBlock}
                       <button
                         key={zone}
                         type="button"
-                        onClick={e => { e.preventDefault(); setPostageZone(zone); }}
+                        onPointerDown={(e) => { e.preventDefault(); setPostageZone(zone); }}
                         className={`w-full flex items-center justify-between px-3 py-2.5 rounded-2xl border text-xs font-semibold transition active:scale-[0.99] ${
                           postageZone === zone
                             ? 'border-slate-900 bg-white text-slate-900'
