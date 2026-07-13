@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { X } from 'lucide-react';
 import { WaIcon, toWa } from '../lib/whatsapp';
 
 interface FareModalProps {
@@ -8,9 +9,10 @@ interface FareModalProps {
   time: string;
   submitting: boolean;
   onConfirm: (fare: number) => void;
+  onDismiss?: () => void;
 }
 
-export const FareModal: React.FC<FareModalProps> = ({ customerName, customerContact, date, time, submitting, onConfirm }) => {
+export const FareModal: React.FC<FareModalProps> = ({ customerName, customerContact, date, time, submitting, onConfirm, onDismiss }) => {
   const [value, setValue] = useState('');
   const fare = parseFloat(value);
   const valid = !isNaN(fare) && fare > 0;
@@ -20,8 +22,17 @@ export const FareModal: React.FC<FareModalProps> = ({ customerName, customerCont
     <div
       className="fixed inset-0 z-[9999] flex items-center justify-center px-6"
       style={{ background: 'rgba(0,0,0,0.25)', backdropFilter: 'blur(24px)', WebkitBackdropFilter: 'blur(24px)' }}
+      onClick={onDismiss}
     >
-      <div className="w-full max-w-[320px] bg-white rounded-3xl p-6 flex flex-col gap-4">
+      <div className="w-full max-w-[320px] bg-white rounded-3xl p-6 flex flex-col gap-4 relative" onClick={e => e.stopPropagation()}>
+        {onDismiss && (
+          <button
+            onPointerDown={e => { e.preventDefault(); onDismiss(); }}
+            className="absolute top-4 right-4 w-7 h-7 flex items-center justify-center rounded-full bg-slate-100 text-slate-500 active:scale-90 transition"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        )}
         <div className="flex flex-col items-center gap-1 text-center">
           <h2 className="text-lg font-bold text-slate-900 m-0">Set Trip Fare</h2>
           <p className="text-xs font-normal text-slate-500 leading-relaxed">

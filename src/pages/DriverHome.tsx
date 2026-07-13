@@ -143,6 +143,7 @@ export const DriverHome: React.FC = () => {
   });
   const [sheetOrder, setSheetOrder]                     = useState<RideOrder | null>(null);
   const [fareModalOrder, setFareModalOrder]             = useState<RideOrder | null>(null);
+  const [fareModalDismissable, setFareModalDismissable] = useState(false);
   const [settingFare, setSettingFare]                   = useState(false);
 
   // Report to AppContext whenever a sheet here is open, so BottomNav hides itself.
@@ -505,8 +506,16 @@ export const DriverHome: React.FC = () => {
       setActiveTab('my-jobs');
       loadOrders();
       // TBC (custom/map) bookings need a driver-set fare before the trip can start
-      if (orderData && orderData.fare === 'TBC') setFareModalOrder(orderData);
+      if (orderData && orderData.fare === 'TBC') {
+        setFareModalDismissable(false);
+        setFareModalOrder(orderData);
+      }
     }
+  };
+
+  const openFareEdit = (order: RideOrder) => {
+    setFareModalDismissable(true);
+    setFareModalOrder(order);
   };
 
   const handleSetFare = async (fare: number) => {
@@ -726,6 +735,7 @@ export const DriverHome: React.FC = () => {
         time={fareModalOrder.time}
         submitting={settingFare}
         onConfirm={handleSetFare}
+        onDismiss={fareModalDismissable ? () => setFareModalOrder(null) : undefined}
       />
     )}
     <div className="flex-grow bg-white overflow-y-auto no-scrollbar pb-4 flex flex-col animate-fade-in">
@@ -1024,7 +1034,16 @@ export const DriverHome: React.FC = () => {
                   </div>
                   <div className="flex items-center justify-between gap-3">
                     <p className="text-sm font-semibold text-slate-800 leading-tight">{myJob.customer_name}</p>
-                    <p className="text-sm font-black text-slate-800 shrink-0">{fmt(myJob)}</p>
+                    {myJob.fare === 'TBC' ? (
+                      <button
+                        onPointerDown={e => { e.preventDefault(); e.stopPropagation(); openFareEdit(myJob); }}
+                        className="text-sm font-black text-primary shrink-0 underline decoration-dashed underline-offset-2"
+                      >
+                        Set Fare
+                      </button>
+                    ) : (
+                      <p className="text-sm font-black text-slate-800 shrink-0">{fmt(myJob)}</p>
+                    )}
                   </div>
                   {myJob.night_charge > 0 && (
                     <p className="text-xs text-amber-500 font-bold text-right">Night +RM{myJob.night_charge}</p>
@@ -1086,7 +1105,15 @@ export const DriverHome: React.FC = () => {
                         : <><Car className="w-3.5 h-3.5" /> Start Trip</>}
                     </button>
                   )}
-                  {myJob.status === 'in_progress' && (
+                  {myJob.status === 'in_progress' && myJob.fare === 'TBC' && (
+                    <button
+                      onClick={() => openFareEdit(myJob)}
+                      className="flex-1 bg-slate-800 text-white font-semibold text-xs py-3 rounded-2xl transition active:scale-95 flex items-center justify-center gap-1.5"
+                    >
+                      <DollarSign className="w-3.5 h-3.5" /> Set Fare to Complete
+                    </button>
+                  )}
+                  {myJob.status === 'in_progress' && myJob.fare !== 'TBC' && (
                     <button
                       onClick={() => handleStatusUpdate(myJob.id, 'completed')}
                       disabled={updating}
