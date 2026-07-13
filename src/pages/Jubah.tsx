@@ -5,6 +5,7 @@ import { submitJubahToSheets } from '../lib/sheetsService';
 import { JubahLanding } from '../components/JubahLanding';
 import { supabase } from '../lib/supabase';
 import { WaIcon, toWa } from '../lib/whatsapp';
+import { compressImage } from '../lib/imageCompress';
 
 const IcMasked: React.FC<{ ic: string | null }> = ({ ic }) => {
   if (!ic) return <span className="text-slate-800 font-bold text-sm">—</span>;
@@ -203,7 +204,7 @@ export const Jubah: React.FC = () => {
 
   const ACCEPTED_TYPES = ['application/pdf', 'image/jpeg', 'image/png', 'image/webp'];
 
-  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>, fieldId: string) => {
+  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>, fieldId: string) => {
     const file = e.target.files?.[0] || null;
     setFileError('');
     setCombinedBlob(null);
@@ -211,7 +212,8 @@ export const Jubah: React.FC = () => {
       setFileError('Only PDF, JPG or PNG files are accepted.');
       return;
     }
-    setDocFiles(prev => ({ ...prev, [fieldId]: file }));
+    const compressed = file ? await compressImage(file) : null;
+    setDocFiles(prev => ({ ...prev, [fieldId]: compressed }));
   };
 
   const generateCombinedBlob = async (): Promise<Blob | null> => {
@@ -1009,7 +1011,10 @@ ${riderBlock}
               type="file"
               accept=".pdf,application/pdf,image/jpeg,image/png"
               ref={paymentProofRef}
-              onChange={e => setPaymentProof(e.target.files?.[0] || null)}
+              onChange={async e => {
+                const file = e.target.files?.[0] || null;
+                setPaymentProof(file ? await compressImage(file) : null);
+              }}
               className="hidden"
             />
             {!paymentProof ? (
