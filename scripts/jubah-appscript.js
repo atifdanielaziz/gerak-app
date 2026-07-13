@@ -11,6 +11,15 @@
 //   5. Copy the Web app URL
 //   6. Paste into: src/lib/sheetsService.ts → SHEETS_WEBAPP_URL
 //
+// UPDATING AN EXISTING DEPLOYMENT (this file changed column layout):
+//   1. Paste this file over the old code in the same Apps Script project
+//   2. Run resetSheets() once (function dropdown → ▶ Run) to wipe the
+//      old header + old test data from every existing tab — destructive,
+//      only do this if the existing rows are disposable test data
+//   3. Run initializeSheets() once to re-apply the new header
+//   4. Existing deployment URL keeps working — no redeploy needed unless
+//      you changed doPost/doGet signatures (you didn't)
+//
 // SHEETS CREATED AUTOMATICALLY:
 //   • UMPSA  → Universiti Malaysia Pahang Al-Sultan Abdullah
 //   • UIA    → Universiti Islam Antarabangsa Malaysia
@@ -28,17 +37,22 @@ var UNIVERSITY_SHEET_MAP = {
 
 var HEADERS = [
   'Timestamp (MYT)',
+  'Reference',
   'Full Name',
   'IC Number',
   'HP Number',
   'University',
   'Faculty',
   'Matric ID',
-  'Payment Mode',
+  'Payment Detail',
   'Amount (RM)',
   'Remark',
-  'Combined File',
+  'Delivery Address',
+  'Assigned Rider',
+  'Documents',
 ];
+
+var COLUMN_WIDTHS = [160, 140, 200, 130, 120, 260, 90, 100, 170, 90, 90, 220, 150, 360];
 
 // Tab colours per university
 var SHEET_COLORS = {
@@ -55,42 +69,39 @@ var HEADER_COLORS = {
   'Others': '#6B7280',
 };
 
+// Applies header row styling + column widths to a sheet. Used whenever a
+// sheet is newly created AND whenever an existing sheet is found blank
+// (e.g. right after resetSheets()), so both paths stay in sync instead
+// of duplicating this logic.
+function applyHeader(sheet, sheetName) {
+  sheet.clear();
+  sheet.appendRow(HEADERS);
+
+  var headerColor = HEADER_COLORS[sheetName] || '#1D4ED8';
+  sheet.getRange(1, 1, 1, HEADERS.length)
+    .setFontWeight('bold')
+    .setBackground(headerColor)
+    .setFontColor('#FFFFFF')
+    .setHorizontalAlignment('center')
+    .setVerticalAlignment('middle')
+    .setWrap(true);
+  sheet.setFrozenRows(1);
+
+  for (var i = 0; i < COLUMN_WIDTHS.length; i++) {
+    sheet.setColumnWidth(i + 1, COLUMN_WIDTHS[i]);
+  }
+  if (SHEET_COLORS[sheetName]) sheet.setTabColor(SHEET_COLORS[sheetName]);
+}
+
 function getOrCreateSheet(sheetName) {
   var ss    = SpreadsheetApp.getActiveSpreadsheet();
   var sheet = ss.getSheetByName(sheetName);
+  var isNew = !sheet;
 
-  if (!sheet) {
-    sheet = ss.insertSheet(sheetName);
+  if (isNew) sheet = ss.insertSheet(sheetName);
 
-    // Colour the tab
-    if (SHEET_COLORS[sheetName]) {
-      sheet.setTabColor(SHEET_COLORS[sheetName]);
-    }
-
-    // Header row
-    sheet.appendRow(HEADERS);
-    var headerColor = HEADER_COLORS[sheetName] || '#1D4ED8';
-    var headerRange = sheet.getRange(1, 1, 1, HEADERS.length);
-    headerRange
-      .setFontWeight('bold')
-      .setBackground(headerColor)
-      .setFontColor('#FFFFFF')
-      .setHorizontalAlignment('center');
-    sheet.setFrozenRows(1);
-
-    // Column widths
-    sheet.setColumnWidth(1,  160); // Timestamp
-    sheet.setColumnWidth(2,  220); // Full Name
-    sheet.setColumnWidth(3,  140); // IC Number
-    sheet.setColumnWidth(4,  130); // HP Number
-    sheet.setColumnWidth(5,  280); // University
-    sheet.setColumnWidth(6,  80);  // Faculty
-    sheet.setColumnWidth(7,  100); // Matric ID
-    sheet.setColumnWidth(8,  160); // Payment Mode
-    sheet.setColumnWidth(9,  90);  // Amount
-    sheet.setColumnWidth(10, 90);  // Remark
-    sheet.setColumnWidth(11, 220); // Combined File
-  }
+  var headerBlank = sheet.getLastRow() === 0 || sheet.getRange(1, 1).getValue() === '';
+  if (isNew || headerBlank) applyHeader(sheet, sheetName);
 
   return sheet;
 }
@@ -98,43 +109,61 @@ function getOrCreateSheet(sheetName) {
 // ── Run this ONCE manually after pasting the script ──────────────────────────
 // In the Apps Script editor: select "initializeSheets" from the dropdown → ▶ Run
 function initializeSheets() {
-  var ss = SpreadsheetApp.getActiveSpreadsheet();
   var names = ['UMPSA', 'UIA', 'UITM'];
-
   for (var i = 0; i < names.length; i++) {
-    var name  = names[i];
-    var sheet = ss.getSheetByName(name);
-
-    if (!sheet) {
-      sheet = ss.insertSheet(name);
-    }
-
-    // Always re-apply header if row 1 is empty
-    if (sheet.getLastRow() === 0 || sheet.getRange(1, 1).getValue() === '') {
-      sheet.clearContents();
-      sheet.appendRow(HEADERS);
-      var color  = HEADER_COLORS[name] || '#1D4ED8';
-      var hRange = sheet.getRange(1, 1, 1, HEADERS.length);
-      hRange.setFontWeight('bold').setBackground(color).setFontColor('#FFFFFF').setHorizontalAlignment('center');
-      sheet.setFrozenRows(1);
-      if (SHEET_COLORS[name]) sheet.setTabColor(SHEET_COLORS[name]);
-      sheet.setColumnWidth(1,  160);
-      sheet.setColumnWidth(2,  220);
-      sheet.setColumnWidth(3,  140);
-      sheet.setColumnWidth(4,  130);
-      sheet.setColumnWidth(5,  280);
-      sheet.setColumnWidth(6,  80);
-      sheet.setColumnWidth(7,  100);
-      sheet.setColumnWidth(8,  160);
-      sheet.setColumnWidth(9,  90);
-      sheet.setColumnWidth(10, 90);
-      sheet.setColumnWidth(11, 220);
-    }
-
-    Logger.log('✅ Sheet ready: ' + name);
+    getOrCreateSheet(names[i]);
+    Logger.log('✅ Sheet ready: ' + names[i]);
   }
 }
+
+// ── DESTRUCTIVE — wipes header + all rows on every existing tab. ────────────
+// Only run this if the current sheet contents are disposable test data.
+// After running, call initializeSheets() (or just wait for the next booking)
+// to re-apply the new header.
+// In the Apps Script editor: select "resetSheets" from the dropdown → ▶ Run
+function resetSheets() {
+  var ss     = SpreadsheetApp.getActiveSpreadsheet();
+  var sheets = ss.getSheets();
+  for (var i = 0; i < sheets.length; i++) {
+    sheets[i].clear();
+  }
+  Logger.log('✅ Cleared ' + sheets.length + ' sheet(s). Run initializeSheets() to re-apply headers.');
+}
 // ─────────────────────────────────────────────────────────────────────────────
+
+// Builds a human-readable payment description. Amount (RM) already carries
+// the real, current price (dynamic per remark — see pricing table in the
+// app), so this only needs to describe WHICH option was chosen, not repeat
+// a price here (a hardcoded price here would just go stale over time).
+function buildPaymentDetail(data) {
+  var zone = data.postageZone === 'SS' ? ' (SS)' : data.postageZone === 'SM' ? ' (SM)' : '';
+  if (data.paymentMode === 'pickup')  return 'Pickup';
+  if (data.paymentMode === 'postage') return 'Postage' + zone;
+  if (data.paymentMode === 'deposit') {
+    var sub = data.depositMethod === 'postage' ? 'Postage' + zone : 'Pickup';
+    return 'Deposit — ' + sub;
+  }
+  return data.paymentMode || '';
+}
+
+// Joins every uploaded document (per-field docs + combined PDF + payment
+// proof, whatever the caller included) into one readable cell. Deliberately
+// NOT a fixed column per document type — the app's document fields are
+// configurable per university, so a fixed column layout would either
+// mislabel or silently drop documents whenever that configuration differs
+// from the original four (OSCAR/SKPG/Konvo/IC).
+//
+// Paths are storage references, not clickable links — jubah-docs is a
+// private Supabase bucket, so viewing a file requires generating a signed
+// URL from inside the Gerak app (Admin/Rider view), not from this sheet.
+function buildDocumentsCell(documents) {
+  if (!documents || !documents.length) return '';
+  var lines = [];
+  for (var i = 0; i < documents.length; i++) {
+    lines.push(documents[i].label + ': ' + documents[i].path);
+  }
+  return lines.join('\n');
+}
 
 function doPost(e) {
   try {
@@ -151,16 +180,19 @@ function doPost(e) {
 
     sheet.appendRow([
       timestamp,
+      data.reference        || '',
       data.fullName         || '',
       data.icNumber         || '',
       data.hpNumber         || '',
       university,
       data.faculty          || '',
       data.matricId         || '',
-      data.paymentMode === 'postage' ? 'Postage — RM80' : 'Pickup — RM55',
+      buildPaymentDetail(data),
       data.cost             || '',
       data.remark           || '',
-      data.combinedFileName || '',
+      data.deliveryAddress  || '',
+      data.riderName        || '',
+      buildDocumentsCell(data.documents),
     ]);
 
     // Alternate row shading for readability

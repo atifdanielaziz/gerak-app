@@ -13,16 +13,18 @@ export interface JubahSheetRow {
   faculty: string;
   matricId: string;
   paymentMode: 'pickup' | 'postage' | 'deposit';
+  depositMethod?: 'pickup' | 'postage';
+  postageZone?: 'SM' | 'SS';
   remark: string;
-  combinedFileName: string;
   cost: number;
   deliveryAddress?: string;
-  docsPath?: string;
-  paymentPath?: string;
-  oscarPath?: string;
-  skpgPath?: string;
-  konvoPath?: string;
-  icPath?: string;
+  riderName?: string;
+  // Every uploaded document (per-field docs + combined PDF + payment proof),
+  // labelled by its actual field label — not a fixed set of named properties.
+  // docFields is configurable per university, so a fixed shape here would
+  // mislabel or silently drop documents whenever that configuration differs
+  // from whatever fields existed when this interface was first written.
+  documents: { label: string; path: string }[];
 }
 
 export async function submitJubahToSheets(data: JubahSheetRow): Promise<void> {

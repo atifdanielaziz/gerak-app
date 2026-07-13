@@ -389,6 +389,7 @@ ${riderBlock}
     let skpgPath: string | undefined;
     let konvoPath: string | undefined;
     let icPath: string | undefined;
+    let docUploads: (string | undefined)[] = [];
 
     // Uploads are foldered by booking reference (not a public URL) so the
     // jubah-docs storage policies can verify ownership later — only
@@ -410,7 +411,7 @@ ${riderBlock}
     const blobForUpload = combinedBlob ?? await generateCombinedBlob();
 
     try {
-      const docUploads = await Promise.all(
+      docUploads = await Promise.all(
         docFields.map(f => {
           const file = docFiles[f.id];
           return file ? uploadFile(file, f.label.replace(/\s+/g,'_')) : Promise.resolve(undefined);
@@ -433,7 +434,27 @@ ${riderBlock}
 
     setBooking(false);
     bookJubah(reference, fullName, icNumber, hpNumber, university, faculty, matricId, paymentMode, remark, combinedFileName, cost, balanceDue, selectedRiderId, selectedRider?.name, bookingCampus, addr, docsPath, paymentPath, oscarPath, skpgPath, konvoPath, icPath);
-    submitJubahToSheets({ reference, fullName, icNumber, hpNumber, university, faculty, matricId, paymentMode, remark, combinedFileName, cost, deliveryAddress: addr, docsPath, paymentPath, oscarPath, skpgPath, konvoPath, icPath });
+
+    // Sheet gets every document labelled by its real field label — lossless
+    // regardless of how many doc fields this university has configured,
+    // unlike the four fixed oscar/skpg/konvo/ic slots above (those stay as
+    // named DB columns; the sheet has no such fixed schema to respect).
+    const documents = [
+      ...docFields.map((f, i) => ({ label: f.label, path: docUploads[i] ?? '' })),
+      { label: 'Combined PDF',   path: docsPath ?? '' },
+      { label: 'Payment Proof', path: paymentPath ?? '' },
+    ].filter(d => d.path);
+
+    submitJubahToSheets({
+      reference, fullName, icNumber, hpNumber, university, faculty, matricId,
+      paymentMode,
+      depositMethod: paymentMode === 'deposit' ? depositMethod : undefined,
+      postageZone: isPostageDelivery ? postageZone : undefined,
+      remark, cost,
+      deliveryAddress: addr,
+      riderName: selectedRider?.name,
+      documents,
+    });
   };
 
   const UNIVERSITY_LABELS: Record<string, string> = {
