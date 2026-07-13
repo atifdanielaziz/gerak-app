@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import { WaIcon, toWa } from '../lib/whatsapp';
 import { OrderReceiptSheet } from '../components/OrderReceiptSheet';
+import { FareModal } from '../components/FareModal';
 import { MonthDrumPicker, EarningsCard, computeEarnings } from '../components/EarningsCard';
 
 interface RentalVehicle {
@@ -141,6 +142,8 @@ export const DriverHome: React.FC = () => {
     return `${n.getFullYear()}-${String(n.getMonth() + 1).padStart(2, '0')}`;
   });
   const [sheetOrder, setSheetOrder]                     = useState<RideOrder | null>(null);
+  const [fareModalOrder, setFareModalOrder]             = useState<RideOrder | null>(null);
+  const [settingFare, setSettingFare]                   = useState(false);
 
   // Report to AppContext whenever a sheet here is open, so BottomNav hides itself.
   useEffect(() => {
@@ -488,6 +491,7 @@ export const DriverHome: React.FC = () => {
 
   const handleAccept = async (orderId: string) => {
     setAccepting(orderId);
+    const orderData = pendingOrders.find(o => o.id === orderId) ?? null;
     // Optimistically remove from pool so it vanishes instantly for this driver
     setPendingOrders(prev => prev.filter(o => o.id !== orderId));
     const { data, error } = await supabase.rpc('accept_ride_order', { p_order_id: orderId });
@@ -499,6 +503,22 @@ export const DriverHome: React.FC = () => {
     } else {
       showToast('Job accepted! Check My Jobs tab.');
       setActiveTab('my-jobs');
+      loadOrders();
+      // TBC (custom/map) bookings need a driver-set fare before the trip can start
+      if (orderData && orderData.fare === 'TBC') setFareModalOrder(orderData);
+    }
+  };
+
+  const handleSetFare = async (fare: number) => {
+    if (!fareModalOrder) return;
+    setSettingFare(true);
+    const { data, error } = await supabase.rpc('set_ride_fare', { p_order_id: fareModalOrder.id, p_fare: fare });
+    setSettingFare(false);
+    if (error || !data?.success) {
+      showToast(data?.error ?? 'Failed to set fare.');
+    } else {
+      showToast(`Fare set: RM${fare.toFixed(2)}`);
+      setFareModalOrder(null);
       loadOrders();
     }
   };
@@ -696,6 +716,16 @@ export const DriverHome: React.FC = () => {
         order={sheetOrder}
         onClose={() => setSheetOrder(null)}
         showWhatsApp={sheetOrder.status === 'completed' || sheetOrder.status === 'cancelled'}
+      />
+    )}
+    {fareModalOrder && (
+      <FareModal
+        customerName={fareModalOrder.customer_name}
+        customerContact={fareModalOrder.contact}
+        date={fareModalOrder.date}
+        time={fareModalOrder.time}
+        submitting={settingFare}
+        onConfirm={handleSetFare}
       />
     )}
     <div className="flex-grow bg-white overflow-y-auto no-scrollbar pb-4 flex flex-col animate-fade-in">

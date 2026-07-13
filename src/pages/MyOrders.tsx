@@ -98,6 +98,14 @@ const DriverSheet: React.FC<DriverSheetProps> = ({ order, onClose }) => (
           </div>
         </div>
 
+        {/* Agreed fare */}
+        <div className="mx-4 mb-4 bg-slate-50 rounded-2xl px-4 py-3 flex items-center justify-between">
+          <p className="text-xs text-slate-400 font-normal">Trip Fare</p>
+          <p className={order.fare === 'TBC' ? 'text-xs font-semibold text-slate-400' : 'text-xs font-black text-slate-800'}>
+            {order.fare === 'TBC' ? 'Awaiting confirmation' : `RM${(Number(order.fare) + (order.night_charge ?? 0)).toFixed(2)}`}
+          </p>
+        </div>
+
         {/* Info rows */}
         <div className="mx-4 mb-4 bg-white border border-slate-100 rounded-2xl overflow-hidden divide-y divide-slate-100">
           <InfoRow icon={<User className="w-4 h-4 text-slate-400" />}   label="Nama"         value={order.driver_name ?? '—'} />
@@ -211,13 +219,14 @@ export const MyOrders: React.FC = () => {
   const [orders, setOrders]         = useState<RideOrder[]>([]);
   const [loading, setLoading]       = useState(true);
   const [toast, setToast]           = useState('');
-  const [sheetOrder, setSheetOrder] = useState<RideOrder | null>(null);
+  const [sheetOrderId, setSheetOrderId] = useState<string | null>(null);
+  const sheetOrder = orders.find(o => o.id === sheetOrderId) ?? null;
 
   // Report to AppContext whenever this sheet is open, so BottomNav hides itself.
   useEffect(() => {
-    setSheetOpen(!!sheetOrder);
+    setSheetOpen(!!sheetOrderId);
     return () => setSheetOpen(false);
-  }, [sheetOrder, setSheetOpen]);
+  }, [sheetOrderId, setSheetOpen]);
   const [cancellingId, setCancellingId] = useState<string | null>(null);
   const [, forceUpdate]             = useState(0);
   const prevStatuses                = useRef<Record<string, string>>({});
@@ -329,7 +338,7 @@ export const MyOrders: React.FC = () => {
 
       {/* Driver profile sheet */}
       {sheetOrder && (
-        <DriverSheet order={sheetOrder} onClose={() => setSheetOrder(null)} />
+        <DriverSheet order={sheetOrder} onClose={() => setSheetOrderId(null)} />
       )}
 
       <div className="px-4 pt-5 pb-3">
@@ -390,7 +399,7 @@ export const MyOrders: React.FC = () => {
                     <div className="border-t border-dashed border-slate-200 my-1" />
                     <button
                       type="button"
-                      onClick={() => setSheetOrder(o)}
+                      onClick={() => setSheetOrderId(o.id)}
                       className="w-full flex items-center gap-1 text-left active:opacity-60 transition"
                     >
                       <span className="text-slate-400 shrink-0">Accepted by:</span>
