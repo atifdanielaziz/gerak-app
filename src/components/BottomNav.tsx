@@ -89,7 +89,7 @@ export const BottomNav: React.FC = () => {
                   addBubble(e, item.id);
                   setCurrentPage(item.id);
                 }}
-                className="relative flex flex-col items-center justify-center py-1 px-3 min-w-[64px] transition-all duration-300 rounded-2xl active:scale-90 overflow-hidden"
+                className="relative flex items-center justify-center py-2 px-4 min-w-[64px] transition-all duration-300 rounded-2xl active:scale-90 overflow-hidden"
                 aria-label={item.label}
               >
                 {/* Liquid Glass bubbles */}
@@ -128,12 +128,12 @@ export const BottomNav: React.FC = () => {
                   </React.Fragment>
                 ))}
 
-                <div className={`p-1 rounded-xl transition-all duration-300 relative ${
+                <div className={`p-1.5 rounded-xl transition-all duration-300 relative ${
                   isActive
                     ? 'bg-primary/10 text-primary scale-110'
                     : 'text-slate-400 hover:text-slate-600 hover:bg-slate-50'
                 }`}>
-                  <Icon className="w-4.5 h-4.5" />
+                  <Icon className="w-5.5 h-5.5" />
                   {item.badge && (
                     <>
                       <span className="absolute top-0 right-0 w-2.5 h-2.5 bg-danger rounded-full border-2 border-white animate-ping" />
@@ -141,12 +141,6 @@ export const BottomNav: React.FC = () => {
                     </>
                   )}
                 </div>
-
-                <span className={`text-xs mt-0.5 font-bold transition-all duration-200 ${
-                  isActive ? 'text-primary scale-105' : 'text-slate-400'
-                }`}>
-                  {item.label}
-                </span>
 
                 {isActive && (
                   <span className="absolute bottom-0 w-4 h-0.75 bg-primary rounded-full animate-fade-in" />
