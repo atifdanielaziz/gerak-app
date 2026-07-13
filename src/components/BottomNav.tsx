@@ -73,10 +73,10 @@ export const BottomNav: React.FC = () => {
         }
       `}</style>
       <div
-        className="shrink-0 bg-slate-50 px-4 pt-1"
+        className="shrink-0 bg-white px-4"
         style={{ paddingBottom: 'calc(0.625rem + env(safe-area-inset-bottom))' }}
       >
-        <nav className="bg-white border border-slate-100 rounded-3xl px-2 py-1.5 flex items-center justify-around shadow-[0_4px_20px_rgba(0,0,0,0.08)]">
+        <nav className="flex items-center justify-around py-2">
           {items.map((item) => {
             const Icon = item.icon;
             const isActive = currentPage === item.id;
@@ -128,10 +128,8 @@ export const BottomNav: React.FC = () => {
                   </React.Fragment>
                 ))}
 
-                <div className={`p-1.5 rounded-xl transition-all duration-300 relative ${
-                  isActive
-                    ? 'bg-primary/10 text-primary scale-110'
-                    : 'text-slate-400 hover:text-slate-600 hover:bg-slate-50'
+                <div className={`relative transition-colors duration-300 ${
+                  isActive ? 'text-slate-900' : 'text-slate-400'
                 }`}>
                   <Icon className="w-5.5 h-5.5" />
                   {item.badge && (
@@ -141,10 +139,6 @@ export const BottomNav: React.FC = () => {
                     </>
                   )}
                 </div>
-
-                {isActive && (
-                  <span className="absolute bottom-0 w-4 h-0.75 bg-primary rounded-full animate-fade-in" />
-                )}
               </button>
             );
           })}
