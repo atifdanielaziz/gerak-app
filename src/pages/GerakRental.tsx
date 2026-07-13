@@ -820,14 +820,14 @@ ${row('Owner ID', bk.owner_gerak_id ?? '—')}
           {/* Booking type toggle — Mode Selector Standard */}
           <div className="flex gap-2">
             <button onPointerDown={(e) => { e.preventDefault(); switchBookingType('hourly'); }}
-              className={`flex-1 flex items-center justify-center gap-1.5 py-3 rounded-2xl border text-xs font-semibold transition-colors active:scale-[0.98] ${
-                bookingType === 'hourly' ? 'border-amber-300 bg-amber-50 text-amber-700' : 'border-slate-100 bg-white text-slate-400'
+              className={`flex-1 flex items-center justify-center gap-1.5 py-3 rounded-2xl border bg-white text-xs font-semibold transition-transform active:scale-[0.99] active:bg-slate-50 ${
+                bookingType === 'hourly' ? 'border-slate-900 text-slate-900' : 'border-slate-100 text-slate-400'
               }`}>
               <Clock className="w-3.5 h-3.5" /> Hourly
             </button>
             <button onPointerDown={(e) => { e.preventDefault(); switchBookingType('fullday'); }}
-              className={`flex-1 flex items-center justify-center gap-1.5 py-3 rounded-2xl border text-xs font-semibold transition-colors active:scale-[0.98] ${
-                bookingType === 'fullday' ? 'border-amber-300 bg-amber-50 text-amber-700' : 'border-slate-100 bg-white text-slate-400'
+              className={`flex-1 flex items-center justify-center gap-1.5 py-3 rounded-2xl border bg-white text-xs font-semibold transition-transform active:scale-[0.99] active:bg-slate-50 ${
+                bookingType === 'fullday' ? 'border-slate-900 text-slate-900' : 'border-slate-100 text-slate-400'
               }`}>
               <CalendarDays className="w-3.5 h-3.5" /> Full Day / Multi-Day
             </button>

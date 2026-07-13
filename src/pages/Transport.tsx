@@ -465,12 +465,12 @@ export const Transport: React.FC = () => {
             { key: 'map',    icon: Map,         label: 'Search Routes' },
           ] as const).map(({ key, icon: Icon, label }) => (
             <button key={key} type="button" onClick={() => setBookMode(key)}
-              className={`flex-1 flex flex-col items-center gap-1.5 p-2.5 rounded-2xl border transition-colors active:scale-[0.98] ${
-                bookMode === key ? 'border-primary/30 bg-primary/5' : 'border-slate-100 bg-white'
+              className={`flex-1 flex flex-col items-center gap-1.5 p-2.5 rounded-2xl border bg-white transition-transform active:scale-[0.99] active:bg-slate-50 ${
+                bookMode === key ? 'border-slate-900' : 'border-slate-100'
               }`}
             >
-              <Icon className={`w-4 h-4 ${bookMode === key ? 'text-primary' : 'text-slate-400'}`} />
-              <span className={`text-[10px] font-semibold leading-tight text-center ${bookMode === key ? 'text-primary' : 'text-slate-500'}`}>
+              <Icon className={`w-4 h-4 ${bookMode === key ? 'text-slate-900' : 'text-slate-400'}`} />
+              <span className={`text-[10px] font-semibold leading-tight text-center ${bookMode === key ? 'text-slate-900' : 'text-slate-500'}`}>
                 {label}
               </span>
             </button>
@@ -486,7 +486,7 @@ export const Transport: React.FC = () => {
             <button
               type="button"
               onClick={() => setShowFromDropdown(v => !v)}
-              className="w-full flex items-center justify-between bg-white border border-slate-100 rounded-2xl px-4 py-3 text-sm font-semibold text-slate-700 transition hover:border-primary active:scale-[0.98]"
+              className="w-full flex items-center justify-between bg-white border border-slate-100 rounded-2xl px-4 py-3 text-sm font-semibold text-slate-700 transition active:bg-slate-50 active:scale-[0.99]"
             >
               <span className={selectedFrom ? 'text-slate-800' : 'text-slate-400 font-normal'}>
                 {selectedFrom || 'Select pickup location…'}
@@ -511,7 +511,7 @@ export const Transport: React.FC = () => {
                         i < fromOptions.length - 1 ? 'border-b border-slate-50' : ''
                       } ${
                         selectedFrom === from
-                          ? 'bg-primary/10 text-primary font-semibold'
+                          ? 'bg-slate-100 text-slate-900 font-semibold'
                           : 'text-slate-700 hover:bg-slate-50'
                       }`}
                     >
@@ -533,7 +533,7 @@ export const Transport: React.FC = () => {
             <button
               type="button"
               onClick={() => setShowRouteList(true)}
-              className="w-full flex items-center justify-between p-3 rounded-2xl border border-primary/30 bg-primary/5 ring-1 ring-primary/20 text-left transition active:scale-[0.98]"
+              className="w-full flex items-center justify-between p-3 rounded-2xl border border-slate-900 bg-white text-left transition active:bg-slate-50 active:scale-[0.99]"
             >
               <div className="flex items-center gap-3">
                 <span className="text-xl">{selectedRoute.emoji}</span>
@@ -548,7 +548,7 @@ export const Transport: React.FC = () => {
               </div>
               <div className="text-right shrink-0 ml-2">
                 <span className="text-xs font-black text-slate-800">RM{selectedRoute.fare}</span>
-                <span className="block text-[9px] font-normal text-primary mt-0.5">Tap to change</span>
+                <span className="block text-[9px] font-normal text-slate-400 mt-0.5">Tap to change</span>
               </div>
             </button>
           ) : (
@@ -564,10 +564,10 @@ export const Transport: React.FC = () => {
                       setSelectedRoute(isSelected ? null : route);
                       if (!isSelected) setShowRouteList(false);
                     }}
-                    className={`w-full flex items-center justify-between p-3 rounded-2xl border transition-all text-left ${
+                    className={`w-full flex items-center justify-between p-3 rounded-2xl border bg-white transition-transform active:scale-[0.99] active:bg-slate-50 text-left ${
                       isSelected
-                        ? 'bg-primary/5 border-primary/30 ring-1 ring-primary/20'
-                        : 'bg-white border-slate-100 hover:border-slate-200'
+                        ? 'border-slate-900'
+                        : 'border-slate-100 hover:border-slate-200'
                     }`}
                   >
                     <div className="flex items-center gap-3">
@@ -607,7 +607,7 @@ export const Transport: React.FC = () => {
                   value={customPickup}
                   onChange={e => setCustomPickup(e.target.value)}
                   placeholder="e.g. Kolej Kediaman 3, Block B"
-                  className="bg-white border border-slate-100 rounded-xl px-3 py-2.5 text-xs text-slate-700 focus:outline-none focus:border-primary transition"
+                  className="bg-white border border-slate-100 rounded-xl px-3 py-2.5 text-xs text-slate-700 focus:outline-none focus:border-slate-900 transition"
                 />
               </div>
               <div className="flex flex-col gap-0.5">
@@ -617,7 +617,7 @@ export const Transport: React.FC = () => {
                   value={customDest}
                   onChange={e => setCustomDest(e.target.value)}
                   placeholder="e.g. FTKMA, Dewan Sri Damai"
-                  className="bg-white border border-slate-100 rounded-xl px-3 py-2.5 text-xs text-slate-700 focus:outline-none focus:border-primary transition"
+                  className="bg-white border border-slate-100 rounded-xl px-3 py-2.5 text-xs text-slate-700 focus:outline-none focus:border-slate-900 transition"
                 />
               </div>
             </div>
@@ -654,20 +654,20 @@ export const Transport: React.FC = () => {
           {/* Now / Later toggle — Mode Selector Standard */}
           <div className="flex gap-2">
             <button type="button" onClick={() => setBookWhen('now')}
-              className={`flex-1 flex items-center gap-2 p-3 rounded-2xl border transition-colors active:scale-[0.98] ${
-                bookWhen === 'now' ? 'border-primary/30 bg-primary/5' : 'border-slate-100 bg-white'
+              className={`flex-1 flex items-center gap-2 p-3 rounded-2xl border bg-white transition-transform active:scale-[0.99] active:bg-slate-50 ${
+                bookWhen === 'now' ? 'border-slate-900' : 'border-slate-100'
               }`}
             >
-              <Clock className={`w-4 h-4 shrink-0 ${bookWhen === 'now' ? 'text-primary' : 'text-slate-400'}`} />
-              <span className={`text-xs font-semibold ${bookWhen === 'now' ? 'text-primary' : 'text-slate-600'}`}>Now</span>
+              <Clock className={`w-4 h-4 shrink-0 ${bookWhen === 'now' ? 'text-slate-900' : 'text-slate-400'}`} />
+              <span className={`text-xs font-semibold ${bookWhen === 'now' ? 'text-slate-900' : 'text-slate-600'}`}>Now</span>
             </button>
             <button type="button" onClick={() => setBookWhen('later')}
-              className={`flex-1 flex items-center gap-2 p-3 rounded-2xl border transition-colors active:scale-[0.98] ${
-                bookWhen === 'later' ? 'border-primary/30 bg-primary/5' : 'border-slate-100 bg-white'
+              className={`flex-1 flex items-center gap-2 p-3 rounded-2xl border bg-white transition-transform active:scale-[0.99] active:bg-slate-50 ${
+                bookWhen === 'later' ? 'border-slate-900' : 'border-slate-100'
               }`}
             >
-              <CalendarDays className={`w-4 h-4 shrink-0 ${bookWhen === 'later' ? 'text-primary' : 'text-slate-400'}`} />
-              <span className={`text-xs font-semibold ${bookWhen === 'later' ? 'text-primary' : 'text-slate-600'}`}>Later</span>
+              <CalendarDays className={`w-4 h-4 shrink-0 ${bookWhen === 'later' ? 'text-slate-900' : 'text-slate-400'}`} />
+              <span className={`text-xs font-semibold ${bookWhen === 'later' ? 'text-slate-900' : 'text-slate-600'}`}>Later</span>
             </button>
           </div>
 
@@ -676,7 +676,7 @@ export const Transport: React.FC = () => {
             <div className="flex flex-col gap-0.5">
               <label className="text-xs font-normal text-slate-400 pl-1">Date</label>
               <div className="relative h-9 group">
-                <div className="absolute inset-0 bg-white border border-slate-100 rounded-xl px-2.5 flex items-center justify-between pointer-events-none group-focus-within:border-primary transition">
+                <div className="absolute inset-0 bg-white border border-slate-100 rounded-xl px-2.5 flex items-center justify-between pointer-events-none group-focus-within:border-slate-900 transition">
                   <span className={`text-xs font-semibold ${bookWhen === 'now' ? 'text-slate-300' : date ? 'text-slate-700' : 'text-slate-400'}`}>
                     {date ? new Date(date + 'T00:00:00').toLocaleDateString('en-MY', { day: 'numeric', month: 'short', year: 'numeric' }) : 'Select date'}
                   </span>
@@ -697,7 +697,7 @@ export const Transport: React.FC = () => {
                 {isNight && <span className="text-amber-500 font-semibold ml-1">+RM5</span>}
               </label>
               <div className="relative h-9 group">
-                <div className={`absolute inset-0 border rounded-xl px-2.5 flex items-center justify-between pointer-events-none group-focus-within:border-primary transition ${
+                <div className={`absolute inset-0 border rounded-xl px-2.5 flex items-center justify-between pointer-events-none group-focus-within:border-slate-900 transition ${
                   isNight ? 'border-amber-200 bg-amber-50/50' : 'bg-white border-slate-100'
                 }`}>
                   <span className={`text-xs font-semibold ${bookWhen === 'now' ? 'text-slate-300' : !time ? 'text-slate-400' : isNight ? 'text-amber-700' : 'text-slate-700'}`}>
@@ -743,7 +743,7 @@ export const Transport: React.FC = () => {
               value={contact}
               onChange={e => setContact(e.target.value)}
               placeholder="e.g. 0123456789"
-              className="w-full h-9 bg-white border border-slate-100 rounded-xl px-3 font-semibold text-slate-700 placeholder:font-normal placeholder:text-slate-400 focus:outline-none focus:border-primary transition"
+              className="w-full h-9 bg-white border border-slate-100 rounded-xl px-3 font-semibold text-slate-700 placeholder:font-normal placeholder:text-slate-400 focus:outline-none focus:border-slate-900 transition"
               style={{ fontSize: '16px' }}
               autoComplete="tel"
             />
@@ -760,7 +760,7 @@ export const Transport: React.FC = () => {
               onChange={e => setNotes(e.target.value.slice(0, 500))}
               maxLength={500}
               placeholder="e.g. luggage, wheelchair, main gate..."
-              className="w-full h-9 bg-white border border-slate-100 rounded-xl px-3 font-semibold text-slate-700 placeholder:font-normal placeholder:text-slate-400 focus:outline-none focus:border-primary transition"
+              className="w-full h-9 bg-white border border-slate-100 rounded-xl px-3 font-semibold text-slate-700 placeholder:font-normal placeholder:text-slate-400 focus:outline-none focus:border-slate-900 transition"
               style={{ fontSize: '16px' }}
               autoComplete="off"
               autoCorrect="off"

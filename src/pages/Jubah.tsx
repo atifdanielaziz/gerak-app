@@ -650,9 +650,9 @@ ${riderBlock}
                     key={r}
                     type="button"
                     onClick={() => setRemark(r)}
-                    className={`py-2 rounded-xl text-xs font-semibold border transition ${
+                    className={`py-2 rounded-xl text-xs font-semibold border bg-white transition-transform active:scale-[0.99] active:bg-slate-50 ${
                       remark === r
-                        ? 'border-blue-500 bg-blue-50 text-blue-600'
+                        ? 'border-slate-900 text-slate-900'
                         : 'border-slate-200 text-slate-600 hover:bg-slate-50'
                     }`}
                   >
@@ -668,10 +668,10 @@ ${riderBlock}
             <h3 className="text-sm font-semibold text-slate-700">Service Option</h3>
 
             {/* Deposit */}
-            <label className={`flex items-start gap-3 p-3.5 rounded-2xl border cursor-pointer transition ${paymentMode === 'deposit' ? 'border-blue-400 bg-blue-50/60' : 'border-slate-200 hover:bg-slate-50'}`}>
-              <input type="radio" name="paymentMode" value="deposit" checked={paymentMode === 'deposit'} onChange={() => setPaymentMode('deposit')} className="mt-0.5 accent-blue-600 shrink-0" />
+            <label className={`flex items-start gap-3 p-3.5 rounded-2xl border cursor-pointer transition ${paymentMode === 'deposit' ? 'border-slate-900' : 'border-slate-200 hover:bg-slate-50'}`}>
+              <input type="radio" name="paymentMode" value="deposit" checked={paymentMode === 'deposit'} onChange={() => setPaymentMode('deposit')} className="mt-0.5 accent-slate-900 shrink-0" />
               <div className="flex-1">
-                <span className={`text-xs font-semibold block ${paymentMode === 'deposit' ? 'text-blue-700' : 'text-slate-700'}`}>
+                <span className={`text-xs font-semibold block ${paymentMode === 'deposit' ? 'text-slate-900' : 'text-slate-700'}`}>
                   Deposit (RM{DEPOSIT_AMOUNT}) — Pay RM{balanceDue} before robe Collection date
                 </span>
                 <span className="text-xs text-slate-400 leading-relaxed block mt-0.5">
@@ -687,12 +687,12 @@ ${riderBlock}
                       onClick={() => setDepositMethod('pickup')}
                       className={`w-full flex items-center justify-between px-3 py-2.5 rounded-2xl border text-xs font-semibold transition active:scale-[0.99] ${
                         depositMethod === 'pickup'
-                          ? 'border-blue-300 bg-blue-50 text-blue-700'
+                          ? 'border-slate-900 bg-white text-slate-900'
                           : 'border-slate-100 bg-white text-slate-600'
                       }`}
                     >
                       <span className="flex-1 text-left">Self Pickup</span>
-                      <span className={`shrink-0 ml-2 font-normal text-xs ${depositMethod === 'pickup' ? 'text-blue-600' : 'text-slate-400'}`}>
+                      <span className={`shrink-0 ml-2 font-normal text-xs ${depositMethod === 'pickup' ? 'text-slate-500' : 'text-slate-400'}`}>
                         Balance RM{pickupPrice - DEPOSIT_AMOUNT}
                       </span>
                     </button>
@@ -703,7 +703,7 @@ ${riderBlock}
                       onClick={() => setDepositMethod('postage')}
                       className={`w-full flex items-center justify-between px-3 py-2.5 rounded-2xl border text-xs font-semibold transition active:scale-[0.99] ${
                         depositMethod === 'postage'
-                          ? 'border-blue-300 bg-blue-50 text-blue-700'
+                          ? 'border-slate-900 bg-white text-slate-900'
                           : 'border-slate-100 bg-white text-slate-600'
                       }`}
                     >
@@ -720,12 +720,12 @@ ${riderBlock}
                             onClick={() => setPostageZone(zone)}
                             className={`w-full flex items-center justify-between px-3 py-2.5 rounded-2xl border text-xs font-semibold transition active:scale-[0.99] ${
                               postageZone === zone
-                                ? 'border-blue-300 bg-blue-50 text-blue-700'
+                                ? 'border-slate-900 bg-white text-slate-900'
                                 : 'border-slate-100 bg-white text-slate-600'
                             }`}
                           >
                             <span className="flex-1 text-left">{zone === 'SM' ? 'SM — Semenanjung Malaysia' : 'SS — Sabah & Sarawak'}</span>
-                            <span className={`shrink-0 ml-2 font-normal text-xs ${postageZone === zone ? 'text-blue-600' : 'text-slate-400'}`}>
+                            <span className={`shrink-0 ml-2 font-normal text-xs ${postageZone === zone ? 'text-slate-500' : 'text-slate-400'}`}>
                               Balance RM{postagePrice + (zone === 'SS' ? 10 : 0) - DEPOSIT_AMOUNT}
                             </span>
                           </button>
@@ -738,10 +738,10 @@ ${riderBlock}
             </label>
 
             {/* Full Pickup */}
-            <label className={`flex items-start gap-3 p-3.5 rounded-2xl border cursor-pointer transition ${paymentMode === 'pickup' ? 'border-blue-400 bg-blue-50/60' : 'border-slate-200 hover:bg-slate-50'}`}>
-              <input type="radio" name="paymentMode" value="pickup" checked={paymentMode === 'pickup'} onChange={() => setPaymentMode('pickup')} className="mt-0.5 accent-blue-600 shrink-0" />
+            <label className={`flex items-start gap-3 p-3.5 rounded-2xl border cursor-pointer transition ${paymentMode === 'pickup' ? 'border-slate-900' : 'border-slate-200 hover:bg-slate-50'}`}>
+              <input type="radio" name="paymentMode" value="pickup" checked={paymentMode === 'pickup'} onChange={() => setPaymentMode('pickup')} className="mt-0.5 accent-slate-900 shrink-0" />
               <div>
-                <span className={`text-xs font-semibold block ${paymentMode === 'pickup' ? 'text-blue-700' : 'text-slate-700'}`}>
+                <span className={`text-xs font-semibold block ${paymentMode === 'pickup' ? 'text-slate-900' : 'text-slate-700'}`}>
                   Full Payment (RM{pickupPrice}) — Self Pickup
                 </span>
                 <span className="text-xs text-slate-400 leading-relaxed block mt-0.5">
@@ -751,10 +751,10 @@ ${riderBlock}
             </label>
 
             {/* Postage with SM/SS zone toggle */}
-            <label className={`flex items-start gap-3 p-3.5 rounded-2xl border cursor-pointer transition ${paymentMode === 'postage' ? 'border-blue-400 bg-blue-50/60' : 'border-slate-200 hover:bg-slate-50'}`}>
-              <input type="radio" name="paymentMode" value="postage" checked={paymentMode === 'postage'} onChange={() => setPaymentMode('postage')} className="mt-0.5 accent-blue-600 shrink-0" />
+            <label className={`flex items-start gap-3 p-3.5 rounded-2xl border cursor-pointer transition ${paymentMode === 'postage' ? 'border-slate-900' : 'border-slate-200 hover:bg-slate-50'}`}>
+              <input type="radio" name="paymentMode" value="postage" checked={paymentMode === 'postage'} onChange={() => setPaymentMode('postage')} className="mt-0.5 accent-slate-900 shrink-0" />
               <div className="flex-1">
-                <span className={`text-xs font-semibold block ${paymentMode === 'postage' ? 'text-blue-700' : 'text-slate-700'}`}>
+                <span className={`text-xs font-semibold block ${paymentMode === 'postage' ? 'text-slate-900' : 'text-slate-700'}`}>
                   Postage (RM{postagePrice + (postageZone === 'SS' ? 10 : 0)}) — Pickup &amp; Postage {postageZone}
                 </span>
                 <span className="text-xs text-slate-400 leading-relaxed block mt-0.5">
@@ -769,12 +769,12 @@ ${riderBlock}
                         onClick={e => { e.preventDefault(); setPostageZone(zone); }}
                         className={`w-full flex items-center justify-between px-3 py-2.5 rounded-2xl border text-xs font-semibold transition active:scale-[0.99] ${
                           postageZone === zone
-                            ? 'border-blue-300 bg-blue-50 text-blue-700'
+                            ? 'border-slate-900 bg-white text-slate-900'
                             : 'border-slate-100 bg-white text-slate-600'
                         }`}
                       >
                         <span className="flex-1 text-left">{zone === 'SM' ? 'SM — Semenanjung Malaysia' : 'SS — Sabah & Sarawak'}</span>
-                        <span className={`shrink-0 ml-2 font-normal text-xs ${postageZone === zone ? 'text-blue-600' : 'text-slate-400'}`}>
+                        <span className={`shrink-0 ml-2 font-normal text-xs ${postageZone === zone ? 'text-slate-500' : 'text-slate-400'}`}>
                           {zone === 'SM' ? `RM${postagePrice}` : `RM${postagePrice}+RM10`}
                         </span>
                       </button>

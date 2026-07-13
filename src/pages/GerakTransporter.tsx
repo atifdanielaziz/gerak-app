@@ -67,18 +67,16 @@ export const GerakTransporter: React.FC = () => {
                 key={s}
                 type="button"
                 onClick={() => setServiceType(s)}
-                className={`flex-1 flex items-center gap-2.5 p-3 rounded-2xl border transition-colors active:scale-[0.98] ${
-                  active ? 'border-primary/30 bg-primary/5' : 'border-slate-100 bg-white'
+                className={`flex-1 flex items-center gap-2.5 p-3 rounded-2xl border bg-white transition-transform active:scale-[0.99] active:bg-slate-50 ${
+                  active ? 'border-slate-900' : 'border-slate-100'
                 }`}
               >
-                <div className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 ${
-                  active ? 'bg-primary/10' : 'bg-slate-100'
-                }`}>
+                <div className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0 bg-slate-100">
                   {s === 'Penghantaran Motosikal'
-                    ? <Bike    className={`w-4 h-4 ${active ? 'text-primary' : 'text-slate-500'}`} />
-                    : <Package className={`w-4 h-4 ${active ? 'text-primary' : 'text-slate-500'}`} />}
+                    ? <Bike    className={`w-4 h-4 ${active ? 'text-slate-900' : 'text-slate-500'}`} />
+                    : <Package className={`w-4 h-4 ${active ? 'text-slate-900' : 'text-slate-500'}`} />}
                 </div>
-                <span className={`text-xs font-semibold ${active ? 'text-primary' : 'text-slate-600'}`}>
+                <span className={`text-xs font-semibold ${active ? 'text-slate-900' : 'text-slate-600'}`}>
                   {s === 'Penghantaran Motosikal' ? 'Motosikal' : 'Pindah Barang'}
                 </span>
               </button>

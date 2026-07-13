@@ -203,17 +203,15 @@ export const Header: React.FC = () => {
                       <button
                         key={campus}
                         onClick={() => selectCampus(campus)}
-                        className={`w-full flex items-center justify-between px-4 py-4 border rounded-2xl active:scale-[0.99] transition ${
-                          selected
-                            ? 'border-primary bg-primary/5'
-                            : 'border-slate-100 bg-white active:bg-slate-50'
+                        className={`w-full flex items-center justify-between px-4 py-4 border rounded-2xl bg-white active:bg-slate-50 active:scale-[0.99] transition ${
+                          selected ? 'border-slate-900' : 'border-slate-100'
                         }`}
                       >
-                        <span className={`text-sm font-semibold ${selected ? 'text-primary' : 'text-slate-800'}`}>
+                        <span className={`text-sm font-semibold ${selected ? 'text-slate-900' : 'text-slate-800'}`}>
                           {tempUni} {campus}
                         </span>
                         <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 ${
-                          selected ? 'border-primary bg-primary' : 'border-slate-300'
+                          selected ? 'border-slate-900 bg-slate-900' : 'border-slate-300'
                         }`}>
                           {selected && <div className="w-2 h-2 rounded-full bg-white" />}
                         </div>
@@ -280,23 +278,23 @@ export const Header: React.FC = () => {
                     <button
                       onClick={() => { switchToAdminMode(); setShowRoleMenu(false); }}
                       className={`w-full flex items-center gap-3 px-4 py-3 text-left text-xs font-extrabold transition active:scale-95 ${
-                        !isNotAdmin ? 'bg-primary/5 text-primary' : 'text-slate-600 hover:bg-slate-50'
+                        !isNotAdmin ? 'bg-slate-100 text-slate-900' : 'text-slate-600 hover:bg-slate-50'
                       }`}
                     >
                       <ShieldCheck className="w-4 h-4 shrink-0" />
                       Admin
-                      {!isNotAdmin && <span className="ml-auto text-[8px] bg-primary/10 text-primary px-1.5 py-0.5 rounded-full">Active</span>}
+                      {!isNotAdmin && <span className="ml-auto text-[8px] bg-slate-200 text-slate-700 px-1.5 py-0.5 rounded-full">Active</span>}
                     </button>
 
                     <button
                       onClick={() => { switchToDriverMode(); setShowRoleMenu(false); }}
                       className={`w-full flex items-center gap-3 px-4 py-3 text-left text-xs font-extrabold transition active:scale-95 ${
-                        activeRole === 'driver' ? 'bg-primary/5 text-primary' : 'text-slate-600 hover:bg-slate-50'
+                        activeRole === 'driver' ? 'bg-slate-100 text-slate-900' : 'text-slate-600 hover:bg-slate-50'
                       }`}
                     >
                       <Car className="w-4 h-4 shrink-0" />
                       Driver
-                      {activeRole === 'driver' && <span className="ml-auto text-[8px] bg-primary/10 text-primary px-1.5 py-0.5 rounded-full">Active</span>}
+                      {activeRole === 'driver' && <span className="ml-auto text-[8px] bg-slate-200 text-slate-700 px-1.5 py-0.5 rounded-full">Active</span>}
                     </button>
 
                     <button

@@ -711,13 +711,13 @@ const UserCard: React.FC<{
                 {u.role === 'driver' && onCapToggle && (
                   <>
                     <button onClick={() => { onCapToggle(u, !u.can_drive, u.can_rent ?? false); setShowMenu(false); }}
-                      className={`w-full flex items-center gap-3 px-4 py-3 text-left text-xs font-semibold transition active:scale-95 ${u.can_drive ? 'bg-primary/5 text-primary' : 'text-slate-500 hover:bg-slate-50'}`}>
+                      className={`w-full flex items-center gap-3 px-4 py-3 text-left text-xs font-semibold transition active:scale-95 ${u.can_drive ? 'bg-slate-100 text-slate-900' : 'text-slate-500 hover:bg-slate-50'}`}>
                       <Car className="w-4 h-4 shrink-0" />
                       {u.can_drive ? 'Car ✓' : 'Car ✗'}
                       {togglingCap === u.id && <span className="ml-auto w-3 h-3 rounded-full border border-current border-t-transparent animate-spin" />}
                     </button>
                     <button onClick={() => { onCapToggle(u, u.can_drive ?? false, !u.can_rent); setShowMenu(false); }}
-                      className={`w-full flex items-center gap-3 px-4 py-3 text-left text-xs font-semibold transition active:scale-95 ${u.can_rent ? 'bg-amber-50 text-amber-700' : 'text-slate-500 hover:bg-slate-50'}`}>
+                      className={`w-full flex items-center gap-3 px-4 py-3 text-left text-xs font-semibold transition active:scale-95 ${u.can_rent ? 'bg-slate-100 text-slate-900' : 'text-slate-500 hover:bg-slate-50'}`}>
                       <KeyRound className="w-4 h-4 shrink-0" />
                       {u.can_rent ? 'Rental ✓' : 'Rental ✗'}
                     </button>
@@ -728,13 +728,13 @@ const UserCard: React.FC<{
                 {u.role === 'rider' && onRiderCapToggle && (
                   <>
                     <button onClick={() => { onRiderCapToggle(u, !u.can_daily, u.can_robe ?? false); setShowMenu(false); }}
-                      className={`w-full flex items-center gap-3 px-4 py-3 text-left text-xs font-semibold transition active:scale-95 ${u.can_daily ? 'bg-emerald-50 text-emerald-700' : 'text-slate-500 hover:bg-slate-50'}`}>
+                      className={`w-full flex items-center gap-3 px-4 py-3 text-left text-xs font-semibold transition active:scale-95 ${u.can_daily ? 'bg-slate-100 text-slate-900' : 'text-slate-500 hover:bg-slate-50'}`}>
                       <Bike className="w-4 h-4" />
                       {u.can_daily ? 'Daily ✓' : 'Daily ✗'}
                       {togglingCap === u.id && <span className="ml-auto w-3 h-3 rounded-full border border-current border-t-transparent animate-spin" />}
                     </button>
                     <button onClick={() => { onRiderCapToggle(u, u.can_daily ?? false, !u.can_robe); setShowMenu(false); }}
-                      className={`w-full flex items-center gap-3 px-4 py-3 text-left text-xs font-semibold transition active:scale-95 ${u.can_robe ? 'bg-blue-50 text-blue-700' : 'text-slate-500 hover:bg-slate-50'}`}>
+                      className={`w-full flex items-center gap-3 px-4 py-3 text-left text-xs font-semibold transition active:scale-95 ${u.can_robe ? 'bg-slate-100 text-slate-900' : 'text-slate-500 hover:bg-slate-50'}`}>
                       <GraduationCap className="w-4 h-4" />
                       {u.can_robe ? 'Robe ✓' : 'Robe ✗'}
                     </button>
@@ -747,7 +747,7 @@ const UserCard: React.FC<{
                     <button key={c}
                       onClick={() => { if (u.campus !== c) onCampusChange(u, c); setShowMenu(false); }}
                       disabled={togglingCampus === u.id}
-                      className={`w-full flex items-center gap-3 px-4 py-3 text-left text-xs font-semibold transition active:scale-95 disabled:opacity-40 ${u.campus === c ? 'bg-indigo-50 text-indigo-700' : 'text-slate-500 hover:bg-slate-50'}`}>
+                      className={`w-full flex items-center gap-3 px-4 py-3 text-left text-xs font-semibold transition active:scale-95 disabled:opacity-40 ${u.campus === c ? 'bg-slate-100 text-slate-900' : 'text-slate-500 hover:bg-slate-50'}`}>
                       <MapPin className="w-4 h-4 shrink-0" />
                       {c}
                       {u.campus === c && <span className="ml-auto text-[8px] bg-indigo-100 text-indigo-600 px-1.5 py-0.5 rounded-full">Active</span>}
@@ -2293,13 +2293,13 @@ export const AdminHome: React.FC = () => {
                 <div className="flex gap-2">
                   <button type="button" onClick={() => setInviteCanDrive(v => !v)}
                     className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl text-xs font-semibold border transition active:scale-95 ${
-                      inviteCanDrive ? 'bg-primary/10 border-primary/30 text-primary' : 'bg-slate-50 border-slate-200 text-slate-400'
+                      inviteCanDrive ? 'bg-white border-slate-900 text-slate-900' : 'bg-slate-50 border-slate-200 text-slate-400'
                     }`}>
                     <Car className="w-3 h-3" /> Gerak Car {inviteCanDrive ? '✓' : '✗'}
                   </button>
                   <button type="button" onClick={() => setInviteCanRent(v => !v)}
                     className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl text-xs font-semibold border transition active:scale-95 ${
-                      inviteCanRent ? 'bg-amber-50 border-amber-200 text-amber-700' : 'bg-slate-50 border-slate-200 text-slate-400'
+                      inviteCanRent ? 'bg-white border-slate-900 text-slate-900' : 'bg-slate-50 border-slate-200 text-slate-400'
                     }`}>
                     <KeyRound className="w-3 h-3" /> Rental {inviteCanRent ? '✓' : '✗'}
                   </button>
@@ -2314,13 +2314,13 @@ export const AdminHome: React.FC = () => {
                 <div className="flex gap-2">
                   <button type="button" onClick={() => setInviteCanDaily(v => !v)}
                     className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl text-xs font-semibold border transition active:scale-95 ${
-                      inviteCanDaily ? 'bg-emerald-50 border-emerald-200 text-emerald-700' : 'bg-slate-50 border-slate-200 text-slate-400'
+                      inviteCanDaily ? 'bg-white border-slate-900 text-slate-900' : 'bg-slate-50 border-slate-200 text-slate-400'
                     }`}>
                     <Bike className="w-3.5 h-3.5" /> Daily {inviteCanDaily ? '✓' : '✗'}
                   </button>
                   <button type="button" onClick={() => setInviteCanRobe(v => !v)}
                     className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl text-xs font-semibold border transition active:scale-95 ${
-                      inviteCanRobe ? 'bg-blue-50 border-blue-200 text-blue-700' : 'bg-slate-50 border-slate-200 text-slate-400'
+                      inviteCanRobe ? 'bg-white border-slate-900 text-slate-900' : 'bg-slate-50 border-slate-200 text-slate-400'
                     }`}>
                     <GraduationCap className="w-3.5 h-3.5" /> Robe {inviteCanRobe ? '✓' : '✗'}
                   </button>
@@ -2769,14 +2769,14 @@ export const AdminHome: React.FC = () => {
                     i < arr.length - 1 ? 'border-b border-slate-100' : ''
                   } ${
                     filter === f
-                      ? 'bg-primary/10 text-primary font-semibold'
+                      ? 'bg-slate-100 text-slate-900 font-semibold'
                       : 'text-slate-700 hover:bg-slate-50'
                   }`}
                 >
                   <span className="uppercase text-xs tracking-wide">{f.replace('_', ' ')}</span>
                   {f !== 'all' && orders.filter(o => o.status === f).length > 0 && (
                     <span className={`text-xs font-semibold px-1.5 py-0.5 rounded-full ${
-                      filter === f ? 'bg-primary/20 text-primary' : 'bg-slate-100 text-slate-500'
+                      filter === f ? 'bg-slate-200 text-slate-700' : 'bg-slate-100 text-slate-500'
                     }`}>
                       {orders.filter(o => o.status === f).length}
                     </span>
@@ -4249,7 +4249,7 @@ export const AdminHome: React.FC = () => {
             <input ref={calUploadRef} type="file" accept="application/pdf" className="hidden" onChange={handleCalendarUpload} />
 
             <button onClick={() => calUploadRef.current?.click()} disabled={calParsing}
-              className="flex items-center justify-center gap-2 w-full border-2 border-dashed border-slate-200 rounded-xl py-3 text-slate-500 hover:border-primary hover:text-primary hover:bg-primary/5 transition text-xs font-semibold disabled:opacity-50">
+              className="flex items-center justify-center gap-2 w-full border-2 border-dashed border-slate-200 rounded-xl py-3 text-slate-500 hover:border-slate-300 hover:text-slate-700 hover:bg-slate-50 transition text-xs font-semibold disabled:opacity-50">
               {calParsing ? (
                 <>
                   <span className="w-4 h-4 rounded-full border-2 border-slate-300 border-t-primary animate-spin" />
