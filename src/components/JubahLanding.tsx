@@ -1,8 +1,9 @@
 ﻿import React, { useState, useEffect, useRef } from 'react';
 import { supabase } from '../lib/supabase';
 import { useApp } from '../context/AppContext';
-import { ChevronRight, Image as ImageIcon, X, Users, PackageSearch } from 'lucide-react';
-import { WaIcon, toWa } from '../lib/whatsapp';
+import { ChevronRight, Image as ImageIcon, Users, PackageSearch } from 'lucide-react';
+import { WaIcon } from '../lib/whatsapp';
+import { RepresentativeSheet } from './RepresentativeSheet';
 
 type RiderDir = { id: string; name: string; drop_point: string | null; method: string | null; ic_number: string | null; phone: string | null };
 
@@ -237,72 +238,17 @@ export const JubahLanding: React.FC<Props> = ({ onProceed }) => {
       )}
 
 
-      {/* Representative profile sheet — Bare Drawer standard */}
+      {/* Representative profile sheet */}
       {selectedRider && (
-        <>
-          <div className="fixed inset-0 z-40 bg-black/40"
-            style={{ backdropFilter: 'blur(2px)' }}
-            onClick={closeRider} />
-          <div className="fixed bottom-0 left-0 right-0 z-50 bg-white rounded-t-3xl shadow-2xl animate-slide-up max-h-[calc(100dvh-3rem)] overflow-y-auto no-scrollbar">
-
-            {/* Drag pill */}
-            <div className="flex justify-center pt-3 pb-1 shrink-0">
-              <div className="w-10 h-1 bg-slate-200 rounded-full" />
-            </div>
-
-            {/* Header */}
-            <div className="flex items-center justify-between px-5 pt-2 pb-4 shrink-0">
-              <div>
-                <p className="text-xs font-normal text-slate-400">Representative</p>
-                <h3 className="text-base font-semibold text-slate-800 mt-0.5">{selectedRider.name}</h3>
-              </div>
-              <button onClick={closeRider}
-                className="w-7 h-7 flex items-center justify-center rounded-full bg-slate-100 text-slate-500 active:scale-90 transition">
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-
-            {/* Fields — mirrors admin Jubah representative sheet */}
-            <div className="px-5 flex flex-col gap-4"
-              style={{ paddingBottom: 'calc(1.5rem + env(safe-area-inset-bottom))' }}>
-              <div className="bg-white border border-slate-100 rounded-2xl p-4 flex flex-col gap-3">
-                {[
-                  { label: 'Representative Name', value: selectedRider.name },
-                  { label: 'Drop Point',           value: selectedRider.drop_point || '—' },
-                  { label: 'Method',               value: selectedRider.method === 'pickup' ? 'Self Pickup' : selectedRider.method === 'postage' ? 'Pickup & Postage' : '—' },
-                ].map(({ label, value }) => (
-                  <div key={label} className="flex flex-col gap-0.5">
-                    <span className="text-xs font-normal text-slate-400">{label}</span>
-                    <span className="text-sm font-semibold text-slate-800">{value}</span>
-                  </div>
-                ))}
-                <div className="flex flex-col gap-0.5">
-                  <span className="text-xs font-normal text-slate-400">I/C Number</span>
-                  <span className="text-sm"><IcMasked ic={selectedRider.ic_number} /></span>
-                </div>
-                <div className="flex flex-col gap-0.5">
-                  <span className="text-xs font-normal text-slate-400">H/P</span>
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm font-semibold text-slate-800">{selectedRider.phone || '—'}</span>
-                    {selectedRider.phone && (
-                      <a
-                        href={`https://wa.me/${toWa(selectedRider.phone)}?text=${encodeURIComponent(
-                          `Asslammualaikum Jubah rider, saya perlukan 6 digit IC ${selectedRider.ic_number ? selectedRider.ic_number.replace(/\D/g,'').slice(0,6) + '-XX-XXXX' : 'XXXXXX-XX-XXXX'} terakhir awak untuk pengisian representative jubah ${UNIV_SHORT[selectedKey] ?? selectedKey.toUpperCase()}`
-                        )}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        onClick={e => e.stopPropagation()}
-                        className="text-[#25D366] active:scale-90 transition shrink-0"
-                      >
-                        <WaIcon className="w-5 h-5" />
-                      </a>
-                    )}
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </>
+        <RepresentativeSheet
+          name={selectedRider.name}
+          dropPoint={selectedRider.drop_point || '—'}
+          method={selectedRider.method === 'pickup' ? 'Self Pickup' : selectedRider.method === 'postage' ? 'Pickup & Postage' : '—'}
+          icNumber={selectedRider.ic_number}
+          phone={selectedRider.phone}
+          waMessage={`Asslammualaikum Jubah rider, saya perlukan 6 digit IC ${selectedRider.ic_number ? selectedRider.ic_number.replace(/\D/g,'').slice(0,6) + '-XX-XXXX' : 'XXXXXX-XX-XXXX'} terakhir awak untuk pengisian representative jubah ${UNIV_SHORT[selectedKey] ?? selectedKey.toUpperCase()}`}
+          onClose={closeRider}
+        />
       )}
 
     </div>

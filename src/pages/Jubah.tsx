@@ -8,21 +8,7 @@ import { WaIcon, toWa } from '../lib/whatsapp';
 import { compressImage } from '../lib/imageCompress';
 import type { PDFPage } from 'pdf-lib';
 import { FloatingMessage } from '../components/FloatingMessage';
-
-const IcMasked: React.FC<{ ic: string | null }> = ({ ic }) => {
-  if (!ic) return <span className="text-slate-800 font-bold text-sm">—</span>;
-  const digits = ic.replace(/\D/g, '');
-  if (digits.length < 6) return <span className="text-slate-800 font-bold text-sm">{ic}</span>;
-  return (
-    <span className="font-bold text-sm font-mono">
-      <span className="text-slate-800">{digits.slice(0, 6)}</span>
-      <span className="text-slate-800">-</span>
-      <span className="text-red-500">XX</span>
-      <span className="text-slate-800">-</span>
-      <span className="text-red-500">XXXX</span>
-    </span>
-  );
-};
+import { RepresentativeSheet } from '../components/RepresentativeSheet';
 
 const UNIVERSITIES = [
   'Universiti Malaysia Pahang Al-Sultan Abdullah (Pekan)',
@@ -994,10 +980,10 @@ ${riderBlock}
               <button
                 type="button"
                 disabled={!selectedRiderId}
-                onClick={() => { setRiderProfileOpen(true); setSheetOpen(true); }}
-                className={`w-10 h-10 flex items-center justify-center rounded-xl border shrink-0 transition active:scale-90 ${
+                onPointerDown={e => { e.preventDefault(); setRiderProfileOpen(true); setSheetOpen(true); }}
+                className={`w-10 h-10 flex items-center justify-center rounded-xl border shrink-0 transition-transform active:scale-90 ${
                   selectedRiderId
-                    ? 'bg-blue-50 border-blue-100 text-blue-600 hover:bg-blue-100'
+                    ? 'bg-white border-slate-100 text-slate-500'
                     : 'bg-slate-50 border-slate-100 text-slate-300 cursor-not-allowed'
                 }`}
               >
@@ -1437,53 +1423,15 @@ ${riderBlock}
       if (!r) return null;
       const close = () => { setRiderProfileOpen(false); setSheetOpen(false); };
       return (
-        <>
-          <div className="fixed inset-0 z-40 bg-black/40" onClick={close} />
-          <div className="fixed bottom-0 left-0 right-0 z-50 bg-white rounded-t-3xl shadow-2xl animate-slide-up max-h-[calc(100dvh-3rem)] overflow-y-auto no-scrollbar">
-            <div className="flex items-center justify-between px-5 pt-5 pb-3 border-b border-slate-100">
-              <div>
-                <p className="text-xs font-semibold text-slate-400">Your Rider</p>
-                <h3 className="text-base font-black text-slate-800 mt-0.5">{r.name}</h3>
-              </div>
-              <button onClick={close}
-                className="w-8 h-8 flex items-center justify-center rounded-xl bg-slate-100 text-slate-500 hover:bg-slate-200 active:scale-90 transition">
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-            <div className="px-5 py-4 flex flex-col gap-5">
-              <div className="flex flex-col gap-1">
-                <span className="text-xs font-semibold text-slate-400">Method</span>
-                <span className="text-sm font-bold text-slate-800">{r.jubah_drop_point || '—'}</span>
-              </div>
-              <div className="flex flex-col gap-1">
-                <span className="text-xs font-semibold text-slate-400">Representative Name</span>
-                <span className="text-sm font-bold text-slate-800">{r.name}</span>
-              </div>
-              <div className="flex flex-col gap-1">
-                <span className="text-xs font-semibold text-slate-400">I/C Number</span>
-                <IcMasked ic={r.ic_number} />
-              </div>
-              <div className="flex flex-col gap-1">
-                <span className="text-xs font-semibold text-slate-400">H/P Number</span>
-                <div className="flex items-center gap-2">
-                  <span className="text-sm font-bold text-slate-800">{r.phone || '—'}</span>
-                  {r.phone && (
-                    <a
-                      href={`https://wa.me/${toWa(r.phone)}?text=${encodeURIComponent(
-                        `Asslammualaikum Jubah rider, saya perlukan 6 digit IC ${r.ic_number ? r.ic_number.replace(/\D/g,'').slice(0,6) + '-XX-XXXX' : 'XXXXXX-XX-XXXX'} terakhir awak untuk pengisian representative jubah ${university.includes('Pahang') ? 'UMPSA' : university.includes('UiTM') || university.includes('MARA') ? 'UiTM' : university.includes('Kelantan') ? 'UMK' : university.includes('Kebangsaan') ? 'UKM' : 'UIAM'}`
-                      )}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-[#25D366] active:scale-90 transition shrink-0"
-                    >
-                      <WaIcon className="w-5 h-5" />
-                    </a>
-                  )}
-                </div>
-              </div>
-            </div>
-          </div>
-        </>
+        <RepresentativeSheet
+          name={r.name}
+          dropPoint={r.jubah_drop_point || '—'}
+          method={isPostageDelivery ? 'Pickup & Postage' : 'Self Pickup'}
+          icNumber={r.ic_number}
+          phone={r.phone}
+          waMessage={`Asslammualaikum Jubah rider, saya perlukan 6 digit IC ${r.ic_number ? r.ic_number.replace(/\D/g,'').slice(0,6) + '-XX-XXXX' : 'XXXXXX-XX-XXXX'} terakhir awak untuk pengisian representative jubah ${university.includes('Pahang') ? 'UMPSA' : university.includes('UiTM') || university.includes('MARA') ? 'UiTM' : university.includes('Kelantan') ? 'UMK' : university.includes('Kebangsaan') ? 'UKM' : 'UIAM'}`}
+          onClose={close}
+        />
       );
     })()}
     </>
