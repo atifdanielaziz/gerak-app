@@ -253,8 +253,8 @@ export const JubahLanding: React.FC<Props> = ({ onProceed }) => {
             {/* Header */}
             <div className="flex items-center justify-between px-5 pt-2 pb-4 shrink-0">
               <div>
-                <p className="text-xs font-semibold text-slate-400">Representative</p>
-                <h3 className="text-base font-bold text-slate-800 mt-0.5">{selectedRider.name}</h3>
+                <p className="text-xs font-normal text-slate-400">Representative</p>
+                <h3 className="text-base font-semibold text-slate-800 mt-0.5">{selectedRider.name}</h3>
               </div>
               <button onClick={closeRider}
                 className="w-7 h-7 flex items-center justify-center rounded-full bg-slate-100 text-slate-500 active:scale-90 transition">
@@ -265,25 +265,25 @@ export const JubahLanding: React.FC<Props> = ({ onProceed }) => {
             {/* Fields — mirrors admin Jubah representative sheet */}
             <div className="px-5 flex flex-col gap-4"
               style={{ paddingBottom: 'calc(1.5rem + env(safe-area-inset-bottom))' }}>
-              <div className="bg-slate-50 border border-slate-100 rounded-2xl p-4 flex flex-col gap-3 text-xs">
+              <div className="bg-white border border-slate-100 rounded-2xl p-4 flex flex-col gap-3">
                 {[
                   { label: 'Representative Name', value: selectedRider.name },
                   { label: 'Drop Point',           value: selectedRider.drop_point || '—' },
                   { label: 'Method',               value: selectedRider.method === 'pickup' ? 'Self Pickup' : selectedRider.method === 'postage' ? 'Pickup & Postage' : '—' },
                 ].map(({ label, value }) => (
                   <div key={label} className="flex flex-col gap-0.5">
-                    <span className="text-xs font-semibold text-slate-400">{label}</span>
-                    <span className="font-bold text-slate-800">{value}</span>
+                    <span className="text-xs font-normal text-slate-400">{label}</span>
+                    <span className="text-sm font-semibold text-slate-800">{value}</span>
                   </div>
                 ))}
                 <div className="flex flex-col gap-0.5">
-                  <span className="text-xs font-semibold text-slate-400">I/C Number</span>
-                  <IcMasked ic={selectedRider.ic_number} />
+                  <span className="text-xs font-normal text-slate-400">I/C Number</span>
+                  <span className="text-sm"><IcMasked ic={selectedRider.ic_number} /></span>
                 </div>
                 <div className="flex flex-col gap-0.5">
-                  <span className="text-xs font-semibold text-slate-400">H/P</span>
+                  <span className="text-xs font-normal text-slate-400">H/P</span>
                   <div className="flex items-center gap-2">
-                    <span className="font-bold text-slate-800">{selectedRider.phone || '—'}</span>
+                    <span className="text-sm font-semibold text-slate-800">{selectedRider.phone || '—'}</span>
                     {selectedRider.phone && (
                       <a
                         href={`https://wa.me/${toWa(selectedRider.phone)}?text=${encodeURIComponent(

@@ -2049,7 +2049,7 @@ export const AdminHome: React.FC = () => {
                 </button>
               </div>
               <div className="px-5 flex flex-col gap-4" style={{ paddingBottom: 'calc(6.5rem + env(safe-area-inset-bottom))' }}>
-                <div className="bg-slate-50 border border-slate-100 rounded-2xl p-4 flex flex-col gap-3 text-xs">
+                <div className="bg-white border border-slate-100 rounded-2xl p-4 flex flex-col gap-3">
                   {[
                     { label: 'Representative Name', value: dirSheet.name },
                     { label: 'Drop Point',           value: dirSheet.drop_point || '—' },
@@ -2058,13 +2058,13 @@ export const AdminHome: React.FC = () => {
                   ].map(({ label, value }) => (
                     <div key={label} className="flex flex-col gap-0.5">
                       <span className="text-xs font-normal text-slate-400">{label}</span>
-                      <span className="font-semibold text-slate-800">{value}</span>
+                      <span className="text-sm font-semibold text-slate-800">{value}</span>
                     </div>
                   ))}
                   <div className="flex flex-col gap-0.5">
                     <span className="text-xs font-normal text-slate-400">H/P</span>
                     <div className="flex items-center gap-2">
-                      <span className="font-semibold text-slate-800">{dirSheet.phone || '—'}</span>
+                      <span className="text-sm font-semibold text-slate-800">{dirSheet.phone || '—'}</span>
                       {dirSheet.phone && (
                         <a href={`https://wa.me/${toWa(dirSheet.phone)}?text=${encodeURIComponent(waMsg)}`}
                           target="_blank" rel="noopener noreferrer" className="text-[#25D366] active:scale-90 transition shrink-0">
