@@ -485,8 +485,8 @@ export const Transport: React.FC = () => {
           <div ref={fromDropdownRef} className="relative">
             <button
               type="button"
-              onClick={() => setShowFromDropdown(v => !v)}
-              className="w-full flex items-center justify-between bg-white border border-slate-100 rounded-2xl px-4 py-3 text-sm font-semibold text-slate-700 transition active:bg-slate-50 active:scale-[0.99]"
+              onPointerDown={e => { e.preventDefault(); setShowFromDropdown(v => !v); }}
+              className="w-full flex items-center justify-between bg-white border border-slate-100 rounded-2xl px-4 py-3 text-sm font-semibold text-slate-700 transition-transform active:bg-slate-50 active:scale-[0.99]"
             >
               <span className={selectedFrom ? 'text-slate-800' : 'text-slate-400 font-normal'}>
                 {selectedFrom || 'Select pickup location…'}
@@ -501,7 +501,8 @@ export const Transport: React.FC = () => {
                     <button
                       key={from}
                       type="button"
-                      onClick={() => {
+                      onPointerDown={e => {
+                        e.preventDefault();
                         setSelectedFrom(from);
                         setSelectedRoute(null);
                         setShowRouteList(true);
@@ -560,7 +561,8 @@ export const Transport: React.FC = () => {
                   <button
                     key={i}
                     type="button"
-                    onClick={() => {
+                    onPointerDown={e => {
+                      e.preventDefault();
                       setSelectedRoute(isSelected ? null : route);
                       if (!isSelected) setShowRouteList(false);
                     }}
@@ -721,11 +723,11 @@ export const Transport: React.FC = () => {
               <Users className="w-3 h-3" /> Number of Passengers
             </label>
             <div className="flex items-center gap-2">
-              <button type="button" onClick={() => setPassengers(p => Math.max(1, p - 1))}
-                className="w-10 h-10 rounded-xl border border-slate-100 bg-white text-slate-700 font-semibold text-sm active:bg-slate-50 active:scale-95 transition flex items-center justify-center shrink-0">−</button>
+              <button type="button" onPointerDown={e => { e.preventDefault(); setPassengers(p => Math.max(1, p - 1)); }}
+                className="w-10 h-10 rounded-xl border border-slate-100 bg-white text-slate-700 font-semibold text-sm active:bg-slate-50 active:scale-95 transition-transform flex items-center justify-center shrink-0">−</button>
               <span className="flex-1 text-center font-black text-xs text-slate-800">{passengers}</span>
-              <button type="button" onClick={() => setPassengers(p => Math.min(8, p + 1))}
-                className="w-10 h-10 rounded-xl border border-slate-100 bg-white text-slate-700 font-semibold text-sm active:bg-slate-50 active:scale-95 transition flex items-center justify-center shrink-0">+</button>
+              <button type="button" onPointerDown={e => { e.preventDefault(); setPassengers(p => Math.min(8, p + 1)); }}
+                className="w-10 h-10 rounded-xl border border-slate-100 bg-white text-slate-700 font-semibold text-sm active:bg-slate-50 active:scale-95 transition-transform flex items-center justify-center shrink-0">+</button>
             </div>
             {passengers > 4 && (
               <p className="text-xs text-amber-600 font-normal pl-1">Over 4 pax — extra charge may apply</p>

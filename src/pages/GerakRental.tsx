@@ -937,11 +937,11 @@ ${row('Owner ID', bk.owner_gerak_id ?? '—')}
                   </p>
                 </div>
                 <div className="flex items-center gap-3">
-                  <button onClick={() => setDuration(d => Math.max(1, d - 1))}
-                    className="w-8 h-8 rounded-xl bg-slate-100 text-slate-600 font-black text-lg flex items-center justify-center active:scale-90">−</button>
+                  <button onPointerDown={e => { e.preventDefault(); setDuration(d => Math.max(1, d - 1)); }}
+                    className="w-8 h-8 rounded-xl bg-slate-100 text-slate-600 font-black text-lg flex items-center justify-center transition-transform active:scale-90">−</button>
                   <span className="text-sm font-black text-slate-800 w-10 text-center">{fmtDuration(duration)}</span>
-                  <button onClick={() => setDuration(d => Math.min(12, d + 1))}
-                    className="w-8 h-8 rounded-xl bg-slate-100 text-slate-600 font-black text-lg flex items-center justify-center active:scale-90">+</button>
+                  <button onPointerDown={e => { e.preventDefault(); setDuration(d => Math.min(12, d + 1)); }}
+                    className="w-8 h-8 rounded-xl bg-slate-100 text-slate-600 font-black text-lg flex items-center justify-center transition-transform active:scale-90">+</button>
                 </div>
               </div>
 
@@ -964,11 +964,11 @@ ${row('Owner ID', bk.owner_gerak_id ?? '—')}
                   <Users className="w-3.5 h-3.5 text-amber-500" /> Persons
                 </p>
                 <div className="flex items-center gap-3">
-                  <button onClick={() => setPersons(p => Math.max(1, p - 1))}
-                    className="w-8 h-8 rounded-xl bg-slate-100 text-slate-600 font-black text-lg flex items-center justify-center active:scale-90">−</button>
+                  <button onPointerDown={e => { e.preventDefault(); setPersons(p => Math.max(1, p - 1)); }}
+                    className="w-8 h-8 rounded-xl bg-slate-100 text-slate-600 font-black text-lg flex items-center justify-center transition-transform active:scale-90">−</button>
                   <span className="text-sm font-black text-slate-800 w-6 text-center">{persons}</span>
-                  <button onClick={() => setPersons(p => Math.min(selected.seats, p + 1))}
-                    className="w-8 h-8 rounded-xl bg-slate-100 text-slate-600 font-black text-lg flex items-center justify-center active:scale-90">+</button>
+                  <button onPointerDown={e => { e.preventDefault(); setPersons(p => Math.min(selected.seats, p + 1)); }}
+                    className="w-8 h-8 rounded-xl bg-slate-100 text-slate-600 font-black text-lg flex items-center justify-center transition-transform active:scale-90">+</button>
                 </div>
               </div>
 
@@ -1038,11 +1038,11 @@ ${row('Owner ID', bk.owner_gerak_id ?? '—')}
                   <Users className="w-3.5 h-3.5 text-amber-500" /> Persons
                 </p>
                 <div className="flex items-center gap-3">
-                  <button onClick={() => setPersons(p => Math.max(1, p - 1))}
-                    className="w-8 h-8 rounded-xl bg-slate-100 text-slate-600 font-black text-lg flex items-center justify-center active:scale-90">−</button>
+                  <button onPointerDown={e => { e.preventDefault(); setPersons(p => Math.max(1, p - 1)); }}
+                    className="w-8 h-8 rounded-xl bg-slate-100 text-slate-600 font-black text-lg flex items-center justify-center transition-transform active:scale-90">−</button>
                   <span className="text-sm font-black text-slate-800 w-6 text-center">{persons}</span>
-                  <button onClick={() => setPersons(p => Math.min(selected.seats, p + 1))}
-                    className="w-8 h-8 rounded-xl bg-slate-100 text-slate-600 font-black text-lg flex items-center justify-center active:scale-90">+</button>
+                  <button onPointerDown={e => { e.preventDefault(); setPersons(p => Math.min(selected.seats, p + 1)); }}
+                    className="w-8 h-8 rounded-xl bg-slate-100 text-slate-600 font-black text-lg flex items-center justify-center transition-transform active:scale-90">+</button>
                 </div>
               </div>
 

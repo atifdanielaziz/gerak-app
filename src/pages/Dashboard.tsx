@@ -210,7 +210,7 @@ export const Dashboard: React.FC = () => {
           {banners.map((_, idx) => (
             <button
               key={idx}
-              onClick={() => setActiveBanner(idx)}
+              onPointerDown={e => { e.preventDefault(); setActiveBanner(idx); }}
               className={`h-1.5 rounded-full transition-all duration-300 ${
                 idx === activeBanner ? 'w-5 bg-primary' : 'w-1.5 bg-slate-200'
               }`}

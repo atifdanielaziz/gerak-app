@@ -337,8 +337,8 @@ export const AcademicCalendar: React.FC = () => {
         {/* Semester tabs */}
         <div className="flex gap-2 px-4 pt-3 pb-2 overflow-x-auto no-scrollbar">
           {SEMESTERS.map(s => (
-            <button key={s.id} onClick={() => setActiveSem(s.id)}
-              className={`shrink-0 px-4 py-1.5 rounded-2xl text-xs font-semibold border transition active:scale-95 ${
+            <button key={s.id} onPointerDown={e => { e.preventDefault(); setActiveSem(s.id); }}
+              className={`shrink-0 px-4 py-1.5 rounded-2xl text-xs font-semibold border transition-transform active:scale-95 ${
                 activeSem === s.id
                   ? `${s.bg} text-white border-transparent`
                   : 'bg-white text-slate-500 border-slate-100'

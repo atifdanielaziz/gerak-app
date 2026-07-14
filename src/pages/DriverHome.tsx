@@ -1410,8 +1410,8 @@ export const DriverHome: React.FC = () => {
                     {HOURS.map(h => {
                       const blocked = blockedHoursOn(scheduleDate).includes(h);
                       return (
-                        <button key={h} onClick={() => toggleHourBlock(scheduleDate, h)}
-                          className={`py-2 rounded-xl text-xs font-semibold transition active:scale-95 ${
+                        <button key={h} onPointerDown={e => { e.preventDefault(); toggleHourBlock(scheduleDate, h); }}
+                          className={`py-2 rounded-xl text-xs font-semibold transition-transform active:scale-95 ${
                             blocked
                               ? 'bg-red-100 text-red-500 border border-red-200'
                               : 'bg-slate-50 text-slate-600 hover:bg-amber-50 hover:text-amber-700'
@@ -1550,11 +1550,11 @@ export const DriverHome: React.FC = () => {
                 <div className="flex flex-col gap-1.5">
                   <label className="text-xs font-semibold text-slate-400">Seats</label>
                   <div className="flex items-center gap-2">
-                    <button onClick={() => setVehicleForm(f => ({ ...f, seats: Math.max(1, (f.seats ?? 5) - 1) }))}
-                      className="w-8 h-8 rounded-xl bg-slate-100 text-slate-600 font-semibold flex items-center justify-center active:scale-90">−</button>
+                    <button onPointerDown={e => { e.preventDefault(); setVehicleForm(f => ({ ...f, seats: Math.max(1, (f.seats ?? 5) - 1) })); }}
+                      className="w-8 h-8 rounded-xl bg-slate-100 text-slate-600 font-semibold flex items-center justify-center transition-transform active:scale-90">−</button>
                     <span className="flex-1 text-center text-sm font-semibold text-slate-800">{vehicleForm.seats ?? 5}</span>
-                    <button onClick={() => setVehicleForm(f => ({ ...f, seats: Math.min(15, (f.seats ?? 5) + 1) }))}
-                      className="w-8 h-8 rounded-xl bg-slate-100 text-slate-600 font-semibold flex items-center justify-center active:scale-90">+</button>
+                    <button onPointerDown={e => { e.preventDefault(); setVehicleForm(f => ({ ...f, seats: Math.min(15, (f.seats ?? 5) + 1) })); }}
+                      className="w-8 h-8 rounded-xl bg-slate-100 text-slate-600 font-semibold flex items-center justify-center transition-transform active:scale-90">+</button>
                   </div>
                 </div>
                 <div className="flex flex-col gap-1.5">

@@ -446,12 +446,12 @@ const JubahRiderSheet: React.FC<{
                 </span>
                 <div className="flex items-center gap-2">
                   {assignments.length > 1 && !showAdd && (
-                    <button onClick={() => setDeleteMode(v => !v)} className="active:scale-90 transition">
+                    <button onPointerDown={e => { e.preventDefault(); setDeleteMode(v => !v); }} className="active:scale-90 transition-transform">
                       <MinusCircle className={`w-5 h-5 ${deleteMode ? 'text-red-500' : 'text-slate-300'}`} />
                     </button>
                   )}
                   {assignments.length < 3 && !deleteMode && (
-                    <button onClick={() => { setShowAdd(v => !v); setAddDropPoint(''); setAddMethod('pickup'); }} className="active:scale-90 transition">
+                    <button onPointerDown={e => { e.preventDefault(); setShowAdd(v => !v); setAddDropPoint(''); setAddMethod('pickup'); }} className="active:scale-90 transition-transform">
                       <PlusCircle className={`w-5 h-5 ${showAdd ? 'text-indigo-500' : 'text-slate-300'}`} />
                     </button>
                   )}
@@ -2227,14 +2227,15 @@ export const AdminHome: React.FC = () => {
                   { id: 'admin',  label: 'Admin',  color: 'bg-violet-600 text-white' },
                 ] as const).map(r => (
                   <button key={r.id} type="button"
-                    onClick={() => {
+                    onPointerDown={e => {
+                      e.preventDefault();
                       setInviteRole(r.id);
                       setInviteCanDrive(r.id === 'driver');
                       setInviteCanRent(false);
                       setInviteCanDaily(false);
                       setInviteCanRobe(false);
                     }}
-                    className={`flex-1 py-2 rounded-xl text-xs font-semibold transition ${
+                    className={`flex-1 py-2 rounded-xl text-xs font-semibold transition-transform ${
                       inviteRole === r.id ? r.color : 'text-slate-400'
                     }`}>
                     {r.label}
@@ -2456,8 +2457,8 @@ export const AdminHome: React.FC = () => {
                 { id: 'riders',  label: 'Riders' },
                 { id: 'admins',  label: 'Admins' },
               ] as const).map(f => (
-                <button key={f.id} onClick={() => setStaffFilter(f.id)}
-                  className={`shrink-0 px-4 py-1.5 rounded-xl text-xs font-semibold transition ${
+                <button key={f.id} onPointerDown={e => { e.preventDefault(); setStaffFilter(f.id); }}
+                  className={`shrink-0 px-4 py-1.5 rounded-xl text-xs font-semibold transition-transform ${
                     staffFilter === f.id ? 'bg-white text-slate-800' : 'text-slate-400'
                   }`}>
                   {f.label}
@@ -2609,8 +2610,8 @@ export const AdminHome: React.FC = () => {
                     <button
                       key={g.value}
                       type="button"
-                      onClick={() => setBannerGradient(g.value)}
-                      className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold text-white bg-gradient-to-r ${g.value} transition active:scale-95 ${
+                      onPointerDown={e => { e.preventDefault(); setBannerGradient(g.value); }}
+                      className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold text-white bg-gradient-to-r ${g.value} transition-transform active:scale-95 ${
                         bannerGradient === g.value ? 'ring-2 ring-offset-1 ring-slate-400' : ''
                       }`}
                     >
@@ -2686,8 +2687,8 @@ export const AdminHome: React.FC = () => {
                     {/* Actions */}
                     <div className="flex gap-2">
                       <button
-                        onClick={() => handleToggleBanner(a)}
-                        className={`flex-1 flex items-center justify-center gap-1.5 font-semibold text-xs py-2 rounded-xl border transition active:scale-95 ${
+                        onPointerDown={e => { e.preventDefault(); handleToggleBanner(a); }}
+                        className={`flex-1 flex items-center justify-center gap-1.5 font-semibold text-xs py-2 rounded-xl border transition-transform active:scale-95 ${
                           a.is_active
                             ? 'bg-emerald-50 border-emerald-100 text-emerald-700'
                             : 'bg-slate-100 border-slate-200 text-slate-500'
@@ -2738,8 +2739,8 @@ export const AdminHome: React.FC = () => {
       <div ref={filterDropdownRef} className="relative">
         <button
           type="button"
-          onClick={() => setShowFilterDropdown(v => !v)}
-          className="w-full flex items-center justify-between bg-white border border-slate-100 rounded-2xl px-4 py-3 text-sm font-semibold text-slate-700 transition active:scale-[0.98]"
+          onPointerDown={e => { e.preventDefault(); setShowFilterDropdown(v => !v); }}
+          className="w-full flex items-center justify-between bg-white border border-slate-100 rounded-2xl px-4 py-3 text-sm font-semibold text-slate-700 transition-transform active:scale-[0.98]"
         >
           <span className="flex items-center gap-2">
             <span className="text-slate-800 font-semibold uppercase text-xs tracking-wide">
@@ -2763,8 +2764,8 @@ export const AdminHome: React.FC = () => {
                 <button
                   key={f}
                   type="button"
-                  onClick={() => { setFilter(f); setShowFilterDropdown(false); }}
-                  className={`w-full flex items-center justify-between px-4 py-3 text-sm font-semibold transition ${
+                  onPointerDown={e => { e.preventDefault(); setFilter(f); setShowFilterDropdown(false); }}
+                  className={`w-full flex items-center justify-between px-4 py-3 text-sm font-semibold transition-transform ${
                     i < arr.length - 1 ? 'border-b border-slate-100' : ''
                   } ${
                     filter === f
@@ -3210,8 +3211,8 @@ export const AdminHome: React.FC = () => {
                   </p>
                 </div>
               </div>
-              <button onClick={handleToggleJubah} disabled={togglingJubah}
-                className={`shrink-0 px-4 py-2 rounded-xl text-xs font-semibold border transition active:scale-95 disabled:opacity-50 ${
+              <button onPointerDown={e => { e.preventDefault(); handleToggleJubah(); }} disabled={togglingJubah}
+                className={`shrink-0 px-4 py-2 rounded-xl text-xs font-semibold border transition-transform active:scale-95 disabled:opacity-50 ${
                   jubahActive ? 'bg-blue-50 border-blue-200 text-blue-700' : 'bg-slate-50 border-slate-200 text-slate-500'
                 }`}>
                 {togglingJubah ? '…' : jubahActive ? <><span className="inline-block w-2 h-2 rounded-full bg-emerald-400 mr-1" />ON</> : <><span className="inline-block w-2 h-2 rounded-full bg-slate-400 mr-1" />OFF</>}
@@ -3354,8 +3355,8 @@ export const AdminHome: React.FC = () => {
                     { id: 'booked', label: 'Booked' },
                     { id: 'paid',   label: 'Paid' },
                   ] as const).map(f => (
-                    <button key={f.id} onClick={() => setJubahPayFilter(f.id)}
-                      className={`flex-1 py-1.5 rounded-[10px] text-xs font-semibold transition active:scale-95 ${
+                    <button key={f.id} onPointerDown={e => { e.preventDefault(); setJubahPayFilter(f.id); }}
+                      className={`flex-1 py-1.5 rounded-[10px] text-xs font-semibold transition-transform active:scale-95 ${
                         jubahPayFilter === f.id ? 'bg-white text-slate-800' : 'text-slate-400'
                       }`}>
                       {f.label}
@@ -3913,8 +3914,8 @@ export const AdminHome: React.FC = () => {
           {/* Driver / Rider toggle */}
           <div className="flex bg-white border border-slate-100 rounded-2xl p-1 gap-1">
             {(['driver', 'rider'] as const).map(r => (
-              <button key={r} onClick={() => setReceiptRoleFilter(r)}
-                className={`flex-1 py-2 rounded-xl text-xs font-semibold transition ${
+              <button key={r} onPointerDown={e => { e.preventDefault(); setReceiptRoleFilter(r); }}
+                className={`flex-1 py-2 rounded-xl text-xs font-semibold transition-transform ${
                   receiptRoleFilter === r ? 'bg-primary text-white' : 'text-slate-400'
                 }`}>
                 {r === 'driver' ? 'Drivers' : 'Riders'}
@@ -3935,8 +3936,8 @@ export const AdminHome: React.FC = () => {
                 pending:  'bg-amber-50 border-amber-100 text-amber-700',
               };
               return (
-                <button key={s} onClick={() => setReceiptFilter(s)}
-                  className={`rounded-2xl border p-3 flex flex-col items-center gap-1 transition active:scale-95 ${styles[s]} ${
+                <button key={s} onPointerDown={e => { e.preventDefault(); setReceiptFilter(s); }}
+                  className={`rounded-2xl border p-3 flex flex-col items-center gap-1 transition-transform active:scale-95 ${styles[s]} ${
                     receiptFilter === s ? 'ring-2 ring-offset-1 ring-primary/40' : ''
                   }`}
                 >
@@ -4136,8 +4137,8 @@ export const AdminHome: React.FC = () => {
             {/* Period toggle */}
             <div className="flex bg-white border border-slate-100 rounded-2xl p-1 gap-1">
               {(['day', 'week', 'month', 'all'] as const).map(p => (
-                <button key={p} onClick={() => setEarningsPeriod(p)}
-                  className={`flex-1 py-2 rounded-xl text-xs font-semibold transition ${
+                <button key={p} onPointerDown={e => { e.preventDefault(); setEarningsPeriod(p); }}
+                  className={`flex-1 py-2 rounded-xl text-xs font-semibold transition-transform ${
                     earningsPeriod === p ? 'bg-primary text-white' : 'text-slate-400'
                   }`}>
                   {p === 'day' ? 'Day' : p === 'week' ? 'Week' : p === 'month' ? 'Month' : 'All Time'}
@@ -4279,8 +4280,8 @@ export const AdminHome: React.FC = () => {
                 {/* Semester mini-tabs */}
                 <div className="flex gap-1.5 overflow-x-auto no-scrollbar">
                   {calParsed.semesters?.map((s: any, i: number) => (
-                    <button key={s.id} onClick={() => setCalPreviewSem(i)}
-                      className={`shrink-0 px-3 py-1.5 rounded-xl text-xs font-semibold transition ${calPreviewSem === i ? 'bg-primary text-white' : 'bg-slate-100 text-slate-500'}`}>
+                    <button key={s.id} onPointerDown={e => { e.preventDefault(); setCalPreviewSem(i); }}
+                      className={`shrink-0 px-3 py-1.5 rounded-xl text-xs font-semibold transition-transform ${calPreviewSem === i ? 'bg-primary text-white' : 'bg-slate-100 text-slate-500'}`}>
                       {s.short}
                     </button>
                   ))}

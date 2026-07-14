@@ -78,7 +78,7 @@ export const ResetPassword: React.FC = () => {
                 spellCheck={false}
                 required
               />
-              <button type="button" onClick={() => setShowPwd(v => !v)}
+              <button type="button" onPointerDown={e => { e.preventDefault(); setShowPwd(v => !v); }}
                 className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400">
                 {showPwd ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
               </button>
