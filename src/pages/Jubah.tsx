@@ -156,9 +156,11 @@ export const Jubah: React.FC = () => {
 
   // Silently restore a saved draft on mount — same behaviour as returning
   // to an unsubmitted Google Form: no extra prompt, fields just reappear.
+  const draftRestoredRef = useRef(false);
   useEffect(() => {
     const d = loadFormDraft();
     if (!d) return;
+    draftRestoredRef.current = true;
     setFullName(d.fullName ?? '');
     setIcNumber(d.icNumber ?? '');
     setHpNumber(d.hpNumber ?? '');
@@ -177,6 +179,21 @@ export const Jubah: React.FC = () => {
     if (d.university) setLandingUniversity('umpsa'); // only UMPSA's form is live — skip the landing picker
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Logged-in users get Full Name / IC / Phone / Matric ID pre-filled from
+  // their profile — still fully editable, just saves re-typing what we
+  // already know. Guests get a blank form, as before. A restored draft
+  // (the user's own prior edits) always wins over a fresh profile pre-fill.
+  // Functional setState (prev => prev || value) makes this safe to re-run
+  // as user data streams in after login, without ever overwriting anything
+  // the user (or the draft restore above) already put in the field.
+  useEffect(() => {
+    if (draftRestoredRef.current || !user.isLoggedIn) return;
+    if (user.name)     setFullName(prev => prev || user.name);
+    if (user.icNumber) setIcNumber(prev => prev || formatIc(user.icNumber));
+    if (user.phone)    setHpNumber(prev => prev || formatPhone(user.phone));
+    if (user.matricNo) setMatricId(prev => prev || user.matricNo);
+  }, [user.isLoggedIn, user.name, user.icNumber, user.phone, user.matricNo]);
 
   const [showLeaveConfirm, setShowLeaveConfirm] = useState(false);
   const hasUnsavedInput = !!(
