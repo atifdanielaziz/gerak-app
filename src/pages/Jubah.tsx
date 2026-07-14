@@ -7,6 +7,7 @@ import { supabase } from '../lib/supabase';
 import { WaIcon, toWa } from '../lib/whatsapp';
 import { compressImage } from '../lib/imageCompress';
 import type { PDFPage } from 'pdf-lib';
+import { FloatingMessage } from '../components/FloatingMessage';
 
 const IcMasked: React.FC<{ ic: string | null }> = ({ ic }) => {
   if (!ic) return <span className="text-slate-800 font-bold text-sm">—</span>;
@@ -51,8 +52,37 @@ const formatPhone = (val: string) => {
   return `${d.slice(0, 3)}-${d.slice(3)}`;
 };
 
+// Form draft — text fields only. Uploaded documents/payment proof are
+// never persisted here (can't reliably stash File data in localStorage,
+// and the user confirmed re-uploading is acceptable) and none of this
+// ever touches Supabase — the only way data reaches the database is the
+// normal Book flow (payment proof + Book button).
+const JUBAH_DRAFT_KEY = 'gerak_jubah_form_draft';
+interface JubahFormDraft {
+  fullName: string; icNumber: string; hpNumber: string; university: string;
+  faculty: string; matricId: string;
+  paymentMode: 'pickup' | 'postage' | 'deposit';
+  postageZone: 'SM' | 'SS';
+  depositMethod: 'pickup' | 'postage';
+  remark: typeof REMARKS[number];
+  selectedRiderId: string;
+  addressLine1: string; addressLine2: string; addressPostal: string; addressState: string;
+}
+const saveFormDraft = (draft: JubahFormDraft) => {
+  try { localStorage.setItem(JUBAH_DRAFT_KEY, JSON.stringify(draft)); } catch { /* storage unavailable — skip silently */ }
+};
+const loadFormDraft = (): JubahFormDraft | null => {
+  try {
+    const raw = localStorage.getItem(JUBAH_DRAFT_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch { return null; }
+};
+const clearFormDraft = () => {
+  try { localStorage.removeItem(JUBAH_DRAFT_KEY); } catch { /* ignore */ }
+};
+
 export const Jubah: React.FC = () => {
-  const { user, jubahBooking, bookJubah, cancelJubahBooking, setCurrentPage, setSheetOpen } = useApp();
+  const { user, jubahBooking, bookJubah, cancelJubahBooking, setCurrentPage, setSheetOpen, goBack, setLeaveGuard } = useApp();
 
   const [landingUniversity, setLandingUniversity] = useState('');
 
@@ -123,6 +153,64 @@ export const Jubah: React.FC = () => {
     setSheetOpen(false);
   };
   const closeAddressSheet = () => { setShowAddressSheet(false); setSheetOpen(false); };
+
+  // Silently restore a saved draft on mount — same behaviour as returning
+  // to an unsubmitted Google Form: no extra prompt, fields just reappear.
+  useEffect(() => {
+    const d = loadFormDraft();
+    if (!d) return;
+    setFullName(d.fullName ?? '');
+    setIcNumber(d.icNumber ?? '');
+    setHpNumber(d.hpNumber ?? '');
+    setUniversity(d.university ?? '');
+    setFaculty(d.faculty ?? '');
+    setMatricId(d.matricId ?? '');
+    if (['pickup', 'postage', 'deposit'].includes(d.paymentMode)) setPaymentMode(d.paymentMode);
+    if (['SM', 'SS'].includes(d.postageZone)) setPostageZone(d.postageZone);
+    if (['pickup', 'postage'].includes(d.depositMethod)) setDepositMethod(d.depositMethod);
+    if (REMARKS.includes(d.remark)) setRemark(d.remark);
+    setSelectedRiderId(d.selectedRiderId ?? '');
+    setAddressLine1(d.addressLine1 ?? '');
+    setAddressLine2(d.addressLine2 ?? '');
+    setAddressPostal(d.addressPostal ?? '');
+    setAddressState(d.addressState ?? '');
+    if (d.university) setLandingUniversity('umpsa'); // only UMPSA's form is live — skip the landing picker
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const [showLeaveConfirm, setShowLeaveConfirm] = useState(false);
+  const hasUnsavedInput = !!(
+    fullName.trim() || icNumber.trim() || hpNumber.trim() || matricId.trim() ||
+    Object.values(docFiles).some(f => !!f) || paymentProof
+  );
+
+  // Registers with AppContext's goBack() so leaving mid-form (back button
+  // or hardware/gesture back) prompts instead of silently losing input.
+  // Cleared once a booking actually succeeds — jubahBooking is truthy then,
+  // and there's nothing left to lose at that point.
+  useEffect(() => {
+    if (jubahBooking) { setLeaveGuard(null); return; }
+    setLeaveGuard(hasUnsavedInput ? () => setShowLeaveConfirm(true) : null);
+    return () => setLeaveGuard(null);
+  }, [hasUnsavedInput, jubahBooking, setLeaveGuard]);
+
+  const handleDiscardLeave = () => {
+    clearFormDraft();
+    setLeaveGuard(null);
+    setShowLeaveConfirm(false);
+    goBack();
+  };
+  const handleSaveDraftLeave = () => {
+    saveFormDraft({
+      fullName, icNumber, hpNumber, university, faculty, matricId,
+      paymentMode, postageZone, depositMethod, remark, selectedRiderId,
+      addressLine1, addressLine2, addressPostal, addressState,
+    });
+    setLeaveGuard(null);
+    setShowLeaveConfirm(false);
+    goBack();
+  };
+  const handleContinueEditing = () => setShowLeaveConfirm(false);
 
   // Pricing state — fetched from jubah_pricing table, kept live via Realtime
   type PricingMap = Record<string, Record<string, number>>; // remark -> mode -> price
@@ -466,6 +554,7 @@ ${riderBlock}
     }
 
     setBooking(false);
+    clearFormDraft();
     bookJubah(reference, fullName, icNumber, hpNumber, university, faculty, matricId, paymentMode, remark, combinedFileName, cost, balanceDue, selectedRiderId, selectedRider?.name, bookingCampus, addr, docsPath, paymentPath, oscarPath, skpgPath, konvoPath, icPath);
 
     // Sheet gets every document labelled by its real field label — lossless
@@ -1305,6 +1394,20 @@ ${riderBlock}
           </div>
         </div>
       </>
+    )}
+
+    {/* Leaving with unsaved input — Floating Message Standard */}
+    {showLeaveConfirm && (
+      <FloatingMessage
+        title="Discard this booking?"
+        description="Your uploaded documents won't be kept — you'll need to upload them again if you save a draft or come back later."
+        options={[
+          { label: 'Discard', destructive: true, onPress: handleDiscardLeave },
+          { label: 'Save Draft', onPress: handleSaveDraftLeave },
+          { label: 'Continue Editing', onPress: handleContinueEditing },
+        ]}
+        onDismiss={handleContinueEditing}
+      />
     )}
 
     {/* Rider profile sheet — outside scroll container so fixed positioning works correctly */}

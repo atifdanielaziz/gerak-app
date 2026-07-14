@@ -118,6 +118,7 @@ interface AppContextType {
   setCurrentPage: (page: ActivePage) => void;
   goBack: () => void;
   canGoBack: boolean;
+  setLeaveGuard: (guard: (() => void) | null) => void;
   isPreviewMode: boolean;
   enterPreviewMode: () => void;
   exitPreviewMode: () => void;
@@ -181,7 +182,16 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     _setCurrentPage(page);
   };
 
+  // Lets the current page intercept back-navigation (e.g. to confirm
+  // discarding unsaved input) instead of leaving immediately. Only one
+  // page can hold the guard at a time — it registers on mount and clears
+  // it on unmount, so leftover guards from a previous page never linger.
+  const [leaveGuard, setLeaveGuard] = useState<(() => void) | null>(null);
+  const leaveGuardRef = useRef<(() => void) | null>(null);
+  useEffect(() => { leaveGuardRef.current = leaveGuard; }, [leaveGuard]);
+
   const goBack = () => {
+    if (leaveGuardRef.current) { leaveGuardRef.current(); return; }
     setPageHistory(prev => {
       if (prev.length === 0) return prev;
       _setCurrentPage(prev[prev.length - 1]);
@@ -803,6 +813,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         setCurrentPage,
         goBack,
         canGoBack: pageHistory.length > 0,
+        setLeaveGuard,
         isPreviewMode,
         enterPreviewMode,
         exitPreviewMode,
