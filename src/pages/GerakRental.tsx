@@ -6,7 +6,7 @@ import {
   CalendarDays, Car, RefreshCw, CheckCircle2, Info,
   Hash, Moon, Upload, FileText, XCircle, ExternalLink, FileDown,
 } from 'lucide-react';
-import { WaIcon, toWa } from '../lib/whatsapp';
+import { WaBtn } from '../lib/whatsapp';
 import { fmt12, fmtDuration, toDateStr, todayStr as today } from '../lib/format';
 
 interface RentalOwner {
@@ -495,7 +495,7 @@ ${row('Owner ID', bk.owner_gerak_id ?? '—')}
         <div className="flex items-center gap-2">
           <div>
             <h2 className="text-xl font-semibold text-slate-800 m-0 flex items-center gap-2">
-              <KeyRound className="w-5 h-5 text-amber-500" /> Gerak Rental
+              <KeyRound className="w-5 h-5 text-slate-400" /> Gerak Rental
             </h2>
             <p className="text-xs text-slate-400 font-normal mt-0.5">
               {selected ? selected.car_type || 'Book your slot' : 'Campus vehicle rental'}
@@ -527,11 +527,11 @@ ${row('Owner ID', bk.owner_gerak_id ?? '—')}
             <div key={bk.id} className="bg-white border border-slate-100 rounded-3xl overflow-hidden">
 
               {/* Receipt header */}
-              <div className="bg-amber-500 px-5 pt-4 pb-3 flex items-start justify-between">
+              <div className="px-5 pt-4 pb-3 flex items-start justify-between">
                 <div>
-                  <p className="text-xs font-semibold text-amber-100 uppercase tracking-widest">Gerak Rental Receipt</p>
-                  <p className="text-lg font-black text-white leading-tight mt-0.5">{bk.car_type}</p>
-                  <p className="text-xs text-amber-100 font-normal">{bk.plate_no} · {bk.color}</p>
+                  <p className="text-xs font-normal text-slate-400">Gerak Rental Receipt</p>
+                  <p className="text-lg font-semibold text-slate-800 leading-tight mt-0.5">{bk.car_type}</p>
+                  <p className="text-xs text-slate-400 font-normal">{bk.plate_no} · {bk.color}</p>
                 </div>
                 <span className={`text-xs font-semibold px-2.5 py-1 rounded-full border uppercase ${statusStyle[bk.status] ?? statusStyle.pending}`}>
                   {bk.status}
@@ -588,7 +588,7 @@ ${row('Owner ID', bk.owner_gerak_id ?? '—')}
                 </div>
                 <div className="mt-1 pt-2 border-t border-dashed border-slate-100 flex items-center justify-between">
                   <span className="text-xs font-semibold text-slate-700">Total</span>
-                  <span className="text-base font-black text-amber-500">RM{Number(bk.total_price).toFixed(2)}</span>
+                  <span className="text-base font-black text-slate-800">RM{Number(bk.total_price).toFixed(2)}</span>
                 </div>
               </div>
 
@@ -628,10 +628,10 @@ ${row('Owner ID', bk.owner_gerak_id ?? '—')}
                       <button
                         onClick={() => licenseRefs.current[bk.id]?.click()}
                         disabled={uploadingLicense === bk.id}
-                        className="w-full flex items-center justify-center gap-2 bg-amber-50 border border-amber-200 text-amber-700 text-xs font-semibold py-2.5 rounded-2xl active:scale-95 transition disabled:opacity-50"
+                        className="w-full flex items-center justify-center gap-2 bg-white border border-slate-100 text-slate-700 text-xs font-semibold py-2.5 rounded-2xl active:scale-95 transition disabled:opacity-50"
                       >
                         {uploadingLicense === bk.id
-                          ? <span className="w-3.5 h-3.5 rounded-full border-2 border-amber-500 border-t-transparent animate-spin" />
+                          ? <span className="w-3.5 h-3.5 rounded-full border-2 border-slate-300 border-t-transparent animate-spin" />
                           : <Upload className="w-3.5 h-3.5" />}
                         {uploadingLicense === bk.id ? 'Uploading…' : 'Upload Driver\'s License'}
                       </button>
@@ -685,13 +685,11 @@ ${row('Owner ID', bk.owner_gerak_id ?? '—')}
                       <p className="text-xs text-slate-400 font-normal">{bk.owner_gerak_id}</p>
                     </div>
                     {bk.owner_phone && (
-                      <a
-                        href={`https://wa.me/${toWa(bk.owner_phone)}?text=${encodeURIComponent(`Hi, I have a rental booking with you. Booking #${String(bk.booking_no ?? '').padStart(5, '0')}`)}`}
-                        target="_blank" rel="noreferrer"
-                        className="w-8 h-8 flex items-center justify-center bg-emerald-500 text-white rounded-xl active:scale-90 transition shrink-0"
-                      >
-                        <WaIcon className="w-4 h-4" />
-                      </a>
+                      <WaBtn
+                        phone={bk.owner_phone}
+                        message={`Hi, I have a rental booking with you. Booking #${String(bk.booking_no ?? '').padStart(5, '0')}`}
+                        iconClass="w-5 h-5"
+                      />
                     )}
                   </div>
                 </div>
@@ -729,7 +727,7 @@ ${row('Owner ID', bk.owner_gerak_id ?? '—')}
         <div className="px-4 flex flex-col gap-4">
           {loading ? (
             <div className="flex justify-center py-12">
-              <span className="w-6 h-6 rounded-full border-2 border-slate-200 border-t-amber-500 animate-spin" />
+              <span className="w-6 h-6 rounded-full border-2 border-slate-200 border-t-primary animate-spin" />
             </div>
           ) : owners.length === 0 ? (
             <div className="bg-white border border-slate-100 rounded-3xl p-8 text-center flex flex-col items-center gap-3">
@@ -740,15 +738,15 @@ ${row('Owner ID', bk.owner_gerak_id ?? '—')}
             <div key={o.id} onClick={() => { setSelected(o); setView('book'); }}
               className="bg-white border border-slate-100 rounded-3xl p-5 cursor-pointer active:scale-[0.99] transition flex flex-col gap-4">
               <div className="flex items-start justify-between gap-3">
-                <div className="w-12 h-12 rounded-2xl bg-amber-50 flex items-center justify-center shrink-0">
-                  <Car className="w-6 h-6 text-amber-500" />
+                <div className="w-12 h-12 rounded-2xl bg-slate-50 flex items-center justify-center shrink-0">
+                  <Car className="w-6 h-6 text-slate-500" />
                 </div>
                 <div className="flex-1 min-w-0">
                   <h4 className="text-base font-semibold text-slate-800 m-0 truncate">{o.car_type || 'Vehicle'}</h4>
                   <p className="text-xs text-slate-400 font-normal mt-0.5">{o.plate_no} · {o.color}</p>
                 </div>
                 <div className="text-right shrink-0">
-                  <p className="text-lg font-black text-amber-500">RM{o.price_hour.toFixed(2)}</p>
+                  <p className="text-lg font-black text-slate-800">RM{o.price_hour.toFixed(2)}</p>
                   <p className="text-xs text-slate-400 font-normal">per hour</p>
                 </div>
               </div>
@@ -781,7 +779,7 @@ ${row('Owner ID', bk.owner_gerak_id ?? '—')}
 
               <div className="flex items-center justify-between pt-1 border-t border-slate-100">
                 <p className="text-xs text-slate-400 font-normal">ID: {o.gerak_id}</p>
-                <span className="text-xs text-amber-500 font-semibold">Tap to book →</span>
+                <span className="text-xs text-primary font-semibold">Tap to book →</span>
               </div>
             </div>
           ))}
@@ -793,15 +791,15 @@ ${row('Owner ID', bk.owner_gerak_id ?? '—')}
         <div className="px-4 flex flex-col gap-4">
 
           {/* Vehicle summary */}
-          <div className="bg-amber-50 border border-amber-100 rounded-2xl p-5 flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-amber-100 flex items-center justify-center shrink-0">
-              <Car className="w-5 h-5 text-amber-600" />
+          <div className="bg-white border border-slate-100 rounded-2xl p-5 flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-slate-50 flex items-center justify-center shrink-0">
+              <Car className="w-5 h-5 text-slate-500" />
             </div>
             <div className="flex-1 min-w-0">
               <p className="text-xs font-semibold text-slate-800 truncate">{selected.car_type}</p>
               <p className="text-xs text-slate-500 font-normal">{selected.plate_no} · {selected.color} · {selected.seats} seats</p>
             </div>
-            <p className="text-sm font-black text-amber-600 shrink-0">RM{selected.price_hour.toFixed(2)}/h</p>
+            <p className="text-sm font-black text-slate-800 shrink-0">RM{selected.price_hour.toFixed(2)}/h</p>
           </div>
 
           {/* Booking type toggle — Mode Selector Standard */}
@@ -867,7 +865,7 @@ ${row('Owner ID', bk.owner_gerak_id ?? '—')}
                       isInRange   ? 'bg-primary/15 text-primary rounded-sm' :
                       isBlocked   ? 'bg-red-50 text-red-300 cursor-not-allowed rounded-xl' :
                       isPast      ? 'text-slate-200 cursor-not-allowed rounded-xl' :
-                                    'text-slate-700 hover:bg-amber-50 rounded-xl'
+                                    'text-slate-700 hover:bg-slate-100 rounded-xl'
                     }`}>
                     {parseInt(dateStr.split('-')[2])}
                   </button>
@@ -879,7 +877,7 @@ ${row('Owner ID', bk.owner_gerak_id ?? '—')}
               <span className="flex items-center gap-1"><span className="w-3 h-3 rounded bg-red-100 inline-block" /> Blocked</span>
               <span className="flex items-center gap-1"><span className="w-3 h-3 rounded bg-primary inline-block" /> Selected</span>
               {bookingType === 'fullday' && rangeStart && !rangeEnd && (
-                <span className="text-amber-500 font-semibold">Now tap end date</span>
+                <span className="text-primary font-semibold">Now tap end date</span>
               )}
             </div>
           </div>
@@ -907,7 +905,7 @@ ${row('Owner ID', bk.owner_gerak_id ?? '—')}
                         !avail   ? 'bg-slate-100 text-slate-300 cursor-not-allowed' :
                         inSlot   ? 'bg-primary/20 text-primary' :
                         isNight  ? 'bg-indigo-50 text-indigo-600 hover:bg-indigo-100' :
-                                   'bg-slate-50 text-slate-600 hover:bg-amber-50 hover:text-amber-700'
+                                   'bg-slate-50 text-slate-600 hover:bg-slate-100'
                       }`}>
                       {fmt12(h)}
                       {isNight && avail && <span className="absolute top-0.5 right-0.5 w-1.5 h-1.5 bg-indigo-400 rounded-full" />}
@@ -930,7 +928,7 @@ ${row('Owner ID', bk.owner_gerak_id ?? '—')}
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-xs font-semibold text-slate-700 flex items-center gap-1.5">
-                    <Clock className="w-3.5 h-3.5 text-amber-500" /> Duration
+                    <Clock className="w-3.5 h-3.5 text-slate-400" /> Duration
                   </p>
                   <p className="text-xs text-slate-400 font-normal mt-0.5">
                     {fmt12(startHour)} → {fmt12(+(startHour + duration).toFixed(1))}
@@ -961,7 +959,7 @@ ${row('Owner ID', bk.owner_gerak_id ?? '—')}
               {/* Persons */}
               <div className="flex items-center justify-between">
                 <p className="text-xs font-semibold text-slate-700 flex items-center gap-1.5">
-                  <Users className="w-3.5 h-3.5 text-amber-500" /> Persons
+                  <Users className="w-3.5 h-3.5 text-slate-400" /> Persons
                 </p>
                 <div className="flex items-center gap-3">
                   <button onPointerDown={e => { e.preventDefault(); setPersons(p => Math.max(1, p - 1)); }}
@@ -975,7 +973,7 @@ ${row('Owner ID', bk.owner_gerak_id ?? '—')}
               {/* Notes */}
               <textarea value={notes} onChange={e => setNotes(e.target.value)} rows={2}
                 placeholder="Any notes for the owner? (optional)"
-                className="w-full bg-white border border-slate-100 rounded-xl px-3 py-2.5 text-xs text-slate-700 focus:outline-none focus:border-amber-400 transition resize-none" />
+                className="w-full bg-white border border-slate-100 rounded-xl px-3 py-2.5 text-xs text-slate-700 focus:outline-none focus:border-slate-900 transition resize-none" />
 
               {/* Profile auto-fill display — logged in only */}
               {user.isLoggedIn && (
@@ -987,9 +985,9 @@ ${row('Owner ID', bk.owner_gerak_id ?? '—')}
               )}
 
               {/* Total + Book */}
-              <div className="bg-amber-50 border border-amber-100 rounded-2xl p-5 flex items-center justify-between">
+              <div className="bg-white border border-slate-100 rounded-2xl p-5 flex items-center justify-between">
                 <div>
-                  <p className="text-xs text-amber-600 font-normal">Total</p>
+                  <p className="text-xs text-slate-400 font-normal">Total</p>
                   <p className="text-xl font-black text-slate-800">RM{totalPrice.toFixed(2)}</p>
                   <p className="text-xs text-slate-400 font-normal">
                     {fmtDuration(duration)} × RM{selected.price_hour.toFixed(2)}{nightSurcharge > 0 ? ` + RM${nightSurcharge.toFixed(2)} night` : ''}
@@ -997,7 +995,7 @@ ${row('Owner ID', bk.owner_gerak_id ?? '—')}
                 </div>
                 {!user.isLoggedIn ? (
                   <button onClick={() => showAuthGate()}
-                    className="bg-amber-500 hover:bg-amber-600 text-white font-semibold text-xs px-5 py-3 rounded-2xl transition active:scale-95 flex items-center gap-2">
+                    className="bg-primary hover:bg-primary-hover text-white font-semibold text-xs px-5 py-3 rounded-2xl transition-transform active:scale-95 shadow-lg shadow-primary/30 flex items-center gap-2">
                     <CheckCircle2 className="w-4 h-4" /> Book
                   </button>
                 ) : bookingDone ? (
@@ -1006,7 +1004,7 @@ ${row('Owner ID', bk.owner_gerak_id ?? '—')}
                   </span>
                 ) : (
                   <button onClick={handleBook} disabled={!bookReady || bookLoading}
-                    className="bg-amber-500 hover:bg-amber-600 text-white font-semibold text-xs px-5 py-3 rounded-2xl transition active:scale-95 disabled:opacity-40 flex items-center gap-2">
+                    className="bg-primary hover:bg-primary-hover text-white font-semibold text-xs px-5 py-3 rounded-2xl transition-transform active:scale-95 disabled:opacity-40 shadow-lg shadow-primary/30 flex items-center gap-2">
                     {bookLoading
                       ? <span className="w-4 h-4 rounded-full border-2 border-white border-t-transparent animate-spin" />
                       : <><CheckCircle2 className="w-4 h-4" /> Book Now</>}
@@ -1035,7 +1033,7 @@ ${row('Owner ID', bk.owner_gerak_id ?? '—')}
               {/* Persons */}
               <div className="flex items-center justify-between">
                 <p className="text-xs font-semibold text-slate-700 flex items-center gap-1.5">
-                  <Users className="w-3.5 h-3.5 text-amber-500" /> Persons
+                  <Users className="w-3.5 h-3.5 text-slate-400" /> Persons
                 </p>
                 <div className="flex items-center gap-3">
                   <button onPointerDown={e => { e.preventDefault(); setPersons(p => Math.max(1, p - 1)); }}
@@ -1049,7 +1047,7 @@ ${row('Owner ID', bk.owner_gerak_id ?? '—')}
               {/* Notes */}
               <textarea value={notes} onChange={e => setNotes(e.target.value)} rows={2}
                 placeholder="Any notes for the owner? (optional)"
-                className="w-full bg-white border border-slate-100 rounded-xl px-3 py-2.5 text-xs text-slate-700 focus:outline-none focus:border-amber-400 transition resize-none" />
+                className="w-full bg-white border border-slate-100 rounded-xl px-3 py-2.5 text-xs text-slate-700 focus:outline-none focus:border-slate-900 transition resize-none" />
 
               {/* Profile auto-fill display — logged in only */}
               {user.isLoggedIn && (
@@ -1061,9 +1059,9 @@ ${row('Owner ID', bk.owner_gerak_id ?? '—')}
               )}
 
               {/* Total + Book */}
-              <div className="bg-amber-50 border border-amber-100 rounded-2xl p-5 flex items-center justify-between">
+              <div className="bg-white border border-slate-100 rounded-2xl p-5 flex items-center justify-between">
                 <div>
-                  <p className="text-xs text-amber-600 font-normal">Total</p>
+                  <p className="text-xs text-slate-400 font-normal">Total</p>
                   <p className="text-xl font-black text-slate-800">RM{totalPrice.toFixed(2)}</p>
                   <p className="text-xs text-slate-400 font-normal">
                     {numDays}d ×{selected.operating_end - selected.operating_start}h × RM{selected.price_hour.toFixed(2)}
@@ -1071,7 +1069,7 @@ ${row('Owner ID', bk.owner_gerak_id ?? '—')}
                 </div>
                 {!user.isLoggedIn ? (
                   <button onClick={() => showAuthGate()}
-                    className="bg-amber-500 hover:bg-amber-600 text-white font-semibold text-xs px-5 py-3 rounded-2xl transition active:scale-95 flex items-center gap-2">
+                    className="bg-primary hover:bg-primary-hover text-white font-semibold text-xs px-5 py-3 rounded-2xl transition-transform active:scale-95 shadow-lg shadow-primary/30 flex items-center gap-2">
                     <CheckCircle2 className="w-4 h-4" /> Book
                   </button>
                 ) : bookingDone ? (
@@ -1080,7 +1078,7 @@ ${row('Owner ID', bk.owner_gerak_id ?? '—')}
                   </span>
                 ) : (
                   <button onClick={handleBook} disabled={!bookReady || bookLoading}
-                    className="bg-amber-500 hover:bg-amber-600 text-white font-semibold text-xs px-5 py-3 rounded-2xl transition active:scale-95 disabled:opacity-40 flex items-center gap-2">
+                    className="bg-primary hover:bg-primary-hover text-white font-semibold text-xs px-5 py-3 rounded-2xl transition-transform active:scale-95 disabled:opacity-40 shadow-lg shadow-primary/30 flex items-center gap-2">
                     {bookLoading
                       ? <span className="w-4 h-4 rounded-full border-2 border-white border-t-transparent animate-spin" />
                       : <><CheckCircle2 className="w-4 h-4" /> Book Now</>}
@@ -1103,11 +1101,7 @@ ${row('Owner ID', bk.owner_gerak_id ?? '—')}
                 </div>
               </div>
               {selected.phone && (
-                <a href={`https://wa.me/${toWa(selected.phone)}`}
-                  target="_blank" rel="noreferrer"
-                  className="flex items-center gap-1.5 bg-emerald-500 text-white text-xs font-semibold px-3 py-2 rounded-xl transition active:scale-95 shrink-0">
-                  <WaIcon className="w-3 h-3" /> WhatsApp
-                </a>
+                <WaBtn phone={selected.phone} iconClass="w-5 h-5" />
               )}
             </div>
           )}
