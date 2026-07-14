@@ -11,7 +11,8 @@ import {
   DollarSign, Moon, FileText, ExternalLink, FileDown,
 } from 'lucide-react';
 import { WaIcon, toWa } from '../lib/whatsapp';
-import { OrderReceiptSheet } from '../components/OrderReceiptSheet';
+import { ReceiptSheet } from '../components/Receipt';
+import { buildTransportReceiptRows } from '../lib/receiptRows';
 import { FareModal } from '../components/FareModal';
 import { MonthDrumPicker, EarningsCard, computeEarnings } from '../components/EarningsCard';
 import { fmt12, fmtDuration, todayStr } from '../lib/format';
@@ -708,10 +709,11 @@ export const DriverHome: React.FC = () => {
   return (
   <>
     {sheetOrder && (
-      <OrderReceiptSheet
-        order={sheetOrder}
+      <ReceiptSheet
+        doc={buildTransportReceiptRows(sheetOrder, {
+          showContactWhatsApp: sheetOrder.status === 'completed' || sheetOrder.status === 'cancelled',
+        })}
         onClose={() => setSheetOrder(null)}
-        showWhatsApp={sheetOrder.status === 'completed' || sheetOrder.status === 'cancelled'}
       />
     )}
     {fareModalOrder && (

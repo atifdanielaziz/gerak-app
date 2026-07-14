@@ -16,6 +16,7 @@ export type ActivePage =
   | 'rider-home'
   | 'admin-home'
   | 'my-orders'
+  | 'activity'
   | 'gerak-rental'
   | 'academic-calendar'
   | 'forgot-password'
@@ -171,7 +172,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [activeRole, setActiveRole] = useState<'admin' | 'driver' | 'rider' | null>(null);
 
   const HISTORY_EXCLUDED: ActivePage[] = ['splash'];
-  const HOME_PAGES: ActivePage[] = ['dashboard', 'driver-home', 'rider-home', 'admin-home', 'login', 'profile', 'academic-calendar'];
+  const HOME_PAGES: ActivePage[] = ['dashboard', 'driver-home', 'rider-home', 'admin-home', 'login', 'profile', 'academic-calendar', 'activity'];
 
   const setCurrentPage = (page: ActivePage) => {
     if (HOME_PAGES.includes(page)) {

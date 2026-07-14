@@ -17,6 +17,7 @@ const DriverHome       = lazy(() => import('./pages/DriverHome').then(m => ({ de
 const RiderHome        = lazy(() => import('./pages/RiderHome').then(m => ({ default: m.RiderHome })));
 const AdminHome        = lazy(() => import('./pages/AdminHome').then(m => ({ default: m.AdminHome })));
 const MyOrders         = lazy(() => import('./pages/MyOrders').then(m => ({ default: m.MyOrders })));
+const Activity         = lazy(() => import('./pages/Activity').then(m => ({ default: m.Activity })));
 const GerakRental      = lazy(() => import('./pages/GerakRental').then(m => ({ default: m.GerakRental })));
 const AcademicCalendar = lazy(() => import('./pages/AcademicCalendar').then(m => ({ default: m.AcademicCalendar })));
 const ForgotPassword   = lazy(() => import('./pages/ForgotPassword').then(m => ({ default: m.ForgotPassword })));
@@ -303,6 +304,8 @@ const AppContent: React.FC = () => {
         return (user.role === 'admin' || user.role === 'superadmin') ? <AdminHome /> : <Dashboard />;
       case 'my-orders':
         return <MyOrders />;
+      case 'activity':
+        return <Activity />;
       case 'gerak-rental':
         return <GerakRental />;
       case 'academic-calendar':

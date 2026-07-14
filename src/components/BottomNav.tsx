@@ -1,7 +1,7 @@
 ﻿import React, { useState } from 'react';
 import { useApp } from '../context/AppContext';
 import type { ActivePage } from '../context/AppContext';
-import { Home, UserCircle, Briefcase, LayoutDashboard, CalendarDays } from 'lucide-react';
+import { Home, UserCircle, Briefcase, LayoutDashboard, CalendarDays, Activity } from 'lucide-react';
 
 type Bubble = { id: number; x: number; y: number; btnId: string };
 
@@ -47,6 +47,7 @@ export const BottomNav: React.FC = () => {
   const customerItems = [
     { id: 'dashboard'         as ActivePage, label: 'Home',      icon: Home,            badge: false },
     { id: 'academic-calendar' as ActivePage, label: 'Calendar',  icon: CalendarDays,    badge: false },
+    { id: 'activity'          as ActivePage, label: 'Activity',  icon: Activity,        badge: false },
     { id: 'profile'           as ActivePage, label: 'Profile',   icon: UserCircle,      badge: false },
   ];
 
