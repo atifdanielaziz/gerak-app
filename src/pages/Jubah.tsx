@@ -154,6 +154,13 @@ export const Jubah: React.FC = () => {
   };
   const closeAddressSheet = () => { setShowAddressSheet(false); setSheetOpen(false); };
 
+  // Tracks genuine user input, separate from values that just happen to be
+  // non-empty because they were auto-filled (profile) or restored (draft).
+  // A profile pre-fill alone must NOT trigger the leave-confirm prompt —
+  // only actual typing, uploads, or a restored draft (the user's own prior
+  // work for this booking) count as something worth confirming before losing.
+  const [hasUserEdited, setHasUserEdited] = useState(false);
+
   // Silently restore a saved draft on mount — same behaviour as returning
   // to an unsubmitted Google Form: no extra prompt, fields just reappear.
   const draftRestoredRef = useRef(false);
@@ -161,6 +168,7 @@ export const Jubah: React.FC = () => {
     const d = loadFormDraft();
     if (!d) return;
     draftRestoredRef.current = true;
+    setHasUserEdited(true); // a restored draft IS the user's own unsaved work
     setFullName(d.fullName ?? '');
     setIcNumber(d.icNumber ?? '');
     setHpNumber(d.hpNumber ?? '');
@@ -196,10 +204,7 @@ export const Jubah: React.FC = () => {
   }, [user.isLoggedIn, user.name, user.icNumber, user.phone, user.matricNo]);
 
   const [showLeaveConfirm, setShowLeaveConfirm] = useState(false);
-  const hasUnsavedInput = !!(
-    fullName.trim() || icNumber.trim() || hpNumber.trim() || matricId.trim() ||
-    Object.values(docFiles).some(f => !!f) || paymentProof
-  );
+  const hasUnsavedInput = hasUserEdited || Object.values(docFiles).some(f => !!f) || !!paymentProof;
 
   // Registers with AppContext's goBack() so leaving mid-form (back button
   // or hardware/gesture back) prompts instead of silently losing input.
@@ -676,7 +681,7 @@ ${riderBlock}
               <input
                 type="text"
                 value={fullName}
-                onChange={e => setFullName(e.target.value.toUpperCase())}
+                onChange={e => { setFullName(e.target.value.toUpperCase()); setHasUserEdited(true); }}
                 placeholder="FULL NAME AS PER IC"
                 required
                 className="bg-white border border-slate-100 rounded-xl py-2.5 px-3 text-xs font-semibold text-slate-700 focus:outline-none focus:border-blue-500 transition placeholder:font-normal placeholder:text-slate-300"
@@ -693,7 +698,7 @@ ${riderBlock}
                 type="text"
                 inputMode="numeric"
                 value={icNumber}
-                onChange={e => setIcNumber(formatIc(e.target.value))}
+                onChange={e => { setIcNumber(formatIc(e.target.value)); setHasUserEdited(true); }}
                 placeholder="980123-45-6789"
                 maxLength={14}
                 required
@@ -711,7 +716,7 @@ ${riderBlock}
                 type="text"
                 inputMode="numeric"
                 value={hpNumber}
-                onChange={e => setHpNumber(formatPhone(e.target.value))}
+                onChange={e => { setHpNumber(formatPhone(e.target.value)); setHasUserEdited(true); }}
                 placeholder="012-34567890"
                 maxLength={12}
                 required
@@ -728,7 +733,7 @@ ${riderBlock}
               <input
                 type="text"
                 value={matricId}
-                onChange={e => setMatricId(e.target.value.toUpperCase())}
+                onChange={e => { setMatricId(e.target.value.toUpperCase()); setHasUserEdited(true); }}
                 placeholder="HB19021"
                 required
                 className="bg-white border border-slate-100 rounded-xl py-2.5 px-3 text-xs font-semibold text-slate-700 focus:outline-none focus:border-blue-500 transition placeholder:font-normal placeholder:text-slate-300"
