@@ -75,6 +75,7 @@ input, textarea, [contenteditable] {
   flex-direction: column;
   overflow-x: hidden;
   touch-action: pan-y;
+  background-color: #FFFFFF;
 }
 
 /* Remove 300 ms click delay on all interactive elements */

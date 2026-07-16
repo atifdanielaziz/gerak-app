@@ -54,8 +54,10 @@ export const GerakTransporter: React.FC = () => {
 
         {/* Page header */}
         <div className="mt-4">
-          <h2 className="text-xl font-bold text-slate-800 m-0">Gerak Transporter</h2>
-          <p className="text-xs text-slate-400 font-normal mt-1">Penghantaran Motosikal & Pindah Barang</p>
+          <h2 className="text-xl font-semibold text-slate-800 m-0 flex items-center gap-2">
+            <Truck className="w-5 h-5 text-slate-400" /> Gerak Transporter
+          </h2>
+          <p className="text-xs text-slate-400 font-normal mt-0.5">Penghantaran Motosikal & Pindah Barang</p>
         </div>
 
         {/* Mode Selector Standard */}

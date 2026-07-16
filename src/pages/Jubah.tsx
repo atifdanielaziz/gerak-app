@@ -569,8 +569,10 @@ export const Jubah: React.FC = () => {
 
       {/* HEADER */}
       <div className="mt-4 px-1">
-        <h2 className="text-xl font-black m-0 text-slate-800">Convocation Robe Service</h2>
-        <p className="text-xs text-slate-400 font-semibold mt-1">
+        <h2 className="text-xl font-semibold m-0 text-slate-800 flex items-center gap-2">
+          <GraduationCap className="w-5 h-5 text-slate-400" /> Jubah Delivery
+        </h2>
+        <p className="text-xs text-slate-400 font-normal mt-0.5">
           {UNIVERSITY_LABELS[landingUniversity]} · Official Robe Bookings
         </p>
         {!jubahBooking && (

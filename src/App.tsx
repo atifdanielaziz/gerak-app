@@ -241,6 +241,9 @@ const SwipeBackGesture: React.FC<{ children: React.ReactNode }> = ({ children })
           transition: gestureOn ? 'none' : 'transform 0.28s cubic-bezier(0.25,0.46,0.45,0.94)',
           position: 'relative', zIndex: 9991,
           width: '100%', flex: 1,
+          backgroundColor: '#ffffff',
+          backfaceVisibility: 'hidden',
+          WebkitBackfaceVisibility: 'hidden',
         }}
       >
         {children}
@@ -327,8 +330,8 @@ const AppContent: React.FC = () => {
     <div className="mobile-container flex flex-col h-full bg-white select-none overscroll-x-none">
       <ConfirmModal />
       <Header />
-      <div key={currentPage} className="flex-1 flex flex-col overflow-hidden page-transition">
-        <Suspense fallback={<div className="flex-1 flex items-center justify-center"><span className="w-6 h-6 rounded-full border-2 border-primary border-t-transparent animate-spin" /></div>}>
+      <div key={currentPage} className="flex-1 flex flex-col overflow-hidden page-transition bg-white">
+        <Suspense fallback={<div className="flex-1 flex items-center justify-center bg-white"><span className="w-6 h-6 rounded-full border-2 border-primary border-t-transparent animate-spin" /></div>}>
           {renderPage()}
         </Suspense>
       </div>

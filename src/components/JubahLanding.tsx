@@ -1,7 +1,7 @@
 ﻿import React, { useState, useEffect, useRef } from 'react';
 import { supabase } from '../lib/supabase';
 import { useApp } from '../context/AppContext';
-import { ChevronRight, Image as ImageIcon, Users, PackageSearch } from 'lucide-react';
+import { ChevronRight, Image as ImageIcon, Users, PackageSearch, GraduationCap } from 'lucide-react';
 import { WaIcon } from '../lib/whatsapp';
 import { RepresentativeSheet } from './RepresentativeSheet';
 
@@ -107,8 +107,10 @@ export const JubahLanding: React.FC<Props> = ({ onProceed }) => {
 
       {/* Header */}
       <div className="mt-4 px-1">
-        <h2 className="text-xl font-bold m-0 text-slate-800">Jubah Delivery</h2>
-        <p className="text-xs text-slate-400 font-normal mt-1">
+        <h2 className="text-xl font-semibold m-0 text-slate-800 flex items-center gap-2">
+          <GraduationCap className="w-5 h-5 text-slate-400" /> Jubah Delivery
+        </h2>
+        <p className="text-xs text-slate-400 font-normal mt-0.5">
           Select your university to continue
         </p>
       </div>

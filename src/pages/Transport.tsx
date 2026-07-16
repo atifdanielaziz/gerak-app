@@ -5,7 +5,7 @@ interface PinLocation { address: string; coords: [number, number]; }
 
 const MapboxRideMap = lazy(() => import('../components/MapboxRideMap').then(m => ({ default: m.MapboxRideMap })));
 import {
-  Map, List, ChevronDown, PencilLine,
+  Map, List, ChevronDown, PencilLine, Car,
   Info, CheckCircle2, RotateCcw, Users, Clock, CalendarDays, Phone, ClipboardList, X,
 } from 'lucide-react';
 import { submitRideToSheets } from '../lib/sheetsService';
@@ -407,6 +407,20 @@ export const Transport: React.FC = () => {
 
   return (
     <div className="flex-grow bg-white overflow-y-auto no-scrollbar pb-4 animate-fade-in">
+
+      {/* Header */}
+      <div className="px-4 pt-5 pb-1 flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <div>
+            <h2 className="text-xl font-semibold text-slate-800 m-0 flex items-center gap-2">
+              <Car className="w-5 h-5 text-slate-400" /> Gerak Car
+            </h2>
+            <p className="text-xs text-slate-400 font-normal mt-0.5">
+              Point-to-point campus travel
+            </p>
+          </div>
+        </div>
+      </div>
 
       {/* Campus toggle — logged-in only */}
       <div className="px-4 pt-4 flex flex-col gap-2">
