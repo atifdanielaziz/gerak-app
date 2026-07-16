@@ -1,6 +1,7 @@
 ﻿import React, { useState } from 'react';
 import { useApp } from '../context/AppContext';
-import { Bell, ChevronLeft, ShieldCheck, Car, Bike, MoreHorizontal, Eye, ChevronDown, X, MapPin, User } from 'lucide-react';
+import { Bell, ChevronLeft, ShieldCheck, Car, Bike, MoreHorizontal, Eye, ChevronDown, X, MapPin, User, Pencil } from 'lucide-react';
+import { WaBtn } from '../lib/whatsapp';
 
 const UNI_CAMPUSES: Record<string, string[]> = {
   'UMPSA': ['Pekan', 'Gambang'],
@@ -456,28 +457,43 @@ export const Header: React.FC = () => {
         </div>
       )}
 
-      {/* Profile preview — big picture + short name */}
+      {/* Profile preview — bare circle, no card; edit shortcut for everyone, plus contact info for staff roles */}
       {showProfilePreview && (
         <div
           className="fixed inset-0 z-[9999] flex items-center justify-center px-6"
           style={{ background: 'rgba(0,0,0,0.25)', backdropFilter: 'blur(24px)', WebkitBackdropFilter: 'blur(24px)' }}
           onClick={() => setShowProfilePreview(false)}
         >
-          <div
-            className="w-full max-w-[280px] bg-white rounded-3xl p-6 flex flex-col items-center gap-3 relative"
-            onClick={e => e.stopPropagation()}
-          >
+          <div className="relative flex flex-col items-center gap-3" onClick={e => e.stopPropagation()}>
             <button
               onPointerDown={(e) => { e.preventDefault(); setShowProfilePreview(false); }}
-              className="absolute top-3 right-3 w-8 h-8 flex items-center justify-center rounded-xl bg-slate-100 text-slate-500 active:scale-90 transition-transform"
+              className="absolute -top-2 -right-2 z-10 w-8 h-8 flex items-center justify-center rounded-xl bg-white text-slate-500 shadow-md active:scale-90 transition-transform"
               aria-label="Close"
             >
               <X className="w-4 h-4" />
             </button>
-            <Avatar url={user.avatarUrl} name={user.name} size={128} />
-            <h2 className="text-base font-semibold text-slate-800 text-center m-0 mt-1">
+
+            <div className="relative w-44 h-44 shrink-0">
+              <Avatar url={user.avatarUrl} name={user.name} size={176} />
+              <button
+                onPointerDown={(e) => { e.preventDefault(); setShowProfilePreview(false); setCurrentPage('profile'); }}
+                className="absolute bottom-0 right-0 w-10 h-10 rounded-full bg-primary text-white flex items-center justify-center active:scale-90 transition-transform shadow-md shadow-primary/30"
+                aria-label="Edit profile"
+              >
+                <Pencil className="w-4 h-4" />
+              </button>
+            </div>
+
+            <h2 className="text-lg font-semibold text-slate-800 text-center m-0">
               {toTitleCase(user.name).split(' ')[0]}
             </h2>
+
+            {user.role !== 'customer' && user.phone && (
+              <div className="flex items-center gap-2 -mt-1.5">
+                <span className="text-sm font-normal text-slate-500">{user.phone}</span>
+                <WaBtn phone={user.phone} iconClass="w-5 h-5" />
+              </div>
+            )}
           </div>
         </div>
       )}
