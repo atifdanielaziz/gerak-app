@@ -136,6 +136,7 @@ interface AppContextType {
   receiptGateActive: boolean;
   isSheetOpen: boolean;
   setSheetOpen: (open: boolean) => void;
+  profileEditIntentRef: { current: boolean };
   confirmModal: ConfirmModalOptions | null;
   showConfirmModal: (opts: ConfirmModalOptions) => void;
   hideConfirmModal: () => void;
@@ -224,6 +225,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   // while true, sidestepping any device-specific stacking-context quirks
   // where a fixed-position sheet might not reliably paint above it.
   const [isSheetOpen, setSheetOpen] = useState(false);
+
+  // One-shot "open straight into the edit sub-page" signal for Profile.tsx,
+  // set by Header.tsx right before navigating there. A ref (not state) since
+  // it only needs to be read once during Profile's initial mount, never to
+  // trigger a re-render itself.
+  const profileEditIntentRef = useRef(false);
+
   const [confirmModal, setConfirmModal] = useState<ConfirmModalOptions | null>(null);
   const showConfirmModal = (opts: ConfirmModalOptions) => setConfirmModal(opts);
   const hideConfirmModal = () => setConfirmModal(null);
@@ -832,6 +840,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         receiptGateActive,
         isSheetOpen,
         setSheetOpen,
+        profileEditIntentRef,
         confirmModal,
         showConfirmModal,
         hideConfirmModal,

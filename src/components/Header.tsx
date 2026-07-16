@@ -37,7 +37,7 @@ export const Header: React.FC = () => {
     currentPage, setCurrentPage, goBack, canGoBack, notifications, user,
     activeRole, isPreviewMode,
     switchToAdminMode, switchToDriverMode, switchToRiderMode, enterPreviewMode,
-    showAuthGate, guestCampus, setGuestCampus, updateProfile,
+    showAuthGate, guestCampus, setGuestCampus, updateProfile, profileEditIntentRef,
   } = useApp();
 
   const [showRoleMenu, setShowRoleMenu] = useState(false);
@@ -476,7 +476,7 @@ export const Header: React.FC = () => {
             <div className="relative w-44 h-44 shrink-0">
               <Avatar url={user.avatarUrl} name={user.name} size={176} />
               <button
-                onPointerDown={(e) => { e.preventDefault(); setShowProfilePreview(false); setCurrentPage('profile'); }}
+                onPointerDown={(e) => { e.preventDefault(); setShowProfilePreview(false); profileEditIntentRef.current = true; setCurrentPage('profile'); }}
                 className="absolute bottom-0 right-0 w-10 h-10 rounded-full bg-primary text-white flex items-center justify-center active:scale-90 transition-transform shadow-md shadow-primary/30"
                 aria-label="Edit profile"
               >

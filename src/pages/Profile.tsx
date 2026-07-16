@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useApp } from '../context/AppContext';
 import { supabase } from '../lib/supabase';
 import {
@@ -22,7 +22,7 @@ export const driverIsActive = (
   ));
 
 export const Profile: React.FC = () => {
-  const { user, logout, updateProfile, refreshUserData, receiptGateActive, showConfirmModal, setCurrentPage, isPreviewMode } = useApp();
+  const { user, logout, updateProfile, refreshUserData, receiptGateActive, showConfirmModal, setCurrentPage, isPreviewMode, profileEditIntentRef } = useApp();
 
   const isDriver = user.role === 'driver' || user.role === 'rider';
   const isActive = driverIsActive(user, receiptGateActive);
@@ -96,6 +96,16 @@ export const Profile: React.FC = () => {
     setFieldErrors({});
     setProfileView('edit');
   };
+
+  // Header's edit-pencil sets this ref right before navigating here — land
+  // straight in the edit sub-page instead of the hub, then clear the flag.
+  useEffect(() => {
+    if (profileEditIntentRef.current) {
+      profileEditIntentRef.current = false;
+      initSubPage();
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const autoSave = async (field: string) => {
     let updates: Parameters<typeof updateProfile>[0] = {};
