@@ -131,7 +131,7 @@ interface AppContextType {
   login: (email: string, password: string) => Promise<{ error: string | null }>;
   register: (name: string, matricNo: string, email: string, password: string, phone: string, university: string, campus: string) => Promise<{ error: string | null }>;
   logout: () => void;
-  updateProfile: (updates: { name?: string; matricNo?: string; email?: string; phone?: string; vehicle?: string; plateNumber?: string; icNumber?: string; feeReceiptUrl?: string; avatarUrl?: string }) => Promise<{ error: string | null }>;
+  updateProfile: (updates: { name?: string; matricNo?: string; email?: string; phone?: string; vehicle?: string; plateNumber?: string; icNumber?: string; feeReceiptUrl?: string; avatarUrl?: string; campus?: string }) => Promise<{ error: string | null }>;
   refreshUserData: () => Promise<void>;
   receiptGateActive: boolean;
   isSheetOpen: boolean;
@@ -511,7 +511,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   };
 
-  const updateProfile = async (updates: { name?: string; matricNo?: string; email?: string; phone?: string; vehicle?: string; plateNumber?: string; icNumber?: string; feeReceiptUrl?: string; avatarUrl?: string }): Promise<{ error: string | null }> => {
+  const updateProfile = async (updates: { name?: string; matricNo?: string; email?: string; phone?: string; vehicle?: string; plateNumber?: string; icNumber?: string; feeReceiptUrl?: string; avatarUrl?: string; campus?: string }): Promise<{ error: string | null }> => {
     let { data: { user: authUser } } = await supabase.auth.getUser();
     if (!authUser) {
       const { data: refreshed } = await supabase.auth.refreshSession();
@@ -528,6 +528,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     if (updates.icNumber       !== undefined) row.ic_number       = updates.icNumber;
     if (updates.avatarUrl      !== undefined) row.avatar_url      = updates.avatarUrl;
     if (updates.feeReceiptUrl  !== undefined) row.fee_receipt_url = updates.feeReceiptUrl;
+    if (updates.campus         !== undefined) row.campus          = updates.campus;
     const { error } = await supabase.from('profiles').update(row).eq('id', authUser.id);
     if (error) return { error: error.message };
     setUser(prev => ({ ...prev, ...updates }));

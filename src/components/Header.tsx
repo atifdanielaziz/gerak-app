@@ -1,24 +1,50 @@
 ﻿import React, { useState } from 'react';
 import { useApp } from '../context/AppContext';
-import { Bell, ChevronLeft, ShieldCheck, Car, Bike, MoreHorizontal, Eye, ChevronDown, X, MapPin, LogIn } from 'lucide-react';
+import { Bell, ChevronLeft, ShieldCheck, Car, Bike, MoreHorizontal, Eye, ChevronDown, X, MapPin, User } from 'lucide-react';
 
 const UNI_CAMPUSES: Record<string, string[]> = {
   'UMPSA': ['Pekan', 'Gambang'],
 };
 const UNIVERSITIES = Object.keys(UNI_CAMPUSES);
 
+const toTitleCase = (str: string) =>
+  str.toLowerCase().replace(/\b\w/g, c => c.toUpperCase());
+
+const Avatar: React.FC<{ url?: string; name?: string; size: number; guest?: boolean }> = ({ url, name, size, guest }) => {
+  const dim = { width: `${size}px`, height: `${size}px` };
+  if (guest) {
+    return (
+      <div className="rounded-full bg-slate-100 flex items-center justify-center shrink-0" style={dim}>
+        <User className="text-slate-400" style={{ width: size * 0.55, height: size * 0.55 }} />
+      </div>
+    );
+  }
+  if (url) {
+    return <img src={url} alt="" className="rounded-full object-cover shrink-0" style={dim} />;
+  }
+  return (
+    <div className="rounded-full bg-slate-900 flex items-center justify-center shrink-0" style={dim}>
+      <span style={{ fontFamily: 'Inter, sans-serif', fontWeight: 900, color: '#FFFFFF', fontSize: size * 0.45 }}>
+        {(name?.[0] || 'U').toUpperCase()}
+      </span>
+    </div>
+  );
+};
+
 export const Header: React.FC = () => {
   const {
     currentPage, setCurrentPage, goBack, canGoBack, notifications, user,
     activeRole, isPreviewMode,
     switchToAdminMode, switchToDriverMode, switchToRiderMode, enterPreviewMode,
-    showAuthGate, guestCampus, setGuestCampus,
+    showAuthGate, guestCampus, setGuestCampus, updateProfile,
   } = useApp();
 
   const [showRoleMenu, setShowRoleMenu] = useState(false);
   const [showCampusSheet, setShowCampusSheet] = useState(false);
   const [sheetStep, setSheetStep] = useState<'university' | 'campus'>('university');
   const [tempUni, setTempUni] = useState('');
+  const [showProfilePreview, setShowProfilePreview] = useState(false);
+  const [showMyCampusSheet, setShowMyCampusSheet] = useState(false);
   const unreadCount = notifications.filter(n => !n.isRead).length;
 
   if (currentPage === 'splash' || currentPage === 'login' || currentPage === 'register' || currentPage === 'forgot-password' || currentPage === 'reset-password' || currentPage === 'profile') {
@@ -43,10 +69,10 @@ export const Header: React.FC = () => {
             </button>
           )}
           <button
-            onClick={() => setCurrentPage('login')}
-            className="flex items-center gap-1.5 active:opacity-70 transition active:scale-95"
+            onPointerDown={(e) => { e.preventDefault(); showAuthGate(); }}
+            className="flex items-center gap-2 active:opacity-70 transition-transform active:scale-95"
           >
-            <LogIn className="w-4 h-4 text-slate-600 shrink-0" />
+            <Avatar guest size={32} />
             <span className="text-sm font-semibold text-slate-800">Sign in</span>
           </button>
         </div>
@@ -235,7 +261,7 @@ export const Header: React.FC = () => {
         className="sticky top-0 z-40 bg-white px-4 py-3 flex items-center justify-between"
         style={{ paddingTop: 'calc(1rem + env(safe-area-inset-top))' }}
       >
-        {/* Left: Back button + Campus name (read-only) */}
+        {/* Left: Back button + Profile circle */}
         <div className="flex items-center gap-1">
           {canGoBack && (
             <button
@@ -246,16 +272,33 @@ export const Header: React.FC = () => {
               <ChevronLeft className="w-5 h-5" />
             </button>
           )}
-          <div className="flex items-center gap-1.5">
-            <MapPin className="w-4 h-4 text-slate-500 shrink-0" />
-            <span className="text-sm font-semibold text-slate-800 max-w-[200px] truncate">
-              {user.campus ? `${user.university} ${user.campus}`.trim() : 'Campus'}
+          <button
+            onPointerDown={(e) => { e.preventDefault(); setShowProfilePreview(true); }}
+            className="flex items-center gap-2 active:opacity-70 transition-transform active:scale-95"
+          >
+            <Avatar url={user.avatarUrl} name={user.name} size={32} />
+            <span className="text-sm font-semibold text-slate-800 max-w-[140px] truncate">
+              Hi, {toTitleCase(user.name).split(' ')[0]}
             </span>
-          </div>
+          </button>
         </div>
 
-        {/* Right: role switcher + bell */}
+        {/* Right: campus selector (customer only) + role switcher + bell */}
         <div className="flex items-center gap-2">
+
+          {/* Customer campus selector */}
+          {user.role === 'customer' && (
+            <button
+              onPointerDown={(e) => { e.preventDefault(); setShowMyCampusSheet(true); }}
+              className="flex items-center gap-1 active:opacity-70 transition-transform active:scale-95"
+            >
+              <MapPin className="w-4 h-4 text-slate-500 shrink-0" />
+              <span className="text-sm font-semibold text-slate-800 max-w-[90px] truncate">
+                {user.campus || 'Campus'}
+              </span>
+              <ChevronDown className="w-4 h-4 text-slate-400 shrink-0" />
+            </button>
+          )}
 
           {/* Superadmin — 3-dot dropdown, red when not in admin role */}
           {user.role === 'superadmin' && (
@@ -362,6 +405,82 @@ export const Header: React.FC = () => {
           </button>
         </div>
       </header>
+
+      {/* My campus sheet — customer campus switcher */}
+      {showMyCampusSheet && (
+        <div
+          className="fixed inset-0 z-[9998] bg-black/30 flex items-end"
+          style={{ backdropFilter: 'blur(4px)', WebkitBackdropFilter: 'blur(4px)' }}
+          onClick={() => setShowMyCampusSheet(false)}
+        >
+          <div
+            className="w-full bg-white rounded-t-3xl shadow-2xl max-h-[70dvh] flex flex-col animate-slide-up"
+            style={{ paddingBottom: 'calc(1.5rem + env(safe-area-inset-bottom))' }}
+            onClick={e => e.stopPropagation()}
+          >
+            <div className="w-10 h-1 bg-slate-200 rounded-full mx-auto mt-3 mb-1 shrink-0" />
+            <div className="flex items-center justify-between px-5 py-3 border-b border-slate-100 shrink-0">
+              <div className="w-8" />
+              <span className="text-sm font-bold text-slate-800">Select Campus</span>
+              <button
+                onPointerDown={(e) => { e.preventDefault(); setShowMyCampusSheet(false); }}
+                className="w-8 h-8 flex items-center justify-center rounded-xl bg-slate-100 text-slate-500 active:scale-90 transition-transform"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            <div className="flex-1 overflow-y-auto no-scrollbar px-4 pt-3 pb-2 flex flex-col gap-2">
+              {(UNI_CAMPUSES[user.university] ?? UNI_CAMPUSES.UMPSA).map(campus => {
+                const selected = user.campus === campus;
+                return (
+                  <button
+                    key={campus}
+                    onPointerDown={(e) => { e.preventDefault(); updateProfile({ campus }); setShowMyCampusSheet(false); }}
+                    className={`w-full flex items-center justify-between px-4 py-4 border rounded-2xl bg-white active:bg-slate-50 active:scale-[0.99] transition-transform ${
+                      selected ? 'border-slate-900' : 'border-slate-100'
+                    }`}
+                  >
+                    <span className={`text-sm font-semibold ${selected ? 'text-slate-900' : 'text-slate-800'}`}>
+                      {user.university} {campus}
+                    </span>
+                    <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 ${
+                      selected ? 'border-slate-900 bg-slate-900' : 'border-slate-300'
+                    }`}>
+                      {selected && <div className="w-2 h-2 rounded-full bg-white" />}
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Profile preview — big picture + short name */}
+      {showProfilePreview && (
+        <div
+          className="fixed inset-0 z-[9999] flex items-center justify-center px-6"
+          style={{ background: 'rgba(0,0,0,0.25)', backdropFilter: 'blur(24px)', WebkitBackdropFilter: 'blur(24px)' }}
+          onClick={() => setShowProfilePreview(false)}
+        >
+          <div
+            className="w-full max-w-[280px] bg-white rounded-3xl p-6 flex flex-col items-center gap-3 relative"
+            onClick={e => e.stopPropagation()}
+          >
+            <button
+              onPointerDown={(e) => { e.preventDefault(); setShowProfilePreview(false); }}
+              className="absolute top-3 right-3 w-8 h-8 flex items-center justify-center rounded-xl bg-slate-100 text-slate-500 active:scale-90 transition-transform"
+              aria-label="Close"
+            >
+              <X className="w-4 h-4" />
+            </button>
+            <Avatar url={user.avatarUrl} name={user.name} size={128} />
+            <h2 className="text-base font-semibold text-slate-800 text-center m-0 mt-1">
+              {toTitleCase(user.name).split(' ')[0]}
+            </h2>
+          </div>
+        </div>
+      )}
     </>
   );
 };
