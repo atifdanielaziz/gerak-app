@@ -3,16 +3,22 @@ import type { ReceiptDoc, ReceiptRow } from './receiptRows';
 const printDate = () =>
   new Date().toLocaleDateString('en-MY', { day: '2-digit', month: 'short', year: 'numeric' });
 
-const row = (label: string, value: string) =>
-  `<div class="row"><span class="lbl">${label} :</span> <span class="val">${value}</span></div>`;
+const row = (label: string, value: string, cls = '') =>
+  `<div class="row${cls}"><span class="lbl">${label}</span><span class="colon">:</span><span class="val">${value}</span></div>`;
 
 export function generateReceiptPdf(doc: ReceiptDoc, extraRows: ReceiptRow[] = []) {
   const allRows = [...doc.rows, ...extraRows];
 
+  // Colons line up in one column, based on the longest label in this receipt
+  // (including the fixed Booking Ref / Status rows above the divider).
+  const maxLabelLen = Math.max(
+    'Booking Ref'.length,
+    'Status'.length,
+    ...allRows.map(r => r.label.length),
+  );
+
   const rowsHtml = allRows
-    .map(r => (r.dividerBefore ? '<hr/>' : '') + (r.emphasis === 'total'
-      ? `<div class="row total"><span class="lbl">${r.label} :</span> <span class="val">${r.value}</span></div>`
-      : row(r.label, r.value)))
+    .map(r => (r.dividerBefore ? '<hr/>' : '') + row(r.label, r.value, r.emphasis === 'total' ? ' total' : ''))
     .join('');
 
   const html = `<!DOCTYPE html><html><head><meta charset="utf-8"/>
@@ -21,8 +27,10 @@ export function generateReceiptPdf(doc: ReceiptDoc, extraRows: ReceiptRow[] = []
 body{font-family:monospace;font-size:13px;color:#1e293b;max-width:400px;margin:40px auto;padding:0 20px}
 h1{font-size:20px;font-weight:300;margin:0 0 2px}h1 span{color:#ef4444}
 .sub{font-size:11px;color:#94a3b8;margin-bottom:24px}
-.row{margin-bottom:6px}
-.lbl{color:#94a3b8}.val{font-weight:700}
+.row{display:flex;align-items:flex-start;margin-bottom:6px}
+.lbl{color:#94a3b8;flex:0 0 auto;width:${maxLabelLen}ch}
+.colon{color:#94a3b8;flex:0 0 auto;margin-right:6px}
+.val{font-weight:700;flex:1;min-width:0}
 hr{border:none;border-top:1px dashed #cbd5e1;margin:12px 0}
 .total{font-size:16px}
 .ref{font-size:10px;color:#94a3b8;text-align:center;margin-top:24px}

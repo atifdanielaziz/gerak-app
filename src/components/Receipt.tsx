@@ -28,20 +28,21 @@ export const ReceiptCard: React.FC<{
   doc: ReceiptDoc;
   onSavePdf?: () => void;
   children?: React.ReactNode;
-}> = ({ doc, onSavePdf, children }) => (
+}> = ({ doc, onSavePdf, children }) => {
+  // Colons line up in one column, based on the longest label in this receipt.
+  const maxLabelLen = Math.max(...doc.rows.map(r => r.label.length));
+
+  return (
   <div className="bg-white border border-slate-100 rounded-2xl p-4 text-xs font-mono text-slate-700 space-y-1.5 leading-relaxed">
     {doc.rows.map((r, i) => (
       <React.Fragment key={i}>
         {r.dividerBefore && <div className="border-t border-dashed border-slate-200 my-1" />}
-        {r.whatsapp ? (
-          <p className="flex items-center gap-2 flex-wrap">
-            <span className="text-slate-400 shrink-0">{r.label} :</span>
-            <span className={valueClass(r)}>{r.value}</span>
-            <WaBtn phone={r.whatsapp.phone} message={r.whatsapp.message} />
-          </p>
-        ) : (
-          <p><span className="text-slate-400">{r.label} :</span> <span className={valueClass(r)}>{r.value}</span></p>
-        )}
+        <div className="flex items-start gap-1.5">
+          <span className="text-slate-400 shrink-0" style={{ width: `${maxLabelLen}ch` }}>{r.label}</span>
+          <span className="text-slate-400 shrink-0">:</span>
+          <span className={`${valueClass(r)} min-w-0`}>{r.value}</span>
+          {r.whatsapp && <WaBtn phone={r.whatsapp.phone} message={r.whatsapp.message} />}
+        </div>
       </React.Fragment>
     ))}
     {children}
@@ -56,7 +57,8 @@ export const ReceiptCard: React.FC<{
       </button>
     )}
   </div>
-);
+  );
+};
 
 export const ReceiptSheet: React.FC<{
   doc: ReceiptDoc;
