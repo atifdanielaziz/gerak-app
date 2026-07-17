@@ -150,15 +150,87 @@ async function loadJubahItems(customerId: string): Promise<ActivityItem[]> {
   });
 }
 
+async function loadDriverJobItems(driverId: string): Promise<ActivityItem[]> {
+  const { data } = await supabase
+    .from('ride_orders')
+    .select('id,customer_name,campus,date,time,pickup,destination,passengers,contact,fare,night_charge,notes,status,created_at')
+    .eq('driver_id', driverId)
+    .order('created_at', { ascending: false })
+    .limit(30);
+
+  return (data ?? []).map(o => {
+    const doc = buildTransportReceiptRows(o);
+    return {
+      id:              `transport-${o.id}`,
+      service:         'transport' as const,
+      createdAt:       o.created_at,
+      title:           o.destination,
+      subtitle:        `${o.customer_name} · from ${o.pickup}`,
+      statusLabel:     doc.statusLabel,
+      statusClassName: doc.statusClassName,
+      amount:          o.fare === 'TBC' ? 'TBC' : `RM${(Number(o.fare) + (o.night_charge ?? 0)).toFixed(2)}`,
+      doc,
+    };
+  });
+}
+
+async function loadRiderJobItems(riderId: string): Promise<ActivityItem[]> {
+  const { data } = await supabase
+    .from('jubah_bookings')
+    .select('id,reference,full_name,ic_number,hp_number,university,faculty,matric_id,remark,payment_mode,cost,balance_due,status,rider_name,created_at')
+    .eq('rider_id', riderId)
+    .order('created_at', { ascending: false })
+    .limit(30);
+
+  return (data ?? []).map(j => {
+    const doc = buildJubahReceiptRows({
+      reference:   j.reference,
+      fullName:    j.full_name,
+      icNumber:    j.ic_number,
+      hpNumber:    j.hp_number,
+      university:  j.university,
+      faculty:     j.faculty,
+      matricId:    j.matric_id,
+      remark:      j.remark,
+      paymentMode: j.payment_mode,
+      cost:        Number(j.cost),
+      balanceDue:  j.balance_due != null ? Number(j.balance_due) : undefined,
+      status:      j.status,
+      riderName:   j.rider_name,
+      riderPhone:  null, // no rider_phone column exists on jubah_bookings
+      createdAt:   j.created_at,
+    });
+    return {
+      id:              `jubah-${j.id}`,
+      service:         'jubah' as const,
+      createdAt:       j.created_at,
+      title:           `${j.remark} Robe Delivery`,
+      subtitle:        `${j.full_name} · ${j.matric_id}`,
+      statusLabel:     doc.statusLabel,
+      statusClassName: doc.statusClassName,
+      amount:          `RM${Number(j.cost).toFixed(2)}`,
+      doc,
+    };
+  });
+}
+
 export const Activity: React.FC = () => {
-  const { user, setSheetOpen } = useApp();
+  const { user, activeRole, setSheetOpen } = useApp();
   const [items, setItems]           = useState<ActivityItem[] | null>(null);
   const [activeItem, setActiveItem] = useState<ActivityItem | null>(null);
+
+  // Driver/rider see their own job history (single service each); everyone
+  // else sees the merged customer feed across all three services.
+  const effectiveRole = activeRole === 'driver' ? 'driver' : activeRole === 'rider' ? 'rider' : user.role;
 
   useEffect(() => {
     (async () => {
       const { data: { user: authUser } } = await supabase.auth.getUser();
       if (!authUser) { setItems([]); return; }
+
+      if (effectiveRole === 'driver') { setItems(await loadDriverJobItems(authUser.id)); return; }
+      if (effectiveRole === 'rider')  { setItems(await loadRiderJobItems(authUser.id));  return; }
+
       const [transport, rental, jubah] = await Promise.all([
         loadTransportItems(authUser.id),
         loadRentalItems(authUser.id, user.name, user.phone),
@@ -169,7 +241,7 @@ export const Activity: React.FC = () => {
       );
       setItems(merged);
     })();
-  }, [user.name, user.phone]);
+  }, [user.name, user.phone, effectiveRole]);
 
   // BottomNav hides itself while any sheet is open — same convention as MyOrders/DriverHome.
   useEffect(() => {
@@ -177,11 +249,16 @@ export const Activity: React.FC = () => {
     return () => setSheetOpen(false);
   }, [activeItem, setSheetOpen]);
 
+  const pageSubtitle =
+    effectiveRole === 'driver' ? 'Your driving trips, all in one place' :
+    effectiveRole === 'rider'  ? 'Your delivery jobs, all in one place' :
+                                 'Your orders across all Gerak services';
+
   return (
     <div className="flex-grow bg-white overflow-y-auto no-scrollbar pb-4 animate-fade-in">
       <div className="px-4 pt-5 pb-3">
         <h2 className="text-xl font-semibold text-slate-800">Activity</h2>
-        <p className="text-xs text-slate-400 font-normal mt-0.5">Your orders across all Gerak services</p>
+        <p className="text-xs text-slate-400 font-normal mt-0.5">{pageSubtitle}</p>
       </div>
 
       {items === null && (
@@ -197,7 +274,9 @@ export const Activity: React.FC = () => {
           </div>
           <p className="text-sm font-bold text-slate-600">No activity yet</p>
           <p className="text-xs text-slate-400 font-normal text-center">
-            Your bookings across Transport, Rental, and Jubah will appear here.
+            {effectiveRole === 'driver' ? 'Your accepted and completed trips will appear here.' :
+             effectiveRole === 'rider'  ? 'Your Jubah delivery jobs will appear here.' :
+                                          'Your bookings across Transport, Rental, and Jubah will appear here.'}
           </p>
         </div>
       )}

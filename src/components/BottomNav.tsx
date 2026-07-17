@@ -29,12 +29,14 @@ export const BottomNav: React.FC = () => {
   const driverItems = [
     { id: 'driver-home'       as ActivePage, label: 'Jobs',      icon: Briefcase,       badge: false },
     { id: 'academic-calendar' as ActivePage, label: 'Calendar',  icon: CalendarDays,    badge: false },
+    { id: 'activity'          as ActivePage, label: 'Activity',  icon: Activity,        badge: false },
     { id: 'profile'           as ActivePage, label: 'Profile',   icon: UserCircle,      badge: false },
   ];
 
   const riderItems = [
     { id: 'rider-home'        as ActivePage, label: 'Jobs',      icon: Briefcase,       badge: false },
     { id: 'academic-calendar' as ActivePage, label: 'Calendar',  icon: CalendarDays,    badge: false },
+    { id: 'activity'          as ActivePage, label: 'Activity',  icon: Activity,        badge: false },
     { id: 'profile'           as ActivePage, label: 'Profile',   icon: UserCircle,      badge: false },
   ];
 
