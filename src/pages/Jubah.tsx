@@ -1138,6 +1138,7 @@ export const Jubah: React.FC = () => {
               <button
                 type="button"
                 onClick={() => {
+                  if (!navigator.clipboard) return;
                   navigator.clipboard.writeText(jubahBooking.reference);
                   setCopied(true);
                   setTimeout(() => setCopied(false), 2000);
