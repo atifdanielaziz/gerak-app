@@ -158,6 +158,26 @@ body {
   }
 }
 
+/* Admin panel on desktop: break out of the phone bezel entirely.
+   1024px here is hand-matched to Tailwind's `lg:` breakpoint used in
+   AdminHome.tsx's sidebar — keep both in sync if that scale ever changes. */
+@media (min-width: 1024px) {
+  .mobile-container.admin-desktop {
+    width: 100%;
+    max-width: 100vw;
+    height: 100vh;
+    height: 100dvh;
+    border-radius: 0;
+    border: none;
+    box-shadow: none;
+    margin: 0;
+  }
+
+  .mobile-container.admin-desktop::before {
+    content: none;
+  }
+}
+
 /* ─── Safe-area helpers (iPhone notch / Dynamic Island / home bar) ── */
 /* Applied via inline style on Header + BottomNav so they work in both
    standalone PWA mode and regular browser. On Android the values are 0. */

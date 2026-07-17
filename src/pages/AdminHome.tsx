@@ -8,6 +8,7 @@ import {
   FileImage, ShieldCheck, ShieldOff, ExternalLink, KeyRound,
   CalendarDays, Upload, Eye, Phone, ArrowLeftRight, Pencil, GraduationCap,
   ChevronLeft, Download, MoreVertical, Copy, Check, TrendingUp, Bike, Settings, Info, BadgeCheck,
+  Bell, User,
 } from 'lucide-react';
 import { WaBtn, WaIcon, toWa } from '../lib/whatsapp';
 import { MonthDrumPicker, EarningsCard, computeEarnings, type EarningsRow } from '../components/EarningsCard';
@@ -45,6 +46,22 @@ const STATUS_COLORS: Record<string, string> = {
 
 type FilterStatus = 'all' | 'pending' | 'accepted' | 'in_progress' | 'completed' | 'cancelled';
 type AdminTab = 'orders' | 'drivers' | 'users' | 'banners' | 'receipts' | 'calendar' | 'routes' | 'verify' | 'jubah' | 'earnings';
+
+// Single source of truth for tab metadata — shared by the mobile tab-strip
+// and the desktop sidebar (see AdminHome's return), so the superadmin-only
+// gate can never drift between the two.
+const ADMIN_TABS: { id: AdminTab; label: string; icon: React.ElementType; superadminOnly: boolean }[] = [
+  { id: 'orders',   label: 'Orders',    icon: BarChart3,       superadminOnly: false },
+  { id: 'drivers',  label: 'Invite',    icon: Car,             superadminOnly: false },
+  { id: 'users',    label: 'Staff',     icon: Users,           superadminOnly: false },
+  { id: 'verify',   label: 'Verify',    icon: ShieldCheck,     superadminOnly: false },
+  { id: 'jubah',    label: 'Jubah',     icon: GraduationCap,   superadminOnly: false },
+  { id: 'banners',  label: 'Banners',   icon: Megaphone,       superadminOnly: false },
+  { id: 'routes',   label: 'Routes',    icon: ArrowLeftRight,  superadminOnly: false },
+  { id: 'receipts', label: 'Receipts',  icon: FileImage,       superadminOnly: true  },
+  { id: 'earnings', label: 'Earnings',  icon: TrendingUp,      superadminOnly: true  },
+  { id: 'calendar', label: 'Calendar',  icon: CalendarDays,    superadminOnly: false },
+];
 
 interface DriverEarningsRow {
   driver_id: string;
@@ -846,7 +863,10 @@ const UserCard: React.FC<{
 };
 
 export const AdminHome: React.FC = () => {
-  const { user, setCurrentPage, setSheetOpen } = useApp();
+  const {
+    user, setCurrentPage, setSheetOpen, notifications,
+    activeRole, isPreviewMode, switchToDriverMode, switchToRiderMode, enterPreviewMode,
+  } = useApp();
 
   const isSuperAdmin = user.role === 'superadmin';
   const adminCampus = (
@@ -1981,13 +2001,121 @@ export const AdminHome: React.FC = () => {
     return null;
   }
 
+  // Shared by the mobile refresh button and the desktop topbar's refresh button.
+  const refreshActiveTab = () =>
+    activeTab === 'orders' ? loadOrders() :
+    activeTab === 'drivers' ? loadInvites() :
+    activeTab === 'users' ? loadUsers() :
+    activeTab === 'receipts' ? loadReceipts() :
+    activeTab === 'earnings' ? (earningsDriverId ? loadDriverEarnings(earningsDriverId) : loadEarningsLeaderboard(...getLeaderboardRange(earningsPeriod, earningsDay, earningsWeekStart, leaderboardMonth))) :
+    loadAnnouncements();
+
+  const unreadCount = notifications.filter(n => !n.isRead).length;
+
   return (
     <>
-    <div ref={mainScrollRef} className="flex-grow bg-white overflow-y-auto overflow-x-hidden no-scrollbar pb-4 px-4 animate-fade-in flex flex-col gap-4 touch-pan-y">
+    <div className="flex-1 flex flex-col lg:flex-row min-h-0 h-full bg-white">
+
+      {/* Desktop sidebar — hidden below 1024px, where the sticky mobile
+          header + tab-strip further down still handles navigation */}
+      {!sampleDocsPage && (
+        <aside className="hidden lg:flex lg:flex-col lg:w-64 lg:shrink-0 lg:h-full lg:border-r lg:border-slate-100 lg:overflow-y-auto lg:no-scrollbar">
+          <div className="px-5 pt-6 pb-4 border-b border-slate-100">
+            <div className="flex items-center gap-2">
+              <h2 className="text-base font-black text-slate-800 m-0">Admin Panel</h2>
+              <span className="bg-primary/10 text-primary text-xs font-semibold px-2 py-0.5 rounded-full uppercase tracking-wider">
+                {user.role}
+              </span>
+            </div>
+            <p className="text-xs text-slate-400 font-semibold mt-0.5">{user.name} · {user.gerakId}</p>
+          </div>
+
+          <nav className="flex-1 flex flex-col gap-1 p-3">
+            {ADMIN_TABS
+              .filter(t => !t.superadminOnly || user.role === 'superadmin')
+              .map(tab => {
+                const Icon = tab.icon;
+                return (
+                  <button key={tab.id}
+                    onPointerDown={(e) => { e.preventDefault(); setActiveTab(tab.id); }}
+                    className={`flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-sm font-semibold text-left transition-transform active:scale-[0.98] ${
+                      activeTab === tab.id ? 'bg-primary text-white' : 'text-slate-500 hover:bg-slate-100'
+                    }`}
+                  >
+                    <Icon className="w-4 h-4 shrink-0" />
+                    {tab.label}
+                  </button>
+                );
+              })}
+          </nav>
+
+          <div className="p-3 border-t border-slate-100 flex flex-col gap-1">
+            <button onPointerDown={(e) => { e.preventDefault(); setCurrentPage('notifications'); }}
+              className="flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-sm font-semibold text-slate-500 hover:bg-slate-100 transition-transform active:scale-[0.98]">
+              <Bell className="w-4 h-4 shrink-0" />
+              Notifications
+              {unreadCount > 0 && (
+                <span className="ml-auto w-5 h-5 bg-danger text-white text-[10px] font-bold rounded-full flex items-center justify-center">
+                  {unreadCount}
+                </span>
+              )}
+            </button>
+            <button onPointerDown={(e) => { e.preventDefault(); setCurrentPage('profile'); }}
+              className="flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-sm font-semibold text-slate-500 hover:bg-slate-100 transition-transform active:scale-[0.98]">
+              <User className="w-4 h-4 shrink-0" />
+              My Profile
+            </button>
+
+            {user.role === 'superadmin' && (
+              <div className="flex flex-col gap-1 pt-2 mt-1 border-t border-slate-100">
+                <p className="px-3 pb-1 text-[10px] font-semibold text-slate-300 uppercase tracking-wider">Preview as</p>
+                <button onPointerDown={(e) => { e.preventDefault(); switchToDriverMode(); }}
+                  className={`flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-semibold text-left transition-transform active:scale-[0.98] ${
+                    activeRole === 'driver' ? 'bg-slate-100 text-slate-900' : 'text-slate-500 hover:bg-slate-100'
+                  }`}>
+                  <Car className="w-3.5 h-3.5 shrink-0" /> Driver
+                </button>
+                <button onPointerDown={(e) => { e.preventDefault(); switchToRiderMode(); }}
+                  className={`flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-semibold text-left transition-transform active:scale-[0.98] ${
+                    activeRole === 'rider' ? 'bg-slate-100 text-slate-900' : 'text-slate-500 hover:bg-slate-100'
+                  }`}>
+                  <Bike className="w-3.5 h-3.5 shrink-0" /> Rider
+                </button>
+                <button onPointerDown={(e) => { e.preventDefault(); enterPreviewMode(); }}
+                  className={`flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-semibold text-left transition-transform active:scale-[0.98] ${
+                    isPreviewMode ? 'bg-slate-100 text-slate-900' : 'text-slate-500 hover:bg-slate-100'
+                  }`}>
+                  <Eye className="w-3.5 h-3.5 shrink-0" /> Customer
+                </button>
+              </div>
+            )}
+          </div>
+        </aside>
+      )}
+
+      {/* Content pane */}
+      <div className="flex-1 flex flex-col min-w-0 lg:h-full">
+
+        {/* Desktop topbar — mobile keeps its own sticky header further down instead */}
+        {!sampleDocsPage && (
+          <div className="hidden lg:flex items-center justify-between px-6 py-4 border-b border-slate-100 shrink-0">
+            <h3 className="text-base font-black text-slate-800 m-0">
+              {ADMIN_TABS.find(t => t.id === activeTab)?.label}
+            </h3>
+            <button
+              onClick={refreshActiveTab}
+              className="w-8 h-8 flex items-center justify-center rounded-xl bg-white border border-slate-100 text-slate-400 hover:text-primary transition active:scale-90"
+            >
+              <RefreshCw className="w-4 h-4" />
+            </button>
+          </div>
+        )}
+
+    <div ref={mainScrollRef} className="flex-1 bg-white overflow-y-auto overflow-x-hidden no-scrollbar pb-4 px-4 lg:px-6 animate-fade-in flex flex-col gap-4 touch-pan-y">
 
       {/* Toast */}
       {toast && (
-        <div className="fixed top-16 left-4 right-4 z-50 bg-slate-800 text-white text-xs font-semibold px-4 py-2.5 rounded-2xl shadow-lg text-center animate-fade-in">
+        <div className="fixed top-16 left-4 right-4 z-50 max-w-md mx-auto bg-slate-800 text-white text-xs font-semibold px-4 py-2.5 rounded-2xl shadow-lg text-center animate-fade-in">
           {toast}
         </div>
       )}
@@ -2172,7 +2300,7 @@ export const AdminHome: React.FC = () => {
           <div className="flex items-center gap-2">
             {/* Refresh */}
             <button
-              onClick={() => activeTab === 'orders' ? loadOrders() : activeTab === 'drivers' ? loadInvites() : activeTab === 'users' ? loadUsers() : activeTab === 'receipts' ? loadReceipts() : activeTab === 'earnings' ? (earningsDriverId ? loadDriverEarnings(earningsDriverId) : loadEarningsLeaderboard(...getLeaderboardRange(earningsPeriod, earningsDay, earningsWeekStart, leaderboardMonth))) : loadAnnouncements()}
+              onClick={refreshActiveTab}
               className="w-8 h-8 flex items-center justify-center rounded-xl bg-white border border-slate-100 text-slate-400 hover:text-primary transition active:scale-90"
             >
               <RefreshCw className="w-4 h-4" />
@@ -2182,18 +2310,7 @@ export const AdminHome: React.FC = () => {
 
         {/* Tab bar */}
       <div className="flex bg-white border border-slate-100 rounded-2xl p-1 gap-1 overflow-x-auto no-scrollbar">
-        {([
-          { id: 'orders',   label: 'Orders',    icon: BarChart3,       superadminOnly: false },
-          { id: 'drivers',  label: 'Invite',    icon: Car,             superadminOnly: false },
-          { id: 'users',    label: 'Staff',     icon: Users,           superadminOnly: false },
-          { id: 'verify',   label: 'Verify',    icon: ShieldCheck,     superadminOnly: false },
-          { id: 'jubah',    label: 'Jubah',     icon: GraduationCap,   superadminOnly: false },
-          { id: 'banners',  label: 'Banners',   icon: Megaphone,       superadminOnly: false },
-          { id: 'routes',   label: 'Routes',    icon: ArrowLeftRight,  superadminOnly: false },
-          { id: 'receipts', label: 'Receipts',  icon: FileImage,       superadminOnly: true  },
-          { id: 'earnings', label: 'Earnings',  icon: TrendingUp,      superadminOnly: true  },
-          { id: 'calendar', label: 'Calendar',  icon: CalendarDays,    superadminOnly: false },
-        ] as { id: AdminTab; label: string; icon: React.ElementType; superadminOnly: boolean }[])
+        {ADMIN_TABS
           .filter(t => !t.superadminOnly || user.role === 'superadmin')
           .map(tab => (
             <button key={tab.id}
@@ -4347,6 +4464,10 @@ export const AdminHome: React.FC = () => {
       </>)}
 
     </div>
+      </div>
+      {/* close content pane */}
+    </div>
+    {/* close outer desktop-shell / mobile-column wrapper */}
 
     {/* ── Driver Action Confirmation Modal ── */}
     {pendingAction && (() => {

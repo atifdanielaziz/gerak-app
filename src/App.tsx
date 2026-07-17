@@ -279,7 +279,7 @@ const SwipeBackGesture: React.FC<{ children: React.ReactNode }> = ({ children })
 
 const AppContent: React.FC = () => {
   const { currentPage, user, activeRole } = useApp();
-
+  const isAdminRoute = currentPage === 'admin-home';
 
   const renderPage = () => {
     switch (currentPage) {
@@ -327,15 +327,15 @@ const AppContent: React.FC = () => {
   };
 
   return (
-    <div className="mobile-container flex flex-col h-full bg-white select-none overscroll-x-none">
+    <div className={`mobile-container flex flex-col h-full bg-white select-none overscroll-x-none ${isAdminRoute ? 'admin-desktop' : ''}`}>
       <ConfirmModal />
-      <Header />
+      <div className={isAdminRoute ? 'lg:hidden' : ''}><Header /></div>
       <div key={currentPage} className="flex-1 flex flex-col overflow-hidden page-transition bg-white">
         <Suspense fallback={<div className="flex-1 flex items-center justify-center bg-white"><span className="w-6 h-6 rounded-full border-2 border-primary border-t-transparent animate-spin" /></div>}>
           {renderPage()}
         </Suspense>
       </div>
-      <BottomNav />
+      <div className={isAdminRoute ? 'lg:hidden' : ''}><BottomNav /></div>
     </div>
   );
 };
