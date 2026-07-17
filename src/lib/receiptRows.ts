@@ -73,7 +73,7 @@ export function buildTransportReceiptRows(
     { label: 'Contact', value: o.contact, whatsapp: opts?.showContactWhatsApp ? { phone: o.contact } : undefined },
   ];
   if (o.notes) rows.push({ label: 'Remark', value: o.notes });
-  rows.push({ label: 'Est. Fare', value: fareLabel(o), emphasis: 'total', dividerBefore: true });
+  rows.push({ label: 'Price', value: fareLabel(o), emphasis: 'total', dividerBefore: true });
 
   return {
     rows,
