@@ -966,6 +966,7 @@ export const AdminHome: React.FC = () => {
   const [verifyDocs,      setVerifyDocs]      = useState<VerifyDoc[]>([]);
   const [verifyLoading,   setVerifyLoading]   = useState(false);
   const [verifyFilter,    setVerifyFilter]    = useState<'driver' | 'rider'>('driver');
+  const [verifyStatusFilter, setVerifyStatusFilter] = useState<'pending' | 'approved' | 'rejected' | 'none' | 'all'>('pending');
   const [verifySearch,    setVerifySearch]    = useState('');
   const [rejectingDoc,    setRejectingDoc]    = useState<string | null>(null);
   const [rejectReason,    setRejectReason]    = useState('');
@@ -1912,7 +1913,7 @@ export const AdminHome: React.FC = () => {
     let q = supabase.from('profiles')
       .select('id,name,gerak_id,campus,role,ic_number,ic_url,license_url,docs_status,docs_reject_reason')
       .eq('role', verifyFilter)
-      .order('docs_status').order('name');
+      .order('name');
     if (!isSuperAdmin) q = q.eq('campus', adminCampus);
     const { data } = await q;
     setVerifyDocs((data as VerifyDoc[]) ?? []);
@@ -3166,6 +3167,24 @@ export const AdminHome: React.FC = () => {
             ))}
           </div>
 
+          {/* Status filter chips */}
+          <div className="flex bg-slate-50 border border-slate-200 rounded-2xl p-1 gap-1 overflow-x-auto no-scrollbar">
+            {([
+              { id: 'all',      label: 'All' },
+              { id: 'pending',  label: 'Pending' },
+              { id: 'approved', label: 'Approved' },
+              { id: 'rejected', label: 'Rejected' },
+              { id: 'none',     label: 'None' },
+            ] as const).map(f => (
+              <button key={f.id} onPointerDown={e => { e.preventDefault(); setVerifyStatusFilter(f.id); }}
+                className={`shrink-0 px-4 py-1.5 rounded-xl text-xs font-semibold transition-transform ${
+                  verifyStatusFilter === f.id ? 'bg-white text-slate-800' : 'text-slate-400'
+                }`}>
+                {f.label} ({f.id === 'all' ? verifyDocs.length : verifyDocs.filter(d => d.docs_status === f.id).length})
+              </button>
+            ))}
+          </div>
+
           {/* Search */}
           <div className="bg-white border border-slate-100 rounded-2xl p-3.5 flex flex-col gap-2">
             <h3 className="text-sm font-semibold text-slate-700 flex items-center gap-1.5">
@@ -3197,21 +3216,20 @@ export const AdminHome: React.FC = () => {
             </h3>
 
             <div className="overflow-y-auto no-scrollbar max-h-[520px] flex flex-col gap-4">
-            {verifyLoading ? (
+            {(() => {
+              const filteredVerifyDocs = verifyDocs.filter(d =>
+                (verifyStatusFilter === 'all' || d.docs_status === verifyStatusFilter) &&
+                (!verifySearch.trim() ||
+                  d.name.toLowerCase().includes(verifySearch.toLowerCase()) ||
+                  d.gerak_id.toLowerCase().includes(verifySearch.toLowerCase()))
+              );
+              return verifyLoading ? (
               <div className="flex justify-center py-8">
                 <span className="w-5 h-5 rounded-full border-2 border-slate-200 border-t-primary animate-spin" />
               </div>
-            ) : verifyDocs.filter(d =>
-                !verifySearch.trim() ||
-                d.name.toLowerCase().includes(verifySearch.toLowerCase()) ||
-                d.gerak_id.toLowerCase().includes(verifySearch.toLowerCase())
-              ).length === 0 ? (
+            ) : filteredVerifyDocs.length === 0 ? (
               <p className="text-xs text-slate-400 font-semibold text-center py-6">No {verifyFilter}s found.</p>
-            ) : verifyDocs.filter(d =>
-                !verifySearch.trim() ||
-                d.name.toLowerCase().includes(verifySearch.toLowerCase()) ||
-                d.gerak_id.toLowerCase().includes(verifySearch.toLowerCase())
-              ).map(d => (
+            ) : filteredVerifyDocs.map(d => (
               <div key={d.id} className="border border-slate-100 rounded-2xl p-5 flex flex-col gap-4">
 
                 {/* Header */}
@@ -3304,7 +3322,8 @@ export const AdminHome: React.FC = () => {
                   </button>
                 )}
               </div>
-            ))}
+            ));
+            })()}
             </div>
           </div>
         </div>
