@@ -72,7 +72,8 @@ export const Profile: React.FC = () => {
     setUploadingDoc(type);
     const { data: { user: authUser } } = await supabase.auth.getUser();
     if (!authUser) { setUploadingDoc(null); return; }
-    const stamped = await stampWatermark(file);
+    let stamped = file;
+    try { stamped = await stampWatermark(file); } catch (err) { console.error('[GERAK] Watermark failed, uploading original file:', err); }
     const ext  = stamped.name.split('.').pop() ?? 'jpg';
     const path = `${authUser.id}/${type}.${ext}`;
     const { error: upErr } = await supabase.storage.from('driver-documents').upload(path, stamped, { upsert: true });
