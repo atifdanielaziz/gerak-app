@@ -95,7 +95,8 @@ export const DriverHome: React.FC = () => {
   // Admin/superadmin who switched the pill to Driver should behave as a full driver
   const effectiveCanDrive = user.canDrive || activeRole === 'driver';
 
-  const isAdminForRental = user.role === 'admin' || user.role === 'superadmin';
+  // Admin/superadmin who switched the pill to Driver should manage rental as the car's owner-driver
+  const isAdminForRental = (user.role === 'admin' || user.role === 'superadmin') && activeRole !== 'driver';
   const effectiveCanRent = user.canRent || isAdminForRental;
   const [activeTab, setActiveTab]           = useState<DriverTab>(!effectiveCanDrive && effectiveCanRent ? 'rental' : 'pool');
   const [pendingOrders, setPendingOrders]   = useState<RideOrder[]>([]);
@@ -156,7 +157,7 @@ export const DriverHome: React.FC = () => {
 
   // ── Rental helpers ────────────────────────────────────────────────────────
   const loadRentalData = useCallback(async () => {
-    const isAdmin = user.role === 'admin' || user.role === 'superadmin';
+    const isAdmin = isAdminForRental;
     if (!user.canRent && !isAdmin) return;
     setRentalLoading(true);
     const { data: { user: authUser } } = await supabase.auth.getUser();
@@ -238,7 +239,7 @@ export const DriverHome: React.FC = () => {
     setRentalBlocks(blocks ?? []);
     setPendingRentals(enriched.filter(b => b.status === 'pending').length);
     setRentalLoading(false);
-  }, [user.canRent, user.role]);
+  }, [user.canRent, isAdminForRental]);
 
   const toggleHourBlock = async (dateStr: string, hour: number) => {
     const { data: { user: authUser } } = await supabase.auth.getUser();
@@ -463,8 +464,7 @@ export const DriverHome: React.FC = () => {
   }, [loadOrders, effectiveCanDrive, fireNotification]);
 
   useEffect(() => {
-    const isAdmin = user.role === 'admin' || user.role === 'superadmin';
-    if (!user.canRent && !isAdmin) return;
+    if (!user.canRent && !isAdminForRental) return;
     loadRentalData();
     const channel = supabase
       .channel('rental_bookings_owner')
@@ -478,7 +478,7 @@ export const DriverHome: React.FC = () => {
       })
       .subscribe();
     return () => { supabase.removeChannel(channel); };
-  }, [user.canRent, user.role, loadRentalData, fireRentalNotification]);
+  }, [user.canRent, isAdminForRental, loadRentalData, fireRentalNotification]);
 
   const handleAccept = async (orderId: string) => {
     setAccepting(orderId);
