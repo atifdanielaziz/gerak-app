@@ -95,7 +95,8 @@ export const DriverHome: React.FC = () => {
   // Admin/superadmin who switched the pill to Driver should behave as a full driver
   const effectiveCanDrive = user.canDrive || activeRole === 'driver';
 
-  const isAdminForRental = user.role === 'admin' || user.role === 'superadmin';
+  // Admin/superadmin who switched the pill to Driver should manage rental as the car's owner-driver
+  const isAdminForRental = (user.role === 'admin' || user.role === 'superadmin') && activeRole !== 'driver';
   const effectiveCanRent = user.canRent || isAdminForRental;
   const [activeTab, setActiveTab]           = useState<DriverTab>(!effectiveCanDrive && effectiveCanRent ? 'rental' : 'pool');
   const [pendingOrders, setPendingOrders]   = useState<RideOrder[]>([]);
@@ -156,7 +157,7 @@ export const DriverHome: React.FC = () => {
 
   // ── Rental helpers ────────────────────────────────────────────────────────
   const loadRentalData = useCallback(async () => {
-    const isAdmin = user.role === 'admin' || user.role === 'superadmin';
+    const isAdmin = isAdminForRental;
     if (!user.canRent && !isAdmin) return;
     setRentalLoading(true);
     const { data: { user: authUser } } = await supabase.auth.getUser();
@@ -238,7 +239,7 @@ export const DriverHome: React.FC = () => {
     setRentalBlocks(blocks ?? []);
     setPendingRentals(enriched.filter(b => b.status === 'pending').length);
     setRentalLoading(false);
-  }, [user.canRent, user.role]);
+  }, [user.canRent, isAdminForRental]);
 
   const toggleHourBlock = async (dateStr: string, hour: number) => {
     const { data: { user: authUser } } = await supabase.auth.getUser();
@@ -463,8 +464,7 @@ export const DriverHome: React.FC = () => {
   }, [loadOrders, effectiveCanDrive, fireNotification]);
 
   useEffect(() => {
-    const isAdmin = user.role === 'admin' || user.role === 'superadmin';
-    if (!user.canRent && !isAdmin) return;
+    if (!user.canRent && !isAdminForRental) return;
     loadRentalData();
     const channel = supabase
       .channel('rental_bookings_owner')
@@ -478,7 +478,7 @@ export const DriverHome: React.FC = () => {
       })
       .subscribe();
     return () => { supabase.removeChannel(channel); };
-  }, [user.canRent, user.role, loadRentalData, fireRentalNotification]);
+  }, [user.canRent, isAdminForRental, loadRentalData, fireRentalNotification]);
 
   const handleAccept = async (orderId: string) => {
     setAccepting(orderId);
@@ -770,7 +770,7 @@ export const DriverHome: React.FC = () => {
           {effectiveCanDrive && (
             <button
               onPointerDown={(e) => { e.preventDefault(); setActiveTab('pool'); }}
-              className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-xs font-semibold transition-transform relative ${
+              className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-xs font-semibold transition-transform transform-gpu relative ${
                 activeTab === 'pool' ? 'bg-primary text-white' : 'text-slate-400'
               }`}
             >
@@ -792,7 +792,7 @@ export const DriverHome: React.FC = () => {
           {effectiveCanDrive && (
             <button
               onPointerDown={(e) => { e.preventDefault(); setActiveTab('my-jobs'); }}
-              className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-xs font-semibold transition-transform relative ${
+              className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-xs font-semibold transition-transform transform-gpu relative ${
                 activeTab === 'my-jobs' ? 'bg-primary text-white' : 'text-slate-400'
               }`}
             >
@@ -810,7 +810,7 @@ export const DriverHome: React.FC = () => {
           {effectiveCanRent && (
             <button
               onPointerDown={(e) => { e.preventDefault(); setActiveTab('rental'); }}
-              className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-xs font-semibold transition-transform relative ${
+              className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-xs font-semibold transition-transform transform-gpu relative ${
                 activeTab === 'rental' ? 'bg-primary text-white' : 'text-slate-400'
               }`}
             >
@@ -830,7 +830,7 @@ export const DriverHome: React.FC = () => {
           {effectiveCanDrive && (
             <button
               onPointerDown={(e) => { e.preventDefault(); setActiveTab('earnings'); }}
-              className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-xs font-semibold transition-transform ${
+              className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-xs font-semibold transition-transform transform-gpu ${
                 activeTab === 'earnings' ? 'bg-primary text-white' : 'text-slate-400'
               }`}
             >
@@ -1268,7 +1268,7 @@ export const DriverHome: React.FC = () => {
               <div className="flex bg-white border border-slate-100 rounded-2xl p-1 gap-1">
                 {subViews.map(({ v, Icon, label }) => (
                   <button key={v} onPointerDown={(e) => { e.preventDefault(); setRentalSubView(v); }}
-                    className={`flex-1 py-2 rounded-xl text-xs font-semibold transition-transform flex flex-col items-center gap-0.5 ${
+                    className={`flex-1 py-2 rounded-xl text-xs font-semibold transition-transform transform-gpu flex flex-col items-center gap-0.5 ${
                       rentalSubView === v ? 'bg-primary text-white' : 'text-slate-400'
                     }`}>
                     <Icon className="w-3 h-3" />
