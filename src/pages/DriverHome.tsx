@@ -5,7 +5,7 @@ import {
   Car, MapPin, Navigation, Users, Clock,
   CheckCircle2, RefreshCw, Briefcase,
   ListOrdered, ShieldOff, KeyRound,
-  ChevronLeft, ChevronRight, Settings, CalendarDays,
+  ChevronLeft, ChevronRight, CalendarDays,
   Package, Ban, Unlock, Hash, X, TrendingUp,
   Upload, FileImage, ShieldCheck, ShieldAlert,
   DollarSign, Moon, FileText, ExternalLink, FileDown,
@@ -116,7 +116,8 @@ export const DriverHome: React.FC = () => {
   const [rentalBookings,  setRentalBookings]  = useState<RentalBookingOwner[]>([]);
   const [rentalBlocks,    setRentalBlocks]    = useState<RentalBlock[]>([]);
   const [rentalLoading,   setRentalLoading]   = useState(false);
-  const [rentalSubView,   setRentalSubView]   = useState<'orders' | 'schedule' | 'vehicle' | 'pricing'>('orders');
+  const [rentalSubView,   setRentalSubView]   = useState<'orders' | 'car'>('orders');
+  const [carSubView,      setCarSubView]      = useState<'vehicle' | 'schedule' | 'pricing'>('vehicle');
   const [rentalMonth, setRentalMonth]         = useState(() => {
     const n = new Date(); return { year: n.getFullYear(), month: n.getMonth() };
   });
@@ -1253,13 +1254,11 @@ export const DriverHome: React.FC = () => {
       {!loading && activeTab === 'rental' && effectiveCanRent && (
         <div className="px-4 pt-2 flex flex-col gap-4">
 
-          {/* Sub-view switcher — hidden for admins, who only ever have Orders to see */}
+          {/* Sub-view switcher — hidden for admins, who only ever have Order to see */}
           {(() => {
             const subViews = ([
-              { v: 'orders',   Icon: Package,      label: 'Orders',   ownerOnly: false },
-              { v: 'schedule', Icon: CalendarDays,  label: 'Schedule', ownerOnly: true  },
-              { v: 'vehicle',  Icon: Settings,      label: 'Vehicle',  ownerOnly: true  },
-              { v: 'pricing',  Icon: DollarSign,    label: 'Pricing',  ownerOnly: true  },
+              { v: 'orders', Icon: Package, label: 'Order', ownerOnly: false },
+              { v: 'car',    Icon: Car,     label: 'Car',   ownerOnly: true  },
             ] as const).filter(({ ownerOnly }) => !ownerOnly || !isAdminForRental);
 
             return subViews.length > 1 && (
@@ -1344,8 +1343,29 @@ export const DriverHome: React.FC = () => {
             </div>
           )}
 
+          {/* ── CAR sub-view: Schedule/Price shortcuts, or back nav when inside one ── */}
+          {!rentalLoading && rentalSubView === 'car' && (
+            carSubView === 'vehicle' ? (
+              <div className="flex gap-2">
+                <button onPointerDown={(e) => { e.preventDefault(); setCarSubView('schedule'); }}
+                  className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-xs font-semibold bg-white border border-slate-100 text-slate-600 transition-transform active:scale-[0.98]">
+                  <CalendarDays className="w-3.5 h-3.5" /> Schedule
+                </button>
+                <button onPointerDown={(e) => { e.preventDefault(); setCarSubView('pricing'); }}
+                  className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-xs font-semibold bg-white border border-slate-100 text-slate-600 transition-transform active:scale-[0.98]">
+                  <DollarSign className="w-3.5 h-3.5" /> Price
+                </button>
+              </div>
+            ) : (
+              <button onPointerDown={(e) => { e.preventDefault(); setCarSubView('vehicle'); }}
+                className="flex items-center gap-2 text-xs font-semibold text-slate-600 transition-transform active:scale-95">
+                <ChevronLeft className="w-4 h-4" /> {carSubView === 'schedule' ? 'Schedule' : 'Price'}
+              </button>
+            )
+          )}
+
           {/* ── SCHEDULE sub-view ── */}
-          {!rentalLoading && rentalSubView === 'schedule' && (
+          {!rentalLoading && rentalSubView === 'car' && carSubView === 'schedule' && (
             <div className="flex flex-col gap-4">
 
               {/* Calendar */}
@@ -1436,7 +1456,7 @@ export const DriverHome: React.FC = () => {
           )}
 
           {/* ── PRICING sub-view ── */}
-          {!rentalLoading && rentalSubView === 'pricing' && (
+          {!rentalLoading && rentalSubView === 'car' && carSubView === 'pricing' && (
             <div className="bg-white border border-slate-100 rounded-3xl p-5 flex flex-col gap-5">
               <p className="text-sm font-semibold text-slate-700">Pricing & Operating Hours</p>
 
@@ -1532,7 +1552,7 @@ export const DriverHome: React.FC = () => {
           )}
 
           {/* ── VEHICLE sub-view ── */}
-          {!rentalLoading && rentalSubView === 'vehicle' && (
+          {!rentalLoading && rentalSubView === 'car' && carSubView === 'vehicle' && (
             <div className="bg-white border border-slate-100 rounded-3xl p-5 flex flex-col gap-4">
               <p className="text-sm font-semibold text-slate-700">Vehicle Information</p>
 
