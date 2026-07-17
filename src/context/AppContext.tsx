@@ -207,6 +207,16 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   useEffect(() => {
     window.history.pushState(null, '');
     const handlePopState = () => {
+      // Dismissing the on-screen keyboard can also fire popstate on some
+      // mobile browsers — treat that as "close the keyboard," not a real
+      // back-press, so it doesn't spuriously trigger a page's leave-guard
+      // (e.g. Jubah's "Discard this booking?") while someone is just typing.
+      const active = document.activeElement as HTMLElement | null;
+      if (active && (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA')) {
+        active.blur();
+        window.history.pushState(null, '');
+        return;
+      }
       if (pageHistoryRef.current.length > 0) {
         goBack();
       }
