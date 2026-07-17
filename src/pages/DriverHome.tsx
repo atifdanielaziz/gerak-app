@@ -1253,25 +1253,29 @@ export const DriverHome: React.FC = () => {
       {!loading && activeTab === 'rental' && effectiveCanRent && (
         <div className="px-4 pt-2 flex flex-col gap-4">
 
-          {/* Sub-view switcher — admin sees Orders only; owner sees all 4 */}
-          <div className="flex bg-white border border-slate-100 rounded-2xl p-1 gap-1">
-            {([
+          {/* Sub-view switcher — hidden for admins, who only ever have Orders to see */}
+          {(() => {
+            const subViews = ([
               { v: 'orders',   Icon: Package,      label: 'Orders',   ownerOnly: false },
               { v: 'schedule', Icon: CalendarDays,  label: 'Schedule', ownerOnly: true  },
               { v: 'vehicle',  Icon: Settings,      label: 'Vehicle',  ownerOnly: true  },
               { v: 'pricing',  Icon: DollarSign,    label: 'Pricing',  ownerOnly: true  },
-            ] as const)
-              .filter(({ ownerOnly }) => !ownerOnly || !isAdminForRental)
-              .map(({ v, Icon, label }) => (
-                <button key={v} onPointerDown={(e) => { e.preventDefault(); setRentalSubView(v); }}
-                  className={`flex-1 py-2 rounded-xl text-xs font-semibold transition-transform flex flex-col items-center gap-0.5 ${
-                    rentalSubView === v ? 'bg-primary text-white' : 'text-slate-400'
-                  }`}>
-                  <Icon className="w-3 h-3" />
-                  {label}
-                </button>
-              ))}
-          </div>
+            ] as const).filter(({ ownerOnly }) => !ownerOnly || !isAdminForRental);
+
+            return subViews.length > 1 && (
+              <div className="flex bg-white border border-slate-100 rounded-2xl p-1 gap-1">
+                {subViews.map(({ v, Icon, label }) => (
+                  <button key={v} onPointerDown={(e) => { e.preventDefault(); setRentalSubView(v); }}
+                    className={`flex-1 py-2 rounded-xl text-xs font-semibold transition-transform flex flex-col items-center gap-0.5 ${
+                      rentalSubView === v ? 'bg-primary text-white' : 'text-slate-400'
+                    }`}>
+                    <Icon className="w-3 h-3" />
+                    {label}
+                  </button>
+                ))}
+              </div>
+            );
+          })()}
 
           {rentalLoading && (
             <div className="flex justify-center py-10">
