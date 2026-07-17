@@ -13,7 +13,8 @@ import {
 } from 'lucide-react';
 import { WaIcon, toWa } from '../lib/whatsapp';
 import { ReceiptSheet } from '../components/Receipt';
-import { buildTransportReceiptRows } from '../lib/receiptRows';
+import { buildTransportReceiptRows, buildRentalReceiptRows } from '../lib/receiptRows';
+import { generateReceiptPdf } from '../lib/receiptPdf';
 import { FareModal } from '../components/FareModal';
 import { MonthDrumPicker, EarningsCard, computeEarnings } from '../components/EarningsCard';
 import { fmt12, fmtDuration, todayStr } from '../lib/format';
@@ -51,7 +52,12 @@ interface RentalBookingOwner {
   // admin-view enrichment
   owner_name?: string;
   owner_phone_display?: string;
+  owner_gerak_id?: string;
   vehicle_label?: string;
+  car_type?: string;
+  plate_no?: string;
+  color?: string;
+  price_hour?: number;
 }
 
 interface RentalBlock {
@@ -176,9 +182,9 @@ export const DriverHome: React.FC = () => {
         const ownerIds    = [...new Set(allBookings.map(b => b.owner_id))];
         const customerIds = [...new Set(allBookings.map(b => b.customer_id))];
         const [{ data: ownerProfs }, { data: custProfs }, { data: vehicles }] = await Promise.all([
-          supabase.from('profiles').select('id, name, phone').in('id', ownerIds),
+          supabase.from('profiles').select('id, name, phone, gerak_id').in('id', ownerIds),
           supabase.from('profiles').select('id, name, phone').in('id', customerIds),
-          supabase.from('rental_vehicles').select('owner_id, car_type, plate_no').in('owner_id', ownerIds),
+          supabase.from('rental_vehicles').select('owner_id, car_type, plate_no, color, price_hour').in('owner_id', ownerIds),
         ]);
         const ownerById     = new Map(ownerProfs?.map(p => [p.id, p]) ?? []);
         const custById      = new Map(custProfs?.map(p => [p.id, p]) ?? []);
@@ -195,7 +201,12 @@ export const DriverHome: React.FC = () => {
             customer_phone:       cp?.phone ?? '—',
             owner_name:           op?.name  ?? '—',
             owner_phone_display:  op?.phone ?? '',
+            owner_gerak_id:       op?.gerak_id ?? '—',
             vehicle_label:        v ? `${v.car_type} · ${v.plate_no}` : '—',
+            car_type:             v?.car_type ?? '—',
+            plate_no:             v?.plate_no ?? '—',
+            color:                v?.color ?? '—',
+            price_hour:           Number(v?.price_hour ?? 0),
           };
         });
       }
@@ -1788,85 +1799,31 @@ export const DriverHome: React.FC = () => {
 
               {/* PDF button — only when confirmed or completed */}
               {(bk.status === 'confirmed' || bk.status === 'completed') && (() => {
-                const vehicleName = bk.vehicle_label ?? rentalVehicle?.car_type ?? 'Vehicle';
-                const plateColor = rentalVehicle ? `${rentalVehicle.plate_no} · ${rentalVehicle.color}` : '';
-                const priceH = rentalVehicle?.price_hour ?? 0;
-                const isFullDay = bk.booking_type === 'fullday' && bk.end_date && bk.end_date !== bk.date;
-                const dateStr = isFullDay
-                  ? `${new Date(bk.date + 'T00:00:00').toLocaleDateString('en-MY', { day: '2-digit', month: 'short' })} – ${new Date(bk.end_date! + 'T00:00:00').toLocaleDateString('en-MY', { day: '2-digit', month: 'short', year: 'numeric' })}`
-                  : new Date(bk.date + 'T00:00:00').toLocaleDateString('en-MY', { day: '2-digit', month: 'short', year: 'numeric' });
-                const timeStr = isFullDay ? '' : `${fmt12(bk.start_hour)} → ${fmt12(bk.start_hour + bk.duration)}`;
-                const bookingDate = new Date(bk.created_at).toLocaleDateString('en-MY', { day: '2-digit', month: 'short', year: 'numeric' });
-                const ownerLabel = isAdminForRental && bk.owner_name ? bk.owner_name : (user.name ?? '');
-
-                const row = (label: string, value: string) => `<div class="row"><span class="lbl">${label}</span><span class="val">${value}</span></div>`;
-                const daysCount = isFullDay && bk.end_date
-                  ? Math.round((new Date(bk.end_date + 'T00:00:00').getTime() - new Date(bk.date + 'T00:00:00').getTime()) / 86400000) + 1
-                  : null;
-                const html = `<!DOCTYPE html><html><head><meta charset="utf-8">
-<title>Gerak Rental Receipt #${String(bk.booking_no).padStart(5, '0')}</title>
-<style>
-*{margin:0;padding:0;box-sizing:border-box}
-body{font-family:'Courier New',Courier,monospace;background:#fff;display:flex;justify-content:center;padding:32px 16px;font-size:12px;color:#1e293b}
-.wrap{width:100%;max-width:400px}
-.wordmark{font-size:22px;font-weight:300;letter-spacing:-0.5px;margin-bottom:2px}
-.wordmark .a{color:#ef4444}
-.subtitle{font-size:10px;color:#64748b;margin-bottom:16px}
-hr{border:none;border-top:1px dashed #cbd5e1;margin:12px 0}
-.row{display:flex;justify-content:space-between;margin-bottom:5px;gap:8px}
-.lbl{color:#64748b;white-space:nowrap}
-.val{font-weight:700;text-align:right}
-.total-row{display:flex;justify-content:space-between;margin-top:4px}
-.total-lbl{font-size:13px;font-weight:700}
-.total-val{font-size:20px;font-weight:900}
-.footer{margin-top:16px;font-size:9px;color:#94a3b8;text-align:center}
-@media print{body{padding:0}}
-</style></head><body><div class="wrap">
-<div class="wordmark">ger<span class="a">a</span>k</div>
-<div class="subtitle">Gerak Rental — Booking Receipt</div>
-${row('Booking Ref', `#${String(bk.booking_no).padStart(5, '0')}`)}
-${row('Status', bk.status.toUpperCase())}
-${row('Booked On', bookingDate)}
-<hr/>
-${row('Vehicle', vehicleName)}
-${plateColor ? row('Plate / Colour', plateColor) : ''}
-<hr/>
-${row(isFullDay ? 'Date Range' : 'Date', dateStr)}
-${timeStr ? row('Time', timeStr) : row('Type', 'Full Day')}
-${daysCount ? row('Duration', `${daysCount} day${daysCount > 1 ? 's' : ''}`) : row('Duration', fmtDuration(bk.duration))}
-${row('Persons', `${bk.persons} pax`)}
-<hr/>
-${isFullDay
-  ? row('Total', `RM${Number(bk.total_price).toFixed(2)}`)
-  : row('Rate', `RM${Number(priceH).toFixed(2)} / hour`) +
-    row('Duration', fmtDuration(bk.duration)) +
-    `<hr/>`}
-<div class="total-row"><span class="total-lbl">Total</span><span class="total-val">RM${Number(bk.total_price).toFixed(2)}</span></div>
-<hr/>
-${row('Customer', bk.customer_name)}
-${bk.customer_phone && bk.customer_phone !== '—' ? row('Phone', bk.customer_phone) : ''}
-${row('Vehicle Owner', ownerLabel)}
-<div class="footer">Generated by Gerak · ${bookingDate}</div>
-</div>
-<script>window.onload=function(){window.print();window.onafterprint=function(){window.close()}}<\/script>
-</body></html>`;
-
-                const handlePdf = () => {
-                  const iframe = document.createElement('iframe');
-                  iframe.style.cssText = 'position:fixed;width:0;height:0;border:none;visibility:hidden;';
-                  document.body.appendChild(iframe);
-                  const doc = iframe.contentDocument ?? iframe.contentWindow?.document;
-                  if (doc) {
-                    doc.open(); doc.write(html); doc.close();
-                    setTimeout(() => {
-                      iframe.contentWindow?.focus();
-                      iframe.contentWindow?.print();
-                      setTimeout(() => document.body.removeChild(iframe), 1000);
-                    }, 300);
-                  }
-                };
+                const doc = buildRentalReceiptRows({
+                  id:             bk.id,
+                  booking_no:     bk.booking_no,
+                  car_type:       bk.car_type   ?? rentalVehicle?.car_type   ?? 'Vehicle',
+                  plate_no:       bk.plate_no   ?? rentalVehicle?.plate_no   ?? '—',
+                  color:          bk.color      ?? rentalVehicle?.color      ?? '—',
+                  date:           bk.date,
+                  end_date:       bk.end_date,
+                  booking_type:   bk.booking_type,
+                  start_hour:     bk.start_hour,
+                  duration:       bk.duration,
+                  persons:        bk.persons,
+                  price_hour:     bk.price_hour ?? rentalVehicle?.price_hour ?? 0,
+                  total_price:    bk.total_price,
+                  notes:          bk.notes,
+                  status:         bk.status,
+                  owner_name:     isAdminForRental ? (bk.owner_name ?? '—')         : (user.name ?? ''),
+                  owner_gerak_id: isAdminForRental ? (bk.owner_gerak_id ?? '—')     : (user.gerakId ?? ''),
+                  owner_phone:    isAdminForRental ? (bk.owner_phone_display ?? '') : (user.phone ?? ''),
+                  created_at:     bk.created_at,
+                  renterName:     bk.customer_name,
+                  renterPhone:    bk.customer_phone,
+                });
                 return (
-                  <button onClick={handlePdf}
+                  <button onClick={() => generateReceiptPdf(doc)}
                     className="w-full flex items-center justify-center gap-2 bg-white border border-slate-100 text-slate-500 text-xs font-semibold py-2.5 rounded-2xl active:scale-95 transition hover:bg-slate-100">
                     <FileDown className="w-3.5 h-3.5" /> Save as PDF
                   </button>
