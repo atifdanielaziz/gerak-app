@@ -27,6 +27,10 @@ const UNIVERSITY_FACULTIES: Record<string, string[]> = {
   ],
 };
 
+const UNIV_ABBREV: Record<string, string> = {
+  umpsa: 'UMPSA', uitm: 'UiTM', umk: 'UMK', ukm: 'UKM', uiam: 'UIAM',
+};
+
 const REMARKS = ['Master', 'PHD', 'Degree', 'Diploma'] as const;
 
 const formatIc = (val: string) => {
@@ -79,23 +83,19 @@ export const Jubah: React.FC = () => {
   const [icNumber, setIcNumber]       = useState('');
   const [hpNumber, setHpNumber]       = useState('');
   const [university, setUniversity]   = useState('');
-  const uniAbbrev = university.includes('Pahang') ? 'UMPSA'
-    : university.includes('UiTM') || university.includes('MARA') ? 'UiTM'
-    : university.includes('Kelantan') ? 'UMK'
-    : university.includes('Kebangsaan') ? 'UKM'
-    : 'UIA';
+  const uniAbbrev = UNIV_ABBREV[landingUniversity] ?? 'UMPSA';
   const [faculty, setFaculty]         = useState('');
   const [matricId, setMatricId]       = useState('');
   const [paymentMode, setPaymentMode]   = useState<'pickup' | 'postage' | 'deposit'>('pickup');
   const [postageZone, setPostageZone]   = useState<'SM' | 'SS'>('SM');
   const [depositMethod, setDepositMethod] = useState<'pickup' | 'postage'>('pickup');
   const [remark, setRemark]           = useState<typeof REMARKS[number]>('Degree');
-  type JubahDocField = { id: string; label: string; hint: string | null; position: number };
+  type JubahDocField = { id: string; field_key: string; label: string; hint: string | null; position: number };
   const FALLBACK_DOC_FIELDS: JubahDocField[] = [
-    { id: 'oscar', label: 'OSCAR',             hint: null,                                   position: 1 },
-    { id: 'skpg',  label: 'SKPG',              hint: null,                                   position: 2 },
-    { id: 'konvo', label: 'Konvo Slip',         hint: null,                                   position: 3 },
-    { id: 'ic',    label: 'IC (Front & Back)',  hint: 'Accepts PDF or image (JPG/PNG)',       position: 4 },
+    { id: 'oscar', field_key: 'oscar', label: 'OSCAR',             hint: null,                                   position: 1 },
+    { id: 'skpg',  field_key: 'skpg',  label: 'SKPG',              hint: null,                                   position: 2 },
+    { id: 'konvo', field_key: 'konvo', label: 'Konvo Slip',         hint: null,                                   position: 3 },
+    { id: 'ic',    field_key: 'ic',    label: 'IC (Front & Back)',  hint: 'Accepts PDF or image (JPG/PNG)',       position: 4 },
   ];
   const [docFields,      setDocFields]      = useState<JubahDocField[]>(FALLBACK_DOC_FIELDS);
   const [docFiles,       setDocFiles]       = useState<Record<string, File | null>>({});
@@ -280,7 +280,7 @@ export const Jubah: React.FC = () => {
       setDocFields(fields);
       const urls: Record<string, string> = {};
       fields.forEach(f => {
-        const { data } = supabase.storage.from('jubah-banners').getPublicUrl(`samples/${univKey}/${f.id}.jpg`);
+        const { data } = supabase.storage.from('jubah-banners').getPublicUrl(`samples/${univKey}/${f.field_key}.jpg`);
         urls[f.id] = `${data.publicUrl}?t=${Date.now()}`;
       });
       setSampleUrls(urls);
@@ -289,13 +289,13 @@ export const Jubah: React.FC = () => {
     const load = async () => {
       const { data } = await supabase
         .from('jubah_doc_fields')
-        .select('id, label, hint, position')
+        .select('id, field_key, label, hint, position')
         .eq('university_key', landingUniversity)
         .order('position');
       if (data && data.length > 0) { applyFields(data, landingUniversity); return; }
       const { data: defaults } = await supabase
         .from('jubah_doc_fields')
-        .select('id, label, hint, position')
+        .select('id, field_key, label, hint, position')
         .eq('university_key', 'umpsa')
         .order('position');
       if (defaults && defaults.length > 0) { applyFields(defaults, 'umpsa'); return; }
@@ -342,14 +342,16 @@ export const Jubah: React.FC = () => {
         const rawWidth    = wmFont.widthOfTextAtSize(wmText, baseSize);
         const targetWidth = width * 0.85;
         const fontSize    = Math.max(8, Math.min(40, baseSize * (targetWidth / rawWidth)));
-        page.drawText(wmText, {
-          x: width * 0.06,
-          y: height * 0.25,
-          size: fontSize,
-          font: wmFont,
-          color: wmColor,
-          opacity: 0.4,
-          rotate: degrees(wmAngle),
+        [0.15, 0.45, 0.75].forEach(yFrac => {
+          page.drawText(wmText, {
+            x: width * 0.06,
+            y: height * yFrac,
+            size: fontSize,
+            font: wmFont,
+            color: wmColor,
+            opacity: 0.4,
+            rotate: degrees(wmAngle),
+          });
         });
       };
 
@@ -360,7 +362,7 @@ export const Jubah: React.FC = () => {
           const doc = await PDFDocument.load(bytes);
           const pages = await merged.copyPages(doc, doc.getPageIndices());
           pages.forEach(p => merged.addPage(p));
-          if (field.id === 'ic') pages.forEach(stampWatermark);
+          if (field.field_key === 'ic') pages.forEach(stampWatermark);
         } else {
           const page = merged.addPage();
           const img = f.type === 'image/png'
@@ -369,7 +371,7 @@ export const Jubah: React.FC = () => {
           const { width, height } = img.scale(1);
           page.setSize(width, height);
           page.drawImage(img, { x: 0, y: 0, width, height });
-          if (field.id === 'ic') stampWatermark(page);
+          if (field.field_key === 'ic') stampWatermark(page);
         }
       };
       for (const entry of entries) await addFile(entry);

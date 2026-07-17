@@ -1008,7 +1008,7 @@ export const AdminHome: React.FC = () => {
     { key: 'ukm',     label: 'Universiti Kebangsaan Malaysia (UKM)' },
     { key: 'uiam',    label: 'Universiti Islam Antarabangsa Malaysia (UIA)' },
   ];
-  type DocField = { id: string; label: string; hint: string | null; position: number };
+  type DocField = { id: string; field_key: string; label: string; hint: string | null; position: number };
   const [bannerUrls,        setBannerUrls]        = useState<Record<string, string>>({});
   const [bannerImgError,    setBannerImgError]    = useState<Record<string, boolean>>({});
   const [bannerRefreshKey,  setBannerRefreshKey]  = useState<Record<string, number>>({});
@@ -1335,7 +1335,7 @@ export const AdminHome: React.FC = () => {
       let fields: DocField[] = [];
       const { data } = await supabase
         .from('jubah_doc_fields')
-        .select('id, label, hint, position')
+        .select('id, field_key, label, hint, position')
         .eq('university_key', sampleDocsPage.key)
         .order('position');
 
@@ -1345,14 +1345,14 @@ export const AdminHome: React.FC = () => {
         // First open for this university — copy from UMPSA defaults
         const { data: defaults } = await supabase
           .from('jubah_doc_fields')
-          .select('label, hint, position')
+          .select('field_key, label, hint, position')
           .eq('university_key', 'umpsa')
           .order('position');
         if (defaults?.length) {
           const { data: inserted } = await supabase
             .from('jubah_doc_fields')
-            .insert(defaults.map(d => ({ university_key: sampleDocsPage.key, label: d.label, hint: d.hint, position: d.position })))
-            .select('id, label, hint, position');
+            .insert(defaults.map(d => ({ university_key: sampleDocsPage.key, field_key: d.field_key, label: d.label, hint: d.hint, position: d.position })))
+            .select('id, field_key, label, hint, position');
           fields = inserted ?? [];
         }
       }
@@ -1362,8 +1362,8 @@ export const AdminHome: React.FC = () => {
       const bust = Date.now();
       const urls: Record<string, string> = {};
       fields.forEach(f => {
-        const { data: u } = supabase.storage.from(BANNER_BUCKET).getPublicUrl(`samples/${sampleDocsPage.key}/${f.id}.jpg`);
-        urls[f.id] = `${u.publicUrl}?t=${bust}`;
+        const { data: u } = supabase.storage.from(BANNER_BUCKET).getPublicUrl(`samples/${sampleDocsPage.key}/${f.field_key}.jpg`);
+        urls[f.field_key] = `${u.publicUrl}?t=${bust}`;
       });
       setSampleUrls(urls);
       setSampleLoaded({});
@@ -2222,10 +2222,10 @@ export const AdminHome: React.FC = () => {
 
           {/* Hidden image probes */}
           <div className="hidden">
-            {docFields.map(f => sampleUrls[f.id] && (
-              <img key={f.id} src={sampleUrls[f.id]}
-                onLoad={() => setSampleLoaded(prev => ({ ...prev, [f.id]: true }))}
-                onError={() => setSampleLoaded(prev => ({ ...prev, [f.id]: false }))}
+            {docFields.map(f => sampleUrls[f.field_key] && (
+              <img key={f.id} src={sampleUrls[f.field_key]}
+                onLoad={() => setSampleLoaded(prev => ({ ...prev, [f.field_key]: true }))}
+                onError={() => setSampleLoaded(prev => ({ ...prev, [f.field_key]: false }))}
               />
             ))}
           </div>
@@ -2248,29 +2248,29 @@ export const AdminHome: React.FC = () => {
               <div key={field.id} className="flex flex-col gap-1.5">
                 <p className="text-xs font-semibold text-slate-600">{field.label}</p>
                 {/* Sample image upload */}
-                {sampleLoaded[field.id] ? (
+                {sampleLoaded[field.field_key] ? (
                   <div className="flex items-center gap-3 bg-emerald-50 border border-emerald-100 rounded-xl p-2.5">
-                    <img src={sampleUrls[field.id]} alt={field.label} className="w-10 h-10 rounded-lg object-cover shrink-0" />
+                    <img src={sampleUrls[field.field_key]} alt={field.label} className="w-10 h-10 rounded-lg object-cover shrink-0" />
                     <div className="flex-1 min-w-0">
                       <p className="text-xs font-semibold text-emerald-700">Sample uploaded</p>
                       <p className="text-xs text-emerald-500">Tap to replace or remove</p>
                     </div>
                     <button type="button"
-                      onClick={() => { setCurrentSampleDoc(field.id); setTimeout(() => sampleFileRef.current?.click(), 0); }}
+                      onClick={() => { setCurrentSampleDoc(field.field_key); setTimeout(() => sampleFileRef.current?.click(), 0); }}
                       className="text-slate-400 active:scale-90 transition shrink-0 p-1">
                       <Upload className="w-4 h-4" />
                     </button>
-                    <button type="button" onClick={() => handleSampleDelete(field.id)}
+                    <button type="button" onClick={() => handleSampleDelete(field.field_key)}
                       className="text-slate-400 active:scale-90 transition shrink-0 p-1">
                       <Trash2 className="w-4 h-4" />
                     </button>
                   </div>
                 ) : (
                   <button type="button"
-                    disabled={sampleUploading === field.id}
-                    onClick={() => { setCurrentSampleDoc(field.id); setTimeout(() => sampleFileRef.current?.click(), 0); }}
+                    disabled={sampleUploading === field.field_key}
+                    onClick={() => { setCurrentSampleDoc(field.field_key); setTimeout(() => sampleFileRef.current?.click(), 0); }}
                     className="w-full border-2 border-dashed border-slate-200 rounded-xl py-3 flex items-center justify-center gap-2 text-slate-400 hover:border-blue-400 hover:text-blue-500 hover:bg-blue-50/30 transition cursor-pointer disabled:opacity-50">
-                    {sampleUploading === field.id
+                    {sampleUploading === field.field_key
                       ? <span className="w-4 h-4 rounded-full border-2 border-slate-300 border-t-blue-500 animate-spin" />
                       : <><Upload className="w-4 h-4" /><span className="text-xs font-semibold">Upload {field.label} Sample</span></>
                     }
