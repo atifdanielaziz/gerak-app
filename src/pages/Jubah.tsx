@@ -200,7 +200,7 @@ export const Jubah: React.FC = () => {
   // succeeds (jubahBooking truthy) since there's nothing left to lose then.
   useEffect(() => {
     if (jubahBooking || !landingUniversity) { setLeaveGuard(null); return; }
-    setLeaveGuard(hasUnsavedInput ? () => setShowLeaveConfirm(true) : null);
+    setLeaveGuard(() => (hasUnsavedInput ? () => setShowLeaveConfirm(true) : null));
     return () => setLeaveGuard(null);
   }, [hasUnsavedInput, jubahBooking, landingUniversity, setLeaveGuard]);
 

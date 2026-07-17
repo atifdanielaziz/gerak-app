@@ -168,6 +168,15 @@ const SwipeBackGesture: React.FC<{ children: React.ReactNode }> = ({ children })
     const onStart = (e: TouchEvent) => {
       const t = e.touches[0];
       if (t.clientX >= EDGE) return;
+      // Don't arm the back-gesture while a text field is focused — reaching
+      // toward the keyboard or repositioning the cursor near the left edge
+      // can otherwise register as a swipe and spuriously trigger a page's
+      // leave-guard (e.g. Jubah's "Discard this booking?") while typing.
+      const active = document.activeElement as HTMLElement | null;
+      if (active && (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA')) {
+        modeRef.current = 'none';
+        return;
+      }
       startXRef.current  = t.clientX;
       startYRef.current  = t.clientY;
       dirLockRef.current = null;
