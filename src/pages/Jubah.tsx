@@ -414,10 +414,8 @@ export const Jubah: React.FC = () => {
     let cancelled = false;
     const poll = async () => {
       const { data } = await supabase
-        .from('jubah_bookings')
-        .select('status, rider_name, rider_phone')
-        .eq('reference', jubahBooking.reference)
-        .single();
+        .rpc('get_jubah_booking_live_status', { p_reference: jubahBooking.reference })
+        .single<{ status: string; rider_name: string | null; rider_phone: string | null }>();
       if (data && !cancelled) {
         setLiveStatus(data.status);
         setLiveRiderName(data.rider_name ?? null);
