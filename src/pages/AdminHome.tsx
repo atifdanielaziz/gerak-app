@@ -1,6 +1,7 @@
 ﻿import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { useApp } from '../context/AppContext';
 import { supabase } from '../lib/supabase';
+import { stampWatermark } from '../lib/watermark';
 import {
   BarChart3, Car, Users, Clock, CheckCircle2,
   AlertCircle, RefreshCw, Trash2, MapPin, Navigation,
@@ -969,6 +970,10 @@ export const AdminHome: React.FC = () => {
   const [verifySearch,    setVerifySearch]    = useState('');
   const [rejectingDoc,    setRejectingDoc]    = useState<string | null>(null);
   const [rejectReason,    setRejectReason]    = useState('');
+  const [showBackfillConfirm, setShowBackfillConfirm] = useState(false);
+  const [backfillRunning, setBackfillRunning] = useState(false);
+  const [backfillProgress, setBackfillProgress] = useState<{ done: number; total: number } | null>(null);
+  const [backfillFailedJobs, setBackfillFailedJobs] = useState<{ profileId: string; field: 'ic' | 'license'; url: string }[]>([]);
 
   // ── Jubah tab state ────────────────────────────────────────────────────────
   type JubahRider   = { id: string; name: string; gerak_id: string; campus: string; status: string; can_robe: boolean; ic_number: string | null; phone: string | null; jubah_method: string | null; jubah_drop_point: string | null };
@@ -1920,6 +1925,70 @@ export const AdminHome: React.FC = () => {
   }, [verifyFilter, isSuperAdmin, adminCampus]);
 
   useEffect(() => { if (activeTab === 'verify') loadVerifyDocs(); }, [activeTab, loadVerifyDocs]);
+
+  // One-off: watermark documents uploaded before the watermark feature
+  // shipped. New uploads are already watermarked at upload time — this only
+  // needs to run once against the backlog of pre-existing documents.
+  const extractDriverDocPath = (url: string): string | null => {
+    const marker = '/driver-documents/';
+    const idx = url.indexOf(marker);
+    if (idx === -1) return null;
+    return url.slice(idx + marker.length).split('?')[0];
+  };
+
+  const backfillOneDoc = async (job: { profileId: string; field: 'ic' | 'license'; url: string }): Promise<boolean> => {
+    const label = `[backfill] profile=${job.profileId} field=${job.field}`;
+    const path = extractDriverDocPath(job.url);
+    if (!path) { console.error(`${label} — could not extract storage path from stored URL:`, job.url); return false; }
+    try {
+      const res = await fetch(job.url);
+      if (!res.ok) { console.error(`${label} path=${path} — fetch failed: HTTP ${res.status} (signed URL likely expired or file missing)`); return false; }
+      const blob = await res.blob();
+      const ext  = path.split('.').pop() ?? 'jpg';
+      const mime = blob.type || (ext === 'pdf' ? 'application/pdf' : 'image/jpeg');
+      const file = new File([blob], path.split('/').pop() ?? 'doc', { type: mime });
+      const stamped = await stampWatermark(file);
+      const { error } = await supabase.storage.from('driver-documents').upload(path, stamped, { upsert: true });
+      if (error) { console.error(`${label} path=${path} — storage upload failed:`, error.message); return false; }
+      return true;
+    } catch (err) {
+      console.error(`${label} path=${path} — unexpected error:`, err);
+      return false;
+    }
+  };
+
+  const runBackfillJobs = async (jobs: { profileId: string; field: 'ic' | 'license'; url: string }[]) => {
+    setBackfillRunning(true);
+    setBackfillProgress({ done: 0, total: jobs.length });
+    const failed: typeof jobs = [];
+    for (let i = 0; i < jobs.length; i++) {
+      const ok = await backfillOneDoc(jobs[i]);
+      if (!ok) failed.push(jobs[i]);
+      setBackfillProgress({ done: i + 1, total: jobs.length });
+    }
+    setBackfillRunning(false);
+    setBackfillFailedJobs(failed);
+    if (failed.length) console.error('[backfill] failed jobs (see errors above for reasons):', failed);
+    showToast(`Backfill complete: ${jobs.length - failed.length}/${jobs.length} watermarked${failed.length ? `, ${failed.length} failed — see console for details` : ''}.`);
+  };
+
+  const handleBackfillWatermarks = async () => {
+    setShowBackfillConfirm(false);
+    const { data } = await supabase
+      .from('profiles')
+      .select('id, ic_url, license_url')
+      .or('ic_url.not.is.null,license_url.not.is.null');
+    const jobs: { profileId: string; field: 'ic' | 'license'; url: string }[] = [];
+    (data ?? []).forEach(r => {
+      if (r.ic_url) jobs.push({ profileId: r.id, field: 'ic', url: r.ic_url });
+      if (r.license_url) jobs.push({ profileId: r.id, field: 'license', url: r.license_url });
+    });
+    await runBackfillJobs(jobs);
+  };
+
+  const handleRetryFailedBackfill = async () => {
+    await runBackfillJobs(backfillFailedJobs);
+  };
 
   const handleApproveDoc = async (userId: string) => {
     await supabase.rpc('approve_driver_docs', { p_user_id: userId });
@@ -3165,6 +3234,35 @@ export const AdminHome: React.FC = () => {
               </button>
             ))}
           </div>
+
+          {/* Superadmin-only: one-off watermark backfill for pre-existing docs */}
+          {isSuperAdmin && (
+            <div className="bg-white border border-slate-100 rounded-2xl p-3.5 flex flex-col gap-2">
+              <h3 className="text-sm font-semibold text-slate-700 flex items-center gap-1.5">
+                <ShieldCheck className="w-3.5 h-3.5" /> Backfill Document Watermarks
+              </h3>
+              <p className="text-xs text-slate-400 font-semibold">
+                One-off: stamps the verification watermark onto every IC/license already uploaded before this feature shipped. New uploads are already watermarked automatically.
+              </p>
+              <button
+                onClick={() => setShowBackfillConfirm(true)}
+                disabled={backfillRunning}
+                className="bg-primary text-white font-semibold text-xs py-2.5 rounded-lg transition active:scale-95 disabled:opacity-50"
+              >
+                {backfillRunning && backfillProgress
+                  ? `Processing ${backfillProgress.done}/${backfillProgress.total}…`
+                  : 'Run Backfill'}
+              </button>
+              {!backfillRunning && backfillFailedJobs.length > 0 && (
+                <button
+                  onClick={handleRetryFailedBackfill}
+                  className="bg-amber-500 text-white font-semibold text-xs py-2.5 rounded-lg transition active:scale-95"
+                >
+                  Retry {backfillFailedJobs.length} Failed
+                </button>
+              )}
+            </div>
+          )}
 
           {/* Search */}
           <div className="bg-white border border-slate-100 rounded-2xl p-3.5 flex flex-col gap-2">
@@ -4562,6 +4660,34 @@ export const AdminHome: React.FC = () => {
                 receiptGateOn ? 'bg-amber-500' : 'bg-primary'
               }`}>
               Yes, Confirm
+            </button>
+          </div>
+        </div>
+      </div>
+    )}
+
+    {/* ── Backfill Watermark Confirmation Modal ── */}
+    {showBackfillConfirm && (
+      <div className="fixed inset-0 z-50 bg-black/40 flex items-end justify-center"
+        onClick={() => setShowBackfillConfirm(false)}>
+        <div className="w-full max-w-sm max-h-[calc(100dvh-3rem)] overflow-y-auto no-scrollbar bg-white rounded-t-3xl p-6 pb-10 shadow-2xl animate-slide-up"
+          onClick={e => e.stopPropagation()}>
+          <div className="w-10 h-1 bg-slate-200 rounded-full mx-auto mb-5" />
+          <div className="w-10 h-10 rounded-2xl mx-auto mb-3 flex items-center justify-center bg-amber-100">
+            <span className="text-amber-600 font-black text-sm">✕</span>
+          </div>
+          <h3 className="text-sm font-black text-slate-800 text-center mb-1">Run watermark backfill?</h3>
+          <p className="text-xs text-slate-400 font-semibold text-center mb-6">
+            This permanently overwrites every existing IC/license document in storage with a watermarked version. There is no way to recover the original files afterward. Only run this once.
+          </p>
+          <div className="flex gap-3">
+            <button onClick={() => setShowBackfillConfirm(false)}
+              className="flex-1 bg-slate-100 text-slate-600 font-semibold text-xs py-3 rounded-2xl transition active:scale-95">
+              Cancel
+            </button>
+            <button onClick={handleBackfillWatermarks}
+              className="flex-1 font-semibold text-xs py-3 rounded-2xl transition active:scale-95 text-white bg-amber-500">
+              Yes, Run Backfill
             </button>
           </div>
         </div>

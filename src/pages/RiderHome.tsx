@@ -3,6 +3,7 @@ import { useApp } from '../context/AppContext';
 import { supabase } from '../lib/supabase';
 import { WaIcon, toWa } from '../lib/whatsapp';
 import { getJubahDocSignedUrl } from '../lib/jubahDocs';
+import { stampWatermark } from '../lib/watermark';
 import {
   RefreshCw, ShoppingBasket, GraduationCap, TrendingUp,
   Upload, FileImage, ShieldCheck, ShieldAlert,
@@ -189,9 +190,10 @@ export const RiderHome: React.FC = () => {
     setUploadingDoc(type);
     const { data: { user: authUser } } = await supabase.auth.getUser();
     if (!authUser) { setUploadingDoc(null); return; }
-    const ext  = file.name.split('.').pop() ?? 'jpg';
+    const stamped = await stampWatermark(file);
+    const ext  = stamped.name.split('.').pop() ?? 'jpg';
     const path = `${authUser.id}/${type}.${ext}`;
-    const { error: upErr } = await supabase.storage.from('driver-documents').upload(path, file, { upsert: true });
+    const { error: upErr } = await supabase.storage.from('driver-documents').upload(path, stamped, { upsert: true });
     if (upErr) { showToast('Upload failed. Please try again.'); setUploadingDoc(null); return; }
     const { data: signed } = await supabase.storage.from('driver-documents').createSignedUrl(path, 60 * 60 * 24 * 365);
     const url = signed?.signedUrl ?? '';
