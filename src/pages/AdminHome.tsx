@@ -1617,39 +1617,36 @@ export const AdminHome: React.FC = () => {
     if (!isSuperAdmin) {
       users = users.filter(u => u.campus.toLowerCase() === adminCampus.toLowerCase());
     }
-    const driverIds = users.filter(u => u.role === 'driver').map(u => u.id);
-    if (driverIds.length > 0) {
-      const { data: caps } = await supabase
-        .from('profiles').select('id, can_drive, can_rent').in('id', driverIds);
-      if (caps) {
-        caps.forEach(c => {
-          const u = users.find(u => u.id === c.id);
-          if (u) { u.can_drive = c.can_drive; u.can_rent = c.can_rent; }
-        });
-      }
-    }
-    const riderIds = users.filter(u => u.role === 'rider').map(u => u.id);
-    if (riderIds.length > 0) {
-      const { data: caps } = await supabase
-        .from('profiles').select('id, can_daily, can_robe').in('id', riderIds);
-      if (caps) {
-        caps.forEach(c => {
-          const u = users.find(u => u.id === c.id);
-          if (u) { u.can_daily = c.can_daily; u.can_robe = c.can_robe; }
-        });
-      }
-    }
+    const driverIds      = users.filter(u => u.role === 'driver').map(u => u.id);
+    const riderIds       = users.filter(u => u.role === 'rider').map(u => u.id);
     const driverRiderIds = [...driverIds, ...riderIds];
-    if (driverRiderIds.length > 0) {
-      const { data: exempts } = await supabase
-        .from('profiles').select('id, receipt_gate_exempt').in('id', driverRiderIds);
-      if (exempts) {
-        exempts.forEach(c => {
-          const u = users.find(u => u.id === c.id);
-          if (u) { u.receipt_gate_exempt = c.receipt_gate_exempt; }
-        });
-      }
-    }
+
+    // Three independent lookups — fire together instead of awaiting one at a time.
+    const [{ data: driverCaps }, { data: riderCaps }, { data: exempts }] = await Promise.all([
+      driverIds.length > 0
+        ? supabase.from('profiles').select('id, can_drive, can_rent').in('id', driverIds)
+        : Promise.resolve({ data: null }),
+      riderIds.length > 0
+        ? supabase.from('profiles').select('id, can_daily, can_robe').in('id', riderIds)
+        : Promise.resolve({ data: null }),
+      driverRiderIds.length > 0
+        ? supabase.from('profiles').select('id, receipt_gate_exempt').in('id', driverRiderIds)
+        : Promise.resolve({ data: null }),
+    ]);
+
+    const usersById = new Map(users.map(u => [u.id, u]));
+    driverCaps?.forEach(c => {
+      const u = usersById.get(c.id);
+      if (u) { u.can_drive = c.can_drive; u.can_rent = c.can_rent; }
+    });
+    riderCaps?.forEach(c => {
+      const u = usersById.get(c.id);
+      if (u) { u.can_daily = c.can_daily; u.can_robe = c.can_robe; }
+    });
+    exempts?.forEach(c => {
+      const u = usersById.get(c.id);
+      if (u) { u.receipt_gate_exempt = c.receipt_gate_exempt; }
+    });
     setProfileUsers(users);
     setUsersLoading(false);
   }, [isSuperAdmin, adminCampus]);

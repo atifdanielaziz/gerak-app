@@ -180,10 +180,13 @@ export const DriverHome: React.FC = () => {
           supabase.from('profiles').select('id, name, phone').in('id', customerIds),
           supabase.from('rental_vehicles').select('owner_id, car_type, plate_no').in('owner_id', ownerIds),
         ]);
+        const ownerById     = new Map(ownerProfs?.map(p => [p.id, p]) ?? []);
+        const custById      = new Map(custProfs?.map(p => [p.id, p]) ?? []);
+        const vehicleByOwner = new Map(vehicles?.map(v => [v.owner_id, v]) ?? []);
         enriched = allBookings.map(b => {
-          const op = ownerProfs?.find(p => p.id === b.owner_id);
-          const cp = custProfs?.find(p => p.id === b.customer_id);
-          const v  = vehicles?.find(v => v.owner_id === b.owner_id);
+          const op = ownerById.get(b.owner_id);
+          const cp = custById.get(b.customer_id);
+          const v  = vehicleByOwner.get(b.owner_id);
           return {
             ...b,
             start_hour:           Number(b.start_hour),
@@ -221,8 +224,9 @@ export const DriverHome: React.FC = () => {
       const customerIds = [...new Set(bookings.map(b => b.customer_id))];
       const { data: profiles } = await supabase
         .from('profiles').select('id, name, phone').in('id', customerIds);
+      const profileById = new Map(profiles?.map(p => [p.id, p]) ?? []);
       enriched = bookings.map(b => {
-        const p = profiles?.find(p => p.id === b.customer_id);
+        const p = profileById.get(b.customer_id);
         return {
           ...b,
           start_hour:     Number(b.start_hour),

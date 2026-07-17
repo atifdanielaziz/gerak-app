@@ -77,9 +77,11 @@ async function loadRentalItems(customerId: string, renterName: string, renterPho
     supabase.from('rental_vehicles').select('owner_id, car_type, plate_no, color, price_hour').in('owner_id', ownerIds),
   ]);
 
+  const profileById    = new Map(profiles?.map(p => [p.id, p]) ?? []);
+  const vehicleByOwner = new Map(vehicles?.map(v => [v.owner_id, v]) ?? []);
   return rows.map(r => {
-    const p = profiles?.find(p => p.id === r.owner_id);
-    const v = vehicles?.find(v => v.owner_id === r.owner_id);
+    const p = profileById.get(r.owner_id);
+    const v = vehicleByOwner.get(r.owner_id);
     const bk = {
       ...r,
       start_hour:     Number(r.start_hour),

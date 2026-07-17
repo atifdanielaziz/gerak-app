@@ -122,9 +122,10 @@ export const GerakRental: React.FC = () => {
       .select('*')
       .in('owner_id', ids);
 
+    const vehicleByOwner = new Map(vehicles?.map(v => [v.owner_id, v]) ?? []);
     const merged: RentalOwner[] = profiles
       .map(p => {
-        const v = vehicles?.find(v => v.owner_id === p.id);
+        const v = vehicleByOwner.get(p.id);
         if (!v) return null;
         return {
           id: p.id, name: p.name, phone: p.phone ?? '', gerak_id: p.gerak_id ?? '',
@@ -185,9 +186,11 @@ export const GerakRental: React.FC = () => {
       supabase.from('rental_vehicles').select('owner_id, car_type, plate_no, color, price_hour').in('owner_id', ownerIds),
     ]);
 
+    const profileById    = new Map(profiles?.map(p => [p.id, p]) ?? []);
+    const vehicleByOwner = new Map(vehicles?.map(v => [v.owner_id, v]) ?? []);
     const enriched: RentalBooking[] = rows.map(r => {
-      const p = profiles?.find(p => p.id === r.owner_id);
-      const v = vehicles?.find(v => v.owner_id === r.owner_id);
+      const p = profileById.get(r.owner_id);
+      const v = vehicleByOwner.get(r.owner_id);
       return {
         ...r,
         start_hour:     Number(r.start_hour),
