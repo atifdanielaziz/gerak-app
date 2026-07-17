@@ -44,6 +44,14 @@ serve(async (req) => {
     const pathPattern = /^[0-9a-f-]{36}\/monthly_receipt\.(jpe?g|png|webp)$/i
     if (!pathPattern.test(imagePath)) return json({ success: false, reason: 'Invalid file path.' }, 400)
 
+    // Defense-in-depth: the path's folder must be the caller's own id, even
+    // though storage RLS already enforces this today — this function uses
+    // the service-role client to write profiles, so it shouldn't rely
+    // solely on storage policy correctness for something this sensitive.
+    if (!imagePath.startsWith(`${user.id}/`)) {
+      return json({ success: false, reason: 'Unauthorized' }, 403)
+    }
+
     // ── Download image from Supabase Storage ───────────────────────────
     const { data: blob, error: dlErr } = await supabase.storage
       .from('driver-receipts')
