@@ -770,7 +770,7 @@ export const DriverHome: React.FC = () => {
           {effectiveCanDrive && (
             <button
               onPointerDown={(e) => { e.preventDefault(); setActiveTab('pool'); }}
-              className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-xs font-semibold transition-transform relative ${
+              className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-xs font-semibold transition-transform transform-gpu relative ${
                 activeTab === 'pool' ? 'bg-primary text-white' : 'text-slate-400'
               }`}
             >
@@ -792,7 +792,7 @@ export const DriverHome: React.FC = () => {
           {effectiveCanDrive && (
             <button
               onPointerDown={(e) => { e.preventDefault(); setActiveTab('my-jobs'); }}
-              className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-xs font-semibold transition-transform relative ${
+              className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-xs font-semibold transition-transform transform-gpu relative ${
                 activeTab === 'my-jobs' ? 'bg-primary text-white' : 'text-slate-400'
               }`}
             >
@@ -810,7 +810,7 @@ export const DriverHome: React.FC = () => {
           {effectiveCanRent && (
             <button
               onPointerDown={(e) => { e.preventDefault(); setActiveTab('rental'); }}
-              className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-xs font-semibold transition-transform relative ${
+              className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-xs font-semibold transition-transform transform-gpu relative ${
                 activeTab === 'rental' ? 'bg-primary text-white' : 'text-slate-400'
               }`}
             >
@@ -830,7 +830,7 @@ export const DriverHome: React.FC = () => {
           {effectiveCanDrive && (
             <button
               onPointerDown={(e) => { e.preventDefault(); setActiveTab('earnings'); }}
-              className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-xs font-semibold transition-transform ${
+              className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-xs font-semibold transition-transform transform-gpu ${
                 activeTab === 'earnings' ? 'bg-primary text-white' : 'text-slate-400'
               }`}
             >
@@ -1268,7 +1268,7 @@ export const DriverHome: React.FC = () => {
               <div className="flex bg-white border border-slate-100 rounded-2xl p-1 gap-1">
                 {subViews.map(({ v, Icon, label }) => (
                   <button key={v} onPointerDown={(e) => { e.preventDefault(); setRentalSubView(v); }}
-                    className={`flex-1 py-2 rounded-xl text-xs font-semibold transition-transform flex flex-col items-center gap-0.5 ${
+                    className={`flex-1 py-2 rounded-xl text-xs font-semibold transition-transform transform-gpu flex flex-col items-center gap-0.5 ${
                       rentalSubView === v ? 'bg-primary text-white' : 'text-slate-400'
                     }`}>
                     <Icon className="w-3 h-3" />
