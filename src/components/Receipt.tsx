@@ -35,12 +35,12 @@ export const ReceiptCard: React.FC<{
         {r.dividerBefore && <div className="border-t border-dashed border-slate-200 my-1" />}
         {r.whatsapp ? (
           <p className="flex items-center gap-2 flex-wrap">
-            <span className="text-slate-400 shrink-0">{r.label}:</span>
+            <span className="text-slate-400 shrink-0">{r.label} :</span>
             <span className={valueClass(r)}>{r.value}</span>
             <WaBtn phone={r.whatsapp.phone} message={r.whatsapp.message} />
           </p>
         ) : (
-          <p><span className="text-slate-400">{r.label}:</span> <span className={valueClass(r)}>{r.value}</span></p>
+          <p><span className="text-slate-400">{r.label} :</span> <span className={valueClass(r)}>{r.value}</span></p>
         )}
       </React.Fragment>
     ))}

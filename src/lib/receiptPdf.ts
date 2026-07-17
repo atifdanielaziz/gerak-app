@@ -4,14 +4,14 @@ const printDate = () =>
   new Date().toLocaleDateString('en-MY', { day: '2-digit', month: 'short', year: 'numeric' });
 
 const row = (label: string, value: string) =>
-  `<div class="row"><span class="lbl">${label}</span><span class="val">${value}</span></div>`;
+  `<div class="row"><span class="lbl">${label} :</span> <span class="val">${value}</span></div>`;
 
 export function generateReceiptPdf(doc: ReceiptDoc, extraRows: ReceiptRow[] = []) {
   const allRows = [...doc.rows, ...extraRows];
 
   const rowsHtml = allRows
     .map(r => (r.dividerBefore ? '<hr/>' : '') + (r.emphasis === 'total'
-      ? `<div class="row total"><span class="lbl">${r.label}</span><span class="val">${r.value}</span></div>`
+      ? `<div class="row total"><span class="lbl">${r.label} :</span> <span class="val">${r.value}</span></div>`
       : row(r.label, r.value)))
     .join('');
 
@@ -21,8 +21,8 @@ export function generateReceiptPdf(doc: ReceiptDoc, extraRows: ReceiptRow[] = []
 body{font-family:monospace;font-size:13px;color:#1e293b;max-width:400px;margin:40px auto;padding:0 20px}
 h1{font-size:20px;font-weight:300;margin:0 0 2px}h1 span{color:#ef4444}
 .sub{font-size:11px;color:#94a3b8;margin-bottom:24px}
-.row{display:flex;justify-content:space-between;margin-bottom:6px;gap:8px}
-.lbl{color:#94a3b8;flex-shrink:0}.val{font-weight:700;text-align:right}
+.row{margin-bottom:6px}
+.lbl{color:#94a3b8}.val{font-weight:700}
 hr{border:none;border-top:1px dashed #cbd5e1;margin:12px 0}
 .total{font-size:16px}
 .ref{font-size:10px;color:#94a3b8;text-align:center;margin-top:24px}
