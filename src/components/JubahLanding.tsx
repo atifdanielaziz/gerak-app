@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect, useRef } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { useApp } from '../context/AppContext';
 import { ChevronRight, Image as ImageIcon, Users, PackageSearch, GraduationCap } from 'lucide-react';
@@ -45,8 +45,6 @@ export const JubahLanding: React.FC<Props> = ({ onProceed }) => {
   const [imgError, setImgError]         = useState<Record<string, boolean>>({});
   const [riderDir, setRiderDir]         = useState<RiderDir[]>([]);
   const [selectedRider, setSelectedRider] = useState<RiderDir | null>(null);
-  const [btnCollapsed, setBtnCollapsed] = useState(false);
-  const collapseRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const openRider  = (r: RiderDir) => { setSelectedRider(r); setSheetOpen(true); };
   const closeRider = ()            => { setSelectedRider(null); setSheetOpen(false); };
@@ -76,14 +74,9 @@ export const JubahLanding: React.FC<Props> = ({ onProceed }) => {
     setBannerUrls(urls);
   }, []);
 
-  useEffect(() => () => { if (collapseRef.current) clearTimeout(collapseRef.current); }, []);
-
   const handleUniversityChange = (key: string) => {
     setSelectedKey(key);
-    setBtnCollapsed(false);
     setImgError(prev => ({ ...prev, [key]: false }));
-    if (collapseRef.current) clearTimeout(collapseRef.current);
-    if (key) collapseRef.current = setTimeout(() => setBtnCollapsed(true), 1500);
     if (!key) { setRiderDir([]); return; }
     const campusList = CAMPUS_LIST[key] ?? [key];
 
@@ -123,21 +116,22 @@ export const JubahLanding: React.FC<Props> = ({ onProceed }) => {
             type="button"
             onClick={() => { if (selectedKey) onProceed(selectedKey); }}
             disabled={!selectedKey}
-            className="flex items-center gap-0.5 active:scale-95 transition"
+            className={`flex items-center rounded-full py-1.5 transition-all duration-300 ease-out active:scale-90 ${
+              selectedKey ? 'bg-primary text-white pl-3 pr-2' : 'bg-slate-100 text-slate-300 px-2'
+            }`}
           >
             <span
-              className="text-xs font-semibold text-primary whitespace-nowrap overflow-hidden"
+              className="text-xs font-semibold whitespace-nowrap overflow-hidden"
               style={{
-                maxWidth: (selectedKey && !btnCollapsed) ? '40px' : '0px',
-                opacity:  (selectedKey && !btnCollapsed) ? 1 : 0,
-                transition: 'max-width 0.4s ease, opacity 0.3s ease',
+                maxWidth:   selectedKey ? '40px' : '0px',
+                opacity:    selectedKey ? 1 : 0,
+                marginRight: selectedKey ? '4px' : '0px',
+                transition: 'max-width 0.35s ease, opacity 0.25s ease, margin-right 0.35s ease',
               }}
             >
               Next
             </span>
-            <ChevronRight
-              className={`w-5 h-5 transition-colors duration-300 ${selectedKey ? 'text-primary' : 'text-slate-300'}`}
-            />
+            <ChevronRight className="w-4 h-4 shrink-0" />
           </button>
         </div>
 
