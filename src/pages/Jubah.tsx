@@ -414,10 +414,8 @@ export const Jubah: React.FC = () => {
     let cancelled = false;
     const poll = async () => {
       const { data } = await supabase
-        .from('jubah_bookings')
-        .select('status, rider_name, rider_phone')
-        .eq('reference', jubahBooking.reference)
-        .single();
+        .rpc('get_jubah_booking_live_status', { p_reference: jubahBooking.reference })
+        .single<{ status: string; rider_name: string | null; rider_phone: string | null }>();
       if (data && !cancelled) {
         setLiveStatus(data.status);
         setLiveRiderName(data.rider_name ?? null);
@@ -496,9 +494,10 @@ export const Jubah: React.FC = () => {
       console.error('[GERAK] Storage upload failed:', err);
     }
 
+    const result = await bookJubah(reference, fullName, icNumber, hpNumber, university, faculty, matricId, paymentMode, remark, combinedFileName, cost, balanceDue, selectedRiderId, selectedRider?.name, bookingCampus, addr, docsPath, paymentPath, oscarPath, skpgPath, konvoPath, icPath);
     setBooking(false);
+    if (!result.success) { setFileError(result.error ?? 'Booking failed to save. Please try again.'); return; }
     clearFormDraft();
-    bookJubah(reference, fullName, icNumber, hpNumber, university, faculty, matricId, paymentMode, remark, combinedFileName, cost, balanceDue, selectedRiderId, selectedRider?.name, bookingCampus, addr, docsPath, paymentPath, oscarPath, skpgPath, konvoPath, icPath);
 
     // Sheet gets every document labelled by its real field label — lossless
     // regardless of how many doc fields this university has configured,
@@ -1138,6 +1137,7 @@ export const Jubah: React.FC = () => {
               <button
                 type="button"
                 onClick={() => {
+                  if (!navigator.clipboard) return;
                   navigator.clipboard.writeText(jubahBooking.reference);
                   setCopied(true);
                   setTimeout(() => setCopied(false), 2000);

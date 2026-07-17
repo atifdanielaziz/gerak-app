@@ -586,9 +586,10 @@ export const DriverHome: React.FC = () => {
     const { data: signed } = await supabase.storage.from('driver-documents').createSignedUrl(path, 60 * 60 * 24 * 365);
     const url = signed?.signedUrl ?? '';
     const col = type === 'ic' ? { ic_url: url } : { license_url: url };
-    await supabase.from('profiles').update({ ...col, docs_status: 'pending' }).eq('id', authUser.id);
+    const { error: profileErr } = await supabase.from('profiles').update({ ...col, docs_status: 'pending' }).eq('id', authUser.id);
     setUploadingDoc(null);
     if (e.target) e.target.value = '';
+    if (profileErr) { showToast('Upload saved, but failed to submit for review. Please try again.'); return; }
     await refreshUserData();
     showToast(type === 'ic' ? 'IC uploaded!' : 'License uploaded!');
   };

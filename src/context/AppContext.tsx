@@ -158,7 +158,7 @@ interface AppContextType {
 
   // Jubah Delivery Module
   jubahBooking: JubahBooking | null;
-  bookJubah: (reference: string, fullName: string, icNumber: string, hpNumber: string, university: string, faculty: string, matricId: string, paymentMode: 'pickup' | 'postage' | 'deposit', remark: 'Master' | 'PHD' | 'Degree' | 'Diploma', combinedFileName: string, cost: number, balanceDue: number, riderId?: string, riderName?: string, campus?: 'Pekan' | 'Gambang', deliveryAddress?: string, docsPath?: string, paymentPath?: string, oscarPath?: string, skpgPath?: string, konvoPath?: string, icPath?: string) => void;
+  bookJubah: (reference: string, fullName: string, icNumber: string, hpNumber: string, university: string, faculty: string, matricId: string, paymentMode: 'pickup' | 'postage' | 'deposit', remark: 'Master' | 'PHD' | 'Degree' | 'Diploma', combinedFileName: string, cost: number, balanceDue: number, riderId?: string, riderName?: string, campus?: 'Pekan' | 'Gambang', deliveryAddress?: string, docsPath?: string, paymentPath?: string, oscarPath?: string, skpgPath?: string, konvoPath?: string, icPath?: string) => Promise<{ success: boolean; error?: string }>;
   scheduleReturn: (method: 'self' | 'locker' | 'courier', date: string, time: string) => void;
   cancelJubahBooking: () => void;
 }
@@ -729,7 +729,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   // 4. Jubah Delivery Operations
-  const bookJubah = (
+  // Awaits the persistence RPC before confirming, so a failed save never
+  // shows the customer a false "Booking Confirmed" screen (previously
+  // fire-and-forget — the confirmation showed regardless of RPC outcome).
+  const bookJubah = async (
     reference: string,
     fullName: string,
     icNumber: string,
@@ -752,7 +755,39 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     skpgPath?: string,
     konvoPath?: string,
     icPath?: string,
-  ) => {
+  ): Promise<{ success: boolean; error?: string }> => {
+    if (!campus) return { success: false, error: 'Missing campus information.' };
+
+    const { data: { user: authUser } } = await supabase.auth.getUser();
+    const { data, error } = await supabase.rpc('create_jubah_booking', {
+      p_reference:         reference,
+      p_full_name:         fullName,
+      p_ic_number:         icNumber,
+      p_hp_number:         hpNumber,
+      p_matric_id:         matricId,
+      p_university:        university,
+      p_campus:            campus,
+      p_faculty:           faculty,
+      p_remark:            remark,
+      p_payment_mode:      paymentMode,
+      p_cost:              cost,
+      p_balance_due:       balanceDue,
+      p_rider_id:          riderId         ?? null,
+      p_rider_name:        riderName       ?? null,
+      p_delivery_address:  deliveryAddress ?? null,
+      p_docs_path:    docsPath    ?? null,
+      p_payment_path: paymentPath ?? null,
+      p_oscar_path:   oscarPath   ?? null,
+      p_skpg_path:    skpgPath    ?? null,
+      p_konvo_path:   konvoPath   ?? null,
+      p_ic_path:      icPath      ?? null,
+      p_customer_id:       authUser?.id    ?? null,
+    });
+
+    if (error || !data?.success) {
+      console.error('[GERAK] Booking save failed:', error ?? data?.error);
+      return { success: false, error: (data?.error as string) ?? 'Could not save your booking. Please try again.' };
+    }
 
     const newBooking: JubahBooking = {
       reference,
@@ -773,38 +808,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     setJubahBooking(newBooking);
     addNotification('Robe Booking Confirmed', `Booking for ${fullName} (${remark}) confirmed. Service fee: RM${cost.toFixed(2)}.`, 'jubah');
-
-    // Persist to Supabase via SECURITY DEFINER RPC (bypasses RLS for guest bookings)
-    if (campus) {
-      supabase.auth.getUser().then(({ data: { user: authUser } }) => {
-        supabase.rpc('create_jubah_booking', {
-          p_reference:         reference,
-          p_full_name:         fullName,
-          p_ic_number:         icNumber,
-          p_hp_number:         hpNumber,
-          p_matric_id:         matricId,
-          p_university:        university,
-          p_campus:            campus,
-          p_faculty:           faculty,
-          p_remark:            remark,
-          p_payment_mode:      paymentMode,
-          p_cost:              cost,
-          p_balance_due:       balanceDue,
-          p_rider_id:          riderId         ?? null,
-          p_rider_name:        riderName       ?? null,
-          p_delivery_address:  deliveryAddress ?? null,
-          p_docs_path:    docsPath    ?? null,
-          p_payment_path: paymentPath ?? null,
-          p_oscar_path:   oscarPath   ?? null,
-          p_skpg_path:    skpgPath    ?? null,
-          p_konvo_path:   konvoPath   ?? null,
-          p_ic_path:      icPath      ?? null,
-          p_customer_id:       authUser?.id    ?? null,
-        }).then(({ data, error }) => {
-          if (error || !data?.success) console.error('[GERAK] Booking save failed:', error ?? data?.error);
-        });
-      });
-    }
+    return { success: true };
   };
 
   const scheduleReturn = (method: 'self' | 'locker' | 'courier', date: string, time: string) => {
