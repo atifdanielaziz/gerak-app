@@ -125,6 +125,9 @@ export const RiderHome: React.FC = () => {
       .eq('rider_id', authUser.id)
       .order('created_at', { ascending: false });
     if (error) console.error('[GERAK] jubah jobs load error:', error.message);
+    // TEMPORARY debug — remove once the 0-jobs report is root-caused.
+    setToast(`DEBUG id:${authUser.id.slice(0, 8)} rows:${data?.length ?? 0} err:${error?.message ?? 'none'}`);
+    setTimeout(() => setToast(''), 10000);
     setJubahJobs((data as JubahJobRow[]) ?? []);
     setJubahLoading(false);
   }, []);
