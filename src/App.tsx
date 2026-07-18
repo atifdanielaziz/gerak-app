@@ -143,21 +143,23 @@ const InstallPrompt: React.FC = () => {
 };
 
 const SwipeBackGesture: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { goBack, canGoBack } = useApp();
+  const { goBack, canGoBack, currentPage } = useApp();
 
   const [dragX,      setDragX]      = useState(0);
   const [gestureOn,  setGestureOn]  = useState(false); // finger is down → no CSS transition
   const [showBackUI, setShowBackUI] = useState(false); // show shadow + arrow (back mode only)
 
-  const dragXRef     = useRef(0);
-  const modeRef      = useRef<'none' | 'back' | 'bounce'>('none');
-  const startXRef    = useRef(0);
-  const startYRef    = useRef(0);
-  const dirLockRef   = useRef<'h' | 'v' | null>(null);
-  const canGoBackRef = useRef(canGoBack);
-  const goBackRef    = useRef(goBack);
+  const dragXRef      = useRef(0);
+  const modeRef       = useRef<'none' | 'back' | 'bounce'>('none');
+  const startXRef     = useRef(0);
+  const startYRef     = useRef(0);
+  const dirLockRef    = useRef<'h' | 'v' | null>(null);
+  const canGoBackRef  = useRef(canGoBack);
+  const goBackRef     = useRef(goBack);
+  const currentPageRef = useRef(currentPage);
 
   useEffect(() => { canGoBackRef.current = canGoBack; }, [canGoBack]);
+  useEffect(() => { currentPageRef.current = currentPage; }, [currentPage]);
   useEffect(() => { goBackRef.current = goBack; }, [goBack]);
 
   const EDGE       = 40;   // px from left edge to activate gesture
@@ -168,6 +170,13 @@ const SwipeBackGesture: React.FC<{ children: React.ReactNode }> = ({ children })
     const onStart = (e: TouchEvent) => {
       const t = e.touches[0];
       if (t.clientX >= EDGE) return;
+      // Admin's own sub-navigation (e.g. Jubah's list -> card -> details) is
+      // 100% explicit-button-driven and puts a back-chevron right at the
+      // left edge — exactly where this gesture arms. A vertical scroll
+      // gesture starting there can misclassify as horizontal in its first
+      // few pixels, and preventDefault() below then silently eats the
+      // scroll. Admin never relies on this swipe, so just skip it there.
+      if (currentPageRef.current === 'admin-home') return;
       // Don't arm the back-gesture while a text field is focused — reaching
       // toward the keyboard or repositioning the cursor near the left edge
       // can otherwise register as a swipe and spuriously trigger a page's
