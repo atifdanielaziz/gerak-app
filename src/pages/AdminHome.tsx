@@ -3644,11 +3644,12 @@ export const AdminHome: React.FC = () => {
                         </a>
                       </div>
                       <span className={`text-xs font-semibold px-3 py-2 rounded-xl border shrink-0 ${
-                        b.payment_mode === 'deposit' ? 'bg-amber-50 border-amber-100 text-amber-700' :
-                        b.payment_mode === 'postage' ? 'bg-blue-50 border-blue-100 text-blue-700' :
+                        b.payment_mode === 'deposit'
+                          ? (b.balance_paid ? 'bg-emerald-50 border-emerald-100 text-emerald-700' : 'bg-amber-50 border-amber-100 text-amber-700')
+                        : b.payment_mode === 'postage' ? 'bg-blue-50 border-blue-100 text-blue-700' :
                         'bg-slate-50 border-slate-200 text-slate-600'
                       }`}>
-                        {b.payment_mode === 'deposit' ? 'Deposit' : b.payment_mode === 'postage' ? 'Postage' : 'Pickup'}
+                        {b.payment_mode === 'deposit' ? (b.balance_paid ? 'Paid' : 'Deposit') : b.payment_mode === 'postage' ? 'Postage' : 'Pickup'}
                       </span>
                     </div>
 
@@ -3711,42 +3712,50 @@ export const AdminHome: React.FC = () => {
                               <ExternalLink className="w-2.5 h-2.5" /> proof
                             </a>
                           )}
+                          {b.balance_proof_url && !b.balance_paid && (
+                            <button
+                              type="button"
+                              onClick={async () => {
+                                const { data } = await supabase.rpc('mark_jubah_balance_paid', { p_booking_id: b.id });
+                                if (data?.success) {
+                                  const updated = { ...b, balance_paid: true };
+                                  setJubahBookings(prev => prev.map(r => r.id === b.id ? updated : r));
+                                  setJubahAdminSelected(updated);
+                                  showToast('Balance confirmed ✓');
+                                } else {
+                                  showToast('Failed to confirm balance.');
+                                }
+                              }}
+                              title="Confirm balance payment"
+                              className="w-7 h-7 flex items-center justify-center rounded-lg bg-emerald-500 hover:bg-emerald-600 active:scale-90 transition text-white shrink-0"
+                            >
+                              <Check className="w-3.5 h-3.5" />
+                            </button>
+                          )}
                         </div>
                       </div>
                     )}
 
-                    {/* Advance status button */}
-                    {!isDone && b.status !== 'cancelled' && (
-                      <button
-                        onClick={handleAdminAdvanceStatus}
-                        disabled={jubahAdminUpdating}
-                        className="w-full bg-primary hover:bg-primary-hover active:scale-[0.98] disabled:bg-slate-200 text-white font-semibold py-3 rounded-2xl transition flex items-center justify-center gap-2 text-sm">
-                        {jubahAdminUpdating
-                          ? <span className="w-4 h-4 rounded-full border-2 border-white/40 border-t-white animate-spin" />
-                          : `→ ${JUBAH_NEXT_LABEL[nextStat ?? ''] ?? `Mark ${JUBAH_STATUS_LABEL[nextStat ?? '']}`}`}
-                      </button>
-                    )}
+                    {/* Advance status button — deposit bookings stay gated until the balance is confirmed above */}
+                    {!isDone && b.status !== 'cancelled' && (() => {
+                      const balanceGateActive = b.payment_mode === 'deposit' && !b.balance_paid;
+                      return (
+                        <button
+                          onClick={handleAdminAdvanceStatus}
+                          disabled={jubahAdminUpdating || balanceGateActive}
+                          className="w-full bg-primary hover:bg-primary-hover active:scale-[0.98] disabled:bg-slate-200 disabled:cursor-not-allowed text-white font-semibold py-3 rounded-2xl transition flex items-center justify-center gap-2 text-sm">
+                          {jubahAdminUpdating
+                            ? <span className="w-4 h-4 rounded-full border-2 border-white/40 border-t-white animate-spin" />
+                            : balanceGateActive
+                              ? 'Awaiting Balance Payment'
+                              : `→ ${JUBAH_NEXT_LABEL[nextStat ?? ''] ?? `Mark ${JUBAH_STATUS_LABEL[nextStat ?? '']}`}`}
+                        </button>
+                      );
+                    })()}
                     {isDone && b.status !== 'cancelled' && (
                       <div className="bg-emerald-50 border border-emerald-100 rounded-2xl px-4 py-3 text-center">
                         <p className="text-xs font-semibold text-emerald-700">✓ Delivery Complete</p>
                       </div>
-                    )}
-
-                    {/* Mark Balance Paid */}
-                    {b.payment_mode === 'deposit' && b.balance_proof_url && !b.balance_paid && (
-                      <button
-                        onClick={async () => {
-                          const { data } = await supabase.rpc('mark_jubah_balance_paid', { p_booking_id: b.id });
-                          if (data?.success) {
-                            const updated = { ...b, balance_paid: true };
-                            setJubahBookings(prev => prev.map(r => r.id === b.id ? updated : r));
-                            setJubahAdminSelected(updated);
-                            showToast('Balance marked as paid.');
-                          }
-                        }}
-                        className="w-full bg-emerald-600 hover:bg-emerald-700 active:scale-[0.98] text-white font-semibold py-3 rounded-2xl text-sm transition">
-                        ✓ Mark Balance Paid
-                      </button>
                     )}
                   </div>
 
