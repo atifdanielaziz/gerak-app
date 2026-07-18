@@ -7,7 +7,7 @@ import { stampWatermark } from '../lib/watermark';
 import {
   RefreshCw, ShoppingBasket, GraduationCap, TrendingUp,
   Upload, FileImage, ShieldCheck, ShieldAlert,
-  ChevronLeft, Download, ExternalLink,
+  ChevronLeft, Download, ExternalLink, CheckCircle2,
 } from 'lucide-react';
 import { driverIsActive } from './Profile';
 
@@ -446,11 +446,14 @@ export const RiderHome: React.FC = () => {
                           <th className="py-2 pr-4 whitespace-nowrap">Name</th>
                           <th className="py-2 pr-4 whitespace-nowrap">Remark</th>
                           <th className="py-2 pr-4 whitespace-nowrap">Mode</th>
-                          <th className="py-2 whitespace-nowrap">Status</th>
+                          <th className="py-2 pr-4 whitespace-nowrap">Status</th>
+                          <th className="py-2 whitespace-nowrap">Confirm</th>
                         </tr>
                       </thead>
                       <tbody>
-                        {jubahJobs.map(job => (
+                        {jubahJobs.map(job => {
+                          const confirmed = job.payment_mode === 'deposit' ? job.balance_paid : job.status !== 'ordered';
+                          return (
                           <tr key={job.id}
                             onClick={() => goToCard(job)}
                             className="border-b border-slate-50 text-xs hover:bg-slate-50 active:bg-slate-100 transition cursor-pointer">
@@ -466,13 +469,17 @@ export const RiderHome: React.FC = () => {
                                 {job.payment_mode === 'deposit' ? 'Deposit' : job.payment_mode === 'postage' ? 'Postage' : 'Pickup'}
                               </span>
                             </td>
-                            <td className="py-2.5 whitespace-nowrap">
+                            <td className="py-2.5 pr-4 whitespace-nowrap">
                               <span className={`font-semibold px-2 py-0.5 rounded-full border text-xs ${STATUS_STYLE[job.status] ?? 'bg-slate-50 border-slate-200 text-slate-400'}`}>
                                 {STATUS_LABEL[job.status] ?? job.status}
                               </span>
                             </td>
+                            <td className="py-2.5 whitespace-nowrap">
+                              <CheckCircle2 className={`w-4 h-4 ${confirmed ? 'text-emerald-500' : 'text-slate-200'}`} />
+                            </td>
                           </tr>
-                        ))}
+                          );
+                        })}
                       </tbody>
                     </table>
                   </div>
