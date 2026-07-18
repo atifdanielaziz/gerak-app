@@ -43,7 +43,11 @@ $$;
 GRANT EXECUTE ON FUNCTION public.mark_jubah_balance_paid(uuid) TO authenticated;
 
 -- ── get_jubah_booking_live_status: also return balance_paid + balance_paid_at
--- (used by Jubah.tsx's post-booking tracking poller) ─────────────────────────
+-- (used by Jubah.tsx's post-booking tracking poller). DROP first — Postgres
+-- won't let CREATE OR REPLACE change a function's return columns, only its
+-- body; adding two output columns requires dropping and recreating it. ─────
+DROP FUNCTION IF EXISTS public.get_jubah_booking_live_status(text);
+
 CREATE OR REPLACE FUNCTION public.get_jubah_booking_live_status(p_reference text)
 RETURNS TABLE (
   status          text,
