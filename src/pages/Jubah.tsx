@@ -78,6 +78,11 @@ export const Jubah: React.FC = () => {
   const { user, jubahBooking, bookJubah, cancelJubahBooking, setCurrentPage, setSheetOpen, goBack, setLeaveGuard } = useApp();
 
   const [landingUniversity, setLandingUniversity] = useState('');
+  // Once booked, landingUniversity/form/tracking are all one page instance —
+  // invisible to the app's page-history — so a single header back-tap would
+  // otherwise skip straight past the Jubah landing to Dashboard. This lets
+  // back correctly step Tracking -> Landing (peek) -> Dashboard instead.
+  const [peekLanding, setPeekLanding] = useState(false);
 
   const [fullName, setFullName]       = useState('');
   const [icNumber, setIcNumber]       = useState('');
@@ -196,13 +201,21 @@ export const Jubah: React.FC = () => {
   // back button, or hardware/gesture back) prompts instead of silently
   // losing input. Scoped to landingUniversity being set — i.e. past the
   // university picker and on the real form — so the picker screen itself
-  // still goes back with no prompt. Cleared once a booking actually
-  // succeeds (jubahBooking truthy) since there's nothing left to lose then.
+  // still goes back with no prompt.
+  //
+  // Once booked (jubahBooking truthy), repurposed to step back through
+  // Jubah's own internal views instead of unwinding real page history:
+  // Tracking -> (back) -> Landing peek -> (back) -> Tracking again. Bottom
+  // nav remains the way to actually leave Jubah in this state.
   useEffect(() => {
-    if (jubahBooking || !landingUniversity) { setLeaveGuard(null); return; }
+    if (jubahBooking) {
+      setLeaveGuard(() => (peekLanding ? () => setPeekLanding(false) : () => setPeekLanding(true)));
+      return () => setLeaveGuard(null);
+    }
+    if (!landingUniversity) { setLeaveGuard(null); return; }
     setLeaveGuard(() => (hasUnsavedInput ? () => setShowLeaveConfirm(true) : null));
     return () => setLeaveGuard(null);
-  }, [hasUnsavedInput, jubahBooking, landingUniversity, setLeaveGuard]);
+  }, [hasUnsavedInput, jubahBooking, landingUniversity, peekLanding, setLeaveGuard]);
 
   const handleDiscardLeave = () => {
     clearFormDraft();
@@ -342,9 +355,16 @@ export const Jubah: React.FC = () => {
         const rawWidth    = wmFont.widthOfTextAtSize(wmText, baseSize);
         const targetWidth = width * 0.85;
         const fontSize    = Math.max(8, Math.min(40, baseSize * (targetWidth / rawWidth)));
+        // drawText's x anchors the START of the (rotated) baseline, not its
+        // center — so centering the text horizontally means backing the
+        // anchor off by half of its rotated horizontal footprint, not just
+        // starting from a fixed left margin.
+        const renderedWidth  = wmFont.widthOfTextAtSize(wmText, fontSize);
+        const horizontalSpan = renderedWidth * Math.cos(wmAngle * Math.PI / 180);
+        const xCentered       = (width - horizontalSpan) / 2;
         [0.15, 0.45, 0.75].forEach(yFrac => {
           page.drawText(wmText, {
-            x: width * 0.06,
+            x: xCentered,
             y: height * yFrac,
             size: fontSize,
             font: wmFont,
@@ -529,8 +549,8 @@ export const Jubah: React.FC = () => {
     uiam:  'Universiti Islam Antarabangsa Malaysia',
   };
 
-  if (!jubahBooking && !landingUniversity) {
-    return <JubahLanding onProceed={setLandingUniversity} />;
+  if (peekLanding || (!jubahBooking && !landingUniversity)) {
+    return <JubahLanding onProceed={u => { setPeekLanding(false); setLandingUniversity(u); }} />;
   }
 
   // Non-UMPSA universities: form not yet available

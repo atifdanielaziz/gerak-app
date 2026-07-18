@@ -47,12 +47,22 @@ ${rowsHtml}
 
   const iframe = document.createElement('iframe');
   iframe.style.cssText = 'position:fixed;width:0;height:0;border:none;opacity:0';
+  // srcdoc (set before the iframe is attached) fires exactly one `load`
+  // once the receipt HTML itself is parsed — unlike open()/write()/close(),
+  // which can fire an earlier `load` for the iframe's initial blank
+  // document, and unlike a fixed setTimeout, which is a guess that can
+  // both fire too early (blank page printed) or, on some mobile browsers,
+  // land far enough outside the tap's gesture window that print() silently
+  // no-ops.
+  iframe.onload = () => {
+    try {
+      iframe.contentWindow?.focus();
+      iframe.contentWindow?.print();
+    } catch (err) {
+      console.error('[GERAK] Receipt print failed:', err);
+    }
+    setTimeout(() => { if (iframe.parentNode) document.body.removeChild(iframe); }, 1000);
+  };
+  iframe.srcdoc = html;
   document.body.appendChild(iframe);
-  const idoc = iframe.contentDocument ?? iframe.contentWindow?.document;
-  if (!idoc) { document.body.removeChild(iframe); return; }
-  idoc.open(); idoc.write(html); idoc.close();
-  setTimeout(() => {
-    iframe.contentWindow?.print();
-    setTimeout(() => document.body.removeChild(iframe), 1000);
-  }, 300);
 }

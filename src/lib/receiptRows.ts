@@ -253,12 +253,7 @@ export function buildJubahReceiptRows(j: JubahReceiptSource): ReceiptDoc {
   if (j.documentName) rows.push({ label: 'Document', value: j.documentName, dividerBefore: true });
 
   if (j.riderName) {
-    rows.push({
-      label: 'Rider Assigned',
-      value: j.riderName,
-      whatsapp: j.riderPhone ? { phone: j.riderPhone, message: `Hello ${j.riderName}, saya ${j.fullName} (${j.reference}). Saya ingin bertanya mengenai tempahan jubah saya.` } : undefined,
-      dividerBefore: true,
-    });
+    rows.push({ label: 'Rider Assigned', value: j.riderName, dividerBefore: true });
     if (j.riderPhone) rows.push({ label: 'Rider Contact', value: j.riderPhone });
   }
 
