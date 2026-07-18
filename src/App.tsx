@@ -348,7 +348,7 @@ const AppContent: React.FC = () => {
     <div className={`mobile-container flex flex-col h-full bg-white select-none overscroll-x-none ${isAdminRoute ? 'admin-desktop' : ''}`}>
       <ConfirmModal />
       <div className={isAdminRoute ? 'lg:hidden' : ''}><Header /></div>
-      <div key={currentPage} className="flex-1 flex flex-col overflow-hidden page-transition bg-white">
+      <div key={currentPage} className="flex-1 min-h-0 flex flex-col overflow-hidden page-transition bg-white">
         <Suspense fallback={<div className="flex-1 flex items-center justify-center bg-white"><span className="w-6 h-6 rounded-full border-2 border-primary border-t-transparent animate-spin" /></div>}>
           {renderPage()}
         </Suspense>

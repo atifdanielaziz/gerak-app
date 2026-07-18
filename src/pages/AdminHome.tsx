@@ -2092,7 +2092,7 @@ export const AdminHome: React.FC = () => {
       )}
 
       {/* Content pane */}
-      <div className="flex-1 flex flex-col min-w-0 lg:h-full">
+      <div className="flex-1 flex flex-col min-w-0 min-h-0 lg:h-full">
 
         {/* Desktop topbar — mobile keeps its own sticky header further down instead */}
         {!sampleDocsPage && (
@@ -2109,7 +2109,7 @@ export const AdminHome: React.FC = () => {
           </div>
         )}
 
-    <div ref={mainScrollRef} className="flex-1 bg-white overflow-y-auto overflow-x-hidden no-scrollbar pb-4 px-4 lg:px-6 animate-fade-in flex flex-col gap-4 touch-pan-y">
+    <div ref={mainScrollRef} className="flex-1 min-h-0 bg-white overflow-y-auto overflow-x-hidden no-scrollbar pb-4 px-4 lg:px-6 animate-fade-in flex flex-col gap-4 touch-pan-y">
 
       {/* Toast */}
       {toast && (
