@@ -203,6 +203,9 @@ export interface JubahReceiptSource {
   paymentMode: 'pickup' | 'postage' | 'deposit';
   cost: number;
   balanceDue?: number;
+  balancePaid?: boolean;
+  balancePaidAt?: string | null;
+  deliveryAddress?: string | null;
   documentName?: string;
   status: string;
   riderName?: string | null;
@@ -234,6 +237,9 @@ const JUBAH_STATUS_LABEL: Record<string, string> = {
 
 const formatIc = (ic: string) => ic.replace(/\D/g, '').replace(/(\d{6})(\d{2})(\d{4})/, '$1-$2-$3');
 
+const fmtJubahDate = (iso: string | null | undefined) =>
+  iso ? new Date(iso).toLocaleDateString('en-MY', { day: '2-digit', month: 'short', year: 'numeric' }) : null;
+
 export function buildJubahReceiptRows(j: JubahReceiptSource): ReceiptDoc {
   const paymentLabel =
     j.paymentMode === 'deposit' ? 'Deposit' :
@@ -241,6 +247,7 @@ export function buildJubahReceiptRows(j: JubahReceiptSource): ReceiptDoc {
                                    'Full Payment — Self Pickup';
 
   const rows: ReceiptRow[] = [
+    { label: 'Reference Number', value: j.reference, emphasis: 'highlight' },
     { label: 'Full Name', value: j.fullName },
     { label: 'IC Number', value: formatIc(j.icNumber) },
     { label: 'Phone', value: j.hpNumber },
@@ -252,16 +259,27 @@ export function buildJubahReceiptRows(j: JubahReceiptSource): ReceiptDoc {
     { label: 'Payment Mode', value: paymentLabel, dividerBefore: true },
   ];
 
+  if (j.deliveryAddress) rows.push({ label: 'Delivery Address', value: j.deliveryAddress });
+
   if (j.paymentMode === 'deposit') {
-    rows.push({ label: 'Deposit Paid', value: `RM${j.cost.toFixed(2)}` });
+    const depositDate = fmtJubahDate(j.createdAt);
+    rows.push({
+      label: 'Deposit Paid',
+      value: depositDate ? `RM${j.cost.toFixed(2)} (${depositDate})` : `RM${j.cost.toFixed(2)}`,
+    });
     if ((j.balanceDue ?? 0) > 0) {
-      rows.push({ label: 'Balance Due', value: `RM${(j.balanceDue ?? 0).toFixed(2)}` });
-      rows.push({ label: 'Balance Due Date', value: '1 day before collection' });
+      const balanceDate = j.balancePaid ? fmtJubahDate(j.balancePaidAt) : null;
+      rows.push({
+        label: j.balancePaid ? 'Balance Paid' : 'Balance Due',
+        value: balanceDate ? `RM${(j.balanceDue ?? 0).toFixed(2)} (${balanceDate})` : `RM${(j.balanceDue ?? 0).toFixed(2)}`,
+      });
+      if (!j.balancePaid) rows.push({ label: 'Balance Due Date', value: '1 day before collection' });
     }
   } else {
     rows.push({ label: 'Amount Paid', value: `RM${j.cost.toFixed(2)}` });
   }
-  rows.push({ label: 'Total Charged', value: `RM${j.cost.toFixed(2)}`, emphasis: 'total' });
+  const totalCharged = j.paymentMode === 'deposit' && j.balancePaid ? j.cost + (j.balanceDue ?? 0) : j.cost;
+  rows.push({ label: 'Total Charged', value: `RM${totalCharged.toFixed(2)}`, emphasis: 'total' });
   if (j.documentName) rows.push({ label: 'Document', value: j.documentName, dividerBefore: true });
 
   if (j.riderName) {

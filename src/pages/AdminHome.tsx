@@ -3829,13 +3829,19 @@ export const AdminHome: React.FC = () => {
                       <div key={label} className="flex items-center justify-between gap-3 border-b border-slate-100 pb-3 last:border-0 last:pb-0">
                         <span className="text-sm font-semibold text-slate-700">{label}</span>
                         <div className="flex items-center gap-2 shrink-0">
-                          {/* View — signed URL generated on demand, not stored */}
+                          {/* View — signed URL generated on demand, not stored.
+                              Window is opened synchronously (before the await) so
+                              it stays inside the tap's user-gesture window — opening
+                              it only after the signed URL resolves gets silently
+                              blocked as a popup on most mobile browsers. */}
                           <button
                             type="button"
                             disabled={!url}
                             onClick={async () => {
+                              const win = window.open('', '_blank', 'noopener,noreferrer');
                               const signed = await getJubahDocSignedUrl(url);
-                              if (signed) window.open(signed, '_blank', 'noopener,noreferrer');
+                              if (signed && win) win.location.href = signed;
+                              else win?.close();
                             }}
                             className={`w-9 h-9 flex items-center justify-center rounded-xl border transition ${
                               url
@@ -3849,8 +3855,10 @@ export const AdminHome: React.FC = () => {
                             type="button"
                             disabled={!url}
                             onClick={async () => {
+                              const win = window.open('', '_blank', 'noopener,noreferrer');
                               const signed = await getJubahDocSignedUrl(url, true);
-                              if (signed) window.open(signed, '_blank', 'noopener,noreferrer');
+                              if (signed && win) win.location.href = signed;
+                              else win?.close();
                             }}
                             className={`w-9 h-9 flex items-center justify-center rounded-xl border transition ${
                               url

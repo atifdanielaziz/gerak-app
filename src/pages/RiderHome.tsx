@@ -671,8 +671,10 @@ export const RiderHome: React.FC = () => {
                         type="button"
                         disabled={!url}
                         onClick={async () => {
+                          const win = window.open('', '_blank', 'noopener,noreferrer');
                           const signed = await getJubahDocSignedUrl(url, true);
-                          if (signed) window.open(signed, '_blank', 'noopener,noreferrer');
+                          if (signed && win) win.location.href = signed;
+                          else win?.close();
                         }}
                         className={`w-9 h-9 flex items-center justify-center rounded-xl border transition shrink-0 ${
                           url

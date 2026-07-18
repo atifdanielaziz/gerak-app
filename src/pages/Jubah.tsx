@@ -4,7 +4,6 @@ import { CheckCircle2, X, Upload, FileText, ShieldAlert, Download, ChevronDown, 
 import { submitJubahToSheets } from '../lib/sheetsService';
 import { JubahLanding } from '../components/JubahLanding';
 import { supabase } from '../lib/supabase';
-import { WaIcon, toWa } from '../lib/whatsapp';
 import { compressImage } from '../lib/imageCompress';
 import type { PDFPage } from 'pdf-lib';
 import { FloatingMessage } from '../components/FloatingMessage';
@@ -75,7 +74,7 @@ const clearFormDraft = () => {
 };
 
 export const Jubah: React.FC = () => {
-  const { user, jubahBooking, bookJubah, cancelJubahBooking, setCurrentPage, setSheetOpen, goBack, setLeaveGuard } = useApp();
+  const { user, jubahBooking, bookJubah, setCurrentPage, setSheetOpen, goBack, setLeaveGuard } = useApp();
 
   const [landingUniversity, setLandingUniversity] = useState('');
   // Once booked, landingUniversity/form/tracking are all one page instance —
@@ -425,9 +424,11 @@ export const Jubah: React.FC = () => {
   const [copied, setCopied]   = useState(false);
 
   // Live status polled from DB (replaces the demo simulation)
-  const [liveStatus,     setLiveStatus]     = useState<string | null>(null);
-  const [liveRiderName,  setLiveRiderName]  = useState<string | null>(null);
-  const [liveRiderPhone, setLiveRiderPhone] = useState<string | null>(null);
+  const [liveStatus,        setLiveStatus]        = useState<string | null>(null);
+  const [liveRiderName,     setLiveRiderName]      = useState<string | null>(null);
+  const [liveRiderPhone,    setLiveRiderPhone]     = useState<string | null>(null);
+  const [liveBalancePaid,   setLiveBalancePaid]    = useState(false);
+  const [liveBalancePaidAt, setLiveBalancePaidAt]  = useState<string | null>(null);
 
   useEffect(() => {
     if (!jubahBooking?.reference) return;
@@ -435,11 +436,13 @@ export const Jubah: React.FC = () => {
     const poll = async () => {
       const { data } = await supabase
         .rpc('get_jubah_booking_live_status', { p_reference: jubahBooking.reference })
-        .single<{ status: string; rider_name: string | null; rider_phone: string | null }>();
+        .single<{ status: string; rider_name: string | null; rider_phone: string | null; balance_paid: boolean | null; balance_paid_at: string | null }>();
       if (data && !cancelled) {
         setLiveStatus(data.status);
         setLiveRiderName(data.rider_name ?? null);
         setLiveRiderPhone(data.rider_phone ?? null);
+        setLiveBalancePaid(data.balance_paid ?? false);
+        setLiveBalancePaidAt(data.balance_paid_at ?? null);
       }
     };
     poll();
@@ -1192,9 +1195,6 @@ export const Jubah: React.FC = () => {
                   {jubahBooking.remark} · {jubahBooking.faculty} · {jubahBooking.matricId}
                 </p>
               </div>
-              <button onClick={cancelJubahBooking} className="text-xs text-slate-400 hover:text-danger font-bold flex items-center gap-0.5 shrink-0">
-                <X className="w-3.5 h-3.5" /> Cancel
-              </button>
             </div>
 
             {(() => {
@@ -1210,27 +1210,15 @@ export const Jubah: React.FC = () => {
                 paymentMode:  jubahBooking.paymentMode,
                 cost:         jubahBooking.cost,
                 balanceDue:   jubahBooking.balanceDue,
+                balancePaid:   liveBalancePaid,
+                balancePaidAt: liveBalancePaidAt,
                 documentName: jubahBooking.combinedFileName,
                 status:       liveStatus ?? jubahBooking.status,
                 riderName:    liveRiderName,
                 riderPhone:   liveRiderPhone,
                 createdAt:    null,
               });
-              return (
-                <ReceiptCard doc={jubahDoc} onSavePdf={() => generateReceiptPdf(jubahDoc)}>
-                  {/* Rider contact — only once assigned */}
-                  {liveRiderName && liveRiderPhone && (
-                    <div className="flex items-center justify-end -mt-1">
-                      <a href={`https://wa.me/${toWa(liveRiderPhone)}?text=${encodeURIComponent(
-                        `Hello ${liveRiderName}, saya ${jubahBooking.fullName} (${jubahBooking.reference}). Saya ingin bertanya mengenai tempahan jubah saya.`
-                      )}`} target="_blank" rel="noopener noreferrer"
-                        className="text-[#25D366] active:scale-90 transition shrink-0">
-                        <WaIcon className="w-5 h-5" />
-                      </a>
-                    </div>
-                  )}
-                </ReceiptCard>
-              );
+              return <ReceiptCard doc={jubahDoc} onSavePdf={() => generateReceiptPdf(jubahDoc)} />;
             })()}
 
             {/* Progress steps — wired to real DB status */}
