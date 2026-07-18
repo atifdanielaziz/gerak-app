@@ -38,6 +38,9 @@ export interface TransportReceiptSource {
   notes: string;
   status: string;
   created_at: string;
+  driver_name?: string | null;
+  driver_contact?: string | null;
+  driver_gerak_id?: string | null;
 }
 
 const TRANSPORT_STATUS_STYLE: Record<string, string> = {
@@ -74,6 +77,14 @@ export function buildTransportReceiptRows(
   ];
   if (o.notes) rows.push({ label: 'Remark', value: o.notes });
   rows.push({ label: 'Price', value: fareLabel(o), emphasis: 'total', dividerBefore: true });
+  if (o.driver_name) {
+    rows.push({
+      label: 'Driver',
+      value: o.driver_gerak_id ? `${o.driver_name} (${o.driver_gerak_id})` : o.driver_name,
+      dividerBefore: true,
+    });
+    if (o.driver_contact) rows.push({ label: 'Driver Phone', value: o.driver_contact });
+  }
 
   return {
     rows,
@@ -165,6 +176,7 @@ export function buildRentalReceiptRows(bk: RentalReceiptSource): ReceiptDoc {
     whatsapp: bk.owner_phone ? { phone: bk.owner_phone } : undefined,
     dividerBefore: true,
   });
+  rows.push({ label: 'Owner Phone', value: bk.owner_phone || '—' });
   rows.push({ label: 'Owner ID', value: bk.owner_gerak_id || '—' });
 
   return {

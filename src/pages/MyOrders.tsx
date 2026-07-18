@@ -319,10 +319,7 @@ export const MyOrders: React.FC = () => {
 
               <ReceiptCard
                 doc={doc}
-                onSavePdf={o.status === 'completed' ? () => generateReceiptPdf(
-                  doc,
-                  o.driver_name ? [{ label: 'Driver', value: o.driver_gerak_id ?? o.driver_name }] : [],
-                ) : undefined}
+                onSavePdf={o.status === 'completed' ? () => generateReceiptPdf(doc) : undefined}
               >
                 {/* Driver row — tappable, single line */}
                 {hasDriver(o) && (
