@@ -24,7 +24,7 @@ export function generateReceiptPdf(doc: ReceiptDoc, extraRows: ReceiptRow[] = []
   const html = `<!DOCTYPE html><html><head><meta charset="utf-8"/>
 <title>${doc.subtitle} ${doc.bookingRef}</title>
 <style>
-body{font-family:monospace;font-size:13px;color:#1e293b;max-width:400px;margin:40px auto;padding:0 20px}
+body{font-family:monospace;font-size:13px;color:#1e293b;width:100%;max-width:680px;margin:0 auto;padding:32px 24px;box-sizing:border-box}
 h1{font-size:20px;font-weight:300;margin:0 0 2px}h1 span{color:#ef4444}
 .sub{font-size:11px;color:#94a3b8;margin-bottom:24px}
 .row{display:flex;align-items:flex-start;margin-bottom:6px}
@@ -34,7 +34,7 @@ h1{font-size:20px;font-weight:300;margin:0 0 2px}h1 span{color:#ef4444}
 hr{border:none;border-top:1px dashed #cbd5e1;margin:12px 0}
 .total{font-size:16px}
 .ref{font-size:10px;color:#94a3b8;text-align:center;margin-top:24px}
-@media print{body{margin:20px auto}}
+@media print{body{margin:0 auto;padding:20px 20px}}
 </style></head><body>
 <h1>ger<span>a</span>k</h1>
 <div class="sub">${doc.subtitle}</div>
