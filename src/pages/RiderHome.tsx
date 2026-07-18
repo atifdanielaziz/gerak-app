@@ -31,12 +31,12 @@ type JubahJobRow = {
   balance_paid: boolean;
   balance_proof_url: string | null;
   delivery_address: string | null;
-  drive_docs_url: string | null;
-  drive_payment_url: string | null;
-  drive_oscar_url: string | null;
-  drive_skpg_url: string | null;
-  drive_konvo_url: string | null;
-  drive_ic_url: string | null;
+  docs_path: string | null;
+  payment_path: string | null;
+  oscar_path: string | null;
+  skpg_path: string | null;
+  konvo_path: string | null;
+  ic_path: string | null;
   status: string;
   rider_name: string | null;
   created_at: string;
@@ -121,13 +121,10 @@ export const RiderHome: React.FC = () => {
     if (!authUser) { setJubahLoading(false); return; }
     const { data, error } = await supabase
       .from('jubah_bookings')
-      .select('id, reference, full_name, ic_number, hp_number, matric_id, university, campus, faculty, remark, payment_mode, cost, balance_due, balance_paid, balance_proof_url, delivery_address, drive_docs_url, drive_payment_url, drive_oscar_url, drive_skpg_url, drive_konvo_url, drive_ic_url, status, rider_name, created_at')
+      .select('id, reference, full_name, ic_number, hp_number, matric_id, university, campus, faculty, remark, payment_mode, cost, balance_due, balance_paid, balance_proof_url, delivery_address, docs_path, payment_path, oscar_path, skpg_path, konvo_path, ic_path, status, rider_name, created_at')
       .eq('rider_id', authUser.id)
       .order('created_at', { ascending: false });
     if (error) console.error('[GERAK] jubah jobs load error:', error.message);
-    // TEMPORARY debug — remove once the 0-jobs report is root-caused.
-    setToast(`DEBUG id:${authUser.id.slice(0, 8)} rows:${data?.length ?? 0} err:${error?.message ?? 'none'}`);
-    setTimeout(() => setToast(''), 10000);
     setJubahJobs((data as JubahJobRow[]) ?? []);
     setJubahLoading(false);
   }, []);
@@ -668,12 +665,12 @@ export const RiderHome: React.FC = () => {
                   <h3 className="text-sm font-semibold text-slate-700">Documents</h3>
 
                   {([
-                    { label: 'Combined PDF',    url: selectedJob.drive_docs_url },
-                    { label: 'Payment Proof',   url: selectedJob.drive_payment_url },
-                    { label: 'OSCAR',           url: selectedJob.drive_oscar_url },
-                    { label: 'SKPG',            url: selectedJob.drive_skpg_url },
-                    { label: 'Konvo Slip',      url: selectedJob.drive_konvo_url },
-                    { label: 'IC Copy',         url: selectedJob.drive_ic_url },
+                    { label: 'Combined PDF',    url: selectedJob.docs_path },
+                    { label: 'Payment Proof',   url: selectedJob.payment_path },
+                    { label: 'OSCAR',           url: selectedJob.oscar_path },
+                    { label: 'SKPG',            url: selectedJob.skpg_path },
+                    { label: 'Konvo Slip',      url: selectedJob.konvo_path },
+                    { label: 'IC Copy',         url: selectedJob.ic_path },
                   ] as { label: string; url: string | null }[]).map(({ label, url }) => (
                     <div key={label} className="flex items-center justify-between gap-3 border-b border-slate-100 pb-3 last:border-0 last:pb-0">
                       <span className="text-sm font-semibold text-slate-700">{label}</span>
