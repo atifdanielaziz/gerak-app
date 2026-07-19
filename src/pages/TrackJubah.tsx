@@ -77,7 +77,7 @@ export const TrackJubah: React.FC = () => {
     });
     setSearching(false);
     setSearched(true);
-    if (rpcError) { setError('Something went wrong. Please try again.'); return; }
+    if (rpcError) { setError(rpcError.message || 'Something went wrong. Please try again.'); return; }
     setResults((data as JubahBookingResult[]) ?? []);
   };
 
