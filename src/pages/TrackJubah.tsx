@@ -62,6 +62,7 @@ export const TrackJubah: React.FC = () => {
   const handleSearch = async (e: React.SyntheticEvent) => {
     e.preventDefault();
     setError('');
+    setResults([]);
     if (!reference.trim() && !matric.trim()) {
       setError('Please enter your reference number or matric / IC number.');
       return;
