@@ -202,17 +202,14 @@ export const Jubah: React.FC = () => {
   // university picker and on the real form — so the picker screen itself
   // still goes back with no prompt.
   //
-  // Once booked (jubahBooking truthy), repurposed to step back through
-  // Jubah's own internal views instead of unwinding real page history:
-  // Tracking -> (back) -> Landing peek -> (back) -> Tracking again. Bottom
-  // nav remains the way to actually leave Jubah in this state.
+  // Once booked (jubahBooking truthy), repurposed for a two-step chain:
+  // Tracking -> (back) -> Landing peek -> (back) -> Dashboard. Only the
+  // FIRST back-tap (still on Tracking) is intercepted; once peekLanding is
+  // true the guard releases, so the next back-tap falls through to normal
+  // goBack() and actually leaves Jubah via real page history.
   useEffect(() => {
     if (jubahBooking) {
-      setLeaveGuard(() => () => {
-        // TEMPORARY debug — remove once the back-to-Dashboard report is root-caused.
-        window.alert(`DEBUG leaveGuard fired, peekLanding was ${peekLanding}`);
-        if (peekLanding) setPeekLanding(false); else setPeekLanding(true);
-      });
+      setLeaveGuard(peekLanding ? null : () => () => setPeekLanding(true));
       return () => setLeaveGuard(null);
     }
     if (!landingUniversity) { setLeaveGuard(null); return; }
