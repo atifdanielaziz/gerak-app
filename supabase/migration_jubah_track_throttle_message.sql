@@ -25,7 +25,7 @@ begin
   delete from public.jubah_tracking_attempts where attempted_at < now() - interval '1 minute';
   select count(*) into v_recent_count from public.jubah_tracking_attempts;
   if v_recent_count >= 20 then
-    raise exception 'Too many tracking requests right now. Please wait a minute and try again.';
+    raise exception 'Rate request limit. Please try again later.';
   end if;
   insert into public.jubah_tracking_attempts default values;
 
