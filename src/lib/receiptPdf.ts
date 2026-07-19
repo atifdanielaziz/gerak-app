@@ -30,7 +30,7 @@ h1{font-size:20px;font-weight:300;margin:0 0 2px}h1 span{color:#ef4444}
 .row{display:flex;align-items:flex-start;margin-bottom:6px}
 .lbl{color:#94a3b8;flex:0 0 auto;width:${maxLabelLen}ch}
 .colon{color:#94a3b8;flex:0 0 auto;margin-right:6px}
-.val{font-weight:700;flex:1;min-width:0}
+.val{font-weight:700;flex:1;min-width:0;overflow-wrap:break-word;word-break:break-word}
 hr{border:none;border-top:1px dashed #cbd5e1;margin:12px 0}
 .total .val{font-size:16px}
 .ref{font-size:10px;color:#94a3b8;text-align:center;margin-top:24px}

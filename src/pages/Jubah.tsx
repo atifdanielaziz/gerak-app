@@ -208,7 +208,11 @@ export const Jubah: React.FC = () => {
   // nav remains the way to actually leave Jubah in this state.
   useEffect(() => {
     if (jubahBooking) {
-      setLeaveGuard(() => (peekLanding ? () => setPeekLanding(false) : () => setPeekLanding(true)));
+      setLeaveGuard(() => () => {
+        // TEMPORARY debug — remove once the back-to-Dashboard report is root-caused.
+        window.alert(`DEBUG leaveGuard fired, peekLanding was ${peekLanding}`);
+        if (peekLanding) setPeekLanding(false); else setPeekLanding(true);
+      });
       return () => setLeaveGuard(null);
     }
     if (!landingUniversity) { setLeaveGuard(null); return; }

@@ -3690,49 +3690,57 @@ export const AdminHome: React.FC = () => {
 
                     {/* Balance status (deposit) */}
                     {b.payment_mode === 'deposit' && (
-                      <div className={`rounded-xl p-3 border flex items-center justify-between gap-2 ${
-                        b.balance_paid ? 'bg-emerald-50 border-emerald-100' : b.balance_proof_url ? 'bg-violet-50 border-violet-100' : 'bg-amber-50 border-amber-100'
-                      }`}>
-                        <div>
-                          <span className={`text-[8px] font-semibold uppercase tracking-wider block ${
-                            b.balance_paid ? 'text-emerald-500' : b.balance_proof_url ? 'text-violet-500' : 'text-amber-500'
-                          }`}>
-                            {b.balance_paid ? 'Balance Paid' : b.balance_proof_url ? 'Proof Submitted — Review' : 'Balance Due'}
-                          </span>
-                          <span className={`text-base font-black ${
-                            b.balance_paid ? 'text-emerald-700' : b.balance_proof_url ? 'text-violet-700' : 'text-amber-700'
-                          }`}>
-                            RM{b.balance_due.toFixed(2)}
-                          </span>
-                        </div>
-                        <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2">
+                        <div className={`flex-1 rounded-xl p-3 border flex items-center justify-between gap-2 ${
+                          b.balance_paid ? 'bg-emerald-50 border-emerald-100' : b.balance_proof_url ? 'bg-violet-50 border-violet-100' : 'bg-amber-50 border-amber-100'
+                        }`}>
+                          <div>
+                            <span className={`text-[8px] font-semibold uppercase tracking-wider block ${
+                              b.balance_paid ? 'text-emerald-500' : b.balance_proof_url ? 'text-violet-500' : 'text-amber-500'
+                            }`}>
+                              {b.balance_paid ? 'Balance Paid' : b.balance_proof_url ? 'Proof Submitted — Review' : 'Balance Due'}
+                            </span>
+                            <span className={`text-base font-black ${
+                              b.balance_paid ? 'text-emerald-700' : b.balance_proof_url ? 'text-violet-700' : 'text-amber-700'
+                            }`}>
+                              RM{b.balance_due.toFixed(2)}
+                            </span>
+                          </div>
                           {b.balance_proof_url && (
-                            <a href={b.balance_proof_url} target="_blank" rel="noopener noreferrer"
-                              className="text-xs text-blue-500 font-semibold flex items-center gap-0.5 hover:underline">
-                              <ExternalLink className="w-2.5 h-2.5" /> proof
-                            </a>
-                          )}
-                          {b.balance_proof_url && !b.balance_paid && (
                             <button
                               type="button"
                               onClick={async () => {
-                                const { data } = await supabase.rpc('mark_jubah_balance_paid', { p_booking_id: b.id });
-                                if (data?.success) {
-                                  const updated = { ...b, balance_paid: true };
-                                  setJubahBookings(prev => prev.map(r => r.id === b.id ? updated : r));
-                                  setJubahAdminSelected(updated);
-                                  showToast('Balance confirmed ✓');
-                                } else {
-                                  showToast('Failed to confirm balance.');
-                                }
+                                const win = window.open('', '_blank', 'noopener,noreferrer');
+                                const signed = await getJubahDocSignedUrl(b.balance_proof_url);
+                                if (signed && win) win.location.href = signed;
+                                else win?.close();
                               }}
-                              title="Confirm balance payment"
-                              className="w-7 h-7 flex items-center justify-center rounded-lg bg-emerald-500 hover:bg-emerald-600 active:scale-90 transition text-white shrink-0"
+                              className="text-xs text-blue-500 font-semibold flex items-center gap-0.5 hover:underline shrink-0"
                             >
-                              <Check className="w-3.5 h-3.5" />
+                              <ExternalLink className="w-2.5 h-2.5" /> proof
                             </button>
                           )}
                         </div>
+                        {b.balance_proof_url && !b.balance_paid && (
+                          <button
+                            type="button"
+                            onClick={async () => {
+                              const { data } = await supabase.rpc('mark_jubah_balance_paid', { p_booking_id: b.id });
+                              if (data?.success) {
+                                const updated = { ...b, balance_paid: true };
+                                setJubahBookings(prev => prev.map(r => r.id === b.id ? updated : r));
+                                setJubahAdminSelected(updated);
+                                showToast('Balance confirmed ✓');
+                              } else {
+                                showToast('Failed to confirm balance.');
+                              }
+                            }}
+                            title="Confirm balance payment"
+                            className="w-9 h-9 flex items-center justify-center rounded-full bg-emerald-500 hover:bg-emerald-600 active:scale-90 transition text-white shrink-0"
+                          >
+                            <Check className="w-4 h-4" />
+                          </button>
+                        )}
                       </div>
                     )}
 

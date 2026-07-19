@@ -7,6 +7,7 @@ export interface ReceiptRow {
   value: string;
   emphasis?: 'highlight' | 'total';        // highlight = blue-600 bold (date/time); total = larger, paired with dividerBefore in the PDF spec
   whatsapp?: { phone: string; message?: string };
+  copyable?: boolean;                       // renders a Copy icon next to the value, in-app card only — receiptPdf.ts never reads this
   dividerBefore?: boolean;                  // dashed section-break drawn above this row
 }
 
@@ -247,7 +248,7 @@ export function buildJubahReceiptRows(j: JubahReceiptSource): ReceiptDoc {
                                    'Full Payment — Self Pickup';
 
   const rows: ReceiptRow[] = [
-    { label: 'Reference Number', value: j.reference, emphasis: 'highlight' },
+    { label: 'Reference Number', value: j.reference, emphasis: 'highlight', copyable: true },
     { label: 'Full Name', value: j.fullName },
     { label: 'IC Number', value: formatIc(j.icNumber) },
     { label: 'Phone', value: j.hpNumber },

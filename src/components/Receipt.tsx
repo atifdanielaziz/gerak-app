@@ -1,5 +1,5 @@
-import React from 'react';
-import { FileDown } from 'lucide-react';
+import React, { useState } from 'react';
+import { FileDown, Copy, Check } from 'lucide-react';
 import { WaBtn } from '../lib/whatsapp';
 import type { ReceiptDoc, ReceiptMeta, ReceiptRow } from '../lib/receiptRows';
 
@@ -31,6 +31,13 @@ export const ReceiptCard: React.FC<{
 }> = ({ doc, onSavePdf, children }) => {
   // Colons line up in one column, based on the longest label in this receipt.
   const maxLabelLen = Math.max(...doc.rows.map(r => r.label.length));
+  const [copiedIdx, setCopiedIdx] = useState<number | null>(null);
+
+  const copyRow = (i: number, value: string) => {
+    navigator.clipboard?.writeText(value);
+    setCopiedIdx(i);
+    setTimeout(() => setCopiedIdx(prev => (prev === i ? null : prev)), 1500);
+  };
 
   return (
   <div className="bg-white border border-slate-100 rounded-2xl p-4 text-xs font-mono text-slate-700 space-y-1.5 leading-relaxed">
@@ -40,8 +47,23 @@ export const ReceiptCard: React.FC<{
         <div className="flex items-start gap-1.5">
           <span className="text-slate-400 shrink-0" style={{ width: `${maxLabelLen}ch` }}>{r.label}</span>
           <span className="text-slate-400 shrink-0">:</span>
-          <span className={`${valueClass(r)} min-w-0`}>{r.value}</span>
+          {/* min-w-0 lets this shrink to its share of the row; overflow-x-auto
+              contains long unbroken values (e.g. filenames) inside their own
+              scrollable strip instead of spilling past the card — normal
+              multi-word text still wraps as before and never needs to scroll. */}
+          <div className="min-w-0 overflow-x-auto no-scrollbar">
+            <span className={`${valueClass(r)} whitespace-nowrap`}>{r.value}</span>
+          </div>
           {r.whatsapp && <WaBtn phone={r.whatsapp.phone} message={r.whatsapp.message} />}
+          {r.copyable && (
+            <button
+              type="button"
+              onClick={() => copyRow(i, r.value)}
+              className="text-blue-500 active:scale-90 transition shrink-0"
+            >
+              {copiedIdx === i ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5" />}
+            </button>
+          )}
         </div>
       </React.Fragment>
     ))}

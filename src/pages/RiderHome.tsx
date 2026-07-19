@@ -591,10 +591,18 @@ export const RiderHome: React.FC = () => {
                           </span>
                         </div>
                         {selectedJob.balance_proof_url && (
-                          <a href={selectedJob.balance_proof_url} target="_blank" rel="noopener noreferrer"
-                            className="text-xs text-blue-500 font-bold flex items-center gap-0.5 hover:underline shrink-0">
+                          <button
+                            type="button"
+                            onClick={async () => {
+                              const win = window.open('', '_blank', 'noopener,noreferrer');
+                              const signed = await getJubahDocSignedUrl(selectedJob.balance_proof_url);
+                              if (signed && win) win.location.href = signed;
+                              else win?.close();
+                            }}
+                            className="text-xs text-blue-500 font-bold flex items-center gap-0.5 hover:underline shrink-0"
+                          >
                             <ExternalLink className="w-2.5 h-2.5" /> proof
-                          </a>
+                          </button>
                         )}
                       </div>
                     )}
