@@ -2,6 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { PackageSearch, Search, GraduationCap, CheckCircle2 } from 'lucide-react';
 import { WaIcon, toWa } from '../lib/whatsapp';
+import { ReceiptCard } from '../components/Receipt';
+import { buildJubahReceiptRows } from '../lib/receiptRows';
+import { generateReceiptPdf } from '../lib/receiptPdf';
 
 interface JubahBookingResult {
   id: string;
@@ -18,7 +21,31 @@ interface JubahBookingResult {
   balance_due: number;
   balance_paid: boolean;
   balance_proof_url: string | null;
-  balance_submitted_at: string | null;
+  created_at: string;
+}
+
+// Full receipt fields — only fetched once the last-4 IC gate passes, kept
+// separate from JubahBookingResult so the plain search never returns them.
+interface JubahReceiptData {
+  id: string;
+  reference: string;
+  full_name: string;
+  ic_number: string | null;
+  hp_number: string;
+  campus: string;
+  faculty: string;
+  university: string;
+  matric_id: string;
+  remark: string;
+  status: string;
+  payment_mode: string;
+  rider_name: string | null;
+  rider_phone: string | null;
+  cost: number;
+  balance_due: number;
+  balance_paid: boolean;
+  balance_paid_at: string | null;
+  delivery_address: string | null;
   created_at: string;
 }
 
@@ -57,6 +84,15 @@ export const TrackJubah: React.FC = () => {
   // disconnected from it at the top of a multi-result page.
   const [payingId, setPayingId] = useState<string | null>(null);
   const [payErrors, setPayErrors] = useState<Record<string, string>>({});
+
+  // Full receipt state — id of the booking whose IC-digit prompt is open,
+  // the digits being entered, and (once verified) the fetched receipt data
+  // keyed by booking id so each result's receipt unlocks independently.
+  const [receiptOpenId, setReceiptOpenId]   = useState<string | null>(null);
+  const [icLast4, setIcLast4]               = useState('');
+  const [verifyingReceipt, setVerifyingReceipt] = useState(false);
+  const [receiptErrors, setReceiptErrors]   = useState<Record<string, string>>({});
+  const [receiptData, setReceiptData]       = useState<Record<string, JubahReceiptData>>({});
 
   const runSearch = async (refOverride?: string) => {
     setError('');
@@ -110,6 +146,32 @@ export const TrackJubah: React.FC = () => {
       setPayingId(null);
       setPayErrors(prev => ({ ...prev, [b.id]: data?.error ?? 'Could not start payment. Please try again.' }));
     }
+  };
+
+  const handleVerifyReceipt = async (b: JubahBookingResult) => {
+    if (!/^\d{4}$/.test(icLast4)) {
+      setReceiptErrors(prev => ({ ...prev, [b.id]: 'Enter the last 4 digits of your IC.' }));
+      return;
+    }
+    setVerifyingReceipt(true);
+    setReceiptErrors(prev => ({ ...prev, [b.id]: '' }));
+    const { data, error } = await supabase.rpc('get_jubah_receipt', {
+      p_reference: b.reference,
+      p_ic_last4:  icLast4,
+    });
+    setVerifyingReceipt(false);
+    if (error) {
+      setReceiptErrors(prev => ({ ...prev, [b.id]: error.message || 'Something went wrong. Please try again.' }));
+      return;
+    }
+    const row = (data as JubahReceiptData[] | null)?.[0];
+    if (!row) {
+      setReceiptErrors(prev => ({ ...prev, [b.id]: 'Incorrect IC digits. Please try again.' }));
+      return;
+    }
+    setReceiptData(prev => ({ ...prev, [b.id]: row }));
+    setReceiptOpenId(null);
+    setIcLast4('');
   };
 
   return (
@@ -198,6 +260,28 @@ export const TrackJubah: React.FC = () => {
               };
               const curStep = trackSteps.indexOf(b.status);
               const isDone  = curStep === trackSteps.length - 1;
+
+              const receipt = receiptData[b.id];
+              const jubahDoc = receipt ? buildJubahReceiptRows({
+                reference:    receipt.reference,
+                fullName:     receipt.full_name,
+                icNumber:     receipt.ic_number ?? '',
+                hpNumber:     receipt.hp_number,
+                university:   receipt.university,
+                faculty:      receipt.faculty,
+                matricId:     receipt.matric_id,
+                remark:       receipt.remark,
+                paymentMode:  receipt.payment_mode as 'pickup' | 'postage' | 'deposit',
+                cost:         receipt.cost,
+                balanceDue:   receipt.balance_due,
+                balancePaid:  receipt.balance_paid,
+                balancePaidAt: receipt.balance_paid_at,
+                deliveryAddress: receipt.delivery_address,
+                status:       receipt.status,
+                riderName:    receipt.rider_name,
+                riderPhone:   receipt.rider_phone,
+                createdAt:    receipt.created_at,
+              }) : null;
 
               return (
               <div key={b.id} className="bg-white border border-slate-100 rounded-3xl p-5 flex flex-col gap-4">
@@ -333,6 +417,50 @@ export const TrackJubah: React.FC = () => {
                       </>
                     )}
                   </div>
+                )}
+
+                {/* Full receipt — gated behind the last 4 IC digits, since this
+                    page is reachable via a guessable matric ID and the receipt
+                    carries phone/address that matric ID alone shouldn't unlock. */}
+                {jubahDoc && receipt ? (
+                  <ReceiptCard doc={jubahDoc} onSavePdf={() => generateReceiptPdf(jubahDoc)} />
+                ) : receiptOpenId === b.id ? (
+                  <div className="flex flex-col gap-2 bg-white border border-slate-100 rounded-2xl p-3">
+                    <p className="text-xs text-slate-500 font-normal">
+                      Enter the last 4 digits of your IC to view your full receipt.
+                    </p>
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        inputMode="numeric"
+                        maxLength={4}
+                        value={icLast4}
+                        onChange={e => setIcLast4(e.target.value.replace(/\D/g, ''))}
+                        placeholder="1234"
+                        style={{ fontSize: '16px' }}
+                        className="flex-1 bg-white border border-slate-100 rounded-xl py-2.5 px-3 text-sm font-semibold text-slate-700 focus:outline-none focus:border-blue-500 transition placeholder:font-normal placeholder:text-slate-300"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => handleVerifyReceipt(b)}
+                        disabled={verifyingReceipt}
+                        className="bg-blue-600 hover:bg-blue-700 active:scale-[0.98] disabled:bg-slate-200 text-white font-semibold px-4 rounded-xl text-xs transition"
+                      >
+                        {verifyingReceipt ? '...' : 'Unlock'}
+                      </button>
+                    </div>
+                    {receiptErrors[b.id] && (
+                      <p className="text-xs text-danger font-semibold">{receiptErrors[b.id]}</p>
+                    )}
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => { setReceiptOpenId(b.id); setIcLast4(''); setReceiptErrors(prev => ({ ...prev, [b.id]: '' })); }}
+                    className="text-xs font-semibold text-blue-600 hover:text-blue-700 transition active:scale-95 self-center"
+                  >
+                    View / Download Receipt
+                  </button>
                 )}
               </div>
               );

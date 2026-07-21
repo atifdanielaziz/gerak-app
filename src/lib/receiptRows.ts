@@ -236,7 +236,10 @@ const JUBAH_STATUS_LABEL: Record<string, string> = {
   cancelled:   'Cancelled',
 };
 
-const formatIc = (ic: string) => ic.replace(/\D/g, '').replace(/(\d{6})(\d{2})(\d{4})/, '$1-$2-$3');
+// Already-masked values (e.g. "980123-XX-XXXX" from track_jubah_booking,
+// which never returns a raw IC) pass through unchanged — re-stripping non-
+// digits would drop the mask and leave just the first 6 digits.
+const formatIc = (ic: string) => /X/i.test(ic) ? ic : ic.replace(/\D/g, '').replace(/(\d{6})(\d{2})(\d{4})/, '$1-$2-$3');
 
 const fmtJubahDate = (iso: string | null | undefined) =>
   iso ? new Date(iso).toLocaleDateString('en-MY', { day: '2-digit', month: 'short', year: 'numeric' }) : null;
