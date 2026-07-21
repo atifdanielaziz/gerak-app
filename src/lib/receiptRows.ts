@@ -265,10 +265,15 @@ export function buildJubahReceiptRows(j: JubahReceiptSource): ReceiptDoc {
 
   if (j.deliveryAddress) rows.push({ label: 'Delivery Address', value: j.deliveryAddress });
 
+  // status === 'ordered' means the initial payment hasn't actually been
+  // confirmed yet — without this check, every deposit/full-payment row
+  // claimed "Paid" regardless of whether any payment had happened.
+  const initialPaid = j.status !== 'ordered';
+
   if (j.paymentMode === 'deposit') {
-    const depositDate = fmtJubahDate(j.createdAt);
+    const depositDate = initialPaid ? fmtJubahDate(j.createdAt) : null;
     rows.push({
-      label: 'Deposit Paid',
+      label: initialPaid ? 'Deposit Paid' : 'Deposit Due',
       value: depositDate ? `RM${j.cost.toFixed(2)} (${depositDate})` : `RM${j.cost.toFixed(2)}`,
     });
     if ((j.balanceDue ?? 0) > 0) {
@@ -280,10 +285,10 @@ export function buildJubahReceiptRows(j: JubahReceiptSource): ReceiptDoc {
       if (!j.balancePaid) rows.push({ label: 'Balance Due Date', value: '1 day before collection' });
     }
   } else {
-    rows.push({ label: 'Amount Paid', value: `RM${j.cost.toFixed(2)}` });
+    rows.push({ label: initialPaid ? 'Amount Paid' : 'Amount Due', value: `RM${j.cost.toFixed(2)}` });
   }
   const totalCharged = j.paymentMode === 'deposit' && j.balancePaid ? j.cost + (j.balanceDue ?? 0) : j.cost;
-  rows.push({ label: 'Total Charged', value: `RM${totalCharged.toFixed(2)}`, emphasis: 'total' });
+  rows.push({ label: initialPaid ? 'Total Charged' : 'Total Due', value: `RM${totalCharged.toFixed(2)}`, emphasis: 'total' });
   if (j.documentName) rows.push({ label: 'Document', value: j.documentName, dividerBefore: true });
 
   if (j.riderName) {
