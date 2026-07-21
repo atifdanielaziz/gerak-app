@@ -1218,7 +1218,7 @@ export const AdminHome: React.FC = () => {
     const b = jubahAdminSelected;
     setConfirmingBooking(true);
 
-    if (b.payment_mode === 'deposit' && b.balance_proof_url && !b.balance_paid) {
+    if (b.payment_mode === 'deposit' && b.status !== 'ordered' && !b.balance_paid) {
       // State 2: confirm balance payment for deposit
       const { data } = await supabase.rpc('mark_jubah_balance_paid', { p_booking_id: b.id });
       if (data?.success) {
@@ -1229,7 +1229,7 @@ export const AdminHome: React.FC = () => {
       } else {
         showToast('Failed to confirm balance.');
       }
-    } else if (b.status === 'ordered' && b.payment_path) {
+    } else if (b.status === 'ordered') {
       // State 1: confirm initial payment — deposit→booked, others→paid
       const newStatus = b.payment_mode === 'deposit' ? 'booked' : 'paid';
       const { data, error } = await supabase.rpc('update_jubah_booking_status', {
@@ -3882,8 +3882,12 @@ export const AdminHome: React.FC = () => {
 
                   {/* Confirm + Delete row */}
                   {(() => {
-                    const canConfirmPayment = b.status === 'ordered' && !!b.payment_path;
-                    const canConfirmBalance = b.payment_mode === 'deposit' && !!b.balance_proof_url && !b.balance_paid;
+                    // ToyyibPay confirms both of these automatically now — payment_path
+                    // and balance_proof_url will be null for every new booking, so these
+                    // no longer gate on proof having been uploaded. Kept as a manual
+                    // override for the rare missed-webhook case.
+                    const canConfirmPayment = b.status === 'ordered';
+                    const canConfirmBalance = b.payment_mode === 'deposit' && b.status !== 'ordered' && !b.balance_paid;
                     const confirmActive = canConfirmPayment || canConfirmBalance;
                     const confirmLabel  = canConfirmBalance ? 'Confirm Balance' : 'Confirm Payment';
                     return (

@@ -19,8 +19,8 @@ export interface JubahSheetRow {
   cost: number;
   deliveryAddress?: string;
   riderName?: string;
-  // Every uploaded document (per-field docs + combined PDF + payment proof),
-  // labelled by its actual field label — not a fixed set of named properties.
+  // Every uploaded document (per-field docs + combined PDF), labelled by its
+  // actual field label — not a fixed set of named properties.
   // docFields is configurable per university, so a fixed shape here would
   // mislabel or silently drop documents whenever that configuration differs
   // from whatever fields existed when this interface was first written.
@@ -40,18 +40,6 @@ export async function submitJubahToSheets(data: JubahSheetRow): Promise<void> {
   }
 }
 
-export async function updateJubahBalanceProof(reference: string, balanceProofUrl: string): Promise<void> {
-  try {
-    await fetch(SHEETS_WEBAPP_URL, {
-      method: 'POST',
-      mode: 'no-cors',
-      headers: { 'Content-Type': 'text/plain' },
-      body: JSON.stringify({ type: 'jubah_balance_update', reference, balanceProofUrl }),
-    });
-  } catch (err) {
-    console.error('[GERAK] Google Sheets balance update failed:', err);
-  }
-}
 
 export interface RideSheetRow {
   campus: string;
