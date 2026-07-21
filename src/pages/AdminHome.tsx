@@ -13,6 +13,9 @@ import {
 import { WaBtn, WaIcon, toWa } from '../lib/whatsapp';
 import { MonthDrumPicker, EarningsCard, computeEarnings, type EarningsRow } from '../components/EarningsCard';
 import { getJubahDocSignedUrl } from '../lib/jubahDocs';
+import { ReceiptCard } from '../components/Receipt';
+import { buildJubahReceiptRows, type ReceiptDoc } from '../lib/receiptRows';
+import { generateReceiptPdf } from '../lib/receiptPdf';
 import ReactCrop, { centerCrop, makeAspectCrop, type Crop, type PixelCrop } from 'react-image-crop';
 import 'react-image-crop/dist/ReactCrop.css';
 
@@ -978,7 +981,7 @@ export const AdminHome: React.FC = () => {
     id: string; reference: string; full_name: string; ic_number: string; hp_number: string;
     matric_id: string; university: string; campus: string; faculty: string; remark: string;
     rider_name: string | null; rider_phone: string | null; status: string; payment_mode: string; cost: number;
-    balance_due: number; balance_paid: boolean; balance_proof_url: string | null;
+    balance_due: number; balance_paid: boolean; balance_paid_at: string | null; balance_proof_url: string | null;
     delivery_address: string | null;
     docs_path: string | null; payment_path: string | null; oscar_path: string | null;
     skpg_path: string | null; konvo_path: string | null; ic_path: string | null;
@@ -997,6 +1000,7 @@ export const AdminHome: React.FC = () => {
   const [jubahAdminView,     setJubahAdminView]     = useState<'list' | 'card' | 'details'>('list');
   const [jubahAdminSelected, setJubahAdminSelected] = useState<JubahBookingRow | null>(null);
   const [jubahAdminUpdating, setJubahAdminUpdating] = useState(false);
+  const [receiptModal, setReceiptModal] = useState<ReceiptDoc | null>(null);
   const [copiedRef, setCopiedRef] = useState(false);
   const [jubahSubTab,        setJubahSubTab]        = useState<'customer' | 'rider' | 'price' | 'banner'>('rider');
 
@@ -1122,7 +1126,7 @@ export const AdminHome: React.FC = () => {
     }
 
     let bookingsQ = supabase.from('jubah_bookings')
-      .select('id, reference, full_name, ic_number, hp_number, matric_id, university, campus, faculty, remark, rider_name, rider_phone, status, payment_mode, cost, balance_due, balance_paid, balance_proof_url, delivery_address, docs_path, payment_path, oscar_path, skpg_path, konvo_path, ic_path, created_at')
+      .select('id, reference, full_name, ic_number, hp_number, matric_id, university, campus, faculty, remark, rider_name, rider_phone, status, payment_mode, cost, balance_due, balance_paid, balance_paid_at, balance_proof_url, delivery_address, docs_path, payment_path, oscar_path, skpg_path, konvo_path, ic_path, created_at')
       .order('created_at', { ascending: false });
     if (!isSuperAdmin) bookingsQ = bookingsQ.eq('campus', adminCampus);
     const { data: bookingsData, error: bookingsError } = await bookingsQ;
@@ -1137,7 +1141,7 @@ export const AdminHome: React.FC = () => {
       if (fallbackError) console.error('[GERAK] jubah_bookings fallback error:', fallbackError.message);
       setJubahBookings(((fallbackData ?? []) as JubahBookingRow[]).map(r => ({
         ...r,
-        ic_number: '', university: '', cost: 0, balance_due: 0, balance_paid: false, balance_proof_url: null,
+        ic_number: '', university: '', cost: 0, balance_due: 0, balance_paid: false, balance_paid_at: null, balance_proof_url: null,
         delivery_address: null, docs_path: null, payment_path: null, oscar_path: null,
         skpg_path: null, konvo_path: null, ic_path: null,
       })));
@@ -3527,7 +3531,8 @@ export const AdminHome: React.FC = () => {
                           <th className="py-2 pr-4 whitespace-nowrap">Remark</th>
                           <th className="py-2 pr-4 whitespace-nowrap">Mode</th>
                           <th className="py-2 pr-4 whitespace-nowrap">Status</th>
-                          <th className="py-2 whitespace-nowrap">Confirm</th>
+                          <th className="py-2 pr-4 whitespace-nowrap">Confirm</th>
+                          <th className="py-2 whitespace-nowrap">Receipt</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -3562,13 +3567,57 @@ export const AdminHome: React.FC = () => {
                                   {isPaid ? 'Paid' : 'Booked'}
                                 </span>
                               </td>
-                              <td className="py-2.5 whitespace-nowrap">
+                              <td className="py-2.5 pr-4 whitespace-nowrap">
                                 {(() => {
                                   const confirmed = b.payment_mode === 'deposit'
                                     ? b.balance_paid
                                     : b.status !== 'ordered';
                                   return (
                                     <CheckCircle2 className={`w-4 h-4 ${confirmed ? 'text-emerald-500' : 'text-slate-200'}`} />
+                                  );
+                                })()}
+                              </td>
+                              <td className="py-2.5 whitespace-nowrap">
+                                {(() => {
+                                  const buildDoc = () => buildJubahReceiptRows({
+                                    reference:    b.reference,
+                                    fullName:     b.full_name,
+                                    icNumber:     b.ic_number,
+                                    hpNumber:     b.hp_number,
+                                    university:   b.university,
+                                    faculty:      b.faculty,
+                                    matricId:     b.matric_id,
+                                    remark:       b.remark,
+                                    paymentMode:  b.payment_mode as 'pickup' | 'postage' | 'deposit',
+                                    cost:         b.cost,
+                                    balanceDue:   b.balance_due,
+                                    balancePaid:  b.balance_paid,
+                                    balancePaidAt: b.balance_paid_at,
+                                    deliveryAddress: b.delivery_address,
+                                    status:       b.status,
+                                    riderName:    b.rider_name,
+                                    riderPhone:   b.rider_phone,
+                                    createdAt:    b.created_at,
+                                  });
+                                  return (
+                                    <div className="flex items-center gap-1.5">
+                                      <button
+                                        type="button"
+                                        onClick={(e) => { e.stopPropagation(); setReceiptModal(buildDoc()); }}
+                                        title="View Receipt"
+                                        className="w-7 h-7 flex items-center justify-center rounded-lg bg-blue-50 border border-blue-100 text-blue-600 hover:bg-blue-100 active:scale-95 transition"
+                                      >
+                                        <Eye className="w-3.5 h-3.5" />
+                                      </button>
+                                      <button
+                                        type="button"
+                                        onClick={(e) => { e.stopPropagation(); generateReceiptPdf(buildDoc()); }}
+                                        title="Download Receipt"
+                                        className="w-7 h-7 flex items-center justify-center rounded-lg bg-slate-800 text-white hover:bg-slate-700 active:scale-95 transition"
+                                      >
+                                        <Download className="w-3.5 h-3.5" />
+                                      </button>
+                                    </div>
                                   );
                                 })()}
                               </td>
@@ -3820,6 +3869,32 @@ export const AdminHome: React.FC = () => {
                       </div>
                     ))}
                   </div>
+
+                  {/* Receipt — same component/PDF export customers see, built
+                      directly from data already loaded here (no extra fetch). */}
+                  {(() => {
+                    const doc = buildJubahReceiptRows({
+                      reference:    b.reference,
+                      fullName:     b.full_name,
+                      icNumber:     b.ic_number,
+                      hpNumber:     b.hp_number,
+                      university:   b.university,
+                      faculty:      b.faculty,
+                      matricId:     b.matric_id,
+                      remark:       b.remark,
+                      paymentMode:  b.payment_mode as 'pickup' | 'postage' | 'deposit',
+                      cost:         b.cost,
+                      balanceDue:   b.balance_due,
+                      balancePaid:  b.balance_paid,
+                      balancePaidAt: b.balance_paid_at,
+                      deliveryAddress: b.delivery_address,
+                      status:       b.status,
+                      riderName:    b.rider_name,
+                      riderPhone:   b.rider_phone,
+                      createdAt:    b.created_at,
+                    });
+                    return <ReceiptCard doc={doc} onSavePdf={() => generateReceiptPdf(doc)} />;
+                  })()}
 
                   {/* Documents download card */}
                   <div className="bg-white border border-slate-100 rounded-3xl p-5 flex flex-col gap-4">
@@ -4609,6 +4684,25 @@ export const AdminHome: React.FC = () => {
               Yes, Confirm
             </button>
           </div>
+        </div>
+      </div>
+    )}
+
+    {/* ── Receipt Preview Modal ── */}
+    {receiptModal && (
+      <div className="fixed inset-0 z-50 bg-black/40 flex items-end justify-center"
+        onClick={() => setReceiptModal(null)}>
+        <div className="w-full max-w-sm max-h-[calc(100dvh-3rem)] overflow-y-auto no-scrollbar bg-white rounded-t-3xl p-6 pb-10 shadow-2xl animate-slide-up"
+          onClick={e => e.stopPropagation()}>
+          <div className="w-10 h-1 bg-slate-200 rounded-full mx-auto mb-5" />
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-sm font-black text-slate-800">Receipt</h3>
+            <button onClick={() => setReceiptModal(null)}
+              className="w-7 h-7 flex items-center justify-center rounded-lg bg-slate-100 text-slate-500 hover:bg-slate-200 transition active:scale-95">
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+          <ReceiptCard doc={receiptModal} onSavePdf={() => generateReceiptPdf(receiptModal)} />
         </div>
       </div>
     )}
