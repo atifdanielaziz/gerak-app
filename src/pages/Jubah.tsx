@@ -74,7 +74,7 @@ const clearFormDraft = () => {
 };
 
 export const Jubah: React.FC = () => {
-  const { user, jubahBooking, bookJubah, startNewJubahBooking, setCurrentPage, setSheetOpen, goBack, setLeaveGuard } = useApp();
+  const { user, jubahBooking, bookJubah, commitJubahBooking, startNewJubahBooking, setCurrentPage, setSheetOpen, goBack, setLeaveGuard } = useApp();
 
   const [landingUniversity, setLandingUniversity] = useState('');
   // Once booked, landingUniversity/form/tracking are all one page instance —
@@ -573,13 +573,16 @@ export const Jubah: React.FC = () => {
       documents,
     });
 
-    // Booking is saved regardless of what happens next. The view has
-    // already switched to the Reservation Active summary at this point
-    // (jubahBooking is now set), so a failure here surfaces through the
-    // "Payment Required" banner there, not the form's fileError — the form
-    // is no longer on screen.
+    // Booking is saved regardless of what happens next, but the Reservation
+    // Active / receipt view is deliberately NOT shown yet — attempt the
+    // ToyyibPay redirect first, while the form is still on screen. If it
+    // succeeds, the browser navigates away to FPX and this view never
+    // renders at all. Only reveal it (with the "Payment Required" fallback)
+    // if the redirect itself fails, so a paying customer never sees a
+    // "confirmed"-looking screen before they've actually paid.
+    const paid = await startPayment(reference, hpNumber);
     setBooking(false);
-    await startPayment(reference, hpNumber);
+    if (!paid) commitJubahBooking(result.booking!);
   };
 
   const UNIVERSITY_LABELS: Record<string, string> = {
