@@ -32,7 +32,7 @@ serve(async (req) => {
     // cancel_jubah_booking_admin's reasoning.
     const { data: expired, error: fetchErr } = await admin
       .from('jubah_bookings')
-      .select('id, reference')
+      .select('id, reference, toyyibpay_bill_code')
       .eq('status', 'ordered')
       .lt('created_at', cutoff)
 
@@ -45,8 +45,50 @@ serve(async (req) => {
       return json({ success: true, cancelled: 0 })
     }
 
+    const baseUrl = Deno.env.get('TOYYIBPAY_BASE_URL')!
     let cancelledCount = 0
+    let skippedPaidCount = 0
+
     for (const booking of expired) {
+      // A bill code means a payment attempt actually happened at some point.
+      // The row still reads 'ordered' here only if our callback never
+      // applied — normally because the customer genuinely never paid, but
+      // occasionally because ToyyibPay's webhook delivery failed even
+      // though the payment succeeded on their end (the same gap admin's
+      // manual "Confirm Payment" fallback exists for). Re-check with
+      // ToyyibPay directly before cancelling, so a booking nobody ever
+      // caught as actually-paid doesn't get auto-cancelled and cleaned up
+      // out from under a paying customer.
+      if (booking.toyyibpay_bill_code) {
+        // If this check can't get a clear answer (network error, bad
+        // response, anything) — skip cancelling this one rather than
+        // assume unpaid. It'll be re-checked on tomorrow's run; the
+        // alternative (defaulting to "unpaid" on an inconclusive check)
+        // would risk auto-cancelling and deleting the documents for a
+        // booking that was actually paid, right when we couldn't confirm
+        // either way.
+        let paid: boolean | null = null
+        try {
+          const verifyForm = new URLSearchParams({ billCode: booking.toyyibpay_bill_code })
+          const verifyRes = await fetch(`${baseUrl}/index.php/api/getBillTransactions`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: verifyForm,
+          })
+          const transactions = await verifyRes.json()
+          paid = Array.isArray(transactions) &&
+            transactions.some((t: any) => String(t.billpaymentStatus) === '1')
+        } catch (verifyErr) {
+          console.error(`jubah-expire-unpaid: could not verify bill status for booking ${booking.id} (${booking.reference}) — skipping this run:`, verifyErr)
+          continue
+        }
+        if (paid) {
+          console.error(`jubah-expire-unpaid: booking ${booking.id} (${booking.reference}) is PAID at ToyyibPay but still 'ordered' — callback likely missed it. Skipped auto-cancel; needs manual reconciliation.`)
+          skippedPaidCount++
+          continue
+        }
+      }
+
       // Uploads are foldered by reference (see Jubah.tsx's uploadFile), so
       // listing and removing that whole folder catches every document —
       // combined PDF, oscar/skpg/konvo/ic — regardless of which columns
@@ -71,7 +113,7 @@ serve(async (req) => {
       cancelledCount++
     }
 
-    return json({ success: true, cancelled: cancelledCount })
+    return json({ success: true, cancelled: cancelledCount, skippedPaid: skippedPaidCount })
 
   } catch (err) {
     console.error('jubah-expire-unpaid unhandled error:', err)

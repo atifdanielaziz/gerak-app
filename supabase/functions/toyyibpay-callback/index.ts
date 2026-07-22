@@ -58,13 +58,22 @@ serve(async (req) => {
       const newStatus = initialMatch.payment_mode === 'deposit' ? 'booked' : 'paid'
       // The status='ordered' guard makes this idempotent against ToyyibPay
       // retrying the callback delivery.
-      const { error: updateErr } = await admin.from('jubah_bookings')
+      const { data: updated, error: updateErr } = await admin.from('jubah_bookings')
         .update({ status: newStatus, initial_paid: true, initial_paid_at: new Date().toISOString() })
         .eq('id', initialMatch.id)
         .eq('status', 'ordered')
+        .select('id')
       if (updateErr) {
         console.error('toyyibpay-callback: failed to update status:', updateErr)
         return json({ success: false, reason: updateErr.message }, 500)
+      }
+      // Real money was just confirmed paid at ToyyibPay, but this booking
+      // wasn't 'ordered' anymore by the time we tried to apply it (already
+      // confirmed some other way, or cancelled). Logged loudly instead of
+      // silently discarded — a paid customer with no matching update needs
+      // a human to reconcile, not a quiet no-op.
+      if (!updated || updated.length === 0) {
+        console.error(`toyyibpay-callback: PAYMENT CONFIRMED for booking ${initialMatch.id} but it was not 'ordered' when applied — needs manual reconciliation. billcode=${billcode}`)
       }
       return json({ success: true })
     }
@@ -79,14 +88,18 @@ serve(async (req) => {
       // status != 'cancelled' guard: the bill could have been created
       // before a cancellation and only paid afterward — bill-creation now
       // blocks this going forward, but this covers that narrow race too.
-      const { error: updateErr } = await admin.from('jubah_bookings')
+      const { data: updated, error: updateErr } = await admin.from('jubah_bookings')
         .update({ balance_paid: true, balance_paid_at: new Date().toISOString() })
         .eq('id', balanceMatch.id)
         .eq('balance_paid', false)
         .neq('status', 'cancelled')
+        .select('id')
       if (updateErr) {
         console.error('toyyibpay-callback: failed to update balance_paid:', updateErr)
         return json({ success: false, reason: updateErr.message }, 500)
+      }
+      if (!updated || updated.length === 0) {
+        console.error(`toyyibpay-callback: PAYMENT CONFIRMED for balance on booking ${balanceMatch.id} but it was already paid or cancelled when applied — needs manual reconciliation. billcode=${billcode}`)
       }
       return json({ success: true })
     }
