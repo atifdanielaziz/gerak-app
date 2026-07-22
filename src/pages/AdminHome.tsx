@@ -8,7 +8,7 @@ import {
   FileImage, ShieldCheck, ShieldOff, ExternalLink, KeyRound,
   CalendarDays, Upload, Eye, Phone, ArrowLeftRight, Pencil, GraduationCap,
   ChevronLeft, Download, MoreVertical, Copy, Check, TrendingUp, Bike, Settings, Info, BadgeCheck,
-  Bell, User,
+  Bell, User, Ban,
 } from 'lucide-react';
 import { WaBtn, WaIcon, toWa } from '../lib/whatsapp';
 import { MonthDrumPicker, EarningsCard, computeEarnings, type EarningsRow } from '../components/EarningsCard';
@@ -988,8 +988,10 @@ export const AdminHome: React.FC = () => {
   const [jubahBookingsLoading, setJubahBookingsLoading] = useState(false);
   const [deletingBooking,    setDeletingBooking]    = useState<string | null>(null);
   const [confirmingBooking,  setConfirmingBooking]  = useState(false);
+  const [cancelModalBooking, setCancelModalBooking] = useState<JubahBookingRow | null>(null);
+  const [cancellingBooking,  setCancellingBooking]  = useState(false);
   const [jubahSearch,          setJubahSearch]          = useState('');
-  const [jubahPayFilter,       setJubahPayFilter]       = useState<'all' | 'booked' | 'paid'>('all');
+  const [jubahPayFilter,       setJubahPayFilter]       = useState<'all' | 'booked' | 'paid' | 'cancelled'>('all');
   const [jubahAdminView,     setJubahAdminView]     = useState<'list' | 'card' | 'details'>('list');
   const [jubahAdminSelected, setJubahAdminSelected] = useState<JubahBookingRow | null>(null);
   const [jubahAdminUpdating, setJubahAdminUpdating] = useState(false);
@@ -1080,6 +1082,24 @@ export const AdminHome: React.FC = () => {
     setDeletingBooking(null);
     if (error) showToast('Delete failed: ' + error.message);
     else { showToast(`${b.reference} deleted.`); setJubahBookings(prev => prev.filter(r => r.id !== b.id)); }
+  };
+
+  const handleCancelJubahBooking = async () => {
+    if (!cancelModalBooking) return;
+    setCancellingBooking(true);
+    const { data, error } = await supabase.rpc('cancel_jubah_booking_admin', {
+      p_booking_id: cancelModalBooking.id,
+    });
+    setCancellingBooking(false);
+    if (error || !data?.success) {
+      showToast(data?.error ?? error?.message ?? 'Cancel failed. Please try again.');
+      return;
+    }
+    const updated = { ...cancelModalBooking, status: 'cancelled' };
+    setJubahBookings(prev => prev.map(r => r.id === updated.id ? updated : r));
+    if (jubahAdminSelected?.id === updated.id) setJubahAdminSelected(updated);
+    showToast(`${cancelModalBooking.reference} cancelled.`);
+    setCancelModalBooking(null);
   };
 
   const loadJubahData = useCallback(async () => {
@@ -3479,9 +3499,10 @@ export const AdminHome: React.FC = () => {
                 {/* Payment status filter */}
                 <div className="flex bg-slate-100 rounded-xl p-0.5 gap-0.5">
                   {([
-                    { id: 'all',    label: 'All' },
-                    { id: 'booked', label: 'Booked' },
-                    { id: 'paid',   label: 'Paid' },
+                    { id: 'all',       label: 'All' },
+                    { id: 'booked',    label: 'Booked' },
+                    { id: 'paid',      label: 'Paid' },
+                    { id: 'cancelled', label: 'Cancelled' },
                   ] as const).map(f => (
                     <button key={f.id} onPointerDown={e => { e.preventDefault(); setJubahPayFilter(f.id); }}
                       className={`flex-1 py-1.5 rounded-[10px] text-xs font-semibold transition-transform active:scale-95 ${
@@ -3500,7 +3521,12 @@ export const AdminHome: React.FC = () => {
                   <span className="font-normal text-slate-300 normal-case tracking-normal">
                     {jubahBookings.filter(b => {
                       const isPaid = b.payment_mode !== 'deposit' || b.balance_paid;
-                      const matchFilter = jubahPayFilter === 'all' ? true : jubahPayFilter === 'paid' ? isPaid : !isPaid;
+                      const isCancelled = b.status === 'cancelled';
+                      const matchFilter =
+                        jubahPayFilter === 'all'       ? true :
+                        jubahPayFilter === 'cancelled' ? isCancelled :
+                        jubahPayFilter === 'paid'       ? (isPaid && !isCancelled) :
+                                                           (!isPaid && !isCancelled);
                       const q = jubahSearch.trim().toLowerCase();
                       const matchSearch = !q || b.full_name.toLowerCase().includes(q) || b.hp_number.includes(q) || b.reference.toLowerCase().includes(q);
                       return matchFilter && matchSearch;
@@ -3529,7 +3555,12 @@ export const AdminHome: React.FC = () => {
                       <tbody>
                         {jubahBookings.filter(b => {
                           const isPaid = b.payment_mode !== 'deposit' || b.balance_paid;
-                          const matchFilter = jubahPayFilter === 'all' ? true : jubahPayFilter === 'paid' ? isPaid : !isPaid;
+                          const isCancelled = b.status === 'cancelled';
+                          const matchFilter =
+                            jubahPayFilter === 'all'       ? true :
+                            jubahPayFilter === 'cancelled' ? isCancelled :
+                            jubahPayFilter === 'paid'       ? (isPaid && !isCancelled) :
+                                                               (!isPaid && !isCancelled);
                           const q = jubahSearch.trim().toLowerCase();
                           const matchSearch = !q || b.full_name.toLowerCase().includes(q) || b.hp_number.includes(q) || b.reference.toLowerCase().includes(q);
                           return matchFilter && matchSearch;
@@ -3553,9 +3584,10 @@ export const AdminHome: React.FC = () => {
                               </td>
                               <td className="py-2.5 pr-4 whitespace-nowrap">
                                 <span className={`font-semibold px-2 py-0.5 rounded-full border text-xs ${
+                                  b.status === 'cancelled' ? 'bg-red-50 border-red-100 text-red-600' :
                                   isPaid ? 'bg-emerald-50 border-emerald-100 text-emerald-700' : 'bg-amber-50 border-amber-100 text-amber-700'
                                 }`}>
-                                  {isPaid ? 'Paid' : 'Booked'}
+                                  {b.status === 'cancelled' ? 'Cancelled' : isPaid ? 'Paid' : 'Booked'}
                                 </span>
                               </td>
                               <td className="py-2.5 pr-4 whitespace-nowrap">
@@ -3728,8 +3760,8 @@ export const AdminHome: React.FC = () => {
                       </div>
                     )}
 
-                    {/* Balance status (deposit) */}
-                    {b.payment_mode === 'deposit' && (
+                    {/* Balance status (deposit) — hidden once cancelled, nothing left to collect */}
+                    {b.payment_mode === 'deposit' && b.status !== 'cancelled' && (
                       <div className="flex items-center gap-2">
                         <div className={`flex-1 rounded-xl p-3 border flex items-center justify-between gap-2 ${
                           b.balance_paid ? 'bg-emerald-50 border-emerald-100' : b.balance_proof_url ? 'bg-violet-50 border-violet-100' : 'bg-amber-50 border-amber-100'
@@ -3953,31 +3985,40 @@ export const AdminHome: React.FC = () => {
                     // no longer gate on proof having been uploaded. Kept as a manual
                     // override for the rare missed-webhook case.
                     const canConfirmPayment = b.status === 'ordered';
-                    const canConfirmBalance = b.payment_mode === 'deposit' && b.status !== 'ordered' && !b.balance_paid;
+                    const canConfirmBalance = b.payment_mode === 'deposit' && b.status !== 'ordered' && b.status !== 'cancelled' && !b.balance_paid;
                     const confirmActive = canConfirmPayment || canConfirmBalance;
                     const confirmLabel  = canConfirmBalance ? 'Confirm Balance' : 'Confirm Payment';
                     return (
-                      <div className="flex gap-3">
-                        <button
-                          onClick={handleConfirmJubahBooking}
-                          disabled={!confirmActive || confirmingBooking}
-                          className="flex-1 flex items-center justify-center gap-2 bg-emerald-50 border border-emerald-200 text-emerald-600 hover:bg-emerald-100 active:scale-[0.98] font-semibold py-3 rounded-2xl text-sm transition disabled:opacity-40 disabled:cursor-not-allowed">
-                          {confirmingBooking
-                            ? <span className="w-4 h-4 rounded-full border-2 border-emerald-300 border-t-emerald-600 animate-spin" />
-                            : <><BadgeCheck className="w-4 h-4" />{confirmLabel}</>}
-                        </button>
-                        <button
-                          onClick={async () => {
-                            setJubahAdminView('list');
-                            setJubahAdminSelected(null);
-                            await handleDeleteJubahBooking(b);
-                          }}
-                          disabled={deletingBooking === b.id}
-                          className="flex-1 flex items-center justify-center gap-2 border border-red-200 text-red-500 hover:bg-red-50 active:scale-[0.98] font-semibold py-3 rounded-2xl text-sm transition disabled:opacity-50">
-                          {deletingBooking === b.id
-                            ? <span className="w-4 h-4 rounded-full border-2 border-red-300 border-t-red-500 animate-spin" />
-                            : <><Trash2 className="w-4 h-4" />Delete</>}
-                        </button>
+                      <div className="flex flex-col gap-3">
+                        <div className="flex gap-3">
+                          <button
+                            onClick={handleConfirmJubahBooking}
+                            disabled={!confirmActive || confirmingBooking}
+                            className="flex-1 flex items-center justify-center gap-2 bg-emerald-50 border border-emerald-200 text-emerald-600 hover:bg-emerald-100 active:scale-[0.98] font-semibold py-3 rounded-2xl text-sm transition disabled:opacity-40 disabled:cursor-not-allowed">
+                            {confirmingBooking
+                              ? <span className="w-4 h-4 rounded-full border-2 border-emerald-300 border-t-emerald-600 animate-spin" />
+                              : <><BadgeCheck className="w-4 h-4" />{confirmLabel}</>}
+                          </button>
+                          <button
+                            onClick={async () => {
+                              setJubahAdminView('list');
+                              setJubahAdminSelected(null);
+                              await handleDeleteJubahBooking(b);
+                            }}
+                            disabled={deletingBooking === b.id}
+                            className="flex-1 flex items-center justify-center gap-2 border border-red-200 text-red-500 hover:bg-red-50 active:scale-[0.98] font-semibold py-3 rounded-2xl text-sm transition disabled:opacity-50">
+                            {deletingBooking === b.id
+                              ? <span className="w-4 h-4 rounded-full border-2 border-red-300 border-t-red-500 animate-spin" />
+                              : <><Trash2 className="w-4 h-4" />Delete</>}
+                          </button>
+                        </div>
+                        {b.status !== 'cancelled' && (
+                          <button
+                            onClick={() => setCancelModalBooking(b)}
+                            className="w-full flex items-center justify-center gap-2 border border-amber-200 text-amber-600 hover:bg-amber-50 active:scale-[0.98] font-semibold py-3 rounded-2xl text-sm transition">
+                            <Ban className="w-4 h-4" />Cancel Booking
+                          </button>
+                        )}
                       </div>
                     );
                   })()}
@@ -4707,6 +4748,50 @@ export const AdminHome: React.FC = () => {
         </div>
       </div>
     )}
+
+    {/* ── Cancel Booking Confirmation Modal ── */}
+    {cancelModalBooking && (() => {
+      const b = cancelModalBooking;
+      const unpaid = b.status === 'ordered';
+      const fullyPaid = (b.payment_mode !== 'deposit' && !unpaid) || (b.payment_mode === 'deposit' && b.balance_paid);
+      const total = b.payment_mode === 'deposit' && b.balance_paid ? b.cost + b.balance_due : b.cost;
+      return (
+        <div className="fixed inset-0 z-50 bg-black/40 flex items-end justify-center"
+          onClick={() => !cancellingBooking && setCancelModalBooking(null)}>
+          <div className="w-full max-w-sm max-h-[calc(100dvh-3rem)] overflow-y-auto no-scrollbar bg-white rounded-t-3xl p-6 pb-10 shadow-2xl animate-slide-up"
+            onClick={e => e.stopPropagation()}>
+            <div className="w-10 h-1 bg-slate-200 rounded-full mx-auto mb-5" />
+            <div className={`w-10 h-10 rounded-2xl mx-auto mb-3 flex items-center justify-center ${
+              unpaid ? 'bg-slate-100' : 'bg-amber-100'
+            }`}>
+              <Ban className={`w-5 h-5 ${unpaid ? 'text-slate-500' : 'text-amber-600'}`} />
+            </div>
+            <h3 className="text-sm font-black text-slate-800 text-center mb-1">
+              Cancel {b.reference}?
+            </h3>
+            <p className="text-xs text-slate-400 font-semibold text-center mb-6">
+              {unpaid
+                ? 'Nothing has been paid yet, so there\'s nothing to refund.'
+                : fullyPaid
+                  ? `This booking was paid in full (RM${total.toFixed(2)}). Cancelling does NOT refund the customer automatically — you'll need to do that yourself.`
+                  : 'The RM25 deposit has already been paid. Cancelling forfeits it — no refund is processed automatically.'}
+            </p>
+            <div className="flex gap-3">
+              <button onClick={() => setCancelModalBooking(null)} disabled={cancellingBooking}
+                className="flex-1 bg-slate-100 text-slate-600 font-semibold text-xs py-3 rounded-2xl transition active:scale-95 disabled:opacity-50">
+                No, keep it
+              </button>
+              <button onClick={handleCancelJubahBooking} disabled={cancellingBooking}
+                className="flex-1 bg-danger font-semibold text-xs py-3 rounded-2xl transition active:scale-95 text-white disabled:opacity-50">
+                {cancellingBooking
+                  ? <span className="w-4 h-4 rounded-full border-2 border-white/40 border-t-white animate-spin mx-auto" />
+                  : 'Yes, cancel'}
+              </button>
+            </div>
+          </div>
+        </div>
+      );
+    })()}
 
 
     {/* ── Invite Confirmation Modal ── */}
