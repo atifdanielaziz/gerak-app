@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { X, Copy, Check } from 'lucide-react';
 import { WaIcon, toWa } from '../lib/whatsapp';
+import { copyToClipboard } from '../lib/clipboard';
 
 interface Props {
   name:       string;
@@ -32,8 +33,8 @@ export const RepresentativeSheet: React.FC<Props> = ({
 }) => {
   const [copiedField, setCopiedField] = useState<'name' | 'phone' | null>(null);
 
-  const copyValue = (value: string, field: 'name' | 'phone') => {
-    navigator.clipboard.writeText(value);
+  const copyValue = async (value: string, field: 'name' | 'phone') => {
+    if (!(await copyToClipboard(value))) return;
     setCopiedField(field);
     setTimeout(() => setCopiedField(prev => (prev === field ? null : prev)), 2000);
   };

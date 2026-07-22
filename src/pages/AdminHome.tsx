@@ -13,6 +13,7 @@ import {
 import { WaBtn, WaIcon, toWa } from '../lib/whatsapp';
 import { MonthDrumPicker, EarningsCard, computeEarnings, type EarningsRow } from '../components/EarningsCard';
 import { getJubahDocSignedUrl } from '../lib/jubahDocs';
+import { copyToClipboard } from '../lib/clipboard';
 import { ReceiptCard } from '../components/Receipt';
 import { Dropdown } from '../components/Dropdown';
 import { buildJubahReceiptRows, type ReceiptDoc } from '../lib/receiptRows';
@@ -998,6 +999,7 @@ export const AdminHome: React.FC = () => {
   const [jubahAdminUpdating, setJubahAdminUpdating] = useState(false);
   const [receiptModal, setReceiptModal] = useState<ReceiptDoc | null>(null);
   const [copiedRef, setCopiedRef] = useState(false);
+  const [copiedListRef, setCopiedListRef] = useState<string | null>(null);
   const [jubahSubTab,        setJubahSubTab]        = useState<'customer' | 'rider' | 'price' | 'banner'>('rider');
 
   const BANNER_BUCKET = 'jubah-banners';
@@ -3572,7 +3574,23 @@ export const AdminHome: React.FC = () => {
                             <tr key={b.id}
                               onClick={() => goToAdminCard(b)}
                               className="border-b border-slate-100 text-xs hover:bg-slate-50 active:bg-slate-100 transition cursor-pointer">
-                              <td className="py-2.5 pr-4 font-mono font-semibold text-primary whitespace-nowrap">{b.reference}</td>
+                              <td className="py-2.5 pr-4 font-mono font-semibold text-primary whitespace-nowrap">
+                                <span className="flex items-center gap-1.5">
+                                  {b.reference}
+                                  <button
+                                    type="button"
+                                    onClick={async (e) => {
+                                      e.stopPropagation();
+                                      if (!(await copyToClipboard(b.reference))) return;
+                                      setCopiedListRef(b.id);
+                                      setTimeout(() => setCopiedListRef(prev => prev === b.id ? null : prev), 2000);
+                                    }}
+                                    className="text-slate-300 hover:text-primary transition active:scale-90 shrink-0"
+                                  >
+                                    {copiedListRef === b.id ? <Check className="w-3 h-3 text-emerald-500" /> : <Copy className="w-3 h-3" />}
+                                  </button>
+                                </span>
+                              </td>
                               <td className="py-2.5 pr-4 font-semibold text-slate-800 whitespace-nowrap">{b.full_name}</td>
                               <td className="py-2.5 pr-4 text-slate-500 font-semibold whitespace-nowrap">{b.remark}</td>
                               <td className="py-2.5 pr-4 whitespace-nowrap">
@@ -3680,7 +3698,7 @@ export const AdminHome: React.FC = () => {
                       <div className="flex items-center gap-1.5">
                         <p className="text-xs font-black text-slate-700">{b.reference}</p>
                         <button
-                          onClick={() => { navigator.clipboard.writeText(b.reference); setCopiedRef(true); setTimeout(() => setCopiedRef(false), 2000); }}
+                          onClick={async () => { if (!(await copyToClipboard(b.reference))) return; setCopiedRef(true); setTimeout(() => setCopiedRef(false), 2000); }}
                           className="w-5 h-5 flex items-center justify-center text-slate-400 hover:text-primary active:scale-90 transition"
                         >
                           {copiedRef ? <Check className="w-3 h-3 text-emerald-500" /> : <Copy className="w-3 h-3" />}

@@ -13,6 +13,7 @@ import { ReceiptCard } from '../components/Receipt';
 import { Dropdown } from '../components/Dropdown';
 import { buildJubahReceiptRows } from '../lib/receiptRows';
 import { generateReceiptPdf } from '../lib/receiptPdf';
+import { copyToClipboard } from '../lib/clipboard';
 
 const UNIVERSITIES = [
   'Universiti Malaysia Pahang Al-Sultan Abdullah (Pekan)',
@@ -1148,9 +1149,8 @@ export const Jubah: React.FC = () => {
               <span className="text-2xl font-black text-white tracking-wider">{jubahBooking.reference}</span>
               <button
                 type="button"
-                onClick={() => {
-                  if (!navigator.clipboard) return;
-                  navigator.clipboard.writeText(jubahBooking.reference);
+                onClick={async () => {
+                  if (!(await copyToClipboard(jubahBooking.reference))) return;
                   setCopied(true);
                   setTimeout(() => setCopied(false), 2000);
                 }}

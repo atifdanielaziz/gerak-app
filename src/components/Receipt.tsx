@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { FileDown, Copy, Check } from 'lucide-react';
 import { WaBtn } from '../lib/whatsapp';
 import type { ReceiptDoc, ReceiptMeta, ReceiptRow } from '../lib/receiptRows';
+import { copyToClipboard } from '../lib/clipboard';
 
 const valueClass = (r: ReceiptRow) =>
   r.emphasis === 'highlight' ? 'text-blue-600 font-bold' :
@@ -33,8 +34,8 @@ export const ReceiptCard: React.FC<{
   const maxLabelLen = Math.max(...doc.rows.map(r => r.label.length));
   const [copiedIdx, setCopiedIdx] = useState<number | null>(null);
 
-  const copyRow = (i: number, value: string) => {
-    navigator.clipboard?.writeText(value);
+  const copyRow = async (i: number, value: string) => {
+    if (!(await copyToClipboard(value))) return;
     setCopiedIdx(i);
     setTimeout(() => setCopiedIdx(prev => (prev === i ? null : prev)), 1500);
   };
