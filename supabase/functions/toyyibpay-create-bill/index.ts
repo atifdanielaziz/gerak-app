@@ -6,8 +6,8 @@ const CORS = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
-// ToyyibPay doesn't collect a real customer email anywhere in the Jubah
-// booking form — createBill requires one, so a fixed placeholder is used.
+// Fallback only — bookings made before email collection was added to the
+// Jubah form have no real email on file, and createBill requires one.
 const PLACEHOLDER_EMAIL = 'jubah@atepgerak.app'
 
 serve(async (req) => {
@@ -29,7 +29,7 @@ serve(async (req) => {
     // the reference can't spin up bills for someone else's booking.
     const { data: booking, error: fetchErr } = await admin
       .from('jubah_bookings')
-      .select('id, reference, hp_number, full_name, payment_mode, status, cost, balance_due, balance_paid')
+      .select('id, reference, hp_number, full_name, email, payment_mode, status, cost, balance_due, balance_paid')
       .eq('reference', reference)
       .eq('hp_number', hp_number)
       .single()
@@ -80,7 +80,10 @@ serve(async (req) => {
       billCallbackUrl:         functionsUrl,
       billExternalReferenceNo: `${booking.reference}-${stage}`,
       billTo:                  booking.full_name,
-      billEmail:               PLACEHOLDER_EMAIL,
+      // Real customer email when we have one (bookings made after email
+      // collection was added) — falls back to the placeholder only for
+      // legacy bookings that predate that field.
+      billEmail:               booking.email || PLACEHOLDER_EMAIL,
       billPhone:               booking.hp_number,
       billPaymentChannel:      '2',
       billDisplayMerchant:     '1',

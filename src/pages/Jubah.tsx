@@ -60,7 +60,7 @@ const formatPhone = (val: string) => {
 // normal Book flow (payment proof + Book button).
 const JUBAH_DRAFT_KEY = 'gerak_jubah_form_draft';
 interface JubahFormDraft {
-  fullName: string; icNumber: string; hpNumber: string; university: string;
+  fullName: string; icNumber: string; hpNumber: string; email: string; university: string;
   faculty: string; matricId: string;
   paymentMode: 'pickup' | 'postage' | 'deposit';
   postageZone: 'SM' | 'SS';
@@ -95,6 +95,7 @@ export const Jubah: React.FC = () => {
   const [fullName, setFullName]       = useState('');
   const [icNumber, setIcNumber]       = useState('');
   const [hpNumber, setHpNumber]       = useState('');
+  const [email, setEmail]             = useState('');
   const [university, setUniversity]   = useState('');
   const uniAbbrev = UNIV_ABBREV[landingUniversity] ?? 'UMPSA';
   const [faculty, setFaculty]         = useState('');
@@ -171,6 +172,7 @@ export const Jubah: React.FC = () => {
       setFullName(d.fullName ?? '');
       setIcNumber(d.icNumber ?? '');
       setHpNumber(d.hpNumber ?? '');
+      setEmail(d.email ?? '');
       setUniversity(d.university ?? '');
       setFaculty(d.faculty ?? '');
       setMatricId(d.matricId ?? '');
@@ -203,8 +205,9 @@ export const Jubah: React.FC = () => {
       if (user.icNumber) setIcNumber(prev => prev || formatIc(user.icNumber));
       if (user.phone)    setHpNumber(prev => prev || formatPhone(user.phone));
       if (user.matricNo) setMatricId(prev => prev || user.matricNo);
+      if (user.email)    setEmail(prev => prev || user.email);
     });
-  }, [user.isLoggedIn, user.name, user.icNumber, user.phone, user.matricNo]);
+  }, [user.isLoggedIn, user.name, user.icNumber, user.phone, user.matricNo, user.email]);
 
   const [showLeaveConfirm, setShowLeaveConfirm] = useState(false);
   // Content-based, not edit-based — a profile-prefilled field counts the
@@ -243,7 +246,7 @@ export const Jubah: React.FC = () => {
   };
   const handleSaveDraftLeave = () => {
     saveFormDraft({
-      fullName, icNumber, hpNumber, university, faculty, matricId,
+      fullName, icNumber, hpNumber, email, university, faculty, matricId,
       paymentMode, postageZone, depositMethod, remark, selectedRiderId,
       addressLine1, addressLine2, addressPostal, addressCity, addressState,
     });
@@ -496,7 +499,7 @@ export const Jubah: React.FC = () => {
   // and already-selected documents.
   const handleBookAnother = () => {
     startNewJubahBooking();
-    setFullName(''); setIcNumber(''); setHpNumber('');
+    setFullName(''); setIcNumber(''); setHpNumber(''); setEmail('');
     setUniversity(''); setFaculty(''); setMatricId('');
     setPaymentMode('pickup'); setPostageZone('SM'); setDepositMethod('pickup');
     setRemark('Degree');
@@ -524,6 +527,7 @@ export const Jubah: React.FC = () => {
     e.preventDefault();
     if (!university) { alert('Please select your university.'); return; }
     if (!faculty) { alert('Please select your faculty.'); return; }
+    if (!email.trim()) { alert('Please enter your email.'); return; }
     if (!selectedRiderId) { alert('Please select a rider.'); return; }
     if (isPostageDelivery && !fullAddress) { alert('Please enter your delivery address.'); return; }
     if (!allFilesReady) { setFileError('Please upload all required documents.'); return; }
@@ -580,7 +584,7 @@ export const Jubah: React.FC = () => {
       console.error('[GERAK] Storage upload failed:', err);
     }
 
-    const result = await bookJubah(reference, fullName, icNumber, hpNumber, university, faculty, matricId, paymentMode, remark, combinedFileName, depositMethod, postageZone, selectedRiderId, selectedRider?.name, bookingCampus, addr, docsPath, oscarPath, skpgPath, konvoPath, icPath, landingUniversity);
+    const result = await bookJubah(reference, fullName, icNumber, hpNumber, university, faculty, matricId, paymentMode, remark, combinedFileName, depositMethod, postageZone, selectedRiderId, selectedRider?.name, bookingCampus, addr, docsPath, oscarPath, skpgPath, konvoPath, icPath, landingUniversity, email);
     if (!result.success) {
       setBooking(false);
       setFileError(result.error ?? 'Booking failed to save. Please try again.');
@@ -740,6 +744,21 @@ export const Jubah: React.FC = () => {
                 onChange={e => setHpNumber(formatPhone(e.target.value))}
                 placeholder="012-34567890"
                 maxLength={12}
+                required
+                className="bg-white border border-slate-100 rounded-xl py-2.5 px-3 text-xs font-semibold text-slate-700 focus:outline-none focus:border-blue-500 transition placeholder:font-normal placeholder:text-slate-300"
+              />
+            </div>
+
+            {/* Email */}
+            <div className="flex flex-col gap-1">
+              <label className="text-xs font-semibold text-slate-400">
+                Email <span className="text-danger">*</span>
+              </label>
+              <input
+                type="email"
+                value={email}
+                onChange={e => setEmail(e.target.value)}
+                placeholder="you@example.com"
                 required
                 className="bg-white border border-slate-100 rounded-xl py-2.5 px-3 text-xs font-semibold text-slate-700 focus:outline-none focus:border-blue-500 transition placeholder:font-normal placeholder:text-slate-300"
               />
