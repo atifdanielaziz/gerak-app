@@ -29,7 +29,7 @@ serve(async (req) => {
     // the reference can't spin up bills for someone else's booking.
     const { data: booking, error: fetchErr } = await admin
       .from('jubah_bookings')
-      .select('id, reference, hp_number, full_name, email, payment_mode, status, cost, balance_due, balance_paid')
+      .select('id, reference, hp_number, full_name, email, payment_mode, status, cost, balance_due, balance_paid, toyyibpay_bill_code, toyyibpay_balance_bill_code')
       .eq('reference', reference)
       .eq('hp_number', hp_number)
       .single()
@@ -67,6 +67,20 @@ serve(async (req) => {
     const baseUrl     = Deno.env.get('TOYYIBPAY_BASE_URL')!
     const appBaseUrl  = Deno.env.get('APP_BASE_URL')!
     const functionsUrl = `${Deno.env.get('SUPABASE_URL')!}/functions/v1/toyyibpay-callback`
+
+    // Reuse an existing unpaid bill for this stage instead of minting a new
+    // one — the callback matches purely on the bill code stored on this row,
+    // so creating a fresh bill on every call (e.g. a "Pay Now" retry after
+    // the customer hit back on ToyyibPay's checkout) would overwrite that
+    // column and orphan the earlier bill: if they then completed payment on
+    // the old, still-open tab, the callback would find no matching booking
+    // and the payment would go through with the order never marked paid.
+    // The stage checks above already confirm this booking is still payable,
+    // so an existing code here is guaranteed to still be awaiting payment.
+    const existingBillCode = stage === 'initial' ? booking.toyyibpay_bill_code : booking.toyyibpay_balance_bill_code
+    if (existingBillCode) {
+      return json({ success: true, paymentUrl: `${baseUrl}/${existingBillCode}` })
+    }
 
     const form = new URLSearchParams({
       userSecretKey:           Deno.env.get('TOYYIBPAY_SECRET_KEY')!,
