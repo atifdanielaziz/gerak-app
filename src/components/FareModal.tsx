@@ -22,9 +22,9 @@ export const FareModal: React.FC<FareModalProps> = ({ customerName, customerCont
     <div
       className="fixed inset-0 z-[9999] flex items-center justify-center px-6"
       style={{ background: 'rgba(0,0,0,0.25)', backdropFilter: 'blur(24px)', WebkitBackdropFilter: 'blur(24px)' }}
-      onClick={onDismiss}
+      onPointerDown={(e) => { e.preventDefault(); onDismiss?.(); }}
     >
-      <div className="w-full max-w-[320px] bg-white rounded-3xl p-6 flex flex-col gap-4 relative" onClick={e => e.stopPropagation()}>
+      <div className="w-full max-w-[320px] bg-white rounded-3xl p-6 flex flex-col gap-4 relative" onPointerDown={e => e.stopPropagation()}>
         {onDismiss && (
           <button
             onPointerDown={e => { e.preventDefault(); onDismiss(); }}

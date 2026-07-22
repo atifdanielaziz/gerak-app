@@ -135,7 +135,7 @@ export const Header: React.FC = () => {
                 </button>
                 {showRoleMenu && (
                   <>
-                    <div className="fixed inset-0 z-40" onClick={() => setShowRoleMenu(false)} />
+                    <div className="fixed inset-0 z-40" onPointerDown={(e) => { e.preventDefault(); setShowRoleMenu(false); }} />
                     <div className="absolute right-0 top-full mt-2 z-50 bg-white border border-slate-100 rounded-2xl shadow-xl overflow-hidden min-w-[180px]">
                       <button
                         onClick={() => { switchToAdminMode(); setShowRoleMenu(false); }}
@@ -177,12 +177,12 @@ export const Header: React.FC = () => {
           <div
             className="fixed inset-0 z-[9998] bg-black/30 flex items-end"
             style={{ backdropFilter: 'blur(4px)', WebkitBackdropFilter: 'blur(4px)' }}
-            onClick={closeSheet}
+            onPointerDown={(e) => { e.preventDefault(); closeSheet(); }}
           >
             <div
               className="w-full bg-white rounded-t-3xl shadow-2xl max-h-[70dvh] flex flex-col animate-slide-up"
               style={{ paddingBottom: 'calc(1.5rem + env(safe-area-inset-bottom))' }}
-              onClick={e => e.stopPropagation()}
+              onPointerDown={e => e.stopPropagation()}
             >
               {/* Drag pill */}
               <div className="w-10 h-1 bg-slate-200 rounded-full mx-auto mt-3 mb-1 shrink-0" />
@@ -317,7 +317,7 @@ export const Header: React.FC = () => {
 
               {showRoleMenu && (
                 <>
-                  <div className="fixed inset-0 z-40" onClick={() => setShowRoleMenu(false)} />
+                  <div className="fixed inset-0 z-40" onPointerDown={(e) => { e.preventDefault(); setShowRoleMenu(false); }} />
                   <div className="absolute right-0 top-full mt-2 z-50 bg-white border border-slate-100 rounded-2xl shadow-xl overflow-hidden min-w-[180px]">
                     <button
                       onPointerDown={(e) => { e.preventDefault(); switchToAdminMode(); setShowRoleMenu(false); }}
@@ -412,12 +412,12 @@ export const Header: React.FC = () => {
         <div
           className="fixed inset-0 z-[9998] bg-black/30 flex items-end"
           style={{ backdropFilter: 'blur(4px)', WebkitBackdropFilter: 'blur(4px)' }}
-          onClick={() => setShowMyCampusSheet(false)}
+          onPointerDown={(e) => { e.preventDefault(); setShowMyCampusSheet(false); }}
         >
           <div
             className="w-full bg-white rounded-t-3xl shadow-2xl max-h-[70dvh] flex flex-col animate-slide-up"
             style={{ paddingBottom: 'calc(1.5rem + env(safe-area-inset-bottom))' }}
-            onClick={e => e.stopPropagation()}
+            onPointerDown={e => e.stopPropagation()}
           >
             <div className="w-10 h-1 bg-slate-200 rounded-full mx-auto mt-3 mb-1 shrink-0" />
             <div className="flex items-center justify-between px-5 py-3 border-b border-slate-100 shrink-0">
@@ -462,9 +462,9 @@ export const Header: React.FC = () => {
         <div
           className="fixed inset-0 z-[9999] flex items-center justify-center px-6"
           style={{ background: 'rgba(0,0,0,0.25)', backdropFilter: 'blur(24px)', WebkitBackdropFilter: 'blur(24px)' }}
-          onClick={() => setShowProfilePreview(false)}
+          onPointerDown={(e) => { e.preventDefault(); setShowProfilePreview(false); }}
         >
-          <div className="relative flex flex-col items-center gap-3" onClick={e => e.stopPropagation()}>
+          <div className="relative flex flex-col items-center gap-3" onPointerDown={e => e.stopPropagation()}>
             <button
               onPointerDown={(e) => { e.preventDefault(); setShowProfilePreview(false); }}
               className="absolute -top-2 -right-2 z-10 w-8 h-8 flex items-center justify-center rounded-xl bg-white text-slate-500 shadow-md active:scale-90 transition-transform"

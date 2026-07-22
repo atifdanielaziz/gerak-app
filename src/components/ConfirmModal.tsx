@@ -10,11 +10,11 @@ export const ConfirmModal: React.FC = () => {
     <div
       className="fixed inset-0 z-[9999] flex items-center justify-center px-6"
       style={{ background: 'rgba(0,0,0,0.25)', backdropFilter: 'blur(24px)', WebkitBackdropFilter: 'blur(24px)' }}
-      onClick={hideConfirmModal}
+      onPointerDown={(e) => { e.preventDefault(); hideConfirmModal(); }}
     >
       <div
         className="w-full max-w-[320px] bg-white rounded-3xl p-6 flex flex-col items-center gap-4"
-        onClick={e => e.stopPropagation()}
+        onPointerDown={e => e.stopPropagation()}
       >
         {/* Ripple icon */}
         <div className="relative flex items-center justify-center w-32 h-32 mt-2 mb-1 shrink-0">

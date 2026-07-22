@@ -1329,9 +1329,9 @@ export const Jubah: React.FC = () => {
       {showAddressSheet && (
         <div className="fixed inset-0 z-50 flex items-end justify-center"
           style={{ background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(2px)' }}
-          onClick={closeAddressSheet}>
+          onPointerDown={(e) => { e.preventDefault(); closeAddressSheet(); }}>
           <div className="w-full max-w-[480px] max-h-[calc(100dvh-5rem)] bg-white rounded-t-3xl shadow-2xl animate-slide-up flex flex-col"
-            onClick={e => e.stopPropagation()}>
+            onPointerDown={e => e.stopPropagation()}>
             <div className="flex justify-center pt-3 pb-1 shrink-0">
               <div className="w-10 h-1 bg-slate-200 rounded-full" />
             </div>
@@ -1413,8 +1413,8 @@ export const Jubah: React.FC = () => {
     {samplePreview && (
       <>
         <div className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-6"
-          onClick={() => setSamplePreview(null)}>
-          <div className="relative w-full max-w-sm" onClick={e => e.stopPropagation()}>
+          onPointerDown={(e) => { e.preventDefault(); setSamplePreview(null); }}>
+          <div className="relative w-full max-w-sm" onPointerDown={e => e.stopPropagation()}>
             <img src={samplePreview} alt="Sample document" className="w-full rounded-2xl object-contain max-h-[70dvh]" />
             <button onClick={() => setSamplePreview(null)}
               className="absolute top-3 right-3 w-8 h-8 flex items-center justify-center rounded-full bg-black/50 text-white active:scale-90 transition">

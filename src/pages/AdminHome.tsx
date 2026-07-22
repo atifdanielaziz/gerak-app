@@ -247,11 +247,11 @@ const ProfileSheet: React.FC<{ u: ProfileUser; onClose: () => void }> = ({ u, on
     <div
       className="fixed inset-0 z-50 flex items-end justify-center"
       style={{ background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(2px)' }}
-      onClick={onClose}
+      onPointerDown={(e) => { e.preventDefault(); onClose(); }}
     >
       <div
         className="w-full max-w-[480px] max-h-[calc(100dvh-5rem)] bg-white rounded-t-3xl shadow-2xl animate-slide-up flex flex-col"
-        onClick={e => e.stopPropagation()}
+        onPointerDown={e => e.stopPropagation()}
       >
         {/* Handle */}
         <div className="flex justify-center pt-3 pb-1 shrink-0">
@@ -414,11 +414,11 @@ const JubahRiderSheet: React.FC<{
   <div
     className="fixed inset-0 z-50 flex items-end justify-center"
     style={{ background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(2px)' }}
-    onClick={onClose}
+    onPointerDown={(e) => { e.preventDefault(); onClose(); }}
   >
     <div
       className="w-full max-w-[480px] max-h-[calc(100dvh-5rem)] bg-white rounded-t-3xl shadow-2xl animate-slide-up flex flex-col"
-      onClick={e => e.stopPropagation()}
+      onPointerDown={e => e.stopPropagation()}
     >
       <div className="flex justify-center pt-3 pb-1 shrink-0">
         <div className="w-10 h-1 bg-slate-200 rounded-full" />
@@ -718,7 +718,7 @@ const UserCard: React.FC<{
 
           {showMenu && (
             <>
-              <div className="fixed inset-0 z-40" onClick={() => setShowMenu(false)} />
+              <div className="fixed inset-0 z-40" onPointerDown={(e) => { e.preventDefault(); setShowMenu(false); }} />
               <div className="absolute right-0 top-full mt-1 z-50 bg-white border border-slate-100 rounded-2xl shadow-xl overflow-hidden min-w-[170px]">
 
                 {/* Driver capabilities */}
@@ -2187,9 +2187,9 @@ export const AdminHome: React.FC = () => {
         return (
           <div className="fixed inset-0 z-50 flex items-end justify-center"
             style={{ background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(2px)' }}
-            onClick={() => setDirSheet(null)}>
+            onPointerDown={(e) => { e.preventDefault(); setDirSheet(null); }}>
             <div className="w-full max-w-[480px] max-h-[calc(100dvh-5rem)] bg-white rounded-t-3xl shadow-2xl animate-slide-up flex flex-col overflow-y-auto no-scrollbar"
-              onClick={e => e.stopPropagation()}>
+              onPointerDown={e => e.stopPropagation()}>
               <div className="flex justify-center pt-3 pb-1"><div className="w-10 h-1 bg-slate-200 rounded-full" /></div>
               <div className="flex items-center justify-between px-5 pt-2 pb-4">
                 <p className="text-sm font-semibold text-slate-700">Representative</p>
@@ -4687,9 +4687,9 @@ export const AdminHome: React.FC = () => {
 
       return (
         <div className="fixed inset-0 z-50 bg-black/40 flex items-end justify-center"
-          onClick={() => setPendingAction(null)}>
+          onPointerDown={(e) => { e.preventDefault(); setPendingAction(null); }}>
           <div className="w-full max-w-sm max-h-[calc(100dvh-5rem)] overflow-y-auto no-scrollbar bg-white rounded-t-3xl p-6 pb-10 shadow-2xl animate-slide-up"
-            onClick={e => e.stopPropagation()}>
+            onPointerDown={e => e.stopPropagation()}>
             <div className="w-10 h-1 bg-slate-200 rounded-full mx-auto mb-5" />
             <div className={`w-10 h-10 rounded-2xl mx-auto mb-3 flex items-center justify-center ${
               isTerminate ? 'bg-red-100' : isStop ? 'bg-amber-100' : 'bg-primary/10'
@@ -4722,9 +4722,9 @@ export const AdminHome: React.FC = () => {
     {/* ── Receipt Gate Master Confirmation Modal ── */}
     {showGateMasterConfirm && (
       <div className="fixed inset-0 z-50 bg-black/40 flex items-end justify-center"
-        onClick={() => setShowGateMasterConfirm(false)}>
+        onPointerDown={(e) => { e.preventDefault(); setShowGateMasterConfirm(false); }}>
         <div className="w-full max-w-sm max-h-[calc(100dvh-5rem)] overflow-y-auto no-scrollbar bg-white rounded-t-3xl p-6 pb-10 shadow-2xl animate-slide-up"
-          onClick={e => e.stopPropagation()}>
+          onPointerDown={e => e.stopPropagation()}>
           <div className="w-10 h-1 bg-slate-200 rounded-full mx-auto mb-5" />
           <div className={`w-10 h-10 rounded-2xl mx-auto mb-3 flex items-center justify-center ${
             receiptGateOn ? 'bg-amber-100' : 'bg-primary/10'
@@ -4760,9 +4760,9 @@ export const AdminHome: React.FC = () => {
     {/* ── Receipt Preview Modal ── */}
     {receiptModal && (
       <div className="fixed inset-0 z-50 bg-black/40 flex items-end justify-center"
-        onClick={() => setReceiptModal(null)}>
+        onPointerDown={(e) => { e.preventDefault(); setReceiptModal(null); }}>
         <div className="w-full max-w-sm max-h-[calc(100dvh-5rem)] overflow-y-auto no-scrollbar bg-white rounded-t-3xl p-6 pb-10 shadow-2xl animate-slide-up"
-          onClick={e => e.stopPropagation()}>
+          onPointerDown={e => e.stopPropagation()}>
           <div className="w-10 h-1 bg-slate-200 rounded-full mx-auto mb-5" />
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-sm font-black text-slate-800">Receipt</h3>
@@ -4784,9 +4784,9 @@ export const AdminHome: React.FC = () => {
       const total = b.payment_mode === 'deposit' && b.balance_paid ? b.cost + b.balance_due : b.cost;
       return (
         <div className="fixed inset-0 z-50 bg-black/40 flex items-end justify-center"
-          onClick={() => !cancellingBooking && setCancelModalBooking(null)}>
+          onPointerDown={(e) => { e.preventDefault(); if (!cancellingBooking) setCancelModalBooking(null); }}>
           <div className="w-full max-w-sm max-h-[calc(100dvh-3rem)] overflow-y-auto no-scrollbar bg-white rounded-t-3xl p-6 pb-10 shadow-2xl animate-slide-up"
-            onClick={e => e.stopPropagation()}>
+            onPointerDown={e => e.stopPropagation()}>
             <div className="w-10 h-1 bg-slate-200 rounded-full mx-auto mb-5" />
             <div className={`w-10 h-10 rounded-2xl mx-auto mb-3 flex items-center justify-center ${
               unpaid ? 'bg-slate-100' : 'bg-amber-100'
@@ -4825,11 +4825,11 @@ export const AdminHome: React.FC = () => {
     {showInviteConfirm && (
       <div
         className="fixed inset-0 z-50 bg-black/40 flex items-end justify-center"
-        onClick={() => setShowInviteConfirm(false)}
+        onPointerDown={(e) => { e.preventDefault(); setShowInviteConfirm(false); }}
       >
         <div
           className="w-full max-w-sm max-h-[calc(100dvh-5rem)] overflow-y-auto no-scrollbar bg-white rounded-t-3xl p-6 pb-10 shadow-2xl animate-slide-up"
-          onClick={e => e.stopPropagation()}
+          onPointerDown={e => e.stopPropagation()}
         >
           {/* Handle bar */}
           <div className="w-10 h-1 bg-slate-200 rounded-full mx-auto mb-5" />

@@ -45,11 +45,11 @@ export function Dropdown<T extends string>({
         <div
           className="fixed inset-0 z-50 flex items-end justify-center"
           style={{ background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(2px)' }}
-          onClick={() => setOpen(false)}
+          onPointerDown={(e) => { e.preventDefault(); setOpen(false); }}
         >
           <div
             className="w-full max-w-[480px] max-h-[calc(100dvh-5rem)] bg-white rounded-t-3xl shadow-2xl animate-slide-up flex flex-col"
-            onClick={e => e.stopPropagation()}
+            onPointerDown={e => e.stopPropagation()}
           >
             <div className="flex justify-center pt-3 pb-1 shrink-0">
               <div className="w-10 h-1 bg-slate-200 rounded-full" />

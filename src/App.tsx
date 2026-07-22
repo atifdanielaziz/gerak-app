@@ -72,12 +72,12 @@ const InstallPrompt: React.FC = () => {
     <div
       className="fixed inset-0 z-[9998] flex items-end justify-center"
       style={{ background: 'rgba(0,0,0,0.45)', backdropFilter: 'blur(2px)', WebkitBackdropFilter: 'blur(2px)' }}
-      onClick={dismiss}
+      onPointerDown={(e) => { e.preventDefault(); dismiss(); }}
     >
       <div
         className="w-full bg-white rounded-t-3xl shadow-2xl animate-slide-up overflow-hidden"
         style={{ maxWidth: 480, paddingBottom: 'calc(1.5rem + env(safe-area-inset-bottom))' }}
-        onClick={e => e.stopPropagation()}
+        onPointerDown={e => e.stopPropagation()}
       >
         {/* Handle */}
         <div className="flex justify-center pt-3 pb-1">

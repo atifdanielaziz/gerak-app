@@ -92,11 +92,11 @@ export const ReceiptSheet: React.FC<{
   <div
     className="fixed inset-0 z-50 flex items-end justify-center"
     style={{ background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(2px)' }}
-    onClick={onClose}
+    onPointerDown={(e) => { e.preventDefault(); onClose(); }}
   >
     <div
       className="w-full max-w-[480px] max-h-[calc(100dvh-5rem)] overflow-y-auto no-scrollbar bg-white rounded-t-3xl shadow-2xl animate-slide-up"
-      onClick={e => e.stopPropagation()}
+      onPointerDown={e => e.stopPropagation()}
     >
       {/* Drag handle */}
       <div className="flex justify-center pt-3 pb-1">
