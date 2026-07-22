@@ -14,6 +14,7 @@ import { WaBtn, WaIcon, toWa } from '../lib/whatsapp';
 import { MonthDrumPicker, EarningsCard, computeEarnings, type EarningsRow } from '../components/EarningsCard';
 import { getJubahDocSignedUrl } from '../lib/jubahDocs';
 import { ReceiptCard } from '../components/Receipt';
+import { Dropdown } from '../components/Dropdown';
 import { buildJubahReceiptRows, type ReceiptDoc } from '../lib/receiptRows';
 import { generateReceiptPdf } from '../lib/receiptPdf';
 import ReactCrop, { centerCrop, makeAspectCrop, type Crop, type PixelCrop } from 'react-image-crop';
@@ -64,6 +65,18 @@ const ADMIN_TABS: { id: AdminTab; label: string; icon: React.ElementType; supera
   { id: 'receipts', label: 'Receipts',  icon: FileImage,       superadminOnly: true  },
   { id: 'earnings', label: 'Earnings',  icon: TrendingUp,      superadminOnly: true  },
   { id: 'calendar', label: 'Calendar',  icon: CalendarDays,    superadminOnly: false },
+];
+
+// Same 5 universities, same order/keys as JubahLanding.tsx's university
+// selector — keeps the Jubah Pricing Matrix's university switcher wired to
+// the exact same list customers pick from. Abbreviated labels here (not the
+// full names JubahLanding shows) since this sits compactly in a card header.
+const JUBAH_PRICING_UNIVERSITIES = [
+  { key: 'umpsa', label: 'UMPSA' },
+  { key: 'uitm',  label: 'UiTM' },
+  { key: 'umk',   label: 'UMK' },
+  { key: 'ukm',   label: 'UKM' },
+  { key: 'uiam',  label: 'UIA' },
 ];
 
 interface DriverEarningsRow {
@@ -236,7 +249,7 @@ const ProfileSheet: React.FC<{ u: ProfileUser; onClose: () => void }> = ({ u, on
       onClick={onClose}
     >
       <div
-        className="w-full max-w-[480px] max-h-[calc(100dvh-3rem)] bg-white rounded-t-3xl shadow-2xl animate-slide-up flex flex-col"
+        className="w-full max-w-[480px] max-h-[calc(100dvh-5rem)] bg-white rounded-t-3xl shadow-2xl animate-slide-up flex flex-col"
         onClick={e => e.stopPropagation()}
       >
         {/* Handle */}
@@ -403,7 +416,7 @@ const JubahRiderSheet: React.FC<{
     onClick={onClose}
   >
     <div
-      className="w-full max-w-[480px] max-h-[calc(100dvh-3rem)] bg-white rounded-t-3xl shadow-2xl animate-slide-up flex flex-col"
+      className="w-full max-w-[480px] max-h-[calc(100dvh-5rem)] bg-white rounded-t-3xl shadow-2xl animate-slide-up flex flex-col"
       onClick={e => e.stopPropagation()}
     >
       <div className="flex justify-center pt-3 pb-1 shrink-0">
@@ -479,23 +492,14 @@ const JubahRiderSheet: React.FC<{
               </div>
               <div className="flex items-center gap-2">
                 {deleteMode && <Minus className="w-4 h-4 text-slate-200 shrink-0" />}
-                <div className="relative group flex-1">
-                  <div className="bg-slate-50 border border-slate-200 rounded-xl py-2.5 px-3 flex items-center justify-between pointer-events-none group-focus-within:border-primary transition">
-                    <span style={{ fontSize: '12px' }} className={method ? 'font-semibold text-slate-700' : 'font-normal text-slate-300'}>
-                      {method === 'pickup' ? 'Self Pickup' : method === 'postage' ? 'Pickup & Postage' : 'Select method...'}
-                    </span>
-                    <ChevronDown className="w-3 h-3 text-slate-400 shrink-0" />
-                  </div>
-                  <select
+                <div className="flex-1">
+                  <Dropdown
                     value={method}
-                    onChange={e => onMethodChange(e.target.value as 'pickup' | 'postage')}
-                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                    style={{ fontSize: '16px' }}
-                  >
-                    <option value="" disabled>Select method...</option>
-                    <option value="pickup">Self Pickup</option>
-                    <option value="postage">Pickup &amp; Postage</option>
-                  </select>
+                    onChange={v => onMethodChange(v as 'pickup' | 'postage')}
+                    options={[{ value: 'pickup', label: 'Self Pickup' }, { value: 'postage', label: 'Pickup & Postage' }]}
+                    placeholder="Select method..."
+                    label="Select Method"
+                  />
                 </div>
               </div>
             </div>
@@ -523,23 +527,12 @@ const JubahRiderSheet: React.FC<{
                 <span className="text-xs font-semibold text-indigo-400">
                   Method {secondary.length + 2}
                 </span>
-                <div className="relative group">
-                  <div className="bg-indigo-50/50 border border-indigo-200 rounded-xl py-2.5 px-3 flex items-center justify-between pointer-events-none transition">
-                    <span style={{ fontSize: '12px' }} className="font-semibold text-slate-700">
-                      {addMethod === 'pickup' ? 'Self Pickup' : 'Pickup & Postage'}
-                    </span>
-                    <ChevronDown className="w-3 h-3 text-slate-400 shrink-0" />
-                  </div>
-                  <select
-                    value={addMethod}
-                    onChange={e => setAddMethod(e.target.value as 'pickup' | 'postage')}
-                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                    style={{ fontSize: '16px' }}
-                  >
-                    <option value="pickup">Self Pickup</option>
-                    <option value="postage">Pickup &amp; Postage</option>
-                  </select>
-                </div>
+                <Dropdown
+                  value={addMethod}
+                  onChange={v => setAddMethod(v as 'pickup' | 'postage')}
+                  options={[{ value: 'pickup', label: 'Self Pickup' }, { value: 'postage', label: 'Pickup & Postage' }]}
+                  label="Select Method"
+                />
               </div>
             )}
           </div>
@@ -1032,9 +1025,10 @@ export const AdminHome: React.FC = () => {
   const [cropObj,        setCropObj]        = useState<Crop | undefined>(undefined);
   const [completedCrop,  setCompletedCrop]  = useState<PixelCrop | undefined>(undefined);
   const cropImgRef = useRef<HTMLImageElement>(null);
-  type JubahPrice = { remark: string; payment_mode: string; price: number };
+  type JubahPrice = { remark: string; payment_mode: string; price: number; university: string };
   const [savingPrice,        setSavingPrice]        = useState<string | null>(null);
   const [priceDrafts,        setPriceDrafts]        = useState<Record<string, string>>({});
+  const [pricingUniversity,  setPricingUniversity]  = useState('umpsa');
   const [jubahSheetRider,    setJubahSheetRider]    = useState<JubahRider | null>(null);
   const [jubahMethodDraft,   setJubahMethodDraft]   = useState<'pickup' | 'postage' | ''>('');
   const [jubahDropPointDraft, setJubahDropPointDraft] = useState('');
@@ -1049,12 +1043,12 @@ export const AdminHome: React.FC = () => {
   }, [sheetUser, jubahSheetRider, pendingAction, showGateMasterConfirm, showInviteConfirm, setSheetOpen]);
 
   const handleSavePrice = async (remark: string, paymentMode: string) => {
-    const key = `${remark}_${paymentMode}`;
+    const key = `${remark}_${paymentMode}_${pricingUniversity}`;
     const price = parseFloat(priceDrafts[key] ?? '0');
     if (isNaN(price) || price < 0) { showToast('Invalid price.'); return; }
     setSavingPrice(key);
     const { error } = await supabase.rpc('set_jubah_price', {
-      p_remark: remark, p_payment_mode: paymentMode, p_price: price,
+      p_remark: remark, p_payment_mode: paymentMode, p_price: price, p_university: pricingUniversity,
     });
     setSavingPrice(null);
     if (error) showToast('Failed to save price.');
@@ -1154,7 +1148,7 @@ export const AdminHome: React.FC = () => {
     if (pricesData) {
       const drafts: Record<string, string> = {};
       (pricesData as JubahPrice[]).forEach(p => {
-        drafts[`${p.remark}_${p.payment_mode}`] = String(p.price);
+        drafts[`${p.remark}_${p.payment_mode}_${p.university}`] = String(p.price);
       });
       setPriceDrafts(drafts);
     }
@@ -2169,7 +2163,7 @@ export const AdminHome: React.FC = () => {
           <div className="fixed inset-0 z-50 flex items-end justify-center"
             style={{ background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(2px)' }}
             onClick={() => setDirSheet(null)}>
-            <div className="w-full max-w-[480px] max-h-[calc(100dvh-3rem)] bg-white rounded-t-3xl shadow-2xl animate-slide-up flex flex-col overflow-y-auto no-scrollbar"
+            <div className="w-full max-w-[480px] max-h-[calc(100dvh-5rem)] bg-white rounded-t-3xl shadow-2xl animate-slide-up flex flex-col overflow-y-auto no-scrollbar"
               onClick={e => e.stopPropagation()}>
               <div className="flex justify-center pt-3 pb-1"><div className="w-10 h-1 bg-slate-200 rounded-full" /></div>
               <div className="flex items-center justify-between px-5 pt-2 pb-4">
@@ -2697,15 +2691,12 @@ export const AdminHome: React.FC = () => {
                 </div>
                 <div className="flex-1 flex flex-col gap-1.5">
                   <label className="text-xs font-normal text-slate-400">CTA Page</label>
-                  <select
+                  <Dropdown
                     value={bannerCtaPage}
-                    onChange={e => setBannerCtaPage(e.target.value)}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-xs text-slate-700 focus:outline-none focus:border-primary transition"
-                  >
-                    {CTA_PAGES.map(p => (
-                      <option key={p.value} value={p.value}>{p.label}</option>
-                    ))}
-                  </select>
+                    onChange={setBannerCtaPage}
+                    options={CTA_PAGES}
+                    label="CTA Page"
+                  />
                 </div>
               </div>
 
@@ -3643,8 +3634,8 @@ export const AdminHome: React.FC = () => {
               const isDone = !nextStat;
               return (
                 <div className="flex flex-col gap-4">
-                  {/* Back row */}
-                  <div className="flex items-center gap-2">
+                  {/* Back row — sticky so it stays visible while the content below scrolls */}
+                  <div className="sticky top-0 z-10 -mx-4 px-4 pt-2 pb-2 bg-white flex items-center gap-2">
                     <button onClick={goAdminBack}
                       className="w-8 h-8 flex items-center justify-center rounded-xl bg-white border border-slate-100 text-slate-500 hover:text-primary transition active:scale-90 shrink-0">
                       <ChevronLeft className="w-4 h-4" />
@@ -3831,8 +3822,8 @@ export const AdminHome: React.FC = () => {
               const b = jubahAdminSelected;
               return (
                 <div className="flex flex-col gap-4">
-                  {/* Back row */}
-                  <div className="flex items-center gap-2">
+                  {/* Back row — sticky so it stays visible while the content below scrolls */}
+                  <div className="sticky top-0 z-10 -mx-4 px-4 pt-2 pb-2 bg-white flex items-center gap-2">
                     <button onClick={goAdminBack}
                       className="w-8 h-8 flex items-center justify-center rounded-xl bg-white border border-slate-100 text-slate-500 hover:text-primary transition active:scale-90 shrink-0">
                       <ChevronLeft className="w-4 h-4" />
@@ -3999,9 +3990,19 @@ export const AdminHome: React.FC = () => {
           {/* ── PRICE sub-tab ── */}
           {jubahSubTab === 'price' && (
             <div className="bg-white border border-slate-100 rounded-3xl p-5 flex flex-col gap-4">
-              <h3 className="text-sm font-semibold text-slate-700 flex items-center gap-1.5">
-                <GraduationCap className="w-4 h-4" /> Jubah Pricing Matrix
-              </h3>
+              <div className="flex items-center justify-between gap-2">
+                <h3 className="text-sm font-semibold text-slate-700 flex items-center gap-1.5">
+                  <GraduationCap className="w-4 h-4" /> Jubah Pricing Matrix
+                </h3>
+                <div className="w-28 shrink-0">
+                  <Dropdown
+                    value={pricingUniversity}
+                    onChange={setPricingUniversity}
+                    options={JUBAH_PRICING_UNIVERSITIES.map(u => ({ value: u.key, label: u.label }))}
+                    label="Select University"
+                  />
+                </div>
+              </div>
               <p className="text-xs text-slate-400 font-semibold -mt-2">Set price per study level × service option. Tap Save after editing each value.</p>
 
               {(['Master', 'PHD', 'Degree', 'Diploma'] as const).map(remark => (
@@ -4009,7 +4010,7 @@ export const AdminHome: React.FC = () => {
                   <p className="text-xs font-black text-slate-700">{remark}</p>
                   <div className="grid grid-cols-2 gap-2">
                     {(['pickup', 'postage'] as const).map(mode => {
-                      const key = `${remark}_${mode}`;
+                      const key = `${remark}_${mode}_${pricingUniversity}`;
                       return (
                         <div key={mode} className="flex flex-col gap-1.5">
                           <label className="text-xs font-normal text-slate-400">
@@ -4619,7 +4620,7 @@ export const AdminHome: React.FC = () => {
       return (
         <div className="fixed inset-0 z-50 bg-black/40 flex items-end justify-center"
           onClick={() => setPendingAction(null)}>
-          <div className="w-full max-w-sm max-h-[calc(100dvh-3rem)] overflow-y-auto no-scrollbar bg-white rounded-t-3xl p-6 pb-10 shadow-2xl animate-slide-up"
+          <div className="w-full max-w-sm max-h-[calc(100dvh-5rem)] overflow-y-auto no-scrollbar bg-white rounded-t-3xl p-6 pb-10 shadow-2xl animate-slide-up"
             onClick={e => e.stopPropagation()}>
             <div className="w-10 h-1 bg-slate-200 rounded-full mx-auto mb-5" />
             <div className={`w-10 h-10 rounded-2xl mx-auto mb-3 flex items-center justify-center ${
@@ -4654,7 +4655,7 @@ export const AdminHome: React.FC = () => {
     {showGateMasterConfirm && (
       <div className="fixed inset-0 z-50 bg-black/40 flex items-end justify-center"
         onClick={() => setShowGateMasterConfirm(false)}>
-        <div className="w-full max-w-sm max-h-[calc(100dvh-3rem)] overflow-y-auto no-scrollbar bg-white rounded-t-3xl p-6 pb-10 shadow-2xl animate-slide-up"
+        <div className="w-full max-w-sm max-h-[calc(100dvh-5rem)] overflow-y-auto no-scrollbar bg-white rounded-t-3xl p-6 pb-10 shadow-2xl animate-slide-up"
           onClick={e => e.stopPropagation()}>
           <div className="w-10 h-1 bg-slate-200 rounded-full mx-auto mb-5" />
           <div className={`w-10 h-10 rounded-2xl mx-auto mb-3 flex items-center justify-center ${
@@ -4692,7 +4693,7 @@ export const AdminHome: React.FC = () => {
     {receiptModal && (
       <div className="fixed inset-0 z-50 bg-black/40 flex items-end justify-center"
         onClick={() => setReceiptModal(null)}>
-        <div className="w-full max-w-sm max-h-[calc(100dvh-3rem)] overflow-y-auto no-scrollbar bg-white rounded-t-3xl p-6 pb-10 shadow-2xl animate-slide-up"
+        <div className="w-full max-w-sm max-h-[calc(100dvh-5rem)] overflow-y-auto no-scrollbar bg-white rounded-t-3xl p-6 pb-10 shadow-2xl animate-slide-up"
           onClick={e => e.stopPropagation()}>
           <div className="w-10 h-1 bg-slate-200 rounded-full mx-auto mb-5" />
           <div className="flex items-center justify-between mb-4">
@@ -4715,7 +4716,7 @@ export const AdminHome: React.FC = () => {
         onClick={() => setShowInviteConfirm(false)}
       >
         <div
-          className="w-full max-w-sm max-h-[calc(100dvh-3rem)] overflow-y-auto no-scrollbar bg-white rounded-t-3xl p-6 pb-10 shadow-2xl animate-slide-up"
+          className="w-full max-w-sm max-h-[calc(100dvh-5rem)] overflow-y-auto no-scrollbar bg-white rounded-t-3xl p-6 pb-10 shadow-2xl animate-slide-up"
           onClick={e => e.stopPropagation()}
         >
           {/* Handle bar */}

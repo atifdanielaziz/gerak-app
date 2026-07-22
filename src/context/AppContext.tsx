@@ -158,7 +158,7 @@ interface AppContextType {
 
   // Jubah Delivery Module
   jubahBooking: JubahBooking | null;
-  bookJubah: (reference: string, fullName: string, icNumber: string, hpNumber: string, university: string, faculty: string, matricId: string, paymentMode: 'pickup' | 'postage' | 'deposit', remark: 'Master' | 'PHD' | 'Degree' | 'Diploma', combinedFileName: string, depositMethod: 'pickup' | 'postage' | undefined, postageZone: 'SM' | 'SS' | undefined, riderId?: string, riderName?: string, campus?: 'Pekan' | 'Gambang', deliveryAddress?: string, docsPath?: string, oscarPath?: string, skpgPath?: string, konvoPath?: string, icPath?: string) => Promise<{ success: boolean; error?: string; booking?: JubahBooking }>;
+  bookJubah: (reference: string, fullName: string, icNumber: string, hpNumber: string, university: string, faculty: string, matricId: string, paymentMode: 'pickup' | 'postage' | 'deposit', remark: 'Master' | 'PHD' | 'Degree' | 'Diploma', combinedFileName: string, depositMethod: 'pickup' | 'postage' | undefined, postageZone: 'SM' | 'SS' | undefined, riderId?: string, riderName?: string, campus?: 'Pekan' | 'Gambang', deliveryAddress?: string, docsPath?: string, oscarPath?: string, skpgPath?: string, konvoPath?: string, icPath?: string, universityKey?: string) => Promise<{ success: boolean; error?: string; booking?: JubahBooking }>;
   commitJubahBooking: (booking: JubahBooking) => void;
   scheduleReturn: (method: 'self' | 'locker' | 'courier', date: string, time: string) => void;
   cancelJubahBooking: () => void;
@@ -756,6 +756,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     skpgPath?: string,
     konvoPath?: string,
     icPath?: string,
+    universityKey?: string,
   ): Promise<{ success: boolean; error?: string; booking?: JubahBooking }> => {
     if (!campus) return { success: false, error: 'Missing campus information.' };
 
@@ -785,6 +786,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       p_konvo_path:   konvoPath   ?? null,
       p_ic_path:      icPath      ?? null,
       p_customer_id:       authUser?.id    ?? null,
+      p_university_key:    universityKey   ?? 'umpsa',
     });
 
     if (error || !data?.success) {

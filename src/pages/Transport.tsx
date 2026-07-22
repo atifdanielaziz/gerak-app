@@ -1,4 +1,4 @@
-﻿import React, { useState, useMemo, useRef, useEffect, lazy, Suspense } from 'react';
+import React, { useState, useMemo, useRef, useEffect, lazy, Suspense } from 'react';
 import { useApp } from '../context/AppContext';
 import { supabase } from '../lib/supabase';
 interface PinLocation { address: string; coords: [number, number]; }
@@ -131,20 +131,6 @@ export const Transport: React.FC = () => {
 
   // Order form
   const [bookWhen,   setBookWhen]   = useState<'now' | 'later'>('now');
-
-  // Pre-fill contact when user logs in mid-session
-  useEffect(() => {
-    if (user.phone && !contact) setContact(user.phone);
-  }, [user.phone]);
-
-  // Sync date/time to "now" whenever user picks "Now"
-  useEffect(() => {
-    if (bookWhen !== 'now') return;
-    const now = new Date();
-    setDate(now.toISOString().slice(0, 10));
-    const rounded = new Date(Math.ceil(now.getTime() / (15 * 60000)) * (15 * 60000));
-    setTime(`${String(rounded.getHours()).padStart(2, '0')}:${String(rounded.getMinutes()).padStart(2, '0')}`);
-  }, [bookWhen]);
   const [date,       setDate]       = useState(() => {
     const now = new Date();
     return now.toISOString().slice(0, 10); // yyyy-MM-dd
@@ -157,6 +143,20 @@ export const Transport: React.FC = () => {
   const [passengers, setPassengers] = useState(1);
   const [contact,    setContact]    = useState(user?.phone ?? '');
   const [notes,      setNotes]      = useState('');
+
+  // Pre-fill contact when user logs in mid-session
+  useEffect(() => {
+    if (user.phone && !contact) setContact(user.phone);
+  }, [user.phone, contact]);
+
+  // Sync date/time to "now" whenever user picks "Now"
+  useEffect(() => {
+    if (bookWhen !== 'now') return;
+    const now = new Date();
+    setDate(now.toISOString().slice(0, 10));
+    const rounded = new Date(Math.ceil(now.getTime() / (15 * 60000)) * (15 * 60000));
+    setTime(`${String(rounded.getHours()).padStart(2, '0')}:${String(rounded.getMinutes()).padStart(2, '0')}`);
+  }, [bookWhen]);
 
   // Submission
   const [booking,          setBooking]          = useState(false);
@@ -842,7 +842,7 @@ export const Transport: React.FC = () => {
           onClick={() => setShowTerms(false)}
         >
           <div
-            className="w-full max-w-[480px] max-h-[calc(100dvh-3rem)] bg-white rounded-t-3xl shadow-2xl animate-slide-up flex flex-col"
+            className="w-full max-w-[480px] max-h-[calc(100dvh-5rem)] bg-white rounded-t-3xl shadow-2xl animate-slide-up flex flex-col"
             onClick={e => e.stopPropagation()}
           >
             {/* Drag pill */}

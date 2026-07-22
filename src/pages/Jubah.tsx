@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
 const getTimestamp = () => Date.now();
-import { CheckCircle2, X, Upload, FileText, ShieldAlert, Download, ChevronDown, User, Pencil, MapPin, Copy, Check, Info, GraduationCap, FileUser } from 'lucide-react';
+import { CheckCircle2, X, Upload, FileText, ShieldAlert, Download, User, Pencil, MapPin, Copy, Check, Info, GraduationCap, FileUser } from 'lucide-react';
 import { submitJubahToSheets } from '../lib/sheetsService';
 import { JubahLanding } from '../components/JubahLanding';
 import { supabase } from '../lib/supabase';
@@ -10,6 +10,7 @@ import type { PDFPage } from 'pdf-lib';
 import { FloatingMessage } from '../components/FloatingMessage';
 import { RepresentativeSheet } from '../components/RepresentativeSheet';
 import { ReceiptCard } from '../components/Receipt';
+import { Dropdown } from '../components/Dropdown';
 import { buildJubahReceiptRows } from '../lib/receiptRows';
 import { generateReceiptPdf } from '../lib/receiptPdf';
 
@@ -574,7 +575,7 @@ export const Jubah: React.FC = () => {
       console.error('[GERAK] Storage upload failed:', err);
     }
 
-    const result = await bookJubah(reference, fullName, icNumber, hpNumber, university, faculty, matricId, paymentMode, remark, combinedFileName, depositMethod, postageZone, selectedRiderId, selectedRider?.name, bookingCampus, addr, docsPath, oscarPath, skpgPath, konvoPath, icPath);
+    const result = await bookJubah(reference, fullName, icNumber, hpNumber, university, faculty, matricId, paymentMode, remark, combinedFileName, depositMethod, postageZone, selectedRiderId, selectedRider?.name, bookingCampus, addr, docsPath, oscarPath, skpgPath, konvoPath, icPath, landingUniversity);
     if (!result.success) {
       setBooking(false);
       setFileError(result.error ?? 'Booking failed to save. Please try again.');
@@ -765,28 +766,13 @@ export const Jubah: React.FC = () => {
               <label className="text-xs font-semibold text-slate-400">
                 Campus <span className="text-danger">*</span>
               </label>
-              <div className="relative group">
-                <div className="bg-white border border-slate-100 rounded-xl py-2.5 px-3 flex items-center justify-between pointer-events-none group-focus-within:border-blue-500 transition">
-                  <span className={`text-xs ${university ? 'font-semibold text-slate-700' : 'font-normal text-slate-300'}`}>
-                    {university
-                      ? (university.includes('Pekan') ? 'UMPSA Pekan' : 'UMPSA Gambang')
-                      : 'Select your campus...'}
-                  </span>
-                  <ChevronDown className="w-3 h-3 text-slate-400 shrink-0" />
-                </div>
-                <select
-                  value={university}
-                  onChange={e => { setUniversity(e.target.value); setFaculty(''); }}
-                  required
-                  className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                  style={{ fontSize: '16px' }}
-                >
-                  <option value="" disabled>Select your campus...</option>
-                  {UNIVERSITIES.map(u => (
-                    <option key={u} value={u}>{u}</option>
-                  ))}
-                </select>
-              </div>
+              <Dropdown
+                value={university}
+                onChange={u => { setUniversity(u); setFaculty(''); }}
+                options={UNIVERSITIES.map(u => ({ value: u, label: u.includes('Pekan') ? 'UMPSA Pekan' : 'UMPSA Gambang' }))}
+                placeholder="Select your campus..."
+                label="Select Campus"
+              />
             </div>
 
             {/* Faculty — list changes based on selected university */}
@@ -794,29 +780,14 @@ export const Jubah: React.FC = () => {
               <label className="text-xs font-semibold text-slate-400">
                 Faculty <span className="text-danger">*</span>
               </label>
-              <div className={`relative group ${!university ? 'opacity-50 pointer-events-none' : ''}`}>
-                <div className="bg-white border border-slate-100 rounded-xl py-2.5 px-3 flex items-center justify-between pointer-events-none group-focus-within:border-blue-500 transition">
-                  <span className={`text-xs ${faculty ? 'font-semibold text-slate-700' : 'font-normal text-slate-300'}`}>
-                    {faculty || (university ? 'Select your faculty...' : 'Select a university first')}
-                  </span>
-                  <ChevronDown className="w-3 h-3 text-slate-400 shrink-0" />
-                </div>
-                <select
-                  value={faculty}
-                  onChange={e => setFaculty(e.target.value)}
-                  required
-                  disabled={!university}
-                  className="absolute inset-0 w-full h-full opacity-0 cursor-pointer disabled:cursor-not-allowed"
-                  style={{ fontSize: '16px' }}
-                >
-                  <option value="" disabled>
-                    {university ? 'Select your faculty...' : 'Select a university first'}
-                  </option>
-                  {(UNIVERSITY_FACULTIES[university] ?? []).map(f => (
-                    <option key={f} value={f}>{f}</option>
-                  ))}
-                </select>
-              </div>
+              <Dropdown
+                value={faculty}
+                onChange={setFaculty}
+                options={(UNIVERSITY_FACULTIES[university] ?? []).map(f => ({ value: f, label: f }))}
+                placeholder={university ? 'Select your faculty...' : 'Select a university first'}
+                label="Select Faculty"
+                disabled={!university}
+              />
             </div>
 
             {/* Remark */}
@@ -935,7 +906,7 @@ export const Jubah: React.FC = () => {
               <input type="radio" name="paymentMode" value="postage" checked={paymentMode === 'postage'} onChange={() => setPaymentMode('postage')} className="mt-0.5 accent-slate-900 shrink-0" />
               <div className="flex-1">
                 <span className={`text-xs font-semibold block ${paymentMode === 'postage' ? 'text-slate-900' : 'text-slate-700'}`}>
-                  Postage (RM{postagePrice + (postageZone === 'SS' ? 10 : 0)}) — Pickup &amp; Postage {postageZone}
+                  Postage (RM{postagePrice + (postageZone === 'SS' ? 10 : 0)}) — Pickup &amp; Postage
                 </span>
                 <span className="text-xs text-slate-400 leading-relaxed block mt-0.5">
                   Total weight ≈ 3–4 kg (jubah, mortarboard, kad jemputan, cenderahati &amp; selempang).
@@ -981,31 +952,21 @@ export const Jubah: React.FC = () => {
               <User className="w-3.5 h-3.5" /> Select Rider
             </h3>
             <div className="flex items-center gap-2">
-              <div className={`relative group flex-1 ${!university ? 'opacity-50 pointer-events-none' : ''}`}>
-                <div className="bg-white border border-slate-100 rounded-xl py-2.5 px-3 flex items-center justify-between pointer-events-none group-focus-within:border-blue-500 transition">
-                  <span className={`text-xs ${selectedRiderId ? 'font-semibold text-slate-700' : 'font-normal text-slate-300'}`}>
-                    {ridersLoading
-                      ? 'Loading riders...'
-                      : selectedRiderId
-                        ? riders.find(r => r.id === selectedRiderId)?.name ?? 'Select a rider...'
-                        : university
-                          ? riders.length === 0 ? 'No riders available' : 'Select a rider...'
-                          : 'Select campus first'}
-                  </span>
-                  <ChevronDown className="w-3 h-3 text-slate-400 shrink-0" />
-                </div>
-                <select
+              <div className="flex-1">
+                <Dropdown
                   value={selectedRiderId}
-                  onChange={e => setSelectedRiderId(e.target.value)}
+                  onChange={setSelectedRiderId}
+                  options={riders.map(r => ({ value: r.id, label: r.name }))}
+                  placeholder={
+                    ridersLoading
+                      ? 'Loading riders...'
+                      : university
+                        ? riders.length === 0 ? 'No riders available' : 'Select a rider...'
+                        : 'Select campus first'
+                  }
+                  label="Select Rider"
                   disabled={!university || ridersLoading || riders.length === 0}
-                  className="absolute inset-0 w-full h-full opacity-0 cursor-pointer disabled:cursor-not-allowed"
-                  style={{ fontSize: '16px' }}
-                >
-                  <option value="" disabled>Select a rider...</option>
-                  {riders.map(r => (
-                    <option key={r.id} value={r.id}>{r.name}</option>
-                  ))}
-                </select>
+                />
               </div>
               <button
                 type="button"
@@ -1335,7 +1296,7 @@ export const Jubah: React.FC = () => {
         <div className="fixed inset-0 z-50 flex items-end justify-center"
           style={{ background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(2px)' }}
           onClick={closeAddressSheet}>
-          <div className="w-full max-w-[480px] max-h-[calc(100dvh-3rem)] bg-white rounded-t-3xl shadow-2xl animate-slide-up flex flex-col"
+          <div className="w-full max-w-[480px] max-h-[calc(100dvh-5rem)] bg-white rounded-t-3xl shadow-2xl animate-slide-up flex flex-col"
             onClick={e => e.stopPropagation()}>
             <div className="flex justify-center pt-3 pb-1 shrink-0">
               <div className="w-10 h-1 bg-slate-200 rounded-full" />
@@ -1371,15 +1332,13 @@ export const Jubah: React.FC = () => {
               {/* State — dropdown, not free text */}
               <div className="flex flex-col gap-1.5">
                 <label className="text-xs font-semibold text-slate-400">State</label>
-                <select
+                <Dropdown
                   value={draftState}
-                  onChange={e => setDraftState(e.target.value)}
-                  style={{ fontSize: '12px' }}
-                  className="bg-white border border-slate-100 rounded-xl py-2.5 px-3 font-semibold text-slate-700 focus:outline-none focus:border-blue-500 transition"
-                >
-                  <option value="">Select state...</option>
-                  {MALAYSIAN_STATES.map(s => <option key={s} value={s}>{s}</option>)}
-                </select>
+                  onChange={setDraftState}
+                  options={MALAYSIAN_STATES.map(s => ({ value: s, label: s }))}
+                  placeholder="Select state..."
+                  label="Select State"
+                />
               </div>
 
               {/* Phone — always the same number as HP Number above, not re-entered here */}

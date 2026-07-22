@@ -1,4 +1,4 @@
-﻿import React, { useEffect, useState, useCallback, useRef } from 'react';
+import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { useApp } from '../context/AppContext';
 import { supabase } from '../lib/supabase';
 import { stampWatermark } from '../lib/watermark';
@@ -13,11 +13,14 @@ import {
 } from 'lucide-react';
 import { WaIcon, toWa } from '../lib/whatsapp';
 import { ReceiptSheet } from '../components/Receipt';
+import { Dropdown } from '../components/Dropdown';
 import { buildTransportReceiptRows, buildRentalReceiptRows } from '../lib/receiptRows';
 import { generateReceiptPdf } from '../lib/receiptPdf';
 import { FareModal } from '../components/FareModal';
 import { MonthDrumPicker, EarningsCard, computeEarnings } from '../components/EarningsCard';
 import { fmt12, fmtDuration, todayStr } from '../lib/format';
+
+const getTimestamp = () => Date.now();
 
 interface RentalVehicle {
   owner_id: string;
@@ -66,6 +69,9 @@ interface RentalBlock {
 }
 
 const HOURS = Array.from({ length: 24 }, (_, i) => i);
+
+const hourLabel = (h: number) => h === 0 ? '12 AM' : h < 12 ? `${h} AM` : h === 12 ? '12 PM' : `${h - 12} PM`;
+const HOUR_OPTIONS = Array.from({ length: 24 }, (_, h) => ({ value: String(h), label: hourLabel(h) }));
 
 interface RideOrder {
   id: string;
@@ -462,8 +468,11 @@ export const DriverHome: React.FC = () => {
   }, [playChime]);
 
   useEffect(() => {
-    if (!effectiveCanDrive) { setLoading(false); return; }
-    loadOrders();
+    if (!effectiveCanDrive) {
+      queueMicrotask(() => setLoading(false));
+      return;
+    }
+    queueMicrotask(() => loadOrders());
     const channel = supabase
       .channel('ride_orders_driver')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'ride_orders' }, (payload) => {
@@ -480,7 +489,7 @@ export const DriverHome: React.FC = () => {
 
   useEffect(() => {
     if (!user.canRent && !isAdminForRental) return;
-    loadRentalData();
+    queueMicrotask(() => loadRentalData());
     const channel = supabase
       .channel('rental_bookings_owner')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'rental_bookings' }, (payload) => {
@@ -548,14 +557,14 @@ export const DriverHome: React.FC = () => {
   // Countdown timer — ticks every second while job is accepted
   useEffect(() => {
     if (!myJob || myJob.status !== 'accepted' || !myJob.accepted_at) {
-      setCancelSecsLeft(0);
+      queueMicrotask(() => setCancelSecsLeft(0));
       return;
     }
     const tick = () => {
-      const elapsed = Math.floor((Date.now() - new Date(myJob.accepted_at!).getTime()) / 1000);
+      const elapsed = Math.floor((getTimestamp() - new Date(myJob.accepted_at!).getTime()) / 1000);
       setCancelSecsLeft(Math.max(0, 180 - elapsed));
     };
-    tick();
+    queueMicrotask(() => tick());
     const id = setInterval(tick, 1000);
     return () => clearInterval(id);
   }, [myJob?.id, myJob?.status, myJob?.accepted_at]);
@@ -1173,7 +1182,7 @@ export const DriverHome: React.FC = () => {
 
           {/* ── History ── */}
           {(() => {
-            const thirtyDaysAgo = Date.now() - 30 * 24 * 60 * 60 * 1000;
+            const thirtyDaysAgo = getTimestamp() - 30 * 24 * 60 * 60 * 1000;
             const visibleHistory = myHistory.filter(o =>
               o.status !== 'cancelled' || new Date(o.created_at).getTime() >= thirtyDaysAgo
             );
@@ -1496,27 +1505,21 @@ export const DriverHome: React.FC = () => {
                 <div className="grid grid-cols-2 gap-3">
                   <div className="flex flex-col gap-1">
                     <span className="text-xs font-semibold text-slate-400">Pickup Time</span>
-                    <select
-                      value={vehicleForm.operating_start ?? 8}
-                      onChange={e => setVehicleForm(f => ({ ...f, operating_start: Number(e.target.value) }))}
-                      className="w-full bg-white border border-slate-100 rounded-xl px-3 py-2.5 text-xs font-bold text-slate-700 focus:outline-none focus:border-amber-400 transition"
-                    >
-                      {Array.from({ length: 24 }, (_, h) => (
-                        <option key={h} value={h}>{h === 0 ? '12 AM' : h < 12 ? `${h} AM` : h === 12 ? '12 PM' : `${h - 12} PM`}</option>
-                      ))}
-                    </select>
+                    <Dropdown
+                      value={String(vehicleForm.operating_start ?? 8)}
+                      onChange={v => setVehicleForm(f => ({ ...f, operating_start: Number(v) }))}
+                      options={HOUR_OPTIONS}
+                      label="Pickup Time"
+                    />
                   </div>
                   <div className="flex flex-col gap-1">
                     <span className="text-xs font-semibold text-slate-400">Return Time</span>
-                    <select
-                      value={vehicleForm.operating_end ?? 22}
-                      onChange={e => setVehicleForm(f => ({ ...f, operating_end: Number(e.target.value) }))}
-                      className="w-full bg-white border border-slate-100 rounded-xl px-3 py-2.5 text-xs font-bold text-slate-700 focus:outline-none focus:border-amber-400 transition"
-                    >
-                      {Array.from({ length: 24 }, (_, h) => (
-                        <option key={h} value={h}>{h === 0 ? '12 AM' : h < 12 ? `${h} AM` : h === 12 ? '12 PM' : `${h - 12} PM`}</option>
-                      ))}
-                    </select>
+                    <Dropdown
+                      value={String(vehicleForm.operating_end ?? 22)}
+                      onChange={v => setVehicleForm(f => ({ ...f, operating_end: Number(v) }))}
+                      options={HOUR_OPTIONS}
+                      label="Return Time"
+                    />
                   </div>
                 </div>
                 <p className="text-xs text-slate-400 font-normal">

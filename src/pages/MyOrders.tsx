@@ -1,4 +1,4 @@
-﻿import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useApp } from '../context/AppContext';
 import { supabase } from '../lib/supabase';
 import {
@@ -50,7 +50,7 @@ const DriverSheet: React.FC<DriverSheetProps> = ({ order, onClose }) => (
   >
     {/* Sheet */}
     <div
-      className="w-full max-w-[480px] max-h-[calc(100dvh-3rem)] bg-white rounded-t-3xl animate-slide-up flex flex-col"
+      className="w-full max-w-[480px] max-h-[calc(100dvh-5rem)] bg-white rounded-t-3xl animate-slide-up flex flex-col"
       onClick={e => e.stopPropagation()}
     >
       {/* Drag handle */}
@@ -224,7 +224,9 @@ export const MyOrders: React.FC = () => {
     setLoading(false);
   };
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => {
+    queueMicrotask(() => load());
+  }, []);
 
   useEffect(() => {
     const channel = supabase

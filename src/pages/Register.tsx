@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
 import { supabase } from '../lib/supabase';
-import { ShieldAlert, User, Mail, Lock, Eye, EyeOff, Phone, ArrowRight, Building2, MapPin, IdCard, Car, X } from 'lucide-react';
+import { ShieldAlert, User, Mail, Lock, Eye, EyeOff, Phone, ArrowRight, MapPin, IdCard, Car, X } from 'lucide-react';
+import { Dropdown } from '../components/Dropdown';
 
 type InviteStatus = null | 'checking' | { isDriver: boolean; campus: string; role: string };
 
@@ -33,8 +34,11 @@ export const Register: React.FC = () => {
 
   // Live invite check — debounced 600ms after email changes
   useEffect(() => {
-    if (!email || !email.includes('@')) { setInviteStatus(null); return; }
-    setInviteStatus('checking');
+    if (!email || !email.includes('@')) {
+      queueMicrotask(() => setInviteStatus(null));
+      return;
+    }
+    queueMicrotask(() => setInviteStatus('checking'));
     const timer = setTimeout(async () => {
       const { data } = await supabase.rpc('check_driver_invite', { p_email: email });
       setInviteStatus({ isDriver: data?.is_driver ?? false, campus: data?.campus ?? '', role: data?.role ?? 'driver' });
@@ -44,7 +48,10 @@ export const Register: React.FC = () => {
 
   // Gerak ID preview
   useEffect(() => {
-    if (!effectiveCampus) { setGerakId(''); return; }
+    if (!effectiveCampus) {
+      queueMicrotask(() => setGerakId(''));
+      return;
+    }
     const rpc = invite?.role === 'rider'
       ? 'get_next_rider_gerak_id'
       : isDriver ? 'get_next_driver_gerak_id' : 'get_next_gerak_id';
@@ -111,18 +118,13 @@ export const Register: React.FC = () => {
           {/* University */}
           <div className="flex flex-col gap-1">
             <label className="text-xs font-semibold text-slate-400 pl-1">University</label>
-            <div className="relative">
-              <Building2 className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
-              <select
-                value={university}
-                onChange={e => { setUniversity(e.target.value); setCampus(''); }}
-                className="w-full bg-white border border-slate-100 rounded-xl py-2.5 pl-9 pr-3 text-xs text-slate-700 focus:outline-none focus:border-primary transition appearance-none"
-                required
-              >
-                <option value="" disabled>Select your university…</option>
-                <option value="Universiti Malaysia Pahang Al-Sultan Abdullah">Universiti Malaysia Pahang Al-Sultan Abdullah (UMPSA)</option>
-              </select>
-            </div>
+            <Dropdown
+              value={university}
+              onChange={u => { setUniversity(u); setCampus(''); }}
+              options={[{ value: 'Universiti Malaysia Pahang Al-Sultan Abdullah', label: 'Universiti Malaysia Pahang Al-Sultan Abdullah (UMPSA)' }]}
+              placeholder="Select your university…"
+              label="Select University"
+            />
           </div>
 
           {/* Campus — auto-locked for drivers, selectable for customers */}
@@ -139,19 +141,13 @@ export const Register: React.FC = () => {
             ) : (
               <div className="flex flex-col gap-1">
                 <label className="text-xs font-semibold text-slate-400 pl-1">Campus</label>
-                <div className="relative">
-                  <MapPin className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
-                  <select
-                    value={campus}
-                    onChange={e => setCampus(e.target.value)}
-                    className="w-full bg-white border border-slate-100 rounded-xl py-2.5 pl-9 pr-3 text-xs text-slate-700 focus:outline-none focus:border-primary transition appearance-none"
-                    required
-                  >
-                    <option value="" disabled>Select your campus…</option>
-                    <option value="Gambang">Gambang</option>
-                    <option value="Pekan">Pekan</option>
-                  </select>
-                </div>
+                <Dropdown
+                  value={campus}
+                  onChange={setCampus}
+                  options={[{ value: 'Gambang', label: 'Gambang' }, { value: 'Pekan', label: 'Pekan' }]}
+                  placeholder="Select your campus…"
+                  label="Select Campus"
+                />
               </div>
             )
           )}

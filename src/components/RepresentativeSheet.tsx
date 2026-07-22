@@ -41,7 +41,7 @@ export const RepresentativeSheet: React.FC<Props> = ({
   return (
     <>
       <div className="fixed inset-0 z-40 bg-black/40" style={{ backdropFilter: 'blur(2px)' }} onClick={onClose} />
-      <div className="fixed bottom-0 left-0 right-0 z-50 bg-white rounded-t-3xl shadow-2xl animate-slide-up max-h-[calc(100dvh-3rem)] overflow-y-auto no-scrollbar">
+      <div className="fixed bottom-0 left-0 right-0 z-50 bg-white rounded-t-3xl shadow-2xl animate-slide-up max-h-[calc(100dvh-5rem)] overflow-y-auto no-scrollbar">
 
         {/* Drag pill */}
         <div className="flex justify-center pt-3 pb-1 shrink-0">

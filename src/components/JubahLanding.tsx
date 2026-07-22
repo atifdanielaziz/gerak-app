@@ -1,9 +1,10 @@
-﻿import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { useApp } from '../context/AppContext';
 import { ChevronRight, Image as ImageIcon, Users, PackageSearch, GraduationCap } from 'lucide-react';
 import { WaIcon } from '../lib/whatsapp';
 import { RepresentativeSheet } from './RepresentativeSheet';
+import { Dropdown } from './Dropdown';
 
 type RiderDir = { id: string; name: string; drop_point: string | null; method: string | null; ic_number: string | null; phone: string | null };
 
@@ -71,7 +72,9 @@ export const JubahLanding: React.FC<Props> = ({ onProceed }) => {
       const { data } = supabase.storage.from(BUCKET).getPublicUrl(`${key}.jpg`);
       urls[key] = `${data.publicUrl}?v=${bust}`;
     });
-    setBannerUrls(urls);
+    queueMicrotask(() => {
+      setBannerUrls(urls);
+    });
   }, []);
 
   const handleUniversityChange = (key: string) => {
@@ -135,17 +138,13 @@ export const JubahLanding: React.FC<Props> = ({ onProceed }) => {
           </button>
         </div>
 
-        <select
+        <Dropdown
           value={selectedKey}
-          onChange={e => handleUniversityChange(e.target.value)}
-          style={{ fontSize: '12px' }}
-          className="w-full bg-white border border-slate-100 rounded-xl py-2.5 px-3 font-semibold text-slate-700 focus:outline-none focus:border-primary"
-        >
-          <option value="" disabled>Choose your university…</option>
-          {UNIVERSITIES.map(u => (
-            <option key={u.key} value={u.key}>{u.label}</option>
-          ))}
-        </select>
+          onChange={handleUniversityChange}
+          options={UNIVERSITIES.map(u => ({ value: u.key, label: u.label }))}
+          placeholder="Choose your university…"
+          label="Select University"
+        />
 
         {/* Banner area — dynamic height (Option A) */}
         <div className="w-full rounded-2xl overflow-hidden border border-slate-100 bg-slate-50 relative">
