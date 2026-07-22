@@ -120,6 +120,7 @@ interface AppContextType {
   setCurrentPage: (page: ActivePage) => void;
   goBack: () => void;
   canGoBack: boolean;
+  deepLinkPage: ActivePage | null;
   setLeaveGuard: (guard: (() => void) | null) => void;
   isPreviewMode: boolean;
   enterPreviewMode: () => void;
@@ -171,6 +172,15 @@ const AppContext = createContext<AppContextType | undefined>(undefined);
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   // Navigation & Session
   const [currentPage, _setCurrentPage] = useState<ActivePage>('splash');
+  // ToyyibPay's billReturnUrl points at /jubah/track — this is a client-routed
+  // SPA (vercel.json rewrites every path to index.html, and nothing else ever
+  // reads location.pathname), so without this, a customer redirected back
+  // after paying would boot straight past that URL into the normal splash →
+  // dashboard flow and never see their booking status. Captured once, before
+  // Splash's own timer can navigate away from it.
+  const [deepLinkPage] = useState<ActivePage | null>(() =>
+    window.location.pathname.replace(/\/+$/, '').endsWith('/jubah/track') ? 'track-jubah' : null
+  );
   const [pageHistory, setPageHistory] = useState<ActivePage[]>([]);
   const [isPreviewMode, setIsPreviewMode] = useState(false);
   const [activeRole, setActiveRole] = useState<'admin' | 'driver' | 'rider' | null>(null);
@@ -443,7 +453,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         isLoggedIn:             true,
       });
       setPageHistory([]);
-      if (role === 'driver') {
+      if (deepLinkPage) {
+        _setCurrentPage(deepLinkPage);
+      } else if (role === 'driver') {
         _setCurrentPage('driver-home');
         // ── Fee expiry reminder (once per session) ───────────────
         const expiry    = data.fee_receipt_expiry ? new Date(data.fee_receipt_expiry) : null;
@@ -859,6 +871,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       value={{
         currentPage,
         setCurrentPage,
+        deepLinkPage,
         goBack,
         canGoBack: pageHistory.length > 0,
         setLeaveGuard,
