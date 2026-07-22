@@ -209,6 +209,11 @@ export interface JubahReceiptSource {
   deliveryAddress?: string | null;
   documentName?: string;
   status: string;
+  // Tracked as its own fact, not inferred from status !== 'ordered' — that
+  // inference broke the moment 'cancelled' became a real status, since a
+  // booking cancelled while still unpaid also has status !== 'ordered'.
+  initialPaid: boolean;
+  initialPaidAt?: string | null;
   riderName?: string | null;
   riderPhone?: string | null;
   createdAt: string | null;
@@ -265,30 +270,50 @@ export function buildJubahReceiptRows(j: JubahReceiptSource): ReceiptDoc {
 
   if (j.deliveryAddress) rows.push({ label: 'Delivery Address', value: j.deliveryAddress });
 
-  // status === 'ordered' means the initial payment hasn't actually been
-  // confirmed yet — without this check, every deposit/full-payment row
-  // claimed "Paid" regardless of whether any payment had happened.
-  const initialPaid = j.status !== 'ordered';
+  const isCancelled = j.status === 'cancelled';
+  const initialPaid = j.initialPaid;
 
   if (j.paymentMode === 'deposit') {
-    const depositDate = initialPaid ? fmtJubahDate(j.createdAt) : null;
-    rows.push({
-      label: initialPaid ? 'Deposit Paid' : 'Deposit Due',
-      value: depositDate ? `RM${j.cost.toFixed(2)} (${depositDate})` : `RM${j.cost.toFixed(2)}`,
-    });
-    if ((j.balanceDue ?? 0) > 0) {
-      const balanceDate = j.balancePaid ? fmtJubahDate(j.balancePaidAt) : null;
+    if (initialPaid) {
+      const depositDate = fmtJubahDate(j.initialPaidAt ?? j.createdAt);
       rows.push({
-        label: j.balancePaid ? 'Balance Paid' : 'Balance Due',
-        value: balanceDate ? `RM${(j.balanceDue ?? 0).toFixed(2)} (${balanceDate})` : `RM${(j.balanceDue ?? 0).toFixed(2)}`,
+        label: 'Deposit Paid',
+        value: depositDate ? `RM${j.cost.toFixed(2)} (${depositDate})` : `RM${j.cost.toFixed(2)}`,
       });
-      if (!j.balancePaid) rows.push({ label: 'Balance Due Date', value: '1 day before collection' });
+    } else if (isCancelled) {
+      rows.push({ label: 'Deposit', value: 'Not Paid (Cancelled)' });
+    } else {
+      rows.push({ label: 'Deposit Due', value: `RM${j.cost.toFixed(2)}` });
     }
+
+    if ((j.balanceDue ?? 0) > 0) {
+      if (j.balancePaid) {
+        const balanceDate = fmtJubahDate(j.balancePaidAt);
+        rows.push({
+          label: 'Balance Paid',
+          value: balanceDate ? `RM${(j.balanceDue ?? 0).toFixed(2)} (${balanceDate})` : `RM${(j.balanceDue ?? 0).toFixed(2)}`,
+        });
+      } else if (isCancelled) {
+        rows.push({ label: 'Balance', value: 'Not Paid (Cancelled)' });
+      } else {
+        rows.push({ label: 'Balance Due', value: `RM${(j.balanceDue ?? 0).toFixed(2)}` });
+        rows.push({ label: 'Balance Due Date', value: '1 day before collection' });
+      }
+    }
+  } else if (initialPaid) {
+    rows.push({ label: 'Amount Paid', value: `RM${j.cost.toFixed(2)}` });
+  } else if (isCancelled) {
+    rows.push({ label: 'Amount', value: 'Not Paid (Cancelled)' });
   } else {
-    rows.push({ label: initialPaid ? 'Amount Paid' : 'Amount Due', value: `RM${j.cost.toFixed(2)}` });
+    rows.push({ label: 'Amount Due', value: `RM${j.cost.toFixed(2)}` });
   }
+
   const totalCharged = j.paymentMode === 'deposit' && j.balancePaid ? j.cost + (j.balanceDue ?? 0) : j.cost;
-  rows.push({ label: initialPaid ? 'Total Charged' : 'Total Due', value: `RM${totalCharged.toFixed(2)}`, emphasis: 'total' });
+  if (!initialPaid && isCancelled) {
+    rows.push({ label: 'Total', value: 'Not Paid (Cancelled)', emphasis: 'total' });
+  } else {
+    rows.push({ label: initialPaid ? 'Total Charged' : 'Total Due', value: `RM${totalCharged.toFixed(2)}`, emphasis: 'total' });
+  }
   if (j.documentName) rows.push({ label: 'Document', value: j.documentName, dividerBefore: true });
 
   if (j.riderName) {

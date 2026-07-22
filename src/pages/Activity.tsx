@@ -137,6 +137,8 @@ async function loadJubahItems(customerId: string): Promise<ActivityItem[]> {
       balancePaidAt: j.balance_paid_at ?? null,
       deliveryAddress: j.delivery_address ?? null,
       status:     j.status,
+      initialPaid:   j.initial_paid ?? false,
+      initialPaidAt: j.initial_paid_at ?? null,
       riderName:  j.rider_name,
       riderPhone: null, // no rider_phone column exists on jubah_bookings — not copying that pre-existing mistake here
       createdAt:  j.created_at,
@@ -182,7 +184,7 @@ async function loadDriverJobItems(driverId: string): Promise<ActivityItem[]> {
 async function loadRiderJobItems(riderId: string): Promise<ActivityItem[]> {
   const { data } = await supabase
     .from('jubah_bookings')
-    .select('id,reference,full_name,ic_number,hp_number,university,faculty,matric_id,remark,payment_mode,cost,balance_due,balance_paid,balance_paid_at,delivery_address,status,rider_name,created_at')
+    .select('id,reference,full_name,ic_number,hp_number,university,faculty,matric_id,remark,payment_mode,cost,balance_due,balance_paid,balance_paid_at,initial_paid,initial_paid_at,delivery_address,status,rider_name,created_at')
     .eq('rider_id', riderId)
     .order('created_at', { ascending: false })
     .limit(30);
@@ -204,6 +206,8 @@ async function loadRiderJobItems(riderId: string): Promise<ActivityItem[]> {
       balancePaidAt: j.balance_paid_at ?? null,
       deliveryAddress: j.delivery_address ?? null,
       status:      j.status,
+      initialPaid:   j.initial_paid ?? false,
+      initialPaidAt: j.initial_paid_at ?? null,
       riderName:   j.rider_name,
       riderPhone:  null, // no rider_phone column exists on jubah_bookings
       createdAt:   j.created_at,

@@ -460,6 +460,8 @@ export const Jubah: React.FC = () => {
   const [liveRiderPhone,    setLiveRiderPhone]     = useState<string | null>(null);
   const [liveBalancePaid,   setLiveBalancePaid]    = useState(false);
   const [liveBalancePaidAt, setLiveBalancePaidAt]  = useState<string | null>(null);
+  const [liveInitialPaid,   setLiveInitialPaid]    = useState(false);
+  const [liveInitialPaidAt, setLiveInitialPaidAt]  = useState<string | null>(null);
 
   useEffect(() => {
     if (!jubahBooking?.reference) return;
@@ -467,13 +469,15 @@ export const Jubah: React.FC = () => {
     const poll = async () => {
       const { data } = await supabase
         .rpc('get_jubah_booking_live_status', { p_reference: jubahBooking.reference })
-        .single<{ status: string; rider_name: string | null; rider_phone: string | null; balance_paid: boolean | null; balance_paid_at: string | null }>();
+        .single<{ status: string; rider_name: string | null; rider_phone: string | null; balance_paid: boolean | null; balance_paid_at: string | null; initial_paid: boolean | null; initial_paid_at: string | null }>();
       if (data && !cancelled) {
         setLiveStatus(data.status);
         setLiveRiderName(data.rider_name ?? null);
         setLiveRiderPhone(data.rider_phone ?? null);
         setLiveBalancePaid(data.balance_paid ?? false);
         setLiveBalancePaidAt(data.balance_paid_at ?? null);
+        setLiveInitialPaid(data.initial_paid ?? false);
+        setLiveInitialPaidAt(data.initial_paid_at ?? null);
       }
     };
     poll();
@@ -1238,6 +1242,8 @@ export const Jubah: React.FC = () => {
                 balancePaidAt: liveBalancePaidAt,
                 documentName: jubahBooking.combinedFileName,
                 status:       liveStatus ?? jubahBooking.status,
+                initialPaid:   liveInitialPaid,
+                initialPaidAt: liveInitialPaidAt,
                 riderName:    liveRiderName,
                 riderPhone:   liveRiderPhone,
                 createdAt:    null,

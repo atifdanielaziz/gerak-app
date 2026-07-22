@@ -59,7 +59,7 @@ serve(async (req) => {
       // The status='ordered' guard makes this idempotent against ToyyibPay
       // retrying the callback delivery.
       const { error: updateErr } = await admin.from('jubah_bookings')
-        .update({ status: newStatus })
+        .update({ status: newStatus, initial_paid: true, initial_paid_at: new Date().toISOString() })
         .eq('id', initialMatch.id)
         .eq('status', 'ordered')
       if (updateErr) {

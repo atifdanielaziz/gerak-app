@@ -975,6 +975,7 @@ export const AdminHome: React.FC = () => {
     matric_id: string; university: string; campus: string; faculty: string; remark: string;
     rider_name: string | null; rider_phone: string | null; status: string; payment_mode: string; cost: number;
     balance_due: number; balance_paid: boolean; balance_paid_at: string | null; balance_proof_url: string | null;
+    initial_paid: boolean; initial_paid_at: string | null;
     delivery_address: string | null;
     docs_path: string | null; payment_path: string | null; oscar_path: string | null;
     skpg_path: string | null; konvo_path: string | null; ic_path: string | null;
@@ -1140,7 +1141,7 @@ export const AdminHome: React.FC = () => {
     }
 
     let bookingsQ = supabase.from('jubah_bookings')
-      .select('id, reference, full_name, ic_number, hp_number, matric_id, university, campus, faculty, remark, rider_name, rider_phone, status, payment_mode, cost, balance_due, balance_paid, balance_paid_at, balance_proof_url, delivery_address, docs_path, payment_path, oscar_path, skpg_path, konvo_path, ic_path, created_at')
+      .select('id, reference, full_name, ic_number, hp_number, matric_id, university, campus, faculty, remark, rider_name, rider_phone, status, payment_mode, cost, balance_due, balance_paid, balance_paid_at, balance_proof_url, initial_paid, initial_paid_at, delivery_address, docs_path, payment_path, oscar_path, skpg_path, konvo_path, ic_path, created_at')
       .order('created_at', { ascending: false });
     if (!isSuperAdmin) bookingsQ = bookingsQ.eq('campus', adminCampus);
     const { data: bookingsData, error: bookingsError } = await bookingsQ;
@@ -1156,6 +1157,7 @@ export const AdminHome: React.FC = () => {
       setJubahBookings(((fallbackData ?? []) as JubahBookingRow[]).map(r => ({
         ...r,
         ic_number: '', university: '', cost: 0, balance_due: 0, balance_paid: false, balance_paid_at: null, balance_proof_url: null,
+        initial_paid: false, initial_paid_at: null,
         delivery_address: null, docs_path: null, payment_path: null, oscar_path: null,
         skpg_path: null, konvo_path: null, ic_path: null,
       })));
@@ -3618,6 +3620,8 @@ export const AdminHome: React.FC = () => {
                                     balancePaidAt: b.balance_paid_at,
                                     deliveryAddress: b.delivery_address,
                                     status:       b.status,
+                                    initialPaid:   b.initial_paid,
+                                    initialPaidAt: b.initial_paid_at,
                                     riderName:    b.rider_name,
                                     riderPhone:   b.rider_phone,
                                     createdAt:    b.created_at,
@@ -3912,6 +3916,8 @@ export const AdminHome: React.FC = () => {
                       balancePaidAt: b.balance_paid_at,
                       deliveryAddress: b.delivery_address,
                       status:       b.status,
+                      initialPaid:   b.initial_paid,
+                      initialPaidAt: b.initial_paid_at,
                       riderName:    b.rider_name,
                       riderPhone:   b.rider_phone,
                       createdAt:    b.created_at,

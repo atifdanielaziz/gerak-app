@@ -45,6 +45,8 @@ interface JubahReceiptData {
   balance_due: number;
   balance_paid: boolean;
   balance_paid_at: string | null;
+  initial_paid: boolean;
+  initial_paid_at: string | null;
   delivery_address: string | null;
   created_at: string;
 }
@@ -300,6 +302,8 @@ export const TrackJubah: React.FC = () => {
                 balancePaidAt: receipt.balance_paid_at,
                 deliveryAddress: receipt.delivery_address,
                 status:       receipt.status,
+                initialPaid:   receipt.initial_paid,
+                initialPaidAt: receipt.initial_paid_at,
                 riderName:    receipt.rider_name,
                 riderPhone:   receipt.rider_phone,
                 createdAt:    receipt.created_at,
