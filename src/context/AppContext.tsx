@@ -90,6 +90,7 @@ export interface JubahBooking {
   fullName: string;
   icNumber: string;
   hpNumber: string;
+  email: string;
   university: string;
   faculty: string;
   matricId: string;
@@ -804,6 +805,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       fullName,
       icNumber,
       hpNumber,
+      email: email ?? '',
       university,
       faculty,
       matricId,

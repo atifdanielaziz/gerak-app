@@ -32,6 +32,7 @@ interface JubahReceiptData {
   full_name: string;
   ic_number: string | null;
   hp_number: string;
+  email: string | null;
   campus: string;
   faculty: string;
   university: string;
@@ -291,6 +292,7 @@ export const TrackJubah: React.FC = () => {
                 fullName:     receipt.full_name,
                 icNumber:     receipt.ic_number ?? '',
                 hpNumber:     receipt.hp_number,
+                email:        receipt.email,
                 university:   receipt.university,
                 faculty:      receipt.faculty,
                 matricId:     receipt.matric_id,

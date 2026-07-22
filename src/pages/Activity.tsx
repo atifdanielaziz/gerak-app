@@ -126,6 +126,7 @@ async function loadJubahItems(customerId: string): Promise<ActivityItem[]> {
       fullName:   j.full_name,
       icNumber:   j.ic_number,
       hpNumber:   j.hp_number,
+      email:      j.email ?? null,
       university: j.university,
       faculty:    j.faculty,
       matricId:   j.matric_id,
@@ -184,7 +185,7 @@ async function loadDriverJobItems(driverId: string): Promise<ActivityItem[]> {
 async function loadRiderJobItems(riderId: string): Promise<ActivityItem[]> {
   const { data } = await supabase
     .from('jubah_bookings')
-    .select('id,reference,full_name,ic_number,hp_number,university,faculty,matric_id,remark,payment_mode,cost,balance_due,balance_paid,balance_paid_at,initial_paid,initial_paid_at,delivery_address,status,rider_name,created_at')
+    .select('id,reference,full_name,ic_number,hp_number,email,university,faculty,matric_id,remark,payment_mode,cost,balance_due,balance_paid,balance_paid_at,initial_paid,initial_paid_at,delivery_address,status,rider_name,created_at')
     .eq('rider_id', riderId)
     .order('created_at', { ascending: false })
     .limit(30);
@@ -195,6 +196,7 @@ async function loadRiderJobItems(riderId: string): Promise<ActivityItem[]> {
       fullName:    j.full_name,
       icNumber:    j.ic_number,
       hpNumber:    j.hp_number,
+      email:       j.email ?? null,
       university:  j.university,
       faculty:     j.faculty,
       matricId:    j.matric_id,

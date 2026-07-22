@@ -973,6 +973,7 @@ export const AdminHome: React.FC = () => {
   type JubahAssignment = { id: string; rider_id: string; name: string; drop_point: string | null; method: string; campus: string; ic_number: string | null; phone: string | null };
   type JubahBookingRow = {
     id: string; reference: string; full_name: string; ic_number: string; hp_number: string;
+    email: string | null;
     matric_id: string; university: string; campus: string; faculty: string; remark: string;
     rider_name: string | null; rider_phone: string | null; status: string; payment_mode: string; cost: number;
     balance_due: number; balance_paid: boolean; balance_paid_at: string | null; balance_proof_url: string | null;
@@ -1143,7 +1144,7 @@ export const AdminHome: React.FC = () => {
     }
 
     let bookingsQ = supabase.from('jubah_bookings')
-      .select('id, reference, full_name, ic_number, hp_number, matric_id, university, campus, faculty, remark, rider_name, rider_phone, status, payment_mode, cost, balance_due, balance_paid, balance_paid_at, balance_proof_url, initial_paid, initial_paid_at, delivery_address, docs_path, payment_path, oscar_path, skpg_path, konvo_path, ic_path, created_at')
+      .select('id, reference, full_name, ic_number, hp_number, email, matric_id, university, campus, faculty, remark, rider_name, rider_phone, status, payment_mode, cost, balance_due, balance_paid, balance_paid_at, balance_proof_url, initial_paid, initial_paid_at, delivery_address, docs_path, payment_path, oscar_path, skpg_path, konvo_path, ic_path, created_at')
       .order('created_at', { ascending: false });
     if (!isSuperAdmin) bookingsQ = bookingsQ.eq('campus', adminCampus);
     const { data: bookingsData, error: bookingsError } = await bookingsQ;
@@ -1158,7 +1159,7 @@ export const AdminHome: React.FC = () => {
       if (fallbackError) console.error('[GERAK] jubah_bookings fallback error:', fallbackError.message);
       setJubahBookings(((fallbackData ?? []) as JubahBookingRow[]).map(r => ({
         ...r,
-        ic_number: '', university: '', cost: 0, balance_due: 0, balance_paid: false, balance_paid_at: null, balance_proof_url: null,
+        ic_number: '', email: null, university: '', cost: 0, balance_due: 0, balance_paid: false, balance_paid_at: null, balance_proof_url: null,
         initial_paid: false, initial_paid_at: null,
         delivery_address: null, docs_path: null, payment_path: null, oscar_path: null,
         skpg_path: null, konvo_path: null, ic_path: null,
@@ -3627,6 +3628,7 @@ export const AdminHome: React.FC = () => {
                                     fullName:     b.full_name,
                                     icNumber:     b.ic_number,
                                     hpNumber:     b.hp_number,
+                                    email:        b.email,
                                     university:   b.university,
                                     faculty:      b.faculty,
                                     matricId:     b.matric_id,
@@ -3923,6 +3925,7 @@ export const AdminHome: React.FC = () => {
                       fullName:     b.full_name,
                       icNumber:     b.ic_number,
                       hpNumber:     b.hp_number,
+                      email:        b.email,
                       university:   b.university,
                       faculty:      b.faculty,
                       matricId:     b.matric_id,

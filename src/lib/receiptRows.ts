@@ -197,6 +197,7 @@ export interface JubahReceiptSource {
   fullName: string;
   icNumber: string;
   hpNumber: string;
+  email?: string | null;
   university: string;
   faculty: string;
   matricId: string;
@@ -260,6 +261,7 @@ export function buildJubahReceiptRows(j: JubahReceiptSource): ReceiptDoc {
     { label: 'Full Name', value: j.fullName },
     { label: 'IC Number', value: formatIc(j.icNumber) },
     { label: 'Phone', value: j.hpNumber },
+    ...(j.email ? [{ label: 'Email', value: j.email }] : []),
     { label: 'University', value: j.university },
     { label: 'Faculty', value: j.faculty },
     { label: 'Matric ID', value: j.matricId },

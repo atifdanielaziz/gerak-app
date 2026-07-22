@@ -1250,6 +1250,7 @@ export const Jubah: React.FC = () => {
                 fullName:     jubahBooking.fullName,
                 icNumber:     jubahBooking.icNumber,
                 hpNumber:     jubahBooking.hpNumber,
+                email:        jubahBooking.email,
                 university:   jubahBooking.university,
                 faculty:      jubahBooking.faculty,
                 matricId:     jubahBooking.matricId,
