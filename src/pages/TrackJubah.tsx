@@ -5,6 +5,7 @@ import { WaIcon, toWa } from '../lib/whatsapp';
 import { ReceiptCard } from '../components/Receipt';
 import { buildJubahReceiptRows } from '../lib/receiptRows';
 import { generateReceiptPdf } from '../lib/receiptPdf';
+import { getPendingJubahBooking, clearPendingJubahBooking } from '../lib/pendingJubahBooking';
 
 interface JubahBookingResult {
   id: string;
@@ -123,7 +124,15 @@ export const TrackJubah: React.FC = () => {
     setSearching(false);
     setSearched(true);
     if (rpcError) { setError(rpcError.message || 'Something went wrong. Please try again.'); return; }
-    setResults((data as JubahBookingResult[]) ?? []);
+    const found = (data as JubahBookingResult[]) ?? [];
+    setResults(found);
+
+    // They've now seen this booking's status directly — the "unfinished
+    // booking" nudge on the landing page has done its job, so stop showing it.
+    const pending = getPendingJubahBooking();
+    if (pending && found.some(b => b.reference === pending.reference)) {
+      clearPendingJubahBooking();
+    }
   };
 
   const handleSearch = (e: React.SyntheticEvent) => {
@@ -133,10 +142,16 @@ export const TrackJubah: React.FC = () => {
 
   // ToyyibPay's return URL lands back here with ?reference=... — auto-search
   // so the customer sees their updated status without retyping anything.
+  // Internal navigation (e.g. the "Check Status" button on the unfinished-
+  // booking nudge) never populates that query param — this is a real SPA,
+  // not URL-routed — so fall back to the same pending-booking marker that
+  // nudge reads from.
   useEffect(() => {
     const refParam = new URLSearchParams(window.location.search).get('reference');
-    if (refParam) {
-      const upper = refParam.toUpperCase();
+    const fallbackRef = refParam ? null : getPendingJubahBooking()?.reference ?? null;
+    const target = refParam || fallbackRef;
+    if (target) {
+      const upper = target.toUpperCase();
       setReference(upper);
       runSearch(upper);
     }

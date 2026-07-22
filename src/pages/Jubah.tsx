@@ -14,6 +14,7 @@ import { Dropdown } from '../components/Dropdown';
 import { buildJubahReceiptRows } from '../lib/receiptRows';
 import { generateReceiptPdf } from '../lib/receiptPdf';
 import { copyToClipboard } from '../lib/clipboard';
+import { savePendingJubahBooking, clearPendingJubahBooking } from '../lib/pendingJubahBooking';
 
 const UNIVERSITIES = [
   'Universiti Malaysia Pahang Al-Sultan Abdullah (Pekan)',
@@ -498,6 +499,7 @@ export const Jubah: React.FC = () => {
   // started, instead of silently re-submitting the previous one's fields
   // and already-selected documents.
   const handleBookAnother = () => {
+    clearPendingJubahBooking();
     startNewJubahBooking();
     setFullName(''); setIcNumber(''); setHpNumber(''); setEmail('');
     setUniversity(''); setFaculty(''); setMatricId('');
@@ -591,6 +593,12 @@ export const Jubah: React.FC = () => {
       return;
     }
     clearFormDraft();
+
+    // Saved now, before the ToyyibPay redirect is attempted, so that if the
+    // customer hits back or closes the tab mid-checkout, the app can still
+    // point them back at this booking next time they open it — see
+    // JubahLanding's "unfinished booking" prompt.
+    savePendingJubahBooking(reference, hpNumber);
 
     // Sheet gets every document labelled by its real field label — lossless
     // regardless of how many doc fields this university has configured,
