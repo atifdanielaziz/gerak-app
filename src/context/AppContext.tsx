@@ -158,9 +158,11 @@ interface AppContextType {
 
   // Jubah Delivery Module
   jubahBooking: JubahBooking | null;
-  bookJubah: (reference: string, fullName: string, icNumber: string, hpNumber: string, university: string, faculty: string, matricId: string, paymentMode: 'pickup' | 'postage' | 'deposit', remark: 'Master' | 'PHD' | 'Degree' | 'Diploma', combinedFileName: string, cost: number, balanceDue: number, riderId?: string, riderName?: string, campus?: 'Pekan' | 'Gambang', deliveryAddress?: string, docsPath?: string, paymentPath?: string, oscarPath?: string, skpgPath?: string, konvoPath?: string, icPath?: string) => Promise<{ success: boolean; error?: string }>;
+  bookJubah: (reference: string, fullName: string, icNumber: string, hpNumber: string, university: string, faculty: string, matricId: string, paymentMode: 'pickup' | 'postage' | 'deposit', remark: 'Master' | 'PHD' | 'Degree' | 'Diploma', combinedFileName: string, depositMethod: 'pickup' | 'postage' | undefined, postageZone: 'SM' | 'SS' | undefined, riderId?: string, riderName?: string, campus?: 'Pekan' | 'Gambang', deliveryAddress?: string, docsPath?: string, oscarPath?: string, skpgPath?: string, konvoPath?: string, icPath?: string) => Promise<{ success: boolean; error?: string; booking?: JubahBooking }>;
+  commitJubahBooking: (booking: JubahBooking) => void;
   scheduleReturn: (method: 'self' | 'locker' | 'courier', date: string, time: string) => void;
   cancelJubahBooking: () => void;
+  startNewJubahBooking: () => void;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -743,22 +745,24 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     paymentMode: 'pickup' | 'postage' | 'deposit',
     remark: 'Master' | 'PHD' | 'Degree' | 'Diploma',
     combinedFileName: string,
-    cost: number,
-    balanceDue: number,
+    depositMethod: 'pickup' | 'postage' | undefined,
+    postageZone: 'SM' | 'SS' | undefined,
     riderId?: string,
     riderName?: string,
     campus?: 'Pekan' | 'Gambang',
     deliveryAddress?: string,
     docsPath?: string,
-    paymentPath?: string,
     oscarPath?: string,
     skpgPath?: string,
     konvoPath?: string,
     icPath?: string,
-  ): Promise<{ success: boolean; error?: string }> => {
+  ): Promise<{ success: boolean; error?: string; booking?: JubahBooking }> => {
     if (!campus) return { success: false, error: 'Missing campus information.' };
 
     const { data: { user: authUser } } = await supabase.auth.getUser();
+    // cost/balance_due aren't sent — create_jubah_booking computes them
+    // itself from jubah_pricing so a tampered request can't get a wrong
+    // price auto-confirmed as paid via the ToyyibPay callback.
     const { data, error } = await supabase.rpc('create_jubah_booking', {
       p_reference:         reference,
       p_full_name:         fullName,
@@ -770,13 +774,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       p_faculty:           faculty,
       p_remark:            remark,
       p_payment_mode:      paymentMode,
-      p_cost:              cost,
-      p_balance_due:       balanceDue,
+      p_deposit_method:    depositMethod ?? null,
+      p_postage_zone:      postageZone   ?? null,
       p_rider_id:          riderId         ?? null,
       p_rider_name:        riderName       ?? null,
       p_delivery_address:  deliveryAddress ?? null,
       p_docs_path:    docsPath    ?? null,
-      p_payment_path: paymentPath ?? null,
       p_oscar_path:   oscarPath   ?? null,
       p_skpg_path:    skpgPath    ?? null,
       p_konvo_path:   konvoPath   ?? null,
@@ -788,6 +791,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       console.error('[GERAK] Booking save failed:', error ?? data?.error);
       return { success: false, error: (data?.error as string) ?? 'Could not save your booking. Please try again.' };
     }
+
+    const cost       = Number(data.cost);
+    const balanceDue = Number(data.balance_due);
 
     const newBooking: JubahBooking = {
       reference,
@@ -806,9 +812,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       returnScheduled: false,
     };
 
-    setJubahBooking(newBooking);
+    // Deliberately does NOT call setJubahBooking here — the caller (Jubah.tsx)
+    // only commits this to the Reservation Active view after attempting the
+    // ToyyibPay redirect, so a customer who's about to be sent straight to
+    // FPX never sees a "confirmed"-looking receipt screen flash by first.
     addNotification('Robe Booking Confirmed', `Booking for ${fullName} (${remark}) confirmed. Service fee: RM${cost.toFixed(2)}.`, 'jubah');
-    return { success: true };
+    return { success: true, booking: newBooking };
   };
 
   const scheduleReturn = (method: 'self' | 'locker' | 'courier', date: string, time: string) => {
@@ -829,6 +838,15 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       addNotification('Booking Cancelled', 'Convocation robe order cancelled.', 'jubah');
     }
   };
+
+  // Forgets the current booking in this browser only — the existing booking
+  // stays exactly as-is in the database (still trackable via reference /
+  // matric / IC), this just clears the way to start a second one.
+  const startNewJubahBooking = () => setJubahBooking(null);
+
+  // Reveals the Reservation Active / receipt view — called only after the
+  // ToyyibPay redirect attempt, never right after the booking is saved.
+  const commitJubahBooking = (booking: JubahBooking) => setJubahBooking(booking);
 
   return (
     <AppContext.Provider
@@ -872,7 +890,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         jubahBooking,
         bookJubah,
         scheduleReturn,
-        cancelJubahBooking
+        cancelJubahBooking,
+        startNewJubahBooking,
+        commitJubahBooking
       }}
     >
       {children}

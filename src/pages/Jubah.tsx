@@ -81,7 +81,7 @@ const clearFormDraft = () => {
 };
 
 export const Jubah: React.FC = () => {
-  const { user, jubahBooking, bookJubah, setCurrentPage, setSheetOpen, goBack, setLeaveGuard } = useApp();
+  const { user, jubahBooking, bookJubah, commitJubahBooking, startNewJubahBooking, setCurrentPage, setSheetOpen, goBack, setLeaveGuard } = useApp();
 
   const [landingUniversity, setLandingUniversity] = useState('');
   // Once booked, landingUniversity/form/tracking are all one page instance —
@@ -117,9 +117,6 @@ export const Jubah: React.FC = () => {
   const [fileError, setFileError]         = useState('');
   const [combining, setCombining]         = useState(false);
   const [combinedBlob, setCombinedBlob]   = useState<Blob | null>(null);
-  const [paymentProof, setPaymentProof]   = useState<File | null>(null);
-
-  const paymentProofRef = useRef<HTMLInputElement>(null);
 
   const [selectedRiderId,   setSelectedRiderId]   = useState('');
   const [riders,            setRiders]            = useState<{ id: string; name: string; jubah_drop_point: string | null; ic_number: string | null; phone: string | null }[]>([]);
@@ -212,7 +209,7 @@ export const Jubah: React.FC = () => {
   // same as a hand-typed one, since either way the form isn't blank.
   const hasUnsavedInput = !!(
     fullName.trim() || icNumber.trim() || hpNumber.trim() || matricId.trim() ||
-    Object.values(docFiles).some(f => !!f) || paymentProof
+    Object.values(docFiles).some(f => !!f)
   );
 
   // Registers with AppContext's goBack() so leaving the actual form (header
@@ -285,9 +282,12 @@ export const Jubah: React.FC = () => {
   const postagePrice      = pricing[remark]?.['postage'] ?? 90;
   const isPostageDelivery = paymentMode === 'postage' || (paymentMode === 'deposit' && depositMethod === 'postage');
   const ssCharge          = isPostageDelivery && postageZone === 'SS' ? 10 : 0;
-  const balanceDue        = paymentMode === 'deposit'
-    ? (depositMethod === 'postage' ? postagePrice + ssCharge : pickupPrice) - DEPOSIT_AMOUNT
-    : 0;
+  // Deposit's own balance estimate, shown in its option label regardless of
+  // which payment mode is currently selected (independent of ssCharge/
+  // isPostageDelivery above, which are gated to the selected mode).
+  const depositBalancePreview = (depositMethod === 'postage'
+    ? postagePrice + (postageZone === 'SS' ? 10 : 0)
+    : pickupPrice) - DEPOSIT_AMOUNT;
   const cost = paymentMode === 'deposit' ? DEPOSIT_AMOUNT : paymentMode === 'postage' ? postagePrice + ssCharge : pickupPrice;
 
   // Fetch active riders whenever campus or service option (Pickup/Postage) changes
@@ -481,6 +481,39 @@ export const Jubah: React.FC = () => {
   }, [jubahBooking?.reference]);
 
 
+  const [payingNow, setPayingNow] = useState(false);
+  const [payNowError, setPayNowError] = useState('');
+
+  // Leaves the current booking untouched in the database — just clears it
+  // from this browser and resets the form so a genuinely new booking can be
+  // started, instead of silently re-submitting the previous one's fields
+  // and already-selected documents.
+  const handleBookAnother = () => {
+    startNewJubahBooking();
+    setFullName(''); setIcNumber(''); setHpNumber('');
+    setUniversity(''); setFaculty(''); setMatricId('');
+    setPaymentMode('pickup'); setPostageZone('SM'); setDepositMethod('pickup');
+    setRemark('Degree');
+    setDocFiles({}); setCombinedBlob(null);
+    setSelectedRiderId('');
+    setAddressLine1(''); setAddressLine2(''); setAddressPostal(''); setAddressState('');
+    setFileError(''); setPayNowError('');
+  };
+
+  // Shared by the auto-redirect right after booking and the "Pay Now" retry
+  // button in the Reservation Active view — both need identical behavior.
+  const startPayment = async (ref: string, hp: string): Promise<boolean> => {
+    const { data: billData } = await supabase.functions.invoke('toyyibpay-create-bill', {
+      body: { reference: ref, hp_number: hp, stage: 'initial' },
+    });
+    if (billData?.success && billData?.paymentUrl) {
+      window.location.href = billData.paymentUrl;
+      return true;
+    }
+    setPayNowError(billData?.error || 'Could not start payment. Please try again.');
+    return false;
+  };
+
   const handleBook = async (e: React.SyntheticEvent) => {
     e.preventDefault();
     if (!university) { alert('Please select your university.'); return; }
@@ -488,7 +521,6 @@ export const Jubah: React.FC = () => {
     if (!selectedRiderId) { alert('Please select a rider.'); return; }
     if (isPostageDelivery && !fullAddress) { alert('Please enter your delivery address.'); return; }
     if (!allFilesReady) { setFileError('Please upload all required documents.'); return; }
-    if (!paymentProof) { setFileError('Please upload your proof of payment.'); return; }
 
     const reference = `JUB-${new Date().getFullYear().toString().slice(-2)}-${uniAbbrev}-${Math.random().toString(36).slice(2, 6).toUpperCase()}`;
     const combinedFileName = `${(fullName || 'combined').replace(/\s+/g, '_')}_combined.pdf`;
@@ -499,7 +531,6 @@ export const Jubah: React.FC = () => {
 
     setBooking(true);
     let docsPath: string | undefined;
-    let paymentPath: string | undefined;
     let oscarPath: string | undefined;
     let skpgPath: string | undefined;
     let konvoPath: string | undefined;
@@ -532,13 +563,9 @@ export const Jubah: React.FC = () => {
           return file ? uploadFile(file, f.label.replace(/\s+/g,'_')) : Promise.resolve(undefined);
         })
       );
-      const results = await Promise.all([
-        blobForUpload
-          ? uploadFile(new File([blobForUpload], combinedFileName, { type: 'application/pdf' }), 'combined')
-          : Promise.resolve(undefined),
-        uploadFile(paymentProof, 'payment'),
-      ]);
-      [docsPath, paymentPath] = results;
+      docsPath = blobForUpload
+        ? await uploadFile(new File([blobForUpload], combinedFileName, { type: 'application/pdf' }), 'combined')
+        : undefined;
       oscarPath = docUploads[0];
       skpgPath  = docUploads[1];
       konvoPath = docUploads[2];
@@ -547,19 +574,21 @@ export const Jubah: React.FC = () => {
       console.error('[GERAK] Storage upload failed:', err);
     }
 
-    const result = await bookJubah(reference, fullName, icNumber, hpNumber, university, faculty, matricId, paymentMode, remark, combinedFileName, cost, balanceDue, selectedRiderId, selectedRider?.name, bookingCampus, addr, docsPath, paymentPath, oscarPath, skpgPath, konvoPath, icPath);
-    setBooking(false);
-    if (!result.success) { setFileError(result.error ?? 'Booking failed to save. Please try again.'); return; }
+    const result = await bookJubah(reference, fullName, icNumber, hpNumber, university, faculty, matricId, paymentMode, remark, combinedFileName, depositMethod, postageZone, selectedRiderId, selectedRider?.name, bookingCampus, addr, docsPath, oscarPath, skpgPath, konvoPath, icPath);
+    if (!result.success) {
+      setBooking(false);
+      setFileError(result.error ?? 'Booking failed to save. Please try again.');
+      return;
+    }
     clearFormDraft();
 
     // Sheet gets every document labelled by its real field label — lossless
     // regardless of how many doc fields this university has configured,
-    // unlike the four fixed oscar/skpg/konvo/ic slots above (those stay as
+    // unlike the three fixed oscar/skpg/konvo/ic slots above (those stay as
     // named DB columns; the sheet has no such fixed schema to respect).
     const documents = [
       ...docFields.map((f, i) => ({ label: f.label, path: docUploads[i] ?? '' })),
-      { label: 'Combined PDF',   path: docsPath ?? '' },
-      { label: 'Payment Proof', path: paymentPath ?? '' },
+      { label: 'Combined PDF', path: docsPath ?? '' },
     ].filter(d => d.path);
 
     submitJubahToSheets({
@@ -572,6 +601,17 @@ export const Jubah: React.FC = () => {
       riderName: selectedRider?.name,
       documents,
     });
+
+    // Booking is saved regardless of what happens next, but the Reservation
+    // Active / receipt view is deliberately NOT shown yet — attempt the
+    // ToyyibPay redirect first, while the form is still on screen. If it
+    // succeeds, the browser navigates away to FPX and this view never
+    // renders at all. Only reveal it (with the "Payment Required" fallback)
+    // if the redirect itself fails, so a paying customer never sees a
+    // "confirmed"-looking screen before they've actually paid.
+    const paid = await startPayment(reference, hpNumber);
+    setBooking(false);
+    if (!paid) commitJubahBooking(result.booking!);
   };
 
   const UNIVERSITY_LABELS: Record<string, string> = {
@@ -812,10 +852,10 @@ export const Jubah: React.FC = () => {
               <input type="radio" name="paymentMode" value="deposit" checked={paymentMode === 'deposit'} onChange={() => setPaymentMode('deposit')} className="mt-0.5 accent-slate-900 shrink-0" />
               <div className="flex-1">
                 <span className={`text-xs font-semibold block ${paymentMode === 'deposit' ? 'text-slate-900' : 'text-slate-700'}`}>
-                  Deposit (RM{DEPOSIT_AMOUNT}) — Pay RM{balanceDue} before robe Collection date
+                  Deposit (RM{DEPOSIT_AMOUNT}) — Pay RM{depositBalancePreview} before robe Collection date
                 </span>
                 <span className="text-xs text-slate-400 leading-relaxed block mt-0.5">
-                  Pay RM{DEPOSIT_AMOUNT} now to secure your booking. Pay the remaining RM{balanceDue} <span className="font-bold text-slate-500">1 day before collection day</span> via Track My Order. Cancellation is locked 1 week before collection — deposit is forfeited if cancelled after that.
+                  Pay RM{DEPOSIT_AMOUNT} now to secure your booking. Pay the remaining RM{depositBalancePreview} <span className="font-bold text-slate-500">1 day before collection day</span> via Track My Order. Cancellation is locked 1 week before collection — deposit is forfeited if cancelled after that.
                 </span>
 
                 {/* Sub-choices: Self Pickup or Pickup & Postage */}
@@ -1116,65 +1156,19 @@ export const Jubah: React.FC = () => {
             )}
           </div>
 
-          {/* ── PROOF OF PAYMENT ── */}
-          <div className="bg-white border border-slate-100 rounded-3xl p-5 flex flex-col gap-4">
-            <h3 className="text-sm font-semibold text-slate-700">
-              {paymentMode === 'deposit' ? `Proof of Deposit (RM${DEPOSIT_AMOUNT})` : 'Proof of Payment'}
-            </h3>
-            <p className="text-xs text-slate-500 leading-relaxed">
-              Upload your <span className="font-bold text-slate-700">{paymentMode === 'deposit' ? `RM${DEPOSIT_AMOUNT} deposit receipt` : 'payment receipt'}</span> (screenshot or PDF). The Book button will activate once uploaded.
-            </p>
-            <input
-              type="file"
-              accept=".pdf,application/pdf,image/jpeg,image/png"
-              ref={paymentProofRef}
-              onChange={async e => {
-                const file = e.target.files?.[0] || null;
-                setPaymentProof(file ? await compressImage(file) : null);
-              }}
-              className="hidden"
-            />
-            {!paymentProof ? (
-              <button
-                type="button"
-                onClick={() => paymentProofRef.current?.click()}
-                className="w-full border-2 border-dashed border-slate-200 rounded-xl py-4 flex flex-col items-center gap-2 text-slate-400 hover:border-blue-400 hover:text-blue-500 hover:bg-blue-50/30 transition cursor-pointer"
-              >
-                <Upload className="w-5 h-5" />
-                <span className="text-xs font-semibold">Upload Receipt</span>
-                <span className="text-xs">PDF · JPG · PNG accepted</span>
-              </button>
-            ) : (
-              <div className="flex items-center gap-3 bg-emerald-50 border border-emerald-100 rounded-xl p-2.5">
-                <FileText className="w-5 h-5 text-emerald-500 shrink-0" />
-                <div className="flex-1 min-w-0">
-                  <p className="text-xs font-semibold text-emerald-700 truncate">{paymentProof.name}</p>
-                  <p className="text-xs text-emerald-500 mt-0.5">{(paymentProof.size / 1024).toFixed(1)} KB</p>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => { setPaymentProof(null); if (paymentProofRef.current) paymentProofRef.current.value = ''; }}
-                  className="text-slate-400 hover:text-danger transition shrink-0 cursor-pointer"
-                >
-                  <X className="w-4 h-4" />
-                </button>
-              </div>
-            )}
-          </div>
-
           {/* SUBMIT */}
           <button
             type="submit"
-            disabled={!paymentProof || booking}
+            disabled={!allFilesReady || booking}
             className={`mx-auto flex items-center gap-2 text-white text-sm font-extrabold px-8 py-2.5 rounded-full transition-all duration-300 active:scale-95 ${
-              paymentProof && !booking
+              allFilesReady && !booking
                 ? 'bg-blue-600 hover:bg-blue-700 shadow-lg shadow-blue-500/50 ring-2 ring-blue-400/40 animate-pulse-glow cursor-pointer'
                 : 'bg-slate-200 text-slate-400 cursor-not-allowed shadow-none'
             }`}
           >
             {booking
-              ? <><span className="w-3.5 h-3.5 rounded-full border-2 border-slate-300 border-t-white animate-spin" /> Uploading…</>
-              : <><CheckCircle2 className="w-3.5 h-3.5" /> Book</>}
+              ? <><span className="w-3.5 h-3.5 rounded-full border-2 border-slate-300 border-t-white animate-spin" /> Proceeding to payment…</>
+              : <><CheckCircle2 className="w-3.5 h-3.5" /> Book &amp; Pay</>}
           </button>
         </form>
 
@@ -1214,6 +1208,45 @@ export const Jubah: React.FC = () => {
               </button>
             )}
           </div>
+
+          {/* Book Another — leaves this booking as-is, just starts a fresh form */}
+          <button
+            type="button"
+            onClick={handleBookAnother}
+            className="text-xs font-semibold text-slate-400 hover:text-blue-600 transition active:scale-95 self-center"
+          >
+            + Book Another
+          </button>
+
+          {/* Payment Required — shown until the initial payment is confirmed */}
+          {(liveStatus ?? jubahBooking.status) === 'ordered' && (
+            <div className="bg-amber-50 border border-amber-100 rounded-3xl p-5 flex flex-col gap-3">
+              <div>
+                <span className="text-xs text-amber-600 font-extrabold uppercase tracking-wider">Payment Required</span>
+                <p className="text-xs text-amber-700 mt-1">
+                  Your booking is saved but not yet paid. Complete payment to continue — RM{jubahBooking.cost.toFixed(2)}.
+                </p>
+              </div>
+              {payNowError && (
+                <p className="text-xs text-danger font-semibold">{payNowError}</p>
+              )}
+              <button
+                type="button"
+                disabled={payingNow}
+                onClick={async () => {
+                  setPayingNow(true);
+                  setPayNowError('');
+                  const started = await startPayment(jubahBooking.reference, jubahBooking.hpNumber);
+                  if (!started) setPayingNow(false);
+                }}
+                className="w-full bg-amber-500 hover:bg-amber-600 active:scale-[0.98] disabled:bg-slate-200 text-white font-extrabold text-xs py-3 rounded-2xl transition flex items-center justify-center gap-2"
+              >
+                {payingNow
+                  ? <><span className="w-3.5 h-3.5 rounded-full border-2 border-white/40 border-t-white animate-spin" /> Redirecting to payment…</>
+                  : 'Pay Now'}
+              </button>
+            </div>
+          )}
 
           {/* Booking Summary */}
           <div className="bg-white border border-slate-100 rounded-3xl p-5 flex flex-col gap-4">
@@ -1268,7 +1301,7 @@ export const Jubah: React.FC = () => {
                   { key: 'collected',  label: 'Ready for Pickup',   desc: 'Available at collection counter.' },
                   { key: 'delivered',  label: 'Collected',           desc: 'Safe in your hands!' },
                 ];
-                const currentStatus = liveStatus ?? 'booked';
+                const currentStatus = liveStatus ?? jubahBooking.status;
                 const currentIdx = steps.findIndex(s => s.key === currentStatus);
                 return steps.map((step, idx) => {
                   const isPast    = currentIdx >= idx;

@@ -1,8 +1,10 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
-import { updateJubahBalanceProof } from '../lib/sheetsService';
-import { PackageSearch, Search, GraduationCap, Upload, FileText, X, Clock, CheckCircle2 } from 'lucide-react';
+import { PackageSearch, Search, GraduationCap, CheckCircle2 } from 'lucide-react';
 import { WaIcon, toWa } from '../lib/whatsapp';
+import { ReceiptCard } from '../components/Receipt';
+import { buildJubahReceiptRows } from '../lib/receiptRows';
+import { generateReceiptPdf } from '../lib/receiptPdf';
 
 interface JubahBookingResult {
   id: string;
@@ -19,7 +21,31 @@ interface JubahBookingResult {
   balance_due: number;
   balance_paid: boolean;
   balance_proof_url: string | null;
-  balance_submitted_at: string | null;
+  created_at: string;
+}
+
+// Full receipt fields — only fetched once the last-4 IC gate passes, kept
+// separate from JubahBookingResult so the plain search never returns them.
+interface JubahReceiptData {
+  id: string;
+  reference: string;
+  full_name: string;
+  ic_number: string | null;
+  hp_number: string;
+  campus: string;
+  faculty: string;
+  university: string;
+  matric_id: string;
+  remark: string;
+  status: string;
+  payment_mode: string;
+  rider_name: string | null;
+  rider_phone: string | null;
+  cost: number;
+  balance_due: number;
+  balance_paid: boolean;
+  balance_paid_at: string | null;
+  delivery_address: string | null;
   created_at: string;
 }
 
@@ -53,16 +79,26 @@ export const TrackJubah: React.FC = () => {
   const [results, setResults]     = useState<JubahBookingResult[]>([]);
   const [error, setError]         = useState('');
 
-  // Balance payment state
-  const [balanceProof,   setBalanceProof]   = useState<File | null>(null);
-  const [submitting,     setSubmitting]     = useState(false);
-  const [submitError,    setSubmitError]    = useState('');
-  const balanceProofRef = useRef<HTMLInputElement>(null);
+  // Payment state — id of the booking whose payment is currently in flight,
+  // plus a per-booking error so a failure on one card doesn't show up
+  // disconnected from it at the top of a multi-result page.
+  const [payingId, setPayingId] = useState<string | null>(null);
+  const [payErrors, setPayErrors] = useState<Record<string, string>>({});
 
-  const handleSearch = async (e: React.SyntheticEvent) => {
-    e.preventDefault();
+  // Full receipt state — id of the booking whose IC-digit prompt is open,
+  // the digits being entered, and (once verified) the fetched receipt data
+  // keyed by booking id so each result's receipt unlocks independently.
+  const [receiptOpenId, setReceiptOpenId]   = useState<string | null>(null);
+  const [icLast4, setIcLast4]               = useState('');
+  const [verifyingReceipt, setVerifyingReceipt] = useState(false);
+  const [receiptErrors, setReceiptErrors]   = useState<Record<string, string>>({});
+  const [receiptData, setReceiptData]       = useState<Record<string, JubahReceiptData>>({});
+
+  const runSearch = async (refOverride?: string) => {
     setError('');
-    if (!reference.trim() && !matric.trim()) {
+    setResults([]);
+    const refValue = (refOverride ?? reference).trim();
+    if (!refValue && !matric.trim()) {
       setError('Please enter your reference number or matric / IC number.');
       return;
     }
@@ -70,56 +106,72 @@ export const TrackJubah: React.FC = () => {
     setSearched(false);
     const isIc = matric.replace(/\D/g, '').length === 12;
     const { data, error: rpcError } = await supabase.rpc('track_jubah_booking', {
-      p_reference:  reference.trim() || null,
+      p_reference:  refValue || null,
       p_hp_number:  null,
       p_matric_id:  (matric.trim() && !isIc) ? matric.trim() : null,
       p_ic_number:  (matric.trim() && isIc)  ? matric.trim() : null,
     });
     setSearching(false);
     setSearched(true);
-    if (rpcError) { setError('Something went wrong. Please try again.'); return; }
+    if (rpcError) { setError(rpcError.message || 'Something went wrong. Please try again.'); return; }
     setResults((data as JubahBookingResult[]) ?? []);
   };
 
-  const handleBalanceSubmit = async (b: JubahBookingResult) => {
-    if (!balanceProof) return;
-    setSubmitting(true);
-    setSubmitError('');
+  const handleSearch = (e: React.SyntheticEvent) => {
+    e.preventDefault();
+    runSearch();
+  };
 
-    // Upload proof to Supabase Storage — foldered by booking reference (not
-    // a public URL) so the jubah-docs storage policies can verify ownership.
-    let driveUrl: string | undefined;
-    try {
-      const ext  = balanceProof.name.split('.').pop() ?? 'pdf';
-      const namePart = b.full_name.replace(/\s+/g, '_');
-      const path = `${b.reference}/${namePart}_balance-payment_${Date.now()}.${ext}`;
-      const { data: storageData, error: storageError } = await supabase.storage
-        .from('jubah-docs')
-        .upload(path, balanceProof, { contentType: balanceProof.type, upsert: false });
-      if (!storageError && storageData) {
-        driveUrl = storageData.path;
-      }
-    } catch (err) {
-      console.error('[GERAK] Balance proof upload failed:', err);
+  // ToyyibPay's return URL lands back here with ?reference=... — auto-search
+  // so the customer sees their updated status without retyping anything.
+  useEffect(() => {
+    const refParam = new URLSearchParams(window.location.search).get('reference');
+    if (refParam) {
+      const upper = refParam.toUpperCase();
+      setReference(upper);
+      runSearch(upper);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
-    const { data } = await supabase.rpc('submit_jubah_balance', {
-      p_reference:         b.reference,
-      p_hp_number:         b.hp_number,
-      p_balance_proof_url: driveUrl ?? 'submitted',
+  const handlePay = async (b: JubahBookingResult, stage: 'initial' | 'balance') => {
+    setPayingId(b.id);
+    setPayErrors(prev => ({ ...prev, [b.id]: '' }));
+    const { data } = await supabase.functions.invoke('toyyibpay-create-bill', {
+      body: { reference: b.reference, hp_number: b.hp_number, stage },
     });
-
-    setSubmitting(false);
-    if (data?.success) {
-      setResults(prev => prev.map(r =>
-        r.id === b.id ? { ...r, balance_proof_url: driveUrl ?? 'submitted' } : r
-      ));
-      setBalanceProof(null);
-      if (balanceProofRef.current) balanceProofRef.current.value = '';
-      if (driveUrl) updateJubahBalanceProof(b.reference, driveUrl);
+    if (data?.success && data?.paymentUrl) {
+      window.location.href = data.paymentUrl;
     } else {
-      setSubmitError(data?.error ?? 'Submission failed. Please try again.');
+      setPayingId(null);
+      setPayErrors(prev => ({ ...prev, [b.id]: data?.error ?? 'Could not start payment. Please try again.' }));
     }
+  };
+
+  const handleVerifyReceipt = async (b: JubahBookingResult) => {
+    if (!/^\d{4}$/.test(icLast4)) {
+      setReceiptErrors(prev => ({ ...prev, [b.id]: 'Enter the last 4 digits of your IC.' }));
+      return;
+    }
+    setVerifyingReceipt(true);
+    setReceiptErrors(prev => ({ ...prev, [b.id]: '' }));
+    const { data, error } = await supabase.rpc('get_jubah_receipt', {
+      p_reference: b.reference,
+      p_ic_last4:  icLast4,
+    });
+    setVerifyingReceipt(false);
+    if (error) {
+      setReceiptErrors(prev => ({ ...prev, [b.id]: error.message || 'Something went wrong. Please try again.' }));
+      return;
+    }
+    const row = (data as JubahReceiptData[] | null)?.[0];
+    if (!row) {
+      setReceiptErrors(prev => ({ ...prev, [b.id]: 'Incorrect IC digits. Please try again.' }));
+      return;
+    }
+    setReceiptData(prev => ({ ...prev, [b.id]: row }));
+    setReceiptOpenId(null);
+    setIcLast4('');
   };
 
   return (
@@ -209,6 +261,28 @@ export const TrackJubah: React.FC = () => {
               const curStep = trackSteps.indexOf(b.status);
               const isDone  = curStep === trackSteps.length - 1;
 
+              const receipt = receiptData[b.id];
+              const jubahDoc = receipt ? buildJubahReceiptRows({
+                reference:    receipt.reference,
+                fullName:     receipt.full_name,
+                icNumber:     receipt.ic_number ?? '',
+                hpNumber:     receipt.hp_number,
+                university:   receipt.university,
+                faculty:      receipt.faculty,
+                matricId:     receipt.matric_id,
+                remark:       receipt.remark,
+                paymentMode:  receipt.payment_mode as 'pickup' | 'postage' | 'deposit',
+                cost:         receipt.cost,
+                balanceDue:   receipt.balance_due,
+                balancePaid:  receipt.balance_paid,
+                balancePaidAt: receipt.balance_paid_at,
+                deliveryAddress: receipt.delivery_address,
+                status:       receipt.status,
+                riderName:    receipt.rider_name,
+                riderPhone:   receipt.rider_phone,
+                createdAt:    receipt.created_at,
+              }) : null;
+
               return (
               <div key={b.id} className="bg-white border border-slate-100 rounded-3xl p-5 flex flex-col gap-4">
 
@@ -249,6 +323,28 @@ export const TrackJubah: React.FC = () => {
                     {b.payment_mode === 'deposit' ? 'Deposit' : b.payment_mode === 'postage' ? 'Postage' : 'Pickup'}
                   </span>
                 </div>
+
+                {/* Payment required — initial payment not yet confirmed, any mode */}
+                {b.status === 'ordered' && (
+                  <div className="flex flex-col gap-2 bg-amber-50 border border-amber-100 rounded-2xl p-3">
+                    <p className="text-xs text-amber-700 font-semibold">
+                      This booking isn't paid yet. Complete payment to continue.
+                    </p>
+                    {payErrors[b.id] && (
+                      <p className="text-xs text-danger font-semibold">{payErrors[b.id]}</p>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => handlePay(b, 'initial')}
+                      disabled={payingId === b.id}
+                      className="w-full bg-amber-500 hover:bg-amber-600 active:scale-[0.99] disabled:bg-slate-200 text-white font-semibold py-2.5 rounded-xl text-xs transition flex items-center justify-center gap-2"
+                    >
+                      {payingId === b.id
+                        ? <><span className="w-3.5 h-3.5 rounded-full border-2 border-white/40 border-t-white animate-spin" /> Redirecting to payment…</>
+                        : 'Pay Now'}
+                    </button>
+                  </div>
+                )}
 
                 {/* Horizontal step bar */}
                 <div className="flex flex-col gap-2">
@@ -299,76 +395,72 @@ export const TrackJubah: React.FC = () => {
                           RM{b.balance_due.toFixed(2)}
                         </span>
                       </div>
-                      {b.balance_paid
-                        ? <CheckCircle2 className="w-5 h-5 text-emerald-500 shrink-0" />
-                        : b.balance_proof_url
-                          ? <Clock className="w-5 h-5 text-amber-500 shrink-0" />
-                          : null}
+                      {b.balance_paid && <CheckCircle2 className="w-5 h-5 text-emerald-500 shrink-0" />}
                     </div>
 
-                    {/* Submitted — under review */}
-                    {b.balance_proof_url && !b.balance_paid && (
-                      <p className="text-xs text-amber-700 font-semibold bg-amber-50 border border-amber-100 rounded-xl px-3 py-2">
-                        Balance payment receipt submitted — admin will confirm shortly.
-                      </p>
-                    )}
-
-                    {/* Pay balance upload */}
-                    {!b.balance_paid && !b.balance_proof_url && (
-                      <div className="flex flex-col gap-2">
-                        <p className="text-xs text-slate-500 font-normal">
-                          Ready to pay your balance? Upload proof of payment below.
-                        </p>
-                        <input
-                          type="file"
-                          accept=".pdf,application/pdf,image/jpeg,image/png"
-                          ref={balanceProofRef}
-                          onChange={e => { setBalanceProof(e.target.files?.[0] ?? null); setSubmitError(''); }}
-                          className="hidden"
-                        />
-                        {!balanceProof ? (
-                          <button
-                            type="button"
-                            onClick={() => balanceProofRef.current?.click()}
-                            className="w-full border-2 border-dashed border-amber-200 rounded-xl py-3 flex items-center justify-center gap-2 text-amber-500 hover:border-amber-400 hover:bg-amber-50/50 transition"
-                          >
-                            <Upload className="w-4 h-4" />
-                            <span className="text-xs font-semibold">Upload Balance Payment Receipt</span>
-                          </button>
-                        ) : (
-                          <div className="flex flex-col gap-2">
-                            <div className="flex items-center gap-3 bg-emerald-50 border border-emerald-100 rounded-xl p-2.5">
-                              <FileText className="w-5 h-5 text-emerald-500 shrink-0" />
-                              <div className="flex-1 min-w-0">
-                                <p className="text-xs font-semibold text-emerald-700 truncate">{balanceProof.name}</p>
-                                <p className="text-xs text-emerald-500 font-normal">{(balanceProof.size / 1024).toFixed(1)} KB</p>
-                              </div>
-                              <button
-                                type="button"
-                                onClick={() => { setBalanceProof(null); if (balanceProofRef.current) balanceProofRef.current.value = ''; }}
-                                className="text-slate-400 hover:text-danger transition shrink-0"
-                              >
-                                <X className="w-4 h-4" />
-                              </button>
-                            </div>
-                            <button
-                              type="button"
-                              onClick={() => handleBalanceSubmit(b)}
-                              disabled={submitting}
-                              className="w-full bg-amber-500 hover:bg-amber-600 active:scale-[0.99] disabled:bg-slate-200 text-white font-semibold py-2.5 rounded-xl text-xs transition flex items-center justify-center gap-2"
-                            >
-                              {submitting
-                                ? <><span className="w-3.5 h-3.5 rounded-full border-2 border-white/40 border-t-white animate-spin" /> Submitting…</>
-                                : 'Submit Balance Payment'}
-                            </button>
-                          </div>
+                    {/* Pay balance — only once the initial payment is confirmed */}
+                    {!b.balance_paid && b.status !== 'ordered' && (
+                      <>
+                        {payErrors[b.id] && (
+                          <p className="text-xs text-danger font-semibold">{payErrors[b.id]}</p>
                         )}
-                        {submitError && (
-                          <p className="text-xs text-danger font-semibold">{submitError}</p>
-                        )}
-                      </div>
+                        <button
+                          type="button"
+                          onClick={() => handlePay(b, 'balance')}
+                          disabled={payingId === b.id}
+                          className="w-full bg-amber-500 hover:bg-amber-600 active:scale-[0.99] disabled:bg-slate-200 text-white font-semibold py-2.5 rounded-xl text-xs transition flex items-center justify-center gap-2"
+                        >
+                          {payingId === b.id
+                            ? <><span className="w-3.5 h-3.5 rounded-full border-2 border-white/40 border-t-white animate-spin" /> Redirecting to payment…</>
+                            : `Pay Balance — RM${b.balance_due.toFixed(2)}`}
+                        </button>
+                      </>
                     )}
                   </div>
+                )}
+
+                {/* Full receipt — gated behind the last 4 IC digits, since this
+                    page is reachable via a guessable matric ID and the receipt
+                    carries phone/address that matric ID alone shouldn't unlock. */}
+                {jubahDoc && receipt ? (
+                  <ReceiptCard doc={jubahDoc} onSavePdf={() => generateReceiptPdf(jubahDoc)} />
+                ) : receiptOpenId === b.id ? (
+                  <div className="flex flex-col gap-2 bg-white border border-slate-100 rounded-2xl p-3">
+                    <p className="text-xs text-slate-500 font-normal">
+                      Enter the last 4 digits of your IC to view your full receipt.
+                    </p>
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        inputMode="numeric"
+                        maxLength={4}
+                        value={icLast4}
+                        onChange={e => setIcLast4(e.target.value.replace(/\D/g, ''))}
+                        placeholder="1234"
+                        style={{ fontSize: '16px' }}
+                        className="flex-1 bg-white border border-slate-100 rounded-xl py-2.5 px-3 text-sm font-semibold text-slate-700 focus:outline-none focus:border-blue-500 transition placeholder:font-normal placeholder:text-slate-300"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => handleVerifyReceipt(b)}
+                        disabled={verifyingReceipt}
+                        className="bg-blue-600 hover:bg-blue-700 active:scale-[0.98] disabled:bg-slate-200 text-white font-semibold px-4 rounded-xl text-xs transition"
+                      >
+                        {verifyingReceipt ? '...' : 'Unlock'}
+                      </button>
+                    </div>
+                    {receiptErrors[b.id] && (
+                      <p className="text-xs text-danger font-semibold">{receiptErrors[b.id]}</p>
+                    )}
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => { setReceiptOpenId(b.id); setIcLast4(''); setReceiptErrors(prev => ({ ...prev, [b.id]: '' })); }}
+                    className="text-xs font-semibold text-blue-600 hover:text-blue-700 transition active:scale-95 self-center"
+                  >
+                    View / Download Receipt
+                  </button>
                 )}
               </div>
               );
