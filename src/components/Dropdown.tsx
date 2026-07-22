@@ -1,5 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { ChevronDown, X, Check } from 'lucide-react';
+import { useApp } from '../context/AppContext';
 
 export interface DropdownOption<T extends string> {
   value: T;
@@ -26,6 +27,16 @@ export function Dropdown<T extends string>({
 }: DropdownProps<T>) {
   const [open, setOpen] = useState(false);
   const selected = options.find(o => o.value === value);
+  const { setSheetOpen } = useApp();
+
+  // Report to AppContext whenever this sheet is open, so BottomNav hides
+  // itself — otherwise it can render on top of this fixed-position sheet
+  // on some Android browsers regardless of z-index (see .page-transition
+  // comment in index.css for the same underlying stacking issue).
+  useEffect(() => {
+    setSheetOpen(open);
+    return () => setSheetOpen(false);
+  }, [open, setSheetOpen]);
 
   return (
     <>
