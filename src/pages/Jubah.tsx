@@ -1,5 +1,6 @@
-﻿import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
+const getTimestamp = () => Date.now();
 import { CheckCircle2, X, Upload, FileText, ShieldAlert, Download, ChevronDown, User, Pencil, MapPin, Copy, Check, Info, GraduationCap, FileUser } from 'lucide-react';
 import { submitJubahToSheets } from '../lib/sheetsService';
 import { JubahLanding } from '../components/JubahLanding';
@@ -32,6 +33,12 @@ const UNIV_ABBREV: Record<string, string> = {
 
 const REMARKS = ['Master', 'PHD', 'Degree', 'Diploma'] as const;
 
+const MALAYSIAN_STATES = [
+  'Johor', 'Kedah', 'Kelantan', 'Melaka', 'Negeri Sembilan', 'Pahang',
+  'Perak', 'Perlis', 'Pulau Pinang', 'Sabah', 'Sarawak', 'Selangor', 'Terengganu',
+  'Wilayah Persekutuan Kuala Lumpur', 'Wilayah Persekutuan Labuan', 'Wilayah Persekutuan Putrajaya',
+];
+
 const formatIc = (val: string) => {
   const d = val.replace(/\D/g, '').slice(0, 12);
   if (d.length <= 6) return d;
@@ -58,7 +65,7 @@ interface JubahFormDraft {
   depositMethod: 'pickup' | 'postage';
   remark: typeof REMARKS[number];
   selectedRiderId: string;
-  addressLine1: string; addressLine2: string; addressPostal: string; addressState: string;
+  addressLine1: string; addressLine2: string; addressPostal: string; addressCity: string; addressState: string;
 }
 const saveFormDraft = (draft: JubahFormDraft) => {
   try { localStorage.setItem(JUBAH_DRAFT_KEY, JSON.stringify(draft)); } catch { /* storage unavailable — skip silently */ }
@@ -123,25 +130,32 @@ export const Jubah: React.FC = () => {
   const [addressLine1,      setAddressLine1]      = useState('');
   const [addressLine2,      setAddressLine2]      = useState('');
   const [addressPostal,     setAddressPostal]     = useState('');
+  const [addressCity,       setAddressCity]       = useState('');
   const [addressState,      setAddressState]      = useState('');
   const [showAddressSheet,  setShowAddressSheet]  = useState(false);
   // Draft state inside the address sheet
   const [draftLine1,        setDraftLine1]        = useState('');
   const [draftLine2,        setDraftLine2]        = useState('');
   const [draftPostal,       setDraftPostal]       = useState('');
+  const [draftCity,         setDraftCity]         = useState('');
   const [draftState,        setDraftState]        = useState('');
 
-  const fullAddress = [addressLine1, addressLine2, addressPostal, addressState].filter(Boolean).join('\n');
+  const fullAddress = [
+    addressLine1,
+    addressLine2,
+    [addressPostal, addressCity].filter(Boolean).join(' '),
+    addressState ? `${addressState}, Malaysia` : '',
+  ].filter(Boolean).join('\n');
 
   const openAddressSheet = () => {
     setDraftLine1(addressLine1); setDraftLine2(addressLine2);
-    setDraftPostal(addressPostal); setDraftState(addressState);
+    setDraftPostal(addressPostal); setDraftCity(addressCity); setDraftState(addressState);
     setShowAddressSheet(true);
     setSheetOpen(true);
   };
   const saveAddress = () => {
     setAddressLine1(draftLine1.trim()); setAddressLine2(draftLine2.trim());
-    setAddressPostal(draftPostal.trim()); setAddressState(draftState.trim());
+    setAddressPostal(draftPostal.trim()); setAddressCity(draftCity.trim()); setAddressState(draftState);
     setShowAddressSheet(false);
     setSheetOpen(false);
   };
@@ -154,22 +168,25 @@ export const Jubah: React.FC = () => {
     const d = loadFormDraft();
     if (!d) return;
     draftRestoredRef.current = true;
-    setFullName(d.fullName ?? '');
-    setIcNumber(d.icNumber ?? '');
-    setHpNumber(d.hpNumber ?? '');
-    setUniversity(d.university ?? '');
-    setFaculty(d.faculty ?? '');
-    setMatricId(d.matricId ?? '');
-    if (['pickup', 'postage', 'deposit'].includes(d.paymentMode)) setPaymentMode(d.paymentMode);
-    if (['SM', 'SS'].includes(d.postageZone)) setPostageZone(d.postageZone);
-    if (['pickup', 'postage'].includes(d.depositMethod)) setDepositMethod(d.depositMethod);
-    if (REMARKS.includes(d.remark)) setRemark(d.remark);
-    setSelectedRiderId(d.selectedRiderId ?? '');
-    setAddressLine1(d.addressLine1 ?? '');
-    setAddressLine2(d.addressLine2 ?? '');
-    setAddressPostal(d.addressPostal ?? '');
-    setAddressState(d.addressState ?? '');
-    if (d.university) setLandingUniversity('umpsa'); // only UMPSA's form is live — skip the landing picker
+    queueMicrotask(() => {
+      setFullName(d.fullName ?? '');
+      setIcNumber(d.icNumber ?? '');
+      setHpNumber(d.hpNumber ?? '');
+      setUniversity(d.university ?? '');
+      setFaculty(d.faculty ?? '');
+      setMatricId(d.matricId ?? '');
+      if (['pickup', 'postage', 'deposit'].includes(d.paymentMode)) setPaymentMode(d.paymentMode);
+      if (['SM', 'SS'].includes(d.postageZone)) setPostageZone(d.postageZone);
+      if (['pickup', 'postage'].includes(d.depositMethod)) setDepositMethod(d.depositMethod);
+      if (REMARKS.includes(d.remark)) setRemark(d.remark);
+      setSelectedRiderId(d.selectedRiderId ?? '');
+      setAddressLine1(d.addressLine1 ?? '');
+      setAddressLine2(d.addressLine2 ?? '');
+      setAddressPostal(d.addressPostal ?? '');
+      setAddressCity(d.addressCity ?? '');
+      setAddressState(d.addressState ?? '');
+      if (d.university) setLandingUniversity('umpsa');
+    });
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -182,10 +199,12 @@ export const Jubah: React.FC = () => {
   // the user (or the draft restore above) already put in the field.
   useEffect(() => {
     if (draftRestoredRef.current || !user.isLoggedIn) return;
-    if (user.name)     setFullName(prev => prev || user.name);
-    if (user.icNumber) setIcNumber(prev => prev || formatIc(user.icNumber));
-    if (user.phone)    setHpNumber(prev => prev || formatPhone(user.phone));
-    if (user.matricNo) setMatricId(prev => prev || user.matricNo);
+    queueMicrotask(() => {
+      if (user.name)     setFullName(prev => prev || user.name);
+      if (user.icNumber) setIcNumber(prev => prev || formatIc(user.icNumber));
+      if (user.phone)    setHpNumber(prev => prev || formatPhone(user.phone));
+      if (user.matricNo) setMatricId(prev => prev || user.matricNo);
+    });
   }, [user.isLoggedIn, user.name, user.icNumber, user.phone, user.matricNo]);
 
   const [showLeaveConfirm, setShowLeaveConfirm] = useState(false);
@@ -227,7 +246,7 @@ export const Jubah: React.FC = () => {
     saveFormDraft({
       fullName, icNumber, hpNumber, university, faculty, matricId,
       paymentMode, postageZone, depositMethod, remark, selectedRiderId,
-      addressLine1, addressLine2, addressPostal, addressState,
+      addressLine1, addressLine2, addressPostal, addressCity, addressState,
     });
     setLeaveGuard(null);
     setShowLeaveConfirm(false);
@@ -273,10 +292,18 @@ export const Jubah: React.FC = () => {
 
   // Fetch active riders whenever campus or service option (Pickup/Postage) changes
   useEffect(() => {
-    if (!university) { setRiders([]); setSelectedRiderId(''); return; }
+    if (!university) {
+      queueMicrotask(() => {
+        setRiders([]);
+        setSelectedRiderId('');
+      });
+      return;
+    }
     const campus = university.includes('Pekan') ? 'Pekan' : 'Gambang';
-    setRidersLoading(true);
-    setSelectedRiderId('');
+    queueMicrotask(() => {
+      setRidersLoading(true);
+      setSelectedRiderId('');
+    });
     supabase
       .rpc('get_active_jubah_riders', { p_campus: campus, p_method: paymentMode === 'deposit' ? depositMethod : paymentMode })
       .then(({ data }) => { setRiders(data ?? []); setRidersLoading(false); });
@@ -285,16 +312,19 @@ export const Jubah: React.FC = () => {
   // Load doc fields for the selected university; fall back to UMPSA then hardcoded defaults
   useEffect(() => {
     if (!landingUniversity) return;
-    setDocFiles({});
-    setCombinedBlob(null);
-    setSampleLoaded({});
+    queueMicrotask(() => {
+      setDocFiles({});
+      setCombinedBlob(null);
+      setSampleLoaded({});
+      load();
+    });
 
     const applyFields = (fields: JubahDocField[], univKey: string) => {
       setDocFields(fields);
       const urls: Record<string, string> = {};
       fields.forEach(f => {
         const { data } = supabase.storage.from('jubah-banners').getPublicUrl(`samples/${univKey}/${f.field_key}.jpg`);
-        urls[f.id] = `${data.publicUrl}?t=${Date.now()}`;
+        urls[f.id] = `${data.publicUrl}?t=${getTimestamp()}`;
       });
       setSampleUrls(urls);
     };
@@ -314,7 +344,6 @@ export const Jubah: React.FC = () => {
       if (defaults && defaults.length > 0) { applyFields(defaults, 'umpsa'); return; }
       applyFields(FALLBACK_DOC_FIELDS, 'umpsa');
     };
-    load();
   }, [landingUniversity]);
 
   const allFilesReady = docFields.length > 0 && docFields.every(f => !!docFiles[f.id]);
@@ -1288,10 +1317,10 @@ export const Jubah: React.FC = () => {
 
             <div className="flex-1 min-h-0 overflow-y-auto no-scrollbar px-5 pb-2 flex flex-col gap-4">
               {[
-                { label: 'Address Line 1', placeholder: 'No. 44, Jalan Desa Melur 4/1,', value: draftLine1, set: setDraftLine1 },
-                { label: 'Address Line 2', placeholder: 'Taman Bandar Connaught,', value: draftLine2, set: setDraftLine2 },
-                { label: 'Postal Code / City', placeholder: '56000 Cheras,', value: draftPostal, set: setDraftPostal },
-                { label: 'State / Country', placeholder: 'Kuala Lumpur, Malaysia.', value: draftState, set: setDraftState },
+                { label: 'Street', placeholder: 'No. 44, Jalan Desa Melur 4/1', value: draftLine1, set: setDraftLine1 },
+                { label: 'Street 2 (optional)', placeholder: 'Taman Bandar Connaught', value: draftLine2, set: setDraftLine2 },
+                { label: 'Postcode', placeholder: '56000', value: draftPostal, set: setDraftPostal },
+                { label: 'City', placeholder: 'Cheras', value: draftCity, set: setDraftCity },
               ].map(f => (
                 <div key={f.label} className="flex flex-col gap-1.5">
                   <label className="text-xs font-semibold text-slate-400">{f.label}</label>
@@ -1305,6 +1334,36 @@ export const Jubah: React.FC = () => {
                   />
                 </div>
               ))}
+
+              {/* State — dropdown, not free text */}
+              <div className="flex flex-col gap-1.5">
+                <label className="text-xs font-semibold text-slate-400">State</label>
+                <select
+                  value={draftState}
+                  onChange={e => setDraftState(e.target.value)}
+                  style={{ fontSize: '12px' }}
+                  className="bg-white border border-slate-100 rounded-xl py-2.5 px-3 font-semibold text-slate-700 focus:outline-none focus:border-blue-500 transition"
+                >
+                  <option value="">Select state...</option>
+                  {MALAYSIAN_STATES.map(s => <option key={s} value={s}>{s}</option>)}
+                </select>
+              </div>
+
+              {/* Phone — always the same number as HP Number above, not re-entered here */}
+              <div className="flex flex-col gap-1.5">
+                <label className="text-xs font-semibold text-slate-400">Phone</label>
+                <div className="bg-slate-50 border border-slate-100 rounded-xl py-2.5 px-3 text-xs font-semibold text-slate-500">
+                  {hpNumber || '—'}
+                </div>
+              </div>
+
+              {/* Country/Region — fixed, Jubah delivery is domestic-only */}
+              <div className="flex flex-col gap-1.5">
+                <label className="text-xs font-semibold text-slate-400">Country/Region</label>
+                <div className="bg-slate-50 border border-slate-100 rounded-xl py-2.5 px-3 text-xs font-semibold text-slate-500">
+                  Malaysia
+                </div>
+              </div>
             </div>
 
             <div className="px-5 pt-3 shrink-0 border-t border-slate-100"
@@ -1312,7 +1371,7 @@ export const Jubah: React.FC = () => {
               <button
                 type="button"
                 onClick={saveAddress}
-                disabled={!draftLine1.trim() || !draftPostal.trim() || !draftState.trim()}
+                disabled={!draftLine1.trim() || !draftPostal.trim() || !draftCity.trim() || !draftState}
                 className="w-full bg-primary text-white font-semibold text-xs py-3.5 rounded-2xl active:scale-[0.98] transition disabled:opacity-50"
               >
                 Save Address
