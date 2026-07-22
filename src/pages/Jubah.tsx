@@ -534,7 +534,8 @@ export const Jubah: React.FC = () => {
     if (isPostageDelivery && !fullAddress) { alert('Please enter your delivery address.'); return; }
     if (!allFilesReady) { setFileError('Please upload all required documents.'); return; }
 
-    const reference = `JUB-${new Date().getFullYear().toString().slice(-2)}-${uniAbbrev}-${Math.random().toString(36).slice(2, 6).toUpperCase()}`;
+    const generateReference = () => `JUB-${new Date().getFullYear().toString().slice(-2)}-${uniAbbrev}-${Math.random().toString(36).slice(2, 6).toUpperCase()}`;
+    let reference = generateReference();
     const combinedFileName = `${(fullName || 'combined').replace(/\s+/g, '_')}_combined.pdf`;
     const selectedRider = riders.find(r => r.id === selectedRiderId);
     const bookingCampus = university.includes('Pekan') ? 'Pekan' : 'Gambang';
@@ -586,7 +587,18 @@ export const Jubah: React.FC = () => {
       console.error('[GERAK] Storage upload failed:', err);
     }
 
-    const result = await bookJubah(reference, fullName, icNumber, hpNumber, university, faculty, matricId, paymentMode, remark, combinedFileName, depositMethod, postageZone, selectedRiderId, selectedRider?.name, bookingCampus, addr, docsPath, oscarPath, skpgPath, konvoPath, icPath, landingUniversity, email);
+    let result = await bookJubah(reference, fullName, icNumber, hpNumber, university, faculty, matricId, paymentMode, remark, combinedFileName, depositMethod, postageZone, selectedRiderId, selectedRider?.name, bookingCampus, addr, docsPath, oscarPath, skpgPath, konvoPath, icPath, landingUniversity, email);
+
+    // The reference is a short client-generated random string — vanishingly
+    // unlikely to collide with another booking, but not impossible at scale.
+    // Retry once with a fresh one rather than surfacing the raw DB error;
+    // already-uploaded files stay valid since their paths are stored as-is,
+    // independent of this label.
+    if (!result.success && /duplicate key|unique constraint/i.test(result.error ?? '')) {
+      reference = generateReference();
+      result = await bookJubah(reference, fullName, icNumber, hpNumber, university, faculty, matricId, paymentMode, remark, combinedFileName, depositMethod, postageZone, selectedRiderId, selectedRider?.name, bookingCampus, addr, docsPath, oscarPath, skpgPath, konvoPath, icPath, landingUniversity, email);
+    }
+
     if (!result.success) {
       setBooking(false);
       setFileError(result.error ?? 'Booking failed to save. Please try again.');
