@@ -38,6 +38,16 @@ serve(async (req) => {
       return json({ success: false, error: 'Booking not found.' }, 404)
     }
 
+    // Checked before anything stage-specific — a cancelled booking should
+    // never be payable again, regardless of what it owed beforehand. The
+    // stage-specific checks below don't independently catch this (balance
+    // stage in particular: none of its own conditions rule out a cancelled
+    // booking with an unpaid balance), so this was previously letting a
+    // real, payable bill get created for a dead booking.
+    if (booking.status === 'cancelled') {
+      return json({ success: false, error: 'This booking has been cancelled.' })
+    }
+
     let amount: number
     if (stage === 'initial') {
       if (booking.status !== 'ordered') {

@@ -76,10 +76,14 @@ serve(async (req) => {
       .maybeSingle()
 
     if (balanceMatch) {
+      // status != 'cancelled' guard: the bill could have been created
+      // before a cancellation and only paid afterward — bill-creation now
+      // blocks this going forward, but this covers that narrow race too.
       const { error: updateErr } = await admin.from('jubah_bookings')
         .update({ balance_paid: true, balance_paid_at: new Date().toISOString() })
         .eq('id', balanceMatch.id)
         .eq('balance_paid', false)
+        .neq('status', 'cancelled')
       if (updateErr) {
         console.error('toyyibpay-callback: failed to update balance_paid:', updateErr)
         return json({ success: false, reason: updateErr.message }, 500)
