@@ -218,7 +218,7 @@ async function sendReceiptEmail(admin: ReturnType<typeof createClient>, booking:
       </table>
       <table style="width: 100%; font-size: 13px; border-collapse: collapse; border-top: 1px dashed #e2e8f0; margin-top: 4px;">
         ${row('Robe Type', booking.remark)}
-        ${row('Booking Type', booking.payment_mode === 'pickup' ? 'Self Pickup' : 'Postage / Delivery')}
+        ${row('Booking Type', (booking.payment_mode === 'postage' || (booking.payment_mode === 'deposit' && !!booking.delivery_address)) ? 'Postage / Delivery' : 'Self Pickup')}
         ${row('Delivery Address', booking.delivery_address)}
       </table>
       <table style="width: 100%; font-size: 13px; border-collapse: collapse; border-top: 1px dashed #e2e8f0; margin-top: 4px;">

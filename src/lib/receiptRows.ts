@@ -266,7 +266,13 @@ export function buildJubahReceiptRows(j: JubahReceiptSource): ReceiptDoc {
     { label: 'Faculty', value: j.faculty },
     { label: 'Matric ID', value: j.matricId },
     { label: 'Robe Type', value: j.remark, dividerBefore: true },
-    { label: 'Booking Type', value: j.paymentMode === 'pickup' ? 'Self Pickup' : 'Postage / Delivery' },
+    // paymentMode alone can't distinguish this for deposit-mode bookings —
+    // it's literally 'deposit' regardless of which delivery method the
+    // customer chose within it. deliveryAddress is only ever populated for
+    // postage bookings (plain postage mode and deposit's postage
+    // sub-choice both go through the same isPostageDelivery flag in
+    // Jubah.tsx), so its presence is the actual reliable signal here.
+    { label: 'Booking Type', value: (j.paymentMode === 'postage' || (j.paymentMode === 'deposit' && !!j.deliveryAddress)) ? 'Postage / Delivery' : 'Self Pickup' },
     { label: 'Payment Mode', value: paymentLabel, dividerBefore: true },
   ];
 
