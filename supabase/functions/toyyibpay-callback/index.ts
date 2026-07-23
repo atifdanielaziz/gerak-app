@@ -10,14 +10,19 @@ type Booking = {
   id: string
   reference: string
   full_name: string
+  ic_number: string | null
+  hp_number: string
   email: string | null
   university: string | null
-  campus: string | null
   faculty: string | null
+  matric_id: string | null
   remark: string | null
   payment_mode: string
   cost: number
   balance_due: number
+  delivery_address: string | null
+  rider_id: string | null
+  rider_name: string | null
 }
 
 serve(async (req) => {
@@ -61,7 +66,7 @@ serve(async (req) => {
 
     if (!paid) return json({ success: true, note: 'Not paid yet.' })
 
-    const bookingFields = 'id, reference, full_name, email, university, campus, faculty, remark, payment_mode, cost, balance_due'
+    const bookingFields = 'id, reference, full_name, ic_number, hp_number, email, university, faculty, matric_id, remark, payment_mode, cost, balance_due, delivery_address, rider_id, rider_name'
 
     // Try the initial-payment bill first, then the balance-payment bill.
     const { data: initialMatch } = await admin
@@ -93,7 +98,7 @@ serve(async (req) => {
       } else {
         // Only on a genuine transition (not a replayed/duplicate callback) —
         // best-effort, never blocks the response either way.
-        await sendReceiptEmail(initialMatch, initialMatch.payment_mode === 'deposit' ? 'deposit' : 'full')
+        await sendReceiptEmail(admin, initialMatch, initialMatch.payment_mode === 'deposit' ? 'deposit' : 'full')
       }
       return json({ success: true })
     }
@@ -121,7 +126,7 @@ serve(async (req) => {
       if (!updated || updated.length === 0) {
         console.error(`toyyibpay-callback: PAYMENT CONFIRMED for balance on booking ${balanceMatch.id} but it was already paid or cancelled when applied — needs manual reconciliation. billcode=${billcode}`)
       } else {
-        await sendReceiptEmail(balanceMatch, 'balance')
+        await sendReceiptEmail(admin, balanceMatch, 'balance')
       }
       return json({ success: true })
     }
@@ -141,6 +146,22 @@ function json(body: unknown, status = 200) {
   })
 }
 
+// Same masking convention used everywhere else customer-facing (TrackJubah's
+// IC-gated receipt, buildJubahReceiptRows) — an email landing in the
+// customer's own inbox is still worth keeping consistent with that, rather
+// than being the one place that shows it in full.
+const maskIc = (ic: string | null) => {
+  if (!ic) return null
+  const digits = ic.replace(/\D/g, '')
+  return digits.length < 6 ? ic : `${digits.slice(0, 6)}-XX-XXXX`
+}
+
+const fmtDate = () =>
+  new Date().toLocaleDateString('en-MY', { day: '2-digit', month: 'short', year: 'numeric' })
+
+const row = (label: string, value: string | null | undefined, opts?: { bold?: boolean; accent?: boolean }) =>
+  !value ? '' : `<tr><td style="padding: 6px 0; color: #94a3b8;">${label}</td><td style="padding: 6px 0; text-align: right; font-weight: ${opts?.bold ? 700 : 400}; color: ${opts?.accent ? '#dc2626' : '#1e293b'};">${value}</td></tr>`
+
 // Best-effort — a failed email should never affect the payment status
 // update, which has already committed by the time this runs. RESEND_FROM_EMAIL
 // is deliberately an env var, not hardcoded: it's 'onboarding@resend.dev'
@@ -148,17 +169,34 @@ function json(body: unknown, status = 200) {
 // signup address) until a real domain is bought and verified in Resend, at
 // which point switching to a real branded sender is just changing that one
 // secret — no redeploy of this logic needed.
-async function sendReceiptEmail(booking: Booking, stage: 'full' | 'deposit' | 'balance') {
+async function sendReceiptEmail(admin: ReturnType<typeof createClient>, booking: Booking, stage: 'full' | 'deposit' | 'balance') {
   const apiKey = Deno.env.get('RESEND_API_KEY')
   const from   = Deno.env.get('RESEND_FROM_EMAIL')
   if (!apiKey || !from || !booking.email) return
 
-  const { subject, headline, amountLabel, amount, note } =
+  let riderPhone: string | null = null
+  if (booking.rider_id) {
+    const { data } = await admin.from('profiles').select('phone').eq('id', booking.rider_id).maybeSingle<{ phone: string | null }>()
+    riderPhone = data?.phone ?? null
+  }
+
+  const { subject, headline, note } =
     stage === 'full'
-      ? { subject: `Payment received — ${booking.reference}`, headline: 'Payment Confirmed', amountLabel: 'Amount Paid', amount: booking.cost, note: 'Your Jubah order is now being processed.' }
+      ? { subject: `Payment received — ${booking.reference}`, headline: 'Payment Confirmed', note: 'Your Jubah order is now being processed.' }
       : stage === 'deposit'
-        ? { subject: `Deposit received — ${booking.reference}`, headline: 'Deposit Confirmed', amountLabel: 'Deposit Paid', amount: booking.cost, note: `A balance of RM${Number(booking.balance_due).toFixed(2)} is still due before delivery — you'll be able to pay it from your tracking page.` }
-        : { subject: `Balance received — ${booking.reference}`, headline: 'Fully Paid', amountLabel: 'Balance Paid', amount: booking.balance_due, note: 'Your Jubah order is now fully paid.' }
+        ? { subject: `Deposit received — ${booking.reference}`, headline: 'Deposit Confirmed', note: `A balance of RM${Number(booking.balance_due).toFixed(2)} is still due before delivery — you'll be able to pay it from your tracking page.` }
+        : { subject: `Balance received — ${booking.reference}`, headline: 'Fully Paid', note: 'Your Jubah order is now fully paid.' }
+
+  const today = fmtDate()
+  const paymentRows =
+    stage === 'deposit'
+      ? row('Deposit Paid', `RM${Number(booking.cost).toFixed(2)} (${today})`) +
+        row('Balance Due', `RM${Number(booking.balance_due).toFixed(2)}`)
+      : stage === 'balance'
+        ? row('Deposit Paid', `RM${Number(booking.cost).toFixed(2)}`) +
+          row('Balance Paid', `RM${Number(booking.balance_due).toFixed(2)} (${today})`) +
+          row('Total Charged', `RM${(Number(booking.cost) + Number(booking.balance_due)).toFixed(2)}`, { bold: true, accent: true })
+        : row('Amount Paid', `RM${Number(booking.cost).toFixed(2)} (${today})`, { bold: true, accent: true })
 
   const html = `
   <div style="font-family: -apple-system, Helvetica, Arial, sans-serif; max-width: 480px; margin: 0 auto; color: #1e293b;">
@@ -169,12 +207,28 @@ async function sendReceiptEmail(booking: Booking, stage: 'full' | 'deposit' | 'b
       <h1 style="font-size: 18px; margin: 0 0 4px;">${headline}</h1>
       <p style="font-size: 13px; color: #64748b; margin: 0 0 20px;">${note}</p>
       <table style="width: 100%; font-size: 13px; border-collapse: collapse;">
-        <tr><td style="padding: 6px 0; color: #94a3b8;">Reference</td><td style="padding: 6px 0; text-align: right; font-weight: 600;">${booking.reference}</td></tr>
-        <tr><td style="padding: 6px 0; color: #94a3b8;">Name</td><td style="padding: 6px 0; text-align: right;">${booking.full_name}</td></tr>
-        ${booking.university ? `<tr><td style="padding: 6px 0; color: #94a3b8;">University</td><td style="padding: 6px 0; text-align: right;">${booking.university}</td></tr>` : ''}
-        ${booking.remark ? `<tr><td style="padding: 6px 0; color: #94a3b8;">Remark</td><td style="padding: 6px 0; text-align: right;">${booking.remark}</td></tr>` : ''}
-        <tr style="border-top: 1px dashed #e2e8f0;"><td style="padding: 10px 0 6px; color: #94a3b8;">${amountLabel}</td><td style="padding: 10px 0 6px; text-align: right; font-weight: 700; color: #dc2626;">RM${Number(amount).toFixed(2)}</td></tr>
+        ${row('Reference Number', booking.reference, { bold: true })}
+        ${row('Full Name', booking.full_name)}
+        ${row('IC Number', maskIc(booking.ic_number))}
+        ${row('Phone', booking.hp_number)}
+        ${row('Email', booking.email)}
+        ${row('University', booking.university)}
+        ${row('Faculty', booking.faculty)}
+        ${row('Matric ID', booking.matric_id)}
       </table>
+      <table style="width: 100%; font-size: 13px; border-collapse: collapse; border-top: 1px dashed #e2e8f0; margin-top: 4px;">
+        ${row('Robe Type', booking.remark)}
+        ${row('Booking Type', booking.payment_mode === 'pickup' ? 'Self Pickup' : 'Postage / Delivery')}
+        ${row('Delivery Address', booking.delivery_address)}
+      </table>
+      <table style="width: 100%; font-size: 13px; border-collapse: collapse; border-top: 1px dashed #e2e8f0; margin-top: 4px;">
+        ${paymentRows}
+      </table>
+      ${booking.rider_name ? `
+      <table style="width: 100%; font-size: 13px; border-collapse: collapse; border-top: 1px dashed #e2e8f0; margin-top: 4px;">
+        ${row('Rider Assigned', booking.rider_name)}
+        ${row('Rider Contact', riderPhone)}
+      </table>` : ''}
       <p style="font-size: 11px; color: #cbd5e1; margin: 20px 0 0;">This is an automated receipt from Gerak. Track your order anytime from the app.</p>
     </div>
   </div>`
