@@ -889,7 +889,7 @@ export const Jubah: React.FC = () => {
                   Deposit (RM{DEPOSIT_AMOUNT}) — Pay RM{depositBalancePreview} before robe Collection date
                 </span>
                 <span className="text-xs text-slate-400 leading-relaxed block mt-0.5">
-                  Pay RM{DEPOSIT_AMOUNT} now to secure your booking. Pay the remaining RM{depositBalancePreview} <span className="font-bold text-slate-500">1 day before collection day</span> via Track My Order. Cancellation is locked 1 week before collection — deposit is forfeited if cancelled after that.
+                  Pay RM{DEPOSIT_AMOUNT} now to secure your booking. Pay the remaining RM{depositBalancePreview} <span className="font-bold text-slate-500">1 day before collection day</span> via Track My Order. <span className="font-bold text-slate-500">The RM{DEPOSIT_AMOUNT} deposit is non-refundable once paid</span> — you can cancel for free before paying it, but not after.
                 </span>
 
                 {/* Sub-choices: Self Pickup or Pickup & Postage */}

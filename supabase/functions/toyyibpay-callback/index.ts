@@ -184,7 +184,7 @@ async function sendReceiptEmail(admin: ReturnType<typeof createClient>, booking:
     stage === 'full'
       ? { subject: `Payment received — ${booking.reference}`, headline: 'Payment Confirmed', note: 'Your Jubah order is now being processed.' }
       : stage === 'deposit'
-        ? { subject: `Deposit received — ${booking.reference}`, headline: 'Deposit Confirmed', note: `A balance of RM${Number(booking.balance_due).toFixed(2)} is still due before delivery — you'll be able to pay it from your tracking page.` }
+        ? { subject: `Deposit received — ${booking.reference}`, headline: 'Deposit Confirmed', note: `A balance of RM${Number(booking.balance_due).toFixed(2)} is still due before delivery — you'll be able to pay it from your tracking page. This deposit is non-refundable.` }
         : { subject: `Balance received — ${booking.reference}`, headline: 'Fully Paid', note: 'Your Jubah order is now fully paid.' }
 
   const today = fmtDate()
