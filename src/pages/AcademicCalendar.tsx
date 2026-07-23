@@ -1,6 +1,6 @@
 ﻿import React, { useState, useMemo, useEffect } from 'react';
 import {
-  ChevronLeft, ChevronRight, X, Star,
+  ChevronLeft, ChevronRight,
   BookOpen, Clock, GraduationCap, Coffee, AlertCircle,
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
@@ -35,7 +35,10 @@ const PRIORITY: Record<EventType, number> = {
 };
 
 // ── All public holidays / special dates ───────────────────────────────────
-interface Holiday { date: string; label: string; }
+// national: false → a state-specific (Pahang) or UMPSA-internal replacement-
+// leave day, shown with a "This is not a national holiday." note in the day
+// detail page, same as how Malaysia's own gazette data distinguishes them.
+interface Holiday { date: string; label: string; national: boolean; }
 
 // Dates originally sourced from UMPSA's own academic calendar Remarks column
 // (institution-specific replacement-leave/make-up days included) are merged
@@ -44,53 +47,55 @@ interface Holiday { date: string; label: string; }
 // Federal Gazette/JAKIM/KPM) — added 2026-07-24 so months outside academic
 // term still show accurate national/state holidays, not just UMPSA's own.
 // Scoped to states: ["*"] (nationwide) or ["pahang"] only, since both UMPSA
-// campuses are in Pahang.
+// campuses are in Pahang. `national` cross-checked against that same source's
+// per-date `states` coverage (UMPSA-only replacement-leave days, absent from
+// that dataset entirely, are hardcoded false).
 const HOLIDAYS: Holiday[] = [
-  { date: '2026-01-01', label: "New Year's Day" },
-  { date: '2026-01-17', label: "Isra' Mi'raj" },
-  { date: '2026-02-01', label: 'Thaipusam' },
-  { date: '2026-02-17', label: 'Chinese New Year' },
-  { date: '2026-02-18', label: 'Chinese New Year (2nd Day)' },
-  { date: '2026-03-07', label: 'Revelation of the Quran' },
-  { date: '2026-03-20', label: 'Hari Raya Aidilfitri (Additional Public Holiday)' },
-  { date: '2026-03-21', label: 'Eid al-Fitr' },
-  { date: '2026-03-22', label: 'Eid al-Fitr (2nd Day)' },
-  { date: '2026-05-01', label: 'Labour Day' },
-  { date: '2026-05-22', label: 'Pahang Hol Day' },
-  { date: '2026-05-27', label: 'Eid al-Adha' },
-  { date: '2026-05-28', label: 'Eid al-Adha (2nd Day)' },
-  { date: '2026-05-31', label: 'Vesak Day' },
-  { date: '2026-06-01', label: 'Official Birthday of the Yang di-Pertuan Agong' },
-  { date: '2026-06-17', label: 'Islamic New Year' },
-  { date: '2026-07-31', label: 'Birthday of KDPB Sultan Pahang' },
-  { date: '2026-08-25', label: 'Maulidur Rasul' },
-  { date: '2026-08-31', label: 'National Day' },
-  { date: '2026-09-16', label: 'Malaysia Day' },
-  { date: '2026-11-08', label: 'Deepavali' },
-  { date: '2026-11-09', label: 'Replacement Leave (Deepavali)' },
-  { date: '2026-12-25', label: 'Christmas Day' },
-  { date: '2027-01-01', label: 'New Year' },
-  { date: '2027-01-06', label: "Isra' Mi'raj" },
-  { date: '2027-01-22', label: 'Thaipusam' },
-  { date: '2027-02-06', label: 'Chinese New Year' },
-  { date: '2027-02-07', label: 'Chinese New Year (2nd Day)' },
-  { date: '2027-02-24', label: 'Nuzul Quran' },
-  { date: '2027-03-10', label: 'Hari Raya Aidil Fitri 1448H' },
-  { date: '2027-03-11', label: 'Hari Raya Aidil Fitri 1448H' },
-  { date: '2027-03-12', label: 'Replacement Leave (Hari Raya)' },
-  { date: '2027-05-01', label: 'Labour Day' },
-  { date: '2027-05-17', label: 'Hari Raya Aidil Adha 1448H' },
-  { date: '2027-05-20', label: 'Wesak Day' },
-  { date: '2027-05-22', label: 'Hol Pahang Day' },
-  { date: '2027-06-06', label: 'Awal Muharram' },
-  { date: '2027-06-07', label: 'Birthday of KDYMM Yang Dipertuan Agong & Replacement Leave' },
-  { date: '2027-07-30', label: 'Birthday of KDPB Sultan Pahang' },
-  { date: '2027-08-15', label: 'Maulidur Rasul' },
-  { date: '2027-08-16', label: 'Replacement Leave (Maulidur Rasul)' },
-  { date: '2027-08-31', label: 'National Day' },
-  { date: '2027-09-16', label: 'Malaysia Day' },
-  { date: '2027-10-28', label: 'Deepavali' },
-  { date: '2027-12-25', label: 'Christmas Day' },
+  { date: '2026-01-01', label: "New Year's Day", national: false },
+  { date: '2026-01-17', label: "Isra' Mi'raj", national: false },
+  { date: '2026-02-01', label: 'Thaipusam', national: false },
+  { date: '2026-02-17', label: 'Chinese New Year', national: true },
+  { date: '2026-02-18', label: 'Chinese New Year (2nd Day)', national: true },
+  { date: '2026-03-07', label: 'Revelation of the Quran', national: true },
+  { date: '2026-03-20', label: 'Hari Raya Aidilfitri (Additional Public Holiday)', national: true },
+  { date: '2026-03-21', label: 'Eid al-Fitr', national: true },
+  { date: '2026-03-22', label: 'Eid al-Fitr (2nd Day)', national: true },
+  { date: '2026-05-01', label: 'Labour Day', national: true },
+  { date: '2026-05-22', label: 'Pahang Hol Day', national: false },
+  { date: '2026-05-27', label: 'Eid al-Adha', national: true },
+  { date: '2026-05-28', label: 'Eid al-Adha (2nd Day)', national: true },
+  { date: '2026-05-31', label: 'Vesak Day', national: true },
+  { date: '2026-06-01', label: 'Official Birthday of the Yang di-Pertuan Agong', national: true },
+  { date: '2026-06-17', label: 'Islamic New Year', national: true },
+  { date: '2026-07-31', label: 'Birthday of KDPB Sultan Pahang', national: false },
+  { date: '2026-08-25', label: 'Maulidur Rasul', national: true },
+  { date: '2026-08-31', label: 'National Day', national: true },
+  { date: '2026-09-16', label: 'Malaysia Day', national: true },
+  { date: '2026-11-08', label: 'Deepavali', national: true },
+  { date: '2026-11-09', label: 'Replacement Leave (Deepavali)', national: false },
+  { date: '2026-12-25', label: 'Christmas Day', national: true },
+  { date: '2027-01-01', label: 'New Year', national: false },
+  { date: '2027-01-06', label: "Isra' Mi'raj", national: false },
+  { date: '2027-01-22', label: 'Thaipusam', national: false },
+  { date: '2027-02-06', label: 'Chinese New Year', national: true },
+  { date: '2027-02-07', label: 'Chinese New Year (2nd Day)', national: true },
+  { date: '2027-02-24', label: 'Nuzul Quran', national: false },
+  { date: '2027-03-10', label: 'Hari Raya Aidil Fitri 1448H', national: true },
+  { date: '2027-03-11', label: 'Hari Raya Aidil Fitri 1448H', national: true },
+  { date: '2027-03-12', label: 'Replacement Leave (Hari Raya)', national: false },
+  { date: '2027-05-01', label: 'Labour Day', national: true },
+  { date: '2027-05-17', label: 'Hari Raya Aidil Adha 1448H', national: true },
+  { date: '2027-05-20', label: 'Wesak Day', national: true },
+  { date: '2027-05-22', label: 'Hol Pahang Day', national: false },
+  { date: '2027-06-06', label: 'Awal Muharram', national: true },
+  { date: '2027-06-07', label: 'Birthday of KDYMM Yang Dipertuan Agong & Replacement Leave', national: true },
+  { date: '2027-07-30', label: 'Birthday of KDPB Sultan Pahang', national: false },
+  { date: '2027-08-15', label: 'Maulidur Rasul', national: true },
+  { date: '2027-08-16', label: 'Replacement Leave (Maulidur Rasul)', national: false },
+  { date: '2027-08-31', label: 'National Day', national: true },
+  { date: '2027-09-16', label: 'Malaysia Day', national: true },
+  { date: '2027-10-28', label: 'Deepavali', national: true },
+  { date: '2027-12-25', label: 'Christmas Day', national: true },
 ];
 
 // ── Calendar data ─────────────────────────────────────────────────────────
@@ -216,9 +221,10 @@ const CAL_BG: Record<EventType, string> = {
 };
 
 
-// ── Build date → eventType map ────────────────────────────────────────────
-function buildDateMap(src: Semester[] = SEMESTERS): Map<string, EventType> {
-  const map = new Map<string, EventType>();
+// ── Build date → event map (full event, not just its type — the day detail
+// page needs the actual title too) ────────────────────────────────────────
+function buildDateMap(src: Semester[] = SEMESTERS): Map<string, CalEvent> {
+  const map = new Map<string, CalEvent>();
   for (const sem of src) {
     for (const ev of sem.events) {
       const end = new Date(ev.end + 'T00:00:00');
@@ -226,8 +232,8 @@ function buildDateMap(src: Semester[] = SEMESTERS): Map<string, EventType> {
       while (cur <= end) {
         const key = toDateStr(cur);
         const existing = map.get(key);
-        if (!existing || PRIORITY[ev.type] > PRIORITY[existing]) {
-          map.set(key, ev.type);
+        if (!existing || PRIORITY[ev.type] > PRIORITY[existing.type]) {
+          map.set(key, ev);
         }
         cur.setDate(cur.getDate() + 1);
       }
@@ -240,7 +246,7 @@ const DAYS = ['Su','Mo','Tu','We','Th','Fr','Sa'];
 
 // ── Component ─────────────────────────────────────────────────────────────
 export const AcademicCalendar: React.FC = () => {
-  const { setSheetOpen } = useApp();
+  const { setLeaveGuard } = useApp();
   const [calMonth, setCalMonth] = useState({ year: 2026, month: 6 }); // July 2026
   const [activeSem, setActiveSem] = useState('sem1');
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
@@ -262,10 +268,10 @@ export const AcademicCalendar: React.FC = () => {
       .then(({ data }) => {
         if (!data) return;
         setLiveSemesters(data.semesters as Semester[]);
-        // Older uploads stored holidays as plain date strings (no name) —
+        // Older uploads stored holidays as plain date strings (no name/scope) —
         // normalize so both shapes work.
         const rawHolidays = (data.holidays ?? []) as (string | Holiday)[];
-        setLiveHolidays(rawHolidays.map(h => typeof h === 'string' ? { date: h, label: '' } : h));
+        setLiveHolidays(rawHolidays.map(h => typeof h === 'string' ? { date: h, label: '', national: true } : h));
         setCalYear(data.academic_year);
         // Jump calendar to the first event month
         const firstSem = (data.semesters as Semester[])[0];
@@ -276,12 +282,15 @@ export const AcademicCalendar: React.FC = () => {
       });
   }, []);
 
-  // BottomNav hides itself while the day-detail sheet is open.
+  // The day-detail sub-page is reached by tapping a date, not a separate
+  // route — registering a leaveGuard makes the header back chevron,
+  // hardware back, and the edge-swipe gesture all close it (returning to the
+  // month grid) instead of leaving Academic Calendar entirely, same pattern
+  // as Jubah's internal picker/form back-chain.
   useEffect(() => {
-    if (!selectedDate) return;
-    setSheetOpen(true);
-    return () => setSheetOpen(false);
-  }, [selectedDate, setSheetOpen]);
+    setLeaveGuard(selectedDate ? () => () => setSelectedDate(null) : null);
+    return () => setLeaveGuard(null);
+  }, [selectedDate, setLeaveGuard]);
 
   const semesters = liveSemesters ?? SEMESTERS;
   const holidays   = liveHolidays  ?? HOLIDAYS;
@@ -292,7 +301,7 @@ export const AcademicCalendar: React.FC = () => {
     [liveSemesters],
   );
   const holidayMap = useMemo(
-    () => new Map(holidays.map(h => [h.date, h.label || 'Public Holiday'])),
+    () => new Map(holidays.map(h => [h.date, h])),
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [liveHolidays],
   );
@@ -306,7 +315,7 @@ export const AcademicCalendar: React.FC = () => {
     }
   };
 
-  const formatSheetDate = (dateStr: string) =>
+  const formatDetailDate = (dateStr: string) =>
     new Date(dateStr + 'T00:00:00').toLocaleDateString('en-MY', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
 
   const monthLabel = () =>
@@ -334,6 +343,66 @@ export const AcademicCalendar: React.FC = () => {
   });
 
   const todayStr = toDateStr(new Date());
+
+  // ── DAY DETAIL SUB-PAGE ── (Sub-page Standard: replaces the grid in place,
+  // no overlay — back chevron + leaveGuard above handle returning to it)
+  if (selectedDate) {
+    const holiday = holidayMap.get(selectedDate);
+    const ev = dateMap.get(selectedDate);
+    const details: { title: string; calendarName: string; dotColor: string; note?: string }[] = [];
+    if (holiday) {
+      details.push({
+        title: holiday.label,
+        calendarName: 'Holidays in Malaysia',
+        dotColor: 'bg-orange-400',
+        note: holiday.national ? undefined : 'This is not a national holiday.',
+      });
+    }
+    if (ev) {
+      details.push({ title: ev.title, calendarName: 'UMPSA Academic Calendar', dotColor: CFG[ev.type].bar });
+    }
+
+    return (
+      <div className="flex flex-col h-full bg-white overflow-y-auto no-scrollbar">
+        <div className="mt-4 px-4 flex items-start gap-2">
+          <button
+            onClick={() => setSelectedDate(null)}
+            className="mt-0.5 w-7 h-7 flex items-center justify-center rounded-xl bg-slate-100 text-slate-500 active:scale-90 transition shrink-0">
+            <ChevronLeft className="w-4 h-4" />
+          </button>
+          <div>
+            <p className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest">Academic Calendar · Day Detail</p>
+            <h2 className="text-xl font-black text-slate-800">{formatDetailDate(selectedDate)}</h2>
+          </div>
+        </div>
+
+        <div className="px-4 pt-4 flex flex-col gap-4" style={{ paddingBottom: 'calc(6.5rem + env(safe-area-inset-bottom))' }}>
+          {details.map((d, i) => (
+            <div key={i} className="bg-white border border-slate-100 rounded-3xl p-5 flex flex-col gap-3">
+              <div>
+                <h3 className="text-base font-semibold text-slate-800 leading-snug">{d.title}</h3>
+                <p className="text-xs font-normal text-slate-400 mt-1">{formatDetailDate(selectedDate)}</p>
+                <p className="text-xs font-normal text-slate-400">All-day</p>
+              </div>
+              <div className="bg-white border border-slate-100 rounded-2xl px-4 py-3 flex items-center justify-between">
+                <span className="text-xs font-normal text-slate-500">Calendar</span>
+                <span className="flex items-center gap-1.5 text-xs font-semibold text-slate-700">
+                  <span className={`w-2.5 h-2.5 rounded-full ${d.dotColor}`} />
+                  {d.calendarName}
+                </span>
+              </div>
+              {d.note && (
+                <div className="bg-white border border-slate-100 rounded-2xl px-4 py-3">
+                  <p className="text-xs font-normal text-slate-500 mb-1">Notes</p>
+                  <p className="text-xs font-normal text-slate-400">{d.note}</p>
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col h-full bg-white overflow-y-auto no-scrollbar pb-4">
@@ -373,11 +442,11 @@ export const AcademicCalendar: React.FC = () => {
         <div className="grid grid-cols-7 gap-y-0.5 px-3 pb-3">
           {calDays().map((dateStr, i) => {
             if (!dateStr) return <div key={i} />;
-            const evType = dateMap.get(dateStr);
-            const holidayLabel = holidayMap.get(dateStr);
+            const ev = dateMap.get(dateStr);
+            const holiday = holidayMap.get(dateStr);
             const isToday   = dateStr === todayStr;
-            const cellCls   = evType ? CAL_BG[evType] : 'text-slate-600';
-            const hasDetail = !!evType || !!holidayLabel;
+            const cellCls   = ev ? CAL_BG[ev.type] : 'text-slate-600';
+            const hasDetail = !!ev || !!holiday;
 
             return (
               <div key={dateStr}
@@ -386,7 +455,7 @@ export const AcademicCalendar: React.FC = () => {
                   isToday ? 'ring-2 ring-offset-1 ring-primary' : ''
                 } ${hasDetail ? 'active:scale-90' : ''}`}>
                 {parseInt(dateStr.split('-')[2])}
-                {holidayLabel && evType !== 'exam' && (
+                {holiday && ev?.type !== 'exam' && (
                   <span className="absolute bottom-0.5 w-1 h-1 rounded-full bg-orange-400" />
                 )}
               </div>
@@ -423,58 +492,6 @@ export const AcademicCalendar: React.FC = () => {
         ))}
       </div>
 
-      {/* ── DAY DETAIL SHEET ── */}
-      {selectedDate && (() => {
-        const evType = dateMap.get(selectedDate);
-        const holidayLabel = holidayMap.get(selectedDate);
-        const cfg = evType ? CFG[evType] : null;
-        const Icon = cfg?.icon;
-        return (
-          <div
-            className="fixed inset-0 z-50 flex items-end justify-center"
-            style={{ background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(2px)' }}
-            onPointerDown={e => { e.preventDefault(); setSelectedDate(null); }}
-          >
-            <div
-              className="w-full max-w-[480px] max-h-[calc(100dvh-5rem)] bg-white rounded-t-3xl shadow-2xl animate-slide-up flex flex-col"
-              onPointerDown={e => e.stopPropagation()}
-            >
-              <div className="flex justify-center pt-3 pb-1 shrink-0">
-                <div className="w-10 h-1 bg-slate-200 rounded-full" />
-              </div>
-              <div className="flex items-center justify-between px-5 pt-2 pb-4 shrink-0">
-                <p className="text-sm font-semibold text-slate-800">{formatSheetDate(selectedDate)}</p>
-                <button
-                  type="button"
-                  onClick={() => setSelectedDate(null)}
-                  className="w-7 h-7 flex items-center justify-center rounded-full bg-slate-100 text-slate-500 active:scale-90 transition"
-                >
-                  <X className="w-4 h-4" />
-                </button>
-              </div>
-              <div
-                className="px-5 flex flex-col gap-2"
-                style={{ paddingBottom: 'calc(1.5rem + env(safe-area-inset-bottom))' }}
-              >
-                {holidayLabel && (
-                  <div className="flex items-center gap-2.5 bg-orange-50 border border-orange-100 rounded-2xl px-4 py-3">
-                    <span className="w-7 h-7 rounded-full bg-orange-400 flex items-center justify-center shrink-0">
-                      <Star className="w-3.5 h-3.5 text-white" fill="white" />
-                    </span>
-                    <p className="text-xs font-semibold text-orange-700">{holidayLabel}</p>
-                  </div>
-                )}
-                {cfg && Icon && (
-                  <div className={`flex items-center gap-2.5 border rounded-2xl px-4 py-3 ${cfg.bg}`}>
-                    <Icon className={`w-4 h-4 shrink-0 ${cfg.text}`} />
-                    <p className={`text-xs font-semibold ${cfg.text}`}>{cfg.label}</p>
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-        );
-      })()}
     </div>
   );
 };
