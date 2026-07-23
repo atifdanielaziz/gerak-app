@@ -3553,7 +3553,9 @@ export const AdminHome: React.FC = () => {
                           <th className="py-2 pr-4 whitespace-nowrap">Name</th>
                           <th className="py-2 pr-4 whitespace-nowrap">Remark</th>
                           <th className="py-2 pr-4 whitespace-nowrap">Mode</th>
+                          <th className="py-2 pr-4 whitespace-nowrap">Type</th>
                           <th className="py-2 pr-4 whitespace-nowrap">Status</th>
+                          <th className="py-2 pr-4 whitespace-nowrap">Robe Status</th>
                           <th className="py-2 pr-4 whitespace-nowrap">Confirm</th>
                           <th className="py-2 whitespace-nowrap">Receipt</th>
                         </tr>
@@ -3605,6 +3607,14 @@ export const AdminHome: React.FC = () => {
                                 </span>
                               </td>
                               <td className="py-2.5 pr-4 whitespace-nowrap">
+                                {/* Independent of payment_mode — deposit mode can't distinguish this on
+                                    its own (it's literally 'deposit' for both delivery methods), so this
+                                    checks deliveryAddress the same way buildJubahReceiptRows now does. */}
+                                <span className="font-semibold px-2 py-0.5 rounded-full border text-xs bg-slate-50 border-slate-200 text-slate-600">
+                                  {(b.payment_mode === 'postage' || (b.payment_mode === 'deposit' && !!b.delivery_address)) ? 'Postage' : 'Pickup'}
+                                </span>
+                              </td>
+                              <td className="py-2.5 pr-4 whitespace-nowrap">
                                 <span className={`font-semibold px-2 py-0.5 rounded-full border text-xs ${
                                   b.status === 'cancelled' ? 'bg-red-50 border-red-100 text-red-600' :
                                   isPaid ? 'bg-emerald-50 border-emerald-100 text-emerald-700' : 'bg-amber-50 border-amber-100 text-amber-700'
@@ -3613,12 +3623,25 @@ export const AdminHome: React.FC = () => {
                                 </span>
                               </td>
                               <td className="py-2.5 pr-4 whitespace-nowrap">
+                                {b.status === 'cancelled' ? (
+                                  <span className="text-slate-300 text-xs">—</span>
+                                ) : (
+                                  <span className={`font-semibold px-2 py-0.5 rounded-full border text-xs ${JUBAH_STATUS_STYLE[b.status] ?? ''}`}>
+                                    {JUBAH_STATUS_LABEL[b.status] ?? b.status}
+                                  </span>
+                                )}
+                              </td>
+                              <td className="py-2.5 pr-4 whitespace-nowrap">
                                 {(() => {
-                                  const confirmed = b.payment_mode === 'deposit'
-                                    ? b.balance_paid
-                                    : b.status !== 'ordered';
+                                  // Three states, not two: nothing paid yet (grey), deposit paid but
+                                  // balance still outstanding (blue — a real but partial confirmation,
+                                  // shouldn't look identical to "fully done"), and fully paid (green).
+                                  const depositOnly = b.payment_mode === 'deposit' && b.initial_paid && !b.balance_paid;
+                                  const colorClass = isPaid ? 'text-emerald-500' : depositOnly ? 'text-blue-500' : 'text-slate-200';
                                   return (
-                                    <CheckCircle2 className={`w-4 h-4 ${confirmed ? 'text-emerald-500' : 'text-slate-200'}`} />
+                                    <span title={isPaid ? 'Fully paid' : depositOnly ? 'Deposit paid — balance due' : 'Unpaid'}>
+                                      <CheckCircle2 className={`w-4 h-4 ${colorClass}`} />
+                                    </span>
                                   );
                                 })()}
                               </td>
