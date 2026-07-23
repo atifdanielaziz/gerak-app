@@ -3715,11 +3715,19 @@ export const AdminHome: React.FC = () => {
               const b      = jubahAdminSelected;
               const steps  = jubahGetSteps(b.payment_mode);
               const curStep = steps.indexOf(b.status);
-              const nextStat = (() => {
-                const idx = steps.indexOf(b.status);
-                return idx >= 0 && idx < steps.length - 1 ? steps[idx + 1] : null;
-              })();
-              const isDone = !nextStat;
+              const nextStat = curStep >= 0 && curStep < steps.length - 1 ? steps[curStep + 1] : null;
+              // curStep is -1 whenever b.status isn't one of this payment
+              // mode's steps at all — status='ordered' (deposit/payment not
+              // even confirmed yet) is the real case, since none of the
+              // jubahGetSteps arrays include it. isDone = !nextStat treated
+              // that the same as "reached the last step", which showed
+              // "Delivery Complete" for a booking that hadn't even been
+              // paid for yet — and left the stepper itself rendering with
+              // nothing marked reached, since curStep=-1 never matches any
+              // step index either. Both symptoms traced back to this one
+              // condition conflating "not found" with "finished".
+              const notStarted = curStep === -1;
+              const isDone = curStep >= 0 && curStep === steps.length - 1;
               return (
                 <div className="flex flex-col gap-4">
                   {/* Back row — sticky so it stays visible while the content below scrolls */}
@@ -3816,8 +3824,11 @@ export const AdminHome: React.FC = () => {
                       </div>
                     )}
 
-                    {/* Balance status (deposit) — hidden once cancelled, nothing left to collect */}
-                    {b.payment_mode === 'deposit' && b.status !== 'cancelled' && (
+                    {/* Balance status (deposit) — hidden once cancelled (nothing left to
+                        collect) or before the deposit itself is even paid (notStarted):
+                        showing "Balance Due RM45" implies that's all that's left, when
+                        really the RM25 deposit hasn't been paid either yet. */}
+                    {b.payment_mode === 'deposit' && b.status !== 'cancelled' && !notStarted && (
                       <div className="flex items-center gap-2">
                         <div className={`flex-1 rounded-xl p-3 border flex items-center justify-between gap-2 ${
                           b.balance_paid ? 'bg-emerald-50 border-emerald-100' : b.balance_proof_url ? 'bg-violet-50 border-violet-100' : 'bg-amber-50 border-amber-100'
@@ -3872,8 +3883,17 @@ export const AdminHome: React.FC = () => {
                       </div>
                     )}
 
+                    {/* status='ordered' — payment hasn't even been confirmed yet, so there's
+                        nothing here to advance or call "complete." That's normally handled
+                        automatically by the ToyyibPay callback; this is just a graceful
+                        fallback for viewing a booking's card before that's happened. */}
+                    {notStarted && b.status !== 'cancelled' && (
+                      <div className="bg-slate-50 border border-slate-100 rounded-2xl px-4 py-3 text-center">
+                        <p className="text-xs font-semibold text-slate-500">Awaiting Payment Confirmation</p>
+                      </div>
+                    )}
                     {/* Advance status button — deposit bookings stay gated until the balance is confirmed above */}
-                    {!isDone && b.status !== 'cancelled' && (() => {
+                    {!notStarted && !isDone && b.status !== 'cancelled' && (() => {
                       const balanceGateActive = b.payment_mode === 'deposit' && !b.balance_paid;
                       return (
                         <button

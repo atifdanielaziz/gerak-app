@@ -492,7 +492,14 @@ export const RiderHome: React.FC = () => {
               const steps    = getSteps(selectedJob.payment_mode);
               const curStep  = steps.indexOf(selectedJob.status);
               const nextStat = getNextStatus(selectedJob);
-              const isDone   = !nextStat;
+              // curStep is -1 whenever status isn't one of this mode's steps
+              // at all (status='ordered' — payment not confirmed yet, so
+              // never in getSteps). isDone = !nextStat treated that the same
+              // as "reached the last step", showing "Job Complete" for a
+              // booking that hadn't even been paid for — see the matching
+              // fix in AdminHome.tsx's own copy of this same stepper.
+              const notStarted = curStep === -1;
+              const isDone = curStep >= 0 && curStep === steps.length - 1;
               return (
                 <div className="flex flex-col gap-4">
 
@@ -568,8 +575,10 @@ export const RiderHome: React.FC = () => {
                       </div>
                     )}
 
-                    {/* Balance status (deposit) */}
-                    {selectedJob.payment_mode === 'deposit' && (
+                    {/* Balance status (deposit) — hidden before the deposit itself is even
+                        paid (notStarted): showing "Balance Due" would imply that's all
+                        that's left, when the deposit hasn't been paid either yet. */}
+                    {selectedJob.payment_mode === 'deposit' && !notStarted && (
                       <div className={`rounded-xl p-3 border flex items-center justify-between gap-2 ${
                         selectedJob.balance_paid ? 'bg-emerald-50 border-emerald-100' :
                         selectedJob.balance_proof_url ? 'bg-violet-50 border-violet-100' :
@@ -607,8 +616,13 @@ export const RiderHome: React.FC = () => {
                       </div>
                     )}
 
+                    {notStarted && selectedJob.status !== 'cancelled' && (
+                      <div className="bg-slate-50 border border-slate-100 rounded-2xl px-4 py-3 text-center">
+                        <p className="text-xs font-semibold text-slate-500">Awaiting Payment Confirmation</p>
+                      </div>
+                    )}
                     {/* Advance status button */}
-                    {!isDone && selectedJob.status !== 'cancelled' && (
+                    {!notStarted && !isDone && selectedJob.status !== 'cancelled' && (
                       <button
                         onClick={handleAdvanceStatus}
                         disabled={updatingStatus}
