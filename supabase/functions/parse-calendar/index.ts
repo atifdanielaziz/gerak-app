@@ -32,7 +32,10 @@ Required format:
       ]
     }
   ],
-  "holidays": ["2026-07-31", "2026-08-25"]
+  "holidays": [
+    { "date": "2026-07-31", "label": "Birthday of KDPB Sultan Pahang" },
+    { "date": "2026-08-25", "label": "Maulidur Rasul" }
+  ]
 }
 
 Rules:
@@ -40,7 +43,7 @@ Rules:
 - Use "study" for Study Week activities
 - Use "break" for Mid-Semester Break
 - Semester "id" must be exactly one of: prelim, sem1, sem2, short
-- "holidays" = every public holiday, replacement leave, and no-exam date in the Remarks column
+- "holidays" = every public holiday, replacement leave, and no-exam date in the Remarks column, each with a short human-readable "label" naming what it is (e.g. "Hari Raya Aidil Fitri 1448H", "Replacement Leave (Deepavali)") — never leave "label" blank
 - All dates in ISO yyyy-mm-dd format
 - "start" and "end" are the first and last day of the activity (inclusive)
 - Return ONLY the JSON object`;

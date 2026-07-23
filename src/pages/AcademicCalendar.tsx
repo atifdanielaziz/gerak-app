@@ -1,10 +1,11 @@
 ﻿import React, { useState, useMemo, useEffect } from 'react';
 import {
-  ChevronLeft, ChevronRight,
+  ChevronLeft, ChevronRight, X, Star,
   BookOpen, Clock, GraduationCap, Coffee, AlertCircle,
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { toDateStr } from '../lib/format';
+import { useApp } from '../context/AppContext';
 
 // ── Types ──────────────────────────────────────────────────────────────────
 type EventType = 'registration' | 'orientation' | 'lectures' | 'break' | 'study' | 'exam';
@@ -34,16 +35,32 @@ const PRIORITY: Record<EventType, number> = {
 };
 
 // ── All public holidays / special dates ───────────────────────────────────
-const HOLIDAYS = new Set([
-  '2026-07-31','2026-08-25','2026-08-31',
-  '2026-11-08','2026-11-09',
-  '2026-12-25','2027-01-01','2027-01-22',
-  '2027-02-24',
-  '2027-03-10','2027-03-11','2027-03-12',
-  '2027-05-01','2027-05-17','2027-05-20','2027-05-22',
-  '2027-06-06','2027-06-07',
-  '2027-07-30','2027-08-15','2027-08-16','2027-08-31',
-]);
+interface Holiday { date: string; label: string; }
+
+const HOLIDAYS: Holiday[] = [
+  { date: '2026-07-31', label: 'Birthday of KDPB Sultan Pahang' },
+  { date: '2026-08-25', label: 'Maulidur Rasul' },
+  { date: '2026-08-31', label: 'National Day' },
+  { date: '2026-11-08', label: 'Deepavali' },
+  { date: '2026-11-09', label: 'Replacement Leave (Deepavali)' },
+  { date: '2026-12-25', label: 'Christmas Day' },
+  { date: '2027-01-01', label: 'New Year' },
+  { date: '2027-01-22', label: 'Thaipusam' },
+  { date: '2027-02-24', label: 'Nuzul Quran' },
+  { date: '2027-03-10', label: 'Hari Raya Aidil Fitri 1448H' },
+  { date: '2027-03-11', label: 'Hari Raya Aidil Fitri 1448H' },
+  { date: '2027-03-12', label: 'Replacement Leave (Hari Raya)' },
+  { date: '2027-05-01', label: 'Labour Day' },
+  { date: '2027-05-17', label: 'Hari Raya Aidil Adha 1448H' },
+  { date: '2027-05-20', label: 'Wesak Day' },
+  { date: '2027-05-22', label: 'Hol Pahang Day' },
+  { date: '2027-06-06', label: 'Awal Muharram' },
+  { date: '2027-06-07', label: 'Birthday of KDYMM Yang Dipertuan Agong & Replacement Leave' },
+  { date: '2027-07-30', label: 'Birthday of KDPB Sultan Pahang' },
+  { date: '2027-08-15', label: 'Maulidur Rasul' },
+  { date: '2027-08-16', label: 'Replacement Leave (Maulidur Rasul)' },
+  { date: '2027-08-31', label: 'National Day' },
+];
 
 // ── Calendar data ─────────────────────────────────────────────────────────
 const SEMESTERS: Semester[] = [
@@ -192,12 +209,14 @@ const DAYS = ['Su','Mo','Tu','We','Th','Fr','Sa'];
 
 // ── Component ─────────────────────────────────────────────────────────────
 export const AcademicCalendar: React.FC = () => {
+  const { setSheetOpen } = useApp();
   const [calMonth, setCalMonth] = useState({ year: 2026, month: 6 }); // July 2026
   const [activeSem, setActiveSem] = useState('sem1');
+  const [selectedDate, setSelectedDate] = useState<string | null>(null);
 
-  // Live data from DB — falls back to hardcoded SEMESTERS if nothing in DB
+  // Live data from DB — falls back to hardcoded SEMESTERS/HOLIDAYS if nothing uploaded
   const [liveSemesters, setLiveSemesters] = useState<Semester[] | null>(null);
-  const [liveHolidays, setLiveHolidays]   = useState<Set<string> | null>(null);
+  const [liveHolidays, setLiveHolidays]   = useState<Holiday[] | null>(null);
   const [calYear, setCalYear]             = useState<string | null>(null);
 
   useEffect(() => {
@@ -212,7 +231,10 @@ export const AcademicCalendar: React.FC = () => {
       .then(({ data }) => {
         if (!data) return;
         setLiveSemesters(data.semesters as Semester[]);
-        setLiveHolidays(new Set(data.holidays as string[]));
+        // Older uploads stored holidays as plain date strings (no name) —
+        // normalize so both shapes work.
+        const rawHolidays = (data.holidays ?? []) as (string | Holiday)[];
+        setLiveHolidays(rawHolidays.map(h => typeof h === 'string' ? { date: h, label: '' } : h));
         setCalYear(data.academic_year);
         // Jump calendar to the first event month
         const firstSem = (data.semesters as Semester[])[0];
@@ -223,15 +245,38 @@ export const AcademicCalendar: React.FC = () => {
       });
   }, []);
 
-  const semesters  = liveSemesters ?? SEMESTERS;
-  const holidaySet = liveHolidays  ?? HOLIDAYS;
+  // BottomNav hides itself while the day-detail sheet is open.
+  useEffect(() => {
+    if (!selectedDate) return;
+    setSheetOpen(true);
+    return () => setSheetOpen(false);
+  }, [selectedDate, setSheetOpen]);
+
+  const semesters = liveSemesters ?? SEMESTERS;
+  const holidays   = liveHolidays  ?? HOLIDAYS;
 
   const dateMap = useMemo(
     () => buildDateMap(semesters),
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [liveSemesters],
   );
-  const semester = semesters.find(s => s.id === activeSem) ?? semesters[0];
+  const holidayMap = useMemo(
+    () => new Map(holidays.map(h => [h.date, h.label || 'Public Holiday'])),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [liveHolidays],
+  );
+
+  const jumpToSemester = (s: Semester) => {
+    setActiveSem(s.id);
+    const first = s.events[0];
+    if (first?.start) {
+      const d = new Date(first.start + 'T00:00:00');
+      setCalMonth({ year: d.getFullYear(), month: d.getMonth() });
+    }
+  };
+
+  const formatSheetDate = (dateStr: string) =>
+    new Date(dateStr + 'T00:00:00').toLocaleDateString('en-MY', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
 
   const monthLabel = () =>
     new Date(calMonth.year, calMonth.month, 1)
@@ -298,17 +343,19 @@ export const AcademicCalendar: React.FC = () => {
           {calDays().map((dateStr, i) => {
             if (!dateStr) return <div key={i} />;
             const evType = dateMap.get(dateStr);
-            const isHoliday = holidaySet.has(dateStr);
+            const holidayLabel = holidayMap.get(dateStr);
             const isToday   = dateStr === todayStr;
             const cellCls   = evType ? CAL_BG[evType] : 'text-slate-600';
+            const hasDetail = !!evType || !!holidayLabel;
 
             return (
               <div key={dateStr}
-                className={`aspect-square flex flex-col items-center justify-center rounded-xl text-xs font-normal relative mx-0.5 my-0.5 transition ${cellCls} ${
+                onPointerDown={hasDetail ? e => { e.preventDefault(); setSelectedDate(dateStr); } : undefined}
+                className={`aspect-square flex flex-col items-center justify-center rounded-xl text-xs font-normal relative mx-0.5 my-0.5 transition-transform ${cellCls} ${
                   isToday ? 'ring-2 ring-offset-1 ring-primary' : ''
-                }`}>
+                } ${hasDetail ? 'active:scale-90' : ''}`}>
                 {parseInt(dateStr.split('-')[2])}
-                {isHoliday && evType && evType !== 'exam' && (
+                {holidayLabel && evType && evType !== 'exam' && (
                   <span className="absolute bottom-0.5 w-1 h-1 rounded-full bg-orange-400" />
                 )}
               </div>
@@ -331,72 +378,72 @@ export const AcademicCalendar: React.FC = () => {
         </div>
       </div>
 
-      {/* ── EVENT LIST ── */}
-      <div>
-
-        {/* Semester tabs */}
-        <div className="flex gap-2 px-4 pt-3 pb-2 overflow-x-auto no-scrollbar">
-          {SEMESTERS.map(s => (
-            <button key={s.id} onPointerDown={e => { e.preventDefault(); setActiveSem(s.id); }}
-              className={`shrink-0 px-4 py-1.5 rounded-2xl text-xs font-semibold border transition-transform active:scale-95 ${
-                activeSem === s.id
-                  ? `${s.bg} text-white border-transparent`
-                  : 'bg-white text-slate-500 border-slate-100'
-              }`}>
-              {s.short}
-            </button>
-          ))}
-        </div>
-
-        <div className="px-4 flex flex-col gap-4 pb-4">
-          <p className="text-sm font-bold text-slate-700">{semester.label}</p>
-
-          {semester.events.map((ev, i) => {
-            const cfg = CFG[ev.type];
-            const Icon = cfg.icon;
-            return (
-              <div key={i} className={`bg-white border rounded-2xl overflow-hidden ${cfg.bg}`}>
-                <div className="flex">
-                  <div className={`w-1 shrink-0 ${cfg.bar}`} />
-                  <div className="flex-1 px-4 py-3 flex flex-col gap-1.5">
-                    <div className="flex items-center justify-between gap-2">
-                      <span className={`flex items-center gap-1 text-xs font-semibold ${cfg.text}`}>
-                        <Icon className="w-3 h-3" />
-                        {cfg.label}
-                      </span>
-                      {ev.duration && (
-                        <span className={`text-xs font-normal px-2 py-0.5 rounded-full ${cfg.badge}`}>
-                          {ev.duration}
-                        </span>
-                      )}
-                    </div>
-                    <p className="text-xs font-semibold text-slate-800 leading-snug">{ev.title}</p>
-                    <p className="text-xs font-normal text-slate-500">{ev.date}</p>
-                    {ev.notes && (
-                      <div className="mt-0.5 flex flex-col gap-1">
-                        {ev.notes.map((note, j) => (
-                          <div key={j} className="flex items-start gap-1.5">
-                            <span className="w-1 h-1 rounded-full bg-slate-300 mt-1.5 shrink-0" />
-                            <p className="text-xs text-slate-400 font-normal leading-tight">{note}</p>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </div>
-            );
-          })}
-
-          {/* Disclaimer */}
-          <div className="bg-amber-50 border border-amber-100 rounded-2xl px-4 py-3 flex gap-2 items-start">
-            <AlertCircle className="w-3.5 h-3.5 text-amber-500 shrink-0 mt-0.5" />
-            <p className="text-xs text-amber-700 font-normal leading-relaxed">
-              Based on UMPSA Academic Calendar {calYear ?? '2026/2027'}. Subject to change — refer to official university announcements.
-            </p>
-          </div>
-        </div>
+      {/* Semester tabs — jump the calendar to that semester's first month */}
+      <div className="flex gap-2 px-4 pt-3 pb-3 overflow-x-auto no-scrollbar">
+        {semesters.map(s => (
+          <button key={s.id} onPointerDown={e => { e.preventDefault(); jumpToSemester(s); }}
+            className={`shrink-0 px-4 py-1.5 rounded-2xl text-xs font-semibold border transition-transform active:scale-95 ${
+              activeSem === s.id
+                ? `${s.bg} text-white border-transparent`
+                : 'bg-white text-slate-500 border-slate-100'
+            }`}>
+            {s.short}
+          </button>
+        ))}
       </div>
+
+      {/* ── DAY DETAIL SHEET ── */}
+      {selectedDate && (() => {
+        const evType = dateMap.get(selectedDate);
+        const holidayLabel = holidayMap.get(selectedDate);
+        const cfg = evType ? CFG[evType] : null;
+        const Icon = cfg?.icon;
+        return (
+          <div
+            className="fixed inset-0 z-50 flex items-end justify-center"
+            style={{ background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(2px)' }}
+            onPointerDown={e => { e.preventDefault(); setSelectedDate(null); }}
+          >
+            <div
+              className="w-full max-w-[480px] max-h-[calc(100dvh-5rem)] bg-white rounded-t-3xl shadow-2xl animate-slide-up flex flex-col"
+              onPointerDown={e => e.stopPropagation()}
+            >
+              <div className="flex justify-center pt-3 pb-1 shrink-0">
+                <div className="w-10 h-1 bg-slate-200 rounded-full" />
+              </div>
+              <div className="flex items-center justify-between px-5 pt-2 pb-4 shrink-0">
+                <p className="text-sm font-semibold text-slate-800">{formatSheetDate(selectedDate)}</p>
+                <button
+                  type="button"
+                  onClick={() => setSelectedDate(null)}
+                  className="w-7 h-7 flex items-center justify-center rounded-full bg-slate-100 text-slate-500 active:scale-90 transition"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+              <div
+                className="px-5 flex flex-col gap-2"
+                style={{ paddingBottom: 'calc(1.5rem + env(safe-area-inset-bottom))' }}
+              >
+                {holidayLabel && (
+                  <div className="flex items-center gap-2.5 bg-orange-50 border border-orange-100 rounded-2xl px-4 py-3">
+                    <span className="w-7 h-7 rounded-full bg-orange-400 flex items-center justify-center shrink-0">
+                      <Star className="w-3.5 h-3.5 text-white" fill="white" />
+                    </span>
+                    <p className="text-xs font-semibold text-orange-700">{holidayLabel}</p>
+                  </div>
+                )}
+                {cfg && Icon && (
+                  <div className={`flex items-center gap-2.5 border rounded-2xl px-4 py-3 ${cfg.bg}`}>
+                    <Icon className={`w-4 h-4 shrink-0 ${cfg.text}`} />
+                    <p className={`text-xs font-semibold ${cfg.text}`}>{cfg.label}</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        );
+      })()}
     </div>
   );
 };
