@@ -1334,8 +1334,11 @@ export const AdminHome: React.FC = () => {
     setBannerImgError({});
   }, [activeTab, jubahSubTab]);
 
-  const jubahWaMsg = (name: string, status: string, ref: string, payMode: string, balPaid: boolean, balDue: number) => {
-    if (payMode === 'deposit' && !balPaid) {
+  const jubahWaMsg = (name: string, status: string, ref: string, payMode: string, initialPaid: boolean, balPaid: boolean, balDue: number) => {
+    // initialPaid must be checked too — !balPaid alone is also true before
+    // the deposit's even been paid, which would send this "your balance is
+    // unpaid" reminder to a customer who hasn't paid anything at all yet.
+    if (payMode === 'deposit' && initialPaid && !balPaid) {
       return `Assalamualaikum ${name} 🎓\n\nIni peringatan daripada Gerak Jubah.\n\nBaki bayaran anda sebanyak *RM${balDue.toFixed(2)}* masih belum dijelaskan.\n\nSila kemaskini bukti pembayaran melalui akaun Gerak anda sebelum tarikh pengambilan jubah.\n\nRujukan: ${ref}\n\nTerima kasih 🙏`;
     }
     const msgs: Record<string, string> = {
@@ -3772,7 +3775,7 @@ export const AdminHome: React.FC = () => {
                       <div className="flex items-center gap-1.5 bg-slate-50 border border-slate-100 rounded-xl px-3 py-2 flex-1">
                         <span className="text-xs font-semibold text-slate-600">{b.hp_number}</span>
                         <a href={`https://wa.me/${toWa(b.hp_number)}?text=${encodeURIComponent(
-                          jubahWaMsg(b.full_name, b.status, b.reference, b.payment_mode, b.balance_paid, b.balance_due)
+                          jubahWaMsg(b.full_name, b.status, b.reference, b.payment_mode, b.initial_paid, b.balance_paid, b.balance_due)
                         )}`}
                           target="_blank" rel="noopener noreferrer"
                           className="text-[#25D366] ml-auto shrink-0">
