@@ -13,6 +13,8 @@ import { ReceiptCard } from '../components/Receipt';
 import { Dropdown } from '../components/Dropdown';
 import { buildJubahReceiptRows } from '../lib/receiptRows';
 import { generateReceiptPdf } from '../lib/receiptPdf';
+import { copyToClipboard } from '../lib/clipboard';
+import { savePendingJubahBooking, clearPendingJubahBooking } from '../lib/pendingJubahBooking';
 
 const UNIVERSITIES = [
   'Universiti Malaysia Pahang Al-Sultan Abdullah (Pekan)',
@@ -59,7 +61,7 @@ const formatPhone = (val: string) => {
 // normal Book flow (payment proof + Book button).
 const JUBAH_DRAFT_KEY = 'gerak_jubah_form_draft';
 interface JubahFormDraft {
-  fullName: string; icNumber: string; hpNumber: string; university: string;
+  fullName: string; icNumber: string; hpNumber: string; email: string; university: string;
   faculty: string; matricId: string;
   paymentMode: 'pickup' | 'postage' | 'deposit';
   postageZone: 'SM' | 'SS';
@@ -94,6 +96,7 @@ export const Jubah: React.FC = () => {
   const [fullName, setFullName]       = useState('');
   const [icNumber, setIcNumber]       = useState('');
   const [hpNumber, setHpNumber]       = useState('');
+  const [email, setEmail]             = useState('');
   const [university, setUniversity]   = useState('');
   const uniAbbrev = UNIV_ABBREV[landingUniversity] ?? 'UMPSA';
   const [faculty, setFaculty]         = useState('');
@@ -170,6 +173,7 @@ export const Jubah: React.FC = () => {
       setFullName(d.fullName ?? '');
       setIcNumber(d.icNumber ?? '');
       setHpNumber(d.hpNumber ?? '');
+      setEmail(d.email ?? '');
       setUniversity(d.university ?? '');
       setFaculty(d.faculty ?? '');
       setMatricId(d.matricId ?? '');
@@ -202,8 +206,9 @@ export const Jubah: React.FC = () => {
       if (user.icNumber) setIcNumber(prev => prev || formatIc(user.icNumber));
       if (user.phone)    setHpNumber(prev => prev || formatPhone(user.phone));
       if (user.matricNo) setMatricId(prev => prev || user.matricNo);
+      if (user.email)    setEmail(prev => prev || user.email);
     });
-  }, [user.isLoggedIn, user.name, user.icNumber, user.phone, user.matricNo]);
+  }, [user.isLoggedIn, user.name, user.icNumber, user.phone, user.matricNo, user.email]);
 
   const [showLeaveConfirm, setShowLeaveConfirm] = useState(false);
   // Content-based, not edit-based — a profile-prefilled field counts the
@@ -242,7 +247,7 @@ export const Jubah: React.FC = () => {
   };
   const handleSaveDraftLeave = () => {
     saveFormDraft({
-      fullName, icNumber, hpNumber, university, faculty, matricId,
+      fullName, icNumber, hpNumber, email, university, faculty, matricId,
       paymentMode, postageZone, depositMethod, remark, selectedRiderId,
       addressLine1, addressLine2, addressPostal, addressCity, addressState,
     });
@@ -460,6 +465,8 @@ export const Jubah: React.FC = () => {
   const [liveRiderPhone,    setLiveRiderPhone]     = useState<string | null>(null);
   const [liveBalancePaid,   setLiveBalancePaid]    = useState(false);
   const [liveBalancePaidAt, setLiveBalancePaidAt]  = useState<string | null>(null);
+  const [liveInitialPaid,   setLiveInitialPaid]    = useState(false);
+  const [liveInitialPaidAt, setLiveInitialPaidAt]  = useState<string | null>(null);
 
   useEffect(() => {
     if (!jubahBooking?.reference) return;
@@ -467,13 +474,15 @@ export const Jubah: React.FC = () => {
     const poll = async () => {
       const { data } = await supabase
         .rpc('get_jubah_booking_live_status', { p_reference: jubahBooking.reference })
-        .single<{ status: string; rider_name: string | null; rider_phone: string | null; balance_paid: boolean | null; balance_paid_at: string | null }>();
+        .single<{ status: string; rider_name: string | null; rider_phone: string | null; balance_paid: boolean | null; balance_paid_at: string | null; initial_paid: boolean | null; initial_paid_at: string | null }>();
       if (data && !cancelled) {
         setLiveStatus(data.status);
         setLiveRiderName(data.rider_name ?? null);
         setLiveRiderPhone(data.rider_phone ?? null);
         setLiveBalancePaid(data.balance_paid ?? false);
         setLiveBalancePaidAt(data.balance_paid_at ?? null);
+        setLiveInitialPaid(data.initial_paid ?? false);
+        setLiveInitialPaidAt(data.initial_paid_at ?? null);
       }
     };
     poll();
@@ -490,8 +499,9 @@ export const Jubah: React.FC = () => {
   // started, instead of silently re-submitting the previous one's fields
   // and already-selected documents.
   const handleBookAnother = () => {
+    clearPendingJubahBooking();
     startNewJubahBooking();
-    setFullName(''); setIcNumber(''); setHpNumber('');
+    setFullName(''); setIcNumber(''); setHpNumber(''); setEmail('');
     setUniversity(''); setFaculty(''); setMatricId('');
     setPaymentMode('pickup'); setPostageZone('SM'); setDepositMethod('pickup');
     setRemark('Degree');
@@ -519,11 +529,13 @@ export const Jubah: React.FC = () => {
     e.preventDefault();
     if (!university) { alert('Please select your university.'); return; }
     if (!faculty) { alert('Please select your faculty.'); return; }
+    if (!email.trim()) { alert('Please enter your email.'); return; }
     if (!selectedRiderId) { alert('Please select a rider.'); return; }
     if (isPostageDelivery && !fullAddress) { alert('Please enter your delivery address.'); return; }
     if (!allFilesReady) { setFileError('Please upload all required documents.'); return; }
 
-    const reference = `JUB-${new Date().getFullYear().toString().slice(-2)}-${uniAbbrev}-${Math.random().toString(36).slice(2, 6).toUpperCase()}`;
+    const generateReference = () => `JUB-${new Date().getFullYear().toString().slice(-2)}-${uniAbbrev}-${Math.random().toString(36).slice(2, 6).toUpperCase()}`;
+    let reference = generateReference();
     const combinedFileName = `${(fullName || 'combined').replace(/\s+/g, '_')}_combined.pdf`;
     const selectedRider = riders.find(r => r.id === selectedRiderId);
     const bookingCampus = university.includes('Pekan') ? 'Pekan' : 'Gambang';
@@ -575,13 +587,30 @@ export const Jubah: React.FC = () => {
       console.error('[GERAK] Storage upload failed:', err);
     }
 
-    const result = await bookJubah(reference, fullName, icNumber, hpNumber, university, faculty, matricId, paymentMode, remark, combinedFileName, depositMethod, postageZone, selectedRiderId, selectedRider?.name, bookingCampus, addr, docsPath, oscarPath, skpgPath, konvoPath, icPath, landingUniversity);
+    let result = await bookJubah(reference, fullName, icNumber, hpNumber, university, faculty, matricId, paymentMode, remark, combinedFileName, depositMethod, postageZone, selectedRiderId, selectedRider?.name, bookingCampus, addr, docsPath, oscarPath, skpgPath, konvoPath, icPath, landingUniversity, email);
+
+    // The reference is a short client-generated random string — vanishingly
+    // unlikely to collide with another booking, but not impossible at scale.
+    // Retry once with a fresh one rather than surfacing the raw DB error;
+    // already-uploaded files stay valid since their paths are stored as-is,
+    // independent of this label.
+    if (!result.success && /duplicate key|unique constraint/i.test(result.error ?? '')) {
+      reference = generateReference();
+      result = await bookJubah(reference, fullName, icNumber, hpNumber, university, faculty, matricId, paymentMode, remark, combinedFileName, depositMethod, postageZone, selectedRiderId, selectedRider?.name, bookingCampus, addr, docsPath, oscarPath, skpgPath, konvoPath, icPath, landingUniversity, email);
+    }
+
     if (!result.success) {
       setBooking(false);
       setFileError(result.error ?? 'Booking failed to save. Please try again.');
       return;
     }
     clearFormDraft();
+
+    // Saved now, before the ToyyibPay redirect is attempted, so that if the
+    // customer hits back or closes the tab mid-checkout, the app can still
+    // point them back at this booking next time they open it — see
+    // JubahLanding's "unfinished booking" prompt.
+    savePendingJubahBooking(reference, hpNumber);
 
     // Sheet gets every document labelled by its real field label — lossless
     // regardless of how many doc fields this university has configured,
@@ -735,6 +764,21 @@ export const Jubah: React.FC = () => {
                 onChange={e => setHpNumber(formatPhone(e.target.value))}
                 placeholder="012-34567890"
                 maxLength={12}
+                required
+                className="bg-white border border-slate-100 rounded-xl py-2.5 px-3 text-xs font-semibold text-slate-700 focus:outline-none focus:border-blue-500 transition placeholder:font-normal placeholder:text-slate-300"
+              />
+            </div>
+
+            {/* Email */}
+            <div className="flex flex-col gap-1">
+              <label className="text-xs font-semibold text-slate-400">
+                Email <span className="text-danger">*</span>
+              </label>
+              <input
+                type="email"
+                value={email}
+                onChange={e => setEmail(e.target.value)}
+                placeholder="you@example.com"
                 required
                 className="bg-white border border-slate-100 rounded-xl py-2.5 px-3 text-xs font-semibold text-slate-700 focus:outline-none focus:border-blue-500 transition placeholder:font-normal placeholder:text-slate-300"
               />
@@ -1144,9 +1188,8 @@ export const Jubah: React.FC = () => {
               <span className="text-2xl font-black text-white tracking-wider">{jubahBooking.reference}</span>
               <button
                 type="button"
-                onClick={() => {
-                  if (!navigator.clipboard) return;
-                  navigator.clipboard.writeText(jubahBooking.reference);
+                onClick={async () => {
+                  if (!(await copyToClipboard(jubahBooking.reference))) return;
                   setCopied(true);
                   setTimeout(() => setCopied(false), 2000);
                 }}
@@ -1227,6 +1270,7 @@ export const Jubah: React.FC = () => {
                 fullName:     jubahBooking.fullName,
                 icNumber:     jubahBooking.icNumber,
                 hpNumber:     jubahBooking.hpNumber,
+                email:        jubahBooking.email,
                 university:   jubahBooking.university,
                 faculty:      jubahBooking.faculty,
                 matricId:     jubahBooking.matricId,
@@ -1238,6 +1282,8 @@ export const Jubah: React.FC = () => {
                 balancePaidAt: liveBalancePaidAt,
                 documentName: jubahBooking.combinedFileName,
                 status:       liveStatus ?? jubahBooking.status,
+                initialPaid:   liveInitialPaid,
+                initialPaidAt: liveInitialPaidAt,
                 riderName:    liveRiderName,
                 riderPhone:   liveRiderPhone,
                 createdAt:    null,
@@ -1295,9 +1341,9 @@ export const Jubah: React.FC = () => {
       {showAddressSheet && (
         <div className="fixed inset-0 z-50 flex items-end justify-center"
           style={{ background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(2px)' }}
-          onClick={closeAddressSheet}>
+          onPointerDown={(e) => { e.preventDefault(); closeAddressSheet(); }}>
           <div className="w-full max-w-[480px] max-h-[calc(100dvh-5rem)] bg-white rounded-t-3xl shadow-2xl animate-slide-up flex flex-col"
-            onClick={e => e.stopPropagation()}>
+            onPointerDown={e => e.stopPropagation()}>
             <div className="flex justify-center pt-3 pb-1 shrink-0">
               <div className="w-10 h-1 bg-slate-200 rounded-full" />
             </div>
@@ -1379,8 +1425,8 @@ export const Jubah: React.FC = () => {
     {samplePreview && (
       <>
         <div className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-6"
-          onClick={() => setSamplePreview(null)}>
-          <div className="relative w-full max-w-sm" onClick={e => e.stopPropagation()}>
+          onPointerDown={(e) => { e.preventDefault(); setSamplePreview(null); }}>
+          <div className="relative w-full max-w-sm" onPointerDown={e => e.stopPropagation()}>
             <img src={samplePreview} alt="Sample document" className="w-full rounded-2xl object-contain max-h-[70dvh]" />
             <button onClick={() => setSamplePreview(null)}
               className="absolute top-3 right-3 w-8 h-8 flex items-center justify-center rounded-full bg-black/50 text-white active:scale-90 transition">

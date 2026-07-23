@@ -2,15 +2,15 @@
 import { useApp } from '../context/AppContext';
 
 export const SplashScreen: React.FC = () => {
-  const { setCurrentPage } = useApp();
+  const { setCurrentPage, deepLinkPage } = useApp();
   const [phase, setPhase] = useState<'enter' | 'idle' | 'exit'>('enter');
 
   useEffect(() => {
     const t1 = setTimeout(() => setPhase('idle'),  400);
     const t2 = setTimeout(() => setPhase('exit'),  2000);
-    const t3 = setTimeout(() => setCurrentPage('dashboard'), 2600);
+    const t3 = setTimeout(() => setCurrentPage(deepLinkPage ?? 'dashboard'), 2600);
     return () => { clearTimeout(t1); clearTimeout(t2); clearTimeout(t3); };
-  }, [setCurrentPage]);
+  }, [setCurrentPage, deepLinkPage]);
 
   return (
     <div className="flex-1 bg-white flex flex-col items-center justify-center select-none h-full relative overflow-hidden">

@@ -5,6 +5,7 @@ import { WaIcon, toWa } from '../lib/whatsapp';
 import { ReceiptCard } from '../components/Receipt';
 import { buildJubahReceiptRows } from '../lib/receiptRows';
 import { generateReceiptPdf } from '../lib/receiptPdf';
+import { getPendingJubahBooking, clearPendingJubahBooking } from '../lib/pendingJubahBooking';
 
 interface JubahBookingResult {
   id: string;
@@ -32,6 +33,7 @@ interface JubahReceiptData {
   full_name: string;
   ic_number: string | null;
   hp_number: string;
+  email: string | null;
   campus: string;
   faculty: string;
   university: string;
@@ -45,6 +47,8 @@ interface JubahReceiptData {
   balance_due: number;
   balance_paid: boolean;
   balance_paid_at: string | null;
+  initial_paid: boolean;
+  initial_paid_at: string | null;
   delivery_address: string | null;
   created_at: string;
 }
@@ -85,6 +89,12 @@ export const TrackJubah: React.FC = () => {
   const [payingId, setPayingId] = useState<string | null>(null);
   const [payErrors, setPayErrors] = useState<Record<string, string>>({});
 
+  // Cancel state — id of the booking whose inline confirm is expanded, plus
+  // loading/error state, same per-booking pattern as payment.
+  const [cancelConfirmId, setCancelConfirmId] = useState<string | null>(null);
+  const [cancellingId, setCancellingId]       = useState<string | null>(null);
+  const [cancelErrors, setCancelErrors]       = useState<Record<string, string>>({});
+
   // Full receipt state — id of the booking whose IC-digit prompt is open,
   // the digits being entered, and (once verified) the fetched receipt data
   // keyed by booking id so each result's receipt unlocks independently.
@@ -114,7 +124,15 @@ export const TrackJubah: React.FC = () => {
     setSearching(false);
     setSearched(true);
     if (rpcError) { setError(rpcError.message || 'Something went wrong. Please try again.'); return; }
-    setResults((data as JubahBookingResult[]) ?? []);
+    const found = (data as JubahBookingResult[]) ?? [];
+    setResults(found);
+
+    // They've now seen this booking's status directly — the "unfinished
+    // booking" nudge on the landing page has done its job, so stop showing it.
+    const pending = getPendingJubahBooking();
+    if (pending && found.some(b => b.reference === pending.reference)) {
+      clearPendingJubahBooking();
+    }
   };
 
   const handleSearch = (e: React.SyntheticEvent) => {
@@ -124,10 +142,16 @@ export const TrackJubah: React.FC = () => {
 
   // ToyyibPay's return URL lands back here with ?reference=... — auto-search
   // so the customer sees their updated status without retyping anything.
+  // Internal navigation (e.g. the "Check Status" button on the unfinished-
+  // booking nudge) never populates that query param — this is a real SPA,
+  // not URL-routed — so fall back to the same pending-booking marker that
+  // nudge reads from.
   useEffect(() => {
     const refParam = new URLSearchParams(window.location.search).get('reference');
-    if (refParam) {
-      const upper = refParam.toUpperCase();
+    const fallbackRef = refParam ? null : getPendingJubahBooking()?.reference ?? null;
+    const target = refParam || fallbackRef;
+    if (target) {
+      const upper = target.toUpperCase();
       setReference(upper);
       runSearch(upper);
     }
@@ -146,6 +170,22 @@ export const TrackJubah: React.FC = () => {
       setPayingId(null);
       setPayErrors(prev => ({ ...prev, [b.id]: data?.error ?? 'Could not start payment. Please try again.' }));
     }
+  };
+
+  const handleCancelBooking = async (b: JubahBookingResult) => {
+    setCancellingId(b.id);
+    setCancelErrors(prev => ({ ...prev, [b.id]: '' }));
+    const { data, error } = await supabase.rpc('cancel_jubah_booking_customer', {
+      p_reference: b.reference,
+      p_hp_number: b.hp_number,
+    });
+    setCancellingId(null);
+    if (error || !data?.success) {
+      setCancelErrors(prev => ({ ...prev, [b.id]: data?.error ?? error?.message ?? 'Could not cancel. Please try again.' }));
+      return;
+    }
+    setResults(prev => prev.map(r => r.id === b.id ? { ...r, status: 'cancelled' } : r));
+    setCancelConfirmId(null);
   };
 
   const handleVerifyReceipt = async (b: JubahBookingResult) => {
@@ -267,6 +307,7 @@ export const TrackJubah: React.FC = () => {
                 fullName:     receipt.full_name,
                 icNumber:     receipt.ic_number ?? '',
                 hpNumber:     receipt.hp_number,
+                email:        receipt.email,
                 university:   receipt.university,
                 faculty:      receipt.faculty,
                 matricId:     receipt.matric_id,
@@ -278,6 +319,8 @@ export const TrackJubah: React.FC = () => {
                 balancePaidAt: receipt.balance_paid_at,
                 deliveryAddress: receipt.delivery_address,
                 status:       receipt.status,
+                initialPaid:   receipt.initial_paid,
+                initialPaidAt: receipt.initial_paid_at,
                 riderName:    receipt.rider_name,
                 riderPhone:   receipt.rider_phone,
                 createdAt:    receipt.created_at,
@@ -343,6 +386,45 @@ export const TrackJubah: React.FC = () => {
                         ? <><span className="w-3.5 h-3.5 rounded-full border-2 border-white/40 border-t-white animate-spin" /> Redirecting to payment…</>
                         : 'Pay Now'}
                     </button>
+
+                    {/* Cancel — only reachable while unpaid; deliberately a
+                        plain link, not a button, so it doesn't compete with
+                        Pay Now as the primary action. */}
+                    {cancelConfirmId === b.id ? (
+                      <div className="flex flex-col gap-2 border-t border-amber-100 pt-2 mt-1">
+                        <p className="text-xs text-amber-700 font-semibold text-center">
+                          Cancel this booking? This can't be undone.
+                        </p>
+                        {cancelErrors[b.id] && (
+                          <p className="text-xs text-danger font-semibold text-center">{cancelErrors[b.id]}</p>
+                        )}
+                        <div className="flex gap-2">
+                          <button
+                            type="button"
+                            onClick={() => setCancelConfirmId(null)}
+                            className="flex-1 bg-white border border-slate-200 text-slate-500 font-semibold py-2 rounded-xl text-xs transition active:scale-95"
+                          >
+                            No, keep it
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleCancelBooking(b)}
+                            disabled={cancellingId === b.id}
+                            className="flex-1 bg-danger hover:bg-danger/90 disabled:bg-slate-200 text-white font-semibold py-2 rounded-xl text-xs transition active:scale-95"
+                          >
+                            {cancellingId === b.id ? '...' : 'Yes, cancel'}
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => { setCancelConfirmId(b.id); setCancelErrors(prev => ({ ...prev, [b.id]: '' })); }}
+                        className="text-xs font-semibold text-amber-700/70 hover:text-amber-700 transition active:scale-95 self-center underline underline-offset-2"
+                      >
+                        Cancel this booking instead
+                      </button>
+                    )}
                   </div>
                 )}
 
@@ -378,8 +460,8 @@ export const TrackJubah: React.FC = () => {
                   )}
                 </div>
 
-                {/* ── DEPOSIT SECTION ── */}
-                {b.payment_mode === 'deposit' && (
+                {/* ── DEPOSIT SECTION — hidden once cancelled, nothing left to pay ── */}
+                {b.payment_mode === 'deposit' && b.status !== 'cancelled' && (
                   <div className="flex flex-col gap-2">
                     {/* Balance info card */}
                     <div className={`rounded-xl p-3 border flex items-center justify-between gap-2 ${

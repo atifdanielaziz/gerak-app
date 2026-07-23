@@ -839,11 +839,11 @@ export const Transport: React.FC = () => {
         <div
           className="fixed inset-0 z-50 flex items-end justify-center"
           style={{ background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(2px)' }}
-          onClick={() => setShowTerms(false)}
+          onPointerDown={(e) => { e.preventDefault(); setShowTerms(false); }}
         >
           <div
             className="w-full max-w-[480px] max-h-[calc(100dvh-5rem)] bg-white rounded-t-3xl shadow-2xl animate-slide-up flex flex-col"
-            onClick={e => e.stopPropagation()}
+            onPointerDown={e => e.stopPropagation()}
           >
             {/* Drag pill */}
             <div className="flex justify-center pt-3 pb-1 shrink-0">

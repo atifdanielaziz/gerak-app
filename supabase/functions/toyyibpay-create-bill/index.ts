@@ -6,8 +6,8 @@ const CORS = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
-// ToyyibPay doesn't collect a real customer email anywhere in the Jubah
-// booking form — createBill requires one, so a fixed placeholder is used.
+// Fallback only — bookings made before email collection was added to the
+// Jubah form have no real email on file, and createBill requires one.
 const PLACEHOLDER_EMAIL = 'jubah@atepgerak.app'
 
 serve(async (req) => {
@@ -29,13 +29,23 @@ serve(async (req) => {
     // the reference can't spin up bills for someone else's booking.
     const { data: booking, error: fetchErr } = await admin
       .from('jubah_bookings')
-      .select('id, reference, hp_number, full_name, payment_mode, status, cost, balance_due, balance_paid')
+      .select('id, reference, hp_number, full_name, email, payment_mode, status, cost, balance_due, balance_paid, toyyibpay_bill_code, toyyibpay_balance_bill_code')
       .eq('reference', reference)
       .eq('hp_number', hp_number)
       .single()
 
     if (fetchErr || !booking) {
       return json({ success: false, error: 'Booking not found.' }, 404)
+    }
+
+    // Checked before anything stage-specific — a cancelled booking should
+    // never be payable again, regardless of what it owed beforehand. The
+    // stage-specific checks below don't independently catch this (balance
+    // stage in particular: none of its own conditions rule out a cancelled
+    // booking with an unpaid balance), so this was previously letting a
+    // real, payable bill get created for a dead booking.
+    if (booking.status === 'cancelled') {
+      return json({ success: false, error: 'This booking has been cancelled.' })
     }
 
     let amount: number
@@ -58,6 +68,20 @@ serve(async (req) => {
     const appBaseUrl  = Deno.env.get('APP_BASE_URL')!
     const functionsUrl = `${Deno.env.get('SUPABASE_URL')!}/functions/v1/toyyibpay-callback`
 
+    // Reuse an existing unpaid bill for this stage instead of minting a new
+    // one — the callback matches purely on the bill code stored on this row,
+    // so creating a fresh bill on every call (e.g. a "Pay Now" retry after
+    // the customer hit back on ToyyibPay's checkout) would overwrite that
+    // column and orphan the earlier bill: if they then completed payment on
+    // the old, still-open tab, the callback would find no matching booking
+    // and the payment would go through with the order never marked paid.
+    // The stage checks above already confirm this booking is still payable,
+    // so an existing code here is guaranteed to still be awaiting payment.
+    const existingBillCode = stage === 'initial' ? booking.toyyibpay_bill_code : booking.toyyibpay_balance_bill_code
+    if (existingBillCode) {
+      return json({ success: true, paymentUrl: `${baseUrl}/${existingBillCode}` })
+    }
+
     const form = new URLSearchParams({
       userSecretKey:           Deno.env.get('TOYYIBPAY_SECRET_KEY')!,
       categoryCode:            Deno.env.get('TOYYIBPAY_CATEGORY_CODE')!,
@@ -70,7 +94,10 @@ serve(async (req) => {
       billCallbackUrl:         functionsUrl,
       billExternalReferenceNo: `${booking.reference}-${stage}`,
       billTo:                  booking.full_name,
-      billEmail:               PLACEHOLDER_EMAIL,
+      // Real customer email when we have one (bookings made after email
+      // collection was added) — falls back to the placeholder only for
+      // legacy bookings that predate that field.
+      billEmail:               booking.email || PLACEHOLDER_EMAIL,
       billPhone:               booking.hp_number,
       billPaymentChannel:      '2',
       billDisplayMerchant:     '1',

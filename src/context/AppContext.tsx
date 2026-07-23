@@ -90,6 +90,7 @@ export interface JubahBooking {
   fullName: string;
   icNumber: string;
   hpNumber: string;
+  email: string;
   university: string;
   faculty: string;
   matricId: string;
@@ -119,6 +120,7 @@ interface AppContextType {
   setCurrentPage: (page: ActivePage) => void;
   goBack: () => void;
   canGoBack: boolean;
+  deepLinkPage: ActivePage | null;
   setLeaveGuard: (guard: (() => void) | null) => void;
   isPreviewMode: boolean;
   enterPreviewMode: () => void;
@@ -158,7 +160,7 @@ interface AppContextType {
 
   // Jubah Delivery Module
   jubahBooking: JubahBooking | null;
-  bookJubah: (reference: string, fullName: string, icNumber: string, hpNumber: string, university: string, faculty: string, matricId: string, paymentMode: 'pickup' | 'postage' | 'deposit', remark: 'Master' | 'PHD' | 'Degree' | 'Diploma', combinedFileName: string, depositMethod: 'pickup' | 'postage' | undefined, postageZone: 'SM' | 'SS' | undefined, riderId?: string, riderName?: string, campus?: 'Pekan' | 'Gambang', deliveryAddress?: string, docsPath?: string, oscarPath?: string, skpgPath?: string, konvoPath?: string, icPath?: string, universityKey?: string) => Promise<{ success: boolean; error?: string; booking?: JubahBooking }>;
+  bookJubah: (reference: string, fullName: string, icNumber: string, hpNumber: string, university: string, faculty: string, matricId: string, paymentMode: 'pickup' | 'postage' | 'deposit', remark: 'Master' | 'PHD' | 'Degree' | 'Diploma', combinedFileName: string, depositMethod: 'pickup' | 'postage' | undefined, postageZone: 'SM' | 'SS' | undefined, riderId?: string, riderName?: string, campus?: 'Pekan' | 'Gambang', deliveryAddress?: string, docsPath?: string, oscarPath?: string, skpgPath?: string, konvoPath?: string, icPath?: string, universityKey?: string, email?: string) => Promise<{ success: boolean; error?: string; booking?: JubahBooking }>;
   commitJubahBooking: (booking: JubahBooking) => void;
   scheduleReturn: (method: 'self' | 'locker' | 'courier', date: string, time: string) => void;
   cancelJubahBooking: () => void;
@@ -170,6 +172,15 @@ const AppContext = createContext<AppContextType | undefined>(undefined);
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   // Navigation & Session
   const [currentPage, _setCurrentPage] = useState<ActivePage>('splash');
+  // ToyyibPay's billReturnUrl points at /jubah/track — this is a client-routed
+  // SPA (vercel.json rewrites every path to index.html, and nothing else ever
+  // reads location.pathname), so without this, a customer redirected back
+  // after paying would boot straight past that URL into the normal splash →
+  // dashboard flow and never see their booking status. Captured once, before
+  // Splash's own timer can navigate away from it.
+  const [deepLinkPage] = useState<ActivePage | null>(() =>
+    window.location.pathname.replace(/\/+$/, '').endsWith('/jubah/track') ? 'track-jubah' : null
+  );
   const [pageHistory, setPageHistory] = useState<ActivePage[]>([]);
   const [isPreviewMode, setIsPreviewMode] = useState(false);
   const [activeRole, setActiveRole] = useState<'admin' | 'driver' | 'rider' | null>(null);
@@ -442,7 +453,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         isLoggedIn:             true,
       });
       setPageHistory([]);
-      if (role === 'driver') {
+      if (deepLinkPage) {
+        _setCurrentPage(deepLinkPage);
+      } else if (role === 'driver') {
         _setCurrentPage('driver-home');
         // ── Fee expiry reminder (once per session) ───────────────
         const expiry    = data.fee_receipt_expiry ? new Date(data.fee_receipt_expiry) : null;
@@ -757,6 +770,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     konvoPath?: string,
     icPath?: string,
     universityKey?: string,
+    email?: string,
   ): Promise<{ success: boolean; error?: string; booking?: JubahBooking }> => {
     if (!campus) return { success: false, error: 'Missing campus information.' };
 
@@ -787,6 +801,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       p_ic_path:      icPath      ?? null,
       p_customer_id:       authUser?.id    ?? null,
       p_university_key:    universityKey   ?? 'umpsa',
+      p_email:             email ?? null,
     });
 
     if (error || !data?.success) {
@@ -802,6 +817,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       fullName,
       icNumber,
       hpNumber,
+      email: email ?? '',
       university,
       faculty,
       matricId,
@@ -855,6 +871,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       value={{
         currentPage,
         setCurrentPage,
+        deepLinkPage,
         goBack,
         canGoBack: pageHistory.length > 0,
         setLeaveGuard,

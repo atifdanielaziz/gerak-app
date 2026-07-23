@@ -1,5 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { ChevronDown, X, Check } from 'lucide-react';
+import { useApp } from '../context/AppContext';
 
 export interface DropdownOption<T extends string> {
   value: T;
@@ -26,6 +27,16 @@ export function Dropdown<T extends string>({
 }: DropdownProps<T>) {
   const [open, setOpen] = useState(false);
   const selected = options.find(o => o.value === value);
+  const { setSheetOpen } = useApp();
+
+  // Report to AppContext whenever this sheet is open, so BottomNav hides
+  // itself — otherwise it can render on top of this fixed-position sheet
+  // on some Android browsers regardless of z-index (see .page-transition
+  // comment in index.css for the same underlying stacking issue).
+  useEffect(() => {
+    setSheetOpen(open);
+    return () => setSheetOpen(false);
+  }, [open, setSheetOpen]);
 
   return (
     <>
@@ -45,11 +56,11 @@ export function Dropdown<T extends string>({
         <div
           className="fixed inset-0 z-50 flex items-end justify-center"
           style={{ background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(2px)' }}
-          onClick={() => setOpen(false)}
+          onPointerDown={(e) => { e.preventDefault(); setOpen(false); }}
         >
           <div
             className="w-full max-w-[480px] max-h-[calc(100dvh-5rem)] bg-white rounded-t-3xl shadow-2xl animate-slide-up flex flex-col"
-            onClick={e => e.stopPropagation()}
+            onPointerDown={e => e.stopPropagation()}
           >
             <div className="flex justify-center pt-3 pb-1 shrink-0">
               <div className="w-10 h-1 bg-slate-200 rounded-full" />

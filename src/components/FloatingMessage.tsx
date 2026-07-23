@@ -23,9 +23,9 @@ export const FloatingMessage: React.FC<FloatingMessageProps> = ({ title, descrip
   <div
     className="fixed inset-0 z-[9999] flex items-center justify-center px-8"
     style={{ background: 'rgba(0,0,0,0.25)', backdropFilter: 'blur(24px)', WebkitBackdropFilter: 'blur(24px)' }}
-    onClick={onDismiss}
+    onPointerDown={(e) => { e.preventDefault(); onDismiss?.(); }}
   >
-    <div className="w-full max-w-[320px] bg-white border border-slate-100 rounded-3xl overflow-hidden" onClick={e => e.stopPropagation()}>
+    <div className="w-full max-w-[320px] bg-white border border-slate-100 rounded-3xl overflow-hidden" onPointerDown={e => e.stopPropagation()}>
       <div className="px-5 pt-5 pb-4 text-center">
         <h2 className="text-slate-900 font-semibold text-base m-0">{title}</h2>
         {description && <p className="text-slate-400 font-normal text-sm mt-1.5 leading-relaxed">{description}</p>}

@@ -1651,10 +1651,10 @@ export const DriverHome: React.FC = () => {
       const priceHour = rentalVehicle?.price_hour ?? 0;
       return (
         <div className="fixed inset-0 z-50 flex items-end justify-center"
-          onClick={() => setRentalReceiptBk(null)}>
+          onPointerDown={(e) => { e.preventDefault(); setRentalReceiptBk(null); }}>
           <div className="absolute inset-0 bg-black/40" />
           <div className="relative w-full max-w-sm rounded-t-3xl bg-white overflow-hidden animate-slide-up"
-            onClick={e => e.stopPropagation()}>
+            onPointerDown={e => e.stopPropagation()}>
 
             {/* Close handle */}
             <div className="flex justify-center pt-3 pb-1">

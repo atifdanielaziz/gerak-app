@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { X, Copy, Check } from 'lucide-react';
 import { WaIcon, toWa } from '../lib/whatsapp';
+import { copyToClipboard } from '../lib/clipboard';
 
 interface Props {
   name:       string;
@@ -32,15 +33,15 @@ export const RepresentativeSheet: React.FC<Props> = ({
 }) => {
   const [copiedField, setCopiedField] = useState<'name' | 'phone' | null>(null);
 
-  const copyValue = (value: string, field: 'name' | 'phone') => {
-    navigator.clipboard.writeText(value);
+  const copyValue = async (value: string, field: 'name' | 'phone') => {
+    if (!(await copyToClipboard(value))) return;
     setCopiedField(field);
     setTimeout(() => setCopiedField(prev => (prev === field ? null : prev)), 2000);
   };
 
   return (
     <>
-      <div className="fixed inset-0 z-40 bg-black/40" style={{ backdropFilter: 'blur(2px)' }} onClick={onClose} />
+      <div className="fixed inset-0 z-40 bg-black/40" style={{ backdropFilter: 'blur(2px)' }} onPointerDown={(e) => { e.preventDefault(); onClose(); }} />
       <div className="fixed bottom-0 left-0 right-0 z-50 bg-white rounded-t-3xl shadow-2xl animate-slide-up max-h-[calc(100dvh-5rem)] overflow-y-auto no-scrollbar">
 
         {/* Drag pill */}

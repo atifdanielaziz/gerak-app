@@ -46,12 +46,12 @@ const DriverSheet: React.FC<DriverSheetProps> = ({ order, onClose }) => (
   <div
     className="fixed inset-0 z-50 flex items-end justify-center"
     style={{ background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(2px)' }}
-    onClick={onClose}
+    onPointerDown={(e) => { e.preventDefault(); onClose(); }}
   >
     {/* Sheet */}
     <div
       className="w-full max-w-[480px] max-h-[calc(100dvh-5rem)] bg-white rounded-t-3xl animate-slide-up flex flex-col"
-      onClick={e => e.stopPropagation()}
+      onPointerDown={e => e.stopPropagation()}
     >
       {/* Drag handle */}
       <div className="flex justify-center pt-3 pb-1 shrink-0">

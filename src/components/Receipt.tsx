@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { FileDown, Copy, Check, X } from 'lucide-react';
 import { WaBtn } from '../lib/whatsapp';
 import type { ReceiptDoc, ReceiptMeta, ReceiptRow } from '../lib/receiptRows';
+import { copyToClipboard } from '../lib/clipboard';
 
 const valueClass = (r: ReceiptRow) =>
   r.emphasis === 'highlight' ? 'text-blue-600 font-bold' :
@@ -33,8 +34,8 @@ export const ReceiptCard: React.FC<{
   const maxLabelLen = Math.max(...doc.rows.map(r => r.label.length));
   const [copiedIdx, setCopiedIdx] = useState<number | null>(null);
 
-  const copyRow = (i: number, value: string) => {
-    navigator.clipboard?.writeText(value);
+  const copyRow = async (i: number, value: string) => {
+    if (!(await copyToClipboard(value))) return;
     setCopiedIdx(i);
     setTimeout(() => setCopiedIdx(prev => (prev === i ? null : prev)), 1500);
   };
@@ -91,11 +92,11 @@ export const ReceiptSheet: React.FC<{
   <div
     className="fixed inset-0 z-50 flex items-end justify-center"
     style={{ background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(2px)' }}
-    onClick={onClose}
+    onPointerDown={(e) => { e.preventDefault(); onClose(); }}
   >
     <div
       className="w-full max-w-[480px] max-h-[calc(100dvh-5rem)] bg-white rounded-t-3xl shadow-2xl animate-slide-up flex flex-col"
-      onClick={e => e.stopPropagation()}
+      onPointerDown={e => e.stopPropagation()}
     >
       {/* Drag handle */}
       <div className="flex justify-center pt-3 pb-1 shrink-0">

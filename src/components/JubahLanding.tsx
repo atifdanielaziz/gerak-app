@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { useApp } from '../context/AppContext';
-import { ChevronRight, Image as ImageIcon, Users, PackageSearch, GraduationCap } from 'lucide-react';
+import { ChevronRight, Image as ImageIcon, Users, PackageSearch, GraduationCap, Clock, X } from 'lucide-react';
 import { WaIcon } from '../lib/whatsapp';
 import { RepresentativeSheet } from './RepresentativeSheet';
 import { Dropdown } from './Dropdown';
+import { getPendingJubahBooking, clearPendingJubahBooking, type PendingJubahBooking } from '../lib/pendingJubahBooking';
 
 type RiderDir = { id: string; name: string; drop_point: string | null; method: string | null; ic_number: string | null; phone: string | null };
 
@@ -46,6 +47,19 @@ export const JubahLanding: React.FC<Props> = ({ onProceed }) => {
   const [imgError, setImgError]         = useState<Record<string, boolean>>({});
   const [riderDir, setRiderDir]         = useState<RiderDir[]>([]);
   const [selectedRider, setSelectedRider] = useState<RiderDir | null>(null);
+  const [pendingBooking, setPendingBooking] = useState<PendingJubahBooking | null>(null);
+
+  // Booking that was saved but whose ToyyibPay checkout was never confirmed
+  // in this browser (back button, closed tab) — a quiet nudge back to it,
+  // not the full receipt, so an unpaid order never looks "confirmed" here.
+  useEffect(() => {
+    setPendingBooking(getPendingJubahBooking());
+  }, []);
+
+  const dismissPendingBooking = () => {
+    clearPendingJubahBooking();
+    setPendingBooking(null);
+  };
 
   const openRider  = (r: RiderDir) => { setSelectedRider(r); setSheetOpen(true); };
   const closeRider = ()            => { setSelectedRider(null); setSheetOpen(false); };
@@ -110,6 +124,37 @@ export const JubahLanding: React.FC<Props> = ({ onProceed }) => {
           Select your university to continue
         </p>
       </div>
+
+      {/* Unfinished booking nudge — shown when a booking was saved but its
+          ToyyibPay checkout was never confirmed complete in this browser */}
+      {pendingBooking && (
+        <div className="bg-amber-50 border border-amber-100 rounded-2xl px-4 py-3 flex items-center gap-3">
+          <div className="w-9 h-9 bg-amber-100 rounded-xl flex items-center justify-center shrink-0">
+            <Clock className="w-4 h-4 text-amber-600" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-xs font-bold text-amber-800 m-0">Unfinished booking</p>
+            <p className="text-xs text-amber-600 font-semibold mt-0.5 truncate">
+              {pendingBooking.reference} — check its payment status
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={() => setCurrentPage('track-jubah')}
+            className="shrink-0 bg-amber-500 hover:bg-amber-600 active:scale-95 text-white text-xs font-bold px-3 py-2 rounded-xl transition"
+          >
+            Check Status
+          </button>
+          <button
+            type="button"
+            onClick={dismissPendingBooking}
+            aria-label="Dismiss"
+            className="shrink-0 w-7 h-7 flex items-center justify-center text-amber-400 active:scale-90 transition"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+      )}
 
       {/* University selector + banner */}
       <div className="bg-white border border-slate-100 rounded-3xl p-5 flex flex-col gap-4">

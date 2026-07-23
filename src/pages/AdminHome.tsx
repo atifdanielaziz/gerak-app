@@ -8,11 +8,12 @@ import {
   FileImage, ShieldCheck, ShieldOff, ExternalLink, KeyRound,
   CalendarDays, Upload, Eye, Phone, ArrowLeftRight, Pencil, GraduationCap,
   ChevronLeft, Download, MoreVertical, Copy, Check, TrendingUp, Bike, Settings, Info, BadgeCheck,
-  Bell, User,
+  Bell, User, Ban,
 } from 'lucide-react';
 import { WaBtn, WaIcon, toWa } from '../lib/whatsapp';
 import { MonthDrumPicker, EarningsCard, computeEarnings, type EarningsRow } from '../components/EarningsCard';
 import { getJubahDocSignedUrl } from '../lib/jubahDocs';
+import { copyToClipboard } from '../lib/clipboard';
 import { ReceiptCard } from '../components/Receipt';
 import { Dropdown } from '../components/Dropdown';
 import { buildJubahReceiptRows, type ReceiptDoc } from '../lib/receiptRows';
@@ -246,11 +247,11 @@ const ProfileSheet: React.FC<{ u: ProfileUser; onClose: () => void }> = ({ u, on
     <div
       className="fixed inset-0 z-50 flex items-end justify-center"
       style={{ background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(2px)' }}
-      onClick={onClose}
+      onPointerDown={(e) => { e.preventDefault(); onClose(); }}
     >
       <div
         className="w-full max-w-[480px] max-h-[calc(100dvh-5rem)] bg-white rounded-t-3xl shadow-2xl animate-slide-up flex flex-col"
-        onClick={e => e.stopPropagation()}
+        onPointerDown={e => e.stopPropagation()}
       >
         {/* Handle */}
         <div className="flex justify-center pt-3 pb-1 shrink-0">
@@ -413,11 +414,11 @@ const JubahRiderSheet: React.FC<{
   <div
     className="fixed inset-0 z-50 flex items-end justify-center"
     style={{ background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(2px)' }}
-    onClick={onClose}
+    onPointerDown={(e) => { e.preventDefault(); onClose(); }}
   >
     <div
       className="w-full max-w-[480px] max-h-[calc(100dvh-5rem)] bg-white rounded-t-3xl shadow-2xl animate-slide-up flex flex-col"
-      onClick={e => e.stopPropagation()}
+      onPointerDown={e => e.stopPropagation()}
     >
       <div className="flex justify-center pt-3 pb-1 shrink-0">
         <div className="w-10 h-1 bg-slate-200 rounded-full" />
@@ -717,7 +718,7 @@ const UserCard: React.FC<{
 
           {showMenu && (
             <>
-              <div className="fixed inset-0 z-40" onClick={() => setShowMenu(false)} />
+              <div className="fixed inset-0 z-40" onPointerDown={(e) => { e.preventDefault(); setShowMenu(false); }} />
               <div className="absolute right-0 top-full mt-1 z-50 bg-white border border-slate-100 rounded-2xl shadow-xl overflow-hidden min-w-[170px]">
 
                 {/* Driver capabilities */}
@@ -972,9 +973,11 @@ export const AdminHome: React.FC = () => {
   type JubahAssignment = { id: string; rider_id: string; name: string; drop_point: string | null; method: string; campus: string; ic_number: string | null; phone: string | null };
   type JubahBookingRow = {
     id: string; reference: string; full_name: string; ic_number: string; hp_number: string;
+    email: string | null;
     matric_id: string; university: string; campus: string; faculty: string; remark: string;
     rider_name: string | null; rider_phone: string | null; status: string; payment_mode: string; cost: number;
     balance_due: number; balance_paid: boolean; balance_paid_at: string | null; balance_proof_url: string | null;
+    initial_paid: boolean; initial_paid_at: string | null;
     delivery_address: string | null;
     docs_path: string | null; payment_path: string | null; oscar_path: string | null;
     skpg_path: string | null; konvo_path: string | null; ic_path: string | null;
@@ -988,13 +991,16 @@ export const AdminHome: React.FC = () => {
   const [jubahBookingsLoading, setJubahBookingsLoading] = useState(false);
   const [deletingBooking,    setDeletingBooking]    = useState<string | null>(null);
   const [confirmingBooking,  setConfirmingBooking]  = useState(false);
+  const [cancelModalBooking, setCancelModalBooking] = useState<JubahBookingRow | null>(null);
+  const [cancellingBooking,  setCancellingBooking]  = useState(false);
   const [jubahSearch,          setJubahSearch]          = useState('');
-  const [jubahPayFilter,       setJubahPayFilter]       = useState<'all' | 'booked' | 'paid'>('all');
+  const [jubahPayFilter,       setJubahPayFilter]       = useState<'all' | 'booked' | 'paid' | 'cancelled'>('all');
   const [jubahAdminView,     setJubahAdminView]     = useState<'list' | 'card' | 'details'>('list');
   const [jubahAdminSelected, setJubahAdminSelected] = useState<JubahBookingRow | null>(null);
   const [jubahAdminUpdating, setJubahAdminUpdating] = useState(false);
   const [receiptModal, setReceiptModal] = useState<ReceiptDoc | null>(null);
   const [copiedRef, setCopiedRef] = useState(false);
+  const [copiedListRef, setCopiedListRef] = useState<string | null>(null);
   const [jubahSubTab,        setJubahSubTab]        = useState<'customer' | 'rider' | 'price' | 'banner'>('rider');
 
   const BANNER_BUCKET = 'jubah-banners';
@@ -1082,6 +1088,24 @@ export const AdminHome: React.FC = () => {
     else { showToast(`${b.reference} deleted.`); setJubahBookings(prev => prev.filter(r => r.id !== b.id)); }
   };
 
+  const handleCancelJubahBooking = async () => {
+    if (!cancelModalBooking) return;
+    setCancellingBooking(true);
+    const { data, error } = await supabase.rpc('cancel_jubah_booking_admin', {
+      p_booking_id: cancelModalBooking.id,
+    });
+    setCancellingBooking(false);
+    if (error || !data?.success) {
+      showToast(data?.error ?? error?.message ?? 'Cancel failed. Please try again.');
+      return;
+    }
+    const updated = { ...cancelModalBooking, status: 'cancelled' };
+    setJubahBookings(prev => prev.map(r => r.id === updated.id ? updated : r));
+    if (jubahAdminSelected?.id === updated.id) setJubahAdminSelected(updated);
+    showToast(`${cancelModalBooking.reference} cancelled.`);
+    setCancelModalBooking(null);
+  };
+
   const loadJubahData = useCallback(async () => {
     setJubahRidersLoading(true);
     setJubahBookingsLoading(true);
@@ -1120,7 +1144,7 @@ export const AdminHome: React.FC = () => {
     }
 
     let bookingsQ = supabase.from('jubah_bookings')
-      .select('id, reference, full_name, ic_number, hp_number, matric_id, university, campus, faculty, remark, rider_name, rider_phone, status, payment_mode, cost, balance_due, balance_paid, balance_paid_at, balance_proof_url, delivery_address, docs_path, payment_path, oscar_path, skpg_path, konvo_path, ic_path, created_at')
+      .select('id, reference, full_name, ic_number, hp_number, email, matric_id, university, campus, faculty, remark, rider_name, rider_phone, status, payment_mode, cost, balance_due, balance_paid, balance_paid_at, balance_proof_url, initial_paid, initial_paid_at, delivery_address, docs_path, payment_path, oscar_path, skpg_path, konvo_path, ic_path, created_at')
       .order('created_at', { ascending: false });
     if (!isSuperAdmin) bookingsQ = bookingsQ.eq('campus', adminCampus);
     const { data: bookingsData, error: bookingsError } = await bookingsQ;
@@ -1135,7 +1159,8 @@ export const AdminHome: React.FC = () => {
       if (fallbackError) console.error('[GERAK] jubah_bookings fallback error:', fallbackError.message);
       setJubahBookings(((fallbackData ?? []) as JubahBookingRow[]).map(r => ({
         ...r,
-        ic_number: '', university: '', cost: 0, balance_due: 0, balance_paid: false, balance_paid_at: null, balance_proof_url: null,
+        ic_number: '', email: null, university: '', cost: 0, balance_due: 0, balance_paid: false, balance_paid_at: null, balance_proof_url: null,
+        initial_paid: false, initial_paid_at: null,
         delivery_address: null, docs_path: null, payment_path: null, oscar_path: null,
         skpg_path: null, konvo_path: null, ic_path: null,
       })));
@@ -2162,9 +2187,9 @@ export const AdminHome: React.FC = () => {
         return (
           <div className="fixed inset-0 z-50 flex items-end justify-center"
             style={{ background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(2px)' }}
-            onClick={() => setDirSheet(null)}>
+            onPointerDown={(e) => { e.preventDefault(); setDirSheet(null); }}>
             <div className="w-full max-w-[480px] max-h-[calc(100dvh-5rem)] bg-white rounded-t-3xl shadow-2xl animate-slide-up flex flex-col overflow-y-auto no-scrollbar"
-              onClick={e => e.stopPropagation()}>
+              onPointerDown={e => e.stopPropagation()}>
               <div className="flex justify-center pt-3 pb-1"><div className="w-10 h-1 bg-slate-200 rounded-full" /></div>
               <div className="flex items-center justify-between px-5 pt-2 pb-4">
                 <p className="text-sm font-semibold text-slate-700">Representative</p>
@@ -3479,9 +3504,10 @@ export const AdminHome: React.FC = () => {
                 {/* Payment status filter */}
                 <div className="flex bg-slate-100 rounded-xl p-0.5 gap-0.5">
                   {([
-                    { id: 'all',    label: 'All' },
-                    { id: 'booked', label: 'Booked' },
-                    { id: 'paid',   label: 'Paid' },
+                    { id: 'all',       label: 'All' },
+                    { id: 'booked',    label: 'Booked' },
+                    { id: 'paid',      label: 'Paid' },
+                    { id: 'cancelled', label: 'Cancelled' },
                   ] as const).map(f => (
                     <button key={f.id} onPointerDown={e => { e.preventDefault(); setJubahPayFilter(f.id); }}
                       className={`flex-1 py-1.5 rounded-[10px] text-xs font-semibold transition-transform active:scale-95 ${
@@ -3500,7 +3526,12 @@ export const AdminHome: React.FC = () => {
                   <span className="font-normal text-slate-300 normal-case tracking-normal">
                     {jubahBookings.filter(b => {
                       const isPaid = b.payment_mode !== 'deposit' || b.balance_paid;
-                      const matchFilter = jubahPayFilter === 'all' ? true : jubahPayFilter === 'paid' ? isPaid : !isPaid;
+                      const isCancelled = b.status === 'cancelled';
+                      const matchFilter =
+                        jubahPayFilter === 'all'       ? true :
+                        jubahPayFilter === 'cancelled' ? isCancelled :
+                        jubahPayFilter === 'paid'       ? (isPaid && !isCancelled) :
+                                                           (!isPaid && !isCancelled);
                       const q = jubahSearch.trim().toLowerCase();
                       const matchSearch = !q || b.full_name.toLowerCase().includes(q) || b.hp_number.includes(q) || b.reference.toLowerCase().includes(q);
                       return matchFilter && matchSearch;
@@ -3529,7 +3560,12 @@ export const AdminHome: React.FC = () => {
                       <tbody>
                         {jubahBookings.filter(b => {
                           const isPaid = b.payment_mode !== 'deposit' || b.balance_paid;
-                          const matchFilter = jubahPayFilter === 'all' ? true : jubahPayFilter === 'paid' ? isPaid : !isPaid;
+                          const isCancelled = b.status === 'cancelled';
+                          const matchFilter =
+                            jubahPayFilter === 'all'       ? true :
+                            jubahPayFilter === 'cancelled' ? isCancelled :
+                            jubahPayFilter === 'paid'       ? (isPaid && !isCancelled) :
+                                                               (!isPaid && !isCancelled);
                           const q = jubahSearch.trim().toLowerCase();
                           const matchSearch = !q || b.full_name.toLowerCase().includes(q) || b.hp_number.includes(q) || b.reference.toLowerCase().includes(q);
                           return matchFilter && matchSearch;
@@ -3539,7 +3575,23 @@ export const AdminHome: React.FC = () => {
                             <tr key={b.id}
                               onClick={() => goToAdminCard(b)}
                               className="border-b border-slate-100 text-xs hover:bg-slate-50 active:bg-slate-100 transition cursor-pointer">
-                              <td className="py-2.5 pr-4 font-mono font-semibold text-primary whitespace-nowrap">{b.reference}</td>
+                              <td className="py-2.5 pr-4 font-mono font-semibold text-primary whitespace-nowrap">
+                                <span className="flex items-center gap-1.5">
+                                  {b.reference}
+                                  <button
+                                    type="button"
+                                    onClick={async (e) => {
+                                      e.stopPropagation();
+                                      if (!(await copyToClipboard(b.reference))) return;
+                                      setCopiedListRef(b.id);
+                                      setTimeout(() => setCopiedListRef(prev => prev === b.id ? null : prev), 2000);
+                                    }}
+                                    className="text-slate-300 hover:text-primary transition active:scale-90 shrink-0"
+                                  >
+                                    {copiedListRef === b.id ? <Check className="w-3 h-3 text-emerald-500" /> : <Copy className="w-3 h-3" />}
+                                  </button>
+                                </span>
+                              </td>
                               <td className="py-2.5 pr-4 font-semibold text-slate-800 whitespace-nowrap">{b.full_name}</td>
                               <td className="py-2.5 pr-4 text-slate-500 font-semibold whitespace-nowrap">{b.remark}</td>
                               <td className="py-2.5 pr-4 whitespace-nowrap">
@@ -3553,9 +3605,10 @@ export const AdminHome: React.FC = () => {
                               </td>
                               <td className="py-2.5 pr-4 whitespace-nowrap">
                                 <span className={`font-semibold px-2 py-0.5 rounded-full border text-xs ${
+                                  b.status === 'cancelled' ? 'bg-red-50 border-red-100 text-red-600' :
                                   isPaid ? 'bg-emerald-50 border-emerald-100 text-emerald-700' : 'bg-amber-50 border-amber-100 text-amber-700'
                                 }`}>
-                                  {isPaid ? 'Paid' : 'Booked'}
+                                  {b.status === 'cancelled' ? 'Cancelled' : isPaid ? 'Paid' : 'Booked'}
                                 </span>
                               </td>
                               <td className="py-2.5 pr-4 whitespace-nowrap">
@@ -3575,6 +3628,7 @@ export const AdminHome: React.FC = () => {
                                     fullName:     b.full_name,
                                     icNumber:     b.ic_number,
                                     hpNumber:     b.hp_number,
+                                    email:        b.email,
                                     university:   b.university,
                                     faculty:      b.faculty,
                                     matricId:     b.matric_id,
@@ -3586,6 +3640,8 @@ export const AdminHome: React.FC = () => {
                                     balancePaidAt: b.balance_paid_at,
                                     deliveryAddress: b.delivery_address,
                                     status:       b.status,
+                                    initialPaid:   b.initial_paid,
+                                    initialPaidAt: b.initial_paid_at,
                                     riderName:    b.rider_name,
                                     riderPhone:   b.rider_phone,
                                     createdAt:    b.created_at,
@@ -3644,7 +3700,7 @@ export const AdminHome: React.FC = () => {
                       <div className="flex items-center gap-1.5">
                         <p className="text-xs font-black text-slate-700">{b.reference}</p>
                         <button
-                          onClick={() => { navigator.clipboard.writeText(b.reference); setCopiedRef(true); setTimeout(() => setCopiedRef(false), 2000); }}
+                          onClick={async () => { if (!(await copyToClipboard(b.reference))) return; setCopiedRef(true); setTimeout(() => setCopiedRef(false), 2000); }}
                           className="w-5 h-5 flex items-center justify-center text-slate-400 hover:text-primary active:scale-90 transition"
                         >
                           {copiedRef ? <Check className="w-3 h-3 text-emerald-500" /> : <Copy className="w-3 h-3" />}
@@ -3728,8 +3784,8 @@ export const AdminHome: React.FC = () => {
                       </div>
                     )}
 
-                    {/* Balance status (deposit) */}
-                    {b.payment_mode === 'deposit' && (
+                    {/* Balance status (deposit) — hidden once cancelled, nothing left to collect */}
+                    {b.payment_mode === 'deposit' && b.status !== 'cancelled' && (
                       <div className="flex items-center gap-2">
                         <div className={`flex-1 rounded-xl p-3 border flex items-center justify-between gap-2 ${
                           b.balance_paid ? 'bg-emerald-50 border-emerald-100' : b.balance_proof_url ? 'bg-violet-50 border-violet-100' : 'bg-amber-50 border-amber-100'
@@ -3869,6 +3925,7 @@ export const AdminHome: React.FC = () => {
                       fullName:     b.full_name,
                       icNumber:     b.ic_number,
                       hpNumber:     b.hp_number,
+                      email:        b.email,
                       university:   b.university,
                       faculty:      b.faculty,
                       matricId:     b.matric_id,
@@ -3880,6 +3937,8 @@ export const AdminHome: React.FC = () => {
                       balancePaidAt: b.balance_paid_at,
                       deliveryAddress: b.delivery_address,
                       status:       b.status,
+                      initialPaid:   b.initial_paid,
+                      initialPaidAt: b.initial_paid_at,
                       riderName:    b.rider_name,
                       riderPhone:   b.rider_phone,
                       createdAt:    b.created_at,
@@ -3953,31 +4012,40 @@ export const AdminHome: React.FC = () => {
                     // no longer gate on proof having been uploaded. Kept as a manual
                     // override for the rare missed-webhook case.
                     const canConfirmPayment = b.status === 'ordered';
-                    const canConfirmBalance = b.payment_mode === 'deposit' && b.status !== 'ordered' && !b.balance_paid;
+                    const canConfirmBalance = b.payment_mode === 'deposit' && b.status !== 'ordered' && b.status !== 'cancelled' && !b.balance_paid;
                     const confirmActive = canConfirmPayment || canConfirmBalance;
                     const confirmLabel  = canConfirmBalance ? 'Confirm Balance' : 'Confirm Payment';
                     return (
-                      <div className="flex gap-3">
-                        <button
-                          onClick={handleConfirmJubahBooking}
-                          disabled={!confirmActive || confirmingBooking}
-                          className="flex-1 flex items-center justify-center gap-2 bg-emerald-50 border border-emerald-200 text-emerald-600 hover:bg-emerald-100 active:scale-[0.98] font-semibold py-3 rounded-2xl text-sm transition disabled:opacity-40 disabled:cursor-not-allowed">
-                          {confirmingBooking
-                            ? <span className="w-4 h-4 rounded-full border-2 border-emerald-300 border-t-emerald-600 animate-spin" />
-                            : <><BadgeCheck className="w-4 h-4" />{confirmLabel}</>}
-                        </button>
-                        <button
-                          onClick={async () => {
-                            setJubahAdminView('list');
-                            setJubahAdminSelected(null);
-                            await handleDeleteJubahBooking(b);
-                          }}
-                          disabled={deletingBooking === b.id}
-                          className="flex-1 flex items-center justify-center gap-2 border border-red-200 text-red-500 hover:bg-red-50 active:scale-[0.98] font-semibold py-3 rounded-2xl text-sm transition disabled:opacity-50">
-                          {deletingBooking === b.id
-                            ? <span className="w-4 h-4 rounded-full border-2 border-red-300 border-t-red-500 animate-spin" />
-                            : <><Trash2 className="w-4 h-4" />Delete</>}
-                        </button>
+                      <div className="flex flex-col gap-3">
+                        <div className="flex gap-3">
+                          <button
+                            onClick={handleConfirmJubahBooking}
+                            disabled={!confirmActive || confirmingBooking}
+                            className="flex-1 flex items-center justify-center gap-2 bg-emerald-50 border border-emerald-200 text-emerald-600 hover:bg-emerald-100 active:scale-[0.98] font-semibold py-3 rounded-2xl text-sm transition disabled:opacity-40 disabled:cursor-not-allowed">
+                            {confirmingBooking
+                              ? <span className="w-4 h-4 rounded-full border-2 border-emerald-300 border-t-emerald-600 animate-spin" />
+                              : <><BadgeCheck className="w-4 h-4" />{confirmLabel}</>}
+                          </button>
+                          <button
+                            onClick={async () => {
+                              setJubahAdminView('list');
+                              setJubahAdminSelected(null);
+                              await handleDeleteJubahBooking(b);
+                            }}
+                            disabled={deletingBooking === b.id}
+                            className="flex-1 flex items-center justify-center gap-2 border border-red-200 text-red-500 hover:bg-red-50 active:scale-[0.98] font-semibold py-3 rounded-2xl text-sm transition disabled:opacity-50">
+                            {deletingBooking === b.id
+                              ? <span className="w-4 h-4 rounded-full border-2 border-red-300 border-t-red-500 animate-spin" />
+                              : <><Trash2 className="w-4 h-4" />Delete</>}
+                          </button>
+                        </div>
+                        {b.status !== 'cancelled' && (
+                          <button
+                            onClick={() => setCancelModalBooking(b)}
+                            className="w-full flex items-center justify-center gap-2 border border-amber-200 text-amber-600 hover:bg-amber-50 active:scale-[0.98] font-semibold py-3 rounded-2xl text-sm transition">
+                            <Ban className="w-4 h-4" />Cancel Booking
+                          </button>
+                        )}
                       </div>
                     );
                   })()}
@@ -4619,9 +4687,9 @@ export const AdminHome: React.FC = () => {
 
       return (
         <div className="fixed inset-0 z-50 bg-black/40 flex items-end justify-center"
-          onClick={() => setPendingAction(null)}>
+          onPointerDown={(e) => { e.preventDefault(); setPendingAction(null); }}>
           <div className="w-full max-w-sm max-h-[calc(100dvh-5rem)] overflow-y-auto no-scrollbar bg-white rounded-t-3xl p-6 pb-10 shadow-2xl animate-slide-up"
-            onClick={e => e.stopPropagation()}>
+            onPointerDown={e => e.stopPropagation()}>
             <div className="w-10 h-1 bg-slate-200 rounded-full mx-auto mb-5" />
             <div className={`w-10 h-10 rounded-2xl mx-auto mb-3 flex items-center justify-center ${
               isTerminate ? 'bg-red-100' : isStop ? 'bg-amber-100' : 'bg-primary/10'
@@ -4654,9 +4722,9 @@ export const AdminHome: React.FC = () => {
     {/* ── Receipt Gate Master Confirmation Modal ── */}
     {showGateMasterConfirm && (
       <div className="fixed inset-0 z-50 bg-black/40 flex items-end justify-center"
-        onClick={() => setShowGateMasterConfirm(false)}>
+        onPointerDown={(e) => { e.preventDefault(); setShowGateMasterConfirm(false); }}>
         <div className="w-full max-w-sm max-h-[calc(100dvh-5rem)] overflow-y-auto no-scrollbar bg-white rounded-t-3xl p-6 pb-10 shadow-2xl animate-slide-up"
-          onClick={e => e.stopPropagation()}>
+          onPointerDown={e => e.stopPropagation()}>
           <div className="w-10 h-1 bg-slate-200 rounded-full mx-auto mb-5" />
           <div className={`w-10 h-10 rounded-2xl mx-auto mb-3 flex items-center justify-center ${
             receiptGateOn ? 'bg-amber-100' : 'bg-primary/10'
@@ -4692,9 +4760,9 @@ export const AdminHome: React.FC = () => {
     {/* ── Receipt Preview Modal ── */}
     {receiptModal && (
       <div className="fixed inset-0 z-50 bg-black/40 flex items-end justify-center"
-        onClick={() => setReceiptModal(null)}>
+        onPointerDown={(e) => { e.preventDefault(); setReceiptModal(null); }}>
         <div className="w-full max-w-sm max-h-[calc(100dvh-5rem)] overflow-y-auto no-scrollbar bg-white rounded-t-3xl p-6 pb-10 shadow-2xl animate-slide-up"
-          onClick={e => e.stopPropagation()}>
+          onPointerDown={e => e.stopPropagation()}>
           <div className="w-10 h-1 bg-slate-200 rounded-full mx-auto mb-5" />
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-sm font-black text-slate-800">Receipt</h3>
@@ -4708,16 +4776,60 @@ export const AdminHome: React.FC = () => {
       </div>
     )}
 
+    {/* ── Cancel Booking Confirmation Modal ── */}
+    {cancelModalBooking && (() => {
+      const b = cancelModalBooking;
+      const unpaid = b.status === 'ordered';
+      const fullyPaid = (b.payment_mode !== 'deposit' && !unpaid) || (b.payment_mode === 'deposit' && b.balance_paid);
+      const total = b.payment_mode === 'deposit' && b.balance_paid ? b.cost + b.balance_due : b.cost;
+      return (
+        <div className="fixed inset-0 z-50 bg-black/40 flex items-end justify-center"
+          onPointerDown={(e) => { e.preventDefault(); if (!cancellingBooking) setCancelModalBooking(null); }}>
+          <div className="w-full max-w-sm max-h-[calc(100dvh-3rem)] overflow-y-auto no-scrollbar bg-white rounded-t-3xl p-6 pb-10 shadow-2xl animate-slide-up"
+            onPointerDown={e => e.stopPropagation()}>
+            <div className="w-10 h-1 bg-slate-200 rounded-full mx-auto mb-5" />
+            <div className={`w-10 h-10 rounded-2xl mx-auto mb-3 flex items-center justify-center ${
+              unpaid ? 'bg-slate-100' : 'bg-amber-100'
+            }`}>
+              <Ban className={`w-5 h-5 ${unpaid ? 'text-slate-500' : 'text-amber-600'}`} />
+            </div>
+            <h3 className="text-sm font-black text-slate-800 text-center mb-1">
+              Cancel {b.reference}?
+            </h3>
+            <p className="text-xs text-slate-400 font-semibold text-center mb-6">
+              {unpaid
+                ? 'Nothing has been paid yet, so there\'s nothing to refund.'
+                : fullyPaid
+                  ? `This booking was paid in full (RM${total.toFixed(2)}). Cancelling does NOT refund the customer automatically — you'll need to do that yourself.`
+                  : 'The RM25 deposit has already been paid. Cancelling forfeits it — no refund is processed automatically.'}
+            </p>
+            <div className="flex gap-3">
+              <button onClick={() => setCancelModalBooking(null)} disabled={cancellingBooking}
+                className="flex-1 bg-slate-100 text-slate-600 font-semibold text-xs py-3 rounded-2xl transition active:scale-95 disabled:opacity-50">
+                No, keep it
+              </button>
+              <button onClick={handleCancelJubahBooking} disabled={cancellingBooking}
+                className="flex-1 bg-danger font-semibold text-xs py-3 rounded-2xl transition active:scale-95 text-white disabled:opacity-50">
+                {cancellingBooking
+                  ? <span className="w-4 h-4 rounded-full border-2 border-white/40 border-t-white animate-spin mx-auto" />
+                  : 'Yes, cancel'}
+              </button>
+            </div>
+          </div>
+        </div>
+      );
+    })()}
+
 
     {/* ── Invite Confirmation Modal ── */}
     {showInviteConfirm && (
       <div
         className="fixed inset-0 z-50 bg-black/40 flex items-end justify-center"
-        onClick={() => setShowInviteConfirm(false)}
+        onPointerDown={(e) => { e.preventDefault(); setShowInviteConfirm(false); }}
       >
         <div
           className="w-full max-w-sm max-h-[calc(100dvh-5rem)] overflow-y-auto no-scrollbar bg-white rounded-t-3xl p-6 pb-10 shadow-2xl animate-slide-up"
-          onClick={e => e.stopPropagation()}
+          onPointerDown={e => e.stopPropagation()}
         >
           {/* Handle bar */}
           <div className="w-10 h-1 bg-slate-200 rounded-full mx-auto mb-5" />
