@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { ChevronDown, X, Check } from 'lucide-react';
 import { useApp } from '../context/AppContext';
-import { useTapVsScroll } from '../lib/useTapVsScroll';
 
 export interface DropdownOption<T extends string> {
   value: T;
@@ -29,7 +28,6 @@ export function Dropdown<T extends string>({
   const [open, setOpen] = useState(false);
   const selected = options.find(o => o.value === value);
   const { setSheetOpen } = useApp();
-  const { onPointerDown: onRowPointerDown, onPointerUp: onRowPointerUp } = useTapVsScroll();
 
   // Report to AppContext whenever this sheet is open, so BottomNav hides
   // itself — otherwise it can render on top of this fixed-position sheet
@@ -82,12 +80,20 @@ export function Dropdown<T extends string>({
               className="flex-1 min-h-0 overflow-y-auto no-scrollbar px-5 flex flex-col gap-1.5"
               style={{ paddingBottom: 'calc(1.5rem + env(safe-area-inset-bottom))' }}
             >
+              {/* Deliberately plain onClick, not onPointerDown — these rows sit
+                  inside a scrollable list, so they need native tap-vs-scroll
+                  handling (which onClick already gets for free: browsers
+                  don't synthesize a click after a touch resolves to a scroll).
+                  onPointerDown+preventDefault broke scrolling; a manual
+                  pointerdown/pointerup tap tracker still let a ghost click
+                  through to whatever sat behind the sheet on close. Plain
+                  onClick has neither problem — it's the standard, reliable
+                  behavior every mobile browser already implements. */}
               {options.map(o => (
                 <button
                   key={o.value}
                   type="button"
-                  onPointerDown={onRowPointerDown}
-                  onPointerUp={e => onRowPointerUp(e, () => { onChange(o.value); setOpen(false); })}
+                  onClick={() => { onChange(o.value); setOpen(false); }}
                   className={`w-full flex items-center justify-between gap-2 px-4 py-3 rounded-2xl border text-xs font-semibold text-left transition-transform active:scale-[0.99] ${
                     o.value === value ? 'border-slate-900 text-slate-900' : 'border-slate-100 text-slate-600'
                   }`}

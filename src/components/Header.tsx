@@ -2,7 +2,6 @@
 import { useApp } from '../context/AppContext';
 import { Bell, ChevronLeft, ShieldCheck, Car, Bike, MoreHorizontal, Eye, ChevronDown, X, MapPin, User, Pencil } from 'lucide-react';
 import { WaBtn } from '../lib/whatsapp';
-import { useTapVsScroll } from '../lib/useTapVsScroll';
 
 const UNI_CAMPUSES: Record<string, string[]> = {
   'UMPSA': ['Pekan', 'Gambang'],
@@ -48,11 +47,6 @@ export const Header: React.FC = () => {
   const [showProfilePreview, setShowProfilePreview] = useState(false);
   const [showMyCampusSheet, setShowMyCampusSheet] = useState(false);
   const unreadCount = notifications.filter(n => !n.isRead).length;
-  // Two separate campus lists (admin preview picker, customer's own) — each
-  // needs its own tap-vs-scroll tracker since a pointerdown on one has
-  // nothing to do with a pointerup on the other.
-  const previewCampusTap = useTapVsScroll();
-  const myCampusTap      = useTapVsScroll();
 
   if (currentPage === 'splash' || currentPage === 'login' || currentPage === 'register' || currentPage === 'forgot-password' || currentPage === 'reset-password' || currentPage === 'profile') {
     return null;
@@ -235,8 +229,7 @@ export const Header: React.FC = () => {
                     return (
                       <button
                         key={campus}
-                        onPointerDown={previewCampusTap.onPointerDown}
-                        onPointerUp={e => previewCampusTap.onPointerUp(e, () => selectCampus(campus))}
+                        onClick={() => selectCampus(campus)}
                         className={`w-full flex items-center justify-between px-4 py-4 border rounded-2xl bg-white active:bg-slate-50 active:scale-[0.99] transition-transform ${
                           selected ? 'border-slate-900' : 'border-slate-100'
                         }`}
@@ -443,8 +436,7 @@ export const Header: React.FC = () => {
                 return (
                   <button
                     key={campus}
-                    onPointerDown={myCampusTap.onPointerDown}
-                    onPointerUp={e => myCampusTap.onPointerUp(e, () => { updateProfile({ campus }); setShowMyCampusSheet(false); })}
+                    onClick={() => { updateProfile({ campus }); setShowMyCampusSheet(false); }}
                     className={`w-full flex items-center justify-between px-4 py-4 border rounded-2xl bg-white active:bg-slate-50 active:scale-[0.99] transition-transform ${
                       selected ? 'border-slate-900' : 'border-slate-100'
                     }`}
