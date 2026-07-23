@@ -259,7 +259,8 @@ export const Activity: React.FC = () => {
 
   // BottomNav hides itself while any sheet is open — same convention as MyOrders/DriverHome.
   useEffect(() => {
-    setSheetOpen(!!activeItem);
+    if (!activeItem) return;
+    setSheetOpen(true);
     return () => setSheetOpen(false);
   }, [activeItem, setSheetOpen]);
 

@@ -152,15 +152,23 @@ export const Jubah: React.FC = () => {
     setDraftLine1(addressLine1); setDraftLine2(addressLine2);
     setDraftPostal(addressPostal); setDraftCity(addressCity); setDraftState(addressState);
     setShowAddressSheet(true);
-    setSheetOpen(true);
   };
   const saveAddress = () => {
     setAddressLine1(draftLine1.trim()); setAddressLine2(draftLine2.trim());
     setAddressPostal(draftPostal.trim()); setAddressCity(draftCity.trim()); setAddressState(draftState);
     setShowAddressSheet(false);
-    setSheetOpen(false);
   };
-  const closeAddressSheet = () => { setShowAddressSheet(false); setSheetOpen(false); };
+  const closeAddressSheet = () => { setShowAddressSheet(false); };
+
+  // Report to AppContext whenever a sheet here is open, so BottomNav hides
+  // itself. Driven by state (not called inline at each open/close site) so
+  // it stays paired 1:1 even if the sheet unmounts some other way.
+  useEffect(() => {
+    const anyOpen = showAddressSheet || riderProfileOpen;
+    if (!anyOpen) return;
+    setSheetOpen(true);
+    return () => setSheetOpen(false);
+  }, [showAddressSheet, riderProfileOpen, setSheetOpen]);
 
   // Silently restore a saved draft on mount — same behaviour as returning
   // to an unsubmitted Google Form: no extra prompt, fields just reappear.
@@ -1015,7 +1023,7 @@ export const Jubah: React.FC = () => {
               <button
                 type="button"
                 disabled={!selectedRiderId}
-                onPointerDown={e => { e.preventDefault(); setRiderProfileOpen(true); setSheetOpen(true); }}
+                onPointerDown={e => { e.preventDefault(); setRiderProfileOpen(true); }}
                 className={`w-10 h-10 flex items-center justify-center rounded-xl border shrink-0 transition-transform active:scale-90 ${
                   selectedRiderId
                     ? 'bg-white border-slate-100 text-slate-500'
@@ -1455,7 +1463,7 @@ export const Jubah: React.FC = () => {
     {riderProfileOpen && (() => {
       const r = riders.find(rd => rd.id === selectedRiderId);
       if (!r) return null;
-      const close = () => { setRiderProfileOpen(false); setSheetOpen(false); };
+      const close = () => setRiderProfileOpen(false);
       return (
         <RepresentativeSheet
           name={r.name}

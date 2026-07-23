@@ -61,8 +61,17 @@ export const JubahLanding: React.FC<Props> = ({ onProceed }) => {
     setPendingBooking(null);
   };
 
-  const openRider  = (r: RiderDir) => { setSelectedRider(r); setSheetOpen(true); };
-  const closeRider = ()            => { setSelectedRider(null); setSheetOpen(false); };
+  const openRider  = (r: RiderDir) => setSelectedRider(r);
+  const closeRider = ()            => setSelectedRider(null);
+
+  // Report to AppContext whenever the rider profile sheet is open, so
+  // BottomNav hides itself — driven by state, not called inline at each
+  // open/close site, so it stays paired 1:1 regardless of how it closes.
+  useEffect(() => {
+    if (!selectedRider) return;
+    setSheetOpen(true);
+    return () => setSheetOpen(false);
+  }, [selectedRider, setSheetOpen]);
 
   // Campus list per university key — matches what admin uses in jubah_rider_assignments
   const CAMPUS_LIST: Record<string, string[]> = {

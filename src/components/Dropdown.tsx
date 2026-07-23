@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { ChevronDown, X, Check } from 'lucide-react';
 import { useApp } from '../context/AppContext';
+import { useTapVsScroll } from '../lib/useTapVsScroll';
 
 export interface DropdownOption<T extends string> {
   value: T;
@@ -28,13 +29,15 @@ export function Dropdown<T extends string>({
   const [open, setOpen] = useState(false);
   const selected = options.find(o => o.value === value);
   const { setSheetOpen } = useApp();
+  const { onPointerDown: onRowPointerDown, onPointerUp: onRowPointerUp } = useTapVsScroll();
 
   // Report to AppContext whenever this sheet is open, so BottomNav hides
   // itself — otherwise it can render on top of this fixed-position sheet
   // on some Android browsers regardless of z-index (see .page-transition
   // comment in index.css for the same underlying stacking issue).
   useEffect(() => {
-    setSheetOpen(open);
+    if (!open) return;
+    setSheetOpen(true);
     return () => setSheetOpen(false);
   }, [open, setSheetOpen]);
 
@@ -83,7 +86,8 @@ export function Dropdown<T extends string>({
                 <button
                   key={o.value}
                   type="button"
-                  onPointerDown={(e) => { e.preventDefault(); onChange(o.value); setOpen(false); }}
+                  onPointerDown={onRowPointerDown}
+                  onPointerUp={e => onRowPointerUp(e, () => { onChange(o.value); setOpen(false); })}
                   className={`w-full flex items-center justify-between gap-2 px-4 py-3 rounded-2xl border text-xs font-semibold text-left transition-transform active:scale-[0.99] ${
                     o.value === value ? 'border-slate-900 text-slate-900' : 'border-slate-100 text-slate-600'
                   }`}

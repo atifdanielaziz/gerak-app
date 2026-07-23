@@ -168,7 +168,8 @@ export const MyOrders: React.FC = () => {
 
   // Report to AppContext whenever this sheet is open, so BottomNav hides itself.
   useEffect(() => {
-    setSheetOpen(!!sheetOrderId);
+    if (!sheetOrderId) return;
+    setSheetOpen(true);
     return () => setSheetOpen(false);
   }, [sheetOrderId, setSheetOpen]);
   const [cancellingId, setCancellingId] = useState<string | null>(null);

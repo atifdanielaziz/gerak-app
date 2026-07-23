@@ -1044,7 +1044,8 @@ export const AdminHome: React.FC = () => {
   // so BottomNav can hide itself and never overlap sheet content.
   useEffect(() => {
     const anyOpen = !!sheetUser || !!jubahSheetRider || !!pendingAction || showGateMasterConfirm || showInviteConfirm || !!receiptModal;
-    setSheetOpen(anyOpen);
+    if (!anyOpen) return;
+    setSheetOpen(true);
     return () => setSheetOpen(false);
   }, [sheetUser, jubahSheetRider, pendingAction, showGateMasterConfirm, showInviteConfirm, receiptModal, setSheetOpen]);
 

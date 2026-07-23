@@ -152,7 +152,8 @@ export const DriverHome: React.FC = () => {
   // Report to AppContext whenever a sheet here is open, so BottomNav hides itself.
   useEffect(() => {
     const anyOpen = !!sheetOrder || !!rentalReceiptBk;
-    setSheetOpen(anyOpen);
+    if (!anyOpen) return;
+    setSheetOpen(true);
     return () => setSheetOpen(false);
   }, [sheetOrder, rentalReceiptBk, setSheetOpen]);
 

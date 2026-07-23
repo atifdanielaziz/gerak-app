@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
+import React, { createContext, useContext, useState, useEffect, useRef, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
 import { INACTIVITY_LIMIT_MS, isSessionExpired, touchActivity, setSessionExpiredMessage } from '../lib/idleSession';
 
@@ -247,7 +247,24 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   // Shared "is any bottom sheet/modal open" flag — BottomNav hides itself
   // while true, sidestepping any device-specific stacking-context quirks
   // where a fixed-position sheet might not reliably paint above it.
-  const [isSheetOpen, setSheetOpen] = useState(false);
+  //
+  // Backed by a count, not a plain boolean, because sheets can nest (e.g. a
+  // <Dropdown> rendered inside an already-open sheet) — a boolean would let
+  // the inner one's "close" call clobber the outer one's "open" call. Every
+  // caller MUST report through the guarded-effect pattern so opens/closes
+  // stay paired 1:1:
+  //   useEffect(() => {
+  //     if (!condition) return;      // do nothing while never open
+  //     setSheetOpen(true);
+  //     return () => setSheetOpen(false);
+  //   }, [condition, setSheetOpen]);
+  // Never call setSheetOpen(false) without a prior matching setSheetOpen(true)
+  // from that same effect/handler pair — an unpaired call desyncs the count.
+  const [openSheetCount, setOpenSheetCount] = useState(0);
+  const isSheetOpen = openSheetCount > 0;
+  const setSheetOpen = useCallback((open: boolean) => {
+    setOpenSheetCount(c => Math.max(0, c + (open ? 1 : -1)));
+  }, []);
 
   // One-shot "open straight into the edit sub-page" signal for Profile.tsx,
   // set by Header.tsx right before navigating there. A ref (not state) since

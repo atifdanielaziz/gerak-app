@@ -9,6 +9,7 @@ import {
   Info, CheckCircle2, RotateCcw, Users, Clock, CalendarDays, Phone, ClipboardList, X,
 } from 'lucide-react';
 import { submitRideToSheets } from '../lib/sheetsService';
+import { useTapVsScroll } from '../lib/useTapVsScroll';
 
 // ─── Route data ───────────────────────────────────────────────────────────────
 
@@ -106,6 +107,7 @@ export const Transport: React.FC = () => {
   const [showFromDropdown, setShowFromDropdown] = useState(false);
   const fromDropdownRef = useRef<HTMLDivElement>(null);
   const routeListRef    = useRef<HTMLDivElement>(null);
+  const { onPointerDown: onRowPointerDown, onPointerUp: onRowPointerUp } = useTapVsScroll();
 
   useEffect(() => {
     const handler = (e: MouseEvent) => {
@@ -515,13 +517,13 @@ export const Transport: React.FC = () => {
                     <button
                       key={from}
                       type="button"
-                      onPointerDown={e => {
-                        e.preventDefault();
+                      onPointerDown={onRowPointerDown}
+                      onPointerUp={e => onRowPointerUp(e, () => {
                         setSelectedFrom(from);
                         setSelectedRoute(null);
                         setShowRouteList(true);
                         setShowFromDropdown(false);
-                      }}
+                      })}
                       className={`w-full text-left px-4 py-3 text-sm font-normal transition ${
                         i < fromOptions.length - 1 ? 'border-b border-slate-50' : ''
                       } ${
@@ -551,7 +553,6 @@ export const Transport: React.FC = () => {
               className="w-full flex items-center justify-between p-3 rounded-2xl border border-slate-900 bg-white text-left transition active:bg-slate-50 active:scale-[0.99]"
             >
               <div className="flex items-center gap-3">
-                <span className="text-xl">{selectedRoute.emoji}</span>
                 <div>
                   <p className="text-xs font-semibold text-slate-800 leading-tight">
                     {selectedRoute.from} → {selectedRoute.to}
@@ -575,11 +576,11 @@ export const Transport: React.FC = () => {
                   <button
                     key={i}
                     type="button"
-                    onPointerDown={e => {
-                      e.preventDefault();
+                    onPointerDown={onRowPointerDown}
+                    onPointerUp={e => onRowPointerUp(e, () => {
                       setSelectedRoute(isSelected ? null : route);
                       if (!isSelected) setShowRouteList(false);
-                    }}
+                    })}
                     className={`w-full flex items-center justify-between p-3 rounded-2xl border bg-white transition-transform active:scale-[0.99] active:bg-slate-50 text-left ${
                       isSelected
                         ? 'border-slate-900'
@@ -587,7 +588,6 @@ export const Transport: React.FC = () => {
                     }`}
                   >
                     <div className="flex items-center gap-3">
-                      <span className="text-xl">{route.emoji}</span>
                       <div>
                         <p className="text-xs font-semibold text-slate-800 leading-tight">
                           {route.from} → {route.to}
