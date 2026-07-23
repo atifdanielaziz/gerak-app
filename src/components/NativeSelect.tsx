@@ -15,15 +15,15 @@ interface NativeSelectProps<T extends string> {
   disabled?: boolean;
 }
 
-// Expands inline, directly below the field — not a full-screen modal sheet.
-// Every bug chased tonight (sheet flashing shut on open, ghost clicks
-// landing on page content behind the sheet once it closed, tap-vs-scroll
-// conflicts) came from the same root cause: a backdrop overlay covering
-// other tappable content, with the browser's touch-to-click translation
-// occasionally misfiring across that boundary. An inline list has nothing
-// underneath it to ever misfire onto, so that whole class of bug can't
-// happen here by construction — while still keeping the app's own card-row
-// styling instead of falling back to the OS's plain <select> picker.
+// Floats directly below the field (position: absolute, anchored to it) —
+// not a full-screen modal sheet, and not inline (which pushed the rest of
+// the page down while open). Every bug chased tonight came from the same
+// root cause: a fixed, full-screen backdrop covering the ENTIRE page, so
+// closing it could reveal distant, unrelated content for a stray click to
+// land on. This only ever overlaps whatever's immediately nearby, and
+// there's still no backdrop element at all — outside taps close it via a
+// plain pointerdown listener scoped to this component's own ref, not a
+// click-catching div sitting over other content.
 export function NativeSelect<T extends string>({
   value, options, onChange, placeholder = 'Select...', disabled,
 }: NativeSelectProps<T>) {
@@ -41,7 +41,7 @@ export function NativeSelect<T extends string>({
   }, [open]);
 
   return (
-    <div ref={rootRef} className="w-full">
+    <div ref={rootRef} className="relative w-full">
       <button
         type="button"
         disabled={disabled}
@@ -55,7 +55,7 @@ export function NativeSelect<T extends string>({
       </button>
 
       {open && (
-        <div className="mt-1.5 max-h-64 overflow-y-auto no-scrollbar flex flex-col gap-1.5 border border-slate-100 rounded-2xl p-2 bg-white shadow-lg">
+        <div className="absolute left-0 right-0 top-full z-20 mt-1.5 max-h-64 overflow-y-auto no-scrollbar flex flex-col gap-1.5 border border-slate-100 rounded-2xl p-2 bg-white shadow-lg">
           {options.map(o => (
             <button
               key={o.value}
