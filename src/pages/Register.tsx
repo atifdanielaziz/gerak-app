@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
 import { supabase } from '../lib/supabase';
 import { ShieldAlert, User, Mail, Lock, Eye, EyeOff, Phone, ArrowRight, MapPin, IdCard, Car, X } from 'lucide-react';
-import { Dropdown } from '../components/Dropdown';
+import { NativeSelect } from '../components/NativeSelect';
 
 type InviteStatus = null | 'checking' | { isDriver: boolean; campus: string; role: string };
 
@@ -118,7 +118,7 @@ export const Register: React.FC = () => {
           {/* University */}
           <div className="flex flex-col gap-1">
             <label className="text-xs font-semibold text-slate-400 pl-1">University</label>
-            <Dropdown
+            <NativeSelect
               value={university}
               onChange={u => { setUniversity(u); setCampus(''); }}
               options={[{ value: 'Universiti Malaysia Pahang Al-Sultan Abdullah', label: 'Universiti Malaysia Pahang Al-Sultan Abdullah (UMPSA)' }]}
@@ -141,7 +141,7 @@ export const Register: React.FC = () => {
             ) : (
               <div className="flex flex-col gap-1">
                 <label className="text-xs font-semibold text-slate-400 pl-1">Campus</label>
-                <Dropdown
+                <NativeSelect
                   value={campus}
                   onChange={setCampus}
                   options={[{ value: 'Gambang', label: 'Gambang' }, { value: 'Pekan', label: 'Pekan' }]}

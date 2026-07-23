@@ -10,7 +10,7 @@ import type { PDFPage } from 'pdf-lib';
 import { FloatingMessage } from '../components/FloatingMessage';
 import { RepresentativeSheet } from '../components/RepresentativeSheet';
 import { ReceiptCard } from '../components/Receipt';
-import { Dropdown } from '../components/Dropdown';
+import { NativeSelect } from '../components/NativeSelect';
 import { buildJubahReceiptRows } from '../lib/receiptRows';
 import { generateReceiptPdf } from '../lib/receiptPdf';
 import { copyToClipboard } from '../lib/clipboard';
@@ -829,7 +829,7 @@ export const Jubah: React.FC = () => {
               <label className="text-xs font-semibold text-slate-400">
                 Campus <span className="text-danger">*</span>
               </label>
-              <Dropdown
+              <NativeSelect
                 value={university}
                 onChange={u => { setUniversity(u); setFaculty(''); }}
                 options={UNIVERSITIES.map(u => ({ value: u, label: u.includes('Pekan') ? 'UMPSA Pekan' : 'UMPSA Gambang' }))}
@@ -843,7 +843,7 @@ export const Jubah: React.FC = () => {
               <label className="text-xs font-semibold text-slate-400">
                 Faculty <span className="text-danger">*</span>
               </label>
-              <Dropdown
+              <NativeSelect
                 value={faculty}
                 onChange={setFaculty}
                 options={(UNIVERSITY_FACULTIES[university] ?? []).map(f => ({ value: f, label: f }))}
@@ -1016,7 +1016,7 @@ export const Jubah: React.FC = () => {
             </h3>
             <div className="flex items-center gap-2">
               <div className="flex-1">
-                <Dropdown
+                <NativeSelect
                   value={selectedRiderId}
                   onChange={setSelectedRiderId}
                   options={riders.map(r => ({ value: r.id, label: r.name }))}
@@ -1397,7 +1397,7 @@ export const Jubah: React.FC = () => {
               {/* State — dropdown, not free text */}
               <div className="flex flex-col gap-1.5">
                 <label className="text-xs font-semibold text-slate-400">State</label>
-                <Dropdown
+                <NativeSelect
                   value={draftState}
                   onChange={setDraftState}
                   options={MALAYSIAN_STATES.map(s => ({ value: s, label: s }))}

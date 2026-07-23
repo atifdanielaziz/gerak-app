@@ -15,7 +15,7 @@ import { MonthDrumPicker, EarningsCard, computeEarnings, type EarningsRow } from
 import { getJubahDocSignedUrl } from '../lib/jubahDocs';
 import { copyToClipboard } from '../lib/clipboard';
 import { ReceiptCard } from '../components/Receipt';
-import { Dropdown } from '../components/Dropdown';
+import { NativeSelect } from '../components/NativeSelect';
 import { buildJubahReceiptRows, type ReceiptDoc } from '../lib/receiptRows';
 import { generateReceiptPdf } from '../lib/receiptPdf';
 import ReactCrop, { centerCrop, makeAspectCrop, type Crop, type PixelCrop } from 'react-image-crop';
@@ -494,7 +494,7 @@ const JubahRiderSheet: React.FC<{
               <div className="flex items-center gap-2">
                 {deleteMode && <Minus className="w-4 h-4 text-slate-200 shrink-0" />}
                 <div className="flex-1">
-                  <Dropdown
+                  <NativeSelect
                     value={method}
                     onChange={v => onMethodChange(v as 'pickup' | 'postage')}
                     options={[{ value: 'pickup', label: 'Self Pickup' }, { value: 'postage', label: 'Pickup & Postage' }]}
@@ -528,7 +528,7 @@ const JubahRiderSheet: React.FC<{
                 <span className="text-xs font-semibold text-indigo-400">
                   Method {secondary.length + 2}
                 </span>
-                <Dropdown
+                <NativeSelect
                   value={addMethod}
                   onChange={v => setAddMethod(v as 'pickup' | 'postage')}
                   options={[{ value: 'pickup', label: 'Self Pickup' }, { value: 'postage', label: 'Pickup & Postage' }]}
@@ -2717,7 +2717,7 @@ export const AdminHome: React.FC = () => {
                 </div>
                 <div className="flex-1 flex flex-col gap-1.5">
                   <label className="text-xs font-normal text-slate-400">CTA Page</label>
-                  <Dropdown
+                  <NativeSelect
                     value={bannerCtaPage}
                     onChange={setBannerCtaPage}
                     options={CTA_PAGES}
@@ -4064,7 +4064,7 @@ export const AdminHome: React.FC = () => {
                   <GraduationCap className="w-4 h-4" /> Jubah Pricing Matrix
                 </h3>
                 <div className="w-28 shrink-0">
-                  <Dropdown
+                  <NativeSelect
                     value={pricingUniversity}
                     onChange={setPricingUniversity}
                     options={JUBAH_PRICING_UNIVERSITIES.map(u => ({ value: u.key, label: u.label }))}
