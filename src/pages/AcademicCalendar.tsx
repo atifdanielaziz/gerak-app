@@ -210,17 +210,6 @@ const CFG: Record<EventType, { bar: string; bg: string; text: string; badge: str
   exam:         { bar: 'bg-red-500',     bg: 'bg-red-50 border-red-100',        text: 'text-red-700',     badge: 'bg-red-100 text-red-600',       icon: AlertCircle,   label: 'Examination'  },
 };
 
-// Calendar cell background (lighter for the grid)
-const CAL_BG: Record<EventType, string> = {
-  registration: 'bg-blue-100 text-blue-800',
-  orientation:  'bg-purple-100 text-purple-800',
-  lectures:     'bg-emerald-100 text-emerald-800',
-  break:        'bg-slate-200 text-slate-500',
-  study:        'bg-amber-100 text-amber-800',
-  exam:         'bg-red-500 text-white font-semibold',
-};
-
-
 // ── Build date → event map (full event, not just its type — the day detail
 // page needs the actual title too) ────────────────────────────────────────
 function buildDateMap(src: Semester[] = SEMESTERS): Map<string, CalEvent> {
@@ -322,6 +311,8 @@ export const AcademicCalendar: React.FC = () => {
     new Date(calMonth.year, calMonth.month, 1)
       .toLocaleDateString('en-MY', { month: 'long', year: 'numeric' });
 
+  // Padded to a multiple of 7 so the grid always divides into whole weeks —
+  // needed to size rows evenly via gridTemplateRows for the full-height layout.
   const calDays = (): (string | null)[] => {
     const { year, month } = calMonth;
     const firstDow = new Date(year, month, 1).getDay();
@@ -330,6 +321,7 @@ export const AcademicCalendar: React.FC = () => {
     for (let d = 1; d <= daysInMonth; d++) {
       cells.push(`${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`);
     }
+    while (cells.length % 7 !== 0) cells.push(null);
     return cells;
   };
 
@@ -404,82 +396,86 @@ export const AcademicCalendar: React.FC = () => {
     );
   }
 
+  const days = calDays();
+  const rows = days.length / 7;
+
   return (
-    <div className="flex flex-col h-full bg-white overflow-y-auto no-scrollbar pb-4">
+    <div className="flex flex-col h-full bg-white overflow-hidden">
 
-      {/* ── CALENDAR ── */}
-      <div className="bg-white border-b border-slate-100">
+      {/* Year label */}
+      <div className="px-4 pt-3 pb-1 flex items-center justify-between shrink-0">
+        <p className="text-sm font-bold text-slate-700">UMPSA Academic Calendar</p>
+        <span className="text-xs font-semibold text-primary bg-primary/10 px-2 py-0.5 rounded-full">
+          {calYear ?? '2026/2027'}
+        </span>
+      </div>
 
-        {/* Year label */}
-        <div className="px-4 pt-3 pb-1 flex items-center justify-between">
-          <p className="text-sm font-bold text-slate-700">UMPSA Academic Calendar</p>
-          <span className="text-xs font-semibold text-primary bg-primary/10 px-2 py-0.5 rounded-full">
-            {calYear ?? '2026/2027'}
-          </span>
-        </div>
+      {/* Month navigation */}
+      <div className="flex items-center justify-between px-4 pb-2 shrink-0">
+        <button onClick={prevMonth}
+          className="w-8 h-8 rounded-xl bg-slate-50 flex items-center justify-center text-slate-400 active:scale-90 transition">
+          <ChevronLeft className="w-4 h-4" />
+        </button>
+        <p className="text-sm font-semibold text-slate-700">{monthLabel()}</p>
+        <button onClick={nextMonth}
+          className="w-8 h-8 rounded-xl bg-slate-50 flex items-center justify-center text-slate-400 active:scale-90 transition">
+          <ChevronRight className="w-4 h-4" />
+        </button>
+      </div>
 
-        {/* Month navigation */}
-        <div className="flex items-center justify-between px-4 pb-2">
-          <button onClick={prevMonth}
-            className="w-8 h-8 rounded-xl bg-slate-50 flex items-center justify-center text-slate-400 active:scale-90 transition">
-            <ChevronLeft className="w-4 h-4" />
-          </button>
-          <p className="text-sm font-semibold text-slate-700">{monthLabel()}</p>
-          <button onClick={nextMonth}
-            className="w-8 h-8 rounded-xl bg-slate-50 flex items-center justify-center text-slate-400 active:scale-90 transition">
-            <ChevronRight className="w-4 h-4" />
-          </button>
-        </div>
+      {/* Day labels */}
+      <div className="grid grid-cols-7 px-3 mb-1 shrink-0">
+        {DAYS.map(d => (
+          <div key={d} className="text-center text-xs font-semibold text-slate-400">{d}</div>
+        ))}
+      </div>
 
-        {/* Day labels */}
-        <div className="grid grid-cols-7 px-3 mb-1">
-          {DAYS.map(d => (
-            <div key={d} className="text-center text-xs font-semibold text-slate-400">{d}</div>
-          ))}
-        </div>
+      {/* Date grid — fills all remaining space, each week row sized equally */}
+      <div
+        className="flex-1 min-h-0 grid grid-cols-7 px-3"
+        style={{ gridTemplateRows: `repeat(${rows}, 1fr)` }}
+      >
+        {days.map((dateStr, i) => {
+          if (!dateStr) return <div key={i} />;
+          const ev = dateMap.get(dateStr);
+          const holiday = holidayMap.get(dateStr);
+          const isToday   = dateStr === todayStr;
+          const hasDetail = !!ev || !!holiday;
 
-        {/* Date cells */}
-        <div className="grid grid-cols-7 gap-y-0.5 px-3 pb-3">
-          {calDays().map((dateStr, i) => {
-            if (!dateStr) return <div key={i} />;
-            const ev = dateMap.get(dateStr);
-            const holiday = holidayMap.get(dateStr);
-            const isToday   = dateStr === todayStr;
-            const cellCls   = ev ? CAL_BG[ev.type] : 'text-slate-600';
-            const hasDetail = !!ev || !!holiday;
-
-            return (
-              <div key={dateStr}
-                onPointerDown={hasDetail ? e => { e.preventDefault(); setSelectedDate(dateStr); } : undefined}
-                className={`aspect-square flex flex-col items-center justify-center rounded-xl text-xs font-normal relative mx-0.5 my-0.5 transition-transform ${cellCls} ${
-                  isToday ? 'ring-2 ring-offset-1 ring-primary' : ''
-                } ${hasDetail ? 'active:scale-90' : ''}`}>
+          return (
+            <div key={dateStr}
+              onPointerDown={hasDetail ? e => { e.preventDefault(); setSelectedDate(dateStr); } : undefined}
+              className={`flex flex-col items-center pt-1.5 gap-1.5 transition-transform ${hasDetail ? 'active:scale-95' : ''}`}>
+              <span className={`w-7 h-7 flex items-center justify-center rounded-full text-sm ${
+                isToday ? 'bg-primary text-white font-bold' : 'text-slate-700 font-normal'
+              }`}>
                 {parseInt(dateStr.split('-')[2])}
-                {holiday && ev?.type !== 'exam' && (
-                  <span className="absolute bottom-0.5 w-1 h-1 rounded-full bg-orange-400" />
-                )}
+              </span>
+              <div className="flex items-center gap-1 h-2.5">
+                {ev && <span className={`w-2.5 h-2.5 rounded-sm ${CFG[ev.type].bar}`} />}
+                {holiday && <span className="w-2.5 h-2.5 rounded-full bg-orange-400" />}
               </div>
-            );
-          })}
-        </div>
+            </div>
+          );
+        })}
+      </div>
 
-        {/* Legend */}
-        <div className="flex flex-wrap gap-x-3 gap-y-1 px-4 pb-3">
-          {(Object.keys(CFG) as EventType[]).map(t => (
-            <span key={t} className="flex items-center gap-1 text-xs font-normal text-slate-500">
-              <span className={`w-2.5 h-2.5 rounded-sm ${CFG[t].bar}`} />
-              {CFG[t].label}
-            </span>
-          ))}
-          <span className="flex items-center gap-1 text-xs font-bold text-slate-500">
-            <span className="w-2.5 h-2.5 rounded-full bg-orange-400" />
-            Holiday
+      {/* Legend */}
+      <div className="flex flex-wrap gap-x-3 gap-y-1.5 px-4 pt-3 pb-3 border-t border-slate-100 shrink-0">
+        {(Object.keys(CFG) as EventType[]).map(t => (
+          <span key={t} className="flex items-center gap-1.5 text-xs font-normal text-slate-500">
+            <span className={`w-2.5 h-2.5 rounded-sm ${CFG[t].bar}`} />
+            {CFG[t].label}
           </span>
-        </div>
+        ))}
+        <span className="flex items-center gap-1.5 text-xs font-bold text-slate-500">
+          <span className="w-2.5 h-2.5 rounded-full bg-orange-400" />
+          Holiday
+        </span>
       </div>
 
       {/* Semester tabs — jump the calendar to that semester's first month */}
-      <div className="flex gap-2 px-4 pt-3 pb-3 overflow-x-auto no-scrollbar">
+      <div className="flex gap-2 px-4 pb-3 overflow-x-auto no-scrollbar shrink-0">
         {semesters.map(s => (
           <button key={s.id} onPointerDown={e => { e.preventDefault(); jumpToSemester(s); }}
             className={`shrink-0 px-4 py-1.5 rounded-2xl text-xs font-semibold border transition-transform active:scale-95 ${
