@@ -277,10 +277,17 @@ export const Jubah: React.FC = () => {
       supabase.rpc('get_jubah_pricing').then(({ data }) => {
         if (data) {
           const map: PricingMap = {};
-          (data as { remark: string; payment_mode: string; price: number }[]).forEach(r => {
-            if (!map[r.remark]) map[r.remark] = {};
-            map[r.remark][r.payment_mode] = r.price;
-          });
+          // get_jubah_pricing returns every university's rows in one list
+          // (same remark+payment_mode repeated once per university) — must
+          // filter to this booking's own university before building the
+          // map, otherwise whichever university's row happens to come last
+          // silently overwrites the one that's actually relevant here.
+          (data as { remark: string; payment_mode: string; price: number; university: string }[])
+            .filter(r => r.university === landingUniversity)
+            .forEach(r => {
+              if (!map[r.remark]) map[r.remark] = {};
+              map[r.remark][r.payment_mode] = r.price;
+            });
           setPricing(map);
         }
       });
@@ -293,7 +300,7 @@ export const Jubah: React.FC = () => {
       .subscribe();
 
     return () => { supabase.removeChannel(channel); };
-  }, []);
+  }, [landingUniversity]);
 
   const DEPOSIT_AMOUNT    = 25;
   const pickupPrice       = pricing[remark]?.['pickup']  ?? 70;
