@@ -227,23 +227,27 @@ export const Jubah: React.FC = () => {
   );
 
   // Registers with AppContext's goBack() so leaving the actual form (header
-  // back button, or hardware/gesture back) prompts instead of silently
-  // losing input. Scoped to landingUniversity being set — i.e. past the
-  // university picker and on the real form — so the picker screen itself
-  // still goes back with no prompt.
+  // back button, hardware back, or the edge-swipe gesture — all three call
+  // the exact same shared goBack()) is a two-step chain instead of jumping
+  // straight past the university picker to wherever the user came from:
+  // Form -> (back) -> University picker -> (back) -> real page history.
+  // Only the FIRST back-tap (landingUniversity still set) is intercepted;
+  // once it resets to '' the guard releases, so the next back-tap falls
+  // through to normal goBack() and actually leaves Jubah.
   //
-  // Once booked (jubahBooking truthy), repurposed for a two-step chain:
-  // Tracking -> (back) -> Landing peek -> (back) -> Dashboard. Only the
-  // FIRST back-tap (still on Tracking) is intercepted; once peekLanding is
-  // true the guard releases, so the next back-tap falls through to normal
-  // goBack() and actually leaves Jubah via real page history.
+  // If there's unsaved input, the first back-tap shows the discard-confirm
+  // dialog instead (unchanged) — "Discard"/"Save Draft" still leave Jubah
+  // directly, since the user already explicitly chose to leave there.
+  //
+  // Once booked (jubahBooking truthy), repurposed for the same two-step
+  // chain: Tracking -> (back) -> Landing peek -> (back) -> Dashboard.
   useEffect(() => {
     if (jubahBooking) {
       setLeaveGuard(peekLanding ? null : () => () => setPeekLanding(true));
       return () => setLeaveGuard(null);
     }
     if (!landingUniversity) { setLeaveGuard(null); return; }
-    setLeaveGuard(() => (hasUnsavedInput ? () => setShowLeaveConfirm(true) : null));
+    setLeaveGuard(() => (hasUnsavedInput ? () => setShowLeaveConfirm(true) : () => setLandingUniversity('')));
     return () => setLeaveGuard(null);
   }, [hasUnsavedInput, jubahBooking, landingUniversity, peekLanding, setLeaveGuard]);
 

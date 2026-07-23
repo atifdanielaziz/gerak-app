@@ -502,12 +502,12 @@ export const Transport: React.FC = () => {
             <button
               type="button"
               onPointerDown={e => { e.preventDefault(); setShowFromDropdown(v => !v); }}
-              className="w-full flex items-center justify-between bg-white border border-slate-100 rounded-2xl px-4 py-3 text-sm font-semibold text-slate-700 transition-transform active:bg-slate-50 active:scale-[0.99]"
+              className="w-full flex items-center justify-between bg-white border border-slate-100 rounded-xl py-2.5 px-3 transition-transform active:bg-slate-50 active:scale-[0.99]"
             >
-              <span className={selectedFrom ? 'text-slate-800' : 'text-slate-400 font-normal'}>
+              <span className={`text-xs font-semibold ${selectedFrom ? 'text-slate-800' : 'text-slate-400 font-normal'}`}>
                 {selectedFrom || 'Select pickup location…'}
               </span>
-              <ChevronDown className={`w-4 h-4 text-slate-400 shrink-0 transition-transform ${showFromDropdown ? 'rotate-180' : ''}`} />
+              <ChevronDown className={`w-3.5 h-3.5 text-slate-400 shrink-0 transition-transform ${showFromDropdown ? 'rotate-180' : ''}`} />
             </button>
 
             {showFromDropdown && (
@@ -547,10 +547,9 @@ export const Transport: React.FC = () => {
             </p>
           ) : selectedRoute && !showRouteList ? (
             /* Collapsed: show selected route + change button */
-            <button
-              type="button"
+            <div
               onClick={() => setShowRouteList(true)}
-              className="w-full flex items-center justify-between p-3 rounded-2xl border border-slate-900 bg-white text-left transition active:bg-slate-50 active:scale-[0.99]"
+              className="w-full flex items-center justify-between py-2.5 px-3 rounded-2xl border border-slate-900 bg-white transition active:bg-slate-50 active:scale-[0.99] cursor-pointer"
             >
               <div className="flex items-center gap-3">
                 <div>
@@ -562,11 +561,21 @@ export const Transport: React.FC = () => {
                   )}
                 </div>
               </div>
-              <div className="text-right shrink-0 ml-2">
-                <span className="text-xs font-black text-slate-800">RM{selectedRoute.fare}</span>
-                <span className="block text-[9px] font-normal text-slate-400 mt-0.5">Tap to change</span>
+              <div className="flex items-center gap-2 shrink-0 ml-2">
+                <div className="text-right">
+                  <span className="text-xs font-black text-slate-800">RM{selectedRoute.fare}</span>
+                  <span className="block text-[9px] font-normal text-slate-400 mt-0.5">Tap to change</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={e => { e.stopPropagation(); setSelectedRoute(null); }}
+                  className="w-6 h-6 flex items-center justify-center rounded-full bg-slate-100 text-slate-400 active:scale-90 transition shrink-0"
+                  aria-label="Cancel selection"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
               </div>
-            </button>
+            </div>
           ) : (
             /* Expanded: full scrollable list */
             <div ref={routeListRef} className="flex flex-col gap-2 max-h-[272px] overflow-y-auto no-scrollbar pr-0.5">
@@ -581,7 +590,7 @@ export const Transport: React.FC = () => {
                       setSelectedRoute(isSelected ? null : route);
                       if (!isSelected) setShowRouteList(false);
                     })}
-                    className={`w-full flex items-center justify-between p-3 rounded-2xl border bg-white transition-transform active:scale-[0.99] active:bg-slate-50 text-left ${
+                    className={`w-full flex items-center justify-between py-2.5 px-3 rounded-2xl border bg-white transition-transform active:scale-[0.99] active:bg-slate-50 text-left ${
                       isSelected
                         ? 'border-slate-900'
                         : 'border-slate-100 hover:border-slate-200'
