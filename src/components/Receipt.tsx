@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { FileDown, Copy, Check } from 'lucide-react';
+import { FileDown, Copy, Check, X } from 'lucide-react';
 import { WaBtn } from '../lib/whatsapp';
 import type { ReceiptDoc, ReceiptMeta, ReceiptRow } from '../lib/receiptRows';
 
@@ -94,21 +94,29 @@ export const ReceiptSheet: React.FC<{
     onClick={onClose}
   >
     <div
-      className="w-full max-w-[480px] max-h-[calc(100dvh-5rem)] overflow-y-auto no-scrollbar bg-white rounded-t-3xl shadow-2xl animate-slide-up"
+      className="w-full max-w-[480px] max-h-[calc(100dvh-5rem)] bg-white rounded-t-3xl shadow-2xl animate-slide-up flex flex-col"
       onClick={e => e.stopPropagation()}
     >
       {/* Drag handle */}
-      <div className="flex justify-center pt-3 pb-1">
+      <div className="flex justify-center pt-3 pb-1 shrink-0">
         <div className="w-10 h-1 bg-slate-200 rounded-full" />
       </div>
 
-      <div className="px-5 pt-2 pb-4 flex flex-col gap-4">
+      {/* Header row */}
+      <div className="flex items-center justify-between px-5 pt-2 pb-4 shrink-0">
+        <p className="text-xs font-extrabold text-slate-400 uppercase tracking-widest">Receipt</p>
+        <button onClick={onClose}
+          className="w-7 h-7 flex items-center justify-center rounded-full bg-slate-100 text-slate-500 active:scale-90 transition">
+          <X className="w-4 h-4" />
+        </button>
+      </div>
+
+      <div
+        className="flex-1 min-h-0 overflow-y-auto no-scrollbar px-5 flex flex-col gap-4"
+        style={{ paddingBottom: 'calc(6.5rem + env(safe-area-inset-bottom))' }}
+      >
         <ReceiptHeader meta={doc} />
         <ReceiptCard doc={doc} onSavePdf={onSavePdf}>{children}</ReceiptCard>
-        <button onClick={onClose}
-          className="w-full py-3 rounded-2xl bg-slate-100 text-slate-500 font-extrabold text-xs active:scale-95 transition">
-          Close
-        </button>
       </div>
     </div>
   </div>
