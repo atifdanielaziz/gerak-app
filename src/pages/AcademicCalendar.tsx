@@ -37,15 +37,43 @@ const PRIORITY: Record<EventType, number> = {
 // ── All public holidays / special dates ───────────────────────────────────
 interface Holiday { date: string; label: string; }
 
+// Dates originally sourced from UMPSA's own academic calendar Remarks column
+// (institution-specific replacement-leave/make-up days included) are merged
+// with federal + Pahang state public holidays for 2026/2027 pulled from
+// github.com/Junhui20/malaysia-calendar-api (MIT-licensed, sourced from the
+// Federal Gazette/JAKIM/KPM) — added 2026-07-24 so months outside academic
+// term still show accurate national/state holidays, not just UMPSA's own.
+// Scoped to states: ["*"] (nationwide) or ["pahang"] only, since both UMPSA
+// campuses are in Pahang.
 const HOLIDAYS: Holiday[] = [
+  { date: '2026-01-01', label: "New Year's Day" },
+  { date: '2026-01-17', label: "Isra' Mi'raj" },
+  { date: '2026-02-01', label: 'Thaipusam' },
+  { date: '2026-02-17', label: 'Chinese New Year' },
+  { date: '2026-02-18', label: 'Chinese New Year (2nd Day)' },
+  { date: '2026-03-07', label: 'Revelation of the Quran' },
+  { date: '2026-03-20', label: 'Hari Raya Aidilfitri (Additional Public Holiday)' },
+  { date: '2026-03-21', label: 'Eid al-Fitr' },
+  { date: '2026-03-22', label: 'Eid al-Fitr (2nd Day)' },
+  { date: '2026-05-01', label: 'Labour Day' },
+  { date: '2026-05-22', label: 'Pahang Hol Day' },
+  { date: '2026-05-27', label: 'Eid al-Adha' },
+  { date: '2026-05-28', label: 'Eid al-Adha (2nd Day)' },
+  { date: '2026-05-31', label: 'Vesak Day' },
+  { date: '2026-06-01', label: 'Official Birthday of the Yang di-Pertuan Agong' },
+  { date: '2026-06-17', label: 'Islamic New Year' },
   { date: '2026-07-31', label: 'Birthday of KDPB Sultan Pahang' },
   { date: '2026-08-25', label: 'Maulidur Rasul' },
   { date: '2026-08-31', label: 'National Day' },
+  { date: '2026-09-16', label: 'Malaysia Day' },
   { date: '2026-11-08', label: 'Deepavali' },
   { date: '2026-11-09', label: 'Replacement Leave (Deepavali)' },
   { date: '2026-12-25', label: 'Christmas Day' },
   { date: '2027-01-01', label: 'New Year' },
+  { date: '2027-01-06', label: "Isra' Mi'raj" },
   { date: '2027-01-22', label: 'Thaipusam' },
+  { date: '2027-02-06', label: 'Chinese New Year' },
+  { date: '2027-02-07', label: 'Chinese New Year (2nd Day)' },
   { date: '2027-02-24', label: 'Nuzul Quran' },
   { date: '2027-03-10', label: 'Hari Raya Aidil Fitri 1448H' },
   { date: '2027-03-11', label: 'Hari Raya Aidil Fitri 1448H' },
@@ -60,6 +88,9 @@ const HOLIDAYS: Holiday[] = [
   { date: '2027-08-15', label: 'Maulidur Rasul' },
   { date: '2027-08-16', label: 'Replacement Leave (Maulidur Rasul)' },
   { date: '2027-08-31', label: 'National Day' },
+  { date: '2027-09-16', label: 'Malaysia Day' },
+  { date: '2027-10-28', label: 'Deepavali' },
+  { date: '2027-12-25', label: 'Christmas Day' },
 ];
 
 // ── Calendar data ─────────────────────────────────────────────────────────
@@ -355,7 +386,7 @@ export const AcademicCalendar: React.FC = () => {
                   isToday ? 'ring-2 ring-offset-1 ring-primary' : ''
                 } ${hasDetail ? 'active:scale-90' : ''}`}>
                 {parseInt(dateStr.split('-')[2])}
-                {holidayLabel && evType && evType !== 'exam' && (
+                {holidayLabel && evType !== 'exam' && (
                   <span className="absolute bottom-0.5 w-1 h-1 rounded-full bg-orange-400" />
                 )}
               </div>
