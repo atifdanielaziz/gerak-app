@@ -191,7 +191,8 @@ async function sendReceiptEmail(admin: ReturnType<typeof createClient>, booking:
   const paymentRows =
     stage === 'deposit'
       ? row('Deposit Paid', `RM${Number(booking.cost).toFixed(2)} (${today})`) +
-        row('Balance Due', `RM${Number(booking.balance_due).toFixed(2)}`)
+        row('Balance Due', `RM${Number(booking.balance_due).toFixed(2)}`) +
+        row('Total Due', `RM${(Number(booking.cost) + Number(booking.balance_due)).toFixed(2)}`, { bold: true, accent: true })
       : stage === 'balance'
         ? row('Deposit Paid', `RM${Number(booking.cost).toFixed(2)}`) +
           row('Balance Paid', `RM${Number(booking.balance_due).toFixed(2)} (${today})`) +
