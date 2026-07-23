@@ -21,6 +21,13 @@ export function useTapVsScroll() {
     start.current = null;
     if (!s) return;
     if (Math.abs(e.clientX - s.x) < MOVE_THRESHOLD && Math.abs(e.clientY - s.y) < MOVE_THRESHOLD) {
+      // A genuine tap, not a scroll release — suppress the browser's own
+      // synthesized click for this gesture. Without this, that click still
+      // fires afterward and hits whatever element is now at these same
+      // coordinates once onTap() has already changed the DOM (e.g. closed
+      // this sheet) — on Android that ghost click was landing on whatever
+      // page content sat behind the tapped row, triggering its onClick.
+      e.preventDefault();
       onTap();
     }
   };
