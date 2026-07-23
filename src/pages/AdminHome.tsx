@@ -8,7 +8,7 @@ import {
   FileImage, ShieldCheck, ShieldOff, ExternalLink, KeyRound,
   CalendarDays, Upload, Eye, Phone, ArrowLeftRight, Pencil, GraduationCap,
   ChevronLeft, Download, MoreVertical, Copy, Check, TrendingUp, Bike, Settings, Info, BadgeCheck,
-  Bell, User, Ban,
+  Bell, User, Ban, XCircle,
 } from 'lucide-react';
 import { WaBtn, WaIcon, toWa } from '../lib/whatsapp';
 import { MonthDrumPicker, EarningsCard, computeEarnings, type EarningsRow } from '../components/EarningsCard';
@@ -3633,9 +3633,17 @@ export const AdminHome: React.FC = () => {
                               </td>
                               <td className="py-2.5 pr-4 whitespace-nowrap">
                                 {(() => {
-                                  // Three states, not two: nothing paid yet (grey), deposit paid but
-                                  // balance still outstanding (blue — a real but partial confirmation,
-                                  // shouldn't look identical to "fully done"), and fully paid (green).
+                                  // Four states: cancelled (red X — distinct from "just unpaid", since
+                                  // a cancelled booking will never become paid), nothing paid yet (grey),
+                                  // deposit paid but balance still outstanding (blue — a real but partial
+                                  // confirmation, shouldn't look identical to "fully done"), fully paid (green).
+                                  if (b.status === 'cancelled') {
+                                    return (
+                                      <span title="Cancelled">
+                                        <XCircle className="w-4 h-4 text-red-500" />
+                                      </span>
+                                    );
+                                  }
                                   const depositOnly = b.payment_mode === 'deposit' && b.initial_paid && !b.balance_paid;
                                   const colorClass = isPaid ? 'text-emerald-500' : depositOnly ? 'text-blue-500' : 'text-slate-200';
                                   return (
