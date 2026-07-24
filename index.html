@@ -33,6 +33,10 @@
     <!-- Performance: preconnect to Google Fonts CDN -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <!-- Loaded as a <link>, not a CSS @import, so the browser fetches it in
+         parallel with the app bundle instead of after downloading and
+         parsing index.css first. -->
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" />
 
     <!-- Performance: preconnect to Supabase (API + auth + realtime) -->
     <link rel="preconnect" href="https://koyyautvmimuhjygqqfv.supabase.co" />
