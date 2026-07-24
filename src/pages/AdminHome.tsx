@@ -4364,13 +4364,13 @@ export const AdminHome: React.FC = () => {
                       </button>
                     )}
                   </div>
-                  <div className="w-full rounded-2xl overflow-hidden border border-slate-100 bg-slate-50">
+                  <div className="w-full h-56 rounded-2xl overflow-hidden border border-slate-100 bg-slate-50 flex items-center justify-center">
                     {bannerUrls[item.key] && !bannerImgError[item.key] ? (
                       <img
                         key={`${item.key}-${bannerRefreshKey[item.key] ?? 0}`}
                         src={bannerUrls[item.key]}
                         alt={`${item.label} banner`}
-                        className="w-full h-auto block"
+                        className="max-w-full max-h-full w-auto h-auto object-contain block"
                         onError={() => setBannerImgError(prev => ({ ...prev, [item.key]: true }))}
                       />
                     ) : (
