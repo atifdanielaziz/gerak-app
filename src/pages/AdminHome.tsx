@@ -3487,8 +3487,11 @@ export const AdminHome: React.FC = () => {
                     { label: 'New',        statuses: ['booked', 'paid'], color: 'bg-blue-500' },
                     { label: 'Processing', statuses: ['processing'],    color: 'bg-violet-500' },
                     { label: 'Collected',  statuses: ['collected'],     color: 'bg-amber-500' },
-                    { label: 'At Hub',     statuses: ['at_hub'],        color: 'bg-emerald-500' },
-                    { label: 'Delivered',  statuses: ['delivered'],     color: 'bg-emerald-600' },
+                    // 'at_hub' is postage mode's own terminal step (its
+                    // equivalent of 'delivered' for pickup/deposit) — folded
+                    // in here rather than its own row, so a completed
+                    // postage booking still counts toward this total.
+                    { label: 'Delivered',  statuses: ['delivered', 'at_hub'], color: 'bg-emerald-600' },
                   ]).map(row => {
                     const count = row.statuses.reduce((sum, s) => sum + (jubahStats.statusCounts[s] ?? 0), 0);
                     const pct = jubahStats.total > 0 ? Math.round((count / jubahStats.total) * 100) : 0;
