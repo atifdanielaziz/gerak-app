@@ -297,7 +297,16 @@ const SwipeBackGesture: React.FC<{ children: React.ReactNode }> = ({ children })
 
 const AppContent: React.FC = () => {
   const { currentPage, user, activeRole } = useApp();
-  const isAdminRoute = currentPage === 'admin-home';
+  // Admin, rider, and driver panels all break out of the phone-bezel mockup
+  // on a wide (desktop/laptop) viewport — customer-facing pages stay
+  // phone-first regardless of viewport width.
+  const isDesktopUnlockedRoute = currentPage === 'admin-home' || currentPage === 'rider-home' || currentPage === 'driver-home';
+  // Only admin has a sidebar that replaces Header/BottomNav's navigation on
+  // desktop — rider/driver have no such replacement yet, so hiding their
+  // only nav (BottomNav) would strand them with no way to reach
+  // Calendar/Activity/Profile. Their pages still get the wide bezel above,
+  // just with the normal chrome kept visible.
+  const hideChromeOnDesktop = currentPage === 'admin-home';
 
   const renderPage = () => {
     switch (currentPage) {
@@ -345,15 +354,15 @@ const AppContent: React.FC = () => {
   };
 
   return (
-    <div className={`mobile-container flex flex-col h-full bg-white select-none overscroll-x-none ${isAdminRoute ? 'admin-desktop' : ''}`}>
+    <div className={`mobile-container flex flex-col h-full bg-white select-none overscroll-x-none ${isDesktopUnlockedRoute ? 'desktop-unlocked' : ''}`}>
       <ConfirmModal />
-      <div className={isAdminRoute ? 'lg:hidden' : ''}><Header /></div>
+      <div className={hideChromeOnDesktop ? 'lg:hidden' : ''}><Header /></div>
       <div key={currentPage} className="flex-1 min-h-0 flex flex-col overflow-hidden page-transition bg-white">
         <Suspense fallback={<div className="flex-1 flex items-center justify-center bg-white"><span className="w-6 h-6 rounded-full border-2 border-primary border-t-transparent animate-spin" /></div>}>
           {renderPage()}
         </Suspense>
       </div>
-      <div className={isAdminRoute ? 'lg:hidden' : ''}><BottomNav /></div>
+      <div className={hideChromeOnDesktop ? 'lg:hidden' : ''}><BottomNav /></div>
     </div>
   );
 };

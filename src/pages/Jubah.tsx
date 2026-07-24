@@ -949,10 +949,10 @@ export const Jubah: React.FC = () => {
               <input type="radio" name="paymentMode" value="pickup" checked={paymentMode === 'pickup'} onChange={() => setPaymentMode('pickup')} className="mt-0.5 accent-slate-900 shrink-0" />
               <div>
                 <span className={`text-xs font-semibold block ${paymentMode === 'pickup' ? 'text-slate-900' : 'text-slate-700'}`}>
-                  Full Payment (RM{pickupPrice}) — Self Pickup
+                  Full Payment (RM{pickupPrice}) — Pickup Point
                 </span>
                 <span className="text-xs text-slate-400 leading-relaxed block mt-0.5">
-                  Service charge for pickup only at UMPSA Gambang on your scheduled date. We store, manage and maintain all items (jubah, mortarboard, kad jemputan, cenderahati &amp; selempang) until handover.
+                  Service charge for pickup only at UMPSA Pekan on your scheduled date. We store, manage and maintain all items (jubah, mortarboard, kad jemputan, cenderahati &amp; selempang) until handover.
                 </span>
               </div>
             </label>
@@ -962,7 +962,7 @@ export const Jubah: React.FC = () => {
               <input type="radio" name="paymentMode" value="postage" checked={paymentMode === 'postage'} onChange={() => setPaymentMode('postage')} className="mt-0.5 accent-slate-900 shrink-0" />
               <div className="flex-1">
                 <span className={`text-xs font-semibold block ${paymentMode === 'postage' ? 'text-slate-900' : 'text-slate-700'}`}>
-                  Postage (RM{postagePrice + (postageZone === 'SS' ? 10 : 0)}) — Pickup &amp; Postage
+                  Full Payment (RM{postagePrice + (postageZone === 'SS' ? 10 : 0)}) — Pickup &amp; Postage
                 </span>
                 <span className="text-xs text-slate-400 leading-relaxed block mt-0.5">
                   Total weight ≈ 3–4 kg (jubah, mortarboard, kad jemputan, cenderahati &amp; selempang).

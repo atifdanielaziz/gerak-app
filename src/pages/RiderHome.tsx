@@ -439,7 +439,7 @@ export const RiderHome: React.FC = () => {
                   </div>
                 ) : (
                   <div className="overflow-x-auto overflow-y-auto no-scrollbar max-h-[500px]">
-                    <table className="min-w-full border-collapse text-left" style={{ minWidth: 360 }}>
+                    <table className="min-w-full border-collapse text-left">
                       <thead className="sticky top-0 bg-white">
                         <tr className="text-xs font-semibold text-slate-400 border-b border-slate-100">
                           <th className="py-2 pr-4 whitespace-nowrap">Reference</th>
