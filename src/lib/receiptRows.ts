@@ -335,17 +335,18 @@ export function buildJubahReceiptRows(j: JubahReceiptSource): ReceiptDoc {
     if (j.riderPhone) rows.push({ label: 'Rider Contact', value: j.riderPhone });
   }
 
-  // A brand-new non-deposit booking is already fully paid up front — showing
-  // "Booked" (the deposit flow's initial state) would misrepresent that.
-  // Fulfillment states beyond this (processing/delivered/etc.) still apply
-  // to both payment modes equally, so only the initial 'booked' status needs
-  // this override.
-  const isFreshFullPayment = j.status === 'booked' && j.paymentMode !== 'deposit';
+  // A non-deposit booking is already fully paid up front, and a deposit
+  // booking whose balance has since been settled is equally fully paid —
+  // both should read "Full Paid" instead of "Booked" (the deposit flow's
+  // own initial, still-partial state). Fulfillment states beyond this
+  // (processing/delivered/etc.) still apply to every payment mode equally,
+  // so only the initial 'booked' status needs this override.
+  const isFullyPaid = j.status === 'booked' && (j.paymentMode !== 'deposit' || !!j.balancePaid);
 
   return {
     rows,
-    statusLabel:     isFreshFullPayment ? 'Full Paid' : (JUBAH_STATUS_LABEL[j.status] ?? j.status),
-    statusClassName: isFreshFullPayment ? 'bg-emerald-50 text-emerald-600 border-emerald-200' : (JUBAH_STATUS_STYLE[j.status] ?? JUBAH_STATUS_STYLE.booked),
+    statusLabel:     isFullyPaid ? 'Full Paid' : (JUBAH_STATUS_LABEL[j.status] ?? j.status),
+    statusClassName: isFullyPaid ? 'bg-emerald-50 text-emerald-600 border-emerald-200' : (JUBAH_STATUS_STYLE[j.status] ?? JUBAH_STATUS_STYLE.booked),
     createdAt:        j.createdAt,
     bookingRef:       j.reference,
     subtitle:         'Jubah Delivery — Order Receipt',

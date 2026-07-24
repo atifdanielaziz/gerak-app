@@ -3621,7 +3621,7 @@ export const AdminHome: React.FC = () => {
                                   b.status === 'cancelled' ? 'bg-red-50 border-red-100 text-red-600' :
                                   isPaid ? 'bg-emerald-50 border-emerald-100 text-emerald-700' : 'bg-amber-50 border-amber-100 text-amber-700'
                                 }`}>
-                                  {b.status === 'cancelled' ? 'Cancelled' : !isPaid ? 'Booked' : b.payment_mode === 'deposit' ? 'Paid' : 'Full Paid'}
+                                  {b.status === 'cancelled' ? 'Cancelled' : !isPaid ? 'Booked' : 'Full Paid'}
                                 </span>
                               </td>
                               <td className="py-2.5 pr-4 whitespace-nowrap">
@@ -3786,7 +3786,7 @@ export const AdminHome: React.FC = () => {
                           ? (b.balance_paid ? 'bg-emerald-50 border-emerald-100 text-emerald-700' : 'bg-amber-50 border-amber-100 text-amber-700')
                           : 'bg-emerald-50 border-emerald-100 text-emerald-700'
                       }`}>
-                        {b.payment_mode === 'deposit' ? (b.balance_paid ? 'Paid' : 'Deposit') : 'Full Paid'}
+                        {b.payment_mode === 'deposit' ? (b.balance_paid ? 'Full Paid' : 'Deposit') : 'Full Paid'}
                       </span>
                     </div>
 
