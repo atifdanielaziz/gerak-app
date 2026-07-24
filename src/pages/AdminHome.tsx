@@ -982,6 +982,7 @@ export const AdminHome: React.FC = () => {
     docs_path: string | null; payment_path: string | null; oscar_path: string | null;
     skpg_path: string | null; konvo_path: string | null; ic_path: string | null;
     created_at: string;
+    needs_reconciliation: boolean; reconciliation_note: string | null;
   };
   const [jubahRiders,        setJubahRiders]        = useState<JubahRider[]>([]);
   const [jubahRidersLoading, setJubahRidersLoading] = useState(false);
@@ -1050,6 +1051,14 @@ export const AdminHome: React.FC = () => {
 
     return { total: active.length, cancelled, collected, outstanding, statusCounts, modeCounts };
   }, [jubahBookings, jubahStatsUniversity]);
+
+  // Independent of the university filter above — this is an operational
+  // alert list, not a revenue view, so it should never disappear just
+  // because a filter is set to a different university.
+  const jubahNeedsReconciliation = useMemo(
+    () => jubahBookings.filter(b => b.needs_reconciliation),
+    [jubahBookings]
+  );
 
   const jubahUniversityOptions = useMemo(() => {
     const set = new Set<string>();
@@ -1143,6 +1152,17 @@ export const AdminHome: React.FC = () => {
     else { showToast(`${b.reference} deleted.`); setJubahBookings(prev => prev.filter(r => r.id !== b.id)); }
   };
 
+  const [clearingReconciliation, setClearingReconciliation] = useState<string | null>(null);
+  const handleClearReconciliation = async (b: JubahBookingRow) => {
+    setClearingReconciliation(b.id);
+    const { error } = await supabase.from('jubah_bookings')
+      .update({ needs_reconciliation: false })
+      .eq('id', b.id);
+    setClearingReconciliation(null);
+    if (error) { showToast('Failed to clear: ' + error.message); return; }
+    setJubahBookings(prev => prev.map(r => r.id === b.id ? { ...r, needs_reconciliation: false } : r));
+  };
+
   const handleCancelJubahBooking = async () => {
     if (!cancelModalBooking) return;
     setCancellingBooking(true);
@@ -1199,7 +1219,7 @@ export const AdminHome: React.FC = () => {
     }
 
     let bookingsQ = supabase.from('jubah_bookings')
-      .select('id, reference, full_name, ic_number, hp_number, email, matric_id, university, campus, faculty, remark, rider_name, rider_phone, status, payment_mode, cost, balance_due, balance_paid, balance_paid_at, balance_proof_url, initial_paid, initial_paid_at, delivery_address, docs_path, payment_path, oscar_path, skpg_path, konvo_path, ic_path, created_at')
+      .select('id, reference, full_name, ic_number, hp_number, email, matric_id, university, campus, faculty, remark, rider_name, rider_phone, status, payment_mode, cost, balance_due, balance_paid, balance_paid_at, balance_proof_url, initial_paid, initial_paid_at, delivery_address, docs_path, payment_path, oscar_path, skpg_path, konvo_path, ic_path, created_at, needs_reconciliation, reconciliation_note')
       .order('created_at', { ascending: false });
     if (!isSuperAdmin) bookingsQ = bookingsQ.eq('campus', adminCampus);
     const { data: bookingsData, error: bookingsError } = await bookingsQ;
@@ -1218,6 +1238,7 @@ export const AdminHome: React.FC = () => {
         initial_paid: false, initial_paid_at: null,
         delivery_address: null, docs_path: null, payment_path: null, oscar_path: null,
         skpg_path: null, konvo_path: null, ic_path: null,
+        needs_reconciliation: false, reconciliation_note: null,
       })));
     } else {
       setJubahBookings((bookingsData as JubahBookingRow[]) ?? []);
@@ -3431,6 +3452,39 @@ export const AdminHome: React.FC = () => {
               </button>
             </div>
 
+            {/* Needs Reconciliation — a payment was confirmed by ToyyibPay but
+                couldn't be cleanly applied (booking already moved on, or
+                cancelled, by the time the callback landed). Previously only
+                visible via Supabase Edge Function logs; now surfaced here so
+                it's actually seen and actionable. */}
+            {jubahNeedsReconciliation.length > 0 && (
+              <div className="bg-red-50 border border-red-100 rounded-3xl p-5 flex flex-col gap-3">
+                <p className="text-xs font-black text-red-700 flex items-center gap-1.5">
+                  <AlertCircle className="w-4 h-4" /> Needs Reconciliation ({jubahNeedsReconciliation.length})
+                </p>
+                <p className="text-[11px] text-red-600/80 font-semibold -mt-1.5">
+                  Payment was confirmed at ToyyibPay for these bookings, but couldn't be applied automatically. Verify manually, then mark reviewed.
+                </p>
+                <div className="flex flex-col gap-2">
+                  {jubahNeedsReconciliation.map(b => (
+                    <div key={b.id} className="bg-white border border-red-100 rounded-2xl p-3 flex items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <p className="text-xs font-bold text-slate-800">{b.reference} — {b.full_name}</p>
+                        <p className="text-[11px] text-slate-500 font-semibold mt-0.5">{b.reconciliation_note}</p>
+                      </div>
+                      <button
+                        onPointerDown={e => { e.preventDefault(); handleClearReconciliation(b); }}
+                        disabled={clearingReconciliation === b.id}
+                        className="shrink-0 px-3 py-1.5 rounded-xl text-[11px] font-bold bg-red-600 text-white active:scale-95 transition-transform disabled:opacity-50"
+                      >
+                        {clearingReconciliation === b.id ? '…' : 'Mark Reviewed'}
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
             {/* Overview stats — computed client-side from jubahBookings, already
                 loaded for the Customer Directory below; no extra query. */}
             <div className="bg-white border border-slate-100 rounded-3xl p-5 flex flex-col gap-4">
@@ -3750,6 +3804,11 @@ export const AdminHome: React.FC = () => {
                               className="border-b border-slate-100 text-xs hover:bg-slate-50 active:bg-slate-100 transition cursor-pointer">
                               <td className="py-2.5 pr-4 font-mono font-semibold text-primary whitespace-nowrap">
                                 <span className="flex items-center gap-1.5">
+                                  {b.needs_reconciliation && (
+                                    <span title={b.reconciliation_note ?? 'Needs reconciliation'}>
+                                      <AlertCircle className="w-3.5 h-3.5 text-red-500 shrink-0" />
+                                    </span>
+                                  )}
                                   {b.reference}
                                   <button
                                     type="button"

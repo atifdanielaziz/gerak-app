@@ -94,7 +94,9 @@ serve(async (req) => {
       // silently discarded — a paid customer with no matching update needs
       // a human to reconcile, not a quiet no-op.
       if (!updated || updated.length === 0) {
-        console.error(`toyyibpay-callback: PAYMENT CONFIRMED for booking ${initialMatch.id} but it was not 'ordered' when applied — needs manual reconciliation. billcode=${billcode}`)
+        const note = `Payment confirmed for booking ${initialMatch.reference} but it was not 'ordered' when applied — needs manual reconciliation. billcode=${billcode}`
+        console.error(`toyyibpay-callback: ${note}`)
+        await flagForReconciliation(admin, initialMatch.id, note)
       } else {
         // Only on a genuine transition (not a replayed/duplicate callback) —
         // best-effort, never blocks the response either way.
@@ -124,7 +126,9 @@ serve(async (req) => {
         return json({ success: false, reason: updateErr.message }, 500)
       }
       if (!updated || updated.length === 0) {
-        console.error(`toyyibpay-callback: PAYMENT CONFIRMED for balance on booking ${balanceMatch.id} but it was already paid or cancelled when applied — needs manual reconciliation. billcode=${billcode}`)
+        const note = `Balance payment confirmed for booking ${balanceMatch.reference} but it was already paid or cancelled when applied — needs manual reconciliation. billcode=${billcode}`
+        console.error(`toyyibpay-callback: ${note}`)
+        await flagForReconciliation(admin, balanceMatch.id, note)
       } else {
         await sendReceiptEmail(admin, balanceMatch, 'balance')
       }
@@ -144,6 +148,18 @@ function json(body: unknown, status = 200) {
     status,
     headers: { ...CORS, 'Content-Type': 'application/json' },
   })
+}
+
+// Surfaces a reconciliation-needed case on the booking row itself, so it
+// shows up in the admin UI instead of only living in Edge Function logs
+// that nobody proactively checks. Best-effort — never blocks the response.
+async function flagForReconciliation(admin: ReturnType<typeof createClient>, bookingId: string, note: string) {
+  const { error } = await admin.from('jubah_bookings').update({
+    needs_reconciliation: true,
+    reconciliation_note: note,
+    reconciliation_flagged_at: new Date().toISOString(),
+  }).eq('id', bookingId)
+  if (error) console.error('flagForReconciliation: failed to write flag:', error)
 }
 
 // Same masking convention used everywhere else customer-facing (TrackJubah's

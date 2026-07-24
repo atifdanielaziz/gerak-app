@@ -83,7 +83,13 @@ serve(async (req) => {
           continue
         }
         if (paid) {
-          console.error(`jubah-expire-unpaid: booking ${booking.id} (${booking.reference}) is PAID at ToyyibPay but still 'ordered' — callback likely missed it. Skipped auto-cancel; needs manual reconciliation.`)
+          const note = `Booking ${booking.reference} is PAID at ToyyibPay but still 'ordered' — callback likely missed it. Auto-cancel skipped; needs manual reconciliation.`
+          console.error(`jubah-expire-unpaid: ${note}`)
+          await admin.from('jubah_bookings').update({
+            needs_reconciliation: true,
+            reconciliation_note: note,
+            reconciliation_flagged_at: new Date().toISOString(),
+          }).eq('id', booking.id)
           skippedPaidCount++
           continue
         }
