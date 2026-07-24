@@ -158,11 +158,11 @@ body {
   }
 }
 
-/* Admin panel on desktop: break out of the phone bezel entirely.
-   1024px here is hand-matched to Tailwind's `lg:` breakpoint used in
-   AdminHome.tsx's sidebar — keep both in sync if that scale ever changes. */
+/* Admin/rider/driver panels on desktop: break out of the phone bezel
+   entirely. 1024px here is hand-matched to Tailwind's `lg:` breakpoint used
+   in AdminHome.tsx's sidebar — keep both in sync if that scale ever changes. */
 @media (min-width: 1024px) {
-  .mobile-container.admin-desktop {
+  .mobile-container.desktop-unlocked {
     width: 100%;
     max-width: 100vw;
     height: 100vh;
@@ -173,7 +173,7 @@ body {
     margin: 0;
   }
 
-  .mobile-container.admin-desktop::before {
+  .mobile-container.desktop-unlocked::before {
     content: none;
   }
 }

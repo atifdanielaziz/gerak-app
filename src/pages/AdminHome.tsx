@@ -3587,7 +3587,7 @@ export const AdminHome: React.FC = () => {
                   <Users className="w-4 h-4" /> Representative Directory
                 </h3>
                 <div className="overflow-x-auto overflow-y-auto no-scrollbar max-h-[320px]">
-                  <table className="text-left border-collapse" style={{ minWidth: 480 }}>
+                  <table className="min-w-full text-left border-collapse">
                     <thead className="sticky top-0 bg-white">
                       <tr className="text-xs font-normal text-slate-400 border-b border-slate-100">
                         <th className="py-2 pr-4 whitespace-nowrap">Method</th>
@@ -3697,7 +3697,7 @@ export const AdminHome: React.FC = () => {
                   <p className="text-xs text-slate-400 font-semibold text-center py-6">No Jubah bookings yet.</p>
                 ) : (
                   <div className="overflow-x-auto overflow-y-auto no-scrollbar max-h-[600px]">
-                    <table className="min-w-full border-collapse text-left" style={{ minWidth: 360 }}>
+                    <table className="min-w-full border-collapse text-left">
                       <thead className="sticky top-0 bg-white">
                         <tr className="text-xs font-normal text-slate-400 border-b border-slate-100">
                           <th className="py-2 pr-4 whitespace-nowrap">Reference</th>
@@ -3751,10 +3751,9 @@ export const AdminHome: React.FC = () => {
                               <td className="py-2.5 pr-4 whitespace-nowrap">
                                 <span className={`font-semibold px-2 py-0.5 rounded-full border text-xs ${
                                   b.payment_mode === 'deposit' ? 'bg-amber-50 border-amber-100 text-amber-700' :
-                                  b.payment_mode === 'postage' ? 'bg-blue-50 border-blue-100 text-blue-700' :
-                                  'bg-slate-50 border-slate-200 text-slate-600'
+                                  'bg-blue-50 border-blue-100 text-blue-700'
                                 }`}>
-                                  {b.payment_mode === 'deposit' ? 'Deposit' : b.payment_mode === 'postage' ? 'Postage' : 'Pickup'}
+                                  {b.payment_mode === 'deposit' ? 'Deposit' : 'Full Payment'}
                                 </span>
                               </td>
                               <td className="py-2.5 pr-4 whitespace-nowrap">
@@ -3770,7 +3769,7 @@ export const AdminHome: React.FC = () => {
                                   b.status === 'cancelled' ? 'bg-red-50 border-red-100 text-red-600' :
                                   isPaid ? 'bg-emerald-50 border-emerald-100 text-emerald-700' : 'bg-amber-50 border-amber-100 text-amber-700'
                                 }`}>
-                                  {b.status === 'cancelled' ? 'Cancelled' : isPaid ? 'Paid' : 'Booked'}
+                                  {b.status === 'cancelled' ? 'Cancelled' : !isPaid ? 'Booked' : b.payment_mode === 'deposit' ? 'Paid' : 'Full Paid'}
                                 </span>
                               </td>
                               <td className="py-2.5 pr-4 whitespace-nowrap">
@@ -3933,10 +3932,9 @@ export const AdminHome: React.FC = () => {
                       <span className={`text-xs font-semibold px-3 py-2 rounded-xl border shrink-0 ${
                         b.payment_mode === 'deposit'
                           ? (b.balance_paid ? 'bg-emerald-50 border-emerald-100 text-emerald-700' : 'bg-amber-50 border-amber-100 text-amber-700')
-                        : b.payment_mode === 'postage' ? 'bg-blue-50 border-blue-100 text-blue-700' :
-                        'bg-slate-50 border-slate-200 text-slate-600'
+                          : 'bg-emerald-50 border-emerald-100 text-emerald-700'
                       }`}>
-                        {b.payment_mode === 'deposit' ? (b.balance_paid ? 'Paid' : 'Deposit') : b.payment_mode === 'postage' ? 'Postage' : 'Pickup'}
+                        {b.payment_mode === 'deposit' ? (b.balance_paid ? 'Paid' : 'Deposit') : 'Full Paid'}
                       </span>
                     </div>
 
@@ -4106,7 +4104,8 @@ export const AdminHome: React.FC = () => {
                       { label: 'Campus',         value: `UMPSA ${b.campus}` },
                       { label: 'Faculty',        value: b.faculty },
                       { label: 'Remark',         value: b.remark },
-                      { label: 'Payment Mode',   value: b.payment_mode.charAt(0).toUpperCase() + b.payment_mode.slice(1) },
+                      { label: 'Booking Type',   value: b.delivery_address ? 'Pickup & Postage' : 'Self Pickup' },
+                      { label: 'Payment Mode',   value: b.payment_mode === 'deposit' ? 'Deposit' : 'Full Payment' },
                       { label: 'Service Fee',    value: `RM${b.cost.toFixed(2)}` },
                       ...(b.payment_mode === 'deposit' ? [{ label: 'Balance Due', value: `RM${b.balance_due.toFixed(2)}` }] : []),
                       ...(b.delivery_address ? [{ label: 'Delivery Address', value: b.delivery_address }] : []),
