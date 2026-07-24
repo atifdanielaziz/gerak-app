@@ -1,4 +1,4 @@
-﻿import React, { useEffect, useState, useCallback, useRef } from 'react';
+import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { supabase } from '../lib/supabase';
 import { useApp } from '../context/AppContext';
 import {
@@ -75,7 +75,7 @@ const getDatesInRange = (start: string, end: string): string[] => {
 };
 
 export const GerakRental: React.FC = () => {
-  const { user, showAuthGate } = useApp();
+  const { user, showAuthGate, setLeaveGuard } = useApp();
 
   const [owners, setOwners]           = useState<RentalOwner[]>([]);
   const [selected, setSelected]       = useState<RentalOwner | null>(null);
@@ -87,6 +87,16 @@ export const GerakRental: React.FC = () => {
   const [bookingDone, setBookingDone] = useState(false);
   const [toast, setToast]             = useState('');
   const [view, setView]               = useState<'list' | 'book' | 'my-bookings'>('list');
+
+  // Registers with AppContext's goBack() so leaving the booking form or My
+  // Bookings (header back chevron, hardware back, or the edge-swipe
+  // gesture — all three call the same shared goBack()) returns to the car
+  // list first, instead of skipping past it straight out of the page.
+  useEffect(() => {
+    if (view === 'list') { setLeaveGuard(null); return; }
+    setLeaveGuard(() => () => { setView('list'); setSelected(null); });
+    return () => setLeaveGuard(null);
+  }, [view, setLeaveGuard]);
 
   // Calendar state
   const [calMonth, setCalMonth] = useState(() => {
@@ -210,10 +220,14 @@ export const GerakRental: React.FC = () => {
     setMyBookings(enriched);
   }, []);
 
-  useEffect(() => { loadOwners(); }, [loadOwners]);
+  useEffect(() => {
+    queueMicrotask(() => loadOwners());
+  }, [loadOwners]);
 
   useEffect(() => {
-    if (selected) loadAvailability(selected.id, calMonth);
+    if (selected) {
+      queueMicrotask(() => loadAvailability(selected.id, calMonth));
+    }
   }, [selected, calMonth, loadAvailability]);
 
   // ── Availability helpers ───────────────────────────────────────────────────
