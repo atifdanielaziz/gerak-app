@@ -1,4 +1,4 @@
-﻿import React, { useState, useMemo, useEffect } from 'react';
+﻿import React, { useState, useMemo, useEffect, useRef } from 'react';
 import {
   ChevronLeft, ChevronRight,
   BookOpen, Clock, GraduationCap, Coffee, AlertCircle,
@@ -334,6 +334,38 @@ export const AcademicCalendar: React.FC = () => {
     return { year: d.getFullYear(), month: d.getMonth() };
   });
 
+  // Swipe left/right anywhere on the date grid changes the month; a plain
+  // tap (little to no movement) opens that day's detail instead. Handled at
+  // the grid container level rather than per-cell, since a swipe's start
+  // and end can land on different cells (or empty padding cells).
+  const gridGestureStart = useRef<{ x: number; y: number; date: string | null } | null>(null);
+  const SWIPE_THRESHOLD = 50;
+  const TAP_THRESHOLD = 10;
+
+  const handleGridPointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
+    e.currentTarget.setPointerCapture(e.pointerId);
+    const cell = (e.target as HTMLElement).closest('[data-date]') as HTMLElement | null;
+    gridGestureStart.current = { x: e.clientX, y: e.clientY, date: cell?.dataset.date ?? null };
+  };
+
+  const handleGridPointerUp = (e: React.PointerEvent<HTMLDivElement>) => {
+    const start = gridGestureStart.current;
+    gridGestureStart.current = null;
+    if (!start) return;
+    const dx = e.clientX - start.x;
+    const dy = e.clientY - start.y;
+
+    if (Math.abs(dx) > SWIPE_THRESHOLD && Math.abs(dx) > Math.abs(dy)) {
+      if (dx < 0) nextMonth(); else prevMonth();
+      return;
+    }
+    if (Math.abs(dx) < TAP_THRESHOLD && Math.abs(dy) < TAP_THRESHOLD && start.date &&
+      (dateMap.has(start.date) || holidayMap.has(start.date))
+    ) {
+      setSelectedDate(start.date);
+    }
+  };
+
   const todayStr = toDateStr(new Date());
 
   // ── DAY DETAIL SUB-PAGE ── (Sub-page Standard: replaces the grid in place,
@@ -430,10 +462,13 @@ export const AcademicCalendar: React.FC = () => {
         ))}
       </div>
 
-      {/* Date grid — fills all remaining space, each week row sized equally */}
+      {/* Date grid — fills all remaining space, each week row sized equally.
+          Swipe left/right anywhere here changes month; tap opens a day. */}
       <div
         className="flex-1 min-h-0 grid grid-cols-7 px-3"
         style={{ gridTemplateRows: `repeat(${rows}, 1fr)` }}
+        onPointerDown={handleGridPointerDown}
+        onPointerUp={handleGridPointerUp}
       >
         {days.map((dateStr, i) => {
           if (!dateStr) return <div key={i} />;
@@ -444,7 +479,7 @@ export const AcademicCalendar: React.FC = () => {
 
           return (
             <div key={dateStr}
-              onPointerDown={hasDetail ? e => { e.preventDefault(); setSelectedDate(dateStr); } : undefined}
+              data-date={dateStr}
               className={`flex flex-col items-center pt-1.5 gap-1.5 transition-transform ${hasDetail ? 'active:scale-95' : ''}`}>
               <span className={`w-7 h-7 flex items-center justify-center rounded-full text-sm ${
                 isToday ? 'bg-primary text-white font-bold' : 'text-slate-700 font-normal'
