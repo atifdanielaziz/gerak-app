@@ -55,6 +55,7 @@ interface JubahReceiptData {
 
 const STATUS_LABEL: Record<string, string> = {
   ordered:    'Payment Pending',
+  paid:       'Paid',
   booked:     'Order Received',
   processing: 'Processing Documents',
   collected:  'Robe Collected',
@@ -67,6 +68,7 @@ const STATUS_LABEL: Record<string, string> = {
 
 const STATUS_STYLE: Record<string, string> = {
   ordered:    'bg-slate-50 border-slate-200 text-slate-500',
+  paid:       'bg-emerald-50 border-emerald-100 text-emerald-700',
   booked:     'bg-amber-50 border-amber-100 text-amber-700',
   processing: 'bg-violet-50 border-violet-100 text-violet-700',
   collected:  'bg-blue-50 border-blue-100 text-blue-700',
@@ -293,11 +295,21 @@ export const TrackJubah: React.FC = () => {
         ) : (
           <div className="flex flex-col gap-4">
             {results.map(b => {
-              const trackSteps = b.payment_mode === 'postage'
-                ? ['booked', 'processing', 'collected', 'at_hub']
-                : ['booked', 'processing', 'collected', 'delivered'];
+              // Non-deposit (pickup/postage) bookings start at 'paid', not
+              // 'booked' — that's what the ToyyibPay callback actually sets
+              // for them, and they never pass through 'booked' via payment.
+              // Only deposit-mode starts at 'booked'. Without 'paid' here,
+              // trackSteps.indexOf('paid') was -1 for any paid pickup/postage
+              // booking, so the stepper rendered as if nothing had happened
+              // yet even though the customer had already paid in full.
+              // Matches AdminHome/RiderHome's step arrays.
+              const trackSteps = b.payment_mode === 'deposit'
+                ? ['booked', 'processing', 'collected', 'delivered']
+                : b.payment_mode === 'postage'
+                ? ['paid', 'booked', 'processing', 'collected', 'at_hub']
+                : ['paid', 'booked', 'processing', 'collected', 'delivered'];
               const STEP_LABEL: Record<string, string> = {
-                booked: 'New', processing: 'Processing', collected: 'Collected',
+                paid: 'Paid', booked: 'New', processing: 'Processing', collected: 'Collected',
                 at_hub: 'At Hub', delivered: 'Delivered',
               };
               const curStep = trackSteps.indexOf(b.status);
