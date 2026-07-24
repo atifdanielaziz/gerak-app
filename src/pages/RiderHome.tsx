@@ -45,6 +45,7 @@ type JubahJobRow = {
 
 const STATUS_LABEL: Record<string, string> = {
   ordered:    'Pending',
+  paid:       'Paid',
   booked:     'New',
   processing: 'Processing',
   collected:  'Collected',
@@ -55,6 +56,7 @@ const STATUS_LABEL: Record<string, string> = {
 
 const STATUS_STYLE: Record<string, string> = {
   ordered:    'bg-slate-50 border-slate-200 text-slate-500',
+  paid:       'bg-emerald-50 border-emerald-100 text-emerald-700',
   booked:     'bg-blue-50 border-blue-100 text-blue-700',
   processing: 'bg-violet-50 border-violet-100 text-violet-700',
   collected:  'bg-amber-50 border-amber-100 text-amber-700',
@@ -63,10 +65,21 @@ const STATUS_STYLE: Record<string, string> = {
   cancelled:  'bg-red-50 border-red-100 text-red-600',
 };
 
+// Was missing the 'paid' starting point for non-deposit bookings entirely —
+// only deposit-mode actually starts at 'booked' (that's what the ToyyibPay
+// callback sets once the deposit clears). Full-payment pickup/postage
+// bookings start at 'paid' instead, and never pass through 'booked' via
+// payment — this array needs it as an explicit first step, not skipped.
+// Without it, steps.indexOf('paid') returned -1 for any paid pickup/postage
+// job, which the calling code treats as "not started yet" — a rider
+// couldn't advance a job that had, in fact, already been paid for.
+// Matches AdminHome's jubahGetSteps exactly.
 const getSteps = (paymentMode: string) =>
-  paymentMode === 'postage'
-    ? ['booked', 'processing', 'collected', 'at_hub']
-    : ['booked', 'processing', 'collected', 'delivered'];
+  paymentMode === 'deposit'
+    ? ['booked', 'processing', 'collected', 'delivered']
+    : paymentMode === 'postage'
+    ? ['paid', 'booked', 'processing', 'collected', 'at_hub']
+    : ['paid', 'booked', 'processing', 'collected', 'delivered'];
 
 const getNextStatus = (job: JubahJobRow): string | null => {
   const steps = getSteps(job.payment_mode);

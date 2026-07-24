@@ -1011,7 +1011,7 @@ export const AdminHome: React.FC = () => {
   // string would split Pekan and Gambang into separate "universities".
   // Stripping the trailing "(...)" campus suffix gives the real university
   // grouping without needing to hardcode/guess a name-to-key mapping.
-  const jubahUniversityBase = (u: string) => u.replace(/\s*\([^)]*\)\s*$/, '').trim();
+  const jubahUniversityBase = (u: string | null | undefined) => (u ?? '').replace(/\s*\([^)]*\)\s*$/, '').trim();
 
   const jubahStats = useMemo(() => {
     const inScope = jubahStatsUniversity === 'all'
