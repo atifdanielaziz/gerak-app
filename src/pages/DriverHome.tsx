@@ -13,7 +13,7 @@ import {
 } from 'lucide-react';
 import { WaIcon, toWa } from '../lib/whatsapp';
 import { ReceiptSheet } from '../components/Receipt';
-import { Dropdown } from '../components/Dropdown';
+import { NativeSelect } from '../components/NativeSelect';
 import { buildTransportReceiptRows, buildRentalReceiptRows } from '../lib/receiptRows';
 import { generateReceiptPdf } from '../lib/receiptPdf';
 import { FareModal } from '../components/FareModal';
@@ -1506,7 +1506,7 @@ export const DriverHome: React.FC = () => {
                 <div className="grid grid-cols-2 gap-3">
                   <div className="flex flex-col gap-1">
                     <span className="text-xs font-semibold text-slate-400">Pickup Time</span>
-                    <Dropdown
+                    <NativeSelect
                       value={String(vehicleForm.operating_start ?? 8)}
                       onChange={v => setVehicleForm(f => ({ ...f, operating_start: Number(v) }))}
                       options={HOUR_OPTIONS}
@@ -1515,7 +1515,7 @@ export const DriverHome: React.FC = () => {
                   </div>
                   <div className="flex flex-col gap-1">
                     <span className="text-xs font-semibold text-slate-400">Return Time</span>
-                    <Dropdown
+                    <NativeSelect
                       value={String(vehicleForm.operating_end ?? 22)}
                       onChange={v => setVehicleForm(f => ({ ...f, operating_end: Number(v) }))}
                       options={HOUR_OPTIONS}

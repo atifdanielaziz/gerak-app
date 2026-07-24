@@ -266,7 +266,13 @@ export function buildJubahReceiptRows(j: JubahReceiptSource): ReceiptDoc {
     { label: 'Faculty', value: j.faculty },
     { label: 'Matric ID', value: j.matricId },
     { label: 'Robe Type', value: j.remark, dividerBefore: true },
-    { label: 'Booking Type', value: j.deliveryAddress ? 'Postage / Delivery' : 'Self Pickup' },
+    // paymentMode alone can't distinguish this for deposit-mode bookings —
+    // it's literally 'deposit' regardless of which delivery method the
+    // customer chose within it. deliveryAddress is only ever populated for
+    // postage bookings (plain postage mode and deposit's postage
+    // sub-choice both go through the same isPostageDelivery flag in
+    // Jubah.tsx), so its presence is the actual reliable signal here.
+    { label: 'Booking Type', value: (j.paymentMode === 'postage' || (j.paymentMode === 'deposit' && !!j.deliveryAddress)) ? 'Postage / Delivery' : 'Self Pickup' },
     { label: 'Payment Mode', value: paymentLabel, dividerBefore: true },
   ];
 
@@ -310,11 +316,17 @@ export function buildJubahReceiptRows(j: JubahReceiptSource): ReceiptDoc {
     rows.push({ label: 'Amount Due', value: `RM${j.cost.toFixed(2)}` });
   }
 
-  const totalCharged = j.paymentMode === 'deposit' && j.balancePaid ? j.cost + (j.balanceDue ?? 0) : j.cost;
+  // The order's full value — deposit + balance — regardless of how much of
+  // it has actually been paid so far. Previously this only summed the two
+  // once the balance was paid, so "Total Due" before that point showed just
+  // the deposit amount (e.g. RM25) instead of what's really owed for the
+  // whole order (e.g. RM70) — misleadingly implying RM25 was the total.
+  const fullOrderValue = j.paymentMode === 'deposit' ? j.cost + (j.balanceDue ?? 0) : j.cost;
+  const fullyPaid = j.paymentMode === 'deposit' ? !!j.balancePaid : initialPaid;
   if (!initialPaid && isCancelled) {
     rows.push({ label: 'Total', value: 'Not Paid (Cancelled)', emphasis: 'total' });
   } else {
-    rows.push({ label: initialPaid ? 'Total Charged' : 'Total Due', value: `RM${totalCharged.toFixed(2)}`, emphasis: 'total' });
+    rows.push({ label: fullyPaid ? 'Total Charged' : 'Total Due', value: `RM${fullOrderValue.toFixed(2)}`, emphasis: 'total' });
   }
   if (j.documentName) rows.push({ label: 'Document', value: j.documentName, dividerBefore: true });
 

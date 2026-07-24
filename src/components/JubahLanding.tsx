@@ -4,7 +4,7 @@ import { useApp } from '../context/AppContext';
 import { ChevronRight, Image as ImageIcon, Users, PackageSearch, GraduationCap, Clock, X } from 'lucide-react';
 import { WaIcon } from '../lib/whatsapp';
 import { RepresentativeSheet } from './RepresentativeSheet';
-import { Dropdown } from './Dropdown';
+import { NativeSelect } from './NativeSelect';
 import { getPendingJubahBooking, clearPendingJubahBooking, type PendingJubahBooking } from '../lib/pendingJubahBooking';
 
 type RiderDir = { id: string; name: string; drop_point: string | null; method: string | null; ic_number: string | null; phone: string | null };
@@ -192,7 +192,7 @@ export const JubahLanding: React.FC<Props> = ({ onProceed }) => {
           </button>
         </div>
 
-        <Dropdown
+        <NativeSelect
           value={selectedKey}
           onChange={handleUniversityChange}
           options={UNIVERSITIES.map(u => ({ value: u.key, label: u.label }))}

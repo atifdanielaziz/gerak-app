@@ -8,14 +8,14 @@ import {
   FileImage, ShieldCheck, ShieldOff, ExternalLink, KeyRound,
   CalendarDays, Upload, Eye, Phone, ArrowLeftRight, Pencil, GraduationCap,
   ChevronLeft, Download, MoreVertical, Copy, Check, TrendingUp, Bike, Settings, Info, BadgeCheck,
-  Bell, User, Ban,
+  Bell, User, Ban, XCircle,
 } from 'lucide-react';
 import { WaBtn, WaIcon, toWa } from '../lib/whatsapp';
 import { MonthDrumPicker, EarningsCard, computeEarnings, type EarningsRow } from '../components/EarningsCard';
 import { getJubahDocSignedUrl } from '../lib/jubahDocs';
 import { copyToClipboard } from '../lib/clipboard';
 import { ReceiptCard } from '../components/Receipt';
-import { Dropdown } from '../components/Dropdown';
+import { NativeSelect } from '../components/NativeSelect';
 import { buildJubahReceiptRows, type ReceiptDoc } from '../lib/receiptRows';
 import { generateReceiptPdf } from '../lib/receiptPdf';
 import ReactCrop, { centerCrop, makeAspectCrop, type Crop, type PixelCrop } from 'react-image-crop';
@@ -494,7 +494,7 @@ const JubahRiderSheet: React.FC<{
               <div className="flex items-center gap-2">
                 {deleteMode && <Minus className="w-4 h-4 text-slate-200 shrink-0" />}
                 <div className="flex-1">
-                  <Dropdown
+                  <NativeSelect
                     value={method}
                     onChange={v => onMethodChange(v as 'pickup' | 'postage')}
                     options={[{ value: 'pickup', label: 'Self Pickup' }, { value: 'postage', label: 'Pickup & Postage' }]}
@@ -528,7 +528,7 @@ const JubahRiderSheet: React.FC<{
                 <span className="text-xs font-semibold text-indigo-400">
                   Method {secondary.length + 2}
                 </span>
-                <Dropdown
+                <NativeSelect
                   value={addMethod}
                   onChange={v => setAddMethod(v as 'pickup' | 'postage')}
                   options={[{ value: 'pickup', label: 'Self Pickup' }, { value: 'postage', label: 'Pickup & Postage' }]}
@@ -1334,8 +1334,11 @@ export const AdminHome: React.FC = () => {
     setBannerImgError({});
   }, [activeTab, jubahSubTab]);
 
-  const jubahWaMsg = (name: string, status: string, ref: string, payMode: string, balPaid: boolean, balDue: number) => {
-    if (payMode === 'deposit' && !balPaid) {
+  const jubahWaMsg = (name: string, status: string, ref: string, payMode: string, initialPaid: boolean, balPaid: boolean, balDue: number) => {
+    // initialPaid must be checked too — !balPaid alone is also true before
+    // the deposit's even been paid, which would send this "your balance is
+    // unpaid" reminder to a customer who hasn't paid anything at all yet.
+    if (payMode === 'deposit' && initialPaid && !balPaid) {
       return `Assalamualaikum ${name} 🎓\n\nIni peringatan daripada Gerak Jubah.\n\nBaki bayaran anda sebanyak *RM${balDue.toFixed(2)}* masih belum dijelaskan.\n\nSila kemaskini bukti pembayaran melalui akaun Gerak anda sebelum tarikh pengambilan jubah.\n\nRujukan: ${ref}\n\nTerima kasih 🙏`;
     }
     const msgs: Record<string, string> = {
@@ -2717,7 +2720,7 @@ export const AdminHome: React.FC = () => {
                 </div>
                 <div className="flex-1 flex flex-col gap-1.5">
                   <label className="text-xs font-normal text-slate-400">CTA Page</label>
-                  <Dropdown
+                  <NativeSelect
                     value={bannerCtaPage}
                     onChange={setBannerCtaPage}
                     options={CTA_PAGES}
@@ -3553,7 +3556,9 @@ export const AdminHome: React.FC = () => {
                           <th className="py-2 pr-4 whitespace-nowrap">Name</th>
                           <th className="py-2 pr-4 whitespace-nowrap">Remark</th>
                           <th className="py-2 pr-4 whitespace-nowrap">Mode</th>
+                          <th className="py-2 pr-4 whitespace-nowrap">Type</th>
                           <th className="py-2 pr-4 whitespace-nowrap">Status</th>
+                          <th className="py-2 pr-4 whitespace-nowrap">Robe Status</th>
                           <th className="py-2 pr-4 whitespace-nowrap">Confirm</th>
                           <th className="py-2 whitespace-nowrap">Receipt</th>
                         </tr>
@@ -3604,6 +3609,14 @@ export const AdminHome: React.FC = () => {
                                 </span>
                               </td>
                               <td className="py-2.5 pr-4 whitespace-nowrap">
+                                {/* Independent of payment_mode — deposit mode can't distinguish this on
+                                    its own (it's literally 'deposit' for both delivery methods), so this
+                                    checks deliveryAddress the same way buildJubahReceiptRows now does. */}
+                                <span className="font-semibold px-2 py-0.5 rounded-full border text-xs bg-slate-50 border-slate-200 text-slate-600">
+                                  {(b.payment_mode === 'postage' || (b.payment_mode === 'deposit' && !!b.delivery_address)) ? 'Postage' : 'Pickup'}
+                                </span>
+                              </td>
+                              <td className="py-2.5 pr-4 whitespace-nowrap">
                                 <span className={`font-semibold px-2 py-0.5 rounded-full border text-xs ${
                                   b.status === 'cancelled' ? 'bg-red-50 border-red-100 text-red-600' :
                                   isPaid ? 'bg-emerald-50 border-emerald-100 text-emerald-700' : 'bg-amber-50 border-amber-100 text-amber-700'
@@ -3612,12 +3625,33 @@ export const AdminHome: React.FC = () => {
                                 </span>
                               </td>
                               <td className="py-2.5 pr-4 whitespace-nowrap">
+                                {b.status === 'cancelled' ? (
+                                  <span className="text-slate-300 text-xs">—</span>
+                                ) : (
+                                  <span className={`font-semibold px-2 py-0.5 rounded-full border text-xs ${JUBAH_STATUS_STYLE[b.status] ?? ''}`}>
+                                    {JUBAH_STATUS_LABEL[b.status] ?? b.status}
+                                  </span>
+                                )}
+                              </td>
+                              <td className="py-2.5 pr-4 whitespace-nowrap">
                                 {(() => {
-                                  const confirmed = b.payment_mode === 'deposit'
-                                    ? b.balance_paid
-                                    : b.status !== 'ordered';
+                                  // Four states: cancelled (red X — distinct from "just unpaid", since
+                                  // a cancelled booking will never become paid), nothing paid yet (grey),
+                                  // deposit paid but balance still outstanding (blue — a real but partial
+                                  // confirmation, shouldn't look identical to "fully done"), fully paid (green).
+                                  if (b.status === 'cancelled') {
+                                    return (
+                                      <span title="Cancelled">
+                                        <XCircle className="w-4 h-4 text-red-500" />
+                                      </span>
+                                    );
+                                  }
+                                  const depositOnly = b.payment_mode === 'deposit' && b.initial_paid && !b.balance_paid;
+                                  const colorClass = isPaid ? 'text-emerald-500' : depositOnly ? 'text-blue-500' : 'text-slate-200';
                                   return (
-                                    <CheckCircle2 className={`w-4 h-4 ${confirmed ? 'text-emerald-500' : 'text-slate-200'}`} />
+                                    <span title={isPaid ? 'Fully paid' : depositOnly ? 'Deposit paid — balance due' : 'Unpaid'}>
+                                      <CheckCircle2 className={`w-4 h-4 ${colorClass}`} />
+                                    </span>
                                   );
                                 })()}
                               </td>
@@ -3683,11 +3717,19 @@ export const AdminHome: React.FC = () => {
               const b      = jubahAdminSelected;
               const steps  = jubahGetSteps(b.payment_mode);
               const curStep = steps.indexOf(b.status);
-              const nextStat = (() => {
-                const idx = steps.indexOf(b.status);
-                return idx >= 0 && idx < steps.length - 1 ? steps[idx + 1] : null;
-              })();
-              const isDone = !nextStat;
+              const nextStat = curStep >= 0 && curStep < steps.length - 1 ? steps[curStep + 1] : null;
+              // curStep is -1 whenever b.status isn't one of this payment
+              // mode's steps at all — status='ordered' (deposit/payment not
+              // even confirmed yet) is the real case, since none of the
+              // jubahGetSteps arrays include it. isDone = !nextStat treated
+              // that the same as "reached the last step", which showed
+              // "Delivery Complete" for a booking that hadn't even been
+              // paid for yet — and left the stepper itself rendering with
+              // nothing marked reached, since curStep=-1 never matches any
+              // step index either. Both symptoms traced back to this one
+              // condition conflating "not found" with "finished".
+              const notStarted = curStep === -1;
+              const isDone = curStep >= 0 && curStep === steps.length - 1;
               return (
                 <div className="flex flex-col gap-4">
                   {/* Back row — sticky so it stays visible while the content below scrolls */}
@@ -3732,7 +3774,7 @@ export const AdminHome: React.FC = () => {
                       <div className="flex items-center gap-1.5 bg-slate-50 border border-slate-100 rounded-xl px-3 py-2 flex-1">
                         <span className="text-xs font-semibold text-slate-600">{b.hp_number}</span>
                         <a href={`https://wa.me/${toWa(b.hp_number)}?text=${encodeURIComponent(
-                          jubahWaMsg(b.full_name, b.status, b.reference, b.payment_mode, b.balance_paid, b.balance_due)
+                          jubahWaMsg(b.full_name, b.status, b.reference, b.payment_mode, b.initial_paid, b.balance_paid, b.balance_due)
                         )}`}
                           target="_blank" rel="noopener noreferrer"
                           className="text-[#25D366] ml-auto shrink-0">
@@ -3783,8 +3825,11 @@ export const AdminHome: React.FC = () => {
                       </div>
                     )}
 
-                    {/* Balance status (deposit) — hidden once cancelled, nothing left to collect */}
-                    {b.payment_mode === 'deposit' && b.status !== 'cancelled' && (
+                    {/* Balance status (deposit) — hidden once cancelled (nothing left to
+                        collect) or before the deposit itself is even paid (notStarted):
+                        showing "Balance Due RM45" implies that's all that's left, when
+                        really the RM25 deposit hasn't been paid either yet. */}
+                    {b.payment_mode === 'deposit' && b.status !== 'cancelled' && !notStarted && (
                       <div className="flex items-center gap-2">
                         <div className={`flex-1 rounded-xl p-3 border flex items-center justify-between gap-2 ${
                           b.balance_paid ? 'bg-emerald-50 border-emerald-100' : b.balance_proof_url ? 'bg-violet-50 border-violet-100' : 'bg-amber-50 border-amber-100'
@@ -3839,8 +3884,17 @@ export const AdminHome: React.FC = () => {
                       </div>
                     )}
 
+                    {/* status='ordered' — payment hasn't even been confirmed yet, so there's
+                        nothing here to advance or call "complete." That's normally handled
+                        automatically by the ToyyibPay callback; this is just a graceful
+                        fallback for viewing a booking's card before that's happened. */}
+                    {notStarted && b.status !== 'cancelled' && (
+                      <div className="bg-slate-50 border border-slate-100 rounded-2xl px-4 py-3 text-center">
+                        <p className="text-xs font-semibold text-slate-500">Awaiting Payment Confirmation</p>
+                      </div>
+                    )}
                     {/* Advance status button — deposit bookings stay gated until the balance is confirmed above */}
-                    {!isDone && b.status !== 'cancelled' && (() => {
+                    {!notStarted && !isDone && b.status !== 'cancelled' && (() => {
                       const balanceGateActive = b.payment_mode === 'deposit' && !b.balance_paid;
                       return (
                         <button
@@ -4063,7 +4117,7 @@ export const AdminHome: React.FC = () => {
                   <GraduationCap className="w-4 h-4" /> Jubah Pricing Matrix
                 </h3>
                 <div className="w-28 shrink-0">
-                  <Dropdown
+                  <NativeSelect
                     value={pricingUniversity}
                     onChange={setPricingUniversity}
                     options={JUBAH_PRICING_UNIVERSITIES.map(u => ({ value: u.key, label: u.label }))}

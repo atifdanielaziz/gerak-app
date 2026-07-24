@@ -7,7 +7,7 @@ import { stampWatermark } from '../lib/watermark';
 import {
   RefreshCw, ShoppingBasket, GraduationCap, TrendingUp,
   Upload, FileImage, ShieldCheck, ShieldAlert,
-  ChevronLeft, Download, ExternalLink, CheckCircle2,
+  ChevronLeft, Download, ExternalLink, CheckCircle2, XCircle,
 } from 'lucide-react';
 import { driverIsActive } from './Profile';
 
@@ -29,6 +29,7 @@ type JubahJobRow = {
   cost: number;
   balance_due: number;
   balance_paid: boolean;
+  initial_paid: boolean;
   balance_proof_url: string | null;
   delivery_address: string | null;
   docs_path: string | null;
@@ -43,6 +44,7 @@ type JubahJobRow = {
 };
 
 const STATUS_LABEL: Record<string, string> = {
+  ordered:    'Pending',
   booked:     'New',
   processing: 'Processing',
   collected:  'Collected',
@@ -52,6 +54,7 @@ const STATUS_LABEL: Record<string, string> = {
 };
 
 const STATUS_STYLE: Record<string, string> = {
+  ordered:    'bg-slate-50 border-slate-200 text-slate-500',
   booked:     'bg-blue-50 border-blue-100 text-blue-700',
   processing: 'bg-violet-50 border-violet-100 text-violet-700',
   collected:  'bg-amber-50 border-amber-100 text-amber-700',
@@ -78,8 +81,12 @@ const NEXT_LABEL: Record<string, string> = {
   delivered:  'Mark Delivered',
 };
 
-const jubahWaMsg = (name: string, status: string, ref: string, payMode: string, balPaid: boolean, balDue: number) => {
-  if (payMode === 'deposit' && !balPaid) {
+const jubahWaMsg = (name: string, status: string, ref: string, payMode: string, initialPaid: boolean, balPaid: boolean, balDue: number) => {
+  // initialPaid must be checked too — the raw !balPaid check on its own is
+  // also true before the deposit's even been paid, which would send this
+  // "your balance is unpaid" reminder to a customer who hasn't paid
+  // anything at all yet.
+  if (payMode === 'deposit' && initialPaid && !balPaid) {
     return `Assalamualaikum ${name} 🎓\n\nIni peringatan daripada Gerak Jubah.\n\nBaki bayaran anda sebanyak *RM${balDue.toFixed(2)}* masih belum dijelaskan.\n\nSila kemaskini bukti pembayaran melalui akaun Gerak anda sebelum tarikh pengambilan jubah.\n\nRujukan: ${ref}\n\nTerima kasih 🙏`;
   }
   const msgs: Record<string, string> = {
@@ -121,7 +128,7 @@ export const RiderHome: React.FC = () => {
     if (!authUser) { setJubahLoading(false); return; }
     const { data, error } = await supabase
       .from('jubah_bookings')
-      .select('id, reference, full_name, ic_number, hp_number, matric_id, university, campus, faculty, remark, payment_mode, cost, balance_due, balance_paid, balance_proof_url, delivery_address, docs_path, payment_path, oscar_path, skpg_path, konvo_path, ic_path, status, rider_name, created_at')
+      .select('id, reference, full_name, ic_number, hp_number, matric_id, university, campus, faculty, remark, payment_mode, cost, balance_due, balance_paid, initial_paid, balance_proof_url, delivery_address, docs_path, payment_path, oscar_path, skpg_path, konvo_path, ic_path, status, rider_name, created_at')
       .eq('rider_id', authUser.id)
       .order('created_at', { ascending: false });
     if (error) console.error('[GERAK] jubah jobs load error:', error.message);
@@ -452,7 +459,14 @@ export const RiderHome: React.FC = () => {
                       </thead>
                       <tbody>
                         {jubahJobs.map(job => {
-                          const confirmed = job.payment_mode === 'deposit' ? job.balance_paid : job.status !== 'ordered';
+                          // Was `status !== 'ordered'` for non-deposit modes, which is also
+                          // true for 'cancelled' — showing a green "confirmed" check for a
+                          // cancelled, unpaid job. Same fix as AdminHome's matching table,
+                          // using the explicit initial_paid fact rather than inferring from
+                          // status (that inference is exactly what broke the receipt's paid
+                          // state once 'cancelled' became a real status, earlier tonight).
+                          const isPaid = job.payment_mode === 'deposit' ? job.balance_paid : job.initial_paid;
+                          const depositOnly = job.payment_mode === 'deposit' && job.initial_paid && !job.balance_paid;
                           return (
                           <tr key={job.id}
                             onClick={() => goToCard(job)}
@@ -475,7 +489,11 @@ export const RiderHome: React.FC = () => {
                               </span>
                             </td>
                             <td className="py-2.5 whitespace-nowrap">
-                              <CheckCircle2 className={`w-4 h-4 ${confirmed ? 'text-emerald-500' : 'text-slate-200'}`} />
+                              {job.status === 'cancelled' ? (
+                                <XCircle className="w-4 h-4 text-red-500" />
+                              ) : (
+                                <CheckCircle2 className={`w-4 h-4 ${isPaid ? 'text-emerald-500' : depositOnly ? 'text-blue-500' : 'text-slate-200'}`} />
+                              )}
                             </td>
                           </tr>
                           );
@@ -492,7 +510,14 @@ export const RiderHome: React.FC = () => {
               const steps    = getSteps(selectedJob.payment_mode);
               const curStep  = steps.indexOf(selectedJob.status);
               const nextStat = getNextStatus(selectedJob);
-              const isDone   = !nextStat;
+              // curStep is -1 whenever status isn't one of this mode's steps
+              // at all (status='ordered' — payment not confirmed yet, so
+              // never in getSteps). isDone = !nextStat treated that the same
+              // as "reached the last step", showing "Job Complete" for a
+              // booking that hadn't even been paid for — see the matching
+              // fix in AdminHome.tsx's own copy of this same stepper.
+              const notStarted = curStep === -1;
+              const isDone = curStep >= 0 && curStep === steps.length - 1;
               return (
                 <div className="flex flex-col gap-4">
 
@@ -518,7 +543,7 @@ export const RiderHome: React.FC = () => {
                       <div className="flex items-center gap-1.5 bg-white border border-slate-100 rounded-xl px-3 py-2 flex-1">
                         <span className="text-xs font-semibold text-slate-600">{selectedJob.hp_number}</span>
                         <a href={`https://wa.me/${toWa(selectedJob.hp_number)}?text=${encodeURIComponent(
-                          jubahWaMsg(selectedJob.full_name, selectedJob.status, selectedJob.reference, selectedJob.payment_mode, selectedJob.balance_paid, selectedJob.balance_due)
+                          jubahWaMsg(selectedJob.full_name, selectedJob.status, selectedJob.reference, selectedJob.payment_mode, selectedJob.initial_paid, selectedJob.balance_paid, selectedJob.balance_due)
                         )}`} target="_blank" rel="noopener noreferrer"
                           className="text-[#25D366] ml-auto shrink-0">
                           <WaIcon className="w-4 h-4" />
@@ -568,8 +593,10 @@ export const RiderHome: React.FC = () => {
                       </div>
                     )}
 
-                    {/* Balance status (deposit) */}
-                    {selectedJob.payment_mode === 'deposit' && (
+                    {/* Balance status (deposit) — hidden before the deposit itself is even
+                        paid (notStarted): showing "Balance Due" would imply that's all
+                        that's left, when the deposit hasn't been paid either yet. */}
+                    {selectedJob.payment_mode === 'deposit' && !notStarted && (
                       <div className={`rounded-xl p-3 border flex items-center justify-between gap-2 ${
                         selectedJob.balance_paid ? 'bg-emerald-50 border-emerald-100' :
                         selectedJob.balance_proof_url ? 'bg-violet-50 border-violet-100' :
@@ -607,18 +634,32 @@ export const RiderHome: React.FC = () => {
                       </div>
                     )}
 
-                    {/* Advance status button */}
-                    {!isDone && selectedJob.status !== 'cancelled' && (
-                      <button
-                        onClick={handleAdvanceStatus}
-                        disabled={updatingStatus}
-                        className="w-full bg-primary hover:bg-primary-hover active:scale-[0.98] disabled:bg-slate-200 text-white font-semibold py-3 rounded-2xl transition flex items-center justify-center gap-2 text-sm"
-                      >
-                        {updatingStatus
-                          ? <span className="w-4 h-4 rounded-full border-2 border-white/40 border-t-white animate-spin" />
-                          : `→ ${NEXT_LABEL[nextStat ?? ''] ?? `Mark ${STATUS_LABEL[nextStat ?? '']}`}`}
-                      </button>
+                    {notStarted && selectedJob.status !== 'cancelled' && (
+                      <div className="bg-slate-50 border border-slate-100 rounded-2xl px-4 py-3 text-center">
+                        <p className="text-xs font-semibold text-slate-500">Awaiting Payment Confirmation</p>
+                      </div>
                     )}
+                    {/* Advance status button — deposit jobs stay gated until the balance is
+                        confirmed, matching AdminHome's copy of this button. Without this,
+                        tapping it here would just hit the server-side balance gate in
+                        update_jubah_booking_status and fail with an unexplained generic
+                        error, since the rider is the one actually expected to drive this. */}
+                    {!notStarted && !isDone && selectedJob.status !== 'cancelled' && (() => {
+                      const balanceGateActive = selectedJob.payment_mode === 'deposit' && !selectedJob.balance_paid;
+                      return (
+                        <button
+                          onClick={handleAdvanceStatus}
+                          disabled={updatingStatus || balanceGateActive}
+                          className="w-full bg-primary hover:bg-primary-hover active:scale-[0.98] disabled:bg-slate-200 disabled:cursor-not-allowed text-white font-semibold py-3 rounded-2xl transition flex items-center justify-center gap-2 text-sm"
+                        >
+                          {updatingStatus
+                            ? <span className="w-4 h-4 rounded-full border-2 border-white/40 border-t-white animate-spin" />
+                            : balanceGateActive
+                              ? 'Awaiting Balance Payment'
+                              : `→ ${NEXT_LABEL[nextStat ?? ''] ?? `Mark ${STATUS_LABEL[nextStat ?? '']}`}`}
+                        </button>
+                      );
+                    })()}
                     {isDone && selectedJob.status !== 'cancelled' && (
                       <div className="bg-emerald-50 border border-emerald-100 rounded-2xl px-4 py-3 text-center">
                         <p className="text-xs font-semibold text-emerald-700">✓ Job Complete</p>

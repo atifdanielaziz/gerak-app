@@ -10,7 +10,7 @@ import type { PDFPage } from 'pdf-lib';
 import { FloatingMessage } from '../components/FloatingMessage';
 import { RepresentativeSheet } from '../components/RepresentativeSheet';
 import { ReceiptCard } from '../components/Receipt';
-import { Dropdown } from '../components/Dropdown';
+import { NativeSelect } from '../components/NativeSelect';
 import { buildJubahReceiptRows } from '../lib/receiptRows';
 import { generateReceiptPdf } from '../lib/receiptPdf';
 import { copyToClipboard } from '../lib/clipboard';
@@ -277,10 +277,17 @@ export const Jubah: React.FC = () => {
       supabase.rpc('get_jubah_pricing').then(({ data }) => {
         if (data) {
           const map: PricingMap = {};
-          (data as { remark: string; payment_mode: string; price: number }[]).forEach(r => {
-            if (!map[r.remark]) map[r.remark] = {};
-            map[r.remark][r.payment_mode] = r.price;
-          });
+          // get_jubah_pricing returns every university's rows in one list
+          // (same remark+payment_mode repeated once per university) — must
+          // filter to this booking's own university before building the
+          // map, otherwise whichever university's row happens to come last
+          // silently overwrites the one that's actually relevant here.
+          (data as { remark: string; payment_mode: string; price: number; university: string }[])
+            .filter(r => r.university === landingUniversity)
+            .forEach(r => {
+              if (!map[r.remark]) map[r.remark] = {};
+              map[r.remark][r.payment_mode] = r.price;
+            });
           setPricing(map);
         }
       });
@@ -293,7 +300,7 @@ export const Jubah: React.FC = () => {
       .subscribe();
 
     return () => { supabase.removeChannel(channel); };
-  }, []);
+  }, [landingUniversity]);
 
   const DEPOSIT_AMOUNT    = 25;
   const pickupPrice       = pricing[remark]?.['pickup']  ?? 70;
@@ -822,7 +829,7 @@ export const Jubah: React.FC = () => {
               <label className="text-xs font-semibold text-slate-400">
                 Campus <span className="text-danger">*</span>
               </label>
-              <Dropdown
+              <NativeSelect
                 value={university}
                 onChange={u => { setUniversity(u); setFaculty(''); }}
                 options={UNIVERSITIES.map(u => ({ value: u, label: u.includes('Pekan') ? 'UMPSA Pekan' : 'UMPSA Gambang' }))}
@@ -836,7 +843,7 @@ export const Jubah: React.FC = () => {
               <label className="text-xs font-semibold text-slate-400">
                 Faculty <span className="text-danger">*</span>
               </label>
-              <Dropdown
+              <NativeSelect
                 value={faculty}
                 onChange={setFaculty}
                 options={(UNIVERSITY_FACULTIES[university] ?? []).map(f => ({ value: f, label: f }))}
@@ -882,7 +889,7 @@ export const Jubah: React.FC = () => {
                   Deposit (RM{DEPOSIT_AMOUNT}) — Pay RM{depositBalancePreview} before robe Collection date
                 </span>
                 <span className="text-xs text-slate-400 leading-relaxed block mt-0.5">
-                  Pay RM{DEPOSIT_AMOUNT} now to secure your booking. Pay the remaining RM{depositBalancePreview} <span className="font-bold text-slate-500">1 day before collection day</span> via Track My Order. Cancellation is locked 1 week before collection — deposit is forfeited if cancelled after that.
+                  Pay RM{DEPOSIT_AMOUNT} now to secure your booking. Pay the remaining RM{depositBalancePreview} <span className="font-bold text-slate-500">1 day before collection day</span> via Track My Order. <span className="bg-yellow-200 text-slate-800 font-semibold px-1 rounded">The RM{DEPOSIT_AMOUNT} deposit is non-refundable once paid — you can cancel for free before paying it, but not after.</span>
                 </span>
 
                 {/* Sub-choices: Self Pickup or Pickup & Postage */}
@@ -1009,7 +1016,7 @@ export const Jubah: React.FC = () => {
             </h3>
             <div className="flex items-center gap-2">
               <div className="flex-1">
-                <Dropdown
+                <NativeSelect
                   value={selectedRiderId}
                   onChange={setSelectedRiderId}
                   options={riders.map(r => ({ value: r.id, label: r.name }))}
@@ -1390,7 +1397,7 @@ export const Jubah: React.FC = () => {
               {/* State — dropdown, not free text */}
               <div className="flex flex-col gap-1.5">
                 <label className="text-xs font-semibold text-slate-400">State</label>
-                <Dropdown
+                <NativeSelect
                   value={draftState}
                   onChange={setDraftState}
                   options={MALAYSIAN_STATES.map(s => ({ value: s, label: s }))}
