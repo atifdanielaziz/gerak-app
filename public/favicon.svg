@@ -1,4 +1,10 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
-  <rect width="100" height="100" rx="22" fill="#EF4444"/>
-  <path d="M 23 30 C 23 28 24 27 26 28 L 41 28 C 51 40 62 46 77 49 C 78 49 78 51 77 51 C 62 54 51 60 41 72 L 26 72 C 24 73 23 72 23 70 L 23 68 C 34 57 41 52 41 50 C 41 48 34 43 23 32 Z M 44 28 C 48 28 53 29 57 31 C 67 36 74 43 78 49 C 67 46 57 41 50 34 C 48 32 46 30 44 28 Z M 44 72 C 48 72 53 71 57 69 C 67 64 74 57 78 51 C 67 54 57 59 50 66 C 48 68 46 70 44 72 Z" fill="#FFFFFF"/>
+  <rect width="100" height="100" rx="22" fill="#0F172A"/>
+  <text x="50" y="65"
+    font-family="Arial, Helvetica, sans-serif"
+    font-size="78"
+    font-weight="900"
+    text-anchor="middle"
+    fill="#FFFFFF"
+  >g</text>
 </svg>
