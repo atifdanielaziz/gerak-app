@@ -1396,6 +1396,7 @@ export const AdminHome: React.FC = () => {
       return `Assalamualaikum ${name} 🎓\n\nIni peringatan daripada Gerak Jubah.\n\nBaki bayaran anda sebanyak *RM${balDue.toFixed(2)}* masih belum dijelaskan.\n\nSila kemaskini bukti pembayaran melalui akaun Gerak anda sebelum tarikh pengambilan jubah.\n\nRujukan: ${ref}\n\nTerima kasih 🙏`;
     }
     const msgs: Record<string, string> = {
+      paid:       `Assalamualaikum ${name} 🎓\n\nPembayaran anda telah berjaya diterima oleh Gerak Jubah! ✅\n\nKami akan maklumkan perkembangan seterusnya tidak lama lagi.\n\nRujukan: ${ref}\n\nTerima kasih 🙏`,
       booked:     `Assalamualaikum ${name} 🎓\n\nTempahan jubah anda telah berjaya diterima oleh Gerak Jubah! ✅\n\nKami akan maklumkan perkembangan seterusnya tidak lama lagi.\n\nRujukan: ${ref}\n\nTerima kasih 🙏`,
       processing: `Assalamualaikum ${name} 🎓\n\nJubah anda sedang dalam proses pembersihan dan pengemasan. 🔄\n\nKami akan maklumkan apabila ia siap untuk diambil.\n\nRujukan: ${ref}\n\nTerima kasih 🙏`,
       collected:  `Assalamualaikum ${name} 🎓\n\nJubah anda telah berjaya diambil! ✅\n\nSila hubungi kami sekiranya ada sebarang pertanyaan.\n\nRujukan: ${ref}\n\nTerima kasih 🙏`,
@@ -3680,7 +3681,12 @@ export const AdminHome: React.FC = () => {
                   <span className="flex items-center gap-1.5"><Users className="w-4 h-4" /> Customer Directory</span>
                   <span className="font-normal text-slate-300 normal-case tracking-normal">
                     {jubahBookings.filter(b => {
-                      const isPaid = b.payment_mode !== 'deposit' || b.balance_paid;
+                      // payment_mode !== 'deposit' alone is NOT "paid" — it just means
+                      // "not deposit mode," true for a pickup/postage booking that's
+                      // never been paid at all (still status='ordered'). initial_paid is
+                      // the actual fact to check for non-deposit modes, same formula
+                      // RiderHome already uses correctly.
+                      const isPaid = b.payment_mode === 'deposit' ? b.balance_paid : b.initial_paid;
                       const isCancelled = b.status === 'cancelled';
                       const matchFilter =
                         jubahPayFilter === 'all'       ? true :
@@ -3716,7 +3722,12 @@ export const AdminHome: React.FC = () => {
                       </thead>
                       <tbody>
                         {jubahBookings.filter(b => {
-                          const isPaid = b.payment_mode !== 'deposit' || b.balance_paid;
+                          // payment_mode !== 'deposit' alone is NOT "paid" — it just means
+                      // "not deposit mode," true for a pickup/postage booking that's
+                      // never been paid at all (still status='ordered'). initial_paid is
+                      // the actual fact to check for non-deposit modes, same formula
+                      // RiderHome already uses correctly.
+                      const isPaid = b.payment_mode === 'deposit' ? b.balance_paid : b.initial_paid;
                           const isCancelled = b.status === 'cancelled';
                           const matchFilter =
                             jubahPayFilter === 'all'       ? true :
@@ -3727,7 +3738,12 @@ export const AdminHome: React.FC = () => {
                           const matchSearch = !q || b.full_name.toLowerCase().includes(q) || b.hp_number.includes(q) || b.reference.toLowerCase().includes(q);
                           return matchFilter && matchSearch;
                         }).map(b => {
-                          const isPaid = b.payment_mode !== 'deposit' || b.balance_paid;
+                          // payment_mode !== 'deposit' alone is NOT "paid" — it just means
+                      // "not deposit mode," true for a pickup/postage booking that's
+                      // never been paid at all (still status='ordered'). initial_paid is
+                      // the actual fact to check for non-deposit modes, same formula
+                      // RiderHome already uses correctly.
+                      const isPaid = b.payment_mode === 'deposit' ? b.balance_paid : b.initial_paid;
                           return (
                             <tr key={b.id}
                               onClick={() => goToAdminCard(b)}
