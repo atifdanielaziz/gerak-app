@@ -252,7 +252,7 @@ const fmtJubahDate = (iso: string | null | undefined) =>
 
 export function buildJubahReceiptRows(j: JubahReceiptSource): ReceiptDoc {
   const paymentLabel =
-    j.paymentMode === 'deposit' ? 'Deposit' :
+    j.paymentMode === 'deposit' ? (j.balancePaid ? 'Full Payment (DP)' : 'Deposit') :
     j.paymentMode === 'postage' ? 'Full Payment — Postage' :
                                    'Full Payment — Self Pickup';
 
