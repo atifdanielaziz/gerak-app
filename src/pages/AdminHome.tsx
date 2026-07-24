@@ -3750,10 +3750,10 @@ export const AdminHome: React.FC = () => {
                               <td className="py-2.5 pr-4 text-slate-500 font-semibold whitespace-nowrap">{b.remark}</td>
                               <td className="py-2.5 pr-4 whitespace-nowrap">
                                 <span className={`font-semibold px-2 py-0.5 rounded-full border text-xs ${
-                                  b.payment_mode === 'deposit' ? 'bg-amber-50 border-amber-100 text-amber-700' :
+                                  b.payment_mode === 'deposit' && !b.balance_paid ? 'bg-amber-50 border-amber-100 text-amber-700' :
                                   'bg-blue-50 border-blue-100 text-blue-700'
                                 }`}>
-                                  {b.payment_mode === 'deposit' ? 'Deposit' : 'Full Payment'}
+                                  {b.payment_mode !== 'deposit' ? 'Full Payment' : b.balance_paid ? 'Full Payment (DP)' : 'Deposit'}
                                 </span>
                               </td>
                               <td className="py-2.5 pr-4 whitespace-nowrap">
@@ -4105,7 +4105,7 @@ export const AdminHome: React.FC = () => {
                       { label: 'Faculty',        value: b.faculty },
                       { label: 'Remark',         value: b.remark },
                       { label: 'Booking Type',   value: b.delivery_address ? 'Pickup & Postage' : 'Self Pickup' },
-                      { label: 'Payment Mode',   value: b.payment_mode === 'deposit' ? 'Deposit' : 'Full Payment' },
+                      { label: 'Payment Mode',   value: b.payment_mode !== 'deposit' ? 'Full Payment' : b.balance_paid ? 'Full Payment (DP)' : 'Deposit' },
                       { label: 'Service Fee',    value: `RM${b.cost.toFixed(2)}` },
                       ...(b.payment_mode === 'deposit' ? [{ label: 'Balance Due', value: `RM${b.balance_due.toFixed(2)}` }] : []),
                       ...(b.delivery_address ? [{ label: 'Delivery Address', value: b.delivery_address }] : []),
