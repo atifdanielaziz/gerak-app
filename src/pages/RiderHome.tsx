@@ -639,18 +639,27 @@ export const RiderHome: React.FC = () => {
                         <p className="text-xs font-semibold text-slate-500">Awaiting Payment Confirmation</p>
                       </div>
                     )}
-                    {/* Advance status button */}
-                    {!notStarted && !isDone && selectedJob.status !== 'cancelled' && (
-                      <button
-                        onClick={handleAdvanceStatus}
-                        disabled={updatingStatus}
-                        className="w-full bg-primary hover:bg-primary-hover active:scale-[0.98] disabled:bg-slate-200 text-white font-semibold py-3 rounded-2xl transition flex items-center justify-center gap-2 text-sm"
-                      >
-                        {updatingStatus
-                          ? <span className="w-4 h-4 rounded-full border-2 border-white/40 border-t-white animate-spin" />
-                          : `→ ${NEXT_LABEL[nextStat ?? ''] ?? `Mark ${STATUS_LABEL[nextStat ?? '']}`}`}
-                      </button>
-                    )}
+                    {/* Advance status button — deposit jobs stay gated until the balance is
+                        confirmed, matching AdminHome's copy of this button. Without this,
+                        tapping it here would just hit the server-side balance gate in
+                        update_jubah_booking_status and fail with an unexplained generic
+                        error, since the rider is the one actually expected to drive this. */}
+                    {!notStarted && !isDone && selectedJob.status !== 'cancelled' && (() => {
+                      const balanceGateActive = selectedJob.payment_mode === 'deposit' && !selectedJob.balance_paid;
+                      return (
+                        <button
+                          onClick={handleAdvanceStatus}
+                          disabled={updatingStatus || balanceGateActive}
+                          className="w-full bg-primary hover:bg-primary-hover active:scale-[0.98] disabled:bg-slate-200 disabled:cursor-not-allowed text-white font-semibold py-3 rounded-2xl transition flex items-center justify-center gap-2 text-sm"
+                        >
+                          {updatingStatus
+                            ? <span className="w-4 h-4 rounded-full border-2 border-white/40 border-t-white animate-spin" />
+                            : balanceGateActive
+                              ? 'Awaiting Balance Payment'
+                              : `→ ${NEXT_LABEL[nextStat ?? ''] ?? `Mark ${STATUS_LABEL[nextStat ?? '']}`}`}
+                        </button>
+                      );
+                    })()}
                     {isDone && selectedJob.status !== 'cancelled' && (
                       <div className="bg-emerald-50 border border-emerald-100 rounded-2xl px-4 py-3 text-center">
                         <p className="text-xs font-semibold text-emerald-700">✓ Job Complete</p>
