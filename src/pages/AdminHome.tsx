@@ -17,6 +17,10 @@ import { copyToClipboard } from '../lib/clipboard';
 import { ReceiptCard } from '../components/Receipt';
 import { NativeSelect } from '../components/NativeSelect';
 import { buildJubahReceiptRows, type ReceiptDoc } from '../lib/receiptRows';
+import {
+  JUBAH_STEP_LABEL as JUBAH_STATUS_LABEL, JUBAH_STATUS_STYLE,
+  JUBAH_NEXT_LABEL, getJubahProgress, jubahWaMsg,
+} from '../lib/jubahStatus';
 import { generateReceiptPdf } from '../lib/receiptPdf';
 import ReactCrop, { centerCrop, makeAspectCrop, type Crop, type PixelCrop } from 'react-image-crop';
 import 'react-image-crop/dist/ReactCrop.css';
@@ -1282,36 +1286,6 @@ export const AdminHome: React.FC = () => {
   };
   const goAdminBack = () => window.history.back();
 
-  const JUBAH_STATUS_LABEL: Record<string, string> = {
-    ordered:    'Pending',
-    paid:       'Paid',
-    booked:     'New', processing: 'Processing', collected: 'Collected',
-    at_hub:     'At Hub', delivered: 'Delivered', cancelled: 'Cancelled',
-  };
-  const JUBAH_STATUS_STYLE: Record<string, string> = {
-    ordered:    'bg-slate-50 border-slate-200 text-slate-500',
-    paid:       'bg-emerald-50 border-emerald-100 text-emerald-700',
-    booked:     'bg-blue-50 border-blue-100 text-blue-700',
-    processing: 'bg-violet-50 border-violet-100 text-violet-700',
-    collected:  'bg-amber-50 border-amber-100 text-amber-700',
-    at_hub:     'bg-emerald-50 border-emerald-100 text-emerald-700',
-    delivered:  'bg-emerald-50 border-emerald-100 text-emerald-700',
-    cancelled:  'bg-red-50 border-red-100 text-red-600',
-  };
-  const JUBAH_NEXT_LABEL: Record<string, string> = {
-    paid:       'Start Booking',
-    processing: 'Start Processing',
-    collected:  'Mark Collected',
-    at_hub:     'Mark Delivered to Hub',
-    delivered:  'Mark Delivered',
-  };
-  const jubahGetSteps = (mode: string) =>
-    mode === 'deposit'
-      ? ['booked', 'processing', 'collected', 'delivered']
-      : mode === 'postage'
-      ? ['paid', 'booked', 'processing', 'collected', 'at_hub']
-      : ['paid', 'booked', 'processing', 'collected', 'delivered'];
-
   const handleConfirmJubahBooking = async () => {
     if (!jubahAdminSelected) return;
     const b = jubahAdminSelected;
@@ -1349,9 +1323,7 @@ export const AdminHome: React.FC = () => {
 
   const handleAdminAdvanceStatus = async () => {
     if (!jubahAdminSelected) return;
-    const steps = jubahGetSteps(jubahAdminSelected.payment_mode);
-    const idx   = steps.indexOf(jubahAdminSelected.status);
-    const next  = idx >= 0 && idx < steps.length - 1 ? steps[idx + 1] : null;
+    const next = getJubahProgress(jubahAdminSelected.status, jubahAdminSelected.payment_mode).nextStatus;
     if (!next) return;
     setJubahAdminUpdating(true);
     const { data, error } = await supabase.rpc('update_jubah_booking_status', {
@@ -1408,25 +1380,6 @@ export const AdminHome: React.FC = () => {
     setBannerUrls(urls);
     setBannerImgError({});
   }, [activeTab, jubahSubTab]);
-
-  const jubahWaMsg = (name: string, status: string, ref: string, payMode: string, initialPaid: boolean, balPaid: boolean, balDue: number) => {
-    // initialPaid must be checked too — !balPaid alone is also true before
-    // the deposit's even been paid, which would send this "your balance is
-    // unpaid" reminder to a customer who hasn't paid anything at all yet.
-    if (payMode === 'deposit' && initialPaid && !balPaid) {
-      return `Assalamualaikum ${name} 🎓\n\nIni peringatan daripada Gerak Jubah.\n\nBaki bayaran anda sebanyak *RM${balDue.toFixed(2)}* masih belum dijelaskan.\n\nSila kemaskini bukti pembayaran melalui akaun Gerak anda sebelum tarikh pengambilan jubah.\n\nRujukan: ${ref}\n\nTerima kasih 🙏`;
-    }
-    const msgs: Record<string, string> = {
-      paid:       `Assalamualaikum ${name} 🎓\n\nPembayaran anda telah berjaya diterima oleh Gerak Jubah! ✅\n\nKami akan maklumkan perkembangan seterusnya tidak lama lagi.\n\nRujukan: ${ref}\n\nTerima kasih 🙏`,
-      booked:     `Assalamualaikum ${name} 🎓\n\nTempahan jubah anda telah berjaya diterima oleh Gerak Jubah! ✅\n\nKami akan maklumkan perkembangan seterusnya tidak lama lagi.\n\nRujukan: ${ref}\n\nTerima kasih 🙏`,
-      processing: `Assalamualaikum ${name} 🎓\n\nJubah anda sedang dalam proses pembersihan dan pengemasan. 🔄\n\nKami akan maklumkan apabila ia siap untuk diambil.\n\nRujukan: ${ref}\n\nTerima kasih 🙏`,
-      collected:  `Assalamualaikum ${name} 🎓\n\nJubah anda telah berjaya diambil! ✅\n\nSila hubungi kami sekiranya ada sebarang pertanyaan.\n\nRujukan: ${ref}\n\nTerima kasih 🙏`,
-      at_hub:     `Assalamualaikum ${name} 🎓\n\nJubah anda telah sampai di hab pos. 📦\n\nIa akan dihantar ke alamat anda tidak lama lagi.\n\nRujukan: ${ref}\n\nTerima kasih 🙏`,
-      on_the_way: `Assalamualaikum ${name} 🎓\n\nJubah anda sedang dalam perjalanan ke alamat anda! 🚚\n\nSila pastikan anda berada di rumah untuk menerima penghantaran.\n\nRujukan: ${ref}\n\nTerima kasih 🙏`,
-      delivered:  `Assalamualaikum ${name} 🎓\n\nJubah anda telah berjaya dihantar! 🎉\n\nTerima kasih kerana menggunakan Gerak Jubah. Semoga majlis konvokesyen anda berjalan lancar! 🎓\n\nRujukan: ${ref}`,
-    };
-    return msgs[status] ?? `Assalamualaikum ${name} 🎓\n\nIni Gerak Jubah. Terima kasih atas tempahan anda.\n\nRujukan: ${ref}\n\nTerima kasih 🙏`;
-  };
 
   useEffect(() => {
     if (!sampleDocsPage) {
@@ -3941,21 +3894,7 @@ export const AdminHome: React.FC = () => {
             {/* PAGE 2 — Job card with stepper */}
             {jubahAdminView === 'card' && jubahAdminSelected && (() => {
               const b      = jubahAdminSelected;
-              const steps  = jubahGetSteps(b.payment_mode);
-              const curStep = steps.indexOf(b.status);
-              const nextStat = curStep >= 0 && curStep < steps.length - 1 ? steps[curStep + 1] : null;
-              // curStep is -1 whenever b.status isn't one of this payment
-              // mode's steps at all — status='ordered' (deposit/payment not
-              // even confirmed yet) is the real case, since none of the
-              // jubahGetSteps arrays include it. isDone = !nextStat treated
-              // that the same as "reached the last step", which showed
-              // "Delivery Complete" for a booking that hadn't even been
-              // paid for yet — and left the stepper itself rendering with
-              // nothing marked reached, since curStep=-1 never matches any
-              // step index either. Both symptoms traced back to this one
-              // condition conflating "not found" with "finished".
-              const notStarted = curStep === -1;
-              const isDone = curStep >= 0 && curStep === steps.length - 1;
+              const { steps, curStep, notStarted, isDone, nextStatus: nextStat } = getJubahProgress(b.status, b.payment_mode);
               return (
                 <div className="flex flex-col gap-4">
                   {/* Back row — sticky so it stays visible while the content below scrolls */}

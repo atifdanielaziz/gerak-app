@@ -5,6 +5,10 @@ import { WaIcon, toWa } from '../lib/whatsapp';
 import { getJubahDocSignedUrl } from '../lib/jubahDocs';
 import { stampWatermark } from '../lib/watermark';
 import {
+  JUBAH_STEP_LABEL as STATUS_LABEL, JUBAH_STATUS_STYLE as STATUS_STYLE,
+  JUBAH_NEXT_LABEL as NEXT_LABEL, getJubahProgress, jubahWaMsg,
+} from '../lib/jubahStatus';
+import {
   RefreshCw, ShoppingBasket, GraduationCap, TrendingUp,
   Upload, FileImage, ShieldCheck, ShieldAlert,
   ChevronLeft, Download, ExternalLink, CheckCircle2, XCircle,
@@ -43,76 +47,8 @@ type JubahJobRow = {
   created_at: string;
 };
 
-const STATUS_LABEL: Record<string, string> = {
-  ordered:    'Pending',
-  paid:       'Paid',
-  booked:     'New',
-  processing: 'Processing',
-  collected:  'Collected',
-  at_hub:     'At Hub',
-  delivered:  'Delivered',
-  cancelled:  'Cancelled',
-};
-
-const STATUS_STYLE: Record<string, string> = {
-  ordered:    'bg-slate-50 border-slate-200 text-slate-500',
-  paid:       'bg-emerald-50 border-emerald-100 text-emerald-700',
-  booked:     'bg-blue-50 border-blue-100 text-blue-700',
-  processing: 'bg-violet-50 border-violet-100 text-violet-700',
-  collected:  'bg-amber-50 border-amber-100 text-amber-700',
-  at_hub:     'bg-emerald-50 border-emerald-100 text-emerald-700',
-  delivered:  'bg-emerald-50 border-emerald-100 text-emerald-700',
-  cancelled:  'bg-red-50 border-red-100 text-red-600',
-};
-
-// Was missing the 'paid' starting point for non-deposit bookings entirely —
-// only deposit-mode actually starts at 'booked' (that's what the ToyyibPay
-// callback sets once the deposit clears). Full-payment pickup/postage
-// bookings start at 'paid' instead, and never pass through 'booked' via
-// payment — this array needs it as an explicit first step, not skipped.
-// Without it, steps.indexOf('paid') returned -1 for any paid pickup/postage
-// job, which the calling code treats as "not started yet" — a rider
-// couldn't advance a job that had, in fact, already been paid for.
-// Matches AdminHome's jubahGetSteps exactly.
-const getSteps = (paymentMode: string) =>
-  paymentMode === 'deposit'
-    ? ['booked', 'processing', 'collected', 'delivered']
-    : paymentMode === 'postage'
-    ? ['paid', 'booked', 'processing', 'collected', 'at_hub']
-    : ['paid', 'booked', 'processing', 'collected', 'delivered'];
-
-const getNextStatus = (job: JubahJobRow): string | null => {
-  const steps = getSteps(job.payment_mode);
-  const idx = steps.indexOf(job.status);
-  return idx >= 0 && idx < steps.length - 1 ? steps[idx + 1] : null;
-};
-
-const NEXT_LABEL: Record<string, string> = {
-  processing: 'Start Processing',
-  collected:  'Mark Collected',
-  at_hub:     'Mark Delivered to Hub',
-  delivered:  'Mark Delivered',
-};
-
-const jubahWaMsg = (name: string, status: string, ref: string, payMode: string, initialPaid: boolean, balPaid: boolean, balDue: number) => {
-  // initialPaid must be checked too — the raw !balPaid check on its own is
-  // also true before the deposit's even been paid, which would send this
-  // "your balance is unpaid" reminder to a customer who hasn't paid
-  // anything at all yet.
-  if (payMode === 'deposit' && initialPaid && !balPaid) {
-    return `Assalamualaikum ${name} 🎓\n\nIni peringatan daripada Gerak Jubah.\n\nBaki bayaran anda sebanyak *RM${balDue.toFixed(2)}* masih belum dijelaskan.\n\nSila kemaskini bukti pembayaran melalui akaun Gerak anda sebelum tarikh pengambilan jubah.\n\nRujukan: ${ref}\n\nTerima kasih 🙏`;
-  }
-  const msgs: Record<string, string> = {
-    paid:       `Assalamualaikum ${name} 🎓\n\nPembayaran anda telah berjaya diterima oleh Gerak Jubah! ✅\n\nKami akan maklumkan perkembangan seterusnya tidak lama lagi.\n\nRujukan: ${ref}\n\nTerima kasih 🙏`,
-    booked:     `Assalamualaikum ${name} 🎓\n\nTempahan jubah anda telah berjaya diterima oleh Gerak Jubah! ✅\n\nKami akan maklumkan perkembangan seterusnya tidak lama lagi.\n\nRujukan: ${ref}\n\nTerima kasih 🙏`,
-    processing: `Assalamualaikum ${name} 🎓\n\nJubah anda sedang dalam proses pembersihan dan pengemasan. 🔄\n\nKami akan maklumkan apabila ia siap untuk diambil.\n\nRujukan: ${ref}\n\nTerima kasih 🙏`,
-    collected:  `Assalamualaikum ${name} 🎓\n\nJubah anda telah berjaya diambil! ✅\n\nSila hubungi kami sekiranya ada sebarang pertanyaan.\n\nRujukan: ${ref}\n\nTerima kasih 🙏`,
-    at_hub:     `Assalamualaikum ${name} 🎓\n\nJubah anda telah sampai di hab pos. 📦\n\nIa akan dihantar ke alamat anda tidak lama lagi.\n\nRujukan: ${ref}\n\nTerima kasih 🙏`,
-    on_the_way: `Assalamualaikum ${name} 🎓\n\nJubah anda sedang dalam perjalanan ke alamat anda! 🚚\n\nSila pastikan anda berada di rumah untuk menerima penghantaran.\n\nRujukan: ${ref}\n\nTerima kasih 🙏`,
-    delivered:  `Assalamualaikum ${name} 🎓\n\nJubah anda telah berjaya dihantar! 🎉\n\nTerima kasih kerana menggunakan Gerak Jubah. Semoga majlis konvokesyen anda berjalan lancar! 🎓\n\nRujukan: ${ref}`,
-  };
-  return msgs[status] ?? `Assalamualaikum ${name} 🎓\n\nIni Gerak Jubah. Terima kasih atas tempahan anda.\n\nRujukan: ${ref}\n\nTerima kasih 🙏`;
-};
+const getNextStatus = (job: JubahJobRow): string | null =>
+  getJubahProgress(job.status, job.payment_mode).nextStatus;
 
 export const RiderHome: React.FC = () => {
   const { user, refreshUserData, receiptGateActive } = useApp();
@@ -521,17 +457,7 @@ export const RiderHome: React.FC = () => {
 
             {/* PAGE 2 — Job Card with stepper */}
             {jubahView === 'card' && selectedJob && (() => {
-              const steps    = getSteps(selectedJob.payment_mode);
-              const curStep  = steps.indexOf(selectedJob.status);
-              const nextStat = getNextStatus(selectedJob);
-              // curStep is -1 whenever status isn't one of this mode's steps
-              // at all (status='ordered' — payment not confirmed yet, so
-              // never in getSteps). isDone = !nextStat treated that the same
-              // as "reached the last step", showing "Job Complete" for a
-              // booking that hadn't even been paid for — see the matching
-              // fix in AdminHome.tsx's own copy of this same stepper.
-              const notStarted = curStep === -1;
-              const isDone = curStep >= 0 && curStep === steps.length - 1;
+              const { steps, curStep, notStarted, isDone, nextStatus: nextStat } = getJubahProgress(selectedJob.status, selectedJob.payment_mode);
               return (
                 <div className="flex flex-col gap-4">
 

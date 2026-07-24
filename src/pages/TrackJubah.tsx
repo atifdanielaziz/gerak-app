@@ -6,6 +6,7 @@ import { ReceiptCard } from '../components/Receipt';
 import { buildJubahReceiptRows } from '../lib/receiptRows';
 import { generateReceiptPdf } from '../lib/receiptPdf';
 import { getPendingJubahBooking, clearPendingJubahBooking } from '../lib/pendingJubahBooking';
+import { JUBAH_STEP_LABEL, getJubahProgress } from '../lib/jubahStatus';
 
 interface JubahBookingResult {
   id: string;
@@ -295,25 +296,7 @@ export const TrackJubah: React.FC = () => {
         ) : (
           <div className="flex flex-col gap-4">
             {results.map(b => {
-              // Non-deposit (pickup/postage) bookings start at 'paid', not
-              // 'booked' — that's what the ToyyibPay callback actually sets
-              // for them, and they never pass through 'booked' via payment.
-              // Only deposit-mode starts at 'booked'. Without 'paid' here,
-              // trackSteps.indexOf('paid') was -1 for any paid pickup/postage
-              // booking, so the stepper rendered as if nothing had happened
-              // yet even though the customer had already paid in full.
-              // Matches AdminHome/RiderHome's step arrays.
-              const trackSteps = b.payment_mode === 'deposit'
-                ? ['booked', 'processing', 'collected', 'delivered']
-                : b.payment_mode === 'postage'
-                ? ['paid', 'booked', 'processing', 'collected', 'at_hub']
-                : ['paid', 'booked', 'processing', 'collected', 'delivered'];
-              const STEP_LABEL: Record<string, string> = {
-                paid: 'Paid', booked: 'New', processing: 'Processing', collected: 'Collected',
-                at_hub: 'At Hub', delivered: 'Delivered',
-              };
-              const curStep = trackSteps.indexOf(b.status);
-              const isDone  = curStep === trackSteps.length - 1;
+              const { steps: trackSteps, curStep, isDone } = getJubahProgress(b.status, b.payment_mode);
 
               const receipt = receiptData[b.id];
               const jubahDoc = receipt ? buildJubahReceiptRows({
@@ -463,7 +446,7 @@ export const TrackJubah: React.FC = () => {
                   <div className="flex justify-between">
                     {trackSteps.map(step => (
                       <span key={step} className="text-[8px] font-normal text-slate-400 flex-1 text-center first:text-left last:text-right">
-                        {STEP_LABEL[step]}
+                        {JUBAH_STEP_LABEL[step]}
                       </span>
                     ))}
                   </div>
