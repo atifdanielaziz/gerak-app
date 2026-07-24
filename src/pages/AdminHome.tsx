@@ -1,4 +1,4 @@
-﻿import React, { useEffect, useState, useCallback, useRef } from 'react';
+﻿import React, { useEffect, useState, useCallback, useRef, useMemo } from 'react';
 import { useApp } from '../context/AppContext';
 import { supabase } from '../lib/supabase';
 import {
@@ -1002,6 +1002,60 @@ export const AdminHome: React.FC = () => {
   const [copiedRef, setCopiedRef] = useState(false);
   const [copiedListRef, setCopiedListRef] = useState<string | null>(null);
   const [jubahSubTab,        setJubahSubTab]        = useState<'customer' | 'rider' | 'price' | 'banner'>('rider');
+  const [jubahStatsUniversity, setJubahStatsUniversity] = useState('all');
+
+  // jubah_bookings.university stores the verbose display string (e.g.
+  // "Universiti Malaysia Pahang Al-Sultan Abdullah (Pekan)"), not the short
+  // key used elsewhere (that key only ever existed as a pricing-lookup
+  // parameter, never persisted on the booking row) — so grouping by exact
+  // string would split Pekan and Gambang into separate "universities".
+  // Stripping the trailing "(...)" campus suffix gives the real university
+  // grouping without needing to hardcode/guess a name-to-key mapping.
+  const jubahUniversityBase = (u: string) => u.replace(/\s*\([^)]*\)\s*$/, '').trim();
+
+  const jubahStats = useMemo(() => {
+    const inScope = jubahStatsUniversity === 'all'
+      ? jubahBookings
+      : jubahBookings.filter(b => jubahUniversityBase(b.university) === jubahStatsUniversity);
+
+    const active    = inScope.filter(b => b.status !== 'cancelled');
+    const cancelled = inScope.length - active.length;
+
+    let collected = 0;
+    let outstanding = 0;
+    const statusCounts: Record<string, number> = {};
+    const modeCounts = { deposit: 0, pickup: 0, postage: 0 };
+
+    active.forEach(b => {
+      statusCounts[b.status] = (statusCounts[b.status] ?? 0) + 1;
+      if (b.payment_mode === 'deposit') modeCounts.deposit++;
+      else if (b.payment_mode === 'postage') modeCounts.postage++;
+      else modeCounts.pickup++;
+
+      if (b.payment_mode === 'deposit') {
+        if (!b.initial_paid) {
+          outstanding += b.cost + (b.balance_due ?? 0);
+        } else if (!b.balance_paid) {
+          collected += b.cost;
+          outstanding += b.balance_due ?? 0;
+        } else {
+          collected += b.cost + (b.balance_due ?? 0);
+        }
+      } else if (b.initial_paid) {
+        collected += b.cost;
+      } else {
+        outstanding += b.cost;
+      }
+    });
+
+    return { total: active.length, cancelled, collected, outstanding, statusCounts, modeCounts };
+  }, [jubahBookings, jubahStatsUniversity]);
+
+  const jubahUniversityOptions = useMemo(() => {
+    const set = new Set<string>();
+    jubahBookings.forEach(b => { if (b.university) set.add(jubahUniversityBase(b.university)); });
+    return Array.from(set).sort();
+  }, [jubahBookings]);
 
   const BANNER_BUCKET = 'jubah-banners';
   const BANNER_ITEMS = [
@@ -3374,6 +3428,100 @@ export const AdminHome: React.FC = () => {
                 }`}>
                 {togglingJubah ? '…' : jubahActive ? <><span className="inline-block w-2 h-2 rounded-full bg-emerald-400 mr-1" />ON</> : <><span className="inline-block w-2 h-2 rounded-full bg-slate-400 mr-1" />OFF</>}
               </button>
+            </div>
+
+            {/* Overview stats — computed client-side from jubahBookings, already
+                loaded for the Customer Directory below; no extra query. */}
+            <div className="bg-white border border-slate-100 rounded-3xl p-5 flex flex-col gap-4">
+              <div className="flex items-center justify-between gap-2 flex-wrap">
+                <p className="text-xs font-black text-slate-800">Overview</p>
+                {jubahUniversityOptions.length > 1 && (
+                  <select
+                    value={jubahStatsUniversity}
+                    onChange={e => setJubahStatsUniversity(e.target.value)}
+                    className="text-xs font-semibold text-slate-600 bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-1.5"
+                  >
+                    <option value="all">All Universities</option>
+                    {jubahUniversityOptions.map(u => <option key={u} value={u}>{u}</option>)}
+                  </select>
+                )}
+              </div>
+
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                <div className="border border-slate-100 rounded-2xl p-3.5 flex flex-col gap-1.5">
+                  <div className="w-7 h-7 rounded-lg bg-blue-50 flex items-center justify-center">
+                    <BarChart3 className="w-3.5 h-3.5 text-blue-600" />
+                  </div>
+                  <span className="text-[10px] font-semibold text-slate-400">Total Orders</span>
+                  <span className="text-lg font-black text-slate-800">{jubahStats.total}</span>
+                </div>
+                <div className="border border-slate-100 rounded-2xl p-3.5 flex flex-col gap-1.5">
+                  <div className="w-7 h-7 rounded-lg bg-emerald-50 flex items-center justify-center">
+                    <Check className="w-3.5 h-3.5 text-emerald-600" />
+                  </div>
+                  <span className="text-[10px] font-semibold text-slate-400">Revenue Collected</span>
+                  <span className="text-lg font-black text-slate-800">RM{jubahStats.collected.toFixed(2)}</span>
+                </div>
+                <div className="border border-slate-100 rounded-2xl p-3.5 flex flex-col gap-1.5">
+                  <div className="w-7 h-7 rounded-lg bg-amber-50 flex items-center justify-center">
+                    <Clock className="w-3.5 h-3.5 text-amber-600" />
+                  </div>
+                  <span className="text-[10px] font-semibold text-slate-400">Revenue Outstanding</span>
+                  <span className="text-lg font-black text-slate-800">RM{jubahStats.outstanding.toFixed(2)}</span>
+                </div>
+                <div className="border border-slate-100 rounded-2xl p-3.5 flex flex-col gap-1.5">
+                  <div className="w-7 h-7 rounded-lg bg-red-50 flex items-center justify-center">
+                    <Ban className="w-3.5 h-3.5 text-red-600" />
+                  </div>
+                  <span className="text-[10px] font-semibold text-slate-400">Cancelled</span>
+                  <span className="text-lg font-black text-slate-800">{jubahStats.cancelled}</span>
+                </div>
+              </div>
+
+              <div className="grid sm:grid-cols-[1.4fr_1fr] gap-3">
+                {/* Status breakdown */}
+                <div className="border border-slate-100 rounded-2xl p-4 flex flex-col gap-1">
+                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">Status Breakdown</p>
+                  {([
+                    { label: 'Pending',    statuses: ['ordered'],       color: 'bg-slate-400' },
+                    { label: 'New',        statuses: ['booked', 'paid'], color: 'bg-blue-500' },
+                    { label: 'Processing', statuses: ['processing'],    color: 'bg-violet-500' },
+                    { label: 'Collected',  statuses: ['collected'],     color: 'bg-amber-500' },
+                    { label: 'At Hub',     statuses: ['at_hub'],        color: 'bg-emerald-500' },
+                    { label: 'Delivered',  statuses: ['delivered'],     color: 'bg-emerald-600' },
+                  ]).map(row => {
+                    const count = row.statuses.reduce((sum, s) => sum + (jubahStats.statusCounts[s] ?? 0), 0);
+                    const pct = jubahStats.total > 0 ? Math.round((count / jubahStats.total) * 100) : 0;
+                    return (
+                      <div key={row.label} className="flex items-center gap-2.5 py-1">
+                        <span className="w-16 shrink-0 text-[10.5px] font-semibold text-slate-500">{row.label}</span>
+                        <div className="flex-1 h-1.5 rounded-full bg-slate-100 overflow-hidden">
+                          <div className={`h-full rounded-full ${row.color}`} style={{ width: `${pct}%` }} />
+                        </div>
+                        <span className="w-5 shrink-0 text-right text-xs font-black text-slate-700">{count}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {/* Payment mode split */}
+                <div className="border border-slate-100 rounded-2xl p-4 flex flex-col gap-2">
+                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">Payment Mode</p>
+                  {([
+                    { label: 'Deposit', key: 'deposit' as const, color: 'bg-amber-500' },
+                    { label: 'Pickup',  key: 'pickup'  as const, color: 'bg-slate-400' },
+                    { label: 'Postage', key: 'postage' as const, color: 'bg-blue-500' },
+                  ]).map(row => (
+                    <div key={row.key} className="flex items-center justify-between gap-2 border border-slate-100 rounded-xl px-3 py-2">
+                      <span className="flex items-center gap-2 text-xs font-bold text-slate-700">
+                        <span className={`w-2 h-2 rounded-full ${row.color}`} />
+                        {row.label}
+                      </span>
+                      <span className="text-sm font-black text-slate-800">{jubahStats.modeCounts[row.key]}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
             </div>
 
             {/* Customer | Rider | Price sub-tabs */}
