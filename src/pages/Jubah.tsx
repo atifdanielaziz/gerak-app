@@ -1217,7 +1217,7 @@ export const Jubah: React.FC = () => {
             <p className="text-xs text-blue-100 font-semibold mt-1">
               {user.isLoggedIn
                 ? 'You can also track this anytime from your order history.'
-                : 'Save this number or your phone number — you\'ll need it to track your delivery.'}
+                : 'Save this number — you\'ll need it to track your delivery.'}
             </p>
             {!user.isLoggedIn && (
               <button
