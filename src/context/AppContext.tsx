@@ -22,7 +22,9 @@ export type ActivePage =
   | 'forgot-password'
   | 'reset-password'
   | 'track-jubah'
-  | 'gerak-transporter';
+  | 'gerak-transporter'
+  | 'privacy-policy'
+  | 'terms-of-service';
 
 export interface UserSession {
   name: string;
@@ -179,9 +181,16 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   // after paying would boot straight past that URL into the normal splash →
   // dashboard flow and never see their booking status. Captured once, before
   // Splash's own timer can navigate away from it.
-  const [deepLinkPage] = useState<ActivePage | null>(() =>
-    window.location.pathname.replace(/\/+$/, '').endsWith('/jubah/track') ? 'track-jubah' : null
-  );
+  const [deepLinkPage] = useState<ActivePage | null>(() => {
+    const path = window.location.pathname.replace(/\/+$/, '');
+    if (path.endsWith('/jubah/track')) return 'track-jubah';
+    // Privacy Policy / Terms need a stable, publicly reachable URL — required
+    // for app store submission and just generally expected — not just an
+    // in-app-only screen. Same deep-link mechanism as /jubah/track above.
+    if (path.endsWith('/privacy')) return 'privacy-policy';
+    if (path.endsWith('/terms')) return 'terms-of-service';
+    return null;
+  });
   const [pageHistory, setPageHistory] = useState<ActivePage[]>([]);
   const [isPreviewMode, setIsPreviewMode] = useState(false);
   const [activeRole, setActiveRole] = useState<'admin' | 'driver' | 'rider' | null>(null);

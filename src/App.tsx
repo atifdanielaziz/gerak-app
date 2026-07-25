@@ -24,6 +24,8 @@ const ForgotPassword   = lazy(() => import('./pages/ForgotPassword').then(m => (
 const ResetPassword    = lazy(() => import('./pages/ResetPassword').then(m => ({ default: m.ResetPassword })));
 const TrackJubah          = lazy(() => import('./pages/TrackJubah').then(m => ({ default: m.TrackJubah })));
 const GerakTransporter    = lazy(() => import('./pages/GerakTransporter').then(m => ({ default: m.GerakTransporter })));
+const PrivacyPolicy       = lazy(() => import('./pages/PrivacyPolicy').then(m => ({ default: m.PrivacyPolicy })));
+const TermsOfService      = lazy(() => import('./pages/TermsOfService').then(m => ({ default: m.TermsOfService })));
 interface BeforeInstallPromptEvent extends Event {
   prompt: () => Promise<void>;
   userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>;
@@ -348,6 +350,10 @@ const AppContent: React.FC = () => {
         return <TrackJubah />;
       case 'gerak-transporter':
         return <GerakTransporter />;
+      case 'privacy-policy':
+        return <PrivacyPolicy />;
+      case 'terms-of-service':
+        return <TermsOfService />;
       default:
         return <Dashboard />;
     }
