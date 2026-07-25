@@ -90,6 +90,29 @@ export const RiderHome: React.FC = () => {
     if (activeTab === 'jubah') loadJubahJobs();
   }, [activeTab, loadJubahJobs]);
 
+  // ── Earnings ───────────────────────────────────────────────────────────────
+  type JubahEarningRow = {
+    reference: string; remark: string; payment_mode: string;
+    order_value: number; rider_commission_rate: number; rider_commission_amount: number;
+    earned_at: string;
+  };
+  const [jubahEarnings,        setJubahEarnings]        = useState<JubahEarningRow[]>([]);
+  const [jubahEarningsLoading, setJubahEarningsLoading] = useState(false);
+
+  const loadJubahEarnings = useCallback(async () => {
+    setJubahEarningsLoading(true);
+    const { data, error } = await supabase.rpc('get_rider_jubah_earnings');
+    if (error) console.error('[GERAK] jubah earnings load error:', error.message);
+    setJubahEarnings((data as JubahEarningRow[]) ?? []);
+    setJubahEarningsLoading(false);
+  }, []);
+
+  useEffect(() => {
+    if (activeTab === 'earnings') loadJubahEarnings();
+  }, [activeTab, loadJubahEarnings]);
+
+  const totalJubahEarnings = jubahEarnings.reduce((sum, e) => sum + Number(e.rider_commission_amount), 0);
+
   // ── Browser / gesture back navigation (3→2→1) ────────────────────────────
   useEffect(() => {
     if (activeTab !== 'jubah') return;
@@ -691,14 +714,50 @@ export const RiderHome: React.FC = () => {
 
         {/* ── Earnings Tab ── */}
         {activeTab === 'earnings' && (
-          <div className="px-4 flex flex-col items-center justify-center flex-1 gap-3 py-12">
-            <div className="w-16 h-16 rounded-3xl bg-emerald-50 border border-emerald-100 flex items-center justify-center">
-              <TrendingUp className="w-7 h-7 text-emerald-300" />
-            </div>
-            <p className="text-sm font-semibold text-slate-700">No Earnings Yet</p>
-            <p className="text-xs text-slate-400 font-normal text-center leading-relaxed max-w-xs">
-              Your completed job earnings will be tracked here.
-            </p>
+          <div className="px-4 flex flex-col gap-4">
+            {jubahEarningsLoading ? (
+              <div className="flex justify-center py-12">
+                <span className="w-5 h-5 rounded-full border-2 border-slate-200 border-t-primary animate-spin" />
+              </div>
+            ) : jubahEarnings.length === 0 ? (
+              <div className="flex flex-col items-center justify-center flex-1 gap-3 py-12">
+                <div className="w-16 h-16 rounded-3xl bg-emerald-50 border border-emerald-100 flex items-center justify-center">
+                  <TrendingUp className="w-7 h-7 text-emerald-300" />
+                </div>
+                <p className="text-sm font-semibold text-slate-700">No Earnings Yet</p>
+                <p className="text-xs text-slate-400 font-normal text-center leading-relaxed max-w-xs">
+                  Your commission from completed Jubah deliveries will be tracked here.
+                </p>
+              </div>
+            ) : (
+              <>
+                <div className="bg-emerald-50 border border-emerald-100 rounded-3xl p-5 flex flex-col items-center gap-1">
+                  <span className="text-[10px] font-semibold text-emerald-500 uppercase tracking-wider">Total Earned</span>
+                  <span className="text-2xl font-black text-emerald-700">RM{totalJubahEarnings.toFixed(2)}</span>
+                  <span className="text-xs font-semibold text-emerald-600 mt-0.5">{jubahEarnings.length} completed {jubahEarnings.length === 1 ? 'order' : 'orders'}</span>
+                </div>
+
+                <div className="bg-white border border-slate-100 rounded-3xl p-5 flex flex-col gap-3">
+                  <h3 className="text-sm font-semibold text-slate-700">Order Breakdown</h3>
+                  <div className="flex flex-col divide-y divide-slate-100">
+                    {jubahEarnings.map(e => (
+                      <div key={e.reference} className="flex items-center justify-between gap-3 py-3 first:pt-0 last:pb-0">
+                        <div className="min-w-0">
+                          <p className="text-xs font-mono font-bold text-primary truncate">{e.reference}</p>
+                          <p className="text-xs text-slate-400 font-semibold mt-0.5">
+                            {e.remark} · RM{Number(e.order_value).toFixed(2)} order · {e.rider_commission_rate}%
+                          </p>
+                          <p className="text-xs text-slate-300 font-normal mt-0.5">
+                            {new Date(e.earned_at).toLocaleDateString('en-MY', { day: '2-digit', month: 'short', year: 'numeric' })}
+                          </p>
+                        </div>
+                        <span className="text-sm font-black text-emerald-600 shrink-0">+RM{Number(e.rider_commission_amount).toFixed(2)}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </>
+            )}
           </div>
         )}
 
