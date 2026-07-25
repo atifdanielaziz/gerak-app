@@ -395,7 +395,23 @@ export const GerakRental: React.FC = () => {
       license_url:  '',
     });
     setBookLoading(false);
-    if (error) { showToast('Booking failed. Please try again.'); return; }
+    if (error) {
+      // 23P01 = exclusion_violation — rental_bookings_no_overlap caught a
+      // real race: someone else booked (part of) this slot between when
+      // this page last fetched availability and this insert landing. The
+      // client-side canBookSlot() check above can't catch this — it's
+      // checking a snapshot, not the live table — only the database
+      // constraint can, atomically, at the moment two inserts actually
+      // collide. Refresh availability so the calendar reflects reality
+      // immediately, rather than continuing to show the now-taken slot as free.
+      if (error.code === '23P01') {
+        showToast('That slot was just booked by someone else. Please pick another time.');
+        loadAvailability(selected.id, calMonth);
+      } else {
+        showToast('Booking failed. Please try again.');
+      }
+      return;
+    }
     setBookingDone(true);
     loadAvailability(selected.id, calMonth);
     loadMyBookings();
