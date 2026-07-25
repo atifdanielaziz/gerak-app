@@ -16,6 +16,7 @@ import { getJubahProgress } from '../lib/jubahStatus';
 import { generateReceiptPdf } from '../lib/receiptPdf';
 import { copyToClipboard } from '../lib/clipboard';
 import { savePendingJubahBooking, clearPendingJubahBooking } from '../lib/pendingJubahBooking';
+import { formatPhone } from '../lib/format';
 
 const UNIVERSITIES = [
   'Universiti Malaysia Pahang Al-Sultan Abdullah (Pekan)',
@@ -48,11 +49,6 @@ const formatIc = (val: string) => {
   if (d.length <= 6) return d;
   if (d.length <= 8) return `${d.slice(0, 6)}-${d.slice(6)}`;
   return `${d.slice(0, 6)}-${d.slice(6, 8)}-${d.slice(8)}`;
-};
-const formatPhone = (val: string) => {
-  const d = val.replace(/\D/g, '').slice(0, 11);
-  if (d.length <= 3) return d;
-  return `${d.slice(0, 3)}-${d.slice(3)}`;
 };
 
 // Form draft — text fields only. Uploaded documents/payment proof are
@@ -493,7 +489,7 @@ export const Jubah: React.FC = () => {
     let cancelled = false;
     const poll = async () => {
       const { data } = await supabase
-        .rpc('get_jubah_booking_live_status', { p_reference: jubahBooking.reference })
+        .rpc('get_jubah_booking_live_status', { p_reference: jubahBooking.reference, p_hp_number: jubahBooking.hpNumber })
         .single<{ status: string; rider_name: string | null; rider_phone: string | null; balance_paid: boolean | null; balance_paid_at: string | null; initial_paid: boolean | null; initial_paid_at: string | null }>();
       if (data && !cancelled) {
         setLiveStatus(data.status);

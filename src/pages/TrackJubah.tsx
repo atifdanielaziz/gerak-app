@@ -7,6 +7,7 @@ import { buildJubahReceiptRows } from '../lib/receiptRows';
 import { generateReceiptPdf } from '../lib/receiptPdf';
 import { getPendingJubahBooking, clearPendingJubahBooking } from '../lib/pendingJubahBooking';
 import { JUBAH_STEP_LABEL, getJubahProgress } from '../lib/jubahStatus';
+import { formatPhone } from '../lib/format';
 
 interface JubahBookingResult {
   id: string;
@@ -83,6 +84,7 @@ const STATUS_STYLE: Record<string, string> = {
 export const TrackJubah: React.FC = () => {
   const [reference, setReference] = useState('');
   const [matric, setMatric]       = useState('');
+  const [phone, setPhone]         = useState('');
   const [searching, setSearching] = useState(false);
   const [searched, setSearched]   = useState(false);
   const [results, setResults]     = useState<JubahBookingResult[]>([]);
@@ -113,8 +115,14 @@ export const TrackJubah: React.FC = () => {
     setError('');
     setResults([]);
     const refValue = (refOverride ?? reference).trim();
-    if (!refValue && !matric.trim()) {
-      setError('Please enter your reference number or matric / IC number.');
+    // Jubah.tsx tells guests "save this number or your phone number" right
+    // after booking — but phone was never actually wired up as a search
+    // option here even though track_jubah_booking already supports it, so
+    // that promise didn't hold. Someone without their reference or exact
+    // matric ID handy (e.g. a friend collecting on the student's behalf)
+    // had no way to look the booking up at all.
+    if (!refValue && !matric.trim() && !phone.trim()) {
+      setError('Please enter your reference number, phone number, or matric / IC number.');
       return;
     }
     setSearching(true);
@@ -122,7 +130,7 @@ export const TrackJubah: React.FC = () => {
     const isIc = matric.replace(/\D/g, '').length === 12;
     const { data, error: rpcError } = await supabase.rpc('track_jubah_booking', {
       p_reference:  refValue || null,
-      p_hp_number:  null,
+      p_hp_number:  phone.trim() || null,
       p_matric_id:  (matric.trim() && !isIc) ? matric.trim() : null,
       p_ic_number:  (matric.trim() && isIc)  ? matric.trim() : null,
     });
@@ -245,6 +253,25 @@ export const TrackJubah: React.FC = () => {
             value={reference}
             onChange={e => setReference(e.target.value.toUpperCase())}
             placeholder="e.g. JUB-26-UMPSA-XK7F"
+            style={{ fontSize: '16px' }}
+            className="bg-white border border-slate-100 rounded-xl py-2.5 px-3 text-sm font-normal text-slate-700 focus:outline-none focus:border-blue-500 transition placeholder:font-normal placeholder:text-slate-300"
+          />
+        </div>
+
+        <div className="flex items-center gap-2">
+          <div className="flex-1 h-px bg-slate-100" />
+          <span className="text-xs text-slate-300 font-normal">or</span>
+          <div className="flex-1 h-px bg-slate-100" />
+        </div>
+
+        <div className="flex flex-col gap-1.5">
+          <label className="text-xs font-semibold text-slate-400">Phone Number</label>
+          <input
+            type="text"
+            inputMode="numeric"
+            value={phone}
+            onChange={e => setPhone(formatPhone(e.target.value))}
+            placeholder="e.g. 012-34567890"
             style={{ fontSize: '16px' }}
             className="bg-white border border-slate-100 rounded-xl py-2.5 px-3 text-sm font-normal text-slate-700 focus:outline-none focus:border-blue-500 transition placeholder:font-normal placeholder:text-slate-300"
           />
