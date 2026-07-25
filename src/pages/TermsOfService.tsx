@@ -1,5 +1,5 @@
 import React from 'react';
-import { FileText, Info } from 'lucide-react';
+import { FileText } from 'lucide-react';
 
 const Section: React.FC<{ title: string; children: React.ReactNode }> = ({ title, children }) => (
   <div className="bg-white border border-slate-100 rounded-3xl p-5 flex flex-col gap-2">
@@ -21,15 +21,8 @@ export const TermsOfService: React.FC = () => {
         </div>
         <div>
           <h2 className="text-base font-bold text-slate-800 m-0">Terms &amp; Conditions</h2>
-          <p className="text-xs text-slate-400 font-normal mt-0.5">Last updated: [insert date]</p>
+          <p className="text-xs text-slate-400 font-normal mt-0.5">Last updated: 25 July 2026</p>
         </div>
-      </div>
-
-      <div className="bg-amber-50 border border-amber-100 rounded-2xl p-4 flex gap-3">
-        <Info className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
-        <p className="text-xs text-amber-700 leading-relaxed font-normal">
-          Placeholders in brackets (like [Legal Entity Name]) need to be filled in with your actual business/registration details before this is published live.
-        </p>
       </div>
 
       <Section title="1. Acceptance of these terms">
@@ -46,6 +39,10 @@ export const TermsOfService: React.FC = () => {
           and processes payment on behalf of service providers — it is <strong>not</strong> a licensed public
           transport operator, courier company, or car rental company in its own right, and services are provided
           on a best-effort, peer-community basis, not a guaranteed commercial service.
+        </p>
+        <p>
+          Gerak is currently built and operated by its founding team as an independent project, not yet a
+          registered company.
         </p>
       </Section>
 
@@ -129,7 +126,7 @@ export const TermsOfService: React.FC = () => {
 
       <Section title="10. Limitation of liability">
         <p>
-          To the maximum extent permitted by Malaysian law, Gerak (and [Legal Entity Name]) is not liable for
+          To the maximum extent permitted by Malaysian law, Gerak and its operating team are not liable for
           indirect, incidental, or consequential damages arising from your use of the platform, or from the
           conduct of individual drivers, riders, or vehicle owners, who act as independent members of the campus
           community rather than as Gerak's employees or agents. This does not limit any liability that cannot be
@@ -147,8 +144,8 @@ export const TermsOfService: React.FC = () => {
 
       <Section title="12. Intellectual property">
         <p>
-          The Gerak name, logo, and app design are the property of [Legal Entity Name]. You may not copy,
-          reproduce, or use them without permission.
+          The Gerak name, logo, and app design are the property of the Gerak team. You may not copy, reproduce, or
+          use them without permission.
         </p>
       </Section>
 
@@ -168,7 +165,7 @@ export const TermsOfService: React.FC = () => {
 
       <Section title="15. Contact us">
         <p>
-          Questions about these terms: [support@yourdomain.com]
+          Questions about these terms: ayamhutanrider@gmail.com
         </p>
       </Section>
 

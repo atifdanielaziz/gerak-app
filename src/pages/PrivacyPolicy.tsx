@@ -1,5 +1,5 @@
 import React from 'react';
-import { Lock, Info } from 'lucide-react';
+import { Lock } from 'lucide-react';
 
 const Section: React.FC<{ title: string; children: React.ReactNode }> = ({ title, children }) => (
   <div className="bg-white border border-slate-100 rounded-3xl p-5 flex flex-col gap-2">
@@ -21,15 +21,8 @@ export const PrivacyPolicy: React.FC = () => {
         </div>
         <div>
           <h2 className="text-base font-bold text-slate-800 m-0">Privacy Policy</h2>
-          <p className="text-xs text-slate-400 font-normal mt-0.5">Last updated: [insert date]</p>
+          <p className="text-xs text-slate-400 font-normal mt-0.5">Last updated: 25 July 2026</p>
         </div>
-      </div>
-
-      <div className="bg-amber-50 border border-amber-100 rounded-2xl p-4 flex gap-3">
-        <Info className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
-        <p className="text-xs text-amber-700 leading-relaxed font-normal">
-          Placeholders in brackets (like [Legal Entity Name]) need to be filled in with your actual business/registration details before this is published live.
-        </p>
       </div>
 
       <Section title="1. Who we are">
@@ -39,9 +32,12 @@ export const PrivacyPolicy: React.FC = () => {
           booking and delivery ("Gerak Jubah"), and peer-to-peer vehicle rental ("Gerak Rental").
         </p>
         <p>
-          Registered as: [Legal Entity Name / Business Registration No.]<br />
-          Registered address: [Address]<br />
-          Data protection contact: [privacy@yourdomain.com]
+          Gerak is currently built and operated by its founding team as an independent project — it is not yet a
+          registered company. Personal data collected through the app is handled with the same care and PDPA
+          obligations that would apply to a registered business.
+        </p>
+        <p>
+          Contact for any privacy question or request: <strong>ayamhutanrider@gmail.com</strong>
         </p>
         <p>
           This policy is written to comply with Malaysia's <strong>Personal Data Protection Act 2010 (PDPA)</strong>.
@@ -111,7 +107,7 @@ export const PrivacyPolicy: React.FC = () => {
         <p>• Request correction of inaccurate or outdated data.</p>
         <p>• Withdraw consent to further processing, or request deletion of your account.</p>
         <p>• Lodge a complaint with the Department of Personal Data Protection Malaysia if you believe we've mishandled your data.</p>
-        <p>To exercise any of these rights, contact us at [privacy@yourdomain.com] or use the in-app Delete Account option.</p>
+        <p>To exercise any of these rights, contact us at ayamhutanrider@gmail.com or use the in-app Delete Account option.</p>
       </Section>
 
       <Section title="9. Security">
@@ -139,7 +135,7 @@ export const PrivacyPolicy: React.FC = () => {
 
       <Section title="12. Contact us">
         <p>
-          Questions about this policy or how your data is handled: [privacy@yourdomain.com]
+          Questions about this policy or how your data is handled: ayamhutanrider@gmail.com
         </p>
       </Section>
 
