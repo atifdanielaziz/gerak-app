@@ -222,7 +222,7 @@ async function sendReceiptEmail(admin: ReturnType<typeof createClient>, booking:
   <div style="font-family: -apple-system, Helvetica, Arial, sans-serif; max-width: 480px; margin: 0 auto; color: #1e293b;">
     <div style="background: #dc2626; padding: 20px 24px; border-radius: 12px 12px 0 0;">
       <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="border-collapse: collapse;"><tr>
-        ${appBaseUrl ? `<td style="padding-right: 10px; vertical-align: middle;"><img src="${appBaseUrl}/icon-192.png" width="28" height="28" alt="" style="display: block; border-radius: 7px;" /></td>` : ''}
+        ${appBaseUrl ? `<td style="padding-right: 10px; vertical-align: middle;"><img src="${appBaseUrl}/icon-192-light.png" width="28" height="28" alt="" style="display: block; border-radius: 7px;" /></td>` : ''}
         <td style="vertical-align: middle;"><span style="color: #ffffff; font-size: 22px; font-weight: 300; letter-spacing: -0.5px;">ger<span style="font-weight:700;">a</span>k</span></td>
       </tr></table>
     </div>
