@@ -874,6 +874,13 @@ export const AdminHome: React.FC = () => {
     user.campus.charAt(0).toUpperCase() + user.campus.slice(1).toLowerCase()
   ) as 'Pekan' | 'Gambang';
 
+  // UserSession (the app-level `user` object) has no id field at all — it's
+  // never carried from auth into client state anywhere. canManage() needs
+  // the admin's own id to exclude their own row from Stop/Terminate
+  // actions, so fetch it once here rather than each call.
+  const [myUserId, setMyUserId] = useState<string | null>(null);
+  useEffect(() => { supabase.auth.getUser().then(({ data }) => setMyUserId(data.user?.id ?? null)); }, []);
+
   const [activeTab, setActiveTab] = useState<AdminTab>('orders');
   const [campusView, setCampusView] = useState<'Pekan' | 'Gambang'>(
     isSuperAdmin ? 'Gambang' : adminCampus
@@ -1616,13 +1623,15 @@ export const AdminHome: React.FC = () => {
   // ── Driver invite helpers ───────────────────────────────────────────────
   const loadInvites = useCallback(async () => {
     setInvitesLoading(true);
-    const { data } = await supabase
+    let query = supabase
       .from('driver_invites')
       .select('id,email,campus,role,can_drive,can_rent,used,used_at,created_at')
       .order('created_at', { ascending: false });
+    if (!isSuperAdmin) query = query.eq('campus', adminCampus);
+    const { data } = await query;
     setInvites(data ?? []);
     setInvitesLoading(false);
-  }, []);
+  }, [isSuperAdmin, adminCampus]);
 
   useEffect(() => {
     if (activeTab === 'drivers') loadInvites();
@@ -1790,7 +1799,13 @@ export const AdminHome: React.FC = () => {
   };
 
   const canManage = (targetRole: string, targetId: string) => {
-    if (targetId === (supabase.auth as any)._currentUser?.id) return false;
+    // (supabase.auth as any)._currentUser doesn't exist on the installed
+    // @supabase/auth-js v2 client (v1-only API) — always undefined, so this
+    // self-exclusion never actually fired. The RPCs themselves correctly
+    // reject self-targeting server-side, so this was a silent UI-only gap
+    // (a superadmin's own Stop/Terminate buttons stayed clickable), not a
+    // data-safety one — but it should still hide them as designed.
+    if (targetId === myUserId) return false;
     if (user.role === 'superadmin') return true;
     if (user.role === 'admin') return !['admin', 'superadmin'].includes(targetRole);
     return false;
@@ -2055,12 +2070,19 @@ export const AdminHome: React.FC = () => {
     return null;
   }
 
-  // Shared by the mobile refresh button and the desktop topbar's refresh button.
+  // Shared by the mobile refresh button and the desktop topbar's refresh
+  // button. Routes/Verify/Calendar used to fall through to the final
+  // catch-all (loadAnnouncements) since they had no case of their own —
+  // tapping refresh on any of those tabs silently fetched unrelated
+  // announcement data instead of the tab actually on screen.
   const refreshActiveTab = () =>
     activeTab === 'orders' ? loadOrders() :
     activeTab === 'drivers' ? loadInvites() :
     activeTab === 'users' ? loadUsers() :
     activeTab === 'receipts' ? loadReceipts() :
+    activeTab === 'routes' ? loadRoutes() :
+    activeTab === 'verify' ? loadVerifyDocs() :
+    activeTab === 'calendar' ? loadActiveCalendar() :
     activeTab === 'earnings' ? (earningsDriverId ? loadDriverEarnings(earningsDriverId) : loadEarningsLeaderboard(...getLeaderboardRange(earningsPeriod, earningsDay, earningsWeekStart, leaderboardMonth))) :
     loadAnnouncements();
 

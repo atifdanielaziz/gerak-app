@@ -272,6 +272,11 @@ export const GerakRental: React.FC = () => {
 
   const canBookSlot = (dateStr: string, start: number, dur: number): boolean => {
     const end = start + dur;
+    // Neither this nor isHourAvailable ever checked the vehicle's own
+    // operating hours — only blocked/booked slots. An hour past closing
+    // isn't in either of those sets, so it read as "available" by default,
+    // letting a booking silently run past the owner's declared closing time.
+    if (selected && (start < selected.operating_start || end > selected.operating_end)) return false;
     for (let h = start; h <= end; h += 0.5) {
       if (!isHourAvailable(dateStr, h)) return false;
     }
@@ -764,7 +769,11 @@ export const GerakRental: React.FC = () => {
                   <button onPointerDown={e => { e.preventDefault(); setDuration(d => Math.max(1, d - 1)); }}
                     className="w-8 h-8 rounded-xl bg-slate-100 text-slate-600 font-black text-lg flex items-center justify-center transition-transform active:scale-90">−</button>
                   <span className="text-sm font-black text-slate-800 w-10 text-center">{fmtDuration(duration)}</span>
-                  <button onPointerDown={e => { e.preventDefault(); setDuration(d => Math.min(12, d + 1)); }}
+                  <button onPointerDown={e => {
+                      e.preventDefault();
+                      const ceiling = selected ? selected.operating_end - startHour : 12;
+                      setDuration(d => Math.min(12, ceiling, d + 1));
+                    }}
                     className="w-8 h-8 rounded-xl bg-slate-100 text-slate-600 font-black text-lg flex items-center justify-center transition-transform active:scale-90">+</button>
                 </div>
               </div>

@@ -99,7 +99,8 @@ export interface JubahBooking {
   combinedFileName: string;
   cost: number;
   balanceDue: number;
-  status: 'ordered' | 'cleaning' | 'packaging' | 'delivering' | 'delivered';
+  status: string;
+  deliveryAddress?: string;
   returnScheduled: boolean;
   returnMethod?: 'self' | 'locker' | 'courier';
   returnDate?: string;
@@ -844,6 +845,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       cost,
       balanceDue,
       status: 'ordered',
+      deliveryAddress,
       returnScheduled: false,
     };
 

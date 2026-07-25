@@ -113,15 +113,23 @@ export const Transport: React.FC = () => {
     const handler = (e: MouseEvent) => {
       if (fromDropdownRef.current && !fromDropdownRef.current.contains(e.target as Node))
         setShowFromDropdown(false);
-      if (routeListRef.current && !routeListRef.current.contains(e.target as Node)) {
+      // Only react while the route list is actually open — this used to run
+      // unconditionally on every click anywhere on the page, so clicking the
+      // Contact/Notes fields further down the same form (or anything else
+      // outside routeListRef) silently wiped an already-made route
+      // selection, long after the dropdown itself had already closed.
+      if (showRouteList && routeListRef.current && !routeListRef.current.contains(e.target as Node)) {
         setShowRouteList(false);
-        setSelectedFrom('');
-        setSelectedRoute(null);
+        // Only clear the in-progress pickup pick if no route was ever
+        // confirmed — dismissing a re-opened "change route" list without
+        // picking a new one should just close it, not discard the route
+        // the user already had selected.
+        if (!selectedRoute) setSelectedFrom('');
       }
     };
     document.addEventListener('mousedown', handler);
     return () => document.removeEventListener('mousedown', handler);
-  }, []);
+  }, [showRouteList, selectedRoute]);
 
   // Map-pin state
   const [pickupPin,    setPickupPin]    = useState<PinLocation | null>(null);
@@ -248,48 +256,56 @@ export const Transport: React.FC = () => {
     };
 
     const { data: { user: authUser } } = await supabase.auth.getUser();
-    if (authUser) {
-      if (submittedOrderId) {
-        // Edit existing order — only succeeds if driver hasn't accepted yet
-        const { data: updated } = await supabase
-          .from('ride_orders')
-          .update(orderPayload)
-          .eq('id', submittedOrderId)
-          .eq('status', 'pending')
-          .select('id');
+    // A stale/expired session here previously fell straight through to the
+    // unconditional setBookingDone(true) below — the customer saw the full
+    // "Booking Submitted!" success screen with no ride_orders row ever
+    // written, insert or update. Bail out with a real error instead.
+    if (!authUser) {
+      setBooking(false);
+      setBookingError('Your session has expired. Please log in again and try booking.');
+      return;
+    }
 
-        if (!updated || updated.length === 0) {
-          setEditBlocked(true);
-          setBooking(false);
-          setBookingDone(true);
-          return;
-        }
-      } else {
-        // New booking
-        const { data, error } = await supabase
-          .from('ride_orders')
-          .insert({ ...orderPayload, customer_id: authUser.id, status: 'pending' })
-          .select('id')
-          .single();
+    if (submittedOrderId) {
+      // Edit existing order — only succeeds if driver hasn't accepted yet
+      const { data: updated } = await supabase
+        .from('ride_orders')
+        .update(orderPayload)
+        .eq('id', submittedOrderId)
+        .eq('status', 'pending')
+        .select('id');
 
-        if (error || !data?.id) {
-          setBooking(false);
-          setBookingError('Your booking could not be saved. Please check your connection and try again.');
-          return;
-        }
-        setSubmittedOrderId(data.id);
-
-        // Log to Google Sheets for new bookings only
-        await submitRideToSheets({
-          campus: campus === 'pekan' ? 'UMPSA Pekan' : 'UMPSA Gambang',
-          date, time,
-          pickup: pickupLabel,
-          destination: destLabel,
-          passengers, contact,
-          fare: baseFare,
-          nightCharge, notes, bookMode,
-        });
+      if (!updated || updated.length === 0) {
+        setEditBlocked(true);
+        setBooking(false);
+        setBookingDone(true);
+        return;
       }
+    } else {
+      // New booking
+      const { data, error } = await supabase
+        .from('ride_orders')
+        .insert({ ...orderPayload, customer_id: authUser.id, status: 'pending' })
+        .select('id')
+        .single();
+
+      if (error || !data?.id) {
+        setBooking(false);
+        setBookingError('Your booking could not be saved. Please check your connection and try again.');
+        return;
+      }
+      setSubmittedOrderId(data.id);
+
+      // Log to Google Sheets for new bookings only
+      await submitRideToSheets({
+        campus: campus === 'pekan' ? 'UMPSA Pekan' : 'UMPSA Gambang',
+        date, time,
+        pickup: pickupLabel,
+        destination: destLabel,
+        passengers, contact,
+        fare: baseFare,
+        nightCharge, notes, bookMode,
+      });
     }
 
     setBooking(false);

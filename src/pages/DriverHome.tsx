@@ -276,7 +276,16 @@ export const DriverHome: React.FC = () => {
     } else if (existing.blocked_hours.includes(hour)) {
       newHours = existing.blocked_hours.filter(h => h !== hour);
     } else {
-      newHours = [...existing.blocked_hours, hour];
+      const combined = [...existing.blocked_hours, hour];
+      // blocked_hours = [] is the canonical "whole day blocked" marker
+      // (same convention blockFullDay/isFullDayBlocked/blockedHoursOn use,
+      // and what GerakRental.tsx's isDateFullyBlocked checks on the
+      // customer side). Blocking the last remaining open hour one-by-one
+      // through this per-hour toggle — rather than tapping "Block All" —
+      // used to leave all 24 hours explicitly listed instead of normalizing
+      // to [], so the customer-facing full-day check missed it and the day
+      // still looked bookable for a full-day rental.
+      newHours = combined.length >= HOURS.length ? [] : combined;
     }
     await supabase.from('rental_blocks').upsert({ owner_id: uid, date: dateStr, blocked_hours: newHours });
     loadRentalData();
@@ -549,10 +558,14 @@ export const DriverHome: React.FC = () => {
 
   const handleStatusUpdate = async (orderId: string, status: string) => {
     setUpdating(true);
-    await supabase.rpc('update_ride_status', { p_order_id: orderId, p_status: status });
+    const { data, error } = await supabase.rpc('update_ride_status', { p_order_id: orderId, p_status: status });
     setUpdating(false);
-    if (status === 'completed') showToast('Trip completed!');
-    loadOrders();
+    if (error || !data?.success) {
+      showToast(data?.error ?? 'Update failed. Please try again.');
+    } else {
+      if (status === 'completed') showToast('Trip completed!');
+      loadOrders();
+    }
   };
 
   // Countdown timer — ticks every second while job is accepted

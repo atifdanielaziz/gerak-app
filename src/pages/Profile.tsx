@@ -216,10 +216,22 @@ export const Profile: React.FC = () => {
     setVerifyMsg('');
   };
 
-  const handleDeleteAccount = () => {
-    if (confirm('Are you sure you want to delete your account? This action cannot be undone.')) {
-      alert('Account deletion request submitted. Our team will process it within 24 hours.');
+  const handleDeleteAccount = async () => {
+    if (!confirm('Are you sure you want to delete your account? This action cannot be undone.')) return;
+    const { data: { user: authUser } } = await supabase.auth.getUser();
+    if (!authUser) { alert('Could not verify your session. Please log in again and retry.'); return; }
+    const { error } = await supabase.from('account_deletion_requests').insert({
+      user_id:   authUser.id,
+      email:     user.email,
+      full_name: user.name,
+      gerak_id:  user.gerakId,
+      campus:    user.campus,
+    });
+    if (error) {
+      alert('Could not submit your request — please try again or contact support directly.');
+      return;
     }
+    alert('Account deletion request submitted. Our team will process it within 24 hours.');
   };
 
   /* ── Expiry display helpers ── */

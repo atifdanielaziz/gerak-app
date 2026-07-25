@@ -12,6 +12,7 @@ import { RepresentativeSheet } from '../components/RepresentativeSheet';
 import { ReceiptCard } from '../components/Receipt';
 import { NativeSelect } from '../components/NativeSelect';
 import { buildJubahReceiptRows } from '../lib/receiptRows';
+import { getJubahProgress } from '../lib/jubahStatus';
 import { generateReceiptPdf } from '../lib/receiptPdf';
 import { copyToClipboard } from '../lib/clipboard';
 import { savePendingJubahBooking, clearPendingJubahBooking } from '../lib/pendingJubahBooking';
@@ -526,7 +527,7 @@ export const Jubah: React.FC = () => {
     setRemark('Degree');
     setDocFiles({}); setCombinedBlob(null);
     setSelectedRiderId('');
-    setAddressLine1(''); setAddressLine2(''); setAddressPostal(''); setAddressState('');
+    setAddressLine1(''); setAddressLine2(''); setAddressPostal(''); setAddressCity(''); setAddressState('');
     setFileError(''); setPayNowError('');
   };
 
@@ -1299,6 +1300,7 @@ export const Jubah: React.FC = () => {
                 balanceDue:   jubahBooking.balanceDue,
                 balancePaid:   liveBalancePaid,
                 balancePaidAt: liveBalancePaidAt,
+                deliveryAddress: jubahBooking.deliveryAddress,
                 documentName: jubahBooking.combinedFileName,
                 status:       liveStatus ?? jubahBooking.status,
                 initialPaid:   liveInitialPaid,
@@ -1310,41 +1312,52 @@ export const Jubah: React.FC = () => {
               return <ReceiptCard doc={jubahDoc} onSavePdf={() => generateReceiptPdf(jubahDoc)} />;
             })()}
 
-            {/* Progress steps — wired to real DB status */}
+            {/* Progress steps — wired to real DB status via the shared step
+                sequence (jubahStatus.ts), same source AdminHome/RiderHome/
+                TrackJubah use. This used to be its own hand-rolled copy that
+                never got the 'paid' status added when that bug was fixed
+                everywhere else — a customer who'd just paid in full (pickup
+                or postage) saw a completely blank, 0%-progress tracker right
+                after paying, since findIndex returned -1 for an unrecognised
+                status and -1 >= idx is false for every step. Postage orders
+                also could never show "done" at all, since their real
+                terminal status is 'at_hub', not 'delivered' — the old local
+                array used 'delivered' for both flows. */}
             <h4 className="text-sm font-semibold text-slate-700">Robe Preparation</h4>
             <div className="flex flex-col gap-4 pl-2">
               {(() => {
-                const isPostage = jubahBooking.paymentMode === 'postage';
-                const steps = isPostage ? [
-                  { key: 'booked',     label: 'Order Confirmed',   desc: 'Booking registered in system.' },
-                  { key: 'processing', label: 'Processing',         desc: 'Robe being prepared for delivery.' },
-                  { key: 'collected',  label: 'Collected',           desc: 'Robe collected from university.' },
-                  { key: 'at_hub',     label: 'Out for Delivery',   desc: 'Arrived at postage hub.' },
-                  { key: 'delivered',  label: 'Delivered',           desc: 'Safe in your hands!' },
-                ] : [
-                  { key: 'booked',     label: 'Order Confirmed',   desc: 'Booking registered in system.' },
-                  { key: 'processing', label: 'Processing',         desc: 'Robe being prepared for collection.' },
-                  { key: 'collected',  label: 'Ready for Pickup',   desc: 'Available at collection counter.' },
-                  { key: 'delivered',  label: 'Collected',           desc: 'Safe in your hands!' },
-                ];
-                const currentStatus = liveStatus ?? jubahBooking.status;
-                const currentIdx = steps.findIndex(s => s.key === currentStatus);
-                return steps.map((step, idx) => {
-                  const isPast    = currentIdx >= idx;
-                  const isCurrent = currentIdx === idx;
+                // Deposit mode's own status flow can't tell pickup vs postage
+                // apart from paymentMode alone (it's literally 'deposit'
+                // either way) — deliveryAddress is the same reliable signal
+                // buildJubahReceiptRows uses for the same distinction.
+                const isPostageDelivery = jubahBooking.paymentMode === 'postage' ||
+                  (jubahBooking.paymentMode === 'deposit' && !!jubahBooking.deliveryAddress);
+                const STEP_INFO: Record<string, { label: string; desc: string }> = {
+                  paid:       { label: 'Payment Confirmed', desc: 'Payment received — your order is in the queue.' },
+                  booked:     { label: 'Order Confirmed',   desc: 'Booking registered in system.' },
+                  processing: { label: 'Processing',        desc: isPostageDelivery ? 'Robe being prepared for delivery.' : 'Robe being prepared for collection.' },
+                  collected:  { label: isPostageDelivery ? 'Collected' : 'Ready for Pickup', desc: isPostageDelivery ? 'Robe collected from university.' : 'Available at collection counter.' },
+                  at_hub:     { label: 'Out for Delivery',  desc: 'Arrived at postage hub.' },
+                  delivered:  { label: 'Collected',         desc: 'Safe in your hands!' },
+                };
+                const { steps, curStep } = getJubahProgress(liveStatus ?? jubahBooking.status, jubahBooking.paymentMode);
+                return steps.map((key, idx) => {
+                  const info      = STEP_INFO[key];
+                  const isPast    = curStep >= idx;
+                  const isCurrent = curStep === idx;
                   return (
-                    <div key={step.key} className="flex gap-4 relative">
+                    <div key={key} className="flex gap-4 relative">
                       {idx < steps.length - 1 && (
-                        <div className={`absolute left-2.5 top-6 bottom-0 w-0.5 -translate-x-1/2 ${currentIdx > idx ? 'bg-blue-500' : 'bg-slate-100'}`} />
+                        <div className={`absolute left-2.5 top-6 bottom-0 w-0.5 -translate-x-1/2 ${curStep > idx ? 'bg-blue-500' : 'bg-slate-100'}`} />
                       )}
                       <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center relative z-10 transition ${isPast ? 'bg-blue-500 border-blue-500 text-white' : 'bg-white border-slate-200'}`}>
                         {isPast && <CheckCircle2 className="w-3.5 h-3.5" />}
                       </div>
                       <div className="flex-1 -mt-0.5">
                         <h5 className={`text-xs font-bold leading-tight ${isCurrent ? 'text-blue-600 font-black' : isPast ? 'text-slate-700' : 'text-slate-300'}`}>
-                          {step.label}
+                          {info.label}
                         </h5>
-                        <p className="text-xs text-slate-400 mt-0.5">{step.desc}</p>
+                        <p className="text-xs text-slate-400 mt-0.5">{info.desc}</p>
                       </div>
                     </div>
                   );
