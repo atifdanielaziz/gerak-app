@@ -1109,9 +1109,12 @@ export const AdminHome: React.FC = () => {
   const [savingPrice,        setSavingPrice]        = useState<string | null>(null);
   const [priceDrafts,        setPriceDrafts]        = useState<Record<string, string>>({});
   const [pricingUniversity,  setPricingUniversity]  = useState('umpsa');
-  const [commissionRate,     setCommissionRate]     = useState<string | null>(null);
-  const [commissionDraft,    setCommissionDraft]    = useState('');
-  const [savingCommission,   setSavingCommission]   = useState(false);
+  // Two separate rates — pickup vs postage — since a postage order's price
+  // includes real shipping cost paid out to Pos Malaysia, not money the
+  // rider earned handling it. One flat rate across both doesn't reflect that.
+  const [commissionRates,  setCommissionRates]  = useState<{ pickup: string; postage: string } | null>(null);
+  const [commissionDrafts, setCommissionDrafts] = useState({ pickup: '', postage: '' });
+  const [savingCommission, setSavingCommission] = useState<'pickup' | 'postage' | null>(null);
   const [jubahSheetRider,    setJubahSheetRider]    = useState<JubahRider | null>(null);
   const [jubahMethodDraft,   setJubahMethodDraft]   = useState<'pickup' | 'postage' | ''>('');
   const [jubahDropPointDraft, setJubahDropPointDraft] = useState('');
@@ -1142,32 +1145,33 @@ export const AdminHome: React.FC = () => {
     }
   };
 
-  // Rider commission — global %, superadmin-only to change (enforced
-  // server-side in set_jubah_rider_commission_rate, not just hidden here).
-  const loadCommissionRate = useCallback(async () => {
+  // Rider commission — separate pickup/postage %, superadmin-only to change
+  // (enforced server-side in set_jubah_rider_commission_rate, not just
+  // hidden here).
+  const loadCommissionRates = useCallback(async () => {
     const { data } = await supabase
       .from('app_settings')
-      .select('value')
-      .eq('key', 'jubah_rider_commission_percent')
-      .maybeSingle();
-    const value = data?.value ?? '0';
-    setCommissionRate(value);
-    setCommissionDraft(value);
+      .select('key, value')
+      .in('key', ['jubah_rider_commission_percent_pickup', 'jubah_rider_commission_percent_postage']);
+    const pickup  = data?.find(r => r.key === 'jubah_rider_commission_percent_pickup')?.value  ?? '0';
+    const postage = data?.find(r => r.key === 'jubah_rider_commission_percent_postage')?.value ?? '0';
+    setCommissionRates({ pickup, postage });
+    setCommissionDrafts({ pickup, postage });
   }, []);
 
   useEffect(() => {
-    if (activeTab === 'jubah' && jubahSubTab === 'price') loadCommissionRate();
-  }, [activeTab, jubahSubTab, loadCommissionRate]);
+    if (activeTab === 'jubah' && jubahSubTab === 'price') loadCommissionRates();
+  }, [activeTab, jubahSubTab, loadCommissionRates]);
 
-  const handleSaveCommission = async () => {
-    const percent = parseFloat(commissionDraft);
+  const handleSaveCommission = async (deliveryType: 'pickup' | 'postage') => {
+    const percent = parseFloat(commissionDrafts[deliveryType]);
     if (isNaN(percent) || percent < 0 || percent > 100) { showToast('Enter a percentage between 0 and 100.'); return; }
-    setSavingCommission(true);
-    const { data, error } = await supabase.rpc('set_jubah_rider_commission_rate', { p_percent: percent });
-    setSavingCommission(false);
+    setSavingCommission(deliveryType);
+    const { data, error } = await supabase.rpc('set_jubah_rider_commission_rate', { p_percent: percent, p_delivery_type: deliveryType });
+    setSavingCommission(null);
     if (error || !data?.success) { showToast(data?.error ?? 'Failed to save commission rate.'); return; }
-    showToast('Rider commission rate updated.');
-    setCommissionRate(commissionDraft);
+    showToast(`${deliveryType === 'pickup' ? 'Self Pickup' : 'Postage'} commission updated.`);
+    setCommissionRates(prev => prev ? { ...prev, [deliveryType]: commissionDrafts[deliveryType] } : prev);
   };
 
   const handleSaveJubahAssignment = async () => {
@@ -4332,47 +4336,56 @@ export const AdminHome: React.FC = () => {
             <div className="flex flex-col gap-4">
 
               {/* Rider commission — superadmin can change it; regular admin
-                  sees it read-only for transparency. Applies only to
-                  bookings that complete from now on — see migration_jubah_
-                  rider_commission.sql for why past bookings are untouched. */}
+                  sees it read-only for transparency. Separate pickup/postage
+                  rates since a postage order's price includes real shipping
+                  cost paid to Pos Malaysia, not rider-earned money — one flat
+                  rate across both doesn't reflect that. Applies only to
+                  bookings that complete from now on — changing it never
+                  rewrites past earnings (see migration_jubah_commission_by_
+                  delivery_type.sql). */}
               <div className="bg-white border border-slate-100 rounded-3xl p-5 flex flex-col gap-3">
                 <h3 className="text-sm font-semibold text-slate-700 flex items-center gap-1.5">
                   <TrendingUp className="w-4 h-4" /> Rider Commission
                 </h3>
                 <p className="text-xs text-slate-400 font-semibold -mt-1.5">
-                  Percentage of each order's total value a rider earns once it's delivered. Only applies to bookings completed from now on — changing it never rewrites past earnings.
+                  Percentage of an order's total value a rider earns once it's delivered — set separately for pickup vs postage, since postage price includes real shipping cost. Only applies going forward — changing it never rewrites past earnings.
                 </p>
-                {isSuperAdmin ? (
-                  <div className="flex gap-2">
-                    <div className="flex items-center bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 gap-1 flex-1 focus-within:border-primary transition">
-                      <input
-                        type="number"
-                        min="0"
-                        max="100"
-                        step="0.1"
-                        value={commissionDraft}
-                        onChange={e => setCommissionDraft(e.target.value)}
-                        style={{ fontSize: '13px' }}
-                        className="flex-1 bg-transparent font-semibold text-slate-700 focus:outline-none w-0"
-                      />
-                      <span className="text-xs font-normal text-slate-400 shrink-0">%</span>
-                    </div>
-                    <button
-                      onClick={handleSaveCommission}
-                      disabled={savingCommission || commissionDraft === commissionRate}
-                      className="shrink-0 bg-primary text-white font-semibold text-xs px-4 py-2.5 rounded-xl transition active:scale-95 disabled:opacity-50"
-                    >
-                      {savingCommission ? '…' : 'Save'}
-                    </button>
+                {(['pickup', 'postage'] as const).map(type => (
+                  <div key={type} className="flex flex-col gap-1.5">
+                    <label className="text-xs font-normal text-slate-400">{type === 'pickup' ? 'Self Pickup' : 'Postage'}</label>
+                    {isSuperAdmin ? (
+                      <div className="flex gap-2">
+                        <div className="flex items-center bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 gap-1 flex-1 focus-within:border-primary transition">
+                          <input
+                            type="number"
+                            min="0"
+                            max="100"
+                            step="0.1"
+                            value={commissionDrafts[type]}
+                            onChange={e => setCommissionDrafts(prev => ({ ...prev, [type]: e.target.value }))}
+                            style={{ fontSize: '13px' }}
+                            className="flex-1 bg-transparent font-semibold text-slate-700 focus:outline-none w-0"
+                          />
+                          <span className="text-xs font-normal text-slate-400 shrink-0">%</span>
+                        </div>
+                        <button
+                          onClick={() => handleSaveCommission(type)}
+                          disabled={savingCommission === type || commissionDrafts[type] === commissionRates?.[type]}
+                          className="shrink-0 bg-primary text-white font-semibold text-xs px-4 py-2.5 rounded-xl transition active:scale-95 disabled:opacity-50"
+                        >
+                          {savingCommission === type ? '…' : 'Save'}
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="bg-slate-50 border border-slate-100 rounded-xl px-3 py-2.5">
+                        <span className="text-xs font-semibold text-slate-600">
+                          {commissionRates === null ? 'Loading…' : `${commissionRates[type]}% per completed order`}
+                        </span>
+                        <span className="text-xs font-normal text-slate-400 ml-2">superadmin only to change</span>
+                      </div>
+                    )}
                   </div>
-                ) : (
-                  <div className="bg-slate-50 border border-slate-100 rounded-xl px-3 py-2.5">
-                    <span className="text-xs font-semibold text-slate-600">
-                      {commissionRate === null ? 'Loading…' : `${commissionRate}% per completed order`}
-                    </span>
-                    <span className="text-xs font-normal text-slate-400 ml-2">superadmin only to change</span>
-                  </div>
-                )}
+                ))}
               </div>
 
               <div className="bg-white border border-slate-100 rounded-3xl p-5 flex flex-col gap-4">

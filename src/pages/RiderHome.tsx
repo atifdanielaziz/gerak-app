@@ -92,7 +92,7 @@ export const RiderHome: React.FC = () => {
 
   // ── Earnings ───────────────────────────────────────────────────────────────
   type JubahEarningRow = {
-    reference: string; remark: string; payment_mode: string;
+    reference: string; remark: string; payment_mode: string; is_postage: boolean;
     order_value: number; rider_commission_rate: number; rider_commission_amount: number;
     earned_at: string;
   };
@@ -743,7 +743,14 @@ export const RiderHome: React.FC = () => {
                     {jubahEarnings.map(e => (
                       <div key={e.reference} className="flex items-center justify-between gap-3 py-3 first:pt-0 last:pb-0">
                         <div className="min-w-0">
-                          <p className="text-xs font-mono font-bold text-primary truncate">{e.reference}</p>
+                          <div className="flex items-center gap-1.5">
+                            <p className="text-xs font-mono font-bold text-primary truncate">{e.reference}</p>
+                            <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full border shrink-0 ${
+                              e.is_postage ? 'bg-blue-50 border-blue-100 text-blue-600' : 'bg-slate-50 border-slate-200 text-slate-500'
+                            }`}>
+                              {e.is_postage ? 'POSTAGE' : 'PICKUP'}
+                            </span>
+                          </div>
                           <p className="text-xs text-slate-400 font-semibold mt-0.5">
                             {e.remark} · RM{Number(e.order_value).toFixed(2)} order · {e.rider_commission_rate}%
                           </p>
