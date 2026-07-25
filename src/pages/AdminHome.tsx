@@ -1,4 +1,4 @@
-﻿import React, { useEffect, useState, useCallback, useRef, useMemo } from 'react';
+import React, { useEffect, useState, useCallback, useRef, useMemo } from 'react';
 import { useApp } from '../context/AppContext';
 import { supabase } from '../lib/supabase';
 import { useLoadOnActive } from '../hooks/useLoadOnActive';
@@ -6,12 +6,12 @@ import {
   BarChart3, Car, Users, Clock, CheckCircle2,
   AlertCircle, RefreshCw, Trash2, MapPin, Navigation,
   X, ChevronDown, ChevronUp, ChevronRight, Megaphone, Plus, PlusCircle, MinusCircle, Minus, ToggleLeft, ToggleRight,
-  FileImage, ShieldCheck, ShieldOff, ExternalLink, KeyRound,
-  CalendarDays, Upload, Eye, Phone, ArrowLeftRight, Pencil, GraduationCap,
-  ChevronLeft, Download, MoreVertical, Copy, Check, TrendingUp, Bike, BadgeCheck,
+  FileImage, ShieldCheck, ShieldOff, ExternalLink,
+  CalendarDays, Upload, Eye, ArrowLeftRight, Pencil, GraduationCap,
+  ChevronLeft, Download, Copy, Check, TrendingUp, Bike, BadgeCheck,
   Bell, User, Ban, XCircle,
 } from 'lucide-react';
-import { WaBtn, WaIcon, toWa } from '../lib/whatsapp';
+import { WaIcon, toWa } from '../lib/whatsapp';
 import { MonthDrumPicker, EarningsCard, computeEarnings, type EarningsRow } from '../components/EarningsCard';
 import { getJubahDocSignedUrl } from '../lib/jubahDocs';
 import { copyToClipboard } from '../lib/clipboard';
@@ -26,6 +26,8 @@ import { generateReceiptPdf } from '../lib/receiptPdf';
 import { JubahBannerSubTab } from './admin/jubah/JubahBannerSubTab';
 import { JubahPriceSubTab } from './admin/jubah/JubahPriceSubTab';
 import { DriversTab, type DriversTabHandle } from './admin/drivers/DriversTab';
+import { UsersTab, type UsersTabHandle } from './admin/users/UsersTab';
+import { ProfileSheet, type ProfileUser } from './admin/users/ProfileSheet';
 
 interface RideOrder {
   id: string;
@@ -130,30 +132,6 @@ const CTA_PAGES = [
   { label: 'Profile', value: 'profile' },
 ];
 
-interface ProfileUser {
-  id: string;
-  name: string;
-  gerak_id: string;
-  role: string;
-  campus: string;
-  email: string;
-  status: string;
-  phone: string;
-  can_drive?: boolean;
-  can_rent?: boolean;
-  can_daily?: boolean;
-  can_robe?: boolean;
-  receipt_gate_exempt?: boolean;
-  matric_no?: string;
-  ic_number?: string;
-  ic_url?: string;
-  license_url?: string;
-  vehicle?: string;
-  plate_number?: string;
-  docs_status?: string;
-  fee_receipt_verified?: boolean;
-}
-
 interface DriverReceipt {
   id: string;
   name: string;
@@ -179,182 +157,6 @@ interface Route {
   is_active: boolean;
   created_at: string;
 }
-
-type PendingAction =
-  | { type: 'toggle-status'; u: ProfileUser }
-  | { type: 'terminate';     u: ProfileUser }
-  | { type: 'toggle-cap';    u: ProfileUser; canDrive: boolean; canRent: boolean }
-  | { type: 'toggle-rider-cap'; u: ProfileUser; canDaily: boolean; canRobe: boolean }
-  | { type: 'campus';        u: ProfileUser; campus: 'Pekan' | 'Gambang' }
-  | { type: 'toggle-role';   u: ProfileUser; newRole: 'driver' | 'admin' }
-  | { type: 'toggle-gate-exempt'; u: ProfileUser };
-
-// ── Profile detail sheet ─────────────────────────────────────────────────────
-const ProfileSheet: React.FC<{ u: ProfileUser; onClose: () => void }> = ({ u, onClose }) => {
-  const [extra, setExtra] = useState<Partial<ProfileUser>>({});
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    supabase.from('profiles')
-      .select('matric_no, ic_number, ic_url, license_url, vehicle, plate_number, docs_status, fee_receipt_verified')
-      .eq('id', u.id)
-      .single()
-      .then(({ data }) => { if (data) setExtra(data); setLoading(false); });
-  }, [u.id]);
-
-  const merged = { ...u, ...extra };
-  const isDriverOrRider = u.role === 'driver' || u.role === 'rider';
-
-  const avatarBg =
-    u.role === 'superadmin' ? 'bg-violet-600 shadow-violet-200' :
-    u.role === 'admin'      ? 'bg-blue-600 shadow-blue-200'     :
-    u.role === 'rider'      ? 'bg-amber-500 shadow-amber-200'   :
-                              'bg-emerald-600 shadow-emerald-200';
-  const roleBadge =
-    u.role === 'superadmin' ? 'bg-violet-50 border-violet-100 text-violet-600' :
-    u.role === 'admin'      ? 'bg-blue-50 border-blue-100 text-blue-600'       :
-    u.role === 'rider'      ? 'bg-amber-50 border-amber-100 text-amber-600'    :
-                              'bg-emerald-50 border-emerald-100 text-emerald-600';
-
-  const Row = ({ label, value, children }: { label: string; value?: string | null; children?: React.ReactNode }) => (
-    <div className="flex items-start justify-between py-2.5 border-b border-slate-100 last:border-0 gap-2">
-      <span className="text-xs font-normal text-slate-400 shrink-0 pt-0.5">{label}</span>
-      <div className="text-right flex items-center gap-1.5 flex-wrap justify-end">
-        {children ?? <span className={`text-xs font-semibold ${value ? 'text-slate-700' : 'text-slate-300'}`}>{value || '—'}</span>}
-      </div>
-    </div>
-  );
-
-  return (
-    <div
-      className="fixed inset-0 z-50 flex items-end justify-center"
-      style={{ background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(2px)' }}
-      onPointerDown={(e) => { e.preventDefault(); onClose(); }}
-    >
-      <div
-        className="w-full max-w-[480px] max-h-[calc(100dvh-5rem)] bg-white rounded-t-3xl shadow-2xl animate-slide-up flex flex-col"
-        onPointerDown={e => e.stopPropagation()}
-      >
-        {/* Handle */}
-        <div className="flex justify-center pt-3 pb-1 shrink-0">
-          <div className="w-10 h-1 bg-slate-200 rounded-full" />
-        </div>
-
-        {/* Header */}
-        <div className="flex items-center justify-between px-5 pt-2 pb-3 shrink-0">
-          <p className="text-sm font-semibold text-slate-700">Staff Profile</p>
-          <button onClick={onClose} className="w-7 h-7 flex items-center justify-center rounded-full bg-slate-100 text-slate-500 active:scale-90 transition">
-            <X className="w-4 h-4" />
-          </button>
-        </div>
-
-        <div className="flex-1 min-h-0 overflow-y-auto no-scrollbar px-5 pb-4">
-
-          {/* Avatar + name */}
-          <div className="flex flex-col items-center pb-5 gap-2">
-            <div className={`w-20 h-20 rounded-full flex items-center justify-center ${avatarBg}`}>
-              {u.role === 'driver' ? <Car className="w-9 h-9 text-white" /> :
-               u.role === 'rider'  ? <Bike className="w-9 h-9 text-white" />  :
-               <ShieldCheck className="w-9 h-9 text-white" />}
-            </div>
-            <div className="text-center">
-              <p className="text-xl font-black text-slate-800">{u.name}</p>
-              <span className={`inline-flex items-center gap-1 mt-1 text-xs font-semibold px-2.5 py-1 rounded-full border ${roleBadge}`}>
-                <ShieldCheck className="w-3 h-3" /> {u.role}
-              </span>
-            </div>
-          </div>
-
-          {loading ? (
-            <div className="flex justify-center py-6">
-              <span className="w-5 h-5 rounded-full border-2 border-slate-200 border-t-primary animate-spin" />
-            </div>
-          ) : (
-            <>
-              {/* Identity */}
-              <div className="bg-slate-50 border border-slate-100 rounded-2xl px-4 py-1 mb-3">
-                <Row label="Gerak ID"><span className="text-xs font-semibold text-primary">{u.gerak_id}</span></Row>
-                <Row label="Campus" value={`UMPSA ${u.campus}`} />
-                <Row label="Matric No." value={merged.matric_no} />
-                <Row label="IC Number" value={merged.ic_number} />
-                <Row label="Status">
-                  <span className={`text-xs font-semibold ${u.status === 'active' ? 'text-emerald-600' : 'text-red-500'}`}>{u.status}</span>
-                </Row>
-              </div>
-
-              {/* Contact */}
-              <div className="bg-slate-50 border border-slate-100 rounded-2xl px-4 py-1 mb-3">
-                <Row label="Email" value={u.email} />
-                <Row label="Phone">
-                  <span className="text-xs font-semibold text-slate-700">{u.phone || '—'}</span>
-                  {u.phone && (
-                    <a href={`https://wa.me/${toWa(u.phone)}`} target="_blank" rel="noopener noreferrer"
-                      onClick={e => e.stopPropagation()} className="text-[#25D366] active:scale-90 transition">
-                      <WaIcon className="w-3.5 h-3.5" />
-                    </a>
-                  )}
-                </Row>
-              </div>
-
-              {/* Vehicle — drivers only */}
-              {u.role === 'driver' && (
-                <div className="bg-slate-50 border border-slate-100 rounded-2xl px-4 py-1 mb-3">
-                  <Row label="Vehicle" value={merged.vehicle} />
-                  <Row label="Plate" value={merged.plate_number} />
-                  <Row label="Receipt">
-                    <span className={`text-xs font-semibold ${merged.fee_receipt_verified ? 'text-emerald-600' : 'text-amber-500'}`}>
-                      {merged.fee_receipt_verified ? 'Verified ✓' : 'Pending'}
-                    </span>
-                  </Row>
-                </div>
-              )}
-
-              {/* Documents */}
-              {isDriverOrRider && (
-                <div className="bg-slate-50 border border-slate-100 rounded-2xl px-4 py-1 mb-3">
-                  <Row label="Docs Status">
-                    <span className={`text-xs font-semibold capitalize ${
-                      merged.docs_status === 'verified' ? 'text-emerald-600' :
-                      merged.docs_status === 'rejected' ? 'text-red-500' :
-                      merged.docs_status === 'pending'  ? 'text-amber-500' : 'text-slate-400'
-                    }`}>{merged.docs_status || 'none'}</span>
-                  </Row>
-                  <Row label="IC Photo">
-                    {merged.ic_url
-                      ? <a href={merged.ic_url} target="_blank" rel="noopener noreferrer"
-                          className="text-xs font-semibold text-blue-600 bg-blue-50 border border-blue-100 px-2.5 py-1 rounded-lg active:scale-95 transition flex items-center gap-1">
-                          <ExternalLink className="w-3 h-3" /> View
-                        </a>
-                      : <span className="text-xs font-semibold text-slate-300">Not uploaded</span>}
-                  </Row>
-                  <Row label="License">
-                    {merged.license_url
-                      ? <a href={merged.license_url} target="_blank" rel="noopener noreferrer"
-                          className="text-xs font-semibold text-blue-600 bg-blue-50 border border-blue-100 px-2.5 py-1 rounded-lg active:scale-95 transition flex items-center gap-1">
-                          <ExternalLink className="w-3 h-3" /> View
-                        </a>
-                      : <span className="text-xs font-semibold text-slate-300">Not uploaded</span>}
-                  </Row>
-                </div>
-              )}
-            </>
-          )}
-        </div>
-
-        {/* Footer: Call + WhatsApp */}
-        {u.phone && (
-          <div className="px-4 pt-3 pb-6 flex gap-3 shrink-0 border-t border-slate-100">
-            <a href={`tel:${u.phone}`}
-              className="flex-1 flex items-center justify-center gap-2 bg-slate-800 text-white font-semibold text-xs py-3.5 rounded-2xl active:scale-[0.98] transition">
-              <Phone className="w-4 h-4" /> Call
-            </a>
-            <WaBtn phone={u.phone} />
-          </div>
-        )}
-      </div>
-    </div>
-  );
-};
 
 // ── Jubah rider assignment sheet ─────────────────────────────────────────────
 const JubahRiderSheet: React.FC<{
@@ -639,208 +441,6 @@ const JubahRiderSheet: React.FC<{
   );
 };
 
-// ── Shared user card ────────────────────────────────────────────────────────
-const UserCard: React.FC<{
-  u: ProfileUser;
-  canManage: boolean;
-  togglingStatus: string | null;
-  terminating: string | null;
-  togglingCap?: string | null;
-  togglingCampus?: string | null;
-  onToggle: (u: ProfileUser) => void;
-  onTerminate: (u: ProfileUser) => void;
-  onCapToggle?: (u: ProfileUser, canDrive: boolean, canRent: boolean) => void;
-  onRiderCapToggle?: (u: ProfileUser, canDaily: boolean, canRobe: boolean) => void;
-  onCampusChange?: (u: ProfileUser, campus: 'Pekan' | 'Gambang') => void;
-  onGateToggle?: (u: ProfileUser) => void;
-  onRoleToggle?: (u: ProfileUser, newRole: 'driver' | 'admin') => void;
-  onViewProfile?: (u: ProfileUser) => void;
-}> = ({ u, canManage, togglingStatus, terminating, togglingCap, togglingCampus, onToggle, onTerminate, onCapToggle, onRiderCapToggle, onCampusChange, onGateToggle, onRoleToggle, onViewProfile }) => {
-  const [showMenu, setShowMenu] = useState(false);
-  const isDriverOrRider = u.role === 'driver' || u.role === 'rider';
-
-  return (
-    <div className={`rounded-2xl border p-5 flex flex-col gap-2.5 ${
-      u.status === 'inactive' ? 'bg-red-50/50 border-red-100' : 'bg-white border-slate-100'
-    }`}>
-
-      {/* Header row: info + ⋮ menu */}
-      <div className="flex items-start gap-2">
-        <button
-          type="button"
-          onClick={() => onViewProfile?.(u)}
-          className="flex-1 min-w-0 text-left active:opacity-70 transition"
-        >
-          <div className="flex items-center gap-2 flex-wrap">
-            <p className="text-xs font-black text-slate-800 truncate">{u.name}</p>
-            <span className={`text-xs font-semibold uppercase shrink-0 ${
-              u.role === 'driver'   ? 'text-emerald-600' :
-              u.role === 'rider'   ? 'text-amber-600' :
-              u.role === 'admin' || u.role === 'superadmin' ? 'text-blue-600' :
-              'text-slate-400'
-            }`}>{u.role}</span>
-            {u.status === 'inactive' && (
-              <span className="text-xs font-semibold px-1.5 py-0.5 rounded-full bg-red-100 text-red-600 border border-red-200 uppercase shrink-0">
-                Suspended
-              </span>
-            )}
-          </div>
-          <p className="text-xs text-slate-400 font-semibold mt-0.5">{u.gerak_id} · UMPSA {u.campus}</p>
-          <p className="text-xs text-slate-400 truncate">{u.email}</p>
-        </button>
-
-        {/* ⋮ vertical dots */}
-        <div className="relative shrink-0">
-          <button
-            onClick={() => setShowMenu(p => !p)}
-            className="w-7 h-7 flex items-center justify-center rounded-lg text-slate-400 hover:bg-slate-100 active:scale-90 transition"
-          >
-            <MoreVertical className="w-4 h-4" />
-          </button>
-
-          {showMenu && (
-            <>
-              <div className="fixed inset-0 z-40" onPointerDown={(e) => { e.preventDefault(); setShowMenu(false); }} />
-              <div className="absolute right-0 top-full mt-1 z-50 bg-white border border-slate-100 rounded-2xl shadow-xl overflow-hidden min-w-[170px]">
-
-                {/* Driver capabilities */}
-                {u.role === 'driver' && onCapToggle && (
-                  <>
-                    <button onClick={() => { onCapToggle(u, !u.can_drive, u.can_rent ?? false); setShowMenu(false); }}
-                      className={`w-full flex items-center gap-3 px-4 py-3 text-left text-xs font-semibold transition active:scale-95 ${u.can_drive ? 'bg-slate-100 text-slate-900' : 'text-slate-500 hover:bg-slate-50'}`}>
-                      <Car className="w-4 h-4 shrink-0" />
-                      {u.can_drive ? 'Car ✓' : 'Car ✗'}
-                      {togglingCap === u.id && <span className="ml-auto w-3 h-3 rounded-full border border-current border-t-transparent animate-spin" />}
-                    </button>
-                    <button onClick={() => { onCapToggle(u, u.can_drive ?? false, !u.can_rent); setShowMenu(false); }}
-                      className={`w-full flex items-center gap-3 px-4 py-3 text-left text-xs font-semibold transition active:scale-95 ${u.can_rent ? 'bg-slate-100 text-slate-900' : 'text-slate-500 hover:bg-slate-50'}`}>
-                      <KeyRound className="w-4 h-4 shrink-0" />
-                      {u.can_rent ? 'Rental ✓' : 'Rental ✗'}
-                    </button>
-                  </>
-                )}
-
-                {/* Rider capabilities */}
-                {u.role === 'rider' && onRiderCapToggle && (
-                  <>
-                    <button onClick={() => { onRiderCapToggle(u, !u.can_daily, u.can_robe ?? false); setShowMenu(false); }}
-                      className={`w-full flex items-center gap-3 px-4 py-3 text-left text-xs font-semibold transition active:scale-95 ${u.can_daily ? 'bg-slate-100 text-slate-900' : 'text-slate-500 hover:bg-slate-50'}`}>
-                      <Bike className="w-4 h-4" />
-                      {u.can_daily ? 'Daily ✓' : 'Daily ✗'}
-                      {togglingCap === u.id && <span className="ml-auto w-3 h-3 rounded-full border border-current border-t-transparent animate-spin" />}
-                    </button>
-                    <button onClick={() => { onRiderCapToggle(u, u.can_daily ?? false, !u.can_robe); setShowMenu(false); }}
-                      className={`w-full flex items-center gap-3 px-4 py-3 text-left text-xs font-semibold transition active:scale-95 ${u.can_robe ? 'bg-slate-100 text-slate-900' : 'text-slate-500 hover:bg-slate-50'}`}>
-                      <GraduationCap className="w-4 h-4" />
-                      {u.can_robe ? 'Robe ✓' : 'Robe ✗'}
-                    </button>
-                  </>
-                )}
-
-                {/* Campus toggle */}
-                {isDriverOrRider && onCampusChange && (
-                  (['Gambang', 'Pekan'] as const).map(c => (
-                    <button key={c}
-                      onClick={() => { if (u.campus !== c) onCampusChange(u, c); setShowMenu(false); }}
-                      disabled={togglingCampus === u.id}
-                      className={`w-full flex items-center gap-3 px-4 py-3 text-left text-xs font-semibold transition active:scale-95 disabled:opacity-40 ${u.campus === c ? 'bg-slate-100 text-slate-900' : 'text-slate-500 hover:bg-slate-50'}`}>
-                      <MapPin className="w-4 h-4 shrink-0" />
-                      {c}
-                      {u.campus === c && <span className="ml-auto text-[8px] bg-indigo-100 text-indigo-600 px-1.5 py-0.5 rounded-full">Active</span>}
-                      {togglingCampus === u.id && u.campus !== c && <span className="ml-auto w-3 h-3 rounded-full border border-current border-t-transparent animate-spin" />}
-                    </button>
-                  ))
-                )}
-
-                {/* Gate toggle */}
-                {isDriverOrRider && onGateToggle && canManage && (
-                  <button onClick={() => { onGateToggle(u); setShowMenu(false); }}
-                    className={`w-full flex items-center gap-3 px-4 py-3 text-left text-xs font-semibold transition active:scale-95 ${u.receipt_gate_exempt ? 'bg-violet-50 text-violet-700' : 'text-slate-500 hover:bg-slate-50'}`}>
-                    <ShieldCheck className="w-4 h-4 shrink-0" />
-                    {u.receipt_gate_exempt ? 'Gate ✓' : 'Gate ✗'}
-                    {togglingCap === u.id && <span className="ml-auto w-3 h-3 rounded-full border border-current border-t-transparent animate-spin" />}
-                  </button>
-                )}
-
-                {/* Role toggle — superadmin only */}
-                {onRoleToggle && isDriverOrRider && (
-                  <button onClick={() => { onRoleToggle(u, 'admin'); setShowMenu(false); }}
-                    className="w-full flex items-center gap-3 px-4 py-3 text-left text-xs font-semibold text-indigo-600 hover:bg-indigo-50 transition active:scale-95">
-                    <ShieldCheck className="w-4 h-4 shrink-0" />
-                    Make Admin
-                  </button>
-                )}
-                {onRoleToggle && u.role === 'admin' && (
-                  <button onClick={() => { onRoleToggle(u, 'driver'); setShowMenu(false); }}
-                    className="w-full flex items-center gap-3 px-4 py-3 text-left text-xs font-semibold text-red-500 hover:bg-red-50 transition active:scale-95">
-                    <ShieldOff className="w-4 h-4 shrink-0" />
-                    Remove Admin
-                  </button>
-                )}
-
-                <div className="border-t border-slate-100" />
-
-                {/* WhatsApp smart message */}
-                {u.phone && (
-                  <a
-                    href={(() => {
-                      const missing: string[] = [];
-                      if (!u.ic_number)   missing.push('nombor IC');
-                      if (!u.ic_url)      missing.push('gambar IC');
-                      if ((u.role === 'driver' || u.role === 'rider') && !u.license_url) missing.push('gambar lesen memandu');
-                      if (!u.matric_no)   missing.push('nombor matrik');
-                      if (u.role === 'driver' && !u.vehicle) missing.push('maklumat kenderaan');
-                      if (u.status === 'inactive') missing.push('status akaun (hubungi admin)');
-                      const body = missing.length > 0
-                        ? `Assalamualaikum ${u.name} 👋, admin Gerak di sini.\n\nSila kemaskini maklumat berikut dalam akaun anda:\n${missing.map(m => `• ${m}`).join('\n')}\n\nTerima kasih 🙏`
-                        : `Assalamualaikum ${u.name} 👋, admin Gerak di sini. Ada sesuatu yang ingin kami maklumkan. Terima kasih 🙏`;
-                      return `https://wa.me/${toWa(u.phone)}?text=${encodeURIComponent(body)}`;
-                    })()}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    onClick={() => setShowMenu(false)}
-                    className="w-full flex items-center gap-3 px-4 py-3 text-left text-xs font-semibold text-[#25D366] hover:bg-green-50 transition active:scale-95"
-                  >
-                    <WaIcon className="w-4 h-4 shrink-0" />
-                  </a>
-                )}
-              </div>
-            </>
-          )}
-        </div>
-      </div>
-
-      {/* Stop + Terminate */}
-      {canManage && (
-        <div className="flex gap-1.5">
-          <button
-            onClick={() => onToggle(u)}
-            disabled={togglingStatus === u.id}
-            className={`flex-1 min-w-0 font-semibold text-xs py-1.5 px-1 rounded-xl transition active:scale-95 disabled:opacity-50 flex items-center justify-center ${
-              u.status === 'active'
-                ? 'bg-amber-50 border border-amber-200 text-amber-700'
-                : 'bg-emerald-50 border border-emerald-200 text-emerald-700'
-            }`}
-          >
-            {togglingStatus === u.id
-              ? <span className="w-3 h-3 rounded-full border border-current border-t-transparent animate-spin" />
-              : u.status === 'active' ? 'Stop' : 'Reactivate'}
-          </button>
-          <button
-            onClick={() => onTerminate(u)}
-            disabled={terminating === u.id}
-            className="flex-1 min-w-0 bg-red-50 border border-red-200 text-red-600 font-semibold text-xs py-1.5 px-1 rounded-xl transition active:scale-95 disabled:opacity-50 flex items-center justify-center gap-0.5"
-          >
-            {terminating === u.id
-              ? <span className="w-3 h-3 rounded-full border border-red-400 border-t-transparent animate-spin" />
-              : <><Trash2 className="w-3 h-3 shrink-0" /> Terminate</>}
-          </button>
-        </div>
-      )}
-    </div>
-  );
-};
-
 export const AdminHome: React.FC = () => {
   const {
     user, setCurrentPage, setSheetOpen, notifications,
@@ -851,13 +451,6 @@ export const AdminHome: React.FC = () => {
   const adminCampus = (
     user.campus.charAt(0).toUpperCase() + user.campus.slice(1).toLowerCase()
   ) as 'Pekan' | 'Gambang';
-
-  // UserSession (the app-level `user` object) has no id field at all — it's
-  // never carried from auth into client state anywhere. canManage() needs
-  // the admin's own id to exclude their own row from Stop/Terminate
-  // actions, so fetch it once here rather than each call.
-  const [myUserId, setMyUserId] = useState<string | null>(null);
-  useEffect(() => { supabase.auth.getUser().then(({ data }) => setMyUserId(data.user?.id ?? null)); }, []);
 
   const [activeTab, setActiveTab] = useState<AdminTab>('orders');
   const [campusView, setCampusView] = useState<'Pekan' | 'Gambang'>(
@@ -871,17 +464,10 @@ export const AdminHome: React.FC = () => {
   const [deleting, setDeleting] = useState<string | null>(null);
   const [toast, setToast] = useState('');
 
-  const [togglingCap, setTogglingCap]         = useState<string | null>(null);
-  const [togglingCampus, setTogglingCampus]   = useState<string | null>(null);
-
-  // Users management state
-  const [profileUsers, setProfileUsers]     = useState<ProfileUser[]>([]);
-  const [usersLoading, setUsersLoading]     = useState(false);
-  const [terminating, setTerminating]       = useState<string | null>(null);
-  const [togglingStatus, setTogglingStatus] = useState<string | null>(null);
-  const [staffSearch, setStaffSearch]       = useState('');
-  const [pendingAction, setPendingAction]   = useState<PendingAction | null>(null);
-  const [staffFilter, setStaffFilter]       = useState<'all' | 'drivers' | 'riders' | 'admins'>('all');
+  // Reported up by UsersTab's own pending-action confirm dialog, so the
+  // shared "hide BottomNav while any sheet is open" effect below still sees
+  // it. sheetUser/ProfileSheet stay here since Receipts also opens it.
+  const [usersModalOpen, setUsersModalOpen] = useState(false);
   const [sheetUser, setSheetUser]           = useState<ProfileUser | null>(null);
 
   // Banners state
@@ -1051,6 +637,7 @@ export const AdminHome: React.FC = () => {
   const sampleFileRef   = useRef<HTMLInputElement>(null);
   const mainScrollRef   = useRef<HTMLDivElement>(null);
   const driversTabRef   = useRef<DriversTabHandle>(null);
+  const usersTabRef     = useRef<UsersTabHandle>(null);
   const [jubahSheetRider,    setJubahSheetRider]    = useState<JubahRider | null>(null);
   const [jubahMethodDraft,   setJubahMethodDraft]   = useState<'pickup' | 'postage' | ''>('');
   const [jubahDropPointDraft, setJubahDropPointDraft] = useState('');
@@ -1062,11 +649,11 @@ export const AdminHome: React.FC = () => {
   // Report to AppContext whenever any bottom sheet/modal here is open,
   // so BottomNav can hide itself and never overlap sheet content.
   useEffect(() => {
-    const anyOpen = !!sheetUser || !!jubahSheetRider || !!pendingAction || showGateMasterConfirm || driversModalOpen || !!receiptModal;
+    const anyOpen = !!sheetUser || !!jubahSheetRider || usersModalOpen || showGateMasterConfirm || driversModalOpen || !!receiptModal;
     if (!anyOpen) return;
     setSheetOpen(true);
     return () => setSheetOpen(false);
-  }, [sheetUser, jubahSheetRider, pendingAction, showGateMasterConfirm, driversModalOpen, receiptModal, setSheetOpen]);
+  }, [sheetUser, jubahSheetRider, usersModalOpen, showGateMasterConfirm, driversModalOpen, receiptModal, setSheetOpen]);
 
   const handleSaveJubahAssignment = async () => {
     if (!jubahSheetRider) return;
@@ -1468,161 +1055,6 @@ export const AdminHome: React.FC = () => {
   const filtered = filter === 'all' ? orders : orders.filter(o => o.status === filter);
 
 
-  // ── Users management helpers ────────────────────────────────────────────────
-  const loadUsers = useCallback(async () => {
-    setUsersLoading(true);
-    const { data } = await supabase.rpc('get_all_profiles');
-    // Enrich drivers with capability flags from profiles table
-    let users = (data as ProfileUser[]) ?? [];
-    // Non-superadmin: scope to their campus only
-    if (!isSuperAdmin) {
-      users = users.filter(u => u.campus.toLowerCase() === adminCampus.toLowerCase());
-    }
-    const driverIds      = users.filter(u => u.role === 'driver').map(u => u.id);
-    const riderIds       = users.filter(u => u.role === 'rider').map(u => u.id);
-    const driverRiderIds = [...driverIds, ...riderIds];
-
-    // Three independent lookups — fire together instead of awaiting one at a time.
-    const [{ data: driverCaps }, { data: riderCaps }, { data: exempts }] = await Promise.all([
-      driverIds.length > 0
-        ? supabase.from('profiles').select('id, can_drive, can_rent').in('id', driverIds)
-        : Promise.resolve({ data: null }),
-      riderIds.length > 0
-        ? supabase.from('profiles').select('id, can_daily, can_robe').in('id', riderIds)
-        : Promise.resolve({ data: null }),
-      driverRiderIds.length > 0
-        ? supabase.from('profiles').select('id, receipt_gate_exempt').in('id', driverRiderIds)
-        : Promise.resolve({ data: null }),
-    ]);
-
-    const usersById = new Map(users.map(u => [u.id, u]));
-    driverCaps?.forEach(c => {
-      const u = usersById.get(c.id);
-      if (u) { u.can_drive = c.can_drive; u.can_rent = c.can_rent; }
-    });
-    riderCaps?.forEach(c => {
-      const u = usersById.get(c.id);
-      if (u) { u.can_daily = c.can_daily; u.can_robe = c.can_robe; }
-    });
-    exempts?.forEach(c => {
-      const u = usersById.get(c.id);
-      if (u) { u.receipt_gate_exempt = c.receipt_gate_exempt; }
-    });
-    setProfileUsers(users);
-    setUsersLoading(false);
-  }, [isSuperAdmin, adminCampus]);
-
-  const handleToggleCapability = async (u: ProfileUser, canDrive: boolean, canRent: boolean) => {
-    const { data: { user: authUser } } = await supabase.auth.getUser();
-    if (!authUser) { showToast('Session expired — please log in again.'); return; }
-    setTogglingCap(u.id);
-    const { error } = await supabase.rpc('set_driver_capabilities', {
-      p_user_id:  u.id,
-      p_can_drive: canDrive,
-      p_can_rent:  canRent,
-    });
-    setTogglingCap(null);
-    if (error) showToast('Failed to update capabilities.');
-    else {
-      showToast(`${u.name}: ${canDrive ? 'Car ✓' : 'Car ✗'} · ${canRent ? 'Rental ✓' : 'Rental ✗'}`);
-      loadUsers();
-    }
-  };
-
-  const handleToggleRiderCapability = async (u: ProfileUser, canDaily: boolean, canRobe: boolean) => {
-    const { data: { user: authUser } } = await supabase.auth.getUser();
-    if (!authUser) { showToast('Session expired — please log in again.'); return; }
-    setTogglingCap(u.id);
-    const { error } = await supabase.rpc('set_rider_capabilities', {
-      p_user_id:  u.id,
-      p_can_daily: canDaily,
-      p_can_robe:  canRobe,
-    });
-    setTogglingCap(null);
-    if (error) showToast('Failed to update capabilities.');
-    else {
-      showToast(`${u.name}: ${canDaily ? 'Daily ✓' : 'Daily ✗'} · ${canRobe ? 'Robe ✓' : 'Robe ✗'}`);
-      loadUsers();
-    }
-  };
-
-  const handleToggleReceiptGateExempt = async (u: ProfileUser) => {
-    setTogglingCap(u.id);
-    const newExempt = !u.receipt_gate_exempt;
-    const { error } = await supabase.rpc('set_receipt_gate_exempt', {
-      p_user_id: u.id,
-      p_exempt:  newExempt,
-    });
-    setTogglingCap(null);
-    if (error) showToast('Failed to update gate exemption.');
-    else {
-      showToast(`${u.name}: Gate ${newExempt ? 'Exempted' : 'Enforced'}.`);
-      loadUsers();
-    }
-  };
-
-  const handleChangeCampus = async (u: ProfileUser, campus: 'Pekan' | 'Gambang') => {
-    setTogglingCampus(u.id);
-    const { error } = await supabase.rpc('set_driver_campus', {
-      p_user_id: u.id,
-      p_campus:  campus,
-    });
-    setTogglingCampus(null);
-    if (error) showToast('Failed to update campus.');
-    else { showToast(`${u.name} moved to UMPSA ${campus}.`); loadUsers(); }
-  };
-
-  useLoadOnActive(activeTab === 'users', loadUsers);
-
-  const handleToggleRole = async (u: ProfileUser, newRole: 'driver' | 'admin') => {
-    const { error } = await supabase.rpc('toggle_user_role', { p_target_id: u.id, p_new_role: newRole });
-    if (error) showToast('Failed to change role.');
-    else { showToast(`${u.name} is now ${newRole === 'admin' ? 'Admin + Driver' : 'Driver only'}.`); loadUsers(); }
-  };
-
-  const executePendingAction = () => {
-    if (!pendingAction) return;
-    if (pendingAction.type === 'toggle-status') handleToggleStatus(pendingAction.u);
-    else if (pendingAction.type === 'terminate')  handleTerminate(pendingAction.u);
-    else if (pendingAction.type === 'toggle-cap') handleToggleCapability(pendingAction.u, pendingAction.canDrive, pendingAction.canRent);
-    else if (pendingAction.type === 'toggle-rider-cap') handleToggleRiderCapability(pendingAction.u, pendingAction.canDaily, pendingAction.canRobe);
-    else if (pendingAction.type === 'campus')     handleChangeCampus(pendingAction.u, pendingAction.campus);
-    else if (pendingAction.type === 'toggle-role') handleToggleRole(pendingAction.u, pendingAction.newRole);
-    else if (pendingAction.type === 'toggle-gate-exempt') handleToggleReceiptGateExempt(pendingAction.u);
-    setPendingAction(null);
-  };
-
-  const canManage = (targetRole: string, targetId: string) => {
-    // (supabase.auth as any)._currentUser doesn't exist on the installed
-    // @supabase/auth-js v2 client (v1-only API) — always undefined, so this
-    // self-exclusion never actually fired. The RPCs themselves correctly
-    // reject self-targeting server-side, so this was a silent UI-only gap
-    // (a superadmin's own Stop/Terminate buttons stayed clickable), not a
-    // data-safety one — but it should still hide them as designed.
-    if (targetId === myUserId) return false;
-    if (user.role === 'superadmin') return true;
-    if (user.role === 'admin') return !['admin', 'superadmin'].includes(targetRole);
-    return false;
-  };
-
-  const handleToggleStatus = async (u: ProfileUser) => {
-    setTogglingStatus(u.id);
-    const newStatus = u.status === 'active' ? 'inactive' : 'active';
-    const { data } = await supabase.rpc('set_user_status', { p_user_id: u.id, p_status: newStatus });
-    setTogglingStatus(null);
-    if (data?.success === false) showToast(data.error ?? 'Failed');
-    else { showToast(newStatus === 'inactive' ? `${u.name} suspended.` : `${u.name} reactivated.`); loadUsers(); }
-  };
-
-  const handleTerminate = async (u: ProfileUser) => {
-    if (!confirm(`Permanently terminate ${u.name} (${u.gerak_id})? This cannot be undone.`)) return;
-    setTerminating(u.id);
-    const { data } = await supabase.rpc('terminate_user', { p_user_id: u.id });
-    setTerminating(null);
-    if (data?.success === false) showToast(data.error ?? 'Failed');
-    else { showToast(`${u.name} has been terminated.`); loadUsers(); }
-  };
-
   // ── Banner helpers ───────────────────────────────────────────────────────────
   const loadAnnouncements = useCallback(async () => {
     setBannersLoading(true);
@@ -1872,7 +1304,7 @@ export const AdminHome: React.FC = () => {
   const refreshActiveTab = () =>
     activeTab === 'orders' ? loadOrders() :
     activeTab === 'drivers' ? driversTabRef.current?.reload() :
-    activeTab === 'users' ? loadUsers() :
+    activeTab === 'users' ? usersTabRef.current?.reload() :
     activeTab === 'receipts' ? loadReceipts() :
     activeTab === 'routes' ? loadRoutes() :
     activeTab === 'verify' ? loadVerifyDocs() :
@@ -2210,90 +1642,15 @@ export const AdminHome: React.FC = () => {
 
       {/* ── USERS TAB ── */}
       {activeTab === 'users' && (
-        <div className="flex flex-col gap-4">
-
-          {/* Admins & Drivers list */}
-          <div className="bg-white border border-slate-100 rounded-3xl p-5 flex flex-col gap-4">
-            <h3 className="text-sm font-semibold text-slate-700 flex items-center gap-1.5">
-              <Users className="w-4 h-4" /> Admins and Staff
-            </h3>
-
-            {/* Search input */}
-            <div className="flex gap-2">
-              <input
-                type="text"
-                value={staffSearch}
-                onChange={e => setStaffSearch(e.target.value)}
-                placeholder="Name or Gerak ID"
-                style={{ fontSize: '12px' }}
-                className="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 font-semibold text-slate-700 focus:outline-none focus:border-primary transition placeholder:font-normal placeholder:text-slate-400"
-              />
-              <button
-                onClick={() => setStaffSearch('')}
-                disabled={!staffSearch.trim()}
-                className="px-3.5 bg-primary text-white font-semibold text-xs rounded-xl transition active:scale-95 disabled:opacity-50"
-              >
-                Clear
-              </button>
-            </div>
-
-            {/* Filter toggle — scrollable */}
-            <div className="flex bg-slate-50 border border-slate-200 rounded-2xl p-1 gap-1 overflow-x-auto no-scrollbar">
-              {([
-                { id: 'all',     label: 'All' },
-                { id: 'drivers', label: 'Drivers' },
-                { id: 'riders',  label: 'Riders' },
-                { id: 'admins',  label: 'Admins' },
-              ] as const).map(f => (
-                <button key={f.id} onPointerDown={e => { e.preventDefault(); setStaffFilter(f.id); }}
-                  className={`shrink-0 px-4 py-1.5 rounded-xl text-xs font-semibold transition-transform ${
-                    staffFilter === f.id ? 'bg-white text-slate-800' : 'text-slate-400'
-                  }`}>
-                  {f.label}
-                </button>
-              ))}
-            </div>
-
-            <div className="overflow-y-auto no-scrollbar max-h-[420px] flex flex-col gap-2">
-              {usersLoading ? (
-                <div className="flex justify-center py-8">
-                  <span className="w-5 h-5 rounded-full border-2 border-slate-200 border-t-primary animate-spin" />
-                </div>
-              ) : (() => {
-                const filtered = profileUsers.filter(u => {
-                  const roleMatch =
-                    staffFilter === 'all'     ? true :
-                    staffFilter === 'drivers' ? u.role === 'driver' :
-                    staffFilter === 'riders'  ? u.role === 'rider' :
-                    ['admin', 'superadmin'].includes(u.role);
-                  if (!roleMatch) return false;
-                  if (!staffSearch.trim()) return true;
-                  const q = staffSearch.toLowerCase();
-                  return u.name?.toLowerCase().includes(q) || u.gerak_id?.toLowerCase().includes(q);
-                });
-                return filtered.length === 0
-                  ? <p className="text-xs text-slate-400 text-center py-4">No {staffFilter === 'all' ? 'staff' : staffFilter} found</p>
-                  : (
-                    <div className="flex flex-col gap-2">
-                      {filtered.map(u => (
-                        <UserCard key={u.id} u={u} canManage={canManage(u.role, u.id)}
-                          togglingStatus={togglingStatus} terminating={terminating}
-                          togglingCap={togglingCap} togglingCampus={togglingCampus}
-                          onToggle={u => setPendingAction({ type: 'toggle-status', u })}
-                          onTerminate={u => setPendingAction({ type: 'terminate', u })}
-                          onCapToggle={user.role === 'superadmin' ? (u, canDrive, canRent) => setPendingAction({ type: 'toggle-cap', u, canDrive, canRent }) : undefined}
-                          onRiderCapToggle={user.role === 'superadmin' ? (u, canDaily, canRobe) => setPendingAction({ type: 'toggle-rider-cap', u, canDaily, canRobe }) : undefined}
-                          onCampusChange={user.role === 'superadmin' ? (u, campus) => setPendingAction({ type: 'campus', u, campus }) : undefined}
-                          onGateToggle={user.role === 'superadmin' ? (u => setPendingAction({ type: 'toggle-gate-exempt', u })) : undefined}
-                          onRoleToggle={user.role === 'superadmin' ? (u, newRole) => setPendingAction({ type: 'toggle-role', u, newRole }) : undefined}
-                          onViewProfile={setSheetUser} />
-                      ))}
-                    </div>
-                  );
-              })()}
-            </div>
-          </div>
-        </div>
+        <UsersTab
+          ref={usersTabRef}
+          active={activeTab === 'users'}
+          isSuperAdmin={isSuperAdmin}
+          adminCampus={adminCampus}
+          showToast={showToast}
+          onViewProfile={setSheetUser}
+          onModalOpenChange={setUsersModalOpen}
+        />
       )}
 
       {/* ── BANNERS TAB ── */}
@@ -4378,67 +3735,6 @@ export const AdminHome: React.FC = () => {
       {/* close content pane */}
     </div>
     {/* close outer desktop-shell / mobile-column wrapper */}
-
-    {/* ── Driver Action Confirmation Modal ── */}
-    {pendingAction && (() => {
-      const { u } = pendingAction;
-      const isTerminate = pendingAction.type === 'terminate';
-      const isStop = pendingAction.type === 'toggle-status' && u.status === 'active';
-
-      const isRoleToAdmin = pendingAction.type === 'toggle-role' && pendingAction.newRole === 'admin';
-
-      const title =
-        pendingAction.type === 'terminate'     ? `Terminate ${u.name}?` :
-        pendingAction.type === 'toggle-status' ? (isStop ? `Suspend ${u.name}?` : `Reactivate ${u.name}?`) :
-        pendingAction.type === 'toggle-cap'    ? `Update capabilities for ${u.name}?` :
-        pendingAction.type === 'toggle-rider-cap' ? `Update capabilities for ${u.name}?` :
-        pendingAction.type === 'toggle-role'   ? (isRoleToAdmin ? `Promote ${u.name} to Admin?` : `Change ${u.name} to Driver?`) :
-        pendingAction.type === 'toggle-gate-exempt' ? (u.receipt_gate_exempt ? `Remove gate exemption for ${u.name}?` : `Exempt ${u.name} from receipt gate?`) :
-        `Move ${u.name} to UMPSA ${(pendingAction as any).campus}?`;
-
-      const desc =
-        isTerminate  ? 'This will permanently remove their account. This cannot be undone.' :
-        isStop       ? 'They will lose access to the app until reactivated.' :
-        pendingAction.type === 'toggle-status' ? 'They will regain access to the app.' :
-        pendingAction.type === 'toggle-cap'    ? 'Their service capabilities will be updated immediately.' :
-        pendingAction.type === 'toggle-rider-cap' ? 'Their service capabilities will be updated immediately.' :
-        pendingAction.type === 'toggle-role'   ? (isRoleToAdmin ? 'They will gain Admin panel access + full driving capabilities.' : 'They will lose Admin panel access and become a driver only.') :
-        pendingAction.type === 'toggle-gate-exempt' ? (u.receipt_gate_exempt ? 'They will need a valid monthly receipt again to stay active.' : 'They will bypass the monthly receipt requirement and stay active regardless.') :
-        'Their campus assignment will change immediately.';
-
-      return (
-        <div className="fixed inset-0 z-50 bg-black/40 flex items-end justify-center"
-          onPointerDown={(e) => { e.preventDefault(); setPendingAction(null); }}>
-          <div className="w-full max-w-sm max-h-[calc(100dvh-5rem)] overflow-y-auto no-scrollbar bg-white rounded-t-3xl p-6 pb-10 shadow-2xl animate-slide-up"
-            onPointerDown={e => e.stopPropagation()}>
-            <div className="w-10 h-1 bg-slate-200 rounded-full mx-auto mb-5" />
-            <div className={`w-10 h-10 rounded-2xl mx-auto mb-3 flex items-center justify-center ${
-              isTerminate ? 'bg-red-100' : isStop ? 'bg-amber-100' : 'bg-primary/10'
-            }`}>
-              {isTerminate
-                ? <Trash2 className="w-5 h-5 text-red-500" />
-                : isStop
-                  ? <span className="text-amber-600 font-black text-sm">✕</span>
-                  : <span className="text-primary font-black text-sm">✓</span>}
-            </div>
-            <h3 className="text-sm font-black text-slate-800 text-center mb-1">{title}</h3>
-            <p className="text-xs text-slate-400 font-semibold text-center mb-6">{desc}</p>
-            <div className="flex gap-3">
-              <button onClick={() => setPendingAction(null)}
-                className="flex-1 bg-slate-100 text-slate-600 font-semibold text-xs py-3 rounded-2xl transition active:scale-95">
-                Cancel
-              </button>
-              <button onClick={executePendingAction}
-                className={`flex-1 font-semibold text-xs py-3 rounded-2xl transition active:scale-95 text-white ${
-                  isTerminate ? 'bg-red-500' : isStop ? 'bg-amber-500' : 'bg-primary'
-                }`}>
-                Yes, Confirm
-              </button>
-            </div>
-          </div>
-        </div>
-      );
-    })()}
 
     {/* ── Receipt Gate Master Confirmation Modal ── */}
     {showGateMasterConfirm && (
