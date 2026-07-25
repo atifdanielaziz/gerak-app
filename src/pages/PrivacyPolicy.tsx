@@ -27,9 +27,10 @@ export const PrivacyPolicy: React.FC = () => {
 
       <Section title="1. Who we are">
         <p>
-          Gerak ("Gerak", "we", "us", "our") operates a campus platform for students and staff of Universiti Malaysia
-          Pahang Al-Sultan Abdullah (UMPSA), covering campus ride-hailing ("Gerak Transport"), graduation robe
-          booking and delivery ("Gerak Jubah"), and peer-to-peer vehicle rental ("Gerak Rental").
+          Gerak ("Gerak", "we", "us", "our") operates a campus platform for students and staff at the universities
+          we serve — currently Universiti Malaysia Pahang Al-Sultan Abdullah (UMPSA), with more campuses planned —
+          covering campus ride-hailing ("Gerak Transport"), graduation robe booking and delivery ("Gerak Jubah"),
+          and peer-to-peer vehicle rental ("Gerak Rental").
         </p>
         <p>
           Gerak is currently built and operated by its founding team as an independent project — it is not yet a
@@ -57,7 +58,7 @@ export const PrivacyPolicy: React.FC = () => {
       </Section>
 
       <Section title="3. Why we collect it">
-        <p>To create and manage your account, verify your eligibility as UMPSA student/staff, and match you with drivers, riders, or rental owners.</p>
+        <p>To create and manage your account, verify your eligibility as a student or staff member of a university we serve, and match you with drivers, riders, or rental owners.</p>
         <p>To process payments and issue receipts for services you book.</p>
         <p>To verify driver/rider identity documents before granting them access to carry passengers or handle deliveries — this protects everyone using the platform.</p>
         <p>To communicate booking updates, respond to support requests, and send service-related notifications.</p>
@@ -70,7 +71,7 @@ export const PrivacyPolicy: React.FC = () => {
         <p><strong>Email delivery (Resend):</strong> your email address and booking details, solely to send you receipts and account notifications.</p>
         <p><strong>Internal operations spreadsheet:</strong> a subset of booking details (name, contact, booking reference, service details) is also logged to an internal Google Sheet used for day-to-day operations and record-keeping by the Gerak team.</p>
         <p><strong>Assigned driver/rider:</strong> only the details needed to fulfil your booking (name, phone number, pickup/delivery details) are shared with the specific driver or rider assigned to it.</p>
-        <p><strong>University administration:</strong> where a booking (e.g. Jubah) requires coordination with UMPSA's own convocation logistics.</p>
+        <p><strong>University administration:</strong> where a booking (e.g. Jubah) requires coordination with your university's own convocation logistics.</p>
         <p>We do <strong>not</strong> sell your personal data, and we do not share it with third parties for their own marketing purposes.</p>
       </Section>
 

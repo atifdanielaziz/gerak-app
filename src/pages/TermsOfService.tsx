@@ -34,8 +34,10 @@ export const TermsOfService: React.FC = () => {
 
       <Section title="2. What Gerak is">
         <p>
-          Gerak is a campus community platform that connects UMPSA students and staff with fellow students and
-          staff acting as drivers, Jubah delivery riders, and vehicle owners. Gerak facilitates these connections
+          Gerak is a campus community platform for students and staff at the universities we serve — currently
+          Universiti Malaysia Pahang Al-Sultan Abdullah (UMPSA), with more campuses planned. It connects you with
+          fellow students and staff acting as drivers, Jubah delivery riders, and vehicle owners. Gerak facilitates
+          these connections
           and processes payment on behalf of service providers — it is <strong>not</strong> a licensed public
           transport operator, courier company, or car rental company in its own right, and services are provided
           on a best-effort, peer-community basis, not a guaranteed commercial service.
@@ -48,7 +50,7 @@ export const TermsOfService: React.FC = () => {
 
       <Section title="3. Eligibility">
         <p>
-          Gerak is intended for current UMPSA students and staff. By registering, you confirm that the matric
+          Gerak is intended for current students and staff of the universities we serve. By registering, you confirm that the matric
           number, IC number, and other details you provide are accurate and belong to you. Providing false
           information may result in account suspension.
         </p>
