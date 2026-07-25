@@ -522,8 +522,11 @@ export const DriverHome: React.FC = () => {
     const { data, error } = await supabase.rpc('accept_ride_order', { p_order_id: orderId });
     setAccepting(null);
     if (error || !data?.success) {
-      // Race lost — job was already taken; refresh pool and inform driver
-      showToast('🔒 Job just taken by another driver.');
+      // Was always the generic "job just taken" message regardless of the
+      // actual reason — silently discarded data?.error, so a driver who
+      // already had an active job saw a misleading message instead of
+      // being told what actually blocked them.
+      showToast(data?.error ? `🔒 ${data.error}` : '🔒 Job just taken by another driver.');
       loadOrders();
     } else {
       showToast('Job accepted! Check My Jobs tab.');
