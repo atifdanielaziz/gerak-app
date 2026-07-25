@@ -5,10 +5,10 @@ import { useLoadOnActive } from '../hooks/useLoadOnActive';
 import {
   BarChart3, Car, Users, Clock, CheckCircle2,
   AlertCircle, RefreshCw, Trash2, MapPin, Navigation,
-  UserPlus, Mail, X, Send, ChevronDown, ChevronUp, ChevronRight, Megaphone, Plus, PlusCircle, MinusCircle, Minus, ToggleLeft, ToggleRight,
+  X, ChevronDown, ChevronUp, ChevronRight, Megaphone, Plus, PlusCircle, MinusCircle, Minus, ToggleLeft, ToggleRight,
   FileImage, ShieldCheck, ShieldOff, ExternalLink, KeyRound,
   CalendarDays, Upload, Eye, Phone, ArrowLeftRight, Pencil, GraduationCap,
-  ChevronLeft, Download, MoreVertical, Copy, Check, TrendingUp, Bike, Settings, BadgeCheck,
+  ChevronLeft, Download, MoreVertical, Copy, Check, TrendingUp, Bike, BadgeCheck,
   Bell, User, Ban, XCircle,
 } from 'lucide-react';
 import { WaBtn, WaIcon, toWa } from '../lib/whatsapp';
@@ -24,6 +24,8 @@ import {
 } from '../lib/jubahStatus';
 import { generateReceiptPdf } from '../lib/receiptPdf';
 import { JubahBannerSubTab } from './admin/jubah/JubahBannerSubTab';
+import { JubahPriceSubTab } from './admin/jubah/JubahPriceSubTab';
+import { DriversTab, type DriversTabHandle } from './admin/drivers/DriversTab';
 
 interface RideOrder {
   id: string;
@@ -70,18 +72,6 @@ const ADMIN_TABS: { id: AdminTab; label: string; icon: React.ElementType; supera
   { id: 'receipts', label: 'Receipts',  icon: FileImage,       superadminOnly: true  },
   { id: 'earnings', label: 'Earnings',  icon: TrendingUp,      superadminOnly: true  },
   { id: 'calendar', label: 'Calendar',  icon: CalendarDays,    superadminOnly: false },
-];
-
-// Same 5 universities, same order/keys as JubahLanding.tsx's university
-// selector — keeps the Jubah Pricing Matrix's university switcher wired to
-// the exact same list customers pick from. Abbreviated labels here (not the
-// full names JubahLanding shows) since this sits compactly in a card header.
-const JUBAH_PRICING_UNIVERSITIES = [
-  { key: 'umpsa', label: 'UMPSA' },
-  { key: 'uitm',  label: 'UiTM' },
-  { key: 'umk',   label: 'UMK' },
-  { key: 'ukm',   label: 'UKM' },
-  { key: 'uiam',  label: 'UIA' },
 ];
 
 interface DriverEarningsRow {
@@ -162,18 +152,6 @@ interface ProfileUser {
   plate_number?: string;
   docs_status?: string;
   fee_receipt_verified?: boolean;
-}
-
-interface DriverInvite {
-  id: string;
-  email: string;
-  campus: string;
-  role: string;
-  can_drive: boolean;
-  can_rent: boolean;
-  used: boolean;
-  used_at: string | null;
-  created_at: string;
 }
 
 interface DriverReceipt {
@@ -893,23 +871,8 @@ export const AdminHome: React.FC = () => {
   const [deleting, setDeleting] = useState<string | null>(null);
   const [toast, setToast] = useState('');
 
-  // Driver invites state
-  const [invites, setInvites]               = useState<DriverInvite[]>([]);
-  const [invitesLoading, setInvitesLoading] = useState(false);
-  const [inviteSearch, setInviteSearch]     = useState('');
-  const [inviteEmail, setInviteEmail]       = useState('');
-  const [inviteCampus, setInviteCampus]     = useState<'Pekan' | 'Gambang'>(
-    isSuperAdmin ? 'Gambang' : adminCampus
-  );
-  const [inviteRole, setInviteRole]         = useState<'driver' | 'rider' | 'admin'>('driver');
-  const [inviteCanDrive, setInviteCanDrive] = useState(true);
-  const [inviteCanRent,  setInviteCanRent]  = useState(false);
-  const [inviteCanDaily, setInviteCanDaily] = useState(false);
-  const [inviteCanRobe,  setInviteCanRobe]  = useState(false);
-  const [inviteSending, setInviteSending]   = useState(false);
   const [togglingCap, setTogglingCap]         = useState<string | null>(null);
   const [togglingCampus, setTogglingCampus]   = useState<string | null>(null);
-  const [showInviteConfirm, setShowInviteConfirm] = useState(false);
 
   // Users management state
   const [profileUsers, setProfileUsers]     = useState<ProfileUser[]>([]);
@@ -1087,72 +1050,23 @@ export const AdminHome: React.FC = () => {
   const [currentSampleDoc, setCurrentSampleDoc] = useState<string | null>(null);
   const sampleFileRef   = useRef<HTMLInputElement>(null);
   const mainScrollRef   = useRef<HTMLDivElement>(null);
-  type JubahPrice = { remark: string; payment_mode: string; price: number; university: string };
-  const [savingPrice,        setSavingPrice]        = useState<string | null>(null);
-  const [priceDrafts,        setPriceDrafts]        = useState<Record<string, string>>({});
-  const [pricingUniversity,  setPricingUniversity]  = useState('umpsa');
-  // Two separate rates — pickup vs postage — since a postage order's price
-  // includes real shipping cost paid out to Pos Malaysia, not money the
-  // rider earned handling it. One flat rate across both doesn't reflect that.
-  const [commissionRates,  setCommissionRates]  = useState<{ pickup: string; postage: string } | null>(null);
-  const [commissionDrafts, setCommissionDrafts] = useState({ pickup: '', postage: '' });
-  const [savingCommission, setSavingCommission] = useState<'pickup' | 'postage' | null>(null);
+  const driversTabRef   = useRef<DriversTabHandle>(null);
   const [jubahSheetRider,    setJubahSheetRider]    = useState<JubahRider | null>(null);
   const [jubahMethodDraft,   setJubahMethodDraft]   = useState<'pickup' | 'postage' | ''>('');
   const [jubahDropPointDraft, setJubahDropPointDraft] = useState('');
   const [savingJubahAssignment, setSavingJubahAssignment] = useState(false);
+  // Reported up by DriversTab's own invite-confirm modal, so the shared
+  // "hide BottomNav while any sheet is open" effect below still sees it.
+  const [driversModalOpen, setDriversModalOpen] = useState(false);
 
   // Report to AppContext whenever any bottom sheet/modal here is open,
   // so BottomNav can hide itself and never overlap sheet content.
   useEffect(() => {
-    const anyOpen = !!sheetUser || !!jubahSheetRider || !!pendingAction || showGateMasterConfirm || showInviteConfirm || !!receiptModal;
+    const anyOpen = !!sheetUser || !!jubahSheetRider || !!pendingAction || showGateMasterConfirm || driversModalOpen || !!receiptModal;
     if (!anyOpen) return;
     setSheetOpen(true);
     return () => setSheetOpen(false);
-  }, [sheetUser, jubahSheetRider, pendingAction, showGateMasterConfirm, showInviteConfirm, receiptModal, setSheetOpen]);
-
-  const handleSavePrice = async (remark: string, paymentMode: string) => {
-    const key = `${remark}_${paymentMode}_${pricingUniversity}`;
-    const price = parseFloat(priceDrafts[key] ?? '0');
-    if (isNaN(price) || price < 0) { showToast('Invalid price.'); return; }
-    setSavingPrice(key);
-    const { error } = await supabase.rpc('set_jubah_price', {
-      p_remark: remark, p_payment_mode: paymentMode, p_price: price, p_university: pricingUniversity,
-    });
-    setSavingPrice(null);
-    if (error) showToast('Failed to save price.');
-    else {
-      showToast(`${remark} ${paymentMode === 'pickup' ? 'Pickup' : 'Postage'} price updated.`);
-      loadJubahData();
-    }
-  };
-
-  // Rider commission — separate pickup/postage %, superadmin-only to change
-  // (enforced server-side in set_jubah_rider_commission_rate, not just
-  // hidden here).
-  const loadCommissionRates = useCallback(async () => {
-    const { data } = await supabase
-      .from('app_settings')
-      .select('key, value')
-      .in('key', ['jubah_rider_commission_percent_pickup', 'jubah_rider_commission_percent_postage']);
-    const pickup  = data?.find(r => r.key === 'jubah_rider_commission_percent_pickup')?.value  ?? '0';
-    const postage = data?.find(r => r.key === 'jubah_rider_commission_percent_postage')?.value ?? '0';
-    setCommissionRates({ pickup, postage });
-    setCommissionDrafts({ pickup, postage });
-  }, []);
-
-  useLoadOnActive(activeTab === 'jubah' && jubahSubTab === 'price', loadCommissionRates);
-
-  const handleSaveCommission = async (deliveryType: 'pickup' | 'postage') => {
-    const percent = parseFloat(commissionDrafts[deliveryType]);
-    if (isNaN(percent) || percent < 0 || percent > 100) { showToast('Enter a percentage between 0 and 100.'); return; }
-    setSavingCommission(deliveryType);
-    const { data, error } = await supabase.rpc('set_jubah_rider_commission_rate', { p_percent: percent, p_delivery_type: deliveryType });
-    setSavingCommission(null);
-    if (error || !data?.success) { showToast(data?.error ?? 'Failed to save commission rate.'); return; }
-    showToast(`${deliveryType === 'pickup' ? 'Self Pickup' : 'Postage'} commission updated.`);
-    setCommissionRates(prev => prev ? { ...prev, [deliveryType]: commissionDrafts[deliveryType] } : prev);
-  };
+  }, [sheetUser, jubahSheetRider, pendingAction, showGateMasterConfirm, driversModalOpen, receiptModal, setSheetOpen]);
 
   const handleSaveJubahAssignment = async () => {
     if (!jubahSheetRider) return;
@@ -1270,15 +1184,6 @@ export const AdminHome: React.FC = () => {
       setJubahBookings((bookingsData as JubahBookingRow[]) ?? []);
     }
     setJubahBookingsLoading(false);
-
-    const { data: pricesData } = await supabase.rpc('get_jubah_pricing');
-    if (pricesData) {
-      const drafts: Record<string, string> = {};
-      (pricesData as JubahPrice[]).forEach(p => {
-        drafts[`${p.remark}_${p.payment_mode}_${p.university}`] = String(p.price);
-      });
-      setPriceDrafts(drafts);
-    }
   }, [isSuperAdmin, adminCampus]);
 
   useLoadOnActive(activeTab === 'jubah', loadJubahData);
@@ -1562,56 +1467,6 @@ export const AdminHome: React.FC = () => {
 
   const filtered = filter === 'all' ? orders : orders.filter(o => o.status === filter);
 
-
-  // ── Driver invite helpers ───────────────────────────────────────────────
-  const loadInvites = useCallback(async () => {
-    setInvitesLoading(true);
-    let query = supabase
-      .from('driver_invites')
-      .select('id,email,campus,role,can_drive,can_rent,used,used_at,created_at')
-      .order('created_at', { ascending: false });
-    if (!isSuperAdmin) query = query.eq('campus', adminCampus);
-    const { data } = await query;
-    setInvites(data ?? []);
-    setInvitesLoading(false);
-  }, [isSuperAdmin, adminCampus]);
-
-  useLoadOnActive(activeTab === 'drivers', loadInvites);
-
-  const handleSendInvite = async () => {
-    if (!inviteEmail.trim()) return;
-    if (inviteRole === 'driver' && !inviteCanDrive && !inviteCanRent) { showToast('Select at least one capability.'); return; }
-    if (inviteRole === 'rider'  && !inviteCanDaily && !inviteCanRobe)  { showToast('Select at least one capability.'); return; }
-    setInviteSending(true);
-    const { data: { user: authUser } } = await supabase.auth.getUser();
-    const { error } = await supabase.from('driver_invites').insert({
-      email:      inviteEmail.trim().toLowerCase(),
-      campus:     inviteCampus,
-      role:       inviteRole,
-      can_drive:  inviteRole === 'driver' ? inviteCanDrive : false,
-      can_rent:   inviteRole === 'driver' ? inviteCanRent  : false,
-      can_daily:  inviteRole === 'rider'  ? inviteCanDaily : false,
-      can_robe:   inviteRole === 'rider'  ? inviteCanRobe  : false,
-      created_by: authUser?.id,
-    });
-    setInviteSending(false);
-    if (error) showToast(error.message.includes('unique') ? 'This email already has a pending invite.' : error.message);
-    else {
-      showToast('Invite added!');
-      setInviteEmail('');
-      setInviteRole('driver');
-      setInviteCanDrive(true); setInviteCanRent(false);
-      setInviteCanDaily(false); setInviteCanRobe(false);
-      loadInvites();
-    }
-  };
-
-  const handleRevokeInvite = async (id: string) => {
-    const { error } = await supabase.from('driver_invites').delete().eq('id', id);
-    if (error) { showToast('Delete failed: ' + error.message); return; }
-    showToast('Invite removed.');
-    loadInvites();
-  };
 
   // ── Users management helpers ────────────────────────────────────────────────
   const loadUsers = useCallback(async () => {
@@ -2016,7 +1871,7 @@ export const AdminHome: React.FC = () => {
   // announcement data instead of the tab actually on screen.
   const refreshActiveTab = () =>
     activeTab === 'orders' ? loadOrders() :
-    activeTab === 'drivers' ? loadInvites() :
+    activeTab === 'drivers' ? driversTabRef.current?.reload() :
     activeTab === 'users' ? loadUsers() :
     activeTab === 'receipts' ? loadReceipts() :
     activeTab === 'routes' ? loadRoutes() :
@@ -2342,214 +2197,15 @@ export const AdminHome: React.FC = () => {
 
       {/* ── DRIVERS TAB ── */}
       {activeTab === 'drivers' && (
-        <div className="flex flex-col gap-4">
-          {/* Invite form */}
-          <div className="bg-white border border-slate-100 rounded-3xl p-5 flex flex-col gap-4">
-            <h3 className="text-sm font-semibold text-slate-700 flex items-center gap-1.5">
-              <UserPlus className="w-4 h-4 text-primary" /> Invite Staff
-            </h3>
-
-            {/* Role selector */}
-            <div>
-              <p className="text-sm font-semibold text-slate-700 mb-2">Role</p>
-              <div className="flex bg-slate-50 border border-slate-200 rounded-2xl p-1 gap-1">
-                {([
-                  { id: 'driver', label: 'Driver', color: 'bg-primary text-white' },
-                  { id: 'rider',  label: 'Rider',  color: 'bg-emerald-600 text-white' },
-                  { id: 'admin',  label: 'Admin',  color: 'bg-violet-600 text-white' },
-                ] as const).map(r => (
-                  <button key={r.id} type="button"
-                    onPointerDown={e => {
-                      e.preventDefault();
-                      setInviteRole(r.id);
-                      setInviteCanDrive(r.id === 'driver');
-                      setInviteCanRent(false);
-                      setInviteCanDaily(false);
-                      setInviteCanRobe(false);
-                    }}
-                    className={`flex-1 py-2 rounded-xl text-xs font-semibold transition-transform ${
-                      inviteRole === r.id ? r.color : 'text-slate-400'
-                    }`}>
-                    {r.label}
-                  </button>
-                ))}
-              </div>
-              {inviteRole === 'admin' && (
-                <p className="text-xs text-violet-500 font-semibold mt-1.5 pl-1">
-                  Admin includes full driving capabilities automatically.
-                </p>
-              )}
-            </div>
-
-            {/* Campus picker — superadmin only; regular admin locked to their campus */}
-            {isSuperAdmin ? (
-              <div>
-                <p className="text-sm font-semibold text-slate-700 mb-2">Campus</p>
-                <div className="flex bg-slate-50 border border-slate-200 rounded-2xl p-1 gap-1">
-                  {(['Gambang', 'Pekan'] as const).map(c => (
-                    <button key={c} type="button" onPointerDown={(e) => { e.preventDefault(); setInviteCampus(c); }}
-                      className={`flex-1 py-2 rounded-xl text-xs font-semibold transition-transform ${
-                        inviteCampus === c ? 'bg-primary text-white' : 'text-slate-400'
-                      }`}
-                    >
-                      {c}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            ) : (
-              <div className="flex items-center gap-2 bg-slate-50 border border-slate-200 rounded-2xl px-4 py-2.5">
-                <MapPin className="w-3.5 h-3.5 text-primary shrink-0" />
-                <p className="text-xs font-semibold text-slate-700">UMPSA {adminCampus}</p>
-                <span className="text-xs font-normal text-slate-400 ml-auto">campus locked</span>
-              </div>
-            )}
-
-            {/* Email input */}
-            <div className="relative">
-              <Mail className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
-              <input
-                type="email"
-                value={inviteEmail}
-                onChange={e => setInviteEmail(e.target.value)}
-                onKeyDown={e => e.key === 'Enter' && inviteEmail.trim() && setShowInviteConfirm(true)}
-                placeholder="staff@email.com"
-                className="w-full bg-slate-50 border border-slate-200 rounded-xl py-2.5 pl-9 pr-3 text-xs text-slate-700 focus:outline-none focus:border-primary transition"
-              />
-            </div>
-
-            {/* Capability toggles — driver */}
-            {inviteRole === 'driver' && (
-              <div>
-                <p className="text-sm font-semibold text-slate-700 mb-2">Capabilities</p>
-                <div className="flex gap-2">
-                  <button type="button" onPointerDown={(e) => { e.preventDefault(); setInviteCanDrive(v => !v); }}
-                    className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl text-xs font-semibold border transition-transform active:scale-95 ${
-                      inviteCanDrive ? 'bg-white border-slate-900 text-slate-900' : 'bg-slate-50 border-slate-200 text-slate-400'
-                    }`}>
-                    <Car className="w-3 h-3" /> Gerak Car {inviteCanDrive ? '✓' : '✗'}
-                  </button>
-                  <button type="button" onPointerDown={(e) => { e.preventDefault(); setInviteCanRent(v => !v); }}
-                    className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl text-xs font-semibold border transition-transform active:scale-95 ${
-                      inviteCanRent ? 'bg-white border-slate-900 text-slate-900' : 'bg-slate-50 border-slate-200 text-slate-400'
-                    }`}>
-                    <KeyRound className="w-3 h-3" /> Rental {inviteCanRent ? '✓' : '✗'}
-                  </button>
-                </div>
-              </div>
-            )}
-
-            {/* Capability toggles — rider */}
-            {inviteRole === 'rider' && (
-              <div>
-                <p className="text-sm font-semibold text-slate-700 mb-2">Capabilities</p>
-                <div className="flex gap-2">
-                  <button type="button" onPointerDown={(e) => { e.preventDefault(); setInviteCanDaily(v => !v); }}
-                    className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl text-xs font-semibold border transition-transform active:scale-95 ${
-                      inviteCanDaily ? 'bg-white border-slate-900 text-slate-900' : 'bg-slate-50 border-slate-200 text-slate-400'
-                    }`}>
-                    <Bike className="w-3.5 h-3.5" /> Daily {inviteCanDaily ? '✓' : '✗'}
-                  </button>
-                  <button type="button" onPointerDown={(e) => { e.preventDefault(); setInviteCanRobe(v => !v); }}
-                    className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl text-xs font-semibold border transition-transform active:scale-95 ${
-                      inviteCanRobe ? 'bg-white border-slate-900 text-slate-900' : 'bg-slate-50 border-slate-200 text-slate-400'
-                    }`}>
-                    <GraduationCap className="w-3.5 h-3.5" /> Robe {inviteCanRobe ? '✓' : '✗'}
-                  </button>
-                </div>
-              </div>
-            )}
-
-            <button
-              onClick={() => {
-                if (!inviteEmail.trim()) return;
-                if (inviteRole === 'driver' && !inviteCanDrive && !inviteCanRent) { showToast('Select at least one capability.'); return; }
-                setShowInviteConfirm(true);
-              }}
-              disabled={!inviteEmail.trim()}
-              className="flex items-center justify-center gap-2 bg-primary hover:bg-primary-hover text-white font-semibold text-xs py-2.5 rounded-xl transition active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed shadow-md shadow-primary/20"
-            >
-              <Send className="w-3.5 h-3.5" /> Add Invite
-            </button>
-          </div>
-
-          {/* Search */}
-          <div className="bg-white border border-slate-100 rounded-2xl p-3.5 flex flex-col gap-2">
-            <h3 className="text-sm font-semibold text-slate-700 flex items-center gap-1.5">
-              <AlertCircle className="w-3.5 h-3.5" /> Find Staff
-            </h3>
-            <div className="flex gap-2">
-              <input
-                type="email"
-                value={inviteSearch}
-                onChange={e => setInviteSearch(e.target.value)}
-                placeholder="Search by email"
-                style={{ fontSize: '12px' }}
-                className="flex-1 bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 font-semibold text-slate-700 focus:outline-none focus:border-primary transition placeholder:font-normal"
-              />
-              <button
-                onClick={() => setInviteSearch('')}
-                disabled={!inviteSearch.trim()}
-                className="px-3.5 bg-primary text-white font-semibold text-xs rounded-lg transition active:scale-95 disabled:opacity-50 flex items-center gap-1.5"
-              >
-                Clear
-              </button>
-            </div>
-          </div>
-
-          {/* Invite list */}
-          <div className="bg-white border border-slate-100 rounded-3xl p-5 flex flex-col gap-4">
-            <h3 className="text-sm font-semibold text-slate-700 flex items-center gap-1.5">
-              <Mail className="w-4 h-4" /> Invite List
-            </h3>
-
-            {invitesLoading ? (
-              <div className="flex justify-center py-6">
-                <span className="w-5 h-5 rounded-full border-2 border-slate-200 border-t-primary animate-spin" />
-              </div>
-            ) : invites.filter(inv => !inviteSearch.trim() || inv.email.toLowerCase().includes(inviteSearch.toLowerCase())).length === 0 ? (
-              <p className="text-xs text-slate-400 font-semibold text-center py-4">
-                {inviteSearch.trim() ? 'No matching invites found' : 'No invites yet'}
-              </p>
-            ) : (
-              <div className="overflow-y-auto no-scrollbar max-h-[360px] flex flex-col gap-2">
-                {invites.filter(inv => !inviteSearch.trim() || inv.email.toLowerCase().includes(inviteSearch.toLowerCase())).map(inv => (
-                  <div key={inv.id} className={`flex items-center justify-between gap-3 px-3 py-2.5 rounded-2xl border ${
-                    inv.used ? 'bg-emerald-50 border-emerald-100' : 'bg-white border-slate-100'
-                  }`}>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-xs font-semibold text-slate-700 truncate">{inv.email}</p>
-                      <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
-                        <span className="text-xs font-normal text-slate-400 uppercase">{inv.campus}</span>
-                        {inv.used
-                          ? <span className="text-xs font-semibold text-emerald-600 bg-emerald-100 px-1.5 py-0.5 rounded-full">Registered</span>
-                          : <span className="text-xs font-semibold text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded-full">Pending</span>}
-                        {inv.can_drive && (
-                          <span className="text-xs font-semibold text-primary bg-primary/10 px-1.5 py-0.5 rounded-full flex items-center gap-0.5">
-                            <Car className="w-2.5 h-2.5" /> Car
-                          </span>
-                        )}
-                        {inv.can_rent && (
-                          <span className="text-xs font-semibold text-amber-700 bg-amber-50 px-1.5 py-0.5 rounded-full flex items-center gap-0.5">
-                            <KeyRound className="w-2.5 h-2.5" /> Rental
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                    {!inv.used && (
-                      <button
-                        onClick={() => handleRevokeInvite(inv.id)}
-                        className="w-7 h-7 flex items-center justify-center rounded-xl bg-red-50 border border-red-100 text-red-400 hover:text-red-600 transition active:scale-90 shrink-0"
-                      >
-                        <X className="w-3.5 h-3.5" />
-                      </button>
-                    )}
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        </div>
+        <DriversTab
+          ref={driversTabRef}
+          active={activeTab === 'drivers'}
+          isSuperAdmin={isSuperAdmin}
+          adminCampus={adminCampus}
+          userName={user.name}
+          showToast={showToast}
+          onModalOpenChange={setDriversModalOpen}
+        />
       )}
 
       {/* ── USERS TAB ── */}
@@ -4237,117 +3893,11 @@ export const AdminHome: React.FC = () => {
 
           {/* ── PRICE sub-tab ── */}
           {jubahSubTab === 'price' && (
-            <div className="flex flex-col gap-4">
-
-              {/* Rider commission — superadmin can change it; regular admin
-                  sees it read-only for transparency. Separate pickup/postage
-                  rates since a postage order's price includes real shipping
-                  cost paid to Pos Malaysia, not rider-earned money — one flat
-                  rate across both doesn't reflect that. Applies only to
-                  bookings that complete from now on — changing it never
-                  rewrites past earnings (see migration_jubah_commission_by_
-                  delivery_type.sql). */}
-              <div className="bg-white border border-slate-100 rounded-3xl p-5 flex flex-col gap-3">
-                <h3 className="text-sm font-semibold text-slate-700 flex items-center gap-1.5">
-                  <TrendingUp className="w-4 h-4" /> Rider Commission
-                </h3>
-                <p className="text-xs text-slate-400 font-semibold -mt-1.5">
-                  Percentage of an order's total value a rider earns once it's delivered — set separately for pickup vs postage, since postage price includes real shipping cost. Only applies going forward — changing it never rewrites past earnings.
-                </p>
-                {(['pickup', 'postage'] as const).map(type => (
-                  <div key={type} className="flex flex-col gap-1.5">
-                    <label className="text-xs font-normal text-slate-400">{type === 'pickup' ? 'Self Pickup' : 'Postage'}</label>
-                    {isSuperAdmin ? (
-                      <div className="flex gap-2">
-                        <div className="flex items-center bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 gap-1 flex-1 focus-within:border-primary transition">
-                          <input
-                            type="number"
-                            min="0"
-                            max="100"
-                            step="0.1"
-                            value={commissionDrafts[type]}
-                            onChange={e => setCommissionDrafts(prev => ({ ...prev, [type]: e.target.value }))}
-                            style={{ fontSize: '13px' }}
-                            className="flex-1 bg-transparent font-semibold text-slate-700 focus:outline-none w-0"
-                          />
-                          <span className="text-xs font-normal text-slate-400 shrink-0">%</span>
-                        </div>
-                        <button
-                          onClick={() => handleSaveCommission(type)}
-                          disabled={savingCommission === type || commissionDrafts[type] === commissionRates?.[type]}
-                          className="shrink-0 bg-primary text-white font-semibold text-xs px-4 py-2.5 rounded-xl transition active:scale-95 disabled:opacity-50"
-                        >
-                          {savingCommission === type ? '…' : 'Save'}
-                        </button>
-                      </div>
-                    ) : (
-                      <div className="bg-slate-50 border border-slate-100 rounded-xl px-3 py-2.5">
-                        <span className="text-xs font-semibold text-slate-600">
-                          {commissionRates === null ? 'Loading…' : `${commissionRates[type]}% per completed order`}
-                        </span>
-                        <span className="text-xs font-normal text-slate-400 ml-2">superadmin only to change</span>
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
-
-              <div className="bg-white border border-slate-100 rounded-3xl p-5 flex flex-col gap-4">
-              <div className="flex items-center justify-between gap-2">
-                <h3 className="text-sm font-semibold text-slate-700 flex items-center gap-1.5">
-                  <GraduationCap className="w-4 h-4" /> Jubah Pricing Matrix
-                </h3>
-                <div className="w-28 shrink-0">
-                  <NativeSelect
-                    value={pricingUniversity}
-                    onChange={setPricingUniversity}
-                    options={JUBAH_PRICING_UNIVERSITIES.map(u => ({ value: u.key, label: u.label }))}
-                    label="Select University"
-                  />
-                </div>
-              </div>
-              <p className="text-xs text-slate-400 font-semibold -mt-2">Set price per study level × service option. Tap Save after editing each value.</p>
-
-              {(['Master', 'PHD', 'Degree', 'Diploma'] as const).map(remark => (
-                <div key={remark} className="border border-slate-100 rounded-2xl p-5 flex flex-col gap-4">
-                  <p className="text-xs font-black text-slate-700">{remark}</p>
-                  <div className="grid grid-cols-2 gap-2">
-                    {(['pickup', 'postage'] as const).map(mode => {
-                      const key = `${remark}_${mode}_${pricingUniversity}`;
-                      return (
-                        <div key={mode} className="flex flex-col gap-1.5">
-                          <label className="text-xs font-normal text-slate-400">
-                            {mode === 'pickup' ? 'Self Pickup' : 'Pickup & Postage'}
-                          </label>
-                          <div className="flex gap-1.5">
-                            <div className="flex items-center bg-slate-50 border border-slate-200 rounded-xl px-2 py-2 gap-1 flex-1 focus-within:border-primary transition">
-                              <span className="text-xs font-normal text-slate-400 shrink-0">RM</span>
-                              <input
-                                type="number"
-                                min="0"
-                                step="0.01"
-                                value={priceDrafts[key] ?? ''}
-                                onChange={e => setPriceDrafts(prev => ({ ...prev, [key]: e.target.value }))}
-                                style={{ fontSize: '12px' }}
-                                className="flex-1 bg-transparent font-semibold text-slate-700 focus:outline-none w-0"
-                              />
-                            </div>
-                            <button
-                              onClick={() => handleSavePrice(remark, mode)}
-                              disabled={savingPrice === key}
-                              className="shrink-0 bg-primary text-white font-semibold text-xs px-2.5 py-2 rounded-xl transition active:scale-95 disabled:opacity-50"
-                            >
-                              {savingPrice === key ? '…' : 'Save'}
-                            </button>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              ))}
-              </div>
-            </div>
+            <JubahPriceSubTab
+              active={activeTab === 'jubah' && jubahSubTab === 'price'}
+              isSuperAdmin={isSuperAdmin}
+              showToast={showToast}
+            />
           )}
 
           {/* ── BANNER sub-tab ── */}
@@ -4991,108 +4541,6 @@ export const AdminHome: React.FC = () => {
       );
     })()}
 
-
-    {/* ── Invite Confirmation Modal ── */}
-    {showInviteConfirm && (
-      <div
-        className="fixed inset-0 z-50 bg-black/40 flex items-end justify-center"
-        onPointerDown={(e) => { e.preventDefault(); setShowInviteConfirm(false); }}
-      >
-        <div
-          className="w-full max-w-sm max-h-[calc(100dvh-5rem)] overflow-y-auto no-scrollbar bg-white rounded-t-3xl p-6 pb-10 shadow-2xl animate-slide-up"
-          onPointerDown={e => e.stopPropagation()}
-        >
-          {/* Handle bar */}
-          <div className="w-10 h-1 bg-slate-200 rounded-full mx-auto mb-5" />
-
-          {/* Title */}
-          <h3 className="text-sm font-black text-slate-800 text-center mb-1">Confirm {inviteRole === 'admin' ? 'Admin' : inviteRole === 'rider' ? 'Rider' : 'Driver'} Invite</h3>
-          <p className="text-xs text-slate-400 font-semibold text-center mb-5">
-            Please review before sending.
-          </p>
-
-          {/* Receipt-style card */}
-          <div className="bg-slate-50 border border-slate-100 rounded-2xl overflow-hidden mb-5">
-
-            {/* Header stripe */}
-            <div className={`px-4 py-3 flex items-center gap-2 ${inviteRole === 'admin' ? 'bg-violet-600' : inviteRole === 'rider' ? 'bg-emerald-600' : 'bg-primary'}`}>
-              <Send className="w-3.5 h-3.5 text-white" />
-              <span className="text-white font-semibold text-xs uppercase tracking-widest">{inviteRole === 'admin' ? 'Admin' : inviteRole === 'rider' ? 'Rider' : 'Driver'} Invite</span>
-            </div>
-
-            {/* Details */}
-            <div className="px-4 py-4 flex flex-col gap-4">
-              <div className="flex items-start justify-between gap-2">
-                <p className="text-xs font-normal text-slate-400">Email</p>
-                <p className="text-xs font-semibold text-slate-800 text-right break-all">{inviteEmail.trim().toLowerCase()}</p>
-              </div>
-
-              <div className="h-px bg-slate-100" />
-
-              <div className="flex items-center justify-between gap-2">
-                <p className="text-xs font-normal text-slate-400">Campus</p>
-                <span className="text-xs font-semibold text-slate-800">UMPSA {inviteCampus}</span>
-              </div>
-
-              <div className="h-px bg-slate-100" />
-
-              <div className="flex items-start justify-between gap-2">
-                <p className="text-xs font-normal text-slate-400">Capabilities</p>
-                <div className="flex flex-col items-end gap-1.5">
-                  {inviteRole === 'driver' && (<>
-                    <span className={`flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full ${inviteCanDrive ? 'bg-primary/10 text-primary' : 'bg-slate-100 text-slate-400 line-through'}`}>
-                      <Car className="w-3 h-3" /> Gerak Car {inviteCanDrive ? '✓' : '✗'}
-                    </span>
-                    <span className={`flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full ${inviteCanRent ? 'bg-amber-50 text-amber-700' : 'bg-slate-100 text-slate-400 line-through'}`}>
-                      <KeyRound className="w-3 h-3" /> Gerak Rental {inviteCanRent ? '✓' : '✗'}
-                    </span>
-                  </>)}
-                  {inviteRole === 'rider' && (<>
-                    <span className={`flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full ${inviteCanDaily ? 'bg-emerald-50 text-emerald-700' : 'bg-slate-100 text-slate-400 line-through'}`}>
-                      <Bike className="w-3 h-3" /> Gerak Daily {inviteCanDaily ? '✓' : '✗'}
-                    </span>
-                    <span className={`flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full ${inviteCanRobe ? 'bg-blue-50 text-blue-700' : 'bg-slate-100 text-slate-400 line-through'}`}>
-                      <GraduationCap className="w-3 h-3" /> Robe Convocation {inviteCanRobe ? '✓' : '✗'}
-                    </span>
-                  </>)}
-                  {inviteRole === 'admin' && (
-                    <span className="flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full bg-violet-50 text-violet-700">
-                      <Settings className="w-3 h-3" /> Full Access
-                    </span>
-                  )}
-                </div>
-              </div>
-            </div>
-
-            {/* Footer stripe */}
-            <div className="bg-slate-100 px-4 py-2.5">
-              <p className="text-xs text-slate-400 font-semibold text-center">
-                Sent by {user.name} · {new Date().toLocaleDateString('en-MY', { day: 'numeric', month: 'short', year: 'numeric' })}
-              </p>
-            </div>
-          </div>
-
-          {/* Actions */}
-          <div className="flex gap-3">
-            <button
-              onClick={() => setShowInviteConfirm(false)}
-              className="flex-1 bg-slate-100 text-slate-600 font-semibold text-xs py-3 rounded-2xl transition active:scale-95"
-            >
-              Cancel
-            </button>
-            <button
-              onClick={() => { setShowInviteConfirm(false); handleSendInvite(); }}
-              disabled={inviteSending}
-              className="flex-1 bg-primary hover:bg-primary-hover text-white font-semibold text-xs py-3 rounded-2xl transition active:scale-95 disabled:opacity-50 flex items-center justify-center gap-2 shadow-md shadow-primary/20"
-            >
-              {inviteSending
-                ? <span className="w-4 h-4 rounded-full border-2 border-white border-t-transparent animate-spin" />
-                : <><Send className="w-3.5 h-3.5" /> Yes, Send Invite</>}
-            </button>
-          </div>
-        </div>
-      </div>
-    )}
 
     </>
   );
