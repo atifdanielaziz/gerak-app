@@ -12,7 +12,7 @@ import { RepresentativeSheet } from '../components/RepresentativeSheet';
 import { ReceiptCard } from '../components/Receipt';
 import { NativeSelect } from '../components/NativeSelect';
 import { buildJubahReceiptRows } from '../lib/receiptRows';
-import { getJubahProgress } from '../lib/jubahStatus';
+import { getJubahProgress, JUBAH_STEP_LABEL } from '../lib/jubahStatus';
 import { generateReceiptPdf } from '../lib/receiptPdf';
 import { copyToClipboard } from '../lib/clipboard';
 import { savePendingJubahBooking, clearPendingJubahBooking } from '../lib/pendingJubahBooking';
@@ -81,7 +81,7 @@ const clearFormDraft = () => {
 };
 
 export const Jubah: React.FC = () => {
-  const { user, jubahBooking, bookJubah, commitJubahBooking, startNewJubahBooking, setCurrentPage, setSheetOpen, goBack, setLeaveGuard } = useApp();
+  const { user, jubahBooking, bookJubah, commitJubahBooking, startNewJubahBooking, setCurrentPage, setSheetOpen, goBack, setLeaveGuard, addNotification } = useApp();
 
   const [landingUniversity, setLandingUniversity] = useState('');
   // Once booked, landingUniversity/form/tracking are all one page instance —
@@ -484,6 +484,13 @@ export const Jubah: React.FC = () => {
   const [liveInitialPaid,   setLiveInitialPaid]    = useState(false);
   const [liveInitialPaidAt, setLiveInitialPaidAt]  = useState<string | null>(null);
 
+  // Notify on real status changes only — mirrors the same prev-vs-current
+  // ref-diff pattern MyOrders.tsx already uses for ride status, so this
+  // fires "Robe Processing" / "Robe Collected" / etc as they actually
+  // happen while this page is open, instead of never notifying at all for
+  // status changes a rider or admin makes independently.
+  const prevLiveStatusRef = useRef<string | null>(null);
+
   useEffect(() => {
     if (!jubahBooking?.reference) return;
     let cancelled = false;
@@ -492,6 +499,14 @@ export const Jubah: React.FC = () => {
         .rpc('get_jubah_booking_live_status', { p_reference: jubahBooking.reference, p_hp_number: jubahBooking.hpNumber })
         .single<{ status: string; rider_name: string | null; rider_phone: string | null; balance_paid: boolean | null; balance_paid_at: string | null; initial_paid: boolean | null; initial_paid_at: string | null }>();
       if (data && !cancelled) {
+        if (prevLiveStatusRef.current !== null && prevLiveStatusRef.current !== data.status) {
+          addNotification(
+            'Jubah Order Updated',
+            `${jubahBooking.reference} is now: ${JUBAH_STEP_LABEL[data.status] ?? data.status}.`,
+            'jubah',
+          );
+        }
+        prevLiveStatusRef.current = data.status;
         setLiveStatus(data.status);
         setLiveRiderName(data.rider_name ?? null);
         setLiveRiderPhone(data.rider_phone ?? null);
