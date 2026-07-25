@@ -4,6 +4,7 @@ import { supabase } from '../lib/supabase';
 import { WaIcon, toWa } from '../lib/whatsapp';
 import { getJubahDocSignedUrl } from '../lib/jubahDocs';
 import { stampWatermark } from '../lib/watermark';
+import { useLoadOnActive } from '../hooks/useLoadOnActive';
 import {
   JUBAH_STEP_LABEL as STATUS_LABEL, JUBAH_STATUS_STYLE as STATUS_STYLE,
   JUBAH_NEXT_LABEL as NEXT_LABEL, getJubahProgress, jubahWaMsg,
@@ -86,9 +87,7 @@ export const RiderHome: React.FC = () => {
     setJubahLoading(false);
   }, []);
 
-  useEffect(() => {
-    if (activeTab === 'jubah') loadJubahJobs();
-  }, [activeTab, loadJubahJobs]);
+  useLoadOnActive(activeTab === 'jubah', loadJubahJobs);
 
   // ── Earnings ───────────────────────────────────────────────────────────────
   type JubahEarningRow = {
@@ -107,9 +106,7 @@ export const RiderHome: React.FC = () => {
     setJubahEarningsLoading(false);
   }, []);
 
-  useEffect(() => {
-    if (activeTab === 'earnings') loadJubahEarnings();
-  }, [activeTab, loadJubahEarnings]);
+  useLoadOnActive(activeTab === 'earnings', loadJubahEarnings);
 
   const totalJubahEarnings = jubahEarnings.reduce((sum, e) => sum + Number(e.rider_commission_amount), 0);
 
