@@ -175,8 +175,8 @@ const maskIc = (ic: string | null) => {
 const fmtDate = () =>
   new Date().toLocaleDateString('en-MY', { day: '2-digit', month: 'short', year: 'numeric' })
 
-const row = (label: string, value: string | null | undefined, opts?: { bold?: boolean; accent?: boolean }) =>
-  !value ? '' : `<tr><td style="padding: 6px 0; color: #94a3b8;">${label}</td><td style="padding: 6px 0; text-align: right; font-weight: ${opts?.bold ? 700 : 400}; color: ${opts?.accent ? '#dc2626' : '#1e293b'};">${value}</td></tr>`
+const row = (label: string, value: string | null | undefined, opts?: { bold?: boolean; accent?: boolean; sub?: string }) =>
+  !value ? '' : `<tr><td style="padding: 6px 0; color: #94a3b8; vertical-align: top;">${label}</td><td style="padding: 6px 0; text-align: right; font-weight: ${opts?.bold ? 700 : 400}; color: ${opts?.accent ? '#dc2626' : '#1e293b'};">${value}${opts?.sub ? `<br><span style="font-size: 11px; font-weight: 400; color: #94a3b8;">${opts.sub}</span>` : ''}</td></tr>`
 
 // Best-effort — a failed email should never affect the payment status
 // update, which has already committed by the time this runs. RESEND_FROM_EMAIL
@@ -209,7 +209,7 @@ async function sendReceiptEmail(admin: ReturnType<typeof createClient>, booking:
   const today = fmtDate()
   const paymentRows =
     stage === 'deposit'
-      ? row('Deposit Paid', `RM${Number(booking.cost).toFixed(2)} (${today})`) +
+      ? row('Deposit Paid', `RM${Number(booking.cost).toFixed(2)}`, { sub: today }) +
         row('Balance Due', `RM${Number(booking.balance_due).toFixed(2)}`) +
         // Total Due here means what's still owed right now — the deposit
         // just cleared, so that's the remaining balance, not cost+balance
@@ -218,9 +218,9 @@ async function sendReceiptEmail(admin: ReturnType<typeof createClient>, booking:
         row('Total Due', `RM${Number(booking.balance_due).toFixed(2)}`, { bold: true, accent: true })
       : stage === 'balance'
         ? row('Deposit Paid', `RM${Number(booking.cost).toFixed(2)}`) +
-          row('Balance Paid', `RM${Number(booking.balance_due).toFixed(2)} (${today})`) +
+          row('Balance Paid', `RM${Number(booking.balance_due).toFixed(2)}`, { sub: today }) +
           row('Total Charged', `RM${(Number(booking.cost) + Number(booking.balance_due)).toFixed(2)}`, { bold: true, accent: true })
-        : row('Amount Paid', `RM${Number(booking.cost).toFixed(2)} (${today})`, { bold: true, accent: true })
+        : row('Amount Paid', `RM${Number(booking.cost).toFixed(2)}`, { bold: true, accent: true, sub: today })
 
   const html = `
   <div style="font-family: -apple-system, Helvetica, Arial, sans-serif; max-width: 480px; margin: 0 auto; color: #1e293b;">
