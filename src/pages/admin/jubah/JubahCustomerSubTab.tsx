@@ -110,6 +110,20 @@ export function JubahCustomerSubTab({
     setCancelModalBooking(null);
   };
 
+  // Best-effort, same as the ToyyibPay-callback path this replaces — a
+  // failed email should never undo or block a payment confirmation that's
+  // already committed to the database by the time this runs.
+  const sendReceiptEmail = async (bookingId: string, stage: 'full' | 'deposit' | 'balance') => {
+    try {
+      const { data, error } = await supabase.functions.invoke('send-jubah-receipt-email', {
+        body: { bookingId, stage },
+      });
+      if (error || !data?.success) console.error('send-jubah-receipt-email failed:', error ?? data?.reason);
+    } catch (err) {
+      console.error('send-jubah-receipt-email failed:', err);
+    }
+  };
+
   const handleConfirmJubahBooking = async () => {
     if (!selected) return;
     const b = selected;
@@ -123,6 +137,7 @@ export function JubahCustomerSubTab({
         setSelected(updated);
         setBookings(prev => prev.map(r => r.id === b.id ? updated : r));
         showToast('Balance confirmed ✓');
+        sendReceiptEmail(b.id, 'balance');
       } else {
         showToast('Failed to confirm balance.');
       }
@@ -140,6 +155,7 @@ export function JubahCustomerSubTab({
         setSelected(updated);
         setBookings(prev => prev.map(r => r.id === b.id ? updated : r));
         showToast(b.payment_mode === 'deposit' ? 'Deposit confirmed → Booked ✓' : 'Payment confirmed → Paid ✓');
+        sendReceiptEmail(b.id, b.payment_mode === 'deposit' ? 'deposit' : 'full');
       }
     }
     setConfirmingBooking(false);
