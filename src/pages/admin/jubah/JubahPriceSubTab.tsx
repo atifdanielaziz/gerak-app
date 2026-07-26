@@ -1,6 +1,6 @@
 import { useCallback, useState } from 'react';
 import { supabase } from '../../../lib/supabase';
-import { TrendingUp, GraduationCap } from 'lucide-react';
+import { TrendingUp, GraduationCap, Landmark } from 'lucide-react';
 import { NativeSelect } from '../../../components/NativeSelect';
 import { useLoadOnActive } from '../../../hooks/useLoadOnActive';
 
@@ -40,6 +40,12 @@ export function JubahPriceSubTab({ active, isSuperAdmin, showToast }: JubahPrice
   const [commissionRates,  setCommissionRates]  = useState<{ pickup: string; postage: string } | null>(null);
   const [commissionDrafts, setCommissionDrafts] = useState({ pickup: '', postage: '' });
   const [savingCommission, setSavingCommission] = useState<'pickup' | 'postage' | null>(null);
+
+  // Bank details customers transfer to for the Jubah manual-proof payment
+  // flow — superadmin-only to change, same reasoning/pattern as commission.
+  const [bankDetails,  setBankDetails]  = useState<{ name: string; account: string; holder: string } | null>(null);
+  const [bankDrafts,   setBankDrafts]   = useState({ name: '', account: '', holder: '' });
+  const [savingBank,   setSavingBank]   = useState(false);
 
   const loadJubahPrices = useCallback(async () => {
     const { data: pricesData } = await supabase.rpc('get_jubah_pricing');
@@ -96,6 +102,36 @@ export function JubahPriceSubTab({ active, isSuperAdmin, showToast }: JubahPrice
     setCommissionRates(prev => prev ? { ...prev, [deliveryType]: commissionDrafts[deliveryType] } : prev);
   };
 
+  const loadBankDetails = useCallback(async () => {
+    const { data } = await supabase
+      .from('app_settings')
+      .select('key, value')
+      .in('key', ['jubah_bank_name', 'jubah_bank_account_number', 'jubah_bank_account_holder']);
+    const get = (k: string) => data?.find(r => r.key === k)?.value ?? '';
+    const next = { name: get('jubah_bank_name'), account: get('jubah_bank_account_number'), holder: get('jubah_bank_account_holder') };
+    setBankDetails(next);
+    setBankDrafts(next);
+  }, []);
+
+  useLoadOnActive(active, loadBankDetails);
+
+  const handleSaveBankDetails = async () => {
+    if (!bankDrafts.name.trim() || !bankDrafts.account.trim() || !bankDrafts.holder.trim()) {
+      showToast('All three bank detail fields are required.');
+      return;
+    }
+    setSavingBank(true);
+    const { data, error } = await supabase.rpc('set_jubah_bank_details', {
+      p_bank_name: bankDrafts.name.trim(),
+      p_account_number: bankDrafts.account.trim(),
+      p_account_holder: bankDrafts.holder.trim(),
+    });
+    setSavingBank(false);
+    if (error || !data?.success) { showToast(data?.error ?? 'Failed to save bank details.'); return; }
+    showToast('Bank details updated.');
+    setBankDetails(bankDrafts);
+  };
+
   return (
     <div className="flex flex-col gap-4">
 
@@ -146,6 +182,57 @@ export function JubahPriceSubTab({ active, isSuperAdmin, showToast }: JubahPrice
             )}
           </div>
         ))}
+      </div>
+
+      {/* Bank details — where customers transfer payment for the manual-proof
+          flow. Regular admin sees it read-only for transparency, same
+          treatment as commission above. */}
+      <div className="bg-white border border-slate-100 rounded-3xl p-5 flex flex-col gap-3">
+        <h3 className="text-sm font-semibold text-slate-700 flex items-center gap-1.5">
+          <Landmark className="w-4 h-4" /> Payment Bank Details
+        </h3>
+        <p className="text-xs text-slate-400 font-semibold -mt-1.5">
+          Shown to customers on the booking form and the balance-payment page as where to transfer payment.
+        </p>
+        {isSuperAdmin ? (
+          <div className="flex flex-col gap-2.5">
+            {([
+              { key: 'name' as const,    label: 'Bank Name' },
+              { key: 'account' as const, label: 'Account Number' },
+              { key: 'holder' as const,  label: 'Account Holder' },
+            ]).map(({ key, label }) => (
+              <div key={key} className="flex flex-col gap-1.5">
+                <label className="text-xs font-normal text-slate-400">{label}</label>
+                <input
+                  type="text"
+                  value={bankDrafts[key]}
+                  onChange={e => setBankDrafts(prev => ({ ...prev, [key]: e.target.value }))}
+                  style={{ fontSize: '13px' }}
+                  className="bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 font-semibold text-slate-700 focus:outline-none focus:border-primary transition"
+                />
+              </div>
+            ))}
+            <button
+              onClick={handleSaveBankDetails}
+              disabled={savingBank}
+              className="self-end bg-primary text-white font-semibold text-xs px-4 py-2.5 rounded-xl transition active:scale-95 disabled:opacity-50"
+            >
+              {savingBank ? '…' : 'Save'}
+            </button>
+          </div>
+        ) : (
+          <div className="bg-slate-50 border border-slate-100 rounded-xl px-3 py-2.5 flex flex-col gap-1">
+            {bankDetails === null ? (
+              <span className="text-xs font-semibold text-slate-600">Loading…</span>
+            ) : (
+              <>
+                <span className="text-xs font-semibold text-slate-600">{bankDetails.name} · {bankDetails.account}</span>
+                <span className="text-xs font-semibold text-slate-600">{bankDetails.holder}</span>
+              </>
+            )}
+            <span className="text-xs font-normal text-slate-400">superadmin only to change</span>
+          </div>
+        )}
       </div>
 
       <div className="bg-white border border-slate-100 rounded-3xl p-5 flex flex-col gap-4">
