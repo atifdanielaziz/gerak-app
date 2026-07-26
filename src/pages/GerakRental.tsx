@@ -120,9 +120,8 @@ export const GerakRental: React.FC = () => {
   const loadOwners = useCallback(async () => {
     setLoading(true);
     const { data: profiles } = await supabase
-      .from('profiles')
-      .select('id, name, phone, gerak_id, campus')
-      .eq('can_rent', true);
+      .from('rental_owner_public')
+      .select('id, name, phone, gerak_id, campus');
 
     if (!profiles?.length) { setOwners([]); setLoading(false); return; }
 
@@ -192,7 +191,7 @@ export const GerakRental: React.FC = () => {
 
     const ownerIds = [...new Set(rows.map(r => r.owner_id))];
     const [{ data: profiles }, { data: vehicles }] = await Promise.all([
-      supabase.from('profiles').select('id, name, gerak_id, phone').in('id', ownerIds),
+      supabase.from('rental_owner_public').select('id, name, gerak_id, phone').in('id', ownerIds),
       supabase.from('rental_vehicles').select('owner_id, car_type, plate_no, color, price_hour').in('owner_id', ownerIds),
     ]);
 
