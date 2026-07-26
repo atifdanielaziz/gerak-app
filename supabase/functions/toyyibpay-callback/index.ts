@@ -175,8 +175,15 @@ const maskIc = (ic: string | null) => {
 const fmtDate = () =>
   new Date().toLocaleDateString('en-MY', { day: '2-digit', month: 'short', year: 'numeric' })
 
+// row()'s value/sub carry customer-submitted booking fields (name, faculty,
+// delivery address, ...) straight into this HTML email — escape before
+// interpolating so a booking with e.g. "<img onerror=...>" as a name can't
+// inject markup into the receipt landing in that same customer's inbox.
+const escapeHtml = (s: string) =>
+  s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;')
+
 const row = (label: string, value: string | null | undefined, opts?: { bold?: boolean; accent?: boolean; sub?: string }) =>
-  !value ? '' : `<tr><td style="padding: 6px 0; color: #94a3b8; vertical-align: top;">${label}</td><td style="padding: 6px 0; text-align: right; font-weight: ${opts?.bold ? 700 : 400}; color: ${opts?.accent ? '#dc2626' : '#1e293b'};">${value}${opts?.sub ? `<br><span style="font-size: 11px; font-weight: 400; color: #94a3b8;">${opts.sub}</span>` : ''}</td></tr>`
+  !value ? '' : `<tr><td style="padding: 6px 0; color: #94a3b8; vertical-align: top;">${label}</td><td style="padding: 6px 0; text-align: right; font-weight: ${opts?.bold ? 700 : 400}; color: ${opts?.accent ? '#dc2626' : '#1e293b'};">${escapeHtml(value)}${opts?.sub ? `<br><span style="font-size: 11px; font-weight: 400; color: #94a3b8;">${escapeHtml(opts.sub)}</span>` : ''}</td></tr>`
 
 // Best-effort — a failed email should never affect the payment status
 // update, which has already committed by the time this runs. RESEND_FROM_EMAIL

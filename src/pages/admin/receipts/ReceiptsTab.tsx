@@ -14,6 +14,7 @@ interface DriverReceipt {
   status: string;
   fee_receipt_url: string;
   fee_receipt_verified: boolean;
+  fee_receipt_auto_verified: boolean;
   fee_receipt_amount: string;
   fee_receipt_date: string;
   fee_receipt_expiry: string | null;
@@ -64,7 +65,7 @@ export const ReceiptsTab = forwardRef<ReceiptsTabHandle, ReceiptsTabProps>(funct
     const [{ data }, { data: setting }] = await Promise.all([
       supabase
         .from('profiles')
-        .select('id, name, gerak_id, campus, email, phone, status, fee_receipt_url, fee_receipt_verified, fee_receipt_amount, fee_receipt_date, fee_receipt_expiry, fee_receipt_reject_reason')
+        .select('id, name, gerak_id, campus, email, phone, status, fee_receipt_url, fee_receipt_verified, fee_receipt_auto_verified, fee_receipt_amount, fee_receipt_date, fee_receipt_expiry, fee_receipt_reject_reason')
         .eq('role', receiptRoleFilter)
         .order('name'),
       supabase.from('app_settings').select('value').eq('key', 'receipt_gate_active').single(),
@@ -252,10 +253,20 @@ export const ReceiptsTab = forwardRef<ReceiptsTabHandle, ReceiptsTabProps>(funct
                         <p className="text-xs font-black text-slate-800 truncate">{r.name}</p>
                         <p className="text-xs text-slate-400 font-semibold mt-0.5">{r.gerak_id} · {r.campus}</p>
                       </div>
-                      <span className={`text-xs font-semibold px-2 py-1 rounded-full border uppercase shrink-0 flex items-center gap-1 ${RECEIPT_STATUS_STYLE[status]}`}>
-                        {status === 'verified' ? <ShieldCheck className="w-2.5 h-2.5" /> : <ShieldOff className="w-2.5 h-2.5" />}
-                        {status}
-                      </span>
+                      <div className="flex flex-col items-end gap-1 shrink-0">
+                        <span className={`text-xs font-semibold px-2 py-1 rounded-full border uppercase flex items-center gap-1 ${RECEIPT_STATUS_STYLE[status]}`}>
+                          {status === 'verified' ? <ShieldCheck className="w-2.5 h-2.5" /> : <ShieldOff className="w-2.5 h-2.5" />}
+                          {status}
+                        </span>
+                        {/* AI approved this without a human ever looking at it — worth
+                            a visible marker so admins can spot-check rather than only
+                            ever seeing the same "verified" pill a manual review gets. */}
+                        {status === 'verified' && r.fee_receipt_auto_verified && (
+                          <span title="Auto-approved by AI — not yet reviewed by a human" className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-violet-50 text-violet-600 border border-violet-100">
+                            AI-verified
+                          </span>
+                        )}
+                      </div>
                     </div>
 
                     {/* Row 2: receipt details */}

@@ -6,6 +6,18 @@ const CORS = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
+// Plain !== short-circuits on the first differing byte, leaking a timing
+// signal an attacker could in principle use to recover the service-role
+// key one byte at a time. Always walks the full length instead.
+function timingSafeEqual(a: string, b: string): boolean {
+  const bufA = new TextEncoder().encode(a)
+  const bufB = new TextEncoder().encode(b)
+  if (bufA.length !== bufB.length) return false
+  let diff = 0
+  for (let i = 0; i < bufA.length; i++) diff |= bufA[i] ^ bufB[i]
+  return diff === 0
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: CORS })
 
@@ -13,7 +25,7 @@ serve(async (req) => {
     // Only allow calls with service role key (from pg_cron or admin)
     const authHeader = req.headers.get('Authorization') ?? ''
     const token = authHeader.replace('Bearer ', '')
-    if (token !== Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')) {
+    if (!timingSafeEqual(token, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '')) {
       return json({ success: false, reason: 'Unauthorized' }, 401)
     }
 

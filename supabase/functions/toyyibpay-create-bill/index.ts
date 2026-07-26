@@ -24,6 +24,13 @@ serve(async (req) => {
       return json({ success: false, error: 'Missing or invalid parameters.' }, 400)
     }
 
+    // Same reference+hp_number brute-force surface as cancel_jubah_booking_customer
+    // and submit_jubah_balance — shares their rate limit.
+    const { error: rateLimitErr } = await admin.rpc('check_jubah_rate_limit')
+    if (rateLimitErr) {
+      return json({ success: false, error: 'Too many requests right now. Please wait a minute and try again.' }, 429)
+    }
+
     // Ownership check: reference + hp_number together, same pairing
     // submit_jubah_balance already relies on — a stranger who only knows
     // the reference can't spin up bills for someone else's booking.
