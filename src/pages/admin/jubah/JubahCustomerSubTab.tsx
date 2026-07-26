@@ -740,10 +740,10 @@ export function JubahCustomerSubTab({
 
             {/* Confirm + Delete row */}
             {(() => {
-              // ToyyibPay confirms both of these automatically now — payment_path
-              // and balance_proof_url will be null for every new booking, so these
-              // no longer gate on proof having been uploaded. Kept as a manual
-              // override for the rare missed-webhook case.
+              // Deliberately not gated on payment_path/balance_proof_url being
+              // set — admin can confirm from their own bank statement even if
+              // a proof upload failed silently, same as the customer-facing
+              // upload never blocking booking on the other documents either.
               const canConfirmPayment = b.status === 'ordered';
               const canConfirmBalance = b.payment_mode === 'deposit' && b.status !== 'ordered' && b.status !== 'cancelled' && !b.balance_paid;
               const confirmActive = canConfirmPayment || canConfirmBalance;

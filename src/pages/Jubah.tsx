@@ -118,6 +118,9 @@ export const Jubah: React.FC = () => {
   const [fileError, setFileError]         = useState('');
   const [combining, setCombining]         = useState(false);
   const [combinedBlob, setCombinedBlob]   = useState<Blob | null>(null);
+  const [paymentProof, setPaymentProof]   = useState<File | null>(null);
+  const paymentProofRef = useRef<HTMLInputElement>(null);
+  const [bankDetails, setBankDetails] = useState<{ name: string; account: string; holder: string } | null>(null);
 
   const [selectedRiderId,   setSelectedRiderId]   = useState('');
   const [riders,            setRiders]            = useState<{ id: string; name: string; jubah_drop_point: string | null; ic_number: string | null; phone: string | null }[]>([]);
@@ -197,6 +200,23 @@ export const Jubah: React.FC = () => {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Bank transfer instructions — admin-editable via app_settings, same
+  // pattern as jubah_active/receipt_gate_active elsewhere in the app.
+  useEffect(() => {
+    supabase.from('app_settings')
+      .select('key, value')
+      .in('key', ['jubah_bank_name', 'jubah_bank_account_number', 'jubah_bank_account_holder'])
+      .then(({ data }) => {
+        if (!data) return;
+        const get = (k: string) => data.find(r => r.key === k)?.value ?? '';
+        setBankDetails({
+          name:   get('jubah_bank_name'),
+          account: get('jubah_bank_account_number'),
+          holder: get('jubah_bank_account_holder'),
+        });
+      });
+  }, []);
+
   // Logged-in users get Full Name / IC / Phone / Matric ID pre-filled from
   // their profile — still fully editable, just saves re-typing what we
   // already know. Guests get a blank form, as before. A restored draft
@@ -220,7 +240,7 @@ export const Jubah: React.FC = () => {
   // same as a hand-typed one, since either way the form isn't blank.
   const hasUnsavedInput = !!(
     fullName.trim() || icNumber.trim() || hpNumber.trim() || matricId.trim() ||
-    Object.values(docFiles).some(f => !!f)
+    Object.values(docFiles).some(f => !!f) || paymentProof
   );
 
   // Registers with AppContext's goBack() so leaving the actual form (header
@@ -522,9 +542,6 @@ export const Jubah: React.FC = () => {
   }, [jubahBooking?.reference]);
 
 
-  const [payingNow, setPayingNow] = useState(false);
-  const [payNowError, setPayNowError] = useState('');
-
   // Leaves the current booking untouched in the database — just clears it
   // from this browser and resets the form so a genuinely new booking can be
   // started, instead of silently re-submitting the previous one's fields
@@ -537,23 +554,10 @@ export const Jubah: React.FC = () => {
     setPaymentMode('pickup'); setPostageZone('SM'); setDepositMethod('pickup');
     setRemark('Degree');
     setDocFiles({}); setCombinedBlob(null);
+    setPaymentProof(null); if (paymentProofRef.current) paymentProofRef.current.value = '';
     setSelectedRiderId('');
     setAddressLine1(''); setAddressLine2(''); setAddressPostal(''); setAddressCity(''); setAddressState('');
-    setFileError(''); setPayNowError('');
-  };
-
-  // Shared by the auto-redirect right after booking and the "Pay Now" retry
-  // button in the Reservation Active view — both need identical behavior.
-  const startPayment = async (ref: string, hp: string): Promise<boolean> => {
-    const { data: billData } = await supabase.functions.invoke('toyyibpay-create-bill', {
-      body: { reference: ref, hp_number: hp, stage: 'initial' },
-    });
-    if (billData?.success && billData?.paymentUrl) {
-      window.location.href = billData.paymentUrl;
-      return true;
-    }
-    setPayNowError(billData?.error || 'Could not start payment. Please try again.');
-    return false;
+    setFileError('');
   };
 
   const handleBook = async (e: React.SyntheticEvent) => {
@@ -564,6 +568,7 @@ export const Jubah: React.FC = () => {
     if (!selectedRiderId) { alert('Please select a rider.'); return; }
     if (isPostageDelivery && !fullAddress) { alert('Please enter your delivery address.'); return; }
     if (!allFilesReady) { setFileError('Please upload all required documents.'); return; }
+    if (!paymentProof) { setFileError('Please upload your proof of payment.'); return; }
 
     const generateReference = () => `JUB-${new Date().getFullYear().toString().slice(-2)}-${uniAbbrev}-${Math.random().toString(36).slice(2, 6).toUpperCase()}`;
     let reference = generateReference();
@@ -575,6 +580,7 @@ export const Jubah: React.FC = () => {
 
     setBooking(true);
     let docsPath: string | undefined;
+    let paymentPath: string | undefined;
     let oscarPath: string | undefined;
     let skpgPath: string | undefined;
     let konvoPath: string | undefined;
@@ -607,9 +613,13 @@ export const Jubah: React.FC = () => {
           return file ? uploadFile(file, f.label.replace(/\s+/g,'_')) : Promise.resolve(undefined);
         })
       );
-      docsPath = blobForUpload
-        ? await uploadFile(new File([blobForUpload], combinedFileName, { type: 'application/pdf' }), 'combined')
-        : undefined;
+      const results = await Promise.all([
+        blobForUpload
+          ? uploadFile(new File([blobForUpload], combinedFileName, { type: 'application/pdf' }), 'combined')
+          : Promise.resolve(undefined),
+        uploadFile(paymentProof, 'payment'),
+      ]);
+      [docsPath, paymentPath] = results;
       oscarPath = docUploads[0];
       skpgPath  = docUploads[1];
       konvoPath = docUploads[2];
@@ -618,7 +628,7 @@ export const Jubah: React.FC = () => {
       console.error('[GERAK] Storage upload failed:', err);
     }
 
-    let result = await bookJubah(reference, fullName, icNumber, hpNumber, university, faculty, matricId, paymentMode, remark, combinedFileName, depositMethod, postageZone, selectedRiderId, selectedRider?.name, bookingCampus, addr, docsPath, oscarPath, skpgPath, konvoPath, icPath, landingUniversity, email);
+    let result = await bookJubah(reference, fullName, icNumber, hpNumber, university, faculty, matricId, paymentMode, remark, combinedFileName, depositMethod, postageZone, selectedRiderId, selectedRider?.name, bookingCampus, addr, docsPath, oscarPath, skpgPath, konvoPath, icPath, landingUniversity, email, paymentPath);
 
     // The reference is a short client-generated random string — vanishingly
     // unlikely to collide with another booking, but not impossible at scale.
@@ -627,7 +637,7 @@ export const Jubah: React.FC = () => {
     // independent of this label.
     if (!result.success && /duplicate key|unique constraint/i.test(result.error ?? '')) {
       reference = generateReference();
-      result = await bookJubah(reference, fullName, icNumber, hpNumber, university, faculty, matricId, paymentMode, remark, combinedFileName, depositMethod, postageZone, selectedRiderId, selectedRider?.name, bookingCampus, addr, docsPath, oscarPath, skpgPath, konvoPath, icPath, landingUniversity, email);
+      result = await bookJubah(reference, fullName, icNumber, hpNumber, university, faculty, matricId, paymentMode, remark, combinedFileName, depositMethod, postageZone, selectedRiderId, selectedRider?.name, bookingCampus, addr, docsPath, oscarPath, skpgPath, konvoPath, icPath, landingUniversity, email, paymentPath);
     }
 
     if (!result.success) {
@@ -637,10 +647,9 @@ export const Jubah: React.FC = () => {
     }
     clearFormDraft();
 
-    // Saved now, before the ToyyibPay redirect is attempted, so that if the
-    // customer hits back or closes the tab mid-checkout, the app can still
-    // point them back at this booking next time they open it — see
-    // JubahLanding's "unfinished booking" prompt.
+    // Saved now, so that if the customer closes the tab right after booking,
+    // the app can still point them back at this booking next time they open
+    // it — see JubahLanding's "unfinished booking" prompt.
     savePendingJubahBooking(reference, hpNumber);
 
     // Sheet gets every document labelled by its real field label — lossless
@@ -649,7 +658,8 @@ export const Jubah: React.FC = () => {
     // named DB columns; the sheet has no such fixed schema to respect).
     const documents = [
       ...docFields.map((f, i) => ({ label: f.label, path: docUploads[i] ?? '' })),
-      { label: 'Combined PDF', path: docsPath ?? '' },
+      { label: 'Combined PDF',  path: docsPath ?? '' },
+      { label: 'Payment Proof', path: paymentPath ?? '' },
     ].filter(d => d.path);
 
     submitJubahToSheets({
@@ -663,16 +673,12 @@ export const Jubah: React.FC = () => {
       documents,
     });
 
-    // Booking is saved regardless of what happens next, but the Reservation
-    // Active / receipt view is deliberately NOT shown yet — attempt the
-    // ToyyibPay redirect first, while the form is still on screen. If it
-    // succeeds, the browser navigates away to FPX and this view never
-    // renders at all. Only reveal it (with the "Payment Required" fallback)
-    // if the redirect itself fails, so a paying customer never sees a
-    // "confirmed"-looking screen before they've actually paid.
-    const paid = await startPayment(reference, hpNumber);
+    // Payment is a screenshot uploaded alongside everything else above, not
+    // a redirect — the booking is fully submitted and awaiting admin review
+    // the moment this call returns, so the Reservation Active view can show
+    // immediately.
     setBooking(false);
-    if (!paid) commitJubahBooking(result.booking!);
+    commitJubahBooking(result.booking!);
   };
 
   const UNIVERSITY_LABELS: Record<string, string> = {
@@ -1192,19 +1198,91 @@ export const Jubah: React.FC = () => {
             )}
           </div>
 
+          {/* ── HOW TO PAY ── */}
+          <div className="bg-blue-50 border border-blue-100 rounded-3xl p-5 flex flex-col gap-3">
+            <h3 className="text-sm font-semibold text-blue-800">How to Pay</h3>
+            {bankDetails ? (
+              <div className="bg-white border border-blue-100 rounded-2xl p-4 flex flex-col gap-2 text-xs">
+                <div className="flex items-center justify-between">
+                  <span className="text-slate-400 font-semibold">Bank</span>
+                  <span className="font-bold text-slate-800">{bankDetails.name}</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-slate-400 font-semibold">Account No.</span>
+                  <span className="font-bold text-slate-800 font-mono">{bankDetails.account}</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-slate-400 font-semibold">Account Holder</span>
+                  <span className="font-bold text-slate-800">{bankDetails.holder}</span>
+                </div>
+              </div>
+            ) : (
+              <p className="text-xs text-blue-600">Loading bank details…</p>
+            )}
+            <p className="text-xs text-blue-700 leading-relaxed">
+              Transfer <span className="font-bold">RM{cost.toFixed(2)}</span>{paymentMode === 'deposit' && <> (RM{DEPOSIT_AMOUNT} deposit)</>} using the details above — put your <span className="font-bold">full name</span> as the transfer reference so it's easy to match. Then upload your receipt below and tap Book.
+            </p>
+          </div>
+
+          {/* ── PROOF OF PAYMENT ── */}
+          <div className="bg-white border border-slate-100 rounded-3xl p-5 flex flex-col gap-4">
+            <h3 className="text-sm font-semibold text-slate-700">
+              {paymentMode === 'deposit' ? `Proof of Deposit (RM${DEPOSIT_AMOUNT})` : 'Proof of Payment'}
+            </h3>
+            <p className="text-xs text-slate-500 leading-relaxed">
+              Upload your <span className="font-bold text-slate-700">{paymentMode === 'deposit' ? `RM${DEPOSIT_AMOUNT} deposit receipt` : 'payment receipt'}</span> (screenshot or PDF). The Book button will activate once uploaded.
+            </p>
+            <input
+              type="file"
+              accept=".pdf,application/pdf,image/jpeg,image/png"
+              ref={paymentProofRef}
+              onChange={async e => {
+                const file = e.target.files?.[0] || null;
+                setPaymentProof(file ? await compressImage(file) : null);
+              }}
+              className="hidden"
+            />
+            {!paymentProof ? (
+              <button
+                type="button"
+                onClick={() => paymentProofRef.current?.click()}
+                className="w-full border-2 border-dashed border-slate-200 rounded-xl py-4 flex flex-col items-center gap-2 text-slate-400 hover:border-blue-400 hover:text-blue-500 hover:bg-blue-50/30 transition cursor-pointer"
+              >
+                <Upload className="w-5 h-5" />
+                <span className="text-xs font-semibold">Upload Receipt</span>
+                <span className="text-xs">PDF · JPG · PNG accepted</span>
+              </button>
+            ) : (
+              <div className="flex items-center gap-3 bg-emerald-50 border border-emerald-100 rounded-xl p-2.5">
+                <FileText className="w-5 h-5 text-emerald-500 shrink-0" />
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs font-semibold text-emerald-700 truncate">{paymentProof.name}</p>
+                  <p className="text-xs text-emerald-500 mt-0.5">{(paymentProof.size / 1024).toFixed(1)} KB</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => { setPaymentProof(null); if (paymentProofRef.current) paymentProofRef.current.value = ''; }}
+                  className="text-slate-400 hover:text-danger transition shrink-0 cursor-pointer"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+            )}
+          </div>
+
           {/* SUBMIT */}
           <button
             type="submit"
-            disabled={!allFilesReady || booking}
+            disabled={!paymentProof || booking}
             className={`mx-auto flex items-center gap-2 text-white text-sm font-extrabold px-8 py-2.5 rounded-full transition-all duration-300 active:scale-95 ${
-              allFilesReady && !booking
+              paymentProof && !booking
                 ? 'bg-blue-600 hover:bg-blue-700 shadow-lg shadow-blue-500/50 ring-2 ring-blue-400/40 animate-pulse-glow cursor-pointer'
                 : 'bg-slate-200 text-slate-400 cursor-not-allowed shadow-none'
             }`}
           >
             {booking
-              ? <><span className="w-3.5 h-3.5 rounded-full border-2 border-slate-300 border-t-white animate-spin" /> Proceeding to payment…</>
-              : <><CheckCircle2 className="w-3.5 h-3.5" /> Book &amp; Pay</>}
+              ? <><span className="w-3.5 h-3.5 rounded-full border-2 border-slate-300 border-t-white animate-spin" /> Uploading…</>
+              : <><CheckCircle2 className="w-3.5 h-3.5" /> Book</>}
           </button>
         </form>
 
@@ -1253,33 +1331,13 @@ export const Jubah: React.FC = () => {
             + Book Another
           </button>
 
-          {/* Payment Required — shown until the initial payment is confirmed */}
+          {/* Awaiting Confirmation — shown until admin reviews the uploaded proof */}
           {(liveStatus ?? jubahBooking.status) === 'ordered' && (
-            <div className="bg-amber-50 border border-amber-100 rounded-3xl p-5 flex flex-col gap-3">
-              <div>
-                <span className="text-xs text-amber-600 font-extrabold uppercase tracking-wider">Payment Required</span>
-                <p className="text-xs text-amber-700 mt-1">
-                  Your booking is saved but not yet paid. Complete payment to continue — RM{jubahBooking.cost.toFixed(2)}.
-                </p>
-              </div>
-              {payNowError && (
-                <p className="text-xs text-danger font-semibold">{payNowError}</p>
-              )}
-              <button
-                type="button"
-                disabled={payingNow}
-                onClick={async () => {
-                  setPayingNow(true);
-                  setPayNowError('');
-                  const started = await startPayment(jubahBooking.reference, jubahBooking.hpNumber);
-                  if (!started) setPayingNow(false);
-                }}
-                className="w-full bg-amber-500 hover:bg-amber-600 active:scale-[0.98] disabled:bg-slate-200 text-white font-extrabold text-xs py-3 rounded-2xl transition flex items-center justify-center gap-2"
-              >
-                {payingNow
-                  ? <><span className="w-3.5 h-3.5 rounded-full border-2 border-white/40 border-t-white animate-spin" /> Redirecting to payment…</>
-                  : 'Pay Now'}
-              </button>
+            <div className="bg-amber-50 border border-amber-100 rounded-3xl p-5 flex flex-col gap-1">
+              <span className="text-xs text-amber-600 font-extrabold uppercase tracking-wider">Awaiting Confirmation</span>
+              <p className="text-xs text-amber-700 mt-1">
+                We've received your booking and payment proof — an admin will review and confirm it shortly. You'll see your status update here once confirmed.
+              </p>
             </div>
           )}
 

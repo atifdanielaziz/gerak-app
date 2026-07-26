@@ -1,11 +1,12 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { supabase } from '../lib/supabase';
-import { PackageSearch, Search, GraduationCap, CheckCircle2 } from 'lucide-react';
+import { PackageSearch, Search, GraduationCap, CheckCircle2, Upload, FileText, X } from 'lucide-react';
 import { WaIcon, toWa } from '../lib/whatsapp';
 import { ReceiptCard } from '../components/Receipt';
 import { buildJubahReceiptRows } from '../lib/receiptRows';
 import { generateReceiptPdf } from '../lib/receiptPdf';
 import { getPendingJubahBooking, clearPendingJubahBooking } from '../lib/pendingJubahBooking';
+import { updateJubahBalanceProof } from '../lib/sheetsService';
 import { JUBAH_STEP_LABEL, getJubahProgress } from '../lib/jubahStatus';
 
 interface JubahBookingResult {
@@ -88,11 +89,31 @@ export const TrackJubah: React.FC = () => {
   const [results, setResults]     = useState<JubahBookingResult[]>([]);
   const [error, setError]         = useState('');
 
-  // Payment state — id of the booking whose payment is currently in flight,
-  // plus a per-booking error so a failure on one card doesn't show up
-  // disconnected from it at the top of a multi-result page.
-  const [payingId, setPayingId] = useState<string | null>(null);
-  const [payErrors, setPayErrors] = useState<Record<string, string>>({});
+  // Balance-proof upload state — file/ref per booking id (a matric/IC
+  // search can return multiple bookings at once, each needs its own
+  // independent selected file), plus a single in-flight id and per-booking
+  // errors, same pattern as cancel/receipt below.
+  const [balanceProofFiles, setBalanceProofFiles] = useState<Record<string, File | null>>({});
+  const balanceProofRefs = useRef<Record<string, HTMLInputElement | null>>({});
+  const [submittingBalanceId, setSubmittingBalanceId] = useState<string | null>(null);
+  const [balanceSubmitErrors, setBalanceSubmitErrors] = useState<Record<string, string>>({});
+
+  // Bank transfer instructions — same app_settings keys Jubah.tsx reads.
+  const [bankDetails, setBankDetails] = useState<{ name: string; account: string; holder: string } | null>(null);
+  useEffect(() => {
+    supabase.from('app_settings')
+      .select('key, value')
+      .in('key', ['jubah_bank_name', 'jubah_bank_account_number', 'jubah_bank_account_holder'])
+      .then(({ data }) => {
+        if (!data) return;
+        const get = (k: string) => data.find(r => r.key === k)?.value ?? '';
+        setBankDetails({
+          name:   get('jubah_bank_name'),
+          account: get('jubah_bank_account_number'),
+          holder: get('jubah_bank_account_holder'),
+        });
+      });
+  }, []);
 
   // Cancel state — id of the booking whose inline confirm is expanded, plus
   // loading/error state, same per-booking pattern as payment.
@@ -145,8 +166,8 @@ export const TrackJubah: React.FC = () => {
     runSearch();
   };
 
-  // ToyyibPay's return URL lands back here with ?reference=... — auto-search
-  // so the customer sees their updated status without retyping anything.
+  // Supports a bookmarked/shared "?reference=..." deep link straight to a
+  // result — auto-search so the customer sees status without retyping.
   // Internal navigation (e.g. the "Check Status" button on the unfinished-
   // booking nudge) never populates that query param — this is a real SPA,
   // not URL-routed — so fall back to the same pending-booking marker that
@@ -163,17 +184,45 @@ export const TrackJubah: React.FC = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const handlePay = async (b: JubahBookingResult, stage: 'initial' | 'balance') => {
-    setPayingId(b.id);
-    setPayErrors(prev => ({ ...prev, [b.id]: '' }));
-    const { data } = await supabase.functions.invoke('toyyibpay-create-bill', {
-      body: { reference: b.reference, hp_number: b.hp_number, stage },
+  const handleBalanceSubmit = async (b: JubahBookingResult) => {
+    const proof = balanceProofFiles[b.id];
+    if (!proof) return;
+    setSubmittingBalanceId(b.id);
+    setBalanceSubmitErrors(prev => ({ ...prev, [b.id]: '' }));
+
+    // Upload proof to Supabase Storage — foldered by booking reference (not
+    // a public URL) so the jubah-docs storage policies can verify ownership.
+    let proofPath: string | undefined;
+    try {
+      const ext = proof.name.split('.').pop() ?? 'pdf';
+      const namePart = b.full_name.replace(/\s+/g, '_');
+      const path = `${b.reference}/${namePart}_balance-payment_${Date.now()}.${ext}`;
+      const { data: storageData, error: storageError } = await supabase.storage
+        .from('jubah-docs')
+        .upload(path, proof, { contentType: proof.type, upsert: false });
+      if (!storageError && storageData) {
+        proofPath = storageData.path;
+      }
+    } catch (err) {
+      console.error('[GERAK] Balance proof upload failed:', err);
+    }
+
+    const { data } = await supabase.rpc('submit_jubah_balance', {
+      p_reference:         b.reference,
+      p_hp_number:         b.hp_number,
+      p_balance_proof_url: proofPath ?? 'submitted',
     });
-    if (data?.success && data?.paymentUrl) {
-      window.location.href = data.paymentUrl;
+
+    setSubmittingBalanceId(null);
+    if (data?.success) {
+      setResults(prev => prev.map(r =>
+        r.id === b.id ? { ...r, balance_proof_url: proofPath ?? 'submitted' } : r
+      ));
+      setBalanceProofFiles(prev => ({ ...prev, [b.id]: null }));
+      if (balanceProofRefs.current[b.id]) balanceProofRefs.current[b.id]!.value = '';
+      if (proofPath) updateJubahBalanceProof(b.reference, proofPath);
     } else {
-      setPayingId(null);
-      setPayErrors(prev => ({ ...prev, [b.id]: data?.error ?? 'Could not start payment. Please try again.' }));
+      setBalanceSubmitErrors(prev => ({ ...prev, [b.id]: data?.error ?? 'Submission failed. Please try again.' }));
     }
   };
 
@@ -364,29 +413,18 @@ export const TrackJubah: React.FC = () => {
                   </span>
                 </div>
 
-                {/* Payment required — initial payment not yet confirmed, any mode */}
+                {/* Awaiting confirmation — proof uploaded at booking time, just
+                    waiting on an admin to review it. Still cancellable from
+                    here while it's in this state. */}
                 {b.status === 'ordered' && (
                   <div className="flex flex-col gap-2 bg-amber-50 border border-amber-100 rounded-2xl p-3">
                     <p className="text-xs text-amber-700 font-semibold">
-                      This booking isn't paid yet. Complete payment to continue.
+                      Awaiting confirmation — an admin will review your payment proof shortly.
                     </p>
-                    {payErrors[b.id] && (
-                      <p className="text-xs text-danger font-semibold">{payErrors[b.id]}</p>
-                    )}
-                    <button
-                      type="button"
-                      onClick={() => handlePay(b, 'initial')}
-                      disabled={payingId === b.id}
-                      className="w-full bg-amber-500 hover:bg-amber-600 active:scale-[0.99] disabled:bg-slate-200 text-white font-semibold py-2.5 rounded-xl text-xs transition flex items-center justify-center gap-2"
-                    >
-                      {payingId === b.id
-                        ? <><span className="w-3.5 h-3.5 rounded-full border-2 border-white/40 border-t-white animate-spin" /> Redirecting to payment…</>
-                        : 'Pay Now'}
-                    </button>
 
-                    {/* Cancel — only reachable while unpaid; deliberately a
-                        plain link, not a button, so it doesn't compete with
-                        Pay Now as the primary action. */}
+                    {/* Cancel — only reachable while unconfirmed; deliberately
+                        a plain link, not a prominent button, since there's no
+                        other primary action on this card anymore. */}
                     {cancelConfirmId === b.id ? (
                       <div className="flex flex-col gap-2 border-t border-amber-100 pt-2 mt-1">
                         <p className="text-xs text-amber-700 font-semibold text-center">
@@ -459,9 +497,9 @@ export const TrackJubah: React.FC = () => {
 
                 {/* ── DEPOSIT SECTION — hidden once cancelled (nothing left to pay) or
                      before the deposit itself is confirmed (status='ordered', covered
-                     by the "Payment Required" banner above instead): showing "Balance
-                     Due on Collection RM45" here implied that was all that was left,
-                     when the RM25 deposit hadn't been paid either yet. ── */}
+                     by the "Awaiting confirmation" banner above instead): showing
+                     "Balance Due on Collection RM45" here implied that was all that
+                     was left, when the RM25 deposit hadn't been confirmed either yet. ── */}
                 {b.payment_mode === 'deposit' && b.status !== 'cancelled' && b.status !== 'ordered' && (
                   <div className="flex flex-col gap-2">
                     {/* Balance info card */}
@@ -481,23 +519,92 @@ export const TrackJubah: React.FC = () => {
                       {b.balance_paid && <CheckCircle2 className="w-5 h-5 text-emerald-500 shrink-0" />}
                     </div>
 
-                    {/* Pay balance — only once the initial payment is confirmed */}
-                    {!b.balance_paid && b.status !== 'ordered' && (
-                      <>
-                        {payErrors[b.id] && (
-                          <p className="text-xs text-danger font-semibold">{payErrors[b.id]}</p>
+                    {/* Submitted — under review */}
+                    {b.balance_proof_url && !b.balance_paid && (
+                      <p className="text-xs text-amber-700 font-semibold bg-amber-50 border border-amber-100 rounded-xl px-3 py-2">
+                        Balance payment receipt submitted — admin will confirm shortly.
+                      </p>
+                    )}
+
+                    {/* Pay balance upload */}
+                    {!b.balance_paid && !b.balance_proof_url && (
+                      <div className="flex flex-col gap-2">
+                        {bankDetails && (
+                          <div className="bg-blue-50 border border-blue-100 rounded-xl p-3 flex flex-col gap-1.5 text-xs">
+                            <div className="flex items-center justify-between">
+                              <span className="text-blue-400 font-semibold">Bank</span>
+                              <span className="font-bold text-blue-800">{bankDetails.name}</span>
+                            </div>
+                            <div className="flex items-center justify-between">
+                              <span className="text-blue-400 font-semibold">Account No.</span>
+                              <span className="font-bold text-blue-800 font-mono">{bankDetails.account}</span>
+                            </div>
+                            <div className="flex items-center justify-between">
+                              <span className="text-blue-400 font-semibold">Account Holder</span>
+                              <span className="font-bold text-blue-800">{bankDetails.holder}</span>
+                            </div>
+                            <p className="text-blue-600 font-semibold pt-1 border-t border-blue-100 mt-0.5">
+                              Put your reference <span className="font-mono">{b.reference}</span> in the transfer note.
+                            </p>
+                          </div>
                         )}
-                        <button
-                          type="button"
-                          onClick={() => handlePay(b, 'balance')}
-                          disabled={payingId === b.id}
-                          className="w-full bg-amber-500 hover:bg-amber-600 active:scale-[0.99] disabled:bg-slate-200 text-white font-semibold py-2.5 rounded-xl text-xs transition flex items-center justify-center gap-2"
-                        >
-                          {payingId === b.id
-                            ? <><span className="w-3.5 h-3.5 rounded-full border-2 border-white/40 border-t-white animate-spin" /> Redirecting to payment…</>
-                            : `Pay Balance — RM${b.balance_due.toFixed(2)}`}
-                        </button>
-                      </>
+                        <p className="text-xs text-slate-500 font-normal">
+                          Ready to pay your balance? Upload proof of payment below.
+                        </p>
+                        <input
+                          type="file"
+                          accept=".pdf,application/pdf,image/jpeg,image/png"
+                          ref={el => { balanceProofRefs.current[b.id] = el; }}
+                          onChange={e => {
+                            setBalanceProofFiles(prev => ({ ...prev, [b.id]: e.target.files?.[0] ?? null }));
+                            setBalanceSubmitErrors(prev => ({ ...prev, [b.id]: '' }));
+                          }}
+                          className="hidden"
+                        />
+                        {!balanceProofFiles[b.id] ? (
+                          <button
+                            type="button"
+                            onClick={() => balanceProofRefs.current[b.id]?.click()}
+                            className="w-full border-2 border-dashed border-amber-200 rounded-xl py-3 flex items-center justify-center gap-2 text-amber-500 hover:border-amber-400 hover:bg-amber-50/50 transition"
+                          >
+                            <Upload className="w-4 h-4" />
+                            <span className="text-xs font-semibold">Upload Balance Payment Receipt</span>
+                          </button>
+                        ) : (
+                          <div className="flex flex-col gap-2">
+                            <div className="flex items-center gap-3 bg-emerald-50 border border-emerald-100 rounded-xl p-2.5">
+                              <FileText className="w-5 h-5 text-emerald-500 shrink-0" />
+                              <div className="flex-1 min-w-0">
+                                <p className="text-xs font-semibold text-emerald-700 truncate">{balanceProofFiles[b.id]!.name}</p>
+                                <p className="text-xs text-emerald-500 font-normal">{(balanceProofFiles[b.id]!.size / 1024).toFixed(1)} KB</p>
+                              </div>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setBalanceProofFiles(prev => ({ ...prev, [b.id]: null }));
+                                  if (balanceProofRefs.current[b.id]) balanceProofRefs.current[b.id]!.value = '';
+                                }}
+                                className="text-slate-400 hover:text-danger transition shrink-0"
+                              >
+                                <X className="w-4 h-4" />
+                              </button>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => handleBalanceSubmit(b)}
+                              disabled={submittingBalanceId === b.id}
+                              className="w-full bg-amber-500 hover:bg-amber-600 active:scale-[0.99] disabled:bg-slate-200 text-white font-semibold py-2.5 rounded-xl text-xs transition flex items-center justify-center gap-2"
+                            >
+                              {submittingBalanceId === b.id
+                                ? <><span className="w-3.5 h-3.5 rounded-full border-2 border-white/40 border-t-white animate-spin" /> Submitting…</>
+                                : 'Submit Balance Payment'}
+                            </button>
+                          </div>
+                        )}
+                        {balanceSubmitErrors[b.id] && (
+                          <p className="text-xs text-danger font-semibold">{balanceSubmitErrors[b.id]}</p>
+                        )}
+                      </div>
                     )}
                   </div>
                 )}

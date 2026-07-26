@@ -159,7 +159,7 @@ interface AppContextType {
 
   // Jubah Delivery Module
   jubahBooking: JubahBooking | null;
-  bookJubah: (reference: string, fullName: string, icNumber: string, hpNumber: string, university: string, faculty: string, matricId: string, paymentMode: 'pickup' | 'postage' | 'deposit', remark: 'Master' | 'PHD' | 'Degree' | 'Diploma', combinedFileName: string, depositMethod: 'pickup' | 'postage' | undefined, postageZone: 'SM' | 'SS' | undefined, riderId?: string, riderName?: string, campus?: 'Pekan' | 'Gambang', deliveryAddress?: string, docsPath?: string, oscarPath?: string, skpgPath?: string, konvoPath?: string, icPath?: string, universityKey?: string, email?: string) => Promise<{ success: boolean; error?: string; booking?: JubahBooking }>;
+  bookJubah: (reference: string, fullName: string, icNumber: string, hpNumber: string, university: string, faculty: string, matricId: string, paymentMode: 'pickup' | 'postage' | 'deposit', remark: 'Master' | 'PHD' | 'Degree' | 'Diploma', combinedFileName: string, depositMethod: 'pickup' | 'postage' | undefined, postageZone: 'SM' | 'SS' | undefined, riderId?: string, riderName?: string, campus?: 'Pekan' | 'Gambang', deliveryAddress?: string, docsPath?: string, oscarPath?: string, skpgPath?: string, konvoPath?: string, icPath?: string, universityKey?: string, email?: string, paymentPath?: string) => Promise<{ success: boolean; error?: string; booking?: JubahBooking }>;
   commitJubahBooking: (booking: JubahBooking) => void;
   scheduleReturn: (method: 'self' | 'locker' | 'courier', date: string, time: string) => void;
   cancelJubahBooking: () => void;
@@ -684,13 +684,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     icPath?: string,
     universityKey?: string,
     email?: string,
+    paymentPath?: string,
   ): Promise<{ success: boolean; error?: string; booking?: JubahBooking }> => {
     if (!campus) return { success: false, error: 'Missing campus information.' };
 
     const { data: { user: authUser } } = await supabase.auth.getUser();
     // cost/balance_due aren't sent — create_jubah_booking computes them
-    // itself from jubah_pricing so a tampered request can't get a wrong
-    // price auto-confirmed as paid via the ToyyibPay callback.
+    // itself from jubah_pricing so a tampered request can't get an
+    // admin-facing price mismatch between what's shown and what's owed.
     const { data, error } = await supabase.rpc('create_jubah_booking', {
       p_reference:         reference,
       p_full_name:         fullName,
@@ -708,6 +709,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       p_rider_name:        riderName       ?? null,
       p_delivery_address:  deliveryAddress ?? null,
       p_docs_path:    docsPath    ?? null,
+      p_payment_path: paymentPath ?? null,
       p_oscar_path:   oscarPath   ?? null,
       p_skpg_path:    skpgPath    ?? null,
       p_konvo_path:   konvoPath   ?? null,
