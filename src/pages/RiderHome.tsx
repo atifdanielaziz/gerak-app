@@ -2,7 +2,7 @@
 import { useApp } from '../context/AppContext';
 import { supabase } from '../lib/supabase';
 import { WaIcon, toWa } from '../lib/whatsapp';
-import { getJubahDocSignedUrl } from '../lib/jubahDocs';
+import { getJubahDocSignedUrl, openInNewTab } from '../lib/jubahDocs';
 import { stampWatermark } from '../lib/watermark';
 import { useLoadOnActive } from '../hooks/useLoadOnActive';
 import {
@@ -581,10 +581,9 @@ export const RiderHome: React.FC = () => {
                           <button
                             type="button"
                             onClick={async () => {
-                              const win = window.open('', '_blank', 'noopener,noreferrer');
-                              const signed = await getJubahDocSignedUrl(selectedJob.balance_proof_url);
-                              if (signed && win) win.location.href = signed;
-                              else win?.close();
+                              const { url: signed, error } = await getJubahDocSignedUrl(selectedJob.balance_proof_url);
+                              if (signed) openInNewTab(signed);
+                              else showToast(error ?? "Couldn't open proof.");
                             }}
                             className="text-xs text-blue-500 font-bold flex items-center gap-0.5 hover:underline shrink-0"
                           >
@@ -687,10 +686,9 @@ export const RiderHome: React.FC = () => {
                         type="button"
                         disabled={!url}
                         onClick={async () => {
-                          const win = window.open('', '_blank', 'noopener,noreferrer');
-                          const signed = await getJubahDocSignedUrl(url, true);
-                          if (signed && win) win.location.href = signed;
-                          else win?.close();
+                          const { url: signed, error } = await getJubahDocSignedUrl(url, true);
+                          if (signed) openInNewTab(signed);
+                          else showToast(error ? `Couldn't download ${label}: ${error}` : `Couldn't download ${label}.`);
                         }}
                         className={`w-9 h-9 flex items-center justify-center rounded-xl border transition shrink-0 ${
                           url

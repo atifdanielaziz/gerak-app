@@ -79,7 +79,7 @@ export const AdminHome: React.FC = () => {
   // ── Jubah tab state ────────────────────────────────────────────────────────
   const [jubahBookings,      setJubahBookings]      = useState<JubahBookingRow[]>([]);
   const [jubahBookingsLoading, setJubahBookingsLoading] = useState(false);
-  const [jubahAdminView,     setJubahAdminView]     = useState<'list' | 'card' | 'details'>('list');
+  const [jubahAdminView,     setJubahAdminView]     = useState<'list' | 'card'>('list');
   const [jubahAdminSelected, setJubahAdminSelected] = useState<JubahBookingRow | null>(null);
   const [jubahSubTab,        setJubahSubTab]        = useState<'customer' | 'rider' | 'price' | 'banner'>('rider');
   // Reported up by JubahCustomerSubTab's own receipt-preview modal.
@@ -229,13 +229,14 @@ export const AdminHome: React.FC = () => {
 
   useLoadOnActive(activeTab === 'jubah', loadJubahData);
 
-  // ── Admin Jubah 3-page back navigation ───────────────────────────────────
+  // ── Admin Jubah back navigation (list <-> card; card now holds
+  //    everything — stepper, confirm, full details, receipt, documents —
+  //    so there's no longer a separate "details" page to hop through). ────
   useEffect(() => {
     if (activeTab !== 'jubah' || jubahSubTab !== 'customer') return;
     const handlePop = () => {
       setJubahAdminView(prev => {
-        if (prev === 'details') return 'card';
-        if (prev === 'card')   { setJubahAdminSelected(null); return 'list'; }
+        if (prev === 'card') { setJubahAdminSelected(null); return 'list'; }
         return prev;
       });
     };
@@ -247,10 +248,6 @@ export const AdminHome: React.FC = () => {
     setJubahAdminSelected(b);
     setJubahAdminView('card');
     window.history.pushState({ jubahAdmin: 'card' }, '');
-  };
-  const goToAdminDetails = () => {
-    setJubahAdminView('details');
-    window.history.pushState({ jubahAdmin: 'details' }, '');
   };
   const goAdminBack = () => window.history.back();
   // Distinct from goAdminBack — used after a delete, when there's no page
@@ -861,7 +858,6 @@ export const AdminHome: React.FC = () => {
               selected={jubahAdminSelected}
               setSelected={setJubahAdminSelected}
               onGoToCard={goToAdminCard}
-              onGoToDetails={goToAdminDetails}
               onGoBack={goAdminBack}
               onGoToList={goToJubahList}
               showToast={showToast}

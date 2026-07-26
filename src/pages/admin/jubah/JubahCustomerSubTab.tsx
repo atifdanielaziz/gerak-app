@@ -5,7 +5,7 @@ import {
   ExternalLink, BadgeCheck, Trash2, Ban, X, XCircle, CheckCircle2,
 } from 'lucide-react';
 import { WaIcon, toWa } from '../../../lib/whatsapp';
-import { getJubahDocSignedUrl } from '../../../lib/jubahDocs';
+import { getJubahDocSignedUrl, openInNewTab } from '../../../lib/jubahDocs';
 import { copyToClipboard } from '../../../lib/clipboard';
 import { ReceiptCard } from '../../../components/Receipt';
 import { buildJubahReceiptRows, type ReceiptDoc } from '../../../lib/receiptRows';
@@ -39,11 +39,13 @@ interface JubahCustomerSubTabProps {
   // component — the shared Jubah-tab header (overview stats, sub-tab
   // switcher) needs to know "are we on the customer list page" to decide
   // whether to render itself at all, so the state can't live only in here.
-  adminView: 'list' | 'card' | 'details';
+  // Two pages now, not three — the card view holds the stepper/confirm
+  // AND the full customer details/receipt/documents that used to live on a
+  // separate "details" page, so there's nothing left to navigate to beyond it.
+  adminView: 'list' | 'card';
   selected: JubahBookingRow | null;
   setSelected: Dispatch<SetStateAction<JubahBookingRow | null>>;
   onGoToCard: (b: JubahBookingRow) => void;
-  onGoToDetails: () => void;
   onGoBack: () => void;
   // Distinct from onGoBack (browser history.back()) — used after a delete,
   // when there's no page to "go back" to since the booking it referred to
@@ -62,7 +64,7 @@ interface JubahCustomerSubTabProps {
 // tightly-coupled navigation state machine that's clearer kept together.
 export function JubahCustomerSubTab({
   bookings, bookingsLoading, setBookings, reload,
-  adminView, selected, setSelected, onGoToCard, onGoToDetails, onGoBack, onGoToList,
+  adminView, selected, setSelected, onGoToCard, onGoBack, onGoToList,
   showToast, onModalOpenChange,
 }: JubahCustomerSubTabProps) {
   const [jubahSearch, setJubahSearch] = useState('');
@@ -74,7 +76,10 @@ export function JubahCustomerSubTab({
   const [cancelModalBooking, setCancelModalBooking] = useState<JubahBookingRow | null>(null);
   const [cancellingBooking, setCancellingBooking] = useState(false);
   const [deletingBooking, setDeletingBooking] = useState<string | null>(null);
-  const [confirmingBooking, setConfirmingBooking] = useState(false);
+  // Keyed by booking id, not a single boolean — the table's per-row Confirm
+  // button and the card/details Confirm button can target different
+  // bookings, and only the one actually in flight should show a spinner.
+  const [confirmingId, setConfirmingId] = useState<string | null>(null);
 
   // Only receiptModal is tracked here — cancelModalBooking was never part of
   // the "any sheet open" check in the original code (a pre-existing gap,
@@ -124,25 +129,40 @@ export function JubahCustomerSubTab({
     }
   };
 
-  const handleConfirmJubahBooking = async () => {
-    if (!selected) return;
-    const b = selected;
-    setConfirmingBooking(true);
+  // Same two-state gate used in three places now (list row, card view,
+  // details page) — centralized so "what counts as confirmable" can't
+  // silently drift between them. Deliberately not gated on payment_path/
+  // balance_proof_url being set — admin can confirm from their own bank
+  // statement even if a proof upload failed silently.
+  const getConfirmState = (b: JubahBookingRow) => {
+    const canConfirmPayment = b.status === 'ordered';
+    const canConfirmBalance = b.payment_mode === 'deposit' && b.status !== 'ordered' && b.status !== 'cancelled' && !b.balance_paid;
+    return {
+      canConfirmPayment,
+      canConfirmBalance,
+      confirmActive: canConfirmPayment || canConfirmBalance,
+      confirmLabel: canConfirmBalance ? 'Confirm Balance' : 'Confirm Payment',
+    };
+  };
 
-    if (b.payment_mode === 'deposit' && b.status !== 'ordered' && !b.balance_paid) {
-      // State 2: confirm balance payment for deposit
+  // Takes the booking as a param (not `selected`) so it works from the list
+  // row's own Confirm button too, without first navigating into the card.
+  const confirmBooking = async (b: JubahBookingRow) => {
+    setConfirmingId(b.id);
+    const { canConfirmBalance, canConfirmPayment } = getConfirmState(b);
+
+    if (canConfirmBalance) {
       const { data } = await supabase.rpc('mark_jubah_balance_paid', { p_booking_id: b.id });
       if (data?.success) {
         const updated = { ...b, balance_paid: true };
-        setSelected(updated);
         setBookings(prev => prev.map(r => r.id === b.id ? updated : r));
+        setSelected(prev => prev?.id === b.id ? updated : prev);
         showToast('Balance confirmed ✓');
         sendReceiptEmail(b.id, 'balance');
       } else {
         showToast('Failed to confirm balance.');
       }
-    } else if (b.status === 'ordered') {
-      // State 1: confirm initial payment — deposit→booked, others→paid
+    } else if (canConfirmPayment) {
       const newStatus = b.payment_mode === 'deposit' ? 'booked' : 'paid';
       const { data, error } = await supabase.rpc('update_jubah_booking_status', {
         p_booking_id: b.id,
@@ -152,13 +172,13 @@ export function JubahCustomerSubTab({
         showToast('Failed to confirm payment.');
       } else {
         const updated = { ...b, status: newStatus };
-        setSelected(updated);
         setBookings(prev => prev.map(r => r.id === b.id ? updated : r));
+        setSelected(prev => prev?.id === b.id ? updated : prev);
         showToast(b.payment_mode === 'deposit' ? 'Deposit confirmed → Booked ✓' : 'Payment confirmed → Paid ✓');
         sendReceiptEmail(b.id, b.payment_mode === 'deposit' ? 'deposit' : 'full');
       }
     }
-    setConfirmingBooking(false);
+    setConfirmingId(null);
   };
 
   const handleAdminAdvanceStatus = async () => {
@@ -344,10 +364,10 @@ export function JubahCustomerSubTab({
                         </td>
                         <td className="py-2.5 pr-4 whitespace-nowrap">
                           {(() => {
-                            // Four states: cancelled (red X — distinct from "just unpaid", since
-                            // a cancelled booking will never become paid), nothing paid yet (grey),
-                            // deposit paid but balance still outstanding (blue — a real but partial
-                            // confirmation, shouldn't look identical to "fully done"), fully paid (green).
+                            // Cancelled (red X — will never become paid) and fully paid (green,
+                            // nothing left to confirm) stay static. Anything still confirmable
+                            // (unpaid, or deposit paid with balance due) is now a real button —
+                            // no need to open the row just to click Confirm.
                             if (b.status === 'cancelled') {
                               return (
                                 <span title="Cancelled">
@@ -355,12 +375,31 @@ export function JubahCustomerSubTab({
                                 </span>
                               );
                             }
+                            const { confirmActive, confirmLabel } = getConfirmState(b);
+                            if (!confirmActive) {
+                              return (
+                                <span title="Fully paid">
+                                  <CheckCircle2 className="w-4 h-4 text-emerald-500" />
+                                </span>
+                              );
+                            }
                             const depositOnly = b.payment_mode === 'deposit' && b.initial_paid && !b.balance_paid;
-                            const colorClass = isPaid ? 'text-emerald-500' : depositOnly ? 'text-blue-500' : 'text-slate-200';
                             return (
-                              <span title={isPaid ? 'Fully paid' : depositOnly ? 'Deposit paid — balance due' : 'Unpaid'}>
-                                <CheckCircle2 className={`w-4 h-4 ${colorClass}`} />
-                              </span>
+                              <button
+                                type="button"
+                                onClick={(e) => { e.stopPropagation(); confirmBooking(b); }}
+                                disabled={confirmingId === b.id}
+                                title={confirmLabel}
+                                className={`w-7 h-7 flex items-center justify-center rounded-lg border transition active:scale-95 disabled:opacity-50 ${
+                                  depositOnly
+                                    ? 'bg-blue-50 border-blue-100 text-blue-600 hover:bg-blue-100'
+                                    : 'bg-slate-50 border-slate-200 text-slate-400 hover:bg-emerald-50 hover:border-emerald-100 hover:text-emerald-600'
+                                }`}
+                              >
+                                {confirmingId === b.id
+                                  ? <span className="w-3.5 h-3.5 rounded-full border-2 border-slate-300 border-t-slate-600 animate-spin" />
+                                  : <CheckCircle2 className="w-4 h-4" />}
+                              </button>
                             );
                           })()}
                         </td>
@@ -421,7 +460,7 @@ export function JubahCustomerSubTab({
         </div>
       </>)}
 
-      {/* PAGE 2 — Job card with stepper */}
+      {/* PAGE 2 — Job card: stepper/confirm, full customer details, receipt, documents */}
       {adminView === 'card' && selected && (() => {
         const b = selected;
         const { steps, curStep, notStarted, isDone, nextStatus: nextStat } = getJubahProgress(b.status, b.payment_mode);
@@ -545,10 +584,9 @@ export function JubahCustomerSubTab({
                       <button
                         type="button"
                         onClick={async () => {
-                          const win = window.open('', '_blank', 'noopener,noreferrer');
-                          const signed = await getJubahDocSignedUrl(b.balance_proof_url);
-                          if (signed && win) win.location.href = signed;
-                          else win?.close();
+                          const { url: signed, error } = await getJubahDocSignedUrl(b.balance_proof_url);
+                          if (signed) openInNewTab(signed);
+                          else showToast(error ?? "Couldn't open proof.");
                         }}
                         className="text-xs text-blue-500 font-semibold flex items-center gap-0.5 hover:underline shrink-0"
                       >
@@ -556,36 +594,37 @@ export function JubahCustomerSubTab({
                       </button>
                     )}
                   </div>
-                  {b.balance_proof_url && !b.balance_paid && (
+                  {!b.balance_paid && (
                     <button
                       type="button"
-                      onClick={async () => {
-                        const { data } = await supabase.rpc('mark_jubah_balance_paid', { p_booking_id: b.id });
-                        if (data?.success) {
-                          const updated = { ...b, balance_paid: true };
-                          setBookings(prev => prev.map(r => r.id === b.id ? updated : r));
-                          setSelected(updated);
-                          showToast('Balance confirmed ✓');
-                        } else {
-                          showToast('Failed to confirm balance.');
-                        }
-                      }}
+                      onClick={() => confirmBooking(b)}
+                      disabled={confirmingId === b.id}
                       title="Confirm balance payment"
-                      className="w-9 h-9 flex items-center justify-center rounded-full bg-emerald-500 hover:bg-emerald-600 active:scale-90 transition text-white shrink-0"
+                      className="w-9 h-9 flex items-center justify-center rounded-full bg-emerald-500 hover:bg-emerald-600 active:scale-90 disabled:opacity-50 transition text-white shrink-0"
                     >
-                      <Check className="w-4 h-4" />
+                      {confirmingId === b.id
+                        ? <span className="w-4 h-4 rounded-full border-2 border-white/40 border-t-white animate-spin" />
+                        : <Check className="w-4 h-4" />}
                     </button>
                   )}
                 </div>
               )}
 
-              {/* status='ordered' — payment hasn't even been confirmed yet, so there's
-                  nothing here to advance or call "complete." That's normally handled
-                  automatically by the ToyyibPay callback; this is just a graceful
-                  fallback for viewing a booking's card before that's happened. */}
+              {/* status='ordered' — payment hasn't been confirmed yet. Confirm
+                  right here against the uploaded proof / bank statement, no
+                  need to open the details page just to click one button. */}
               {notStarted && b.status !== 'cancelled' && (
-                <div className="bg-slate-50 border border-slate-100 rounded-2xl px-4 py-3 text-center">
+                <div className="bg-slate-50 border border-slate-100 rounded-2xl px-4 py-3 flex items-center justify-between gap-3">
                   <p className="text-xs font-semibold text-slate-500">Awaiting Payment Confirmation</p>
+                  <button
+                    type="button"
+                    onClick={() => confirmBooking(b)}
+                    disabled={confirmingId === b.id}
+                    className="shrink-0 flex items-center gap-1.5 bg-emerald-500 hover:bg-emerald-600 active:scale-95 disabled:opacity-50 text-white font-semibold text-xs px-3 py-2 rounded-xl transition">
+                    {confirmingId === b.id
+                      ? <span className="w-3.5 h-3.5 rounded-full border-2 border-white/40 border-t-white animate-spin" />
+                      : <><BadgeCheck className="w-3.5 h-3.5" />Confirm</>}
+                  </button>
                 </div>
               )}
               {/* Advance status button — deposit bookings stay gated until the balance is confirmed above */}
@@ -611,59 +650,37 @@ export function JubahCustomerSubTab({
               )}
             </div>
 
-            {/* View Customer Details button */}
-            <button
-              onClick={onGoToDetails}
-              className="w-full bg-white border border-slate-100 text-slate-600 font-semibold py-3 rounded-2xl text-sm transition active:scale-95 active:bg-slate-50">
-              View Customer Details →
-            </button>
-          </div>
-        );
-      })()}
-
-      {/* PAGE 3 — Customer details (read-only form + downloads) */}
-      {adminView === 'details' && selected && (() => {
-        const b = selected;
-        return (
-          <div className="flex flex-col gap-4">
-            {/* Back row — sticky so it stays visible while the content below scrolls */}
-            <div className="sticky top-0 z-10 -mx-4 px-4 pt-2 pb-2 bg-white flex items-center gap-2">
-              <button onClick={onGoBack}
-                className="w-8 h-8 flex items-center justify-center rounded-xl bg-white border border-slate-100 text-slate-500 hover:text-primary transition active:scale-90 shrink-0">
-                <ChevronLeft className="w-4 h-4" />
-              </button>
-              <div>
-                <p className="text-xs font-black text-slate-700">Customer Info</p>
-                <p className="text-xs text-slate-400 font-semibold">{b.remark} · {b.university}</p>
-              </div>
-            </div>
-
-            {/* Form fields card */}
+            {/* Form fields card — folded into this same page (was a separate
+                "View Customer Details" page/tap before) so confirming a
+                payment and checking who/what you're confirming don't need
+                two different pages. */}
             <div className="bg-white border border-slate-100 rounded-3xl p-5 flex flex-col gap-4">
               <h3 className="text-sm font-semibold text-slate-700">Booking Information</h3>
 
-              {([
-                { label: 'Full Name',     value: b.full_name },
-                { label: 'IC Number',      value: b.ic_number },
-                { label: 'Phone',          value: b.hp_number },
-                { label: 'Matric No.',     value: b.matric_id },
-                { label: 'University',     value: b.university },
-                { label: 'Campus',         value: `UMPSA ${b.campus}` },
-                { label: 'Faculty',        value: b.faculty },
-                { label: 'Remark',         value: b.remark },
-                { label: 'Booking Type',   value: b.delivery_address ? 'Pickup & Postage' : 'Self Pickup' },
-                { label: 'Payment Mode',   value: b.payment_mode !== 'deposit' ? 'Full Payment' : b.balance_paid ? 'Full Payment (DP)' : 'Deposit' },
-                { label: 'Service Fee',    value: `RM${b.cost.toFixed(2)}` },
-                ...(b.payment_mode === 'deposit' ? [{ label: 'Balance Due', value: `RM${b.balance_due.toFixed(2)}` }] : []),
-                ...(b.delivery_address ? [{ label: 'Delivery Address', value: b.delivery_address }] : []),
-                { label: 'Rider Assigned', value: b.rider_name ?? '—' },
-                { label: 'Reference',      value: b.reference },
-              ] as { label: string; value: string }[]).map(({ label, value }) => (
-                <div key={label} className="flex flex-col gap-0.5 border-b border-slate-100 pb-3 last:border-0 last:pb-0">
-                  <span className="text-xs font-normal text-slate-400">{label}</span>
-                  <span className="text-sm font-semibold text-slate-700 leading-relaxed">{value}</span>
-                </div>
-              ))}
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                {([
+                  { label: 'Full Name',     value: b.full_name },
+                  { label: 'IC Number',      value: b.ic_number },
+                  { label: 'Phone',          value: b.hp_number },
+                  { label: 'Matric No.',     value: b.matric_id },
+                  { label: 'University',     value: b.university },
+                  { label: 'Campus',         value: `UMPSA ${b.campus}` },
+                  { label: 'Faculty',        value: b.faculty },
+                  { label: 'Remark',         value: b.remark },
+                  { label: 'Booking Type',   value: b.delivery_address ? 'Pickup & Postage' : 'Self Pickup' },
+                  { label: 'Payment Mode',   value: b.payment_mode !== 'deposit' ? 'Full Payment' : b.balance_paid ? 'Full Payment (DP)' : 'Deposit' },
+                  { label: 'Service Fee',    value: `RM${b.cost.toFixed(2)}` },
+                  ...(b.payment_mode === 'deposit' ? [{ label: 'Balance Due', value: `RM${b.balance_due.toFixed(2)}` }] : []),
+                  ...(b.delivery_address ? [{ label: 'Delivery Address', value: b.delivery_address, span: true }] : []),
+                  { label: 'Rider Assigned', value: b.rider_name ?? '—' },
+                  { label: 'Reference',      value: b.reference },
+                ] as { label: string; value: string; span?: boolean }[]).map(({ label, value, span }) => (
+                  <div key={label} className={`bg-slate-50 border border-slate-100 rounded-xl px-3 py-2 min-w-0 ${span ? 'col-span-2 sm:col-span-3' : ''}`}>
+                    <p className="text-[8px] font-semibold text-slate-400 uppercase tracking-wider">{label}</p>
+                    <p className="text-xs font-semibold text-slate-700 leading-relaxed break-words">{value}</p>
+                  </div>
+                ))}
+              </div>
             </div>
 
             {/* Receipt — same component/PDF export customers see, built
@@ -695,108 +712,89 @@ export function JubahCustomerSubTab({
               return <ReceiptCard doc={doc} onSavePdf={() => generateReceiptPdf(doc)} />;
             })()}
 
-            {/* Documents download card */}
+            {/* Documents download card — a grid of compact cards rather than
+                full-width rows, so the label and its buttons stay close
+                together instead of stretching apart on a wide desktop screen. */}
             <div className="bg-white border border-slate-100 rounded-3xl p-5 flex flex-col gap-4">
               <h3 className="text-sm font-semibold text-slate-700">Documents</h3>
 
-              {([
-                { label: 'Combined PDF',  url: b.docs_path },
-                { label: 'Payment Proof', url: b.payment_path },
-                { label: 'OSCAR',         url: b.oscar_path },
-                { label: 'SKPG',          url: b.skpg_path },
-                { label: 'Konvo Slip',    url: b.konvo_path },
-                { label: 'IC Copy',       url: b.ic_path },
-                ...(b.payment_mode === 'deposit' ? [{ label: 'Balance Proof', url: b.balance_proof_url }] : []),
-              ] as { label: string; url: string | null }[]).map(({ label, url }) => (
-                <div key={label} className="flex items-center justify-between gap-3 border-b border-slate-100 pb-3 last:border-0 last:pb-0">
-                  <span className="text-sm font-semibold text-slate-700">{label}</span>
-                  <div className="flex items-center gap-2 shrink-0">
-                    {/* View — signed URL generated on demand, not stored.
-                        Window is opened synchronously (before the await) so
-                        it stays inside the tap's user-gesture window — opening
-                        it only after the signed URL resolves gets silently
-                        blocked as a popup on most mobile browsers. */}
-                    <button
-                      type="button"
-                      disabled={!url}
-                      onClick={async () => {
-                        const win = window.open('', '_blank', 'noopener,noreferrer');
-                        const signed = await getJubahDocSignedUrl(url);
-                        if (signed && win) win.location.href = signed;
-                        else win?.close();
-                      }}
-                      className={`w-9 h-9 flex items-center justify-center rounded-xl border transition ${
-                        url
-                          ? 'bg-blue-50 border-blue-100 text-blue-600 hover:bg-blue-100 active:scale-95'
-                          : 'bg-slate-50 border-slate-100 text-slate-300 cursor-not-allowed'
-                      }`}>
-                      <Eye className="w-4 h-4" />
-                    </button>
-                    {/* Download — signed URL with download disposition, generated on demand */}
-                    <button
-                      type="button"
-                      disabled={!url}
-                      onClick={async () => {
-                        const win = window.open('', '_blank', 'noopener,noreferrer');
-                        const signed = await getJubahDocSignedUrl(url, true);
-                        if (signed && win) win.location.href = signed;
-                        else win?.close();
-                      }}
-                      className={`w-9 h-9 flex items-center justify-center rounded-xl border transition ${
-                        url
-                          ? 'bg-slate-800 border-slate-700 text-white hover:bg-slate-700 active:scale-95'
-                          : 'bg-slate-50 border-slate-100 text-slate-300 cursor-not-allowed'
-                      }`}>
-                      <Download className="w-4 h-4" />
-                    </button>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {([
+                  { label: 'Combined PDF',  url: b.docs_path },
+                  { label: 'Payment Proof', url: b.payment_path },
+                  { label: 'OSCAR',         url: b.oscar_path },
+                  { label: 'SKPG',          url: b.skpg_path },
+                  { label: 'Konvo Slip',    url: b.konvo_path },
+                  { label: 'IC Copy',       url: b.ic_path },
+                  ...(b.payment_mode === 'deposit' ? [{ label: 'Balance Proof', url: b.balance_proof_url }] : []),
+                ] as { label: string; url: string | null }[]).map(({ label, url }) => (
+                  <div key={label} className="flex items-center justify-between gap-3 bg-slate-50 border border-slate-100 rounded-xl px-3 py-2.5">
+                    <span className="text-xs font-semibold text-slate-700 truncate">{label}</span>
+                    <div className="flex items-center gap-2 shrink-0">
+                      {/* View — signed URL generated on demand, not stored, then
+                          opened via a synthetic <a> click (see openInNewTab)
+                          rather than window.open(), which some browsers/
+                          extensions block outright even on a direct click. */}
+                      <button
+                        type="button"
+                        disabled={!url}
+                        onClick={async () => {
+                          const { url: signed, error } = await getJubahDocSignedUrl(url);
+                          if (signed) openInNewTab(signed);
+                          else showToast(error ? `Couldn't open ${label}: ${error}` : `Couldn't open ${label}.`);
+                        }}
+                        className={`w-8 h-8 flex items-center justify-center rounded-lg border transition shrink-0 ${
+                          url
+                            ? 'bg-blue-50 border-blue-100 text-blue-600 hover:bg-blue-100 active:scale-95'
+                            : 'bg-white border-slate-100 text-slate-300 cursor-not-allowed'
+                        }`}>
+                        <Eye className="w-3.5 h-3.5" />
+                      </button>
+                      {/* Download — signed URL with download disposition, generated on demand */}
+                      <button
+                        type="button"
+                        disabled={!url}
+                        onClick={async () => {
+                          const { url: signed, error } = await getJubahDocSignedUrl(url, true);
+                          if (signed) openInNewTab(signed);
+                          else showToast(error ? `Couldn't download ${label}: ${error}` : `Couldn't download ${label}.`);
+                        }}
+                        className={`w-8 h-8 flex items-center justify-center rounded-lg border transition shrink-0 ${
+                          url
+                            ? 'bg-slate-800 border-slate-700 text-white hover:bg-slate-700 active:scale-95'
+                            : 'bg-white border-slate-100 text-slate-300 cursor-not-allowed'
+                        }`}>
+                        <Download className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
                   </div>
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
 
-            {/* Confirm + Delete row */}
-            {(() => {
-              // Deliberately not gated on payment_path/balance_proof_url being
-              // set — admin can confirm from their own bank statement even if
-              // a proof upload failed silently, same as the customer-facing
-              // upload never blocking booking on the other documents either.
-              const canConfirmPayment = b.status === 'ordered';
-              const canConfirmBalance = b.payment_mode === 'deposit' && b.status !== 'ordered' && b.status !== 'cancelled' && !b.balance_paid;
-              const confirmActive = canConfirmPayment || canConfirmBalance;
-              const confirmLabel  = canConfirmBalance ? 'Confirm Balance' : 'Confirm Payment';
-              return (
-                <div className="flex flex-col gap-3">
-                  <div className="flex gap-3">
-                    <button
-                      onClick={handleConfirmJubahBooking}
-                      disabled={!confirmActive || confirmingBooking}
-                      className="flex-1 flex items-center justify-center gap-2 bg-emerald-50 border border-emerald-200 text-emerald-600 hover:bg-emerald-100 active:scale-[0.98] font-semibold py-3 rounded-2xl text-sm transition disabled:opacity-40 disabled:cursor-not-allowed">
-                      {confirmingBooking
-                        ? <span className="w-4 h-4 rounded-full border-2 border-emerald-300 border-t-emerald-600 animate-spin" />
-                        : <><BadgeCheck className="w-4 h-4" />{confirmLabel}</>}
-                    </button>
-                    <button
-                      onClick={async () => {
-                        onGoToList();
-                        await handleDeleteJubahBooking(b);
-                      }}
-                      disabled={deletingBooking === b.id}
-                      className="flex-1 flex items-center justify-center gap-2 border border-red-200 text-red-500 hover:bg-red-50 active:scale-[0.98] font-semibold py-3 rounded-2xl text-sm transition disabled:opacity-50">
-                      {deletingBooking === b.id
-                        ? <span className="w-4 h-4 rounded-full border-2 border-red-300 border-t-red-500 animate-spin" />
-                        : <><Trash2 className="w-4 h-4" />Delete</>}
-                    </button>
-                  </div>
-                  {b.status !== 'cancelled' && (
-                    <button
-                      onClick={() => setCancelModalBooking(b)}
-                      className="w-full flex items-center justify-center gap-2 border border-amber-200 text-amber-600 hover:bg-amber-50 active:scale-[0.98] font-semibold py-3 rounded-2xl text-sm transition">
-                      <Ban className="w-4 h-4" />Cancel Booking
-                    </button>
-                  )}
-                </div>
-              );
-            })()}
+            {/* Delete + Cancel row — Confirm itself lives contextually up in
+                the stepper card (next to the payment status it applies to),
+                so it isn't repeated down here too. */}
+            <div className="flex flex-col gap-3">
+              <button
+                onClick={async () => {
+                  onGoToList();
+                  await handleDeleteJubahBooking(b);
+                }}
+                disabled={deletingBooking === b.id}
+                className="w-full flex items-center justify-center gap-2 border border-red-200 text-red-500 hover:bg-red-50 active:scale-[0.98] font-semibold py-3 rounded-2xl text-sm transition disabled:opacity-50">
+                {deletingBooking === b.id
+                  ? <span className="w-4 h-4 rounded-full border-2 border-red-300 border-t-red-500 animate-spin" />
+                  : <><Trash2 className="w-4 h-4" />Delete</>}
+              </button>
+              {b.status !== 'cancelled' && (
+                <button
+                  onClick={() => setCancelModalBooking(b)}
+                  className="w-full flex items-center justify-center gap-2 border border-amber-200 text-amber-600 hover:bg-amber-50 active:scale-[0.98] font-semibold py-3 rounded-2xl text-sm transition">
+                  <Ban className="w-4 h-4" />Cancel Booking
+                </button>
+              )}
+            </div>
           </div>
         );
       })()}
