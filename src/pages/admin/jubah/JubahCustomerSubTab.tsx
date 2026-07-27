@@ -2,7 +2,7 @@ import React, { useEffect, useState, type Dispatch, type SetStateAction } from '
 import { supabase } from '../../../lib/supabase';
 import {
   Users, RefreshCw, AlertCircle, Copy, Check, Eye, Download, ChevronLeft,
-  ExternalLink, BadgeCheck, Trash2, Ban, X, XCircle, CheckCircle2,
+  ExternalLink, BadgeCheck, Trash2, Ban, X, XCircle, CheckCircle2, Clock,
 } from 'lucide-react';
 import { WaIcon, toWa } from '../../../lib/whatsapp';
 import { getJubahDocSignedUrl, openInNewTab } from '../../../lib/jubahDocs';
@@ -135,13 +135,21 @@ export function JubahCustomerSubTab({
   // balance_proof_url being set — admin can confirm from their own bank
   // statement even if a proof upload failed silently.
   const getConfirmState = (b: JubahBookingRow) => {
+    // Initial payment is never gated on payment_path being set — the
+    // customer can't even submit a booking without attaching that proof, so
+    // it's always present by the time a booking row exists at all.
     const canConfirmPayment = b.status === 'ordered';
-    const canConfirmBalance = b.payment_mode === 'deposit' && b.status !== 'ordered' && b.status !== 'cancelled' && !b.balance_paid;
+    // Balance, by contrast, IS gated on balance_proof_url — unlike the
+    // initial proof, submitting it is a genuinely separate, optional step
+    // that can lag behind the deposit confirmation by any amount of time,
+    // so there's a real window where "Confirm Balance" would otherwise be
+    // clickable with nothing to confirm against yet.
+    const canConfirmBalance = b.payment_mode === 'deposit' && b.status !== 'ordered' && b.status !== 'cancelled' && !b.balance_paid && !!b.balance_proof_url;
     return {
       canConfirmPayment,
       canConfirmBalance,
       confirmActive: canConfirmPayment || canConfirmBalance,
-      confirmLabel: canConfirmBalance ? 'Confirm Balance' : 'Confirm Payment',
+      confirmLabel: (b.payment_mode === 'deposit' && b.status !== 'ordered' && !b.balance_paid) ? 'Confirm Balance' : 'Confirm Payment',
     };
   };
 
@@ -376,6 +384,19 @@ export function JubahCustomerSubTab({
                               );
                             }
                             const { confirmActive, confirmLabel } = getConfirmState(b);
+                            // Distinct from "fully paid" — a deposit booking waiting on the
+                            // customer's balance proof isn't done, it's just not confirmable
+                            // yet. Without this it would fall into the same "!confirmActive"
+                            // branch as an actually-fully-paid booking and show the same
+                            // green checkmark, which is misleading.
+                            const awaitingBalanceProof = b.payment_mode === 'deposit' && b.initial_paid && !b.balance_paid && !b.balance_proof_url;
+                            if (awaitingBalanceProof) {
+                              return (
+                                <span title="Waiting on customer to submit balance payment proof">
+                                  <Clock className="w-4 h-4 text-slate-300" />
+                                </span>
+                              );
+                            }
                             if (!confirmActive) {
                               return (
                                 <span title="Fully paid">
@@ -601,8 +622,9 @@ export function JubahCustomerSubTab({
                     <button
                       type="button"
                       onClick={() => confirmBooking(b)}
-                      disabled={confirmingId === b.id}
-                      className="w-full flex items-center justify-center gap-1.5 bg-emerald-500 hover:bg-emerald-600 active:scale-[0.98] disabled:opacity-50 text-white font-semibold text-xs px-3 py-2.5 rounded-xl transition">
+                      disabled={confirmingId === b.id || !b.balance_proof_url}
+                      title={!b.balance_proof_url ? 'Waiting on the customer to upload a balance payment receipt' : undefined}
+                      className="w-full flex items-center justify-center gap-1.5 bg-emerald-500 hover:bg-emerald-600 active:scale-[0.98] disabled:bg-slate-200 disabled:cursor-not-allowed text-white font-semibold text-xs px-3 py-2.5 rounded-xl transition">
                       {confirmingId === b.id
                         ? <span className="w-3.5 h-3.5 rounded-full border-2 border-white/40 border-t-white animate-spin" />
                         : <><BadgeCheck className="w-3.5 h-3.5" />Confirm Balance</>}
