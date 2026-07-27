@@ -564,8 +564,8 @@ export function JubahCustomerSubTab({
                   showing "Balance Due RM45" implies that's all that's left, when
                   really the RM25 deposit hasn't been paid either yet. */}
               {b.payment_mode === 'deposit' && b.status !== 'cancelled' && !notStarted && (
-                <div className="flex items-center gap-2">
-                  <div className={`flex-1 rounded-xl p-3 border flex items-center justify-between gap-2 ${
+                <div className="flex flex-col gap-2">
+                  <div className={`rounded-xl p-3 border flex items-center justify-between gap-2 ${
                     b.balance_paid ? 'bg-emerald-50 border-emerald-100' : b.balance_proof_url ? 'bg-violet-50 border-violet-100' : 'bg-amber-50 border-amber-100'
                   }`}>
                     <div>
@@ -594,17 +594,18 @@ export function JubahCustomerSubTab({
                       </button>
                     )}
                   </div>
+                  {/* Was an unlabeled icon-only circle button here — easy to miss
+                      next to the clearly labeled "Confirm" button for the initial
+                      payment just below. Same action, matching visible label now. */}
                   {!b.balance_paid && (
                     <button
                       type="button"
                       onClick={() => confirmBooking(b)}
                       disabled={confirmingId === b.id}
-                      title="Confirm balance payment"
-                      className="w-9 h-9 flex items-center justify-center rounded-full bg-emerald-500 hover:bg-emerald-600 active:scale-90 disabled:opacity-50 transition text-white shrink-0"
-                    >
+                      className="w-full flex items-center justify-center gap-1.5 bg-emerald-500 hover:bg-emerald-600 active:scale-[0.98] disabled:opacity-50 text-white font-semibold text-xs px-3 py-2.5 rounded-xl transition">
                       {confirmingId === b.id
-                        ? <span className="w-4 h-4 rounded-full border-2 border-white/40 border-t-white animate-spin" />
-                        : <Check className="w-4 h-4" />}
+                        ? <span className="w-3.5 h-3.5 rounded-full border-2 border-white/40 border-t-white animate-spin" />
+                        : <><BadgeCheck className="w-3.5 h-3.5" />Confirm Balance</>}
                     </button>
                   )}
                 </div>
