@@ -409,8 +409,12 @@ export const Jubah: React.FC = () => {
       return;
     }
     const compressed = file ? await compressImage(file) : null;
+    // Only the IC gets watermarked, not OSCAR/SKPG/Konvo — those don't carry
+    // the same identity-document risk. field_key (not fieldId, which is a
+    // DB id for university-specific field sets) is what actually says "ic".
+    const isIc = docFields.find(f => f.id === fieldId)?.field_key === 'ic';
     let stamped = compressed;
-    if (compressed) {
+    if (compressed && isIc) {
       try { stamped = await stampWatermark(compressed, jubahWatermarkText); }
       catch (err) { console.error('[GERAK] Watermark failed, uploading original file:', err); }
     }
@@ -1224,13 +1228,7 @@ export const Jubah: React.FC = () => {
               ref={paymentProofRef}
               onChange={async e => {
                 const file = e.target.files?.[0] || null;
-                const compressed = file ? await compressImage(file) : null;
-                let stamped = compressed;
-                if (compressed) {
-                  try { stamped = await stampWatermark(compressed, jubahWatermarkText); }
-                  catch (err) { console.error('[GERAK] Watermark failed, uploading original file:', err); }
-                }
-                setPaymentProof(stamped);
+                setPaymentProof(file ? await compressImage(file) : null);
               }}
               className="hidden"
             />
