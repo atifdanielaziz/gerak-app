@@ -782,9 +782,13 @@ export const Transport: React.FC = () => {
             </button>
           </div>
 
-          {/* Point selection — Dropdown Standard (NativeSelect); options and
-              pricing are per-campus (see AERBUS_POINTS) since travel time to
-              each point genuinely differs between Pekan and Gambang. */}
+          {/* Point selection — Dropdown Standard (NativeSelect), same row
+              layout as Quick Routes (plain label left, bold price right).
+              Options/pricing are per-campus (see AERBUS_POINTS) since travel
+              time to each point genuinely differs between Pekan and Gambang.
+              The buffer duration itself isn't shown per-option here anymore
+              — it's surfaced as a badge on the Order Details header below,
+              since it applies to whichever point is currently selected. */}
           <div className="flex flex-col gap-0.5">
             <label className="text-xs font-normal text-slate-400 pl-1">Pickup / Drop Point</label>
             <NativeSelect<AerbusPointId | ''>
@@ -793,7 +797,8 @@ export const Transport: React.FC = () => {
               placeholder="Select a point"
               options={aerbusPoints.map(p => ({
                 value: p.id,
-                label: `${p.label} — ${p.bufferMin >= 60 ? `${p.bufferMin / 60}h` : `${p.bufferMin}min`} · RM${p.fare}`,
+                label: p.label,
+                right: `RM${p.fare}`,
               }))}
             />
           </div>
@@ -803,9 +808,20 @@ export const Transport: React.FC = () => {
       {/* ── Order form ── */}
       <form onSubmit={handleBook} className="px-4 mt-2 flex flex-col gap-2">
         <div className="bg-white border border-slate-100 rounded-2xl p-3 flex flex-col gap-2.5">
-          <h3 className="text-sm font-semibold text-slate-700 flex items-center gap-1.5">
-            <CalendarDays className="w-4 h-4 text-slate-400" /> Order Details
-          </h3>
+          <div className="flex items-center justify-between">
+            <h3 className="text-sm font-semibold text-slate-700 flex items-center gap-1.5">
+              <CalendarDays className="w-4 h-4 text-slate-400" /> Order Details
+            </h3>
+            {/* Buffer-time flag — reflects whichever AerBus point is
+                currently selected, so it updates the moment the dropdown
+                selection changes. */}
+            {bookMode === 'aerbus' && aerbusPointData && (
+              <span className="inline-flex items-center gap-1 bg-emerald-50 border border-emerald-100 text-emerald-600 rounded-md px-1.5 py-0.5 text-[10px] font-semibold">
+                <PlaneTakeoff className="w-3 h-3" />
+                +{aerbusPointData.bufferMin >= 60 ? `${aerbusPointData.bufferMin / 60}h` : `${aerbusPointData.bufferMin}min`} buffer
+              </span>
+            )}
+          </div>
 
           {/* Now / Later toggle — Mode Selector Standard. AerBus always
               books a specific ticket time, so it skips this entirely. */}
