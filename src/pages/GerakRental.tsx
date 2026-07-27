@@ -120,9 +120,8 @@ export const GerakRental: React.FC = () => {
   const loadOwners = useCallback(async () => {
     setLoading(true);
     const { data: profiles } = await supabase
-      .from('profiles')
-      .select('id, name, phone, gerak_id, campus')
-      .eq('can_rent', true);
+      .from('rental_owner_public')
+      .select('id, name, phone, gerak_id, campus');
 
     if (!profiles?.length) { setOwners([]); setLoading(false); return; }
 
@@ -192,7 +191,7 @@ export const GerakRental: React.FC = () => {
 
     const ownerIds = [...new Set(rows.map(r => r.owner_id))];
     const [{ data: profiles }, { data: vehicles }] = await Promise.all([
-      supabase.from('profiles').select('id, name, gerak_id, phone').in('id', ownerIds),
+      supabase.from('rental_owner_public').select('id, name, gerak_id, phone').in('id', ownerIds),
       supabase.from('rental_vehicles').select('owner_id, car_type, plate_no, color, price_hour').in('owner_id', ownerIds),
     ]);
 
@@ -272,6 +271,11 @@ export const GerakRental: React.FC = () => {
 
   const canBookSlot = (dateStr: string, start: number, dur: number): boolean => {
     const end = start + dur;
+    // Neither this nor isHourAvailable ever checked the vehicle's own
+    // operating hours — only blocked/booked slots. An hour past closing
+    // isn't in either of those sets, so it read as "available" by default,
+    // letting a booking silently run past the owner's declared closing time.
+    if (selected && (start < selected.operating_start || end > selected.operating_end)) return false;
     for (let h = start; h <= end; h += 0.5) {
       if (!isHourAvailable(dateStr, h)) return false;
     }
@@ -390,7 +394,23 @@ export const GerakRental: React.FC = () => {
       license_url:  '',
     });
     setBookLoading(false);
-    if (error) { showToast('Booking failed. Please try again.'); return; }
+    if (error) {
+      // 23P01 = exclusion_violation — rental_bookings_no_overlap caught a
+      // real race: someone else booked (part of) this slot between when
+      // this page last fetched availability and this insert landing. The
+      // client-side canBookSlot() check above can't catch this — it's
+      // checking a snapshot, not the live table — only the database
+      // constraint can, atomically, at the moment two inserts actually
+      // collide. Refresh availability so the calendar reflects reality
+      // immediately, rather than continuing to show the now-taken slot as free.
+      if (error.code === '23P01') {
+        showToast('That slot was just booked by someone else. Please pick another time.');
+        loadAvailability(selected.id, calMonth);
+      } else {
+        showToast('Booking failed. Please try again.');
+      }
+      return;
+    }
     setBookingDone(true);
     loadAvailability(selected.id, calMonth);
     loadMyBookings();
@@ -764,7 +784,11 @@ export const GerakRental: React.FC = () => {
                   <button onPointerDown={e => { e.preventDefault(); setDuration(d => Math.max(1, d - 1)); }}
                     className="w-8 h-8 rounded-xl bg-slate-100 text-slate-600 font-black text-lg flex items-center justify-center transition-transform active:scale-90">−</button>
                   <span className="text-sm font-black text-slate-800 w-10 text-center">{fmtDuration(duration)}</span>
-                  <button onPointerDown={e => { e.preventDefault(); setDuration(d => Math.min(12, d + 1)); }}
+                  <button onPointerDown={e => {
+                      e.preventDefault();
+                      const ceiling = selected ? selected.operating_end - startHour : 12;
+                      setDuration(d => Math.min(12, ceiling, d + 1));
+                    }}
                     className="w-8 h-8 rounded-xl bg-slate-100 text-slate-600 font-black text-lg flex items-center justify-center transition-transform active:scale-90">+</button>
                 </div>
               </div>

@@ -169,8 +169,12 @@ Return ONLY the raw JSON object.`,
     const expiry    = new Date(paymentDate!.getFullYear(), paymentDate!.getMonth() + 1, 1)
     const expiryStr = expiry.toISOString().split('T')[0]
 
+    // fee_receipt_auto_verified distinguishes "the AI decided this was fine"
+    // from a human admin's approve_driver_receipt review — lets admins spot-
+    // audit AI-only approvals rather than trusting the vision model blindly.
     await admin.from('profiles').update({
       fee_receipt_verified:      true,
+      fee_receipt_auto_verified: true,
       fee_receipt_amount:        `RM${Number(extracted.amount).toFixed(2)}`,
       fee_receipt_date:          extracted.date,
       fee_receipt_expiry:        expiryStr,

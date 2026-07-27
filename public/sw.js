@@ -1,4 +1,4 @@
-const CACHE_NAME = 'gerak-cache-v220';
+const CACHE_NAME = 'gerak-cache-v257';
 const ASSETS_TO_CACHE = [
   '/',
   '/index.html',
@@ -37,15 +37,42 @@ self.addEventListener('activate', (event) => {
   self.clients.claim();
 });
 
-// Fetch Event - network-first falling back to cache
 self.addEventListener('fetch', (event) => {
-  // Only handle standard GET requests
+  // Only handle standard GET requests, and only same-origin — cross-origin
+  // calls (Supabase API/auth/realtime) should go straight to the network
+  // untouched rather than being routed through this cache logic.
   if (event.request.method !== 'GET') return;
+  const url = new URL(event.request.url);
+  if (url.origin !== self.location.origin) return;
 
+  // Vite's built assets are content-hashed (filename changes iff contents
+  // change), so a cached copy is never stale — a new deploy simply produces
+  // a new URL. Serving these straight from cache skips a network round-trip
+  // on every single chunk, on every single load, for files that by
+  // construction can never need revalidation. Falls back to network (and
+  // caches the result) the first time a given hash is seen.
+  if (url.pathname.startsWith('/assets/')) {
+    event.respondWith(
+      caches.match(event.request).then((cached) => {
+        if (cached) return cached;
+        return fetch(event.request).then((response) => {
+          if (response && response.status === 200 && response.type === 'basic') {
+            const responseToCache = response.clone();
+            caches.open(CACHE_NAME).then((cache) => cache.put(event.request, responseToCache));
+          }
+          return response;
+        });
+      })
+    );
+    return;
+  }
+
+  // Everything else (the HTML shell, manifest, icons) — network-first, so
+  // updates to the app shell itself are picked up as soon as they're live,
+  // falling back to cache when offline.
   event.respondWith(
     fetch(event.request)
       .then((response) => {
-        // If request is valid, clone it and save to cache
         if (response && response.status === 200 && response.type === 'basic') {
           const responseToCache = response.clone();
           caches.open(CACHE_NAME).then((cache) => {

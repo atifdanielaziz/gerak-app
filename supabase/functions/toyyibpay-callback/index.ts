@@ -94,7 +94,9 @@ serve(async (req) => {
       // silently discarded — a paid customer with no matching update needs
       // a human to reconcile, not a quiet no-op.
       if (!updated || updated.length === 0) {
-        console.error(`toyyibpay-callback: PAYMENT CONFIRMED for booking ${initialMatch.id} but it was not 'ordered' when applied — needs manual reconciliation. billcode=${billcode}`)
+        const note = `Payment confirmed for booking ${initialMatch.reference} but it was not 'ordered' when applied — needs manual reconciliation. billcode=${billcode}`
+        console.error(`toyyibpay-callback: ${note}`)
+        await flagForReconciliation(admin, initialMatch.id, note)
       } else {
         // Only on a genuine transition (not a replayed/duplicate callback) —
         // best-effort, never blocks the response either way.
@@ -124,7 +126,9 @@ serve(async (req) => {
         return json({ success: false, reason: updateErr.message }, 500)
       }
       if (!updated || updated.length === 0) {
-        console.error(`toyyibpay-callback: PAYMENT CONFIRMED for balance on booking ${balanceMatch.id} but it was already paid or cancelled when applied — needs manual reconciliation. billcode=${billcode}`)
+        const note = `Balance payment confirmed for booking ${balanceMatch.reference} but it was already paid or cancelled when applied — needs manual reconciliation. billcode=${billcode}`
+        console.error(`toyyibpay-callback: ${note}`)
+        await flagForReconciliation(admin, balanceMatch.id, note)
       } else {
         await sendReceiptEmail(admin, balanceMatch, 'balance')
       }
@@ -146,6 +150,18 @@ function json(body: unknown, status = 200) {
   })
 }
 
+// Surfaces a reconciliation-needed case on the booking row itself, so it
+// shows up in the admin UI instead of only living in Edge Function logs
+// that nobody proactively checks. Best-effort — never blocks the response.
+async function flagForReconciliation(admin: ReturnType<typeof createClient>, bookingId: string, note: string) {
+  const { error } = await admin.from('jubah_bookings').update({
+    needs_reconciliation: true,
+    reconciliation_note: note,
+    reconciliation_flagged_at: new Date().toISOString(),
+  }).eq('id', bookingId)
+  if (error) console.error('flagForReconciliation: failed to write flag:', error)
+}
+
 // Same masking convention used everywhere else customer-facing (TrackJubah's
 // IC-gated receipt, buildJubahReceiptRows) — an email landing in the
 // customer's own inbox is still worth keeping consistent with that, rather
@@ -159,8 +175,15 @@ const maskIc = (ic: string | null) => {
 const fmtDate = () =>
   new Date().toLocaleDateString('en-MY', { day: '2-digit', month: 'short', year: 'numeric' })
 
-const row = (label: string, value: string | null | undefined, opts?: { bold?: boolean; accent?: boolean }) =>
-  !value ? '' : `<tr><td style="padding: 6px 0; color: #94a3b8;">${label}</td><td style="padding: 6px 0; text-align: right; font-weight: ${opts?.bold ? 700 : 400}; color: ${opts?.accent ? '#dc2626' : '#1e293b'};">${value}</td></tr>`
+// row()'s value/sub carry customer-submitted booking fields (name, faculty,
+// delivery address, ...) straight into this HTML email — escape before
+// interpolating so a booking with e.g. "<img onerror=...>" as a name can't
+// inject markup into the receipt landing in that same customer's inbox.
+const escapeHtml = (s: string) =>
+  s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;')
+
+const row = (label: string, value: string | null | undefined, opts?: { bold?: boolean; accent?: boolean; sub?: string }) =>
+  !value ? '' : `<tr><td style="padding: 6px 0; color: #94a3b8; vertical-align: top;">${label}</td><td style="padding: 6px 0; text-align: right; font-weight: ${opts?.bold ? 700 : 400}; color: ${opts?.accent ? '#dc2626' : '#1e293b'};">${escapeHtml(value)}${opts?.sub ? `<br><span style="font-size: 11px; font-weight: 400; color: #94a3b8;">${escapeHtml(opts.sub)}</span>` : ''}</td></tr>`
 
 // Best-effort — a failed email should never affect the payment status
 // update, which has already committed by the time this runs. RESEND_FROM_EMAIL
@@ -172,6 +195,9 @@ const row = (label: string, value: string | null | undefined, opts?: { bold?: bo
 async function sendReceiptEmail(admin: ReturnType<typeof createClient>, booking: Booking, stage: 'full' | 'deposit' | 'balance') {
   const apiKey = Deno.env.get('RESEND_API_KEY')
   const from   = Deno.env.get('RESEND_FROM_EMAIL')
+  // Email clients need a real fetchable URL, not a bundled asset path — reuse
+  // the same APP_BASE_URL secret toyyibpay-create-bill already relies on.
+  const appBaseUrl = Deno.env.get('APP_BASE_URL') ?? ''
   if (!apiKey || !from || !booking.email) return
 
   let riderPhone: string | null = null
@@ -190,19 +216,26 @@ async function sendReceiptEmail(admin: ReturnType<typeof createClient>, booking:
   const today = fmtDate()
   const paymentRows =
     stage === 'deposit'
-      ? row('Deposit Paid', `RM${Number(booking.cost).toFixed(2)} (${today})`) +
+      ? row('Deposit Paid', `RM${Number(booking.cost).toFixed(2)}`, { sub: today }) +
         row('Balance Due', `RM${Number(booking.balance_due).toFixed(2)}`) +
-        row('Total Due', `RM${(Number(booking.cost) + Number(booking.balance_due)).toFixed(2)}`, { bold: true, accent: true })
+        // Total Due here means what's still owed right now — the deposit
+        // just cleared, so that's the remaining balance, not cost+balance
+        // again (which would double-count the deposit this exact email is
+        // confirming).
+        row('Total Due', `RM${Number(booking.balance_due).toFixed(2)}`, { bold: true, accent: true })
       : stage === 'balance'
         ? row('Deposit Paid', `RM${Number(booking.cost).toFixed(2)}`) +
-          row('Balance Paid', `RM${Number(booking.balance_due).toFixed(2)} (${today})`) +
+          row('Balance Paid', `RM${Number(booking.balance_due).toFixed(2)}`, { sub: today }) +
           row('Total Charged', `RM${(Number(booking.cost) + Number(booking.balance_due)).toFixed(2)}`, { bold: true, accent: true })
-        : row('Amount Paid', `RM${Number(booking.cost).toFixed(2)} (${today})`, { bold: true, accent: true })
+        : row('Amount Paid', `RM${Number(booking.cost).toFixed(2)}`, { bold: true, accent: true, sub: today })
 
   const html = `
   <div style="font-family: -apple-system, Helvetica, Arial, sans-serif; max-width: 480px; margin: 0 auto; color: #1e293b;">
     <div style="background: #dc2626; padding: 20px 24px; border-radius: 12px 12px 0 0;">
-      <span style="color: #ffffff; font-size: 22px; font-weight: 300; letter-spacing: -0.5px;">ger<span style="font-weight:700;">a</span>k</span>
+      <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="border-collapse: collapse;"><tr>
+        ${appBaseUrl ? `<td style="padding-right: 10px; vertical-align: middle;"><img src="${appBaseUrl}/icon-192-light.png" width="28" height="28" alt="" style="display: block; border-radius: 7px;" /></td>` : ''}
+        <td style="vertical-align: middle;"><span style="color: #ffffff; font-size: 22px; font-weight: 300; letter-spacing: -0.5px;">ger<span style="font-weight:700;">a</span>k</span></td>
+      </tr></table>
     </div>
     <div style="border: 1px solid #f1f5f9; border-top: none; border-radius: 0 0 12px 12px; padding: 24px;">
       <h1 style="font-size: 18px; margin: 0 0 4px;">${headline}</h1>

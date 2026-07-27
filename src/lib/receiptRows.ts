@@ -316,17 +316,26 @@ export function buildJubahReceiptRows(j: JubahReceiptSource): ReceiptDoc {
     rows.push({ label: 'Amount Due', value: `RM${j.cost.toFixed(2)}` });
   }
 
-  // The order's full value — deposit + balance — regardless of how much of
-  // it has actually been paid so far. Previously this only summed the two
-  // once the balance was paid, so "Total Due" before that point showed just
-  // the deposit amount (e.g. RM25) instead of what's really owed for the
-  // whole order (e.g. RM70) — misleadingly implying RM25 was the total.
+  // The order's full value — deposit + balance — used once everything is
+  // actually settled ("Total Charged"). Before that point, "Total Due" means
+  // what's still owed right now: if the deposit is already paid, that's just
+  // the remaining balance, not the whole order value again — showing RM70
+  // when only RM45 is actually still owed (RM25 already paid) double-counts
+  // the deposit and reads as more owed than is really the case.
   const fullOrderValue = j.paymentMode === 'deposit' ? j.cost + (j.balanceDue ?? 0) : j.cost;
   const fullyPaid = j.paymentMode === 'deposit' ? !!j.balancePaid : initialPaid;
   if (!initialPaid && isCancelled) {
     rows.push({ label: 'Total', value: 'Not Paid (Cancelled)', emphasis: 'total' });
+  } else if (isCancelled) {
+    // A deposit was already paid (non-refundable, per the booking terms)
+    // before the order was cancelled — that payment is the final total; the
+    // remaining balance will never be collected, so it isn't "due".
+    rows.push({ label: 'Total Paid', value: `RM${j.cost.toFixed(2)} (Cancelled)`, emphasis: 'total' });
+  } else if (fullyPaid) {
+    rows.push({ label: 'Total Charged', value: `RM${fullOrderValue.toFixed(2)}`, emphasis: 'total' });
   } else {
-    rows.push({ label: fullyPaid ? 'Total Charged' : 'Total Due', value: `RM${fullOrderValue.toFixed(2)}`, emphasis: 'total' });
+    const remainingDue = j.paymentMode === 'deposit' && initialPaid ? (j.balanceDue ?? 0) : fullOrderValue;
+    rows.push({ label: 'Total Due', value: `RM${remainingDue.toFixed(2)}`, emphasis: 'total' });
   }
   if (j.documentName) rows.push({ label: 'Document', value: j.documentName, dividerBefore: true });
 

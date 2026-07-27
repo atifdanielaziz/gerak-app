@@ -8,6 +8,18 @@ const CORS = {
 
 const GRACE_DAYS = 7
 
+// Plain !== short-circuits on the first differing byte, leaking a timing
+// signal an attacker could in principle use to recover the service-role
+// key one byte at a time. Always walks the full length instead.
+function timingSafeEqual(a: string, b: string): boolean {
+  const bufA = new TextEncoder().encode(a)
+  const bufB = new TextEncoder().encode(b)
+  if (bufA.length !== bufB.length) return false
+  let diff = 0
+  for (let i = 0; i < bufA.length; i++) diff |= bufA[i] ^ bufB[i]
+  return diff === 0
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: CORS })
 
@@ -15,7 +27,7 @@ serve(async (req) => {
     // Only allow calls with the service role key (from pg_cron)
     const authHeader = req.headers.get('Authorization') ?? ''
     const token = authHeader.replace('Bearer ', '')
-    if (token !== Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')) {
+    if (!timingSafeEqual(token, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '')) {
       return json({ success: false, reason: 'Unauthorized' }, 401)
     }
 
@@ -83,7 +95,13 @@ serve(async (req) => {
           continue
         }
         if (paid) {
-          console.error(`jubah-expire-unpaid: booking ${booking.id} (${booking.reference}) is PAID at ToyyibPay but still 'ordered' — callback likely missed it. Skipped auto-cancel; needs manual reconciliation.`)
+          const note = `Booking ${booking.reference} is PAID at ToyyibPay but still 'ordered' — callback likely missed it. Auto-cancel skipped; needs manual reconciliation.`
+          console.error(`jubah-expire-unpaid: ${note}`)
+          await admin.from('jubah_bookings').update({
+            needs_reconciliation: true,
+            reconciliation_note: note,
+            reconciliation_flagged_at: new Date().toISOString(),
+          }).eq('id', booking.id)
           skippedPaidCount++
           continue
         }

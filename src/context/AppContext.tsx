@@ -22,7 +22,9 @@ export type ActivePage =
   | 'forgot-password'
   | 'reset-password'
   | 'track-jubah'
-  | 'gerak-transporter';
+  | 'gerak-transporter'
+  | 'privacy-policy'
+  | 'terms-of-service';
 
 export interface UserSession {
   name: string;
@@ -99,7 +101,8 @@ export interface JubahBooking {
   combinedFileName: string;
   cost: number;
   balanceDue: number;
-  status: 'ordered' | 'cleaning' | 'packaging' | 'delivering' | 'delivered';
+  status: string;
+  deliveryAddress?: string;
   returnScheduled: boolean;
   returnMethod?: 'self' | 'locker' | 'courier';
   returnDate?: string;
@@ -153,14 +156,10 @@ interface AppContextType {
 
   // Transport Module
   activeRide: RideBooking | null;
-  rideHistory: RideBooking[];
-  bookRide: (pickup: string, destination: string, fare: number) => void;
-  cancelRide: () => void;
-  simulateRideProgress: () => void;
 
   // Jubah Delivery Module
   jubahBooking: JubahBooking | null;
-  bookJubah: (reference: string, fullName: string, icNumber: string, hpNumber: string, university: string, faculty: string, matricId: string, paymentMode: 'pickup' | 'postage' | 'deposit', remark: 'Master' | 'PHD' | 'Degree' | 'Diploma', combinedFileName: string, depositMethod: 'pickup' | 'postage' | undefined, postageZone: 'SM' | 'SS' | undefined, riderId?: string, riderName?: string, campus?: 'Pekan' | 'Gambang', deliveryAddress?: string, docsPath?: string, oscarPath?: string, skpgPath?: string, konvoPath?: string, icPath?: string, universityKey?: string, email?: string) => Promise<{ success: boolean; error?: string; booking?: JubahBooking }>;
+  bookJubah: (reference: string, fullName: string, icNumber: string, hpNumber: string, university: string, faculty: string, matricId: string, paymentMode: 'pickup' | 'postage' | 'deposit', remark: 'Master' | 'PHD' | 'Degree' | 'Diploma', combinedFileName: string, depositMethod: 'pickup' | 'postage' | undefined, postageZone: 'SM' | 'SS' | undefined, riderId?: string, riderName?: string, campus?: 'Pekan' | 'Gambang', deliveryAddress?: string, docsPath?: string, oscarPath?: string, skpgPath?: string, konvoPath?: string, icPath?: string, universityKey?: string, email?: string, paymentPath?: string) => Promise<{ success: boolean; error?: string; booking?: JubahBooking }>;
   commitJubahBooking: (booking: JubahBooking) => void;
   scheduleReturn: (method: 'self' | 'locker' | 'courier', date: string, time: string) => void;
   cancelJubahBooking: () => void;
@@ -178,9 +177,16 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   // after paying would boot straight past that URL into the normal splash →
   // dashboard flow and never see their booking status. Captured once, before
   // Splash's own timer can navigate away from it.
-  const [deepLinkPage] = useState<ActivePage | null>(() =>
-    window.location.pathname.replace(/\/+$/, '').endsWith('/jubah/track') ? 'track-jubah' : null
-  );
+  const [deepLinkPage] = useState<ActivePage | null>(() => {
+    const path = window.location.pathname.replace(/\/+$/, '');
+    if (path.endsWith('/jubah/track')) return 'track-jubah';
+    // Privacy Policy / Terms need a stable, publicly reachable URL — required
+    // for app store submission and just generally expected — not just an
+    // in-app-only screen. Same deep-link mechanism as /jubah/track above.
+    if (path.endsWith('/privacy')) return 'privacy-policy';
+    if (path.endsWith('/terms')) return 'terms-of-service';
+    return null;
+  });
   const [pageHistory, setPageHistory] = useState<ActivePage[]>([]);
   const [isPreviewMode, setIsPreviewMode] = useState(false);
   const [activeRole, setActiveRole] = useState<'admin' | 'driver' | 'rider' | null>(null);
@@ -316,46 +322,40 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     isLoggedIn: false,
   });
 
-  // Notifications
-  const [notifications, setNotifications] = useState<NotificationItem[]>([
-    {
-      id: '1',
-      title: 'Welcome to gerak!',
-      description: 'Your Smart University Service Platform is ready. Check out Transport or Jubah services.',
-      time: 'Just now',
-      isRead: false,
-      type: 'system',
-    },
-    {
-      id: '2',
-      title: 'Graduation Notice 2026',
-      description: 'Convocation robe booking is now open. Book early via Jubah Delivery to secure your sizes.',
-      time: '2 hours ago',
-      isRead: true,
-      type: 'jubah',
-    }
-  ]);
+  // Notifications — previously seeded with two hardcoded fake items shown
+  // to every single user regardless of anything they'd actually done
+  // ("Welcome to gerak!", a "Graduation Notice 2026" that only made sense
+  // for one particular convocation). Combined with notifications never
+  // being persisted anywhere, this meant every fresh session/reload showed
+  // exactly the same phantom "1 unread" badge forever, whether or not
+  // there was ever anything real to read. Starts empty now — real events
+  // populate it as they actually happen (see addNotification call sites).
+  const [notifications, setNotifications] = useState<NotificationItem[]>([]);
+
+  // One-time "we updated our Privacy Policy / Terms" nudge — fires once per
+  // browser per version bump (tracked in localStorage, independent of
+  // login, since guests can read these too), not once per session, since
+  // the in-memory notifications list itself resets on every reload anyway.
+  // Bump POLICY_NOTICE_VERSION whenever PrivacyPolicy.tsx/TermsOfService.tsx
+  // meaningfully change.
+  useEffect(() => {
+    const POLICY_NOTICE_VERSION = '2026-07-25';
+    const key = 'gerak_policy_version_seen';
+    try {
+      if (localStorage.getItem(key) !== POLICY_NOTICE_VERSION) {
+        addNotification(
+          'Privacy Policy & Terms Updated',
+          'We\'ve updated our Privacy Policy and Terms of Service. Tap to review what changed.',
+          'system',
+        );
+        localStorage.setItem(key, POLICY_NOTICE_VERSION);
+      }
+    } catch { /* localStorage unavailable — skip silently, same as elsewhere in this file */ }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Transport Module
   const [activeRide, setActiveRide] = useState<RideBooking | null>(null);
-  const [rideHistory, setRideHistory] = useState<RideBooking[]>([
-    {
-      id: 'TX-8902',
-      pickup: 'Kolej Kediaman Pertama (KK1)',
-      destination: 'Dewan Peperiksaan Utama',
-      fare: 4.50,
-      date: 'Yesterday, 2:40 PM',
-      status: 'completed',
-    },
-    {
-      id: 'TX-7231',
-      pickup: 'Fakulti Sains Komputer & Teknologi Maklumat',
-      destination: 'Pusat Sukan',
-      fare: 3.50,
-      date: '24 May 2026',
-      status: 'completed',
-    }
-  ]);
 
   // Jubah Delivery — persisted to localStorage so booking survives app restarts
   const [jubahBooking, setJubahBooking] = useState<JubahBooking | null>(() => {
@@ -368,16 +368,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     if (jubahBooking) localStorage.setItem('gerak_jubah_booking', JSON.stringify(jubahBooking));
     else localStorage.removeItem('gerak_jubah_booking');
   }, [jubahBooking]);
-
-  // Simulation Interval References
-  const [rideTimer, setRideTimer] = useState<number | null>(null);
-
-  // Clean timers on unmount
-  useEffect(() => {
-    return () => {
-      if (rideTimer) clearInterval(rideTimer);
-    };
-  }, [rideTimer]);
 
   // ── Inactivity/session-expiry tracking ──────────────────────────────
   // isLoggingOutRef distinguishes an explicit logout() call from the
@@ -666,101 +656,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
   };
 
-  // 3. Transport Simulation
-  const bookRide = (pickup: string, destination: string, fare: number) => {
-    const mockDriver: DriverDetails = {
-      name: 'Khairul Anwar',
-      rating: 4.9,
-      vehicle: 'Proton Saga (Forest Green)',
-      plateNumber: 'VBY 8439',
-      phone: '+6012-3456789',
-      lat: 0.1,
-      lng: 0.1
-    };
-
-    const newBooking: RideBooking = {
-      id: `TX-${Math.floor(1000 + Math.random() * 9000)}`,
-      pickup,
-      destination,
-      fare,
-      date: 'Today, ' + new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-      status: 'searching',
-      driver: mockDriver
-    };
-
-    setActiveRide(newBooking);
-      if (currentPage !== 'transport') {
-        setCurrentPage('transport');
-      }
-
-    // Start simulation steps
-    let currentStep: TransportStep = 'searching';
-    const intervalId = window.setInterval(() => {
-      if (currentStep === 'searching') {
-        currentStep = 'assigned';
-        setActiveRide(prev => prev ? { ...prev, status: 'assigned' } : null);
-        addNotification('Driver Found', 'Your driver Khairul Anwar (VBY 8439) has been assigned.', 'transport');
-      } else if (currentStep === 'assigned') {
-        currentStep = 'arriving';
-        setActiveRide(prev => prev ? { ...prev, status: 'arriving' } : null);
-      } else if (currentStep === 'arriving') {
-        currentStep = 'active';
-        setActiveRide(prev => prev ? { ...prev, status: 'active' } : null);
-        addNotification('Trip Started', 'You have entered the vehicle. Driving to destination.', 'transport');
-      } else if (currentStep === 'active') {
-        currentStep = 'completed';
-        setActiveRide(prev => {
-          if (prev) {
-            const completedRide = { ...prev, status: 'completed' as TransportStep };
-            setRideHistory(history => [completedRide, ...history]);
-            return null;
-          }
-          return null;
-        });
-        addNotification('Trip Completed', `You have arrived at ${destination}. Thank you for riding gerak.`, 'transport');
-        clearInterval(intervalId);
-        setRideTimer(null);
-      }
-    }, 6000); // changes stages every 6 seconds for test drive speed
-
-    setRideTimer(intervalId);
-  };
-
-  const cancelRide = () => {
-    if (activeRide) {
-      if (rideTimer) {
-        clearInterval(rideTimer);
-        setRideTimer(null);
-      }
-      addNotification('Ride Cancelled', 'Your booking was cancelled.', 'transport');
-      setActiveRide(null);
-    }
-  };
-
-  const simulateRideProgress = () => {
-    // manual advance shortcut for user testing
-    if (!activeRide) return;
-    if (rideTimer) {
-      clearInterval(rideTimer);
-      setRideTimer(null);
-    }
-    const stages: TransportStep[] = ['searching', 'assigned', 'arriving', 'active', 'completed'];
-    const currentIndex = stages.indexOf(activeRide.status);
-    if (currentIndex < stages.length - 1) {
-      const nextStatus = stages[currentIndex + 1];
-      if (nextStatus === 'completed') {
-        const completedRide = { ...activeRide, status: 'completed' as TransportStep };
-        setRideHistory(history => [completedRide, ...history]);
-        setActiveRide(null);
-        addNotification('Trip Completed', `Arrived at ${activeRide.destination}.`, 'transport');
-      } else {
-        setActiveRide(prev => prev ? { ...prev, status: nextStatus } : null);
-        addNotification('Trip Stage Updated', `Ride is now: ${nextStatus.toUpperCase()}`, 'transport');
-      }
-    }
-  };
-
-  // 4. Jubah Delivery Operations
+  // 3. Jubah Delivery Operations
   // Awaits the persistence RPC before confirming, so a failed save never
   // shows the customer a false "Booking Confirmed" screen (previously
   // fire-and-forget — the confirmation showed regardless of RPC outcome).
@@ -788,13 +684,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     icPath?: string,
     universityKey?: string,
     email?: string,
+    paymentPath?: string,
   ): Promise<{ success: boolean; error?: string; booking?: JubahBooking }> => {
     if (!campus) return { success: false, error: 'Missing campus information.' };
 
     const { data: { user: authUser } } = await supabase.auth.getUser();
     // cost/balance_due aren't sent — create_jubah_booking computes them
-    // itself from jubah_pricing so a tampered request can't get a wrong
-    // price auto-confirmed as paid via the ToyyibPay callback.
+    // itself from jubah_pricing so a tampered request can't get an
+    // admin-facing price mismatch between what's shown and what's owed.
     const { data, error } = await supabase.rpc('create_jubah_booking', {
       p_reference:         reference,
       p_full_name:         fullName,
@@ -812,6 +709,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       p_rider_name:        riderName       ?? null,
       p_delivery_address:  deliveryAddress ?? null,
       p_docs_path:    docsPath    ?? null,
+      p_payment_path: paymentPath ?? null,
       p_oscar_path:   oscarPath   ?? null,
       p_skpg_path:    skpgPath    ?? null,
       p_konvo_path:   konvoPath   ?? null,
@@ -844,6 +742,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       cost,
       balanceDue,
       status: 'ordered',
+      deliveryAddress,
       returnScheduled: false,
     };
 
@@ -919,10 +818,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         addNotification,
         markAllNotificationsRead,
         activeRide,
-        rideHistory,
-        bookRide,
-        cancelRide,
-        simulateRideProgress,
         jubahBooking,
         bookJubah,
         scheduleReturn,

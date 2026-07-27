@@ -2,8 +2,13 @@
 import { useApp } from '../context/AppContext';
 import { supabase } from '../lib/supabase';
 import { WaIcon, toWa } from '../lib/whatsapp';
-import { getJubahDocSignedUrl } from '../lib/jubahDocs';
+import { getJubahDocSignedUrl, openInNewTab } from '../lib/jubahDocs';
 import { stampWatermark } from '../lib/watermark';
+import { useLoadOnActive } from '../hooks/useLoadOnActive';
+import {
+  JUBAH_STEP_LABEL as STATUS_LABEL, JUBAH_STATUS_STYLE as STATUS_STYLE,
+  JUBAH_NEXT_LABEL as NEXT_LABEL, getJubahProgress, jubahWaMsg,
+} from '../lib/jubahStatus';
 import {
   RefreshCw, ShoppingBasket, GraduationCap, TrendingUp,
   Upload, FileImage, ShieldCheck, ShieldAlert,
@@ -43,75 +48,8 @@ type JubahJobRow = {
   created_at: string;
 };
 
-const STATUS_LABEL: Record<string, string> = {
-  ordered:    'Pending',
-  paid:       'Paid',
-  booked:     'New',
-  processing: 'Processing',
-  collected:  'Collected',
-  at_hub:     'At Hub',
-  delivered:  'Delivered',
-  cancelled:  'Cancelled',
-};
-
-const STATUS_STYLE: Record<string, string> = {
-  ordered:    'bg-slate-50 border-slate-200 text-slate-500',
-  paid:       'bg-emerald-50 border-emerald-100 text-emerald-700',
-  booked:     'bg-blue-50 border-blue-100 text-blue-700',
-  processing: 'bg-violet-50 border-violet-100 text-violet-700',
-  collected:  'bg-amber-50 border-amber-100 text-amber-700',
-  at_hub:     'bg-emerald-50 border-emerald-100 text-emerald-700',
-  delivered:  'bg-emerald-50 border-emerald-100 text-emerald-700',
-  cancelled:  'bg-red-50 border-red-100 text-red-600',
-};
-
-// Was missing the 'paid' starting point for non-deposit bookings entirely —
-// only deposit-mode actually starts at 'booked' (that's what the ToyyibPay
-// callback sets once the deposit clears). Full-payment pickup/postage
-// bookings start at 'paid' instead, and never pass through 'booked' via
-// payment — this array needs it as an explicit first step, not skipped.
-// Without it, steps.indexOf('paid') returned -1 for any paid pickup/postage
-// job, which the calling code treats as "not started yet" — a rider
-// couldn't advance a job that had, in fact, already been paid for.
-// Matches AdminHome's jubahGetSteps exactly.
-const getSteps = (paymentMode: string) =>
-  paymentMode === 'deposit'
-    ? ['booked', 'processing', 'collected', 'delivered']
-    : paymentMode === 'postage'
-    ? ['paid', 'booked', 'processing', 'collected', 'at_hub']
-    : ['paid', 'booked', 'processing', 'collected', 'delivered'];
-
-const getNextStatus = (job: JubahJobRow): string | null => {
-  const steps = getSteps(job.payment_mode);
-  const idx = steps.indexOf(job.status);
-  return idx >= 0 && idx < steps.length - 1 ? steps[idx + 1] : null;
-};
-
-const NEXT_LABEL: Record<string, string> = {
-  processing: 'Start Processing',
-  collected:  'Mark Collected',
-  at_hub:     'Mark Delivered to Hub',
-  delivered:  'Mark Delivered',
-};
-
-const jubahWaMsg = (name: string, status: string, ref: string, payMode: string, initialPaid: boolean, balPaid: boolean, balDue: number) => {
-  // initialPaid must be checked too — the raw !balPaid check on its own is
-  // also true before the deposit's even been paid, which would send this
-  // "your balance is unpaid" reminder to a customer who hasn't paid
-  // anything at all yet.
-  if (payMode === 'deposit' && initialPaid && !balPaid) {
-    return `Assalamualaikum ${name} 🎓\n\nIni peringatan daripada Gerak Jubah.\n\nBaki bayaran anda sebanyak *RM${balDue.toFixed(2)}* masih belum dijelaskan.\n\nSila kemaskini bukti pembayaran melalui akaun Gerak anda sebelum tarikh pengambilan jubah.\n\nRujukan: ${ref}\n\nTerima kasih 🙏`;
-  }
-  const msgs: Record<string, string> = {
-    booked:     `Assalamualaikum ${name} 🎓\n\nTempahan jubah anda telah berjaya diterima oleh Gerak Jubah! ✅\n\nKami akan maklumkan perkembangan seterusnya tidak lama lagi.\n\nRujukan: ${ref}\n\nTerima kasih 🙏`,
-    processing: `Assalamualaikum ${name} 🎓\n\nJubah anda sedang dalam proses pembersihan dan pengemasan. 🔄\n\nKami akan maklumkan apabila ia siap untuk diambil.\n\nRujukan: ${ref}\n\nTerima kasih 🙏`,
-    collected:  `Assalamualaikum ${name} 🎓\n\nJubah anda telah berjaya diambil! ✅\n\nSila hubungi kami sekiranya ada sebarang pertanyaan.\n\nRujukan: ${ref}\n\nTerima kasih 🙏`,
-    at_hub:     `Assalamualaikum ${name} 🎓\n\nJubah anda telah sampai di hab pos. 📦\n\nIa akan dihantar ke alamat anda tidak lama lagi.\n\nRujukan: ${ref}\n\nTerima kasih 🙏`,
-    on_the_way: `Assalamualaikum ${name} 🎓\n\nJubah anda sedang dalam perjalanan ke alamat anda! 🚚\n\nSila pastikan anda berada di rumah untuk menerima penghantaran.\n\nRujukan: ${ref}\n\nTerima kasih 🙏`,
-    delivered:  `Assalamualaikum ${name} 🎓\n\nJubah anda telah berjaya dihantar! 🎉\n\nTerima kasih kerana menggunakan Gerak Jubah. Semoga majlis konvokesyen anda berjalan lancar! 🎓\n\nRujukan: ${ref}`,
-  };
-  return msgs[status] ?? `Assalamualaikum ${name} 🎓\n\nIni Gerak Jubah. Terima kasih atas tempahan anda.\n\nRujukan: ${ref}\n\nTerima kasih 🙏`;
-};
+const getNextStatus = (job: JubahJobRow): string | null =>
+  getJubahProgress(job.status, job.payment_mode).nextStatus;
 
 export const RiderHome: React.FC = () => {
   const { user, refreshUserData, receiptGateActive } = useApp();
@@ -149,9 +87,28 @@ export const RiderHome: React.FC = () => {
     setJubahLoading(false);
   }, []);
 
-  useEffect(() => {
-    if (activeTab === 'jubah') loadJubahJobs();
-  }, [activeTab, loadJubahJobs]);
+  useLoadOnActive(activeTab === 'jubah', loadJubahJobs);
+
+  // ── Earnings ───────────────────────────────────────────────────────────────
+  type JubahEarningRow = {
+    reference: string; remark: string; payment_mode: string; is_postage: boolean;
+    order_value: number; rider_commission_rate: number; rider_commission_amount: number;
+    earned_at: string;
+  };
+  const [jubahEarnings,        setJubahEarnings]        = useState<JubahEarningRow[]>([]);
+  const [jubahEarningsLoading, setJubahEarningsLoading] = useState(false);
+
+  const loadJubahEarnings = useCallback(async () => {
+    setJubahEarningsLoading(true);
+    const { data, error } = await supabase.rpc('get_rider_jubah_earnings');
+    if (error) console.error('[GERAK] jubah earnings load error:', error.message);
+    setJubahEarnings((data as JubahEarningRow[]) ?? []);
+    setJubahEarningsLoading(false);
+  }, []);
+
+  useLoadOnActive(activeTab === 'earnings', loadJubahEarnings);
+
+  const totalJubahEarnings = jubahEarnings.reduce((sum, e) => sum + Number(e.rider_commission_amount), 0);
 
   // ── Browser / gesture back navigation (3→2→1) ────────────────────────────
   useEffect(() => {
@@ -520,17 +477,7 @@ export const RiderHome: React.FC = () => {
 
             {/* PAGE 2 — Job Card with stepper */}
             {jubahView === 'card' && selectedJob && (() => {
-              const steps    = getSteps(selectedJob.payment_mode);
-              const curStep  = steps.indexOf(selectedJob.status);
-              const nextStat = getNextStatus(selectedJob);
-              // curStep is -1 whenever status isn't one of this mode's steps
-              // at all (status='ordered' — payment not confirmed yet, so
-              // never in getSteps). isDone = !nextStat treated that the same
-              // as "reached the last step", showing "Job Complete" for a
-              // booking that hadn't even been paid for — see the matching
-              // fix in AdminHome.tsx's own copy of this same stepper.
-              const notStarted = curStep === -1;
-              const isDone = curStep >= 0 && curStep === steps.length - 1;
+              const { steps, curStep, notStarted, isDone, nextStatus: nextStat } = getJubahProgress(selectedJob.status, selectedJob.payment_mode);
               return (
                 <div className="flex flex-col gap-4">
 
@@ -634,10 +581,9 @@ export const RiderHome: React.FC = () => {
                           <button
                             type="button"
                             onClick={async () => {
-                              const win = window.open('', '_blank', 'noopener,noreferrer');
-                              const signed = await getJubahDocSignedUrl(selectedJob.balance_proof_url);
-                              if (signed && win) win.location.href = signed;
-                              else win?.close();
+                              const { url: signed, error } = await getJubahDocSignedUrl(selectedJob.balance_proof_url);
+                              if (signed) openInNewTab(signed);
+                              else showToast(error ?? "Couldn't open proof.");
                             }}
                             className="text-xs text-blue-500 font-bold flex items-center gap-0.5 hover:underline shrink-0"
                           >
@@ -740,10 +686,9 @@ export const RiderHome: React.FC = () => {
                         type="button"
                         disabled={!url}
                         onClick={async () => {
-                          const win = window.open('', '_blank', 'noopener,noreferrer');
-                          const signed = await getJubahDocSignedUrl(url, true);
-                          if (signed && win) win.location.href = signed;
-                          else win?.close();
+                          const { url: signed, error } = await getJubahDocSignedUrl(url, true);
+                          if (signed) openInNewTab(signed);
+                          else showToast(error ? `Couldn't download ${label}: ${error}` : `Couldn't download ${label}.`);
                         }}
                         className={`w-9 h-9 flex items-center justify-center rounded-xl border transition shrink-0 ${
                           url
@@ -764,14 +709,57 @@ export const RiderHome: React.FC = () => {
 
         {/* ── Earnings Tab ── */}
         {activeTab === 'earnings' && (
-          <div className="px-4 flex flex-col items-center justify-center flex-1 gap-3 py-12">
-            <div className="w-16 h-16 rounded-3xl bg-emerald-50 border border-emerald-100 flex items-center justify-center">
-              <TrendingUp className="w-7 h-7 text-emerald-300" />
-            </div>
-            <p className="text-sm font-semibold text-slate-700">No Earnings Yet</p>
-            <p className="text-xs text-slate-400 font-normal text-center leading-relaxed max-w-xs">
-              Your completed job earnings will be tracked here.
-            </p>
+          <div className="px-4 flex flex-col gap-4">
+            {jubahEarningsLoading ? (
+              <div className="flex justify-center py-12">
+                <span className="w-5 h-5 rounded-full border-2 border-slate-200 border-t-primary animate-spin" />
+              </div>
+            ) : jubahEarnings.length === 0 ? (
+              <div className="flex flex-col items-center justify-center flex-1 gap-3 py-12">
+                <div className="w-16 h-16 rounded-3xl bg-emerald-50 border border-emerald-100 flex items-center justify-center">
+                  <TrendingUp className="w-7 h-7 text-emerald-300" />
+                </div>
+                <p className="text-sm font-semibold text-slate-700">No Earnings Yet</p>
+                <p className="text-xs text-slate-400 font-normal text-center leading-relaxed max-w-xs">
+                  Your commission from completed Jubah deliveries will be tracked here.
+                </p>
+              </div>
+            ) : (
+              <>
+                <div className="bg-emerald-50 border border-emerald-100 rounded-3xl p-5 flex flex-col items-center gap-1">
+                  <span className="text-[10px] font-semibold text-emerald-500 uppercase tracking-wider">Total Earned</span>
+                  <span className="text-2xl font-black text-emerald-700">RM{totalJubahEarnings.toFixed(2)}</span>
+                  <span className="text-xs font-semibold text-emerald-600 mt-0.5">{jubahEarnings.length} completed {jubahEarnings.length === 1 ? 'order' : 'orders'}</span>
+                </div>
+
+                <div className="bg-white border border-slate-100 rounded-3xl p-5 flex flex-col gap-3">
+                  <h3 className="text-sm font-semibold text-slate-700">Order Breakdown</h3>
+                  <div className="flex flex-col divide-y divide-slate-100">
+                    {jubahEarnings.map(e => (
+                      <div key={e.reference} className="flex items-center justify-between gap-3 py-3 first:pt-0 last:pb-0">
+                        <div className="min-w-0">
+                          <div className="flex items-center gap-1.5">
+                            <p className="text-xs font-mono font-bold text-primary truncate">{e.reference}</p>
+                            <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full border shrink-0 ${
+                              e.is_postage ? 'bg-blue-50 border-blue-100 text-blue-600' : 'bg-slate-50 border-slate-200 text-slate-500'
+                            }`}>
+                              {e.is_postage ? 'POSTAGE' : 'PICKUP'}
+                            </span>
+                          </div>
+                          <p className="text-xs text-slate-400 font-semibold mt-0.5">
+                            {e.remark} · RM{Number(e.order_value).toFixed(2)} order · {e.rider_commission_rate}%
+                          </p>
+                          <p className="text-xs text-slate-300 font-normal mt-0.5">
+                            {new Date(e.earned_at).toLocaleDateString('en-MY', { day: '2-digit', month: 'short', year: 'numeric' })}
+                          </p>
+                        </div>
+                        <span className="text-sm font-black text-emerald-600 shrink-0">+RM{Number(e.rider_commission_amount).toFixed(2)}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </>
+            )}
           </div>
         )}
 

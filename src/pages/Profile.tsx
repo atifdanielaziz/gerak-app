@@ -216,10 +216,22 @@ export const Profile: React.FC = () => {
     setVerifyMsg('');
   };
 
-  const handleDeleteAccount = () => {
-    if (confirm('Are you sure you want to delete your account? This action cannot be undone.')) {
-      alert('Account deletion request submitted. Our team will process it within 24 hours.');
+  const handleDeleteAccount = async () => {
+    if (!confirm('Are you sure you want to delete your account? This action cannot be undone.')) return;
+    const { data: { user: authUser } } = await supabase.auth.getUser();
+    if (!authUser) { alert('Could not verify your session. Please log in again and retry.'); return; }
+    const { error } = await supabase.from('account_deletion_requests').insert({
+      user_id:   authUser.id,
+      email:     user.email,
+      full_name: user.name,
+      gerak_id:  user.gerakId,
+      campus:    user.campus,
+    });
+    if (error) {
+      alert('Could not submit your request — please try again or contact support directly.');
+      return;
     }
+    alert('Account deletion request submitted. Our team will process it within 24 hours.');
   };
 
   /* ── Expiry display helpers ── */
@@ -233,11 +245,15 @@ export const Profile: React.FC = () => {
   /* ── GUEST VIEW ── */
   if (!user.isLoggedIn || isPreviewMode) {
     const prefRows    = [{ icon: Languages, label: 'Language' }, { icon: Moon, label: 'Appearance' }];
-    const supportRows = [{ icon: HelpCircle, label: 'Help Center' }, { icon: FileText, label: 'Terms & Conditions' }, { icon: Lock, label: 'Privacy Policy' }];
+    const supportRows = [
+      { icon: HelpCircle, label: 'Help Center' },
+      { icon: FileText, label: 'Terms & Conditions', onClick: () => setCurrentPage('terms-of-service') },
+      { icon: Lock, label: 'Privacy Policy', onClick: () => setCurrentPage('privacy-policy') },
+    ];
     const otherRows   = [{ icon: Info, label: 'About Gerak' }, { icon: Star, label: 'Rate App' }, { icon: Share2, label: 'Share App' }];
 
-    const SettingRow = ({ icon: Icon, label }: { icon: React.ElementType; label: string }) => (
-      <button className="w-full bg-white border border-slate-100 rounded-2xl flex items-center justify-between px-4 py-4 active:bg-slate-50 active:scale-[0.99] transition text-left cursor-pointer">
+    const SettingRow = ({ icon: Icon, label, onClick }: { icon: React.ElementType; label: string; onClick?: () => void }) => (
+      <button onClick={onClick} className="w-full bg-white border border-slate-100 rounded-2xl flex items-center justify-between px-4 py-4 active:bg-slate-50 active:scale-[0.99] transition text-left cursor-pointer">
         <div className="flex items-center gap-3">
           <div className="w-9 h-9 rounded-xl bg-slate-100 flex items-center justify-center shrink-0">
             <Icon className="w-4 h-4 text-slate-900" />
@@ -775,10 +791,10 @@ export const Profile: React.FC = () => {
         <div className="flex flex-col gap-2">
           {([
             { icon: HelpCircle, label: 'Help Center' },
-            { icon: FileText, label: 'Terms & Conditions' },
-            { icon: Lock, label: 'Privacy Policy' },
-          ] as { icon: React.ElementType; label: string }[]).map(({ icon: Icon, label }) => (
-            <button key={label} className="w-full bg-white border border-slate-100 rounded-2xl flex items-center justify-between px-4 py-4 active:bg-slate-50 active:scale-[0.99] transition text-left cursor-pointer">
+            { icon: FileText, label: 'Terms & Conditions', onClick: () => setCurrentPage('terms-of-service') },
+            { icon: Lock, label: 'Privacy Policy', onClick: () => setCurrentPage('privacy-policy') },
+          ] as { icon: React.ElementType; label: string; onClick?: () => void }[]).map(({ icon: Icon, label, onClick }) => (
+            <button key={label} onClick={onClick} className="w-full bg-white border border-slate-100 rounded-2xl flex items-center justify-between px-4 py-4 active:bg-slate-50 active:scale-[0.99] transition text-left cursor-pointer">
               <div className="flex items-center gap-3">
                 <div className="w-9 h-9 rounded-xl bg-slate-100 flex items-center justify-center shrink-0"><Icon className="w-4 h-4 text-slate-900" /></div>
                 <span className="text-sm font-semibold text-slate-800">{label}</span>

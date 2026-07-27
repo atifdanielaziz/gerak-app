@@ -24,6 +24,8 @@ const ForgotPassword   = lazy(() => import('./pages/ForgotPassword').then(m => (
 const ResetPassword    = lazy(() => import('./pages/ResetPassword').then(m => ({ default: m.ResetPassword })));
 const TrackJubah          = lazy(() => import('./pages/TrackJubah').then(m => ({ default: m.TrackJubah })));
 const GerakTransporter    = lazy(() => import('./pages/GerakTransporter').then(m => ({ default: m.GerakTransporter })));
+const PrivacyPolicy       = lazy(() => import('./pages/PrivacyPolicy').then(m => ({ default: m.PrivacyPolicy })));
+const TermsOfService      = lazy(() => import('./pages/TermsOfService').then(m => ({ default: m.TermsOfService })));
 interface BeforeInstallPromptEvent extends Event {
   prompt: () => Promise<void>;
   userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>;
@@ -86,8 +88,8 @@ const InstallPrompt: React.FC = () => {
 
         {/* App card */}
         <div className="flex items-center gap-4 px-6 py-4 border-b border-slate-100">
-          <div className="w-14 h-14 rounded-2xl bg-white border border-slate-100 shadow-md shrink-0 flex items-center justify-center">
-            <span style={{ fontFamily: 'Inter, sans-serif', fontSize: '2.4rem', color: '#0F172A', lineHeight: 1, fontWeight: 300 }}>g</span>
+          <div className="w-14 h-14 rounded-2xl overflow-hidden shadow-md shrink-0">
+            <img src="/gerak-icon.svg" alt="gerak" className="w-full h-full" />
           </div>
           <div>
             <p className="text-sm text-slate-900 m-0" style={{ fontFamily: 'Inter, sans-serif', fontWeight: 300 }}>
@@ -348,6 +350,10 @@ const AppContent: React.FC = () => {
         return <TrackJubah />;
       case 'gerak-transporter':
         return <GerakTransporter />;
+      case 'privacy-policy':
+        return <PrivacyPolicy />;
+      case 'terms-of-service':
+        return <TermsOfService />;
       default:
         return <Dashboard />;
     }
