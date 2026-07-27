@@ -635,15 +635,35 @@ export function JubahCustomerSubTab({
 
               {/* status='ordered' — payment hasn't been confirmed yet. Confirm
                   right here against the uploaded proof / bank statement, no
-                  need to open the details page just to click one button. */}
+                  need to open the details page just to click one button.
+                  Same "view proof" link as the balance section below, for
+                  the same reason — verify before confirming without having
+                  to scroll all the way down to the Documents card. Applies
+                  to both full-payment and deposit bookings alike (whatever
+                  was uploaded as payment_path at booking time). */}
               {notStarted && b.status !== 'cancelled' && (
-                <div className="bg-slate-50 border border-slate-100 rounded-2xl px-4 py-3 flex items-center justify-between gap-3">
-                  <p className="text-xs font-semibold text-slate-500">Awaiting Payment Confirmation</p>
+                <div className="flex flex-col gap-2">
+                  <div className="bg-slate-50 border border-slate-100 rounded-xl p-3 flex items-center justify-between gap-2">
+                    <p className="text-xs font-semibold text-slate-500">Awaiting Payment Confirmation</p>
+                    {b.payment_path && (
+                      <button
+                        type="button"
+                        onClick={async () => {
+                          const { url: signed, error } = await getJubahDocSignedUrl(b.payment_path);
+                          if (signed) openInNewTab(signed);
+                          else showToast(error ?? "Couldn't open proof.");
+                        }}
+                        className="text-xs text-blue-500 font-semibold flex items-center gap-0.5 hover:underline shrink-0"
+                      >
+                        <ExternalLink className="w-2.5 h-2.5" /> proof
+                      </button>
+                    )}
+                  </div>
                   <button
                     type="button"
                     onClick={() => confirmBooking(b)}
                     disabled={confirmingId === b.id}
-                    className="shrink-0 flex items-center gap-1.5 bg-emerald-500 hover:bg-emerald-600 active:scale-95 disabled:opacity-50 text-white font-semibold text-xs px-3 py-2 rounded-xl transition">
+                    className="w-full flex items-center justify-center gap-1.5 bg-emerald-500 hover:bg-emerald-600 active:scale-[0.98] disabled:opacity-50 text-white font-semibold text-xs px-3 py-2.5 rounded-xl transition">
                     {confirmingId === b.id
                       ? <span className="w-3.5 h-3.5 rounded-full border-2 border-white/40 border-t-white animate-spin" />
                       : <><BadgeCheck className="w-3.5 h-3.5" />Confirm</>}
