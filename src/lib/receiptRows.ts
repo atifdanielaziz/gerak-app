@@ -53,7 +53,7 @@ export interface TransportReceiptSource {
   aerbus_customer_time?: string | null;
 }
 
-const BOOKING_METHOD_LABEL: Record<string, string> = {
+export const BOOKING_METHOD_LABEL: Record<string, string> = {
   quick:  'Quick Routes',
   custom: 'Custom',
   map:    'Search Routes',

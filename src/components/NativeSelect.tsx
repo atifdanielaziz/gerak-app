@@ -4,6 +4,7 @@ import { ChevronDown, Check } from 'lucide-react';
 export interface DropdownOption<T extends string> {
   value: T;
   label: string;
+  right?: string; // optional bold value shown right-aligned in the option row (e.g. a price), matching Quick Routes' route-row layout
 }
 
 interface NativeSelectProps<T extends string> {
@@ -65,8 +66,11 @@ export function NativeSelect<T extends string>({
                 o.value === value ? 'border-slate-900 text-slate-900' : 'border-slate-100 text-slate-600'
               }`}
             >
-              <span>{o.label}</span>
-              {o.value === value && <Check className="w-4 h-4 text-slate-900 shrink-0" />}
+              <span className="truncate">{o.label}</span>
+              <span className="flex items-center gap-1.5 shrink-0">
+                {o.right && <span className="font-black text-slate-800">{o.right}</span>}
+                {o.value === value && <Check className="w-4 h-4 text-slate-900 shrink-0" />}
+              </span>
             </button>
           ))}
         </div>

@@ -9,6 +9,7 @@ import {
 } from '../lib/receiptRows';
 import type { ReceiptDoc } from '../lib/receiptRows';
 import { generateReceiptPdf } from '../lib/receiptPdf';
+import { BOOKING_METHOD_ICON, bookingMethodBadgeClass } from '../lib/bookingMethodIcon';
 
 type ServiceKind = 'transport' | 'rental' | 'jubah' | 'transporter' | 'daily';
 
@@ -301,6 +302,8 @@ export const Activity: React.FC = () => {
           {items.map(item => {
             const badge = SERVICE_BADGE[item.service];
             const BadgeIcon = badge.icon;
+            const method = item.doc.bookingMethod;
+            const MethodIcon = method ? BOOKING_METHOD_ICON[method.mode] : null;
             return (
               <div
                 key={item.id}
@@ -308,10 +311,18 @@ export const Activity: React.FC = () => {
                 className="bg-white border border-slate-100 rounded-2xl p-4 flex flex-col gap-2 cursor-pointer active:scale-[0.99] transition"
               >
                 <div className="flex items-center justify-between">
-                  <span className="inline-flex items-center gap-1 bg-slate-50 border border-slate-100 rounded-md px-1.5 py-0.5 text-[10px] font-semibold text-slate-500">
-                    <BadgeIcon className="w-3 h-3" />
-                    {badge.label}
-                  </span>
+                  <div className="flex items-center gap-1.5">
+                    <span className="inline-flex items-center gap-1 bg-slate-50 border border-slate-100 rounded-md px-1.5 py-0.5 text-[10px] font-semibold text-slate-500">
+                      <BadgeIcon className="w-3 h-3" />
+                      {badge.label}
+                    </span>
+                    {method && MethodIcon && (
+                      <span className={`inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[10px] font-semibold border ${bookingMethodBadgeClass(method.mode)}`}>
+                        <MethodIcon className="w-3 h-3" />
+                        {method.label}
+                      </span>
+                    )}
+                  </div>
                   <span className={`text-[10px] font-semibold uppercase tracking-wide px-2 py-0.5 rounded-full border ${item.statusClassName}`}>
                     {item.statusLabel}
                   </span>
