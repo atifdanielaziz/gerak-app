@@ -3436,14 +3436,16 @@ export const AdminHome: React.FC = () => {
               <div className="flex items-center justify-between gap-2 flex-wrap">
                 <p className="text-xs font-black text-slate-800">Overview</p>
                 {jubahUniversityOptions.length > 1 && (
-                  <select
-                    value={jubahStatsUniversity}
-                    onChange={e => setJubahStatsUniversity(e.target.value)}
-                    className="text-xs font-semibold text-slate-600 bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-1.5"
-                  >
-                    <option value="all">All Universities</option>
-                    {jubahUniversityOptions.map(u => <option key={u} value={u}>{u}</option>)}
-                  </select>
+                  <div className="w-40">
+                    <NativeSelect
+                      value={jubahStatsUniversity}
+                      onChange={setJubahStatsUniversity}
+                      options={[
+                        { value: 'all', label: 'All Universities' },
+                        ...jubahUniversityOptions.map(u => ({ value: u, label: u })),
+                      ]}
+                    />
+                  </div>
                 )}
               </div>
 
@@ -4990,7 +4992,7 @@ export const AdminHome: React.FC = () => {
       return (
         <div className="fixed inset-0 z-50 bg-black/40 flex items-end justify-center"
           onPointerDown={(e) => { e.preventDefault(); if (!cancellingBooking) setCancelModalBooking(null); }}>
-          <div className="w-full max-w-sm max-h-[calc(100dvh-3rem)] overflow-y-auto no-scrollbar bg-white rounded-t-3xl p-6 pb-10 shadow-2xl animate-slide-up"
+          <div className="w-full max-w-sm max-h-[calc(100dvh-5rem)] overflow-y-auto no-scrollbar bg-white rounded-t-3xl p-6 pb-10 shadow-2xl animate-slide-up"
             onPointerDown={e => e.stopPropagation()}>
             <div className="w-10 h-1 bg-slate-200 rounded-full mx-auto mb-5" />
             <div className={`w-10 h-10 rounded-2xl mx-auto mb-3 flex items-center justify-center ${
