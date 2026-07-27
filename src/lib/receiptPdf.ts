@@ -6,6 +6,18 @@ const printDate = () =>
 const row = (label: string, value: string, cls = '') =>
   `<div class="row${cls}"><span class="lbl">${label}</span><span class="colon">:</span><span class="val">${value}</span></div>`;
 
+// Inlined rather than referenced via <img src="/gerak-icon-light.svg"> — this
+// prints from an iframe's srcdoc, and print() fires as soon as the HTML
+// itself has parsed; an external image load isn't guaranteed to finish
+// first; and would leave a blank square in the printed receipt. Inline SVG
+// has no separate request to race against.
+const LOGO_SVG = `<svg width="26" height="26" viewBox="0 0 512 512" style="border-radius:7px;flex:none;display:block">
+  <rect width="512" height="512" rx="120" fill="#FFFFFF"/>
+  <rect x="12" y="12" width="488" height="488" rx="110" fill="none" stroke="#EF4444" stroke-width="8" opacity="0.12"/>
+  <path d="M 116 146 C 116 138 124 134 132 138 L 212 138 C 265 200 322 236 396 252 C 403 253 403 259 396 260 C 322 276 265 312 212 374 L 132 374 C 124 378 116 374 116 366 L 116 352 C 172 298 208 266 208 256 C 208 246 172 214 116 160 Z" fill="#EF4444"/>
+  <path d="M 224 138 C 248 138 272 144 294 156 C 342 182 378 216 398 246 C 342 234 294 208 256 172 C 244 161 234 150 224 138 Z M 224 374 C 248 374 272 368 294 356 C 342 330 378 296 398 266 C 342 278 294 304 256 340 C 244 351 234 362 224 374 Z" fill="#FFFFFF"/>
+</svg>`;
+
 function buildReceiptHtml(doc: ReceiptDoc, extraRows: ReceiptRow[] = []): string {
   const allRows = [...doc.rows, ...extraRows];
 
@@ -25,7 +37,8 @@ function buildReceiptHtml(doc: ReceiptDoc, extraRows: ReceiptRow[] = []): string
 <title>${doc.subtitle} ${doc.bookingRef}</title>
 <style>
 body{font-family:monospace;font-size:13px;color:#1e293b;width:100%;max-width:680px;margin:0 auto;padding:32px 24px;box-sizing:border-box}
-h1{font-size:20px;font-weight:300;margin:0 0 2px}h1 span{color:#ef4444}
+.brand{display:flex;align-items:center;gap:8px;margin-bottom:2px}
+h1{font-size:20px;font-weight:300;margin:0}h1 span{color:#ef4444}
 .sub{font-size:11px;color:#94a3b8;margin-bottom:24px}
 .row{display:flex;align-items:flex-start;margin-bottom:6px}
 .lbl{color:#94a3b8;flex:0 0 auto;width:${maxLabelLen}ch}
@@ -36,7 +49,7 @@ hr{border:none;border-top:1px dashed #cbd5e1;margin:12px 0}
 .ref{font-size:10px;color:#94a3b8;text-align:center;margin-top:24px}
 @media print{body{margin:0 auto;padding:20px 20px}}
 </style></head><body>
-<h1>ger<span>a</span>k</h1>
+<div class="brand">${LOGO_SVG}<h1>ger<span>a</span>k</h1></div>
 <div class="sub">${doc.subtitle}</div>
 ${row('Booking Ref', doc.bookingRef)}
 ${row('Status', doc.statusLabel.toUpperCase())}
