@@ -2,6 +2,7 @@ import { useState, useRef } from 'react';
 import { Upload, FileText, X, CheckCircle2 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { updateJubahBalanceProof } from '../lib/sheetsService';
+import { stampWatermark } from '../lib/watermark';
 
 export interface JubahBankDetails {
   name: string;
@@ -121,7 +122,17 @@ export function JubahBalancePayment({
             type="file"
             accept=".pdf,application/pdf,image/jpeg,image/png"
             ref={fileRef}
-            onChange={e => { setFile(e.target.files?.[0] ?? null); setError(''); }}
+            onChange={async e => {
+              const picked = e.target.files?.[0] ?? null;
+              setError('');
+              if (!picked) { setFile(null); return; }
+              // Bank transfer screenshots carry account numbers — same
+              // deterrent treatment as the rest of Jubah's document uploads.
+              let stamped = picked;
+              try { stamped = await stampWatermark(picked, `UNTUK KEGUNAAN RASMI GERAK SAHAJA — ${reference}`); }
+              catch (err) { console.error('[GERAK] Watermark failed, uploading original file:', err); }
+              setFile(stamped);
+            }}
             className="hidden"
           />
           {!file ? (

@@ -6,7 +6,7 @@ import { submitJubahToSheets } from '../lib/sheetsService';
 import { JubahLanding } from '../components/JubahLanding';
 import { supabase } from '../lib/supabase';
 import { compressImage } from '../lib/imageCompress';
-import type { PDFPage } from 'pdf-lib';
+import { stampWatermark } from '../lib/watermark';
 import { FloatingMessage } from '../components/FloatingMessage';
 import { RepresentativeSheet } from '../components/RepresentativeSheet';
 import { ReceiptCard } from '../components/Receipt';
@@ -97,6 +97,13 @@ export const Jubah: React.FC = () => {
   const [email, setEmail]             = useState('');
   const [university, setUniversity]   = useState('');
   const uniAbbrev = UNIV_ABBREV[landingUniversity] ?? 'UMPSA';
+  // Stamped onto every uploaded document (IC, OSCAR, SKPG, Konvo slip,
+  // payment proof) before it ever leaves the browser — these carry IC
+  // numbers, bank details and other PII, so every one of them gets the
+  // same deterrent treatment, not just the IC. Baked into the individual
+  // file itself (not just the combined PDF), so it's there regardless of
+  // which one an admin/rider actually opens.
+  const jubahWatermarkText = `UNTUK KEGUNAAN MAJLIS KONVOKESYEN ${uniAbbrev} SAHAJA`;
   const [faculty, setFaculty]         = useState('');
   const [matricId, setMatricId]       = useState('');
   const [paymentMode, setPaymentMode]   = useState<'pickup' | 'postage' | 'deposit'>('pickup');
@@ -402,59 +409,32 @@ export const Jubah: React.FC = () => {
       return;
     }
     const compressed = file ? await compressImage(file) : null;
-    setDocFiles(prev => ({ ...prev, [fieldId]: compressed }));
+    let stamped = compressed;
+    if (compressed) {
+      try { stamped = await stampWatermark(compressed, jubahWatermarkText); }
+      catch (err) { console.error('[GERAK] Watermark failed, uploading original file:', err); }
+    }
+    setDocFiles(prev => ({ ...prev, [fieldId]: stamped }));
   };
 
   const generateCombinedBlob = async (): Promise<Blob | null> => {
     const entries = docFields.map(f => ({ field: f, file: docFiles[f.id] ?? null }));
     if (entries.some(e => !e.file)) return null;
     try {
-      const { PDFDocument, StandardFonts, rgb, degrees } = await import('pdf-lib');
-      const merged  = await PDFDocument.create();
-      const wmFont  = await merged.embedFont(StandardFonts.HelveticaBold);
-      const wmText  = `UNTUK KEGUNAAN MAJLIS KONVOKESYEN ${uniAbbrev} SAHAJA`;
-      const wmColor = rgb(0.12, 0.12, 0.12);
-      const wmAngle = 26;
+      const { PDFDocument } = await import('pdf-lib');
+      const merged = await PDFDocument.create();
 
-      // Single diagonal band crossing the card, sized to the page so it
-      // scales with whatever resolution the photo was taken at — not two
-      // corner labels. Opacity stays low enough that the card underneath
-      // (photo, chip, text fields) stays fully legible through it. Only
-      // stamped on the IC page, not the other documents.
-      const stampWatermark = (page: PDFPage) => {
-        const { width, height } = page.getSize();
-        const baseSize    = 20;
-        const rawWidth    = wmFont.widthOfTextAtSize(wmText, baseSize);
-        const targetWidth = width * 0.85;
-        const fontSize    = Math.max(8, Math.min(40, baseSize * (targetWidth / rawWidth)));
-        // drawText's x anchors the START of the (rotated) baseline, not its
-        // center — so centering the text horizontally means backing the
-        // anchor off by half of its rotated horizontal footprint, not just
-        // starting from a fixed left margin.
-        const renderedWidth  = wmFont.widthOfTextAtSize(wmText, fontSize);
-        const horizontalSpan = renderedWidth * Math.cos(wmAngle * Math.PI / 180);
-        const xCentered       = (width - horizontalSpan) / 2;
-        [0.15, 0.45, 0.75].forEach(yFrac => {
-          page.drawText(wmText, {
-            x: xCentered,
-            y: height * yFrac,
-            size: fontSize,
-            font: wmFont,
-            color: wmColor,
-            opacity: 0.4,
-            rotate: degrees(wmAngle),
-          });
-        });
-      };
-
-      const addFile = async ({ field, file: f }: { field: JubahDocField; file: File | null }) => {
+      // No watermarking here anymore — every file in docFiles was already
+      // stamped by handleFileSelect before it got this far, so merging them
+      // carries the watermark through automatically. Stamping again here on
+      // top of an already-watermarked IC page would double it up.
+      const addFile = async ({ file: f }: { field: JubahDocField; file: File | null }) => {
         if (!f) return;
         const bytes = await f.arrayBuffer();
         if (f.type === 'application/pdf') {
           const doc = await PDFDocument.load(bytes);
           const pages = await merged.copyPages(doc, doc.getPageIndices());
           pages.forEach(p => merged.addPage(p));
-          if (field.field_key === 'ic') pages.forEach(stampWatermark);
         } else {
           const page = merged.addPage();
           const img = f.type === 'image/png'
@@ -463,7 +443,6 @@ export const Jubah: React.FC = () => {
           const { width, height } = img.scale(1);
           page.setSize(width, height);
           page.drawImage(img, { x: 0, y: 0, width, height });
-          if (field.field_key === 'ic') stampWatermark(page);
         }
       };
       for (const entry of entries) await addFile(entry);
@@ -1245,7 +1224,13 @@ export const Jubah: React.FC = () => {
               ref={paymentProofRef}
               onChange={async e => {
                 const file = e.target.files?.[0] || null;
-                setPaymentProof(file ? await compressImage(file) : null);
+                const compressed = file ? await compressImage(file) : null;
+                let stamped = compressed;
+                if (compressed) {
+                  try { stamped = await stampWatermark(compressed, jubahWatermarkText); }
+                  catch (err) { console.error('[GERAK] Watermark failed, uploading original file:', err); }
+                }
+                setPaymentProof(stamped);
               }}
               className="hidden"
             />
