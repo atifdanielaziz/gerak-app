@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { FileDown, Copy, Check, X } from 'lucide-react';
+import { FileDown, Copy, Check, X, List, PencilLine, Map, PlaneTakeoff } from 'lucide-react';
 import { WaBtn } from '../lib/whatsapp';
 import type { ReceiptDoc, ReceiptMeta, ReceiptRow } from '../lib/receiptRows';
 import { copyToClipboard } from '../lib/clipboard';
@@ -9,21 +9,43 @@ const valueClass = (r: ReceiptRow) =>
   r.emphasis === 'total'     ? 'text-sm font-bold text-slate-800' :
                                 'text-slate-700';
 
-export const ReceiptHeader: React.FC<{ meta: ReceiptMeta }> = ({ meta }) => (
-  <div className="flex items-center justify-between">
-    <span className={`text-xs font-extrabold uppercase tracking-wider px-2.5 py-1 rounded-lg border ${meta.statusClassName}`}>
-      {meta.statusLabel}
-    </span>
-    <div className="text-right">
-      {meta.createdAt && (
-        <p className="text-xs text-slate-400 font-semibold">
-          {new Date(meta.createdAt).toLocaleDateString('en-MY', { day: '2-digit', month: 'short', year: 'numeric' })}
-        </p>
+// AerBus gets its own green treatment — it's the odd one out (time-critical,
+// automatic dispatch buffer), everything else stays the neutral slate used
+// for badges everywhere else in the app.
+const BOOKING_METHOD_ICON: Record<string, React.ElementType> = {
+  quick: List, custom: PencilLine, map: Map, aerbus: PlaneTakeoff,
+};
+
+export const ReceiptHeader: React.FC<{ meta: ReceiptMeta }> = ({ meta }) => {
+  const MethodIcon = meta.bookingMethod ? BOOKING_METHOD_ICON[meta.bookingMethod.mode] : null;
+  const isAerbus = meta.bookingMethod?.mode === 'aerbus';
+
+  return (
+    <div className="flex flex-col gap-1.5">
+      {meta.bookingMethod && MethodIcon && (
+        <span className={`inline-flex items-center gap-1 self-start rounded-md px-1.5 py-0.5 text-[10px] font-semibold border ${
+          isAerbus ? 'bg-emerald-50 border-emerald-100 text-emerald-600' : 'bg-slate-50 border-slate-100 text-slate-500'
+        }`}>
+          <MethodIcon className="w-3 h-3" />
+          {meta.bookingMethod.label}
+        </span>
       )}
-      <p className="text-[10px] text-slate-300 font-mono mt-0.5">{meta.bookingRef}</p>
+      <div className="flex items-center justify-between">
+        <span className={`text-xs font-extrabold uppercase tracking-wider px-2.5 py-1 rounded-lg border ${meta.statusClassName}`}>
+          {meta.statusLabel}
+        </span>
+        <div className="text-right">
+          {meta.createdAt && (
+            <p className="text-xs text-slate-400 font-semibold">
+              {new Date(meta.createdAt).toLocaleDateString('en-MY', { day: '2-digit', month: 'short', year: 'numeric' })}
+            </p>
+          )}
+          <p className="text-[10px] text-slate-300 font-mono mt-0.5">{meta.bookingRef}</p>
+        </div>
+      </div>
     </div>
-  </div>
-);
+  );
+};
 
 export const ReceiptCard: React.FC<{
   doc: ReceiptDoc;

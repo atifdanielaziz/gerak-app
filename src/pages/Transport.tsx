@@ -5,7 +5,7 @@ interface PinLocation { address: string; coords: [number, number]; }
 
 const MapboxRideMap = lazy(() => import('../components/MapboxRideMap').then(m => ({ default: m.MapboxRideMap })));
 import {
-  Map, List, ChevronDown, PencilLine, Car,
+  Map, List, ChevronDown, PencilLine, Car, PlaneTakeoff, PlaneLanding,
   Info, CheckCircle2, RotateCcw, Users, Clock, CalendarDays, Phone, ClipboardList, X,
 } from 'lucide-react';
 import { submitRideToSheets } from '../lib/sheetsService';
@@ -88,6 +88,21 @@ const CAMPUS_FROM: Record<string, string[]> = {
   gambang: ['UMP Gambang', 'CFS IIUM Gambang'],
 };
 
+// ─── AerBus (Airport/Bus pickup & drop) ─────────────────────────────────────────
+// Two-way transfers to/from a fixed set of points — bufferMin is both the
+// campus↔point travel time and the dispatch-time buffer applied to whatever
+// ticket time the customer enters (see aerbusDispatchTime below). Currently
+// UMPSA Pekan only — Gambang's actual travel times to these same points
+// differ enough (it's the closer campus to the airport) that reusing these
+// same buffer figures for it would be wrong, not just unpolished.
+const AERBUS_POINTS = [
+  { id: 'airport',   label: 'Airport (Sultan Ahmad Shah)', bufferMin: 60, fare: 40 },
+  { id: 'tsk',       label: 'TSK',                          bufferMin: 60, fare: 45 },
+  { id: 'pekan_bus', label: 'Pekan Bus Terminal',            bufferMin: 25, fare: 15 },
+] as const;
+
+type AerbusPointId = typeof AERBUS_POINTS[number]['id'];
+
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export const Transport: React.FC = () => {
@@ -97,8 +112,12 @@ export const Transport: React.FC = () => {
   const [campus,   setCampus]   = useState<'pekan' | 'gambang'>(
     user.campus?.toLowerCase() === 'pekan' ? 'pekan' : 'gambang'
   );
-  const [bookMode, setBookMode] = useState<'quick' | 'custom' | 'map'>(user.isLoggedIn ? 'quick' : 'map');
+  const [bookMode, setBookMode] = useState<'quick' | 'custom' | 'map' | 'aerbus'>(user.isLoggedIn ? 'quick' : 'map');
   const [showTerms, setShowTerms] = useState(false);
+
+  // AerBus state
+  const [aerbusDirection, setAerbusDirection] = useState<'to' | 'from'>('to');
+  const [aerbusPoint,     setAerbusPoint]     = useState<AerbusPointId | ''>('');
 
   // Quick-route state
   const [selectedFrom,  setSelectedFrom]  = useState('');
@@ -168,6 +187,14 @@ export const Transport: React.FC = () => {
     setTime(`${String(rounded.getHours()).padStart(2, '0')}:${String(rounded.getMinutes()).padStart(2, '0')}`);
   }, [bookWhen]);
 
+  // AerBus always books a specific ticket time — flights/buses aren't
+  // something you catch "now" — so its date/time inputs are always
+  // interactive regardless of the Now/Later toggle (hidden for this mode
+  // anyway). Derived rather than forcing bookWhen itself, so switching back
+  // to another mode restores whatever Now/Later choice the user actually
+  // made instead of it staying stuck on 'later'.
+  const effectiveBookWhen = bookMode === 'aerbus' ? 'later' : bookWhen;
+
   // Submission
   const [booking,          setBooking]          = useState(false);
   const [bookingDone,      setBookingDone]      = useState(false);
@@ -185,14 +212,41 @@ export const Transport: React.FC = () => {
     [routes, selectedFrom]
   );
 
+  // Pekan-only — the buffer figures are specifically UMPSA Pekan travel
+  // times, so a stale point selection must not stay bookable after
+  // switching to Gambang (the point-picker cards are hidden there too).
+  const aerbusPointData = bookMode === 'aerbus' && campus === 'pekan'
+    ? AERBUS_POINTS.find(p => p.id === aerbusPoint) ?? null
+    : null;
+
+  // The customer types their ticket's boarding/landing time into the same
+  // date+time fields every other mode uses — this derives the actual
+  // dispatch time the driver acts on (ticket time minus the point's
+  // buffer). Uses a real Date object rather than HH:MM subtraction so a
+  // landing time close to midnight correctly rolls the dispatch date back
+  // a day too, instead of silently landing on the wrong day.
+  const aerbusDispatch = useMemo(() => {
+    if (!aerbusPointData || !date || !time) return null;
+    const dt = new Date(`${date}T${time}:00`);
+    if (Number.isNaN(dt.getTime())) return null;
+    dt.setMinutes(dt.getMinutes() - aerbusPointData.bufferMin);
+    return {
+      date: dt.toISOString().slice(0, 10),
+      time: `${String(dt.getHours()).padStart(2, '0')}:${String(dt.getMinutes()).padStart(2, '0')}`,
+    };
+  }, [aerbusPointData, date, time]);
+
   const isNight = useMemo(() => {
-    if (!time) return false;
-    const [h] = time.split(':').map(Number);
+    const effectiveTime = aerbusDispatch?.time ?? time;
+    if (!effectiveTime) return false;
+    const [h] = effectiveTime.split(':').map(Number);
     return h >= 0 && h < 7;
-  }, [time]);
+  }, [time, aerbusDispatch]);
 
   const baseFare: number | 'TBC' = bookMode === 'quick'
     ? (selectedRoute?.fare ?? 0)
+    : bookMode === 'aerbus'
+    ? (aerbusPointData?.fare ?? 'TBC')
     : 'TBC';
 
   const nightCharge = isNight ? 5 : 0;
@@ -201,21 +255,28 @@ export const Transport: React.FC = () => {
     ? 'TBC'
     : baseFare + nightCharge;
 
+  const campusLabelFull = campus === 'pekan' ? 'UMPSA Pekan Campus' : 'UMPSA Gambang Campus';
+
   const pickupLabel = bookMode === 'quick'
     ? (selectedRoute ? selectedRoute.from : '')
     : bookMode === 'custom'
     ? customPickup
+    : bookMode === 'aerbus'
+    ? (aerbusPointData ? (aerbusDirection === 'to' ? campusLabelFull : aerbusPointData.label) : '')
     : (pickupPin?.address ?? '');
 
   const destLabel = bookMode === 'quick'
     ? (selectedRoute ? selectedRoute.to : '')
     : bookMode === 'custom'
     ? customDest
+    : bookMode === 'aerbus'
+    ? (aerbusPointData ? (aerbusDirection === 'to' ? aerbusPointData.label : campusLabelFull) : '')
     : (destPin?.address ?? '');
 
   const canBook =
     !!date && !!time && !!contact &&
     (bookMode === 'quick'  ? !!selectedRoute :
+     bookMode === 'aerbus' ? !!aerbusPointData :
      bookMode === 'custom' ? !!(customPickup.trim() && customDest.trim()) :
      !!(pickupPin && destPin));
 
@@ -240,11 +301,15 @@ export const Transport: React.FC = () => {
     setBookingError(null);
 
     const campusLabel = campus === 'pekan' ? 'Pekan' : 'Gambang';
+    // For AerBus, date/time (used everywhere else in the app — driver sort,
+    // filters, receipts) hold the computed dispatch time, not the raw
+    // ticket time the customer typed. aerbus_customer_time preserves that
+    // raw value purely for display, so nothing is silently overwritten.
     const orderPayload = {
       customer_name: user.name || 'Student',
       campus:        campusLabel,
-      date,
-      time,
+      date:          bookMode === 'aerbus' && aerbusDispatch ? aerbusDispatch.date : date,
+      time:          bookMode === 'aerbus' && aerbusDispatch ? aerbusDispatch.time : time,
       pickup:        pickupLabel,
       destination:   destLabel,
       passengers,
@@ -253,6 +318,9 @@ export const Transport: React.FC = () => {
       night_charge:  nightCharge,
       notes,
       book_mode:     bookMode,
+      aerbus_direction:     bookMode === 'aerbus' ? aerbusDirection : null,
+      aerbus_point:         bookMode === 'aerbus' ? aerbusPoint : null,
+      aerbus_customer_time: bookMode === 'aerbus' ? time : null,
     };
 
     const { data: { user: authUser } } = await supabase.auth.getUser();
@@ -299,7 +367,7 @@ export const Transport: React.FC = () => {
       // Log to Google Sheets for new bookings only
       await submitRideToSheets({
         campus: campus === 'pekan' ? 'UMPSA Pekan' : 'UMPSA Gambang',
-        date, time,
+        date: orderPayload.date, time: orderPayload.time,
         pickup: pickupLabel,
         destination: destLabel,
         passengers, contact,
@@ -488,13 +556,14 @@ export const Transport: React.FC = () => {
         </div>
       </div>
 
-      {/* Mode selector — 3 modes */}
+      {/* Mode selector — 4 modes */}
       {user.isLoggedIn && (
         <div className="px-4 mt-3 flex gap-2">
           {([
-            { key: 'quick',  icon: List,        label: 'Quick Routes'  },
-            { key: 'custom', icon: PencilLine,  label: 'Custom'        },
-            { key: 'map',    icon: Map,         label: 'Search Routes' },
+            { key: 'quick',  icon: List,         label: 'Quick Routes'  },
+            { key: 'custom', icon: PencilLine,   label: 'Custom'        },
+            { key: 'map',    icon: Map,          label: 'Search Routes' },
+            { key: 'aerbus', icon: PlaneTakeoff, label: 'AerBus'        },
           ] as const).map(({ key, icon: Icon, label }) => (
             <button key={key} type="button" onPointerDown={(e) => { e.preventDefault(); setBookMode(key); }}
               className={`flex-1 flex flex-col items-center gap-1.5 p-2.5 rounded-2xl border bg-white transition-transform active:scale-[0.99] active:bg-slate-50 ${
@@ -685,6 +754,61 @@ export const Transport: React.FC = () => {
         </div>
       )}
 
+      {/* ── AerBus ── */}
+      {bookMode === 'aerbus' && (
+        <div className="px-4 mt-3 flex flex-col gap-3">
+          {campus === 'gambang' ? (
+            <div className="bg-amber-50 border border-amber-100 rounded-2xl px-4 py-3 flex items-start gap-2">
+              <Info className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
+              <p className="text-xs text-amber-700 font-normal leading-relaxed">
+                AerBus is currently only available from UMPSA Pekan. Switch campus above to book.
+              </p>
+            </div>
+          ) : (
+            <>
+              {/* Direction — Mode Selector Standard */}
+              <div className="flex gap-2">
+                <button type="button" onPointerDown={e => { e.preventDefault(); setAerbusDirection('to'); }}
+                  className={`flex-1 flex flex-col items-center gap-1.5 p-3 rounded-2xl border bg-white transition-transform active:scale-[0.99] active:bg-slate-50 ${
+                    aerbusDirection === 'to' ? 'border-slate-900' : 'border-slate-100'
+                  }`}
+                >
+                  <PlaneTakeoff className={`w-4 h-4 ${aerbusDirection === 'to' ? 'text-slate-900' : 'text-slate-400'}`} />
+                  <span className={`text-xs font-semibold ${aerbusDirection === 'to' ? 'text-slate-900' : 'text-slate-600'}`}>To Airport/Bus</span>
+                </button>
+                <button type="button" onPointerDown={e => { e.preventDefault(); setAerbusDirection('from'); }}
+                  className={`flex-1 flex flex-col items-center gap-1.5 p-3 rounded-2xl border bg-white transition-transform active:scale-[0.99] active:bg-slate-50 ${
+                    aerbusDirection === 'from' ? 'border-slate-900' : 'border-slate-100'
+                  }`}
+                >
+                  <PlaneLanding className={`w-4 h-4 ${aerbusDirection === 'from' ? 'text-slate-900' : 'text-slate-400'}`} />
+                  <span className={`text-xs font-semibold ${aerbusDirection === 'from' ? 'text-slate-900' : 'text-slate-600'}`}>From Airport/Bus</span>
+                </button>
+              </div>
+
+              {/* Point selection — Field Standard cards, Solo Card Standard */}
+              <div className="flex flex-col gap-2">
+                {AERBUS_POINTS.map(p => (
+                  <button key={p.id} type="button" onPointerDown={e => { e.preventDefault(); setAerbusPoint(p.id); }}
+                    className={`w-full flex items-center justify-between p-3 rounded-2xl border bg-white transition-transform active:scale-[0.99] active:bg-slate-50 ${
+                      aerbusPoint === p.id ? 'border-slate-900' : 'border-slate-100'
+                    }`}
+                  >
+                    <div className="text-left">
+                      <p className={`text-xs font-semibold ${aerbusPoint === p.id ? 'text-slate-900' : 'text-slate-700'}`}>{p.label}</p>
+                      <p className="text-xs text-slate-400 font-normal mt-0.5">
+                        {p.bufferMin >= 60 ? `${p.bufferMin / 60} hour` : `${p.bufferMin} minutes`} from UMPSA Pekan
+                      </p>
+                    </div>
+                    <span className="text-xs font-black text-slate-800 shrink-0">RM{p.fare}</span>
+                  </button>
+                ))}
+              </div>
+            </>
+          )}
+        </div>
+      )}
+
       {/* ── Order form ── */}
       <form onSubmit={handleBook} className="px-4 mt-2 flex flex-col gap-2">
         <div className="bg-white border border-slate-100 rounded-2xl p-3 flex flex-col gap-2.5">
@@ -692,25 +816,28 @@ export const Transport: React.FC = () => {
             <CalendarDays className="w-4 h-4 text-slate-400" /> Order Details
           </h3>
 
-          {/* Now / Later toggle — Mode Selector Standard */}
-          <div className="flex gap-2">
-            <button type="button" onPointerDown={(e) => { e.preventDefault(); setBookWhen('now'); }}
-              className={`flex-1 flex items-center gap-2 p-3 rounded-2xl border bg-white transition-transform active:scale-[0.99] active:bg-slate-50 ${
-                bookWhen === 'now' ? 'border-slate-900' : 'border-slate-100'
-              }`}
-            >
-              <Clock className={`w-4 h-4 shrink-0 ${bookWhen === 'now' ? 'text-slate-900' : 'text-slate-400'}`} />
-              <span className={`text-xs font-semibold ${bookWhen === 'now' ? 'text-slate-900' : 'text-slate-600'}`}>Now</span>
-            </button>
-            <button type="button" onPointerDown={(e) => { e.preventDefault(); setBookWhen('later'); }}
-              className={`flex-1 flex items-center gap-2 p-3 rounded-2xl border bg-white transition-transform active:scale-[0.99] active:bg-slate-50 ${
-                bookWhen === 'later' ? 'border-slate-900' : 'border-slate-100'
-              }`}
-            >
-              <CalendarDays className={`w-4 h-4 shrink-0 ${bookWhen === 'later' ? 'text-slate-900' : 'text-slate-400'}`} />
-              <span className={`text-xs font-semibold ${bookWhen === 'later' ? 'text-slate-900' : 'text-slate-600'}`}>Later</span>
-            </button>
-          </div>
+          {/* Now / Later toggle — Mode Selector Standard. AerBus always
+              books a specific ticket time, so it skips this entirely. */}
+          {bookMode !== 'aerbus' && (
+            <div className="flex gap-2">
+              <button type="button" onPointerDown={(e) => { e.preventDefault(); setBookWhen('now'); }}
+                className={`flex-1 flex items-center gap-2 p-3 rounded-2xl border bg-white transition-transform active:scale-[0.99] active:bg-slate-50 ${
+                  bookWhen === 'now' ? 'border-slate-900' : 'border-slate-100'
+                }`}
+              >
+                <Clock className={`w-4 h-4 shrink-0 ${bookWhen === 'now' ? 'text-slate-900' : 'text-slate-400'}`} />
+                <span className={`text-xs font-semibold ${bookWhen === 'now' ? 'text-slate-900' : 'text-slate-600'}`}>Now</span>
+              </button>
+              <button type="button" onPointerDown={(e) => { e.preventDefault(); setBookWhen('later'); }}
+                className={`flex-1 flex items-center gap-2 p-3 rounded-2xl border bg-white transition-transform active:scale-[0.99] active:bg-slate-50 ${
+                  bookWhen === 'later' ? 'border-slate-900' : 'border-slate-100'
+                }`}
+              >
+                <CalendarDays className={`w-4 h-4 shrink-0 ${bookWhen === 'later' ? 'text-slate-900' : 'text-slate-400'}`} />
+                <span className={`text-xs font-semibold ${bookWhen === 'later' ? 'text-slate-900' : 'text-slate-600'}`}>Later</span>
+              </button>
+            </div>
+          )}
 
           {/* Date + Time — overlay trick: display div at 12px, real input invisible on top */}
           <div className="grid grid-cols-2 gap-2">
@@ -718,12 +845,12 @@ export const Transport: React.FC = () => {
               <label className="text-xs font-normal text-slate-400 pl-1">Date</label>
               <div className="relative h-9 group">
                 <div className="absolute inset-0 bg-white border border-slate-100 rounded-xl px-2.5 flex items-center justify-between pointer-events-none group-focus-within:border-slate-900 transition">
-                  <span className={`text-xs font-semibold ${bookWhen === 'now' ? 'text-slate-300' : date ? 'text-slate-700' : 'text-slate-400'}`}>
+                  <span className={`text-xs font-semibold ${effectiveBookWhen === 'now' ? 'text-slate-300' : date ? 'text-slate-700' : 'text-slate-400'}`}>
                     {date ? new Date(date + 'T00:00:00').toLocaleDateString('en-MY', { day: 'numeric', month: 'short', year: 'numeric' }) : 'Select date'}
                   </span>
-                  <CalendarDays className={`w-3 h-3 shrink-0 ${bookWhen === 'now' ? 'text-slate-200' : 'text-slate-400'}`} />
+                  <CalendarDays className={`w-3 h-3 shrink-0 ${effectiveBookWhen === 'now' ? 'text-slate-200' : 'text-slate-400'}`} />
                 </div>
-                {bookWhen === 'later' && (
+                {effectiveBookWhen === 'later' && (
                   <input type="date" required value={date}
                     min={new Date().toISOString().split('T')[0]}
                     onChange={e => setDate(e.target.value)}
@@ -734,19 +861,22 @@ export const Transport: React.FC = () => {
             </div>
             <div className="flex flex-col gap-0.5">
               <label className="text-xs font-normal text-slate-400 pl-1 flex items-center gap-1">
-                <Clock className="w-3 h-3" /> Time
+                <Clock className="w-3 h-3" />
+                {bookMode === 'aerbus'
+                  ? (aerbusDirection === 'to' ? 'Boarding / Departure Time' : 'Landing / Arrival Time')
+                  : 'Time'}
                 {isNight && <span className="text-amber-500 font-semibold ml-1">+RM5</span>}
               </label>
               <div className="relative h-9 group">
                 <div className={`absolute inset-0 border rounded-xl px-2.5 flex items-center justify-between pointer-events-none group-focus-within:border-slate-900 transition ${
                   isNight ? 'border-amber-200 bg-amber-50/50' : 'bg-white border-slate-100'
                 }`}>
-                  <span className={`text-xs font-semibold ${bookWhen === 'now' ? 'text-slate-300' : !time ? 'text-slate-400' : isNight ? 'text-amber-700' : 'text-slate-700'}`}>
+                  <span className={`text-xs font-semibold ${effectiveBookWhen === 'now' ? 'text-slate-300' : !time ? 'text-slate-400' : isNight ? 'text-amber-700' : 'text-slate-700'}`}>
                     {time || 'Select time'}
                   </span>
-                  <Clock className={`w-3 h-3 shrink-0 ${bookWhen === 'now' ? 'text-slate-200' : 'text-slate-400'}`} />
+                  <Clock className={`w-3 h-3 shrink-0 ${effectiveBookWhen === 'now' ? 'text-slate-200' : 'text-slate-400'}`} />
                 </div>
-                {bookWhen === 'later' && (
+                {effectiveBookWhen === 'later' && (
                   <input type="time" required value={time}
                     onChange={e => setTime(e.target.value)}
                     className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
@@ -755,6 +885,25 @@ export const Transport: React.FC = () => {
               </div>
             </div>
           </div>
+
+          {/* AerBus buffer note — tells the customer to enter their actual
+              ticket time as-is, since the buffer is already handled for them */}
+          {bookMode === 'aerbus' && aerbusPointData && (
+            <div className="bg-emerald-50 border border-emerald-100 rounded-2xl px-3.5 py-2.5 flex items-start gap-2">
+              <PlaneTakeoff className="w-3.5 h-3.5 text-emerald-600 shrink-0 mt-0.5" />
+              <p className="text-xs text-emerald-700 font-normal leading-relaxed">
+                Enter your actual {aerbusDirection === 'to' ? 'boarding/departure' : 'landing/arrival'} time —
+                no need to add your own buffer. Your driver is automatically scheduled{' '}
+                <strong>{aerbusPointData.bufferMin >= 60 ? `${aerbusPointData.bufferMin / 60} hour` : `${aerbusPointData.bufferMin} minutes`} earlier</strong>
+                {aerbusDispatch && (
+                  <> — {aerbusDirection === 'to' ? 'pickup' : 'driver departs'} at{' '}
+                    <strong>{aerbusDispatch.time}</strong>
+                    {aerbusDispatch.date !== date ? ` (${new Date(aerbusDispatch.date + 'T00:00:00').toLocaleDateString('en-MY', { day: 'numeric', month: 'short' })})` : ''}
+                  </>
+                )}.
+              </p>
+            </div>
+          )}
 
           {/* Passengers stepper */}
           <div className="flex flex-col gap-0.5">
@@ -853,6 +1002,7 @@ export const Transport: React.FC = () => {
         {!canBook && (
           <p className="text-xs text-slate-400 font-normal text-center -mt-1">
             {bookMode === 'quick' && !selectedRoute ? 'Select a route above to continue' : ''}
+            {bookMode === 'aerbus' && !aerbusPointData ? 'Select a pickup/drop point above to continue' : ''}
             {bookMode === 'map' && !(pickupPin && destPin) ? 'Drop both pins on the map to continue' : ''}
             {!(date && time) ? 'Fill in date and time to continue' : ''}
           </p>

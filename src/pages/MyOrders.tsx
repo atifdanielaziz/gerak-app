@@ -23,6 +23,8 @@ interface RideOrder {
   night_charge: number;
   notes: string;
   book_mode: string;
+  aerbus_direction: string | null;
+  aerbus_customer_time: string | null;
   status: string;
   driver_name: string | null;
   driver_contact: string | null;

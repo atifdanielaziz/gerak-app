@@ -2,6 +2,7 @@ import React, { useEffect, useState, useCallback, useRef, useMemo } from 'react'
 import { useApp } from '../context/AppContext';
 import { supabase } from '../lib/supabase';
 import { useLoadOnActive } from '../hooks/useLoadOnActive';
+import { NativeSelect } from '../components/NativeSelect';
 import {
   BarChart3, Car, Users, Clock,
   AlertCircle, RefreshCw, Trash2,
@@ -725,14 +726,16 @@ export const AdminHome: React.FC = () => {
               <div className="flex items-center justify-between gap-2 flex-wrap">
                 <p className="text-xs font-black text-slate-800">Overview</p>
                 {jubahUniversityOptions.length > 1 && (
-                  <select
-                    value={jubahStatsUniversity}
-                    onChange={e => setJubahStatsUniversity(e.target.value)}
-                    className="text-xs font-semibold text-slate-600 bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-1.5"
-                  >
-                    <option value="all">All Universities</option>
-                    {jubahUniversityOptions.map(u => <option key={u} value={u}>{u}</option>)}
-                  </select>
+                  <div className="w-40">
+                    <NativeSelect
+                      value={jubahStatsUniversity}
+                      onChange={setJubahStatsUniversity}
+                      options={[
+                        { value: 'all', label: 'All Universities' },
+                        ...jubahUniversityOptions.map(u => ({ value: u, label: u })),
+                      ]}
+                    />
+                  </div>
                 )}
               </div>
 

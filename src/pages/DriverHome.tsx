@@ -9,7 +9,7 @@ import {
   ChevronLeft, ChevronRight, CalendarDays,
   Package, Ban, Unlock, Hash, X, TrendingUp,
   Upload, FileImage, ShieldCheck, ShieldAlert,
-  DollarSign, Moon, FileText, ExternalLink, FileDown,
+  DollarSign, Moon, FileText, ExternalLink, FileDown, PlaneTakeoff,
 } from 'lucide-react';
 import { WaIcon, toWa } from '../lib/whatsapp';
 import { ReceiptSheet } from '../components/Receipt';
@@ -86,6 +86,9 @@ interface RideOrder {
   fare: string;
   night_charge: number;
   notes: string;
+  book_mode?: string | null;
+  aerbus_direction?: string | null;
+  aerbus_customer_time?: string | null;
   status: string;
   driver_id: string | null;
   driver_name: string | null;
@@ -363,7 +366,7 @@ export const DriverHome: React.FC = () => {
     const { data: { user: authUser } } = await supabase.auth.getUser();
     const uid = authUser?.id ?? '';
 
-    const RIDE_FIELDS = 'id,customer_name,campus,date,time,pickup,destination,passengers,contact,fare,night_charge,notes,status,driver_id,driver_name,created_at,accepted_at';
+    const RIDE_FIELDS = 'id,customer_name,campus,date,time,pickup,destination,passengers,contact,fare,night_charge,notes,book_mode,aerbus_direction,aerbus_customer_time,status,driver_id,driver_name,created_at,accepted_at';
 
     // Pool: pending orders for this campus, sorted by scheduled date+time (FIFO)
     let pendingQ = supabase
@@ -957,6 +960,19 @@ export const DriverHome: React.FC = () => {
                     {order.date} · {order.time}
                   </div>
                 </div>
+
+                {/* AerBus notice — the queue-strip time above is already the
+                    buffered dispatch time; this explains why, and shows the
+                    customer's actual ticket time so the driver isn't
+                    guessing at the early pickup. */}
+                {order.book_mode === 'aerbus' && (
+                  <div className="mx-4 mt-2 bg-emerald-50 border border-emerald-100 rounded-xl px-3 py-2 flex items-center gap-2">
+                    <PlaneTakeoff className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                    <p className="text-xs text-emerald-700 font-semibold">
+                      AerBus — {order.aerbus_direction === 'from' ? 'Landing' : 'Boarding'} {order.aerbus_customer_time}, leave early
+                    </p>
+                  </div>
+                )}
 
                 {/* Customer + fare */}
                 <div className="px-4 pt-3 pb-2 flex items-start justify-between gap-3">
