@@ -17,6 +17,12 @@ export interface ReceiptMeta {
   createdAt: string | null;   // raw ISO/DB timestamp — formatting happens at render time; null when unavailable (e.g. Jubah's client-only booking state has no timestamp)
   bookingRef: string;
   subtitle: string;    // PDF subtitle, e.g. 'Gerak Car — Trip Receipt'
+  // Which booking method was used (Transport's 4 modes) — just the
+  // identifying key + a human label; the icon lookup lives in Receipt.tsx
+  // (this file stays plain data, no JSX/icon imports, since receiptPdf.ts
+  // also builds off these same docs). Undefined for services that don't
+  // have multiple booking methods (Rental, Jubah).
+  bookingMethod?: { mode: 'quick' | 'custom' | 'map' | 'aerbus'; label: string };
 }
 
 export interface ReceiptDoc extends ReceiptMeta {
@@ -42,7 +48,17 @@ export interface TransportReceiptSource {
   driver_name?: string | null;
   driver_contact?: string | null;
   driver_gerak_id?: string | null;
+  book_mode?: string | null;
+  aerbus_direction?: string | null;
+  aerbus_customer_time?: string | null;
 }
+
+const BOOKING_METHOD_LABEL: Record<string, string> = {
+  quick:  'Quick Routes',
+  custom: 'Custom',
+  map:    'Search Routes',
+  aerbus: 'AerBus',
+};
 
 const TRANSPORT_STATUS_STYLE: Record<string, string> = {
   pending:     'bg-amber-50 text-amber-600 border-amber-200',
@@ -67,15 +83,28 @@ export function buildTransportReceiptRows(
   o: TransportReceiptSource,
   opts?: { showContactWhatsApp?: boolean },
 ): ReceiptDoc {
+  const isAerbus = o.book_mode === 'aerbus';
+
   const rows: ReceiptRow[] = [
     { label: 'Date', value: o.date, emphasis: 'highlight' },
-    { label: 'Time', value: o.time + (o.night_charge > 0 ? ' (Night +RM5)' : ''), emphasis: 'highlight' },
+    { label: isAerbus ? 'Driver Dispatch Time' : 'Time', value: o.time + (o.night_charge > 0 ? ' (Night +RM5)' : ''), emphasis: 'highlight' },
+  ];
+  // The buffer already applied to o.time — shown alongside it, not instead
+  // of it, so the customer/driver can see both the ticket time they gave
+  // and the actual adjusted dispatch time next to each other.
+  if (isAerbus && o.aerbus_customer_time) {
+    rows.push({
+      label: o.aerbus_direction === 'from' ? 'Landing / Arrival Time' : 'Boarding / Departure Time',
+      value: o.aerbus_customer_time,
+    });
+  }
+  rows.push(
     { label: 'Campus', value: `UMPSA ${o.campus}` },
     { label: 'Pick-up', value: o.pickup },
     { label: 'Destination', value: o.destination },
     { label: 'Passengers', value: `${o.passengers} pax` },
     { label: 'Contact', value: o.contact, whatsapp: opts?.showContactWhatsApp ? { phone: o.contact } : undefined },
-  ];
+  );
   if (o.notes) rows.push({ label: 'Remark', value: o.notes });
   rows.push({ label: 'Price', value: fareLabel(o), emphasis: 'total', dividerBefore: true });
   if (o.driver_name) {
@@ -94,6 +123,9 @@ export function buildTransportReceiptRows(
     createdAt:        o.created_at,
     bookingRef:       `#${o.id.slice(0, 8).toUpperCase()}`,
     subtitle:         'Gerak Car — Trip Receipt',
+    bookingMethod:    o.book_mode && BOOKING_METHOD_LABEL[o.book_mode]
+      ? { mode: o.book_mode as 'quick' | 'custom' | 'map' | 'aerbus', label: BOOKING_METHOD_LABEL[o.book_mode] }
+      : undefined,
   };
 }
 

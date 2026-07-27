@@ -64,7 +64,7 @@ export interface RideSheetRow {
   fare: number | 'TBC';
   nightCharge: number;
   notes: string;
-  bookMode: 'quick' | 'custom' | 'map';
+  bookMode: 'quick' | 'custom' | 'map' | 'aerbus';
 }
 
 export async function submitRideToSheets(data: RideSheetRow): Promise<void> {
