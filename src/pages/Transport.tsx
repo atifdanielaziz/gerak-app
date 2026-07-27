@@ -10,6 +10,7 @@ import {
 } from 'lucide-react';
 import { submitRideToSheets } from '../lib/sheetsService';
 import { useTapVsScroll } from '../lib/useTapVsScroll';
+import { NativeSelect } from '../components/NativeSelect';
 
 // ─── Route data ───────────────────────────────────────────────────────────────
 
@@ -26,12 +27,9 @@ const PEKAN_ROUTES: Route[] = [
   { from: 'DHUAM',                  to: 'Gigi Coffee / Eco Shop',       fare: 7,               emoji: '☕' },
   { from: 'DHUAM',                  to: 'Tealive / MyMama',             fare: 7,               emoji: '🧋' },
   { from: 'DHUAM',                  to: 'Bandar Pekan',                 fare: 12,              emoji: '🏙️' },
-  { from: 'DHUAM',                  to: 'TSK',                          fare: 45, maxPax: 3,   emoji: '🚌' },
   { from: 'UMP Pekan / Fakulti',    to: 'DHUAM',                        fare: 10,              emoji: '🏢' },
   { from: 'UMP Pekan / Fakulti',    to: 'Anywhere inside UMP',          fare: 5,               emoji: '🏫' },
-  { from: 'UMP Pekan / Fakulti',    to: 'TSK',                          fare: 45, maxPax: 3,   emoji: '🚌' },
   { from: 'UMP Pekan / Fakulti',    to: 'Kuantan',                      fare: 50,              emoji: '🏬' },
-  { from: 'UMP Pekan / Fakulti',    to: 'Airport (Sultan Ahmad Shah)',  fare: 40, maxPax: 3,   emoji: '✈️' },
   { from: 'UMP Pekan / Fakulti',    to: 'UMP Gambang',                  fare: 55,              emoji: '🚗' },
   { from: 'UMP Pekan / Fakulti',    to: 'Terminal Bas Pekan',           fare: 15, maxPax: 3,   emoji: '🚎' },
   { from: 'UMP Pekan / Fakulti',    to: 'TMG Mart Peramu',              fare: 12,              emoji: '🛒' },
@@ -59,10 +57,8 @@ const GAMBANG_ROUTES: Route[] = [
   { from: 'UMP Gambang',            to: 'Gambang Damai',                   fare: 15,            emoji: '🏡' },
   { from: 'UMP Gambang',            to: 'Jaya Gading',                     fare: 15,            emoji: '🏘️' },
   { from: 'UMP Gambang',            to: 'Taman Tas',                       fare: 18,            emoji: '🌳' },
-  { from: 'UMP Gambang',            to: 'Airport (Sultan Ahmad Shah)',      fare: 18,            emoji: '✈️' },
   { from: 'UMP Gambang',            to: "McDonald's Sg. Isap",             fare: 24,            emoji: '🍔' },
   { from: 'UMP Gambang',            to: 'Air Terjun Pandan',               fare: 27,            emoji: '💧' },
-  { from: 'UMP Gambang',            to: 'TSK',                             fare: 28,            emoji: '🚌' },
   { from: 'UMP Gambang',            to: 'ECM / KCM',                       fare: 32,            emoji: '🏬' },
   { from: 'UMP Gambang',            to: 'Pantai Kempadang',                fare: 34,            emoji: '🏖️' },
   { from: 'UMP Gambang',            to: 'IM (IIUM Kuantan)',               fare: 35,            emoji: '🏫' },
@@ -72,7 +68,6 @@ const GAMBANG_ROUTES: Route[] = [
   { from: 'UMP Gambang',            to: 'Pekan',                           fare: 60,            emoji: '🏙️' },
   { from: 'CFS IIUM Gambang',       to: 'Bus Stop UMP',                    fare: 11,            emoji: '🚌' },
   { from: 'CFS IIUM Gambang',       to: 'Taman Tas',                       fare: 22,            emoji: '🌳' },
-  { from: 'CFS IIUM Gambang',       to: 'TSK',                             fare: 34,            emoji: '🚌' },
   { from: 'CFS IIUM Gambang',       to: 'IIUM Kuantan',                    fare: 37,            emoji: '🏫' },
   { from: 'CFS IIUM Gambang',       to: 'ECM / KCM',                       fare: 37,            emoji: '🏬' },
   { from: 'CFS IIUM Gambang',       to: 'Teluk Cempedak',                  fare: 39,            emoji: '🌊' },
@@ -91,17 +86,25 @@ const CAMPUS_FROM: Record<string, string[]> = {
 // ─── AerBus (Airport/Bus pickup & drop) ─────────────────────────────────────────
 // Two-way transfers to/from a fixed set of points — bufferMin is both the
 // campus↔point travel time and the dispatch-time buffer applied to whatever
-// ticket time the customer enters (see aerbusDispatchTime below). Currently
-// UMPSA Pekan only — Gambang's actual travel times to these same points
-// differ enough (it's the closer campus to the airport) that reusing these
-// same buffer figures for it would be wrong, not just unpolished.
-const AERBUS_POINTS = [
-  { id: 'airport',   label: 'Airport (Sultan Ahmad Shah)', bufferMin: 60, fare: 40 },
-  { id: 'tsk',       label: 'TSK',                          bufferMin: 60, fare: 45 },
-  { id: 'pekan_bus', label: 'Pekan Bus Terminal',            bufferMin: 25, fare: 15 },
-] as const;
+// ticket time the customer enters (see aerbusDispatch below). Gambang is
+// genuinely closer to the airport than Pekan is (that's why its Quick
+// Routes fare was always cheaper), so it gets its own, shorter buffers —
+// reusing Pekan's figures for it would be wrong, not just imprecise. No
+// Pekan Bus Terminal option for Gambang — that route doesn't exist.
+type AerbusPointId = 'airport' | 'tsk' | 'pekan_bus';
+interface AerbusPoint { id: AerbusPointId; label: string; bufferMin: number; fare: number; }
 
-type AerbusPointId = typeof AERBUS_POINTS[number]['id'];
+const AERBUS_POINTS: Record<'pekan' | 'gambang', AerbusPoint[]> = {
+  pekan: [
+    { id: 'airport',   label: 'Airport (Sultan Ahmad Shah)', bufferMin: 60, fare: 40 },
+    { id: 'tsk',       label: 'TSK',                          bufferMin: 60, fare: 45 },
+    { id: 'pekan_bus', label: 'Pekan Bus Terminal',            bufferMin: 25, fare: 15 },
+  ],
+  gambang: [
+    { id: 'airport', label: 'Airport (Sultan Ahmad Shah)', bufferMin: 30, fare: 18 },
+    { id: 'tsk',     label: 'TSK',                          bufferMin: 40, fare: 28 },
+  ],
+};
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
@@ -212,11 +215,9 @@ export const Transport: React.FC = () => {
     [routes, selectedFrom]
   );
 
-  // Pekan-only — the buffer figures are specifically UMPSA Pekan travel
-  // times, so a stale point selection must not stay bookable after
-  // switching to Gambang (the point-picker cards are hidden there too).
-  const aerbusPointData = bookMode === 'aerbus' && campus === 'pekan'
-    ? AERBUS_POINTS.find(p => p.id === aerbusPoint) ?? null
+  const aerbusPoints = AERBUS_POINTS[campus];
+  const aerbusPointData = bookMode === 'aerbus'
+    ? aerbusPoints.find(p => p.id === aerbusPoint) ?? null
     : null;
 
   // The customer types their ticket's boarding/landing time into the same
@@ -290,6 +291,10 @@ export const Transport: React.FC = () => {
     setShowFromDropdown(false);
     setPickupPin(null);
     setDestPin(null);
+    // Each campus has its own AerBus point list/pricing (see AERBUS_POINTS)
+    // — a selection made under the old campus may not exist under the new
+    // one (e.g. Pekan Bus Terminal has no Gambang equivalent).
+    setAerbusPoint('');
   };
 
   const handleBook = async (e: React.SyntheticEvent) => {
@@ -757,55 +762,41 @@ export const Transport: React.FC = () => {
       {/* ── AerBus ── */}
       {bookMode === 'aerbus' && (
         <div className="px-4 mt-3 flex flex-col gap-3">
-          {campus === 'gambang' ? (
-            <div className="bg-amber-50 border border-amber-100 rounded-2xl px-4 py-3 flex items-start gap-2">
-              <Info className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
-              <p className="text-xs text-amber-700 font-normal leading-relaxed">
-                AerBus is currently only available from UMPSA Pekan. Switch campus above to book.
-              </p>
-            </div>
-          ) : (
-            <>
-              {/* Direction — Mode Selector Standard */}
-              <div className="flex gap-2">
-                <button type="button" onPointerDown={e => { e.preventDefault(); setAerbusDirection('to'); }}
-                  className={`flex-1 flex flex-col items-center gap-1.5 p-3 rounded-2xl border bg-white transition-transform active:scale-[0.99] active:bg-slate-50 ${
-                    aerbusDirection === 'to' ? 'border-slate-900' : 'border-slate-100'
-                  }`}
-                >
-                  <PlaneTakeoff className={`w-4 h-4 ${aerbusDirection === 'to' ? 'text-slate-900' : 'text-slate-400'}`} />
-                  <span className={`text-xs font-semibold ${aerbusDirection === 'to' ? 'text-slate-900' : 'text-slate-600'}`}>To Airport/Bus</span>
-                </button>
-                <button type="button" onPointerDown={e => { e.preventDefault(); setAerbusDirection('from'); }}
-                  className={`flex-1 flex flex-col items-center gap-1.5 p-3 rounded-2xl border bg-white transition-transform active:scale-[0.99] active:bg-slate-50 ${
-                    aerbusDirection === 'from' ? 'border-slate-900' : 'border-slate-100'
-                  }`}
-                >
-                  <PlaneLanding className={`w-4 h-4 ${aerbusDirection === 'from' ? 'text-slate-900' : 'text-slate-400'}`} />
-                  <span className={`text-xs font-semibold ${aerbusDirection === 'from' ? 'text-slate-900' : 'text-slate-600'}`}>From Airport/Bus</span>
-                </button>
-              </div>
+          {/* Direction — Mode Selector Standard */}
+          <div className="flex gap-2">
+            <button type="button" onPointerDown={e => { e.preventDefault(); setAerbusDirection('to'); }}
+              className={`flex-1 flex flex-col items-center gap-1.5 p-3 rounded-2xl border bg-white transition-transform active:scale-[0.99] active:bg-slate-50 ${
+                aerbusDirection === 'to' ? 'border-slate-900' : 'border-slate-100'
+              }`}
+            >
+              <PlaneTakeoff className={`w-4 h-4 ${aerbusDirection === 'to' ? 'text-slate-900' : 'text-slate-400'}`} />
+              <span className={`text-xs font-semibold ${aerbusDirection === 'to' ? 'text-slate-900' : 'text-slate-600'}`}>To Airport/Bus</span>
+            </button>
+            <button type="button" onPointerDown={e => { e.preventDefault(); setAerbusDirection('from'); }}
+              className={`flex-1 flex flex-col items-center gap-1.5 p-3 rounded-2xl border bg-white transition-transform active:scale-[0.99] active:bg-slate-50 ${
+                aerbusDirection === 'from' ? 'border-slate-900' : 'border-slate-100'
+              }`}
+            >
+              <PlaneLanding className={`w-4 h-4 ${aerbusDirection === 'from' ? 'text-slate-900' : 'text-slate-400'}`} />
+              <span className={`text-xs font-semibold ${aerbusDirection === 'from' ? 'text-slate-900' : 'text-slate-600'}`}>From Airport/Bus</span>
+            </button>
+          </div>
 
-              {/* Point selection — Field Standard cards, Solo Card Standard */}
-              <div className="flex flex-col gap-2">
-                {AERBUS_POINTS.map(p => (
-                  <button key={p.id} type="button" onPointerDown={e => { e.preventDefault(); setAerbusPoint(p.id); }}
-                    className={`w-full flex items-center justify-between p-3 rounded-2xl border bg-white transition-transform active:scale-[0.99] active:bg-slate-50 ${
-                      aerbusPoint === p.id ? 'border-slate-900' : 'border-slate-100'
-                    }`}
-                  >
-                    <div className="text-left">
-                      <p className={`text-xs font-semibold ${aerbusPoint === p.id ? 'text-slate-900' : 'text-slate-700'}`}>{p.label}</p>
-                      <p className="text-xs text-slate-400 font-normal mt-0.5">
-                        {p.bufferMin >= 60 ? `${p.bufferMin / 60} hour` : `${p.bufferMin} minutes`} from UMPSA Pekan
-                      </p>
-                    </div>
-                    <span className="text-xs font-black text-slate-800 shrink-0">RM{p.fare}</span>
-                  </button>
-                ))}
-              </div>
-            </>
-          )}
+          {/* Point selection — Dropdown Standard (NativeSelect); options and
+              pricing are per-campus (see AERBUS_POINTS) since travel time to
+              each point genuinely differs between Pekan and Gambang. */}
+          <div className="flex flex-col gap-0.5">
+            <label className="text-xs font-normal text-slate-400 pl-1">Pickup / Drop Point</label>
+            <NativeSelect<AerbusPointId | ''>
+              value={aerbusPoint}
+              onChange={setAerbusPoint}
+              placeholder="Select a point"
+              options={aerbusPoints.map(p => ({
+                value: p.id,
+                label: `${p.label} — ${p.bufferMin >= 60 ? `${p.bufferMin / 60}h` : `${p.bufferMin}min`} · RM${p.fare}`,
+              }))}
+            />
+          </div>
         </div>
       )}
 
@@ -863,7 +854,7 @@ export const Transport: React.FC = () => {
               <label className="text-xs font-normal text-slate-400 pl-1 flex items-center gap-1">
                 <Clock className="w-3 h-3" />
                 {bookMode === 'aerbus'
-                  ? (aerbusDirection === 'to' ? 'Boarding / Departure Time' : 'Landing / Arrival Time')
+                  ? (aerbusDirection === 'to' ? 'Boarding Time' : 'Landing Time')
                   : 'Time'}
                 {isNight && <span className="text-amber-500 font-semibold ml-1">+RM5</span>}
               </label>

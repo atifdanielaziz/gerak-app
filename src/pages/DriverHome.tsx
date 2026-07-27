@@ -14,8 +14,9 @@ import {
 import { WaIcon, toWa } from '../lib/whatsapp';
 import { ReceiptSheet } from '../components/Receipt';
 import { NativeSelect } from '../components/NativeSelect';
-import { buildTransportReceiptRows, buildRentalReceiptRows } from '../lib/receiptRows';
+import { buildTransportReceiptRows, buildRentalReceiptRows, BOOKING_METHOD_LABEL } from '../lib/receiptRows';
 import { generateReceiptPdf } from '../lib/receiptPdf';
+import { BOOKING_METHOD_ICON, bookingMethodBadgeClass } from '../lib/bookingMethodIcon';
 import { FareModal } from '../components/FareModal';
 import { MonthDrumPicker, EarningsCard, computeEarnings } from '../components/EarningsCard';
 import { fmt12, fmtDuration, todayStr } from '../lib/format';
@@ -954,6 +955,17 @@ export const DriverHome: React.FC = () => {
                     <span className="text-xs font-semibold text-slate-400">
                       {idx === 0 ? 'Next in queue' : `Queue position ${idx + 1}`}
                     </span>
+                    {/* Booking-method badge — quick catch-up on order type
+                        for all 4 modes, not just AerBus. */}
+                    {order.book_mode && BOOKING_METHOD_LABEL[order.book_mode] && (() => {
+                      const MethodIcon = BOOKING_METHOD_ICON[order.book_mode!];
+                      return (
+                        <span className={`inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[10px] font-semibold border ${bookingMethodBadgeClass(order.book_mode!)}`}>
+                          {MethodIcon && <MethodIcon className="w-3 h-3" />}
+                          {BOOKING_METHOD_LABEL[order.book_mode]}
+                        </span>
+                      );
+                    })()}
                   </div>
                   <div className="flex items-center gap-1 text-xs text-blue-600 font-semibold">
                     <Clock className="w-3 h-3" />
@@ -969,7 +981,7 @@ export const DriverHome: React.FC = () => {
                   <div className="mx-4 mt-2 bg-emerald-50 border border-emerald-100 rounded-xl px-3 py-2 flex items-center gap-2">
                     <PlaneTakeoff className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
                     <p className="text-xs text-emerald-700 font-semibold">
-                      AerBus — {order.aerbus_direction === 'from' ? 'Landing' : 'Boarding'} {order.aerbus_customer_time}, leave early
+                      {order.aerbus_direction === 'from' ? 'Landing' : 'Boarding'} {order.aerbus_customer_time}, leave early
                     </p>
                   </div>
                 )}
@@ -1073,9 +1085,27 @@ export const DriverHome: React.FC = () => {
                   <span className="text-white text-xs font-semibold uppercase tracking-wide">
                     {myJob.status === 'in_progress' ? 'Trip In Progress' : 'Job Accepted'}
                   </span>
+                  {myJob.book_mode && BOOKING_METHOD_LABEL[myJob.book_mode] && (() => {
+                    const MethodIcon = BOOKING_METHOD_ICON[myJob.book_mode!];
+                    return (
+                      <span className="inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[10px] font-semibold bg-white/15 text-white">
+                        {MethodIcon && <MethodIcon className="w-3 h-3" />}
+                        {BOOKING_METHOD_LABEL[myJob.book_mode]}
+                      </span>
+                    );
+                  })()}
                 </div>
                 <span className="text-white/70 text-xs font-normal">{myJob.date} · {myJob.time}</span>
               </div>
+
+              {myJob.book_mode === 'aerbus' && (
+                <div className="bg-emerald-50 border border-emerald-100 rounded-2xl px-3.5 py-2.5 flex items-center gap-2">
+                  <PlaneTakeoff className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                  <p className="text-xs text-emerald-700 font-semibold">
+                    {myJob.aerbus_direction === 'from' ? 'Landing' : 'Boarding'} {myJob.aerbus_customer_time}, leave early
+                  </p>
+                </div>
+              )}
 
               <div className="bg-white border border-slate-100 rounded-3xl overflow-hidden cursor-pointer" onClick={() => setSheetOrder(myJob)}>
                 <div className="px-5 pt-5 pb-4 flex flex-col gap-0.5">

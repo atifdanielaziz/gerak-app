@@ -1,31 +1,22 @@
 import React, { useState } from 'react';
-import { FileDown, Copy, Check, X, List, PencilLine, Map, PlaneTakeoff } from 'lucide-react';
+import { FileDown, Copy, Check, X } from 'lucide-react';
 import { WaBtn } from '../lib/whatsapp';
 import type { ReceiptDoc, ReceiptMeta, ReceiptRow } from '../lib/receiptRows';
 import { copyToClipboard } from '../lib/clipboard';
+import { BOOKING_METHOD_ICON, bookingMethodBadgeClass } from '../lib/bookingMethodIcon';
 
 const valueClass = (r: ReceiptRow) =>
   r.emphasis === 'highlight' ? 'text-blue-600 font-bold' :
   r.emphasis === 'total'     ? 'text-sm font-bold text-slate-800' :
                                 'text-slate-700';
 
-// AerBus gets its own green treatment — it's the odd one out (time-critical,
-// automatic dispatch buffer), everything else stays the neutral slate used
-// for badges everywhere else in the app.
-const BOOKING_METHOD_ICON: Record<string, React.ElementType> = {
-  quick: List, custom: PencilLine, map: Map, aerbus: PlaneTakeoff,
-};
-
 export const ReceiptHeader: React.FC<{ meta: ReceiptMeta }> = ({ meta }) => {
   const MethodIcon = meta.bookingMethod ? BOOKING_METHOD_ICON[meta.bookingMethod.mode] : null;
-  const isAerbus = meta.bookingMethod?.mode === 'aerbus';
 
   return (
     <div className="flex flex-col gap-1.5">
       {meta.bookingMethod && MethodIcon && (
-        <span className={`inline-flex items-center gap-1 self-start rounded-md px-1.5 py-0.5 text-[10px] font-semibold border ${
-          isAerbus ? 'bg-emerald-50 border-emerald-100 text-emerald-600' : 'bg-slate-50 border-slate-100 text-slate-500'
-        }`}>
+        <span className={`inline-flex items-center gap-1 self-start rounded-md px-1.5 py-0.5 text-[10px] font-semibold border ${bookingMethodBadgeClass(meta.bookingMethod.mode)}`}>
           <MethodIcon className="w-3 h-3" />
           {meta.bookingMethod.label}
         </span>
