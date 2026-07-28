@@ -3,8 +3,23 @@ import type { ReceiptDoc, ReceiptRow } from './receiptRows';
 const printDate = () =>
   new Date().toLocaleDateString('en-MY', { day: '2-digit', month: 'short', year: 'numeric' });
 
+// SECURITY [stored XSS]: doc.rows carries fields straight from user-submitted
+// booking data (Jubah's fullName/deliveryAddress/matricId, Transport's
+// pickup/destination/notes, Rental's notes, etc.) — all free text on
+// no-login/guest-facing forms, so any of them can contain literal HTML.
+// This string is injected as a REAL DOM document via iframe.srcdoc (not
+// React JSX, which would auto-escape), and that iframe has no `sandbox`
+// attribute, so it shares the app's own origin — an unescaped
+// `<img src=x onerror=...>` in a booking's name would execute with access
+// to the parent page's localStorage (where the Supabase session lives) the
+// moment any admin/rider opens that booking's receipt. Escaping every
+// interpolated value, not just the ones known today to be user-controlled,
+// so a future field added to any receipt doesn't silently reopen this.
+const escapeHtml = (s: string) =>
+  String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+
 const row = (label: string, value: string, cls = '') =>
-  `<div class="row${cls}"><span class="lbl">${label}</span><span class="colon">:</span><span class="val">${value}</span></div>`;
+  `<div class="row${cls}"><span class="lbl">${escapeHtml(label)}</span><span class="colon">:</span><span class="val">${escapeHtml(value)}</span></div>`;
 
 // Inlined rather than referenced via <img src="/gerak-icon-light.svg"> — this
 // prints from an iframe's srcdoc, and print() fires as soon as the HTML
@@ -37,7 +52,7 @@ function buildReceiptHtml(doc: ReceiptDoc, extraRows: ReceiptRow[] = []): string
     .join('');
 
   return `<!DOCTYPE html><html><head><meta charset="utf-8"/>
-<title>${doc.subtitle} ${doc.bookingRef}</title>
+<title>${escapeHtml(doc.subtitle)} ${escapeHtml(doc.bookingRef)}</title>
 <style>
 body{font-family:monospace;font-size:13px;color:#1e293b;width:100%;max-width:680px;margin:0 auto;padding:32px 24px;box-sizing:border-box}
 .brand{display:flex;align-items:center;gap:8px;margin-bottom:2px}
@@ -53,7 +68,7 @@ hr{border:none;border-top:1px dashed #cbd5e1;margin:12px 0}
 @media print{body{margin:0 auto;padding:20px 20px}}
 </style></head><body>
 <div class="brand">${LOGO_SVG}<h1>ger<span>a</span>k</h1></div>
-<div class="sub">${doc.subtitle}</div>
+<div class="sub">${escapeHtml(doc.subtitle)}</div>
 ${row('Booking Ref', doc.bookingRef)}
 ${row('Status', doc.statusLabel.toUpperCase())}
 ${doc.bookingMethod ? row('Booking Method', doc.bookingMethod.label) : ''}
