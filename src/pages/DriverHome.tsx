@@ -1558,7 +1558,7 @@ export const DriverHome: React.FC = () => {
                   type="number" min="1" step="0.50"
                   value={vehicleForm.price_hour ?? 10}
                   onChange={e => setVehicleForm(f => ({ ...f, price_hour: Number(e.target.value) }))}
-                  className="w-full bg-white border border-slate-100 rounded-xl px-3 py-2.5 text-xs font-bold text-slate-700 focus:outline-none focus:border-amber-400 transition"
+                  className="w-full bg-white border border-slate-100 rounded-xl px-3 py-2.5 text-xs font-bold text-slate-700 focus:outline-none focus:border-slate-900 transition"
                 />
               </div>
 
@@ -1618,7 +1618,7 @@ export const DriverHome: React.FC = () => {
                       value={vehicleForm.night_surcharge_rate || ''}
                       onChange={e => setVehicleForm(f => ({ ...f, night_surcharge_rate: Number(e.target.value) }))}
                       placeholder="0.00"
-                      className="w-full bg-white border border-slate-100 rounded-xl px-3 py-2.5 text-xs font-bold text-slate-700 focus:outline-none focus:border-amber-400 transition"
+                      className="w-full bg-white border border-slate-100 rounded-xl px-3 py-2.5 text-xs font-bold text-slate-700 focus:outline-none focus:border-slate-900 transition"
                     />
                     <p className="text-xs text-slate-400 font-normal">
                       Night hours = normal rate + this extra amount per hour.
@@ -1652,7 +1652,7 @@ export const DriverHome: React.FC = () => {
                     value={vehicleForm[key] as string ?? ''}
                     onChange={e => setVehicleForm(f => ({ ...f, [key]: e.target.value }))}
                     placeholder={placeholder}
-                    className="w-full bg-white border border-slate-100 rounded-xl px-3 py-2.5 text-xs text-slate-700 focus:outline-none focus:border-amber-400 transition"
+                    className="w-full bg-white border border-slate-100 rounded-xl px-3 py-2.5 text-xs text-slate-700 focus:outline-none focus:border-slate-900 transition"
                   />
                 </div>
               ))}
@@ -1674,7 +1674,7 @@ export const DriverHome: React.FC = () => {
                     type="number" min="1" step="0.50"
                     value={vehicleForm.price_hour ?? 10}
                     onChange={e => setVehicleForm(f => ({ ...f, price_hour: Number(e.target.value) }))}
-                    className="w-full bg-white border border-slate-100 rounded-xl px-3 py-2.5 text-xs text-slate-700 focus:outline-none focus:border-amber-400 transition"
+                    className="w-full bg-white border border-slate-100 rounded-xl px-3 py-2.5 text-xs text-slate-700 focus:outline-none focus:border-slate-900 transition"
                   />
                 </div>
               </div>
@@ -1686,7 +1686,7 @@ export const DriverHome: React.FC = () => {
                   onChange={e => setVehicleForm(f => ({ ...f, description: e.target.value }))}
                   rows={2}
                   placeholder="Any details customers should know..."
-                  className="w-full bg-white border border-slate-100 rounded-xl px-3 py-2.5 text-xs text-slate-700 focus:outline-none focus:border-amber-400 transition resize-none"
+                  className="w-full bg-white border border-slate-100 rounded-xl px-3 py-2.5 text-xs text-slate-700 focus:outline-none focus:border-slate-900 transition resize-none"
                 />
               </div>
 

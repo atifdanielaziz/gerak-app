@@ -83,7 +83,7 @@ const STATUS_STYLE: Record<string, string> = {
 
 export const TrackJubah: React.FC = () => {
   const [reference, setReference] = useState('');
-  const [matric, setMatric]       = useState('');
+  const [icNumber, setIcNumber]   = useState('');
   const [searching, setSearching] = useState(false);
   const [searched, setSearched]   = useState(false);
   const [results, setResults]     = useState<JubahBookingResult[]>([]);
@@ -125,18 +125,27 @@ export const TrackJubah: React.FC = () => {
     setError('');
     setResults([]);
     const refValue = (refOverride ?? reference).trim();
-    if (!refValue && !matric.trim()) {
-      setError('Please enter your reference number or matric / IC number.');
+    const icDigits = icNumber.replace(/\D/g, '');
+    if (!refValue && !icNumber.trim()) {
+      setError('Please enter your reference number or IC number.');
+      return;
+    }
+    // IC number is the only accepted lookup key here (besides reference) —
+    // matric numbers are sequential/predictable per intake, so allowing
+    // lookup by matric alone would let anyone enumerate other students'
+    // booking status. A malformed (non-12-digit) IC value is rejected
+    // client-side rather than silently sent through as free text.
+    if (!refValue && icNumber.trim() && icDigits.length !== 12) {
+      setError('Please enter a valid 12-digit IC number (e.g. 980123-45-6789).');
       return;
     }
     setSearching(true);
     setSearched(false);
-    const isIc = matric.replace(/\D/g, '').length === 12;
     const { data, error: rpcError } = await supabase.rpc('track_jubah_booking', {
       p_reference:  refValue || null,
       p_hp_number:  null,
-      p_matric_id:  (matric.trim() && !isIc) ? matric.trim() : null,
-      p_ic_number:  (matric.trim() && isIc)  ? matric.trim() : null,
+      p_matric_id:  null,
+      p_ic_number:  icDigits.length === 12 ? icNumber.trim() : null,
     });
     setSearching(false);
     setSearched(true);
@@ -244,7 +253,7 @@ export const TrackJubah: React.FC = () => {
             onChange={e => setReference(e.target.value.toUpperCase())}
             placeholder="e.g. JUB-26-UMPSA-XK7F"
             style={{ fontSize: '16px' }}
-            className="bg-white border border-slate-100 rounded-xl py-2.5 px-3 text-sm font-normal text-slate-700 focus:outline-none focus:border-blue-500 transition placeholder:font-normal placeholder:text-slate-300"
+            className="bg-white border border-slate-100 rounded-xl py-2.5 px-3 text-sm font-normal text-slate-700 focus:outline-none focus:border-slate-900 transition placeholder:font-normal placeholder:text-slate-300"
           />
         </div>
 
@@ -255,14 +264,15 @@ export const TrackJubah: React.FC = () => {
         </div>
 
         <div className="flex flex-col gap-1.5">
-          <label className="text-xs font-semibold text-slate-400">Matric or IC Number</label>
+          <label className="text-xs font-semibold text-slate-400">IC Number</label>
           <input
             type="text"
-            value={matric}
-            onChange={e => setMatric(e.target.value)}
-            placeholder="e.g. CB21110 or 980123-45-6789"
+            inputMode="numeric"
+            value={icNumber}
+            onChange={e => setIcNumber(e.target.value)}
+            placeholder="e.g. 980123-45-6789"
             style={{ fontSize: '16px' }}
-            className="bg-white border border-slate-100 rounded-xl py-2.5 px-3 text-sm font-normal text-slate-700 focus:outline-none focus:border-blue-500 transition placeholder:font-normal placeholder:text-slate-300"
+            className="bg-white border border-slate-100 rounded-xl py-2.5 px-3 text-sm font-normal text-slate-700 focus:outline-none focus:border-slate-900 transition placeholder:font-normal placeholder:text-slate-300"
           />
         </div>
 
@@ -289,7 +299,7 @@ export const TrackJubah: React.FC = () => {
           <div className="bg-white border border-slate-100 rounded-3xl p-8 flex flex-col items-center gap-3 text-center">
             <GraduationCap className="w-8 h-8 text-slate-300" />
             <p className="text-xs font-semibold text-slate-500">No booking found.</p>
-            <p className="text-xs text-slate-400 font-normal">Double-check your reference number or matric / IC number and try again.</p>
+            <p className="text-xs text-slate-400 font-normal">Double-check your reference number or IC number and try again.</p>
           </div>
         ) : (
           <div className="flex flex-col gap-4">
@@ -481,7 +491,7 @@ export const TrackJubah: React.FC = () => {
                         onChange={e => setIcLast4(e.target.value.replace(/\D/g, ''))}
                         placeholder="1234"
                         style={{ fontSize: '16px' }}
-                        className="flex-1 bg-white border border-slate-100 rounded-xl py-2.5 px-3 text-sm font-semibold text-slate-700 focus:outline-none focus:border-blue-500 transition placeholder:font-normal placeholder:text-slate-300"
+                        className="flex-1 bg-white border border-slate-100 rounded-xl py-2.5 px-3 text-sm font-semibold text-slate-700 focus:outline-none focus:border-slate-900 transition placeholder:font-normal placeholder:text-slate-300"
                       />
                       <button
                         type="button"

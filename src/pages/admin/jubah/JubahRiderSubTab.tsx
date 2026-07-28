@@ -238,7 +238,7 @@ const JubahRiderSheet: React.FC<{
             {/* New drop point input */}
             {showAdd && (
               <div className="flex flex-col gap-1">
-                <span className="text-xs font-semibold text-indigo-400">
+                <span className="text-xs font-semibold text-slate-400">
                   Drop Point {secondary.length + 2}
                 </span>
                 {addMethod !== 'postage' ? (
@@ -248,7 +248,7 @@ const JubahRiderSheet: React.FC<{
                     onChange={e => setAddDropPoint(e.target.value)}
                     placeholder="e.g. Kolej Kediaman 3, Lobby A"
                     style={{ fontSize: '12px' }}
-                    className="bg-indigo-50/50 border border-indigo-200 rounded-xl py-2.5 px-3 font-semibold text-slate-700 focus:outline-none focus:border-indigo-400 transition placeholder:font-normal placeholder:text-slate-300"
+                    className="bg-white border border-slate-100 rounded-xl py-2.5 px-3 font-semibold text-slate-700 focus:outline-none focus:border-slate-900 transition placeholder:font-normal placeholder:text-slate-300"
                     autoFocus
                   />
                 ) : (
@@ -425,7 +425,12 @@ export const JubahRiderSubTab = forwardRef<JubahRiderSubTabHandle, JubahRiderSub
             <h3 className="text-sm font-semibold text-slate-700 flex items-center gap-1.5">
               <Users className="w-4 h-4" /> Representative Directory
             </h3>
-            <div className="overflow-x-auto overflow-y-auto no-scrollbar max-h-[320px]">
+            {/* Split horizontal/vertical scroll across two nested containers
+                — see JubahCustomerSubTab's identical table for why a single
+                dual-axis scroll element causes erratic diagonal scrolling
+                and an unreliable sticky header on mobile. */}
+            <div className="overflow-x-auto no-scrollbar">
+              <div className="overflow-y-auto no-scrollbar max-h-[320px]">
               <table className="min-w-full text-left border-collapse">
                 <thead className="sticky top-0 bg-white">
                   <tr className="text-xs font-normal text-slate-400 border-b border-slate-100">
@@ -462,6 +467,7 @@ export const JubahRiderSubTab = forwardRef<JubahRiderSubTabHandle, JubahRiderSub
                   })}
                 </tbody>
               </table>
+              </div>
             </div>
           </div>
         )}

@@ -756,7 +756,7 @@ export const Jubah: React.FC = () => {
                 onChange={e => setFullName(e.target.value.toUpperCase())}
                 placeholder="FULL NAME AS PER IC"
                 required
-                className="bg-white border border-slate-100 rounded-xl py-2.5 px-3 text-xs font-semibold text-slate-700 focus:outline-none focus:border-blue-500 transition placeholder:font-normal placeholder:text-slate-300"
+                className="bg-white border border-slate-100 rounded-xl py-2.5 px-3 text-xs font-semibold text-slate-700 focus:outline-none focus:border-slate-900 transition placeholder:font-normal placeholder:text-slate-300"
               />
             </div>
 
@@ -774,7 +774,7 @@ export const Jubah: React.FC = () => {
                 placeholder="980123-45-6789"
                 maxLength={14}
                 required
-                className="bg-white border border-slate-100 rounded-xl py-2.5 px-3 text-xs font-semibold text-slate-700 focus:outline-none focus:border-blue-500 transition placeholder:font-normal placeholder:text-slate-300"
+                className="bg-white border border-slate-100 rounded-xl py-2.5 px-3 text-xs font-semibold text-slate-700 focus:outline-none focus:border-slate-900 transition placeholder:font-normal placeholder:text-slate-300"
               />
             </div>
 
@@ -792,7 +792,7 @@ export const Jubah: React.FC = () => {
                 placeholder="012-34567890"
                 maxLength={12}
                 required
-                className="bg-white border border-slate-100 rounded-xl py-2.5 px-3 text-xs font-semibold text-slate-700 focus:outline-none focus:border-blue-500 transition placeholder:font-normal placeholder:text-slate-300"
+                className="bg-white border border-slate-100 rounded-xl py-2.5 px-3 text-xs font-semibold text-slate-700 focus:outline-none focus:border-slate-900 transition placeholder:font-normal placeholder:text-slate-300"
               />
             </div>
 
@@ -807,7 +807,7 @@ export const Jubah: React.FC = () => {
                 onChange={e => setEmail(e.target.value)}
                 placeholder="you@example.com"
                 required
-                className="bg-white border border-slate-100 rounded-xl py-2.5 px-3 text-xs font-semibold text-slate-700 focus:outline-none focus:border-blue-500 transition placeholder:font-normal placeholder:text-slate-300"
+                className="bg-white border border-slate-100 rounded-xl py-2.5 px-3 text-xs font-semibold text-slate-700 focus:outline-none focus:border-slate-900 transition placeholder:font-normal placeholder:text-slate-300"
               />
             </div>
 
@@ -823,7 +823,7 @@ export const Jubah: React.FC = () => {
                 onChange={e => setMatricId(e.target.value.toUpperCase())}
                 placeholder="HB19021"
                 required
-                className="bg-white border border-slate-100 rounded-xl py-2.5 px-3 text-xs font-semibold text-slate-700 focus:outline-none focus:border-blue-500 transition placeholder:font-normal placeholder:text-slate-300"
+                className="bg-white border border-slate-100 rounded-xl py-2.5 px-3 text-xs font-semibold text-slate-700 focus:outline-none focus:border-slate-900 transition placeholder:font-normal placeholder:text-slate-300"
               />
             </div>
           </div>
@@ -1281,7 +1281,7 @@ export const Jubah: React.FC = () => {
         <div className="flex flex-col gap-4">
 
           {/* Reference Number — always shown, critical for guests */}
-          <div className="bg-blue-600 rounded-3xl p-5 shadow-md flex flex-col gap-1 text-center">
+          <div className="bg-blue-600 rounded-3xl p-5 flex flex-col gap-1 text-center">
             <span className="text-xs text-blue-100 font-extrabold uppercase tracking-widest">Your Reference Number</span>
             <div className="flex items-center justify-center gap-2">
               <span className="text-2xl font-black text-white tracking-wider">{jubahBooking.reference}</span>
@@ -1483,7 +1483,7 @@ export const Jubah: React.FC = () => {
                     onChange={e => f.set(e.target.value)}
                     placeholder={f.placeholder}
                     style={{ fontSize: '12px' }}
-                    className="bg-white border border-slate-100 rounded-xl py-2.5 px-3 font-semibold text-slate-700 focus:outline-none focus:border-blue-500 transition placeholder:font-normal placeholder:text-slate-300"
+                    className="bg-white border border-slate-100 rounded-xl py-2.5 px-3 font-semibold text-slate-700 focus:outline-none focus:border-slate-900 transition placeholder:font-normal placeholder:text-slate-300"
                   />
                 </div>
               ))}

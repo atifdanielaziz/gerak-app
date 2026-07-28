@@ -49,6 +49,7 @@ export const AdminHome: React.FC = () => {
   const {
     user, setCurrentPage, setSheetOpen, notifications,
     activeRole, isPreviewMode, switchToDriverMode, switchToRiderMode, enterPreviewMode,
+    setLeaveGuard,
   } = useApp();
 
   const isSuperAdmin = user.role === 'superadmin';
@@ -158,6 +159,7 @@ export const AdminHome: React.FC = () => {
   const [currentSampleDoc, setCurrentSampleDoc] = useState<string | null>(null);
   const sampleFileRef   = useRef<HTMLInputElement>(null);
   const mainScrollRef   = useRef<HTMLDivElement>(null);
+  const stickyHeaderRef = useRef<HTMLDivElement>(null);
   const driversTabRef   = useRef<DriversTabHandle>(null);
   const usersTabRef     = useRef<UsersTabHandle>(null);
   const routesTabRef    = useRef<RoutesTabHandle>(null);
@@ -233,27 +235,49 @@ export const AdminHome: React.FC = () => {
   // ── Admin Jubah back navigation (list <-> card; card now holds
   //    everything — stepper, confirm, full details, receipt, documents —
   //    so there's no longer a separate "details" page to hop through). ────
+  // Registers with AppContext's single shared goBack() (see GerakRental.tsx
+  // for the same pattern) instead of adding a second, independent popstate
+  // listener + manual pushState — two listeners on the same window event
+  // both firing meant a single hardware/gesture back-press here could BOTH
+  // close the card AND (since AppContext's own popstate handler runs
+  // unconditionally alongside it) navigate away from Admin Home entirely.
   useEffect(() => {
-    if (activeTab !== 'jubah' || jubahSubTab !== 'customer') return;
-    const handlePop = () => {
-      setJubahAdminView(prev => {
-        if (prev === 'card') { setJubahAdminSelected(null); return 'list'; }
-        return prev;
-      });
-    };
-    window.addEventListener('popstate', handlePop);
-    return () => window.removeEventListener('popstate', handlePop);
-  }, [activeTab, jubahSubTab]);
+    if (activeTab !== 'jubah' || jubahSubTab !== 'customer' || jubahAdminView !== 'card') {
+      setLeaveGuard(null);
+      return;
+    }
+    setLeaveGuard(() => () => { setJubahAdminSelected(null); setJubahAdminView('list'); });
+    return () => setLeaveGuard(null);
+  }, [activeTab, jubahSubTab, jubahAdminView, setLeaveGuard]);
 
   const goToAdminCard = (b: JubahBookingRow) => {
     setJubahAdminSelected(b);
     setJubahAdminView('card');
-    window.history.pushState({ jubahAdmin: 'card' }, '');
   };
-  const goAdminBack = () => window.history.back();
+  const goAdminBack = () => { setJubahAdminSelected(null); setJubahAdminView('list'); };
   // Distinct from goAdminBack — used after a delete, when there's no page
   // to browser-back to since the booking it referred to no longer exists.
   const goToJubahList = () => { setJubahAdminView('list'); setJubahAdminSelected(null); };
+
+  // Exposes this header+tab-bar's live rendered height as a CSS variable on
+  // the shared scroll container, so any sticky sub-page header rendered
+  // further down (e.g. JubahCustomerSubTab's own sticky back-row) can sit
+  // at `top: var(--admin-sticky-header-h)` instead of `top: 0` — two
+  // sticky elements at top:0 in the same scroll container overlap rather
+  // than stack. ResizeObserver (not a one-time measurement) because the
+  // tab bar's item count/width changes with role (superadmin sees more
+  // tabs), which changes this header's height.
+  useEffect(() => {
+    const el = stickyHeaderRef.current;
+    if (!el) return;
+    const apply = () => {
+      mainScrollRef.current?.style.setProperty('--admin-sticky-header-h', `${el.offsetHeight}px`);
+    };
+    apply();
+    const ro = new ResizeObserver(apply);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [sampleDocsPage, activeTab, isSuperAdmin]);
 
   useEffect(() => {
     if (!sampleDocsPage) {
@@ -548,7 +572,7 @@ export const AdminHome: React.FC = () => {
       ) : (<>
 
       {/* Sticky header + tab switcher — mobile only; desktop uses the sidebar + topbar instead */}
-      <div className="lg:hidden sticky top-0 z-10 -mx-4 px-4 pt-4 pb-2 bg-slate-50/95 backdrop-blur-sm flex flex-col gap-4">
+      <div ref={stickyHeaderRef} className="lg:hidden sticky top-0 z-10 -mx-4 px-4 pt-4 pb-2 bg-slate-50/95 backdrop-blur-sm flex flex-col gap-4">
 
         {/* Header */}
         <div className="flex items-center justify-between">
