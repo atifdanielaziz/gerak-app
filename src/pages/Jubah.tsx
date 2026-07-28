@@ -7,6 +7,7 @@ import { JubahLanding } from '../components/JubahLanding';
 import { supabase } from '../lib/supabase';
 import { compressImage } from '../lib/imageCompress';
 import { stampWatermark } from '../lib/watermark';
+import { saveOrShareBlob } from '../lib/nativeDownload';
 import { FloatingMessage } from '../components/FloatingMessage';
 import { RepresentativeSheet } from '../components/RepresentativeSheet';
 import { ReceiptCard } from '../components/Receipt';
@@ -468,12 +469,7 @@ export const Jubah: React.FC = () => {
 
   const handleDownload = () => {
     if (!combinedBlob) return;
-    const url = URL.createObjectURL(combinedBlob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `${(fullName || 'combined').replace(/\s+/g, '_')}.pdf`;
-    a.click();
-    URL.revokeObjectURL(url);
+    saveOrShareBlob(combinedBlob, `${(fullName || 'combined').replace(/\s+/g, '_')}.pdf`);
   };
 
   const [booking, setBooking] = useState(false);
