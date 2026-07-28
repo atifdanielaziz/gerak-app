@@ -15,6 +15,47 @@ import {
 } from '../../../lib/jubahStatus';
 import { generateReceiptPdf } from '../../../lib/receiptPdf';
 
+// Shared by the "Upload Documents & Combined Document" and "Proof of
+// Payment" sections below — same view/download-via-signed-URL row, reused
+// so both sections stay visually identical instead of drifting apart.
+const DocLinkRow: React.FC<{ label: string; url: string | null; showToast: (msg: string) => void }> = ({ label, url, showToast }) => (
+  <div className="flex items-center justify-between gap-3 bg-slate-50 border border-slate-100 rounded-xl px-3 py-2.5">
+    <span className="text-xs font-semibold text-slate-700 truncate">{label}</span>
+    <div className="flex items-center gap-2 shrink-0">
+      <button
+        type="button"
+        disabled={!url}
+        onClick={async () => {
+          const { url: signed, error } = await getJubahDocSignedUrl(url);
+          if (signed) openInNewTab(signed);
+          else showToast(error ? `Couldn't open ${label}: ${error}` : `Couldn't open ${label}.`);
+        }}
+        className={`w-8 h-8 flex items-center justify-center rounded-lg border transition shrink-0 ${
+          url
+            ? 'bg-blue-50 border-blue-100 text-blue-600 hover:bg-blue-100 active:scale-95'
+            : 'bg-white border-slate-100 text-slate-300 cursor-not-allowed'
+        }`}>
+        <Eye className="w-3.5 h-3.5" />
+      </button>
+      <button
+        type="button"
+        disabled={!url}
+        onClick={async () => {
+          const { url: signed, error } = await getJubahDocSignedUrl(url, true);
+          if (signed) openInNewTab(signed);
+          else showToast(error ? `Couldn't download ${label}: ${error}` : `Couldn't download ${label}.`);
+        }}
+        className={`w-8 h-8 flex items-center justify-center rounded-lg border transition shrink-0 ${
+          url
+            ? 'bg-slate-800 border-slate-700 text-white hover:bg-slate-700 active:scale-95'
+            : 'bg-white border-slate-100 text-slate-300 cursor-not-allowed'
+        }`}>
+        <Download className="w-3.5 h-3.5" />
+      </button>
+    </div>
+  </div>
+);
+
 export type JubahBookingRow = {
   id: string; reference: string; full_name: string; ic_number: string; hp_number: string;
   email: string | null;
@@ -487,8 +528,11 @@ export function JubahCustomerSubTab({
         const { steps, curStep, notStarted, isDone, nextStatus: nextStat } = getJubahProgress(b.status, b.payment_mode);
         return (
           <div className="flex flex-col gap-4">
-            {/* Back row — sticky so it stays visible while the content below scrolls */}
-            <div className="sticky top-0 z-10 -mx-4 px-4 pt-2 pb-2 bg-white flex items-center gap-2">
+            {/* Back row — sticky so it stays visible while the content below
+                scrolls. Offset by the admin header+tab-bar's own live
+                height (see AdminHome.tsx's stickyHeaderRef) instead of
+                top-0, otherwise both stick to the same y and overlap. */}
+            <div className="sticky z-10 -mx-4 px-4 pt-2 pb-2 bg-white flex items-center gap-2" style={{ top: 'var(--admin-sticky-header-h, 0px)' }}>
               <button onClick={onGoBack}
                 className="w-8 h-8 flex items-center justify-center rounded-xl bg-white border border-slate-100 text-slate-500 hover:text-primary transition active:scale-90 shrink-0">
                 <ChevronLeft className="w-4 h-4" />
@@ -693,36 +737,86 @@ export function JubahCustomerSubTab({
               )}
             </div>
 
-            {/* Form fields card — folded into this same page (was a separate
-                "View Customer Details" page/tap before) so confirming a
-                payment and checking who/what you're confirming don't need
-                two different pages. */}
-            <div className="bg-white border border-slate-100 rounded-3xl p-5 flex flex-col gap-4">
-              <h3 className="text-sm font-semibold text-slate-700">Booking Information</h3>
+            {/* Booking Information — mirrors Jubah.tsx's own booking-form
+                section layout/titles exactly (Personal Information,
+                Academic Information, Service Option, Upload Documents &
+                Combined Document, Proof of Payment), just read-only: plain
+                value boxes instead of inputs, nothing here is editable. */}
 
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                {([
-                  { label: 'Full Name',     value: b.full_name },
-                  { label: 'IC Number',      value: b.ic_number },
-                  { label: 'Phone',          value: b.hp_number },
-                  { label: 'Matric No.',     value: b.matric_id },
-                  { label: 'University',     value: b.university },
-                  { label: 'Campus',         value: `UMPSA ${b.campus}` },
-                  { label: 'Faculty',        value: b.faculty },
-                  { label: 'Remark',         value: b.remark },
-                  { label: 'Booking Type',   value: b.delivery_address ? 'Pickup & Postage' : 'Self Pickup' },
-                  { label: 'Payment Mode',   value: b.payment_mode !== 'deposit' ? 'Full Payment' : b.balance_paid ? 'Full Payment (DP)' : 'Deposit' },
-                  { label: 'Service Fee',    value: `RM${b.cost.toFixed(2)}` },
-                  ...(b.payment_mode === 'deposit' ? [{ label: 'Balance Due', value: `RM${b.balance_due.toFixed(2)}` }] : []),
-                  ...(b.delivery_address ? [{ label: 'Delivery Address', value: b.delivery_address, span: true }] : []),
-                  { label: 'Rider Assigned', value: b.rider_name ?? '—' },
-                  { label: 'Reference',      value: b.reference },
-                ] as { label: string; value: string; span?: boolean }[]).map(({ label, value, span }) => (
-                  <div key={label} className={`bg-slate-50 border border-slate-100 rounded-xl px-3 py-2 min-w-0 ${span ? 'col-span-2 sm:col-span-3' : ''}`}>
-                    <p className="text-[8px] font-semibold text-slate-400 uppercase tracking-wider">{label}</p>
-                    <p className="text-xs font-semibold text-slate-700 leading-relaxed break-words">{value}</p>
+            {/* ── PERSONAL INFORMATION ── */}
+            <div className="bg-white border border-slate-100 rounded-3xl p-5 flex flex-col gap-4">
+              <h3 className="text-sm font-semibold text-slate-700">Personal Information</h3>
+              {([
+                { label: 'Full Name', value: b.full_name },
+                { label: 'IC Number', value: b.ic_number },
+                { label: 'HP Number', value: b.hp_number },
+                { label: 'Email',     value: b.email ?? '—' },
+                { label: 'Matric ID', value: b.matric_id },
+              ]).map(({ label, value }) => (
+                <div key={label} className="flex flex-col gap-1">
+                  <label className="text-xs font-semibold text-slate-400">{label}</label>
+                  <div className="bg-slate-50 border border-slate-100 rounded-xl py-2.5 px-3">
+                    <span className="text-xs font-semibold text-slate-700 break-words">{value}</span>
                   </div>
-                ))}
+                </div>
+              ))}
+            </div>
+
+            {/* ── ACADEMIC INFORMATION ── */}
+            <div className="bg-white border border-slate-100 rounded-3xl p-5 flex flex-col gap-4">
+              <h3 className="text-sm font-semibold text-slate-700">Academic Information</h3>
+              {([
+                { label: 'Campus',  value: `UMPSA ${b.campus}` },
+                { label: 'Faculty', value: b.faculty },
+                { label: 'Remark',  value: b.remark },
+              ]).map(({ label, value }) => (
+                <div key={label} className="flex flex-col gap-1">
+                  <label className="text-xs font-semibold text-slate-400">{label}</label>
+                  <div className="bg-slate-50 border border-slate-100 rounded-xl py-2.5 px-3">
+                    <span className="text-xs font-semibold text-slate-700 break-words">{value}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* ── SERVICE OPTION ── echoes whichever option the customer
+                actually picked, styled like that option's selected radio
+                card in the live form (border-slate-900 + checkmark)
+                instead of showing all 3 choices — the other two were never
+                relevant to this booking. */}
+            <div className="bg-white border border-slate-100 rounded-3xl p-5 flex flex-col gap-4">
+              <h3 className="text-sm font-semibold text-slate-700">Service Option</h3>
+              <div className="flex items-start gap-3 p-3.5 rounded-2xl border border-slate-900">
+                <CheckCircle2 className="w-4 h-4 text-slate-900 shrink-0 mt-0.5" />
+                <div className="flex-1">
+                  <span className="text-xs font-semibold block text-slate-900">
+                    {b.payment_mode === 'deposit'
+                      ? `Deposit — ${b.delivery_address ? 'Pickup & Postage' : 'Self Pickup'}`
+                      : b.payment_mode === 'postage'
+                      ? 'Full Payment — Pickup & Postage'
+                      : 'Full Payment — Pickup Point'}
+                  </span>
+                  {b.delivery_address && (
+                    <span className="text-xs text-slate-400 leading-relaxed block mt-1 whitespace-pre-wrap">{b.delivery_address}</span>
+                  )}
+                </div>
+              </div>
+              <div className="border border-slate-100 rounded-2xl p-3.5">
+                <span className="text-xs text-slate-400 font-semibold block">Service Fee</span>
+                <span className="text-xl font-black text-slate-800">RM{b.cost.toFixed(2)}</span>
+                {b.payment_mode === 'deposit' && !b.balance_paid && (
+                  <span className="text-xs text-slate-400 block mt-0.5">Balance Due: RM{b.balance_due.toFixed(2)}</span>
+                )}
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <div className="bg-slate-50 border border-slate-100 rounded-xl px-3 py-2 min-w-0">
+                  <p className="text-[8px] font-semibold text-slate-400 uppercase tracking-wider">Rider Assigned</p>
+                  <p className="text-xs font-semibold text-slate-700">{b.rider_name ?? '—'}</p>
+                </div>
+                <div className="bg-slate-50 border border-slate-100 rounded-xl px-3 py-2 min-w-0">
+                  <p className="text-[8px] font-semibold text-slate-400 uppercase tracking-wider">Reference</p>
+                  <p className="text-xs font-semibold text-slate-700">{b.reference}</p>
+                </div>
               </div>
             </div>
 
@@ -755,64 +849,37 @@ export function JubahCustomerSubTab({
               return <ReceiptCard doc={doc} onSavePdf={() => generateReceiptPdf(doc)} />;
             })()}
 
-            {/* Documents download card — a grid of compact cards rather than
-                full-width rows, so the label and its buttons stay close
-                together instead of stretching apart on a wide desktop screen. */}
+            {/* ── UPLOAD DOCUMENTS & COMBINED DOCUMENT ── grid of compact
+                cards rather than full-width rows, so the label and its
+                buttons stay close together instead of stretching apart on
+                a wide desktop screen. Payment/balance proofs live in their
+                own "Proof of Payment" section below instead, matching how
+                the live booking form separates those concepts too. */}
             <div className="bg-white border border-slate-100 rounded-3xl p-5 flex flex-col gap-4">
-              <h3 className="text-sm font-semibold text-slate-700">Documents</h3>
+              <h3 className="text-sm font-semibold text-slate-700">Upload Documents &amp; Combined Document</h3>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 {([
-                  { label: 'Combined PDF',  url: b.docs_path },
-                  { label: 'Payment Proof', url: b.payment_path },
                   { label: 'OSCAR',         url: b.oscar_path },
                   { label: 'SKPG',          url: b.skpg_path },
                   { label: 'Konvo Slip',    url: b.konvo_path },
                   { label: 'IC Copy',       url: b.ic_path },
-                  ...(b.payment_mode === 'deposit' ? [{ label: 'Balance Proof', url: b.balance_proof_url }] : []),
+                  { label: 'Combined PDF',  url: b.docs_path },
                 ] as { label: string; url: string | null }[]).map(({ label, url }) => (
-                  <div key={label} className="flex items-center justify-between gap-3 bg-slate-50 border border-slate-100 rounded-xl px-3 py-2.5">
-                    <span className="text-xs font-semibold text-slate-700 truncate">{label}</span>
-                    <div className="flex items-center gap-2 shrink-0">
-                      {/* View — signed URL generated on demand, not stored, then
-                          opened via a synthetic <a> click (see openInNewTab)
-                          rather than window.open(), which some browsers/
-                          extensions block outright even on a direct click. */}
-                      <button
-                        type="button"
-                        disabled={!url}
-                        onClick={async () => {
-                          const { url: signed, error } = await getJubahDocSignedUrl(url);
-                          if (signed) openInNewTab(signed);
-                          else showToast(error ? `Couldn't open ${label}: ${error}` : `Couldn't open ${label}.`);
-                        }}
-                        className={`w-8 h-8 flex items-center justify-center rounded-lg border transition shrink-0 ${
-                          url
-                            ? 'bg-blue-50 border-blue-100 text-blue-600 hover:bg-blue-100 active:scale-95'
-                            : 'bg-white border-slate-100 text-slate-300 cursor-not-allowed'
-                        }`}>
-                        <Eye className="w-3.5 h-3.5" />
-                      </button>
-                      {/* Download — signed URL with download disposition, generated on demand */}
-                      <button
-                        type="button"
-                        disabled={!url}
-                        onClick={async () => {
-                          const { url: signed, error } = await getJubahDocSignedUrl(url, true);
-                          if (signed) openInNewTab(signed);
-                          else showToast(error ? `Couldn't download ${label}: ${error}` : `Couldn't download ${label}.`);
-                        }}
-                        className={`w-8 h-8 flex items-center justify-center rounded-lg border transition shrink-0 ${
-                          url
-                            ? 'bg-slate-800 border-slate-700 text-white hover:bg-slate-700 active:scale-95'
-                            : 'bg-white border-slate-100 text-slate-300 cursor-not-allowed'
-                        }`}>
-                        <Download className="w-3.5 h-3.5" />
-                      </button>
-                    </div>
-                  </div>
+                  <DocLinkRow key={label} label={label} url={url} showToast={showToast} />
                 ))}
               </div>
+            </div>
+
+            {/* ── PROOF OF PAYMENT ── */}
+            <div className="bg-white border border-slate-100 rounded-3xl p-5 flex flex-col gap-4">
+              <h3 className="text-sm font-semibold text-slate-700">
+                {b.payment_mode === 'deposit' ? 'Proof of Deposit' : 'Proof of Payment'}
+              </h3>
+              <DocLinkRow label={b.payment_mode === 'deposit' ? 'Deposit Receipt' : 'Payment Receipt'} url={b.payment_path} showToast={showToast} />
+              {b.payment_mode === 'deposit' && (
+                <DocLinkRow label="Balance Receipt" url={b.balance_proof_url} showToast={showToast} />
+              )}
             </div>
 
             {/* Delete + Cancel row — Confirm itself lives contextually up in
