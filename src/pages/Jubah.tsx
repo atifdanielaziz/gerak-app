@@ -2,14 +2,15 @@ import React, { useState, useRef, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
 const getTimestamp = () => Date.now();
 import { CheckCircle2, X, Upload, FileText, ShieldAlert, Download, User, Pencil, MapPin, Copy, Check, Info, GraduationCap, FileUser } from 'lucide-react';
-import { submitJubahToSheets, updateJubahBalanceProof } from '../lib/sheetsService';
+import { submitJubahToSheets } from '../lib/sheetsService';
 import { JubahLanding } from '../components/JubahLanding';
 import { supabase } from '../lib/supabase';
 import { compressImage } from '../lib/imageCompress';
-import type { PDFPage } from 'pdf-lib';
+import { stampWatermark } from '../lib/watermark';
 import { FloatingMessage } from '../components/FloatingMessage';
 import { RepresentativeSheet } from '../components/RepresentativeSheet';
 import { ReceiptCard } from '../components/Receipt';
+import { JubahBalancePayment } from '../components/JubahBalancePayment';
 import { NativeSelect } from '../components/NativeSelect';
 import { buildJubahReceiptRows } from '../lib/receiptRows';
 import { getJubahProgress, JUBAH_STEP_LABEL } from '../lib/jubahStatus';
@@ -96,6 +97,13 @@ export const Jubah: React.FC = () => {
   const [email, setEmail]             = useState('');
   const [university, setUniversity]   = useState('');
   const uniAbbrev = UNIV_ABBREV[landingUniversity] ?? 'UMPSA';
+  // Stamped onto every uploaded document (IC, OSCAR, SKPG, Konvo slip,
+  // payment proof) before it ever leaves the browser — these carry IC
+  // numbers, bank details and other PII, so every one of them gets the
+  // same deterrent treatment, not just the IC. Baked into the individual
+  // file itself (not just the combined PDF), so it's there regardless of
+  // which one an admin/rider actually opens.
+  const jubahWatermarkText = `UNTUK KEGUNAAN MAJLIS KONVOKESYEN ${uniAbbrev} SAHAJA`;
   const [faculty, setFaculty]         = useState('');
   const [matricId, setMatricId]       = useState('');
   const [paymentMode, setPaymentMode]   = useState<'pickup' | 'postage' | 'deposit'>('pickup');
@@ -401,59 +409,36 @@ export const Jubah: React.FC = () => {
       return;
     }
     const compressed = file ? await compressImage(file) : null;
-    setDocFiles(prev => ({ ...prev, [fieldId]: compressed }));
+    // Only the IC gets watermarked, not OSCAR/SKPG/Konvo — those don't carry
+    // the same identity-document risk. field_key (not fieldId, which is a
+    // DB id for university-specific field sets) is what actually says "ic".
+    const isIc = docFields.find(f => f.id === fieldId)?.field_key === 'ic';
+    let stamped = compressed;
+    if (compressed && isIc) {
+      try { stamped = await stampWatermark(compressed, jubahWatermarkText); }
+      catch (err) { console.error('[GERAK] Watermark failed, uploading original file:', err); }
+    }
+    setDocFiles(prev => ({ ...prev, [fieldId]: stamped }));
   };
 
   const generateCombinedBlob = async (): Promise<Blob | null> => {
     const entries = docFields.map(f => ({ field: f, file: docFiles[f.id] ?? null }));
     if (entries.some(e => !e.file)) return null;
     try {
-      const { PDFDocument, StandardFonts, rgb, degrees } = await import('pdf-lib');
-      const merged  = await PDFDocument.create();
-      const wmFont  = await merged.embedFont(StandardFonts.HelveticaBold);
-      const wmText  = `UNTUK KEGUNAAN MAJLIS KONVOKESYEN ${uniAbbrev} SAHAJA`;
-      const wmColor = rgb(0.12, 0.12, 0.12);
-      const wmAngle = 26;
+      const { PDFDocument } = await import('pdf-lib');
+      const merged = await PDFDocument.create();
 
-      // Single diagonal band crossing the card, sized to the page so it
-      // scales with whatever resolution the photo was taken at — not two
-      // corner labels. Opacity stays low enough that the card underneath
-      // (photo, chip, text fields) stays fully legible through it. Only
-      // stamped on the IC page, not the other documents.
-      const stampWatermark = (page: PDFPage) => {
-        const { width, height } = page.getSize();
-        const baseSize    = 20;
-        const rawWidth    = wmFont.widthOfTextAtSize(wmText, baseSize);
-        const targetWidth = width * 0.85;
-        const fontSize    = Math.max(8, Math.min(40, baseSize * (targetWidth / rawWidth)));
-        // drawText's x anchors the START of the (rotated) baseline, not its
-        // center — so centering the text horizontally means backing the
-        // anchor off by half of its rotated horizontal footprint, not just
-        // starting from a fixed left margin.
-        const renderedWidth  = wmFont.widthOfTextAtSize(wmText, fontSize);
-        const horizontalSpan = renderedWidth * Math.cos(wmAngle * Math.PI / 180);
-        const xCentered       = (width - horizontalSpan) / 2;
-        [0.15, 0.45, 0.75].forEach(yFrac => {
-          page.drawText(wmText, {
-            x: xCentered,
-            y: height * yFrac,
-            size: fontSize,
-            font: wmFont,
-            color: wmColor,
-            opacity: 0.4,
-            rotate: degrees(wmAngle),
-          });
-        });
-      };
-
-      const addFile = async ({ field, file: f }: { field: JubahDocField; file: File | null }) => {
+      // No watermarking here anymore — every file in docFiles was already
+      // stamped by handleFileSelect before it got this far, so merging them
+      // carries the watermark through automatically. Stamping again here on
+      // top of an already-watermarked IC page would double it up.
+      const addFile = async ({ file: f }: { field: JubahDocField; file: File | null }) => {
         if (!f) return;
         const bytes = await f.arrayBuffer();
         if (f.type === 'application/pdf') {
           const doc = await PDFDocument.load(bytes);
           const pages = await merged.copyPages(doc, doc.getPageIndices());
           pages.forEach(p => merged.addPage(p));
-          if (field.field_key === 'ic') pages.forEach(stampWatermark);
         } else {
           const page = merged.addPage();
           const img = f.type === 'image/png'
@@ -462,7 +447,6 @@ export const Jubah: React.FC = () => {
           const { width, height } = img.scale(1);
           page.setSize(width, height);
           page.drawImage(img, { x: 0, y: 0, width, height });
-          if (field.field_key === 'ic') stampWatermark(page);
         }
       };
       for (const entry of entries) await addFile(entry);
@@ -539,53 +523,14 @@ export const Jubah: React.FC = () => {
       }
     };
     poll();
-    const id = setInterval(poll, 30000);
+    // 60s, not 30s — this polls a shared rate-limit budget
+    // (check_jubah_rate_limit) alongside every other guest-facing Jubah
+    // RPC; halving the background poll rate here matters more at real
+    // intake volume (many guests with this page open) than the extra
+    // latency on picking up a status change costs.
+    const id = setInterval(poll, 60000);
     return () => { cancelled = true; clearInterval(id); };
   }, [jubahBooking?.reference]);
-
-  // Deposit balance payment — same upload-and-submit flow as TrackJubah.tsx's
-  // "Pay Balance" section, duplicated here so a guest who stays on this page
-  // (rather than navigating to Track My Order) can pay the balance without
-  // leaving. Keep both in sync if this flow ever changes.
-  const [balanceProof, setBalanceProof] = useState<File | null>(null);
-  const balanceProofRef = useRef<HTMLInputElement>(null);
-  const [submittingBalance, setSubmittingBalance] = useState(false);
-  const [balanceSubmitError, setBalanceSubmitError] = useState('');
-
-  const handleBalanceSubmit = async () => {
-    if (!balanceProof || !jubahBooking) return;
-    setSubmittingBalance(true);
-    setBalanceSubmitError('');
-
-    let proofPath: string | undefined;
-    try {
-      const ext = balanceProof.name.split('.').pop() ?? 'pdf';
-      const namePart = (jubahBooking.fullName || 'student').replace(/\s+/g, '_');
-      const path = `${jubahBooking.reference}/${namePart}_balance-payment_${Date.now()}.${ext}`;
-      const { data: storageData, error: storageError } = await supabase.storage
-        .from('jubah-docs')
-        .upload(path, balanceProof, { contentType: balanceProof.type, upsert: false });
-      if (!storageError && storageData) proofPath = storageData.path;
-    } catch (err) {
-      console.error('[GERAK] Balance proof upload failed:', err);
-    }
-
-    const { data } = await supabase.rpc('submit_jubah_balance', {
-      p_reference:         jubahBooking.reference,
-      p_hp_number:         jubahBooking.hpNumber,
-      p_balance_proof_url: proofPath ?? 'submitted',
-    });
-
-    setSubmittingBalance(false);
-    if (data?.success) {
-      setLiveBalanceProofUrl(proofPath ?? 'submitted');
-      setBalanceProof(null);
-      if (balanceProofRef.current) balanceProofRef.current.value = '';
-      if (proofPath) updateJubahBalanceProof(jubahBooking.reference, proofPath);
-    } else {
-      setBalanceSubmitError(data?.error ?? 'Submission failed. Please try again.');
-    }
-  };
 
   // Leaves the current booking untouched in the database — just clears it
   // from this browser and resets the form so a genuinely new booking can be
@@ -1489,99 +1434,16 @@ export const Jubah: React.FC = () => {
            (liveStatus ?? jubahBooking.status) !== 'cancelled' &&
            (liveStatus ?? jubahBooking.status) !== 'ordered' && (
             <div className="bg-white border border-slate-100 rounded-3xl p-5 flex flex-col gap-3">
-              <div className={`rounded-xl p-3 border flex items-center justify-between gap-2 ${
-                liveBalancePaid ? 'bg-emerald-50 border-emerald-100' : 'bg-amber-50 border-amber-100'
-              }`}>
-                <div>
-                  <span className={`text-[8px] font-semibold block ${liveBalancePaid ? 'text-emerald-500' : 'text-amber-500'}`}>
-                    {liveBalancePaid ? 'Balance Paid' : 'Balance Due'}
-                  </span>
-                  <span className={`text-base font-black ${liveBalancePaid ? 'text-emerald-700' : 'text-amber-700'}`}>
-                    RM{jubahBooking.balanceDue.toFixed(2)}
-                  </span>
-                </div>
-                {liveBalancePaid && <CheckCircle2 className="w-5 h-5 text-emerald-500 shrink-0" />}
-              </div>
-
-              {liveBalanceProofUrl && !liveBalancePaid && (
-                <p className="text-xs text-amber-700 font-semibold bg-amber-50 border border-amber-100 rounded-xl px-3 py-2">
-                  Balance payment receipt submitted — admin will confirm shortly.
-                </p>
-              )}
-
-              {!liveBalancePaid && !liveBalanceProofUrl && (
-                <div className="flex flex-col gap-2">
-                  {bankDetails && (
-                    <div className="bg-blue-50 border border-blue-100 rounded-xl p-3 flex flex-col gap-1.5 text-xs">
-                      <div className="flex items-center justify-between">
-                        <span className="text-blue-400 font-semibold">Bank</span>
-                        <span className="font-bold text-blue-800">{bankDetails.name}</span>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <span className="text-blue-400 font-semibold">Account No.</span>
-                        <span className="font-bold text-blue-800 font-mono">{bankDetails.account}</span>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <span className="text-blue-400 font-semibold">Account Holder</span>
-                        <span className="font-bold text-blue-800">{bankDetails.holder}</span>
-                      </div>
-                      <p className="text-blue-600 font-semibold pt-1 border-t border-blue-100 mt-0.5">
-                        Put your reference <span className="font-mono">{jubahBooking.reference}</span> in the transfer note.
-                      </p>
-                    </div>
-                  )}
-                  <p className="text-xs text-slate-500 font-normal">
-                    Ready to pay your balance? Upload proof of payment below.
-                  </p>
-                  <input
-                    type="file"
-                    accept=".pdf,application/pdf,image/jpeg,image/png"
-                    ref={balanceProofRef}
-                    onChange={e => { setBalanceProof(e.target.files?.[0] ?? null); setBalanceSubmitError(''); }}
-                    className="hidden"
-                  />
-                  {!balanceProof ? (
-                    <button
-                      type="button"
-                      onClick={() => balanceProofRef.current?.click()}
-                      className="w-full border-2 border-dashed border-amber-200 rounded-xl py-3 flex items-center justify-center gap-2 text-amber-500 hover:border-amber-400 hover:bg-amber-50/50 transition"
-                    >
-                      <Upload className="w-4 h-4" />
-                      <span className="text-xs font-semibold">Upload Balance Payment Receipt</span>
-                    </button>
-                  ) : (
-                    <div className="flex flex-col gap-2">
-                      <div className="flex items-center gap-3 bg-emerald-50 border border-emerald-100 rounded-xl p-2.5">
-                        <FileText className="w-5 h-5 text-emerald-500 shrink-0" />
-                        <div className="flex-1 min-w-0">
-                          <p className="text-xs font-semibold text-emerald-700 truncate">{balanceProof.name}</p>
-                          <p className="text-xs text-emerald-500 font-normal">{(balanceProof.size / 1024).toFixed(1)} KB</p>
-                        </div>
-                        <button
-                          type="button"
-                          onClick={() => { setBalanceProof(null); if (balanceProofRef.current) balanceProofRef.current.value = ''; }}
-                          className="text-slate-400 hover:text-danger transition shrink-0"
-                        >
-                          <X className="w-4 h-4" />
-                        </button>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={handleBalanceSubmit}
-                        disabled={submittingBalance}
-                        className="w-full bg-amber-500 hover:bg-amber-600 active:scale-[0.99] disabled:bg-slate-200 text-white font-semibold py-2.5 rounded-xl text-xs transition flex items-center justify-center gap-2"
-                      >
-                        {submittingBalance
-                          ? <><span className="w-3.5 h-3.5 rounded-full border-2 border-white/40 border-t-white animate-spin" /> Submitting…</>
-                          : 'Submit Balance Payment'}
-                      </button>
-                    </div>
-                  )}
-                  {balanceSubmitError && (
-                    <p className="text-xs text-danger font-semibold">{balanceSubmitError}</p>
-                  )}
-                </div>
-              )}
+              <JubahBalancePayment
+                reference={jubahBooking.reference}
+                hpNumber={jubahBooking.hpNumber}
+                fullName={jubahBooking.fullName}
+                balanceDue={jubahBooking.balanceDue}
+                balancePaid={liveBalancePaid}
+                balanceProofUrl={liveBalanceProofUrl}
+                bankDetails={bankDetails}
+                onSubmitted={proof => setLiveBalanceProofUrl(proof)}
+              />
             </div>
           )}
 
