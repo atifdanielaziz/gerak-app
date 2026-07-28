@@ -253,7 +253,7 @@ export const TrackJubah: React.FC = () => {
             onChange={e => setReference(e.target.value.toUpperCase())}
             placeholder="e.g. JUB-26-UMPSA-XK7F"
             style={{ fontSize: '16px' }}
-            className="bg-white border border-slate-100 rounded-xl py-2.5 px-3 text-sm font-normal text-slate-700 focus:outline-none focus:border-blue-500 transition placeholder:font-normal placeholder:text-slate-300"
+            className="bg-white border border-slate-100 rounded-xl py-2.5 px-3 text-sm font-normal text-slate-700 focus:outline-none focus:border-slate-900 transition placeholder:font-normal placeholder:text-slate-300"
           />
         </div>
 
@@ -272,7 +272,7 @@ export const TrackJubah: React.FC = () => {
             onChange={e => setIcNumber(e.target.value)}
             placeholder="e.g. 980123-45-6789"
             style={{ fontSize: '16px' }}
-            className="bg-white border border-slate-100 rounded-xl py-2.5 px-3 text-sm font-normal text-slate-700 focus:outline-none focus:border-blue-500 transition placeholder:font-normal placeholder:text-slate-300"
+            className="bg-white border border-slate-100 rounded-xl py-2.5 px-3 text-sm font-normal text-slate-700 focus:outline-none focus:border-slate-900 transition placeholder:font-normal placeholder:text-slate-300"
           />
         </div>
 
@@ -491,7 +491,7 @@ export const TrackJubah: React.FC = () => {
                         onChange={e => setIcLast4(e.target.value.replace(/\D/g, ''))}
                         placeholder="1234"
                         style={{ fontSize: '16px' }}
-                        className="flex-1 bg-white border border-slate-100 rounded-xl py-2.5 px-3 text-sm font-semibold text-slate-700 focus:outline-none focus:border-blue-500 transition placeholder:font-normal placeholder:text-slate-300"
+                        className="flex-1 bg-white border border-slate-100 rounded-xl py-2.5 px-3 text-sm font-semibold text-slate-700 focus:outline-none focus:border-slate-900 transition placeholder:font-normal placeholder:text-slate-300"
                       />
                       <button
                         type="button"

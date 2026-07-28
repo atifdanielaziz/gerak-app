@@ -52,7 +52,7 @@ const getNextStatus = (job: JubahJobRow): string | null =>
   getJubahProgress(job.status, job.payment_mode).nextStatus;
 
 export const RiderHome: React.FC = () => {
-  const { user, refreshUserData, receiptGateActive } = useApp();
+  const { user, refreshUserData, receiptGateActive, setLeaveGuard } = useApp();
 
   const [activeTab,     setActiveTab]     = useState<RiderTab>('daily');
   const [toast,         setToast]         = useState('');
@@ -111,31 +111,35 @@ export const RiderHome: React.FC = () => {
   const totalJubahEarnings = jubahEarnings.reduce((sum, e) => sum + Number(e.rider_commission_amount), 0);
 
   // ── Browser / gesture back navigation (3→2→1) ────────────────────────────
+  // Registers with AppContext's single shared goBack() (see GerakRental.tsx
+  // for the same pattern) instead of a second, independent popstate listener
+  // + manual pushState — two listeners on the same window event both firing
+  // meant a single hardware/gesture back-press here could BOTH pop one
+  // sub-view level AND (since AppContext's own popstate handler runs
+  // unconditionally alongside it) navigate away from Rider Home entirely.
+  const popJubahView = () => {
+    setJubahView(prev => {
+      if (prev === 'details') return 'card';
+      if (prev === 'card')   { setSelectedJob(null); return 'list'; }
+      return prev;
+    });
+  };
   useEffect(() => {
-    if (activeTab !== 'jubah') return;
-    const handlePop = () => {
-      setJubahView(prev => {
-        if (prev === 'details') return 'card';
-        if (prev === 'card')   { setSelectedJob(null); return 'list'; }
-        return prev;
-      });
-    };
-    window.addEventListener('popstate', handlePop);
-    return () => window.removeEventListener('popstate', handlePop);
-  }, [activeTab]);
+    if (activeTab !== 'jubah' || jubahView === 'list') { setLeaveGuard(null); return; }
+    setLeaveGuard(() => popJubahView);
+    return () => setLeaveGuard(null);
+  }, [activeTab, jubahView, setLeaveGuard]);
 
   const goToCard = (job: JubahJobRow) => {
     setSelectedJob(job);
     setJubahView('card');
-    window.history.pushState({ jubahSubPage: 'card' }, '');
   };
 
   const goToDetails = () => {
     setJubahView('details');
-    window.history.pushState({ jubahSubPage: 'details' }, '');
   };
 
-  const goBack = () => window.history.back();
+  const goBack = popJubahView;
 
   // ── Advance status ────────────────────────────────────────────────────────
   const handleAdvanceStatus = async () => {

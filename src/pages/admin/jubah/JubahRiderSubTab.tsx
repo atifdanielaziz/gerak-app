@@ -238,7 +238,7 @@ const JubahRiderSheet: React.FC<{
             {/* New drop point input */}
             {showAdd && (
               <div className="flex flex-col gap-1">
-                <span className="text-xs font-semibold text-indigo-400">
+                <span className="text-xs font-semibold text-slate-400">
                   Drop Point {secondary.length + 2}
                 </span>
                 {addMethod !== 'postage' ? (
@@ -248,7 +248,7 @@ const JubahRiderSheet: React.FC<{
                     onChange={e => setAddDropPoint(e.target.value)}
                     placeholder="e.g. Kolej Kediaman 3, Lobby A"
                     style={{ fontSize: '12px' }}
-                    className="bg-indigo-50/50 border border-indigo-200 rounded-xl py-2.5 px-3 font-semibold text-slate-700 focus:outline-none focus:border-indigo-400 transition placeholder:font-normal placeholder:text-slate-300"
+                    className="bg-white border border-slate-100 rounded-xl py-2.5 px-3 font-semibold text-slate-700 focus:outline-none focus:border-slate-900 transition placeholder:font-normal placeholder:text-slate-300"
                     autoFocus
                   />
                 ) : (

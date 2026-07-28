@@ -49,6 +49,7 @@ export const AdminHome: React.FC = () => {
   const {
     user, setCurrentPage, setSheetOpen, notifications,
     activeRole, isPreviewMode, switchToDriverMode, switchToRiderMode, enterPreviewMode,
+    setLeaveGuard,
   } = useApp();
 
   const isSuperAdmin = user.role === 'superadmin';
@@ -234,24 +235,26 @@ export const AdminHome: React.FC = () => {
   // ── Admin Jubah back navigation (list <-> card; card now holds
   //    everything — stepper, confirm, full details, receipt, documents —
   //    so there's no longer a separate "details" page to hop through). ────
+  // Registers with AppContext's single shared goBack() (see GerakRental.tsx
+  // for the same pattern) instead of adding a second, independent popstate
+  // listener + manual pushState — two listeners on the same window event
+  // both firing meant a single hardware/gesture back-press here could BOTH
+  // close the card AND (since AppContext's own popstate handler runs
+  // unconditionally alongside it) navigate away from Admin Home entirely.
   useEffect(() => {
-    if (activeTab !== 'jubah' || jubahSubTab !== 'customer') return;
-    const handlePop = () => {
-      setJubahAdminView(prev => {
-        if (prev === 'card') { setJubahAdminSelected(null); return 'list'; }
-        return prev;
-      });
-    };
-    window.addEventListener('popstate', handlePop);
-    return () => window.removeEventListener('popstate', handlePop);
-  }, [activeTab, jubahSubTab]);
+    if (activeTab !== 'jubah' || jubahSubTab !== 'customer' || jubahAdminView !== 'card') {
+      setLeaveGuard(null);
+      return;
+    }
+    setLeaveGuard(() => () => { setJubahAdminSelected(null); setJubahAdminView('list'); });
+    return () => setLeaveGuard(null);
+  }, [activeTab, jubahSubTab, jubahAdminView, setLeaveGuard]);
 
   const goToAdminCard = (b: JubahBookingRow) => {
     setJubahAdminSelected(b);
     setJubahAdminView('card');
-    window.history.pushState({ jubahAdmin: 'card' }, '');
   };
-  const goAdminBack = () => window.history.back();
+  const goAdminBack = () => { setJubahAdminSelected(null); setJubahAdminView('list'); };
   // Distinct from goAdminBack — used after a delete, when there's no page
   // to browser-back to since the booking it referred to no longer exists.
   const goToJubahList = () => { setJubahAdminView('list'); setJubahAdminSelected(null); };
