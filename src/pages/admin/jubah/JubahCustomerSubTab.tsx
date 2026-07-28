@@ -112,6 +112,7 @@ export function JubahCustomerSubTab({
   const [jubahPayFilter, setJubahPayFilter] = useState<'all' | 'booked' | 'paid' | 'cancelled'>('all');
   const [jubahAdminUpdating, setJubahAdminUpdating] = useState(false);
   const [copiedRef, setCopiedRef] = useState(false);
+  const [copiedIc, setCopiedIc] = useState(false);
   const [copiedListRef, setCopiedListRef] = useState<string | null>(null);
   const [receiptModal, setReceiptModal] = useState<ReceiptDoc | null>(null);
   const [cancelModalBooking, setCancelModalBooking] = useState<JubahBookingRow | null>(null);
@@ -321,7 +322,17 @@ export function JubahCustomerSubTab({
           ) : bookings.length === 0 ? (
             <p className="text-xs text-slate-400 font-semibold text-center py-6">No Jubah bookings yet.</p>
           ) : (
-            <div className="overflow-x-auto overflow-y-auto no-scrollbar max-h-[600px]">
+            /* Horizontal and vertical scroll are split across two nested
+               containers rather than both axes on one element — a single
+               element scrolling both ways lets a diagonal touch drag
+               fling it in an uncontrolled combination of directions on
+               mobile, and made the sticky header's position computation
+               unreliable along with it. Outer handles horizontal only
+               (no vertical clipping, so it sizes to the table's real
+               width); inner handles vertical only, so sticky top-0
+               on thead has a single, predictable scrolling ancestor. */
+            <div className="overflow-x-auto no-scrollbar">
+              <div className="overflow-y-auto no-scrollbar max-h-[600px]">
               <table className="min-w-full border-collapse text-left">
                 <thead className="sticky top-0 bg-white">
                   <tr className="text-xs font-normal text-slate-400 border-b border-slate-100">
@@ -517,6 +528,7 @@ export function JubahCustomerSubTab({
                   })}
                 </tbody>
               </table>
+              </div>
             </div>
           )}
         </div>
@@ -746,20 +758,54 @@ export function JubahCustomerSubTab({
             {/* ── PERSONAL INFORMATION ── */}
             <div className="bg-white border border-slate-100 rounded-3xl p-5 flex flex-col gap-4">
               <h3 className="text-sm font-semibold text-slate-700">Personal Information</h3>
-              {([
-                { label: 'Full Name', value: b.full_name },
-                { label: 'IC Number', value: b.ic_number },
-                { label: 'HP Number', value: b.hp_number },
-                { label: 'Email',     value: b.email ?? '—' },
-                { label: 'Matric ID', value: b.matric_id },
-              ]).map(({ label, value }) => (
-                <div key={label} className="flex flex-col gap-1">
-                  <label className="text-xs font-semibold text-slate-400">{label}</label>
-                  <div className="bg-slate-50 border border-slate-100 rounded-xl py-2.5 px-3">
-                    <span className="text-xs font-semibold text-slate-700 break-words">{value}</span>
-                  </div>
+
+              <div className="flex flex-col gap-1">
+                <label className="text-xs font-semibold text-slate-400">Full Name</label>
+                <div className="bg-slate-50 border border-slate-100 rounded-xl py-2.5 px-3">
+                  <span className="text-xs font-semibold text-slate-700 break-words">{b.full_name}</span>
                 </div>
-              ))}
+              </div>
+
+              {/* IC Number — copy button, far right, level with the value */}
+              <div className="flex flex-col gap-1">
+                <label className="text-xs font-semibold text-slate-400">IC Number</label>
+                <div className="bg-slate-50 border border-slate-100 rounded-xl py-2.5 px-3 flex items-center justify-between gap-2">
+                  <span className="text-xs font-semibold text-slate-700 break-words">{b.ic_number}</span>
+                  <button
+                    type="button"
+                    onClick={async () => { if (!(await copyToClipboard(b.ic_number))) return; setCopiedIc(true); setTimeout(() => setCopiedIc(false), 2000); }}
+                    className="text-slate-400 hover:text-primary active:scale-90 transition shrink-0"
+                  >
+                    {copiedIc ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5" />}
+                  </button>
+                </div>
+              </div>
+
+              {/* HP Number — WhatsApp button, same position as IC Number's copy button */}
+              <div className="flex flex-col gap-1">
+                <label className="text-xs font-semibold text-slate-400">HP Number</label>
+                <div className="bg-slate-50 border border-slate-100 rounded-xl py-2.5 px-3 flex items-center justify-between gap-2">
+                  <span className="text-xs font-semibold text-slate-700 break-words">{b.hp_number}</span>
+                  <a href={`https://wa.me/${toWa(b.hp_number)}`} target="_blank" rel="noopener noreferrer"
+                    className="text-[#25D366] active:scale-90 transition shrink-0">
+                    <WaIcon className="w-3.5 h-3.5" />
+                  </a>
+                </div>
+              </div>
+
+              <div className="flex flex-col gap-1">
+                <label className="text-xs font-semibold text-slate-400">Email</label>
+                <div className="bg-slate-50 border border-slate-100 rounded-xl py-2.5 px-3">
+                  <span className="text-xs font-semibold text-slate-700 break-words">{b.email ?? '—'}</span>
+                </div>
+              </div>
+
+              <div className="flex flex-col gap-1">
+                <label className="text-xs font-semibold text-slate-400">Matric ID</label>
+                <div className="bg-slate-50 border border-slate-100 rounded-xl py-2.5 px-3">
+                  <span className="text-xs font-semibold text-slate-700 break-words">{b.matric_id}</span>
+                </div>
+              </div>
             </div>
 
             {/* ── ACADEMIC INFORMATION ── */}
