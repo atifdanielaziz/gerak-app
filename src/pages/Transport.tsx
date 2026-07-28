@@ -363,6 +363,11 @@ export const Transport: React.FC = () => {
         .single();
 
       if (error || !data?.id) {
+        // Logged (not shown to the user) so a schema/RLS-level failure —
+        // e.g. a column the client sends that a pending migration hasn't
+        // added yet — is diagnosable from devtools instead of looking
+        // identical to a real network error.
+        console.error('[GERAK] Ride booking insert failed:', error);
         setBooking(false);
         setBookingError('Your booking could not be saved. Please check your connection and try again.');
         return;
