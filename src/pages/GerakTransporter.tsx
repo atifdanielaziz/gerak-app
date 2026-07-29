@@ -1,21 +1,22 @@
-import React, { useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { useApp } from '../context/AppContext';
 import { supabase } from '../lib/supabase';
 import { WaIcon } from '../lib/whatsapp';
 import {
   Truck, Home, MapPin, Banknote, Shield,
-  Package, Clock, ChevronRight, ChevronLeft, Phone, Bike,
+  Package, ChevronRight, ChevronLeft, Phone, Bike,
   Check, CheckCircle2, Navigation, ClipboardList, RotateCcw,
 } from 'lucide-react';
 
-const PROVIDER = {
-  name:     'Khai Transporter',
-  phone:    '0133978113',
-  plate:    'DEK 4212',
-  vehicle:  'Isuzu D-Max 4×4 Pickup',
-  tagline:  'Selamat • Pantas • Boleh Dipercayai',
-  campus:   'Pekan & Gambang',
-};
+interface TransporterProvider {
+  id: string;
+  name: string;
+  phone: string;
+  gerak_id: string;
+  campus: string;
+  vehicle: string | null;
+  plate_number: string | null;
+}
 
 const FEATURES = [
   { icon: Home,     label: 'Ambil Depan Rumah',            desc: 'Kami datang ke lokasi anda' },
@@ -41,24 +42,22 @@ const SERVICE_OPTIONS = [
 ];
 type ServiceKey = typeof SERVICE_OPTIONS[number]['key'];
 
-const buildWaMsg = (service: string) =>
-  encodeURIComponent(
-`Assalamualaikum, saya berminat dengan perkhidmatan *Gerak Transporter* 🏍️
+const formatPhone = (phone: string) => phone.replace(/(\d{3})(\d{4})(\d{4})/, '$1-$2$3');
 
-Perkhidmatan: ${service}
-Pickup:
-Destinasi:
-Tarikh:
-Moto / Barang:
-Nama:
+// Quick-contact from the provider list card — a generic inquiry, not tied
+// to a specific service (that's chosen inside the actual booking form now
+// that this page lists multiple providers instead of one hardcoded one).
+const buildQuickWaMsg = () =>
+  encodeURIComponent(
+`Assalamualaikum, saya berminat dengan perkhidmatan *Gerak Transporter* anda 🏍️
 
 Boleh saya dapatkan maklumat harga & ketersediaan? Terima kasih 🙏`
   );
 
 // Sent once a booking is actually recorded — pre-filled from the customer's
-// own form input, since Khai (the provider) has no in-app account/dashboard
-// to see this booking otherwise; price is always negotiated here, over
-// WhatsApp, never computed or trusted from the client.
+// own form input, since providers have no in-app dashboard to see this
+// booking otherwise; price is always negotiated here, over WhatsApp, never
+// computed or trusted from the client.
 const buildBookingWaMsg = (services: ServiceKey[], pickup: string, destination: string, name: string) =>
   encodeURIComponent(
 `Assalamualaikum, saya baru buat tempahan *Gerak Transporter* melalui app 🏍️
@@ -73,10 +72,21 @@ Boleh saya dapatkan maklumat harga & ketersediaan? Terima kasih 🙏`
 
 export const GerakTransporter: React.FC = () => {
   const { user, showAuthGate } = useApp();
-  const [serviceType, setServiceType] = useState<'Penghantaran Motosikal' | 'Pindah Barang'>('Penghantaran Motosikal');
+
+  const [providers,        setProviders]        = useState<TransporterProvider[]>([]);
+  const [providersLoading, setProvidersLoading]  = useState(true);
+
+  const loadProviders = useCallback(async () => {
+    setProvidersLoading(true);
+    const { data } = await supabase.from('transporter_provider_public').select('*');
+    setProviders((data as TransporterProvider[]) ?? []);
+    setProvidersLoading(false);
+  }, []);
+
+  useEffect(() => { queueMicrotask(() => loadProviders()); }, [loadProviders]);
 
   // ── Booking sub-page (Sub-page Standard) ──────────────────────────────────
-  const [bookOpen,        setBookOpen]        = useState(false);
+  const [selectedProvider, setSelectedProvider] = useState<TransporterProvider | null>(null);
   const [selectedServices, setSelectedServices] = useState<Set<ServiceKey>>(new Set());
   const [tripPickup,      setTripPickup]      = useState('');
   const [tripDestination, setTripDestination] = useState('');
@@ -106,12 +116,13 @@ export const GerakTransporter: React.FC = () => {
 
   const handleBook = async () => {
     if (!user.isLoggedIn) { showAuthGate(); return; }
-    if (!canBook) return;
+    if (!canBook || !selectedProvider) return;
     setBooking(true);
     setBookingError(null);
 
     const services = Array.from(selectedServices);
     const { data, error } = await supabase.rpc('create_transporter_booking', {
+      p_provider_id: selectedProvider.id,
       p_services: services,
       p_pickup: tripPickup.trim(),
       p_destination: tripDestination.trim(),
@@ -125,16 +136,16 @@ export const GerakTransporter: React.FC = () => {
     }
 
     setBookingDone({ ref: `#${String(data.id).slice(0, 8).toUpperCase()}` });
-    // Notify the human provider directly — there's no in-app driver
-    // account for Gerak Transporter to see this booking otherwise.
+    // Notify the human provider directly — no in-app dashboard shows them
+    // this booking otherwise.
     window.open(
-      `https://wa.me/6${PROVIDER.phone}?text=${buildBookingWaMsg(services, tripPickup.trim(), tripDestination.trim(), user.name || 'Student')}`,
+      `https://wa.me/6${selectedProvider.phone}?text=${buildBookingWaMsg(services, tripPickup.trim(), tripDestination.trim(), user.name || 'Student')}`,
       '_blank',
     );
   };
 
   // ── Booking sub-page — success screen ─────────────────────────────────────
-  if (bookOpen && bookingDone) {
+  if (selectedProvider && bookingDone) {
     return (
       <div className="flex-grow bg-white overflow-y-auto no-scrollbar pb-4 px-5 animate-fade-in flex flex-col gap-5">
         <div className="mt-6 bg-white border border-slate-100 rounded-3xl p-6 flex flex-col gap-4"
@@ -151,15 +162,16 @@ export const GerakTransporter: React.FC = () => {
 
           <div className="bg-white border border-slate-100 rounded-2xl p-4 text-xs font-mono text-slate-700 space-y-1 leading-relaxed">
             <p className="font-semibold text-slate-800 mb-2">Order Summary</p>
+            <p><span className="text-slate-400">Provider:</span> {selectedProvider.name}</p>
             <p><span className="text-slate-400">Services:</span> {Array.from(selectedServices).map(s => SERVICE_OPTIONS.find(o => o.key === s)?.label ?? s).join(', ')}</p>
             <p><span className="text-slate-400">Pickup:</span> {tripPickup}</p>
             <p><span className="text-slate-400">Destination:</span> {tripDestination}</p>
             {tripNotes && <p><span className="text-slate-400">Remark:</span> {tripNotes}</p>}
-            <p><span className="text-slate-400">Price:</span> TBC — negotiated with {PROVIDER.name}</p>
+            <p><span className="text-slate-400">Price:</span> TBC — negotiated with {selectedProvider.name}</p>
           </div>
 
           <p className="text-xs text-slate-400 font-normal text-center leading-relaxed">
-            WhatsApp opened with your details pre-filled — confirm price &amp; availability directly with {PROVIDER.name}.
+            WhatsApp opened with your details pre-filled — confirm price &amp; availability directly with {selectedProvider.name}.
           </p>
 
           <div className="flex gap-2">
@@ -173,7 +185,7 @@ export const GerakTransporter: React.FC = () => {
           </div>
 
           <button
-            onClick={() => { setBookOpen(false); resetBookingForm(); }}
+            onClick={() => { setSelectedProvider(null); resetBookingForm(); }}
             className="w-full flex items-center justify-center gap-2 text-slate-400 hover:text-primary text-xs font-normal py-1 transition"
           >
             <ClipboardList className="w-3.5 h-3.5" />
@@ -185,7 +197,7 @@ export const GerakTransporter: React.FC = () => {
   }
 
   // ── Booking sub-page — form ────────────────────────────────────────────────
-  if (bookOpen) {
+  if (selectedProvider) {
     return (
       <div className="flex-grow bg-white overflow-y-auto no-scrollbar pb-4 animate-fade-in">
         <div className="px-4 flex flex-col gap-4">
@@ -193,13 +205,13 @@ export const GerakTransporter: React.FC = () => {
           {/* Sub-page header — own back chevron, page's global Header back
               button navigates between top-level pages, not this in-page view */}
           <div className="mt-4 flex items-center gap-3">
-            <button onClick={() => setBookOpen(false)}
+            <button onClick={() => { setSelectedProvider(null); resetBookingForm(); }}
               className="w-8 h-8 flex items-center justify-center rounded-xl bg-slate-100 text-slate-500 active:scale-90 transition shrink-0">
               <ChevronLeft className="w-4 h-4" />
             </button>
             <div>
               <h2 className="text-lg font-semibold text-slate-800 m-0">Book Gerak Transporter</h2>
-              <p className="text-xs text-slate-400 font-normal mt-0.5">{PROVIDER.name}</p>
+              <p className="text-xs text-slate-400 font-normal mt-0.5">{selectedProvider.name}</p>
             </div>
           </div>
 
@@ -282,11 +294,11 @@ export const GerakTransporter: React.FC = () => {
           <div className="bg-slate-50 border border-slate-100 rounded-2xl px-4 py-3 flex items-center justify-between gap-2">
             <div>
               <p className="text-xs font-normal text-slate-400">Booking with</p>
-              <p className="text-xs font-semibold text-slate-700">{PROVIDER.name}</p>
+              <p className="text-xs font-semibold text-slate-700">{selectedProvider.name}</p>
             </div>
             <div className="flex items-center gap-2">
-              <span className="text-xs font-semibold text-slate-600">{PROVIDER.phone.replace(/(\d{3})(\d{4})(\d{4})/, '$1-$2$3')}</span>
-              <a href={`https://wa.me/6${PROVIDER.phone}`} target="_blank" rel="noopener noreferrer"
+              <span className="text-xs font-semibold text-slate-600">{formatPhone(selectedProvider.phone)}</span>
+              <a href={`https://wa.me/6${selectedProvider.phone}`} target="_blank" rel="noopener noreferrer"
                 className="text-[#25D366] active:scale-90 transition shrink-0">
                 <WaIcon className="w-4 h-4" />
               </a>
@@ -338,7 +350,7 @@ export const GerakTransporter: React.FC = () => {
     );
   }
 
-  // ── Marketing / info page ─────────────────────────────────────────────────
+  // ── Provider list / marketing page ────────────────────────────────────────
   return (
     <div className="flex-grow bg-white overflow-y-auto no-scrollbar pb-4 animate-fade-in">
       <div className="px-4 flex flex-col gap-4">
@@ -351,99 +363,87 @@ export const GerakTransporter: React.FC = () => {
           <p className="text-xs text-slate-400 font-normal mt-0.5">Penghantaran Motosikal & Pindah Barang</p>
         </div>
 
-        {/* Mode Selector Standard */}
-        <div className="flex gap-2">
-          {(['Penghantaran Motosikal', 'Pindah Barang'] as const).map(s => {
-            const active = serviceType === s;
-            return (
-              <button
-                key={s}
-                type="button"
-                onPointerDown={(e) => { e.preventDefault(); setServiceType(s); }}
-                className={`flex-1 flex items-center gap-2.5 p-3 rounded-2xl border bg-white transition-transform active:scale-[0.99] active:bg-slate-50 ${
-                  active ? 'border-slate-900' : 'border-slate-100'
-                }`}
-              >
-                <div className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0 bg-slate-100">
-                  {s === 'Penghantaran Motosikal'
-                    ? <Bike    className={`w-4 h-4 ${active ? 'text-slate-900' : 'text-slate-500'}`} />
-                    : <Package className={`w-4 h-4 ${active ? 'text-slate-900' : 'text-slate-500'}`} />}
+        {/* Available Providers — Solo Card Standard */}
+        <div className="flex flex-col gap-3">
+          <h3 className="text-sm font-semibold text-slate-700 flex items-center gap-1.5 px-1">
+            <Truck className="w-3.5 h-3.5 text-slate-400" /> Available Providers
+          </h3>
+
+          {providersLoading ? (
+            <div className="flex justify-center py-8">
+              <span className="w-5 h-5 rounded-full border-2 border-slate-200 border-t-primary animate-spin" />
+            </div>
+          ) : providers.length === 0 ? (
+            <div className="bg-white border border-slate-100 rounded-3xl p-6 flex flex-col items-center gap-2 text-center">
+              <Truck className="w-8 h-8 text-slate-300" />
+              <p className="text-xs font-semibold text-slate-500">No providers available right now</p>
+              <p className="text-xs text-slate-400 font-normal">Check back soon — new service providers are onboarded by admin.</p>
+            </div>
+          ) : (
+            providers.map(p => (
+              <div key={p.id} className="bg-white border border-slate-100 rounded-3xl p-5 flex flex-col gap-3">
+                <div
+                  onClick={() => setSelectedProvider(p)}
+                  className="flex items-center gap-3 cursor-pointer active:scale-[0.99] transition-transform"
+                >
+                  <div className="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center shrink-0">
+                    <Truck className="w-5 h-5 text-slate-700" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-semibold text-slate-800 leading-tight truncate">{p.name}</p>
+                    <p className="text-xs text-slate-400 font-normal mt-0.5">{p.gerak_id} · UMPSA {p.campus}</p>
+                  </div>
+                  <span className="shrink-0 bg-emerald-50 border border-emerald-100 text-emerald-600 text-[10px] font-semibold px-2.5 py-1 rounded-xl">
+                    Aktif
+                  </span>
                 </div>
-                <span className={`text-xs font-semibold ${active ? 'text-slate-900' : 'text-slate-600'}`}>
-                  {s === 'Penghantaran Motosikal' ? 'Motosikal' : 'Pindah Barang'}
-                </span>
-              </button>
-            );
-          })}
-        </div>
 
-        {/* Provider Card — tap to book (Sub-page Standard) */}
-        <div
-          onClick={() => setBookOpen(true)}
-          className="bg-white border border-slate-100 rounded-3xl p-5 flex flex-col gap-4 cursor-pointer active:scale-[0.99] transition-transform"
-        >
-          <div className="flex items-center justify-between">
-            <h3 className="text-sm font-semibold text-slate-700">Penyedia Perkhidmatan</h3>
-            <ChevronRight className="w-4 h-4 text-slate-300" />
-          </div>
+                {(p.vehicle || p.plate_number) && (
+                  <div className="grid grid-cols-2 gap-3 border-t border-slate-100 pt-3">
+                    {p.vehicle && (
+                      <div className="flex flex-col gap-0.5">
+                        <span className="text-xs font-normal text-slate-400">Kenderaan</span>
+                        <span className="text-xs font-semibold text-slate-700">{p.vehicle}</span>
+                      </div>
+                    )}
+                    {p.plate_number && (
+                      <div className="flex flex-col gap-0.5">
+                        <span className="text-xs font-normal text-slate-400">Plat</span>
+                        <span className="text-xs font-semibold text-slate-700">{p.plate_number}</span>
+                      </div>
+                    )}
+                  </div>
+                )}
 
-          {/* Provider identity */}
-          <div className="border border-slate-100 rounded-2xl p-4 flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center shrink-0">
-              <Truck className="w-5 h-5 text-slate-700" />
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-semibold text-slate-800 leading-tight">{PROVIDER.name}</p>
-              <p className="text-xs text-slate-400 font-normal mt-0.5">{PROVIDER.tagline}</p>
-            </div>
-            <span className="shrink-0 bg-emerald-50 border border-emerald-100 text-emerald-600 text-[10px] font-semibold px-2.5 py-1 rounded-xl">
-              Aktif
-            </span>
-          </div>
-
-          {/* Details grid */}
-          <div className="grid grid-cols-2 gap-3">
-            {[
-              { label: 'Kenderaan', value: PROVIDER.vehicle },
-              { label: 'Plat',      value: PROVIDER.plate },
-              { label: 'Kawasan',   value: PROVIDER.campus },
-              { label: 'Hubungi',   value: PROVIDER.phone.replace(/(\d{3})(\d{4})(\d{4})/, '$1-$2$3') },
-            ].map(({ label, value }) => (
-              <div key={label} className="flex flex-col gap-0.5">
-                <span className="text-xs font-normal text-slate-400">{label}</span>
-                <span className="text-xs font-semibold text-slate-700">{value}</span>
+                <div className="flex gap-2 pt-1 border-t border-slate-100">
+                  <a
+                    href={`https://wa.me/6${p.phone}?text=${buildQuickWaMsg()}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={e => e.stopPropagation()}
+                    className="w-11 h-11 flex items-center justify-center bg-white border border-slate-100 rounded-2xl active:scale-95 transition shrink-0"
+                  >
+                    <WaIcon className="w-4 h-4 text-[#25D366]" />
+                  </a>
+                  <a
+                    href={`tel:+6${p.phone}`}
+                    onClick={e => e.stopPropagation()}
+                    className="w-11 h-11 flex items-center justify-center bg-white border border-slate-100 text-slate-700 rounded-2xl active:scale-95 transition shrink-0"
+                  >
+                    <Phone className="w-4 h-4" />
+                  </a>
+                  <button
+                    type="button"
+                    onClick={() => setSelectedProvider(p)}
+                    className="flex-1 flex items-center justify-between bg-primary hover:bg-primary-hover active:scale-[0.98] text-white font-semibold px-4 rounded-2xl text-xs transition"
+                  >
+                    Book
+                    <ChevronRight className="w-4 h-4" />
+                  </button>
+                </div>
               </div>
-            ))}
-          </div>
-
-          {/* Feature tags */}
-          <div className="flex flex-wrap gap-1.5 pt-1 border-t border-slate-100">
-            {['Selamat Dijamin', 'Pantas & Tepat Masa', 'Servis Mesra', 'Ikatan Selamat'].map(g => (
-              <span key={g} className="text-xs font-normal bg-white border border-slate-100 text-slate-500 px-2.5 py-1 rounded-xl">
-                ✓ {g}
-              </span>
-            ))}
-          </div>
-
-          {/* Contact buttons — stopPropagation so tapping WA/phone doesn't also open the booking sub-page */}
-          <div className="flex gap-2 pt-1 border-t border-slate-100">
-            <a
-              href={`https://wa.me/6${PROVIDER.phone}?text=${buildWaMsg(serviceType)}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              onClick={e => e.stopPropagation()}
-              className="w-12 h-12 flex items-center justify-center bg-white border border-slate-100 rounded-2xl active:scale-95 transition shrink-0"
-            >
-              <WaIcon className="w-5 h-5 text-[#25D366]" />
-            </a>
-            <a
-              href={`tel:+6${PROVIDER.phone}`}
-              onClick={e => e.stopPropagation()}
-              className="w-12 h-12 flex items-center justify-center bg-white border border-slate-100 text-slate-700 rounded-2xl active:scale-95 transition shrink-0"
-            >
-              <Phone className="w-4 h-4" />
-            </a>
-          </div>
+            ))
+          )}
         </div>
 
         {/* Perkhidmatan Kami — always visible, no accordion */}
@@ -486,7 +486,8 @@ export const GerakTransporter: React.FC = () => {
         </div>
 
         {/* Price note */}
-        <div className="bg-white border border-slate-100 rounded-3xl p-5 flex items-start gap-3">
+        <div className="bg-white border border-slate-100 rounded-3xl p-5 flex items-start gap-3"
+          style={{ marginBottom: 'calc(6.5rem + env(safe-area-inset-bottom))' }}>
           <div className="w-9 h-9 rounded-xl bg-slate-100 flex items-center justify-center shrink-0 mt-0.5">
             <Banknote className="w-4 h-4 text-slate-600" />
           </div>
@@ -499,25 +500,6 @@ export const GerakTransporter: React.FC = () => {
             <p className="text-xs text-slate-500 font-normal mt-2">Tempahan awal disyorkan.</p>
           </div>
         </div>
-
-        {/* Book CTA */}
-        <button
-          type="button"
-          onClick={() => { if (!user.isLoggedIn) { showAuthGate(); return; } setBookOpen(true); }}
-          className="w-full flex items-center justify-between bg-primary hover:bg-primary-hover active:scale-[0.98] text-white font-semibold py-4 px-5 rounded-2xl text-sm transition"
-          style={{ marginBottom: 'calc(6.5rem + env(safe-area-inset-bottom))' }}
-        >
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-white/20 flex items-center justify-center shrink-0">
-              <Clock className="w-4 h-4 text-white" />
-            </div>
-            <div className="text-left">
-              <p className="text-sm font-semibold leading-tight">Tempah Sekarang</p>
-              <p className="text-xs text-white/70 font-normal mt-0.5">{serviceType}</p>
-            </div>
-          </div>
-          <ChevronRight className="w-5 h-5 text-white/60" />
-        </button>
 
       </div>
     </div>
