@@ -432,12 +432,14 @@ export const JubahRiderSubTab = forwardRef<JubahRiderSubTabHandle, JubahRiderSub
             <div className="overflow-x-auto no-scrollbar">
               <div className="overflow-y-auto no-scrollbar max-h-[320px]">
               <table className="min-w-full text-left border-collapse">
-                <thead className="sticky top-0 bg-white">
+                {/* sticky+bg-white on each <th> individually, not on <thead> —
+                    see JubahCustomerSubTab's identical table for why. */}
+                <thead>
                   <tr className="text-xs font-normal text-slate-400 border-b border-slate-100">
-                    <th className="py-2 pr-4 whitespace-nowrap">Method</th>
-                    <th className="py-2 pr-4 whitespace-nowrap">Representative Name</th>
-                    <th className="py-2 pr-4 whitespace-nowrap">I/C Number</th>
-                    <th className="py-2 whitespace-nowrap">H/P</th>
+                    <th className="sticky top-0 bg-white py-2 pr-4 whitespace-nowrap">Method</th>
+                    <th className="sticky top-0 bg-white py-2 pr-4 whitespace-nowrap">Representative Name</th>
+                    <th className="sticky top-0 bg-white py-2 pr-4 whitespace-nowrap">I/C Number</th>
+                    <th className="sticky top-0 bg-white py-2 whitespace-nowrap">H/P</th>
                   </tr>
                 </thead>
                 <tbody>

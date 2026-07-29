@@ -335,17 +335,23 @@ export function JubahCustomerSubTab({
             <div className="overflow-x-auto no-scrollbar">
               <div className="overflow-y-auto no-scrollbar max-h-[600px]">
               <table className="min-w-full border-collapse text-left">
-                <thead className="sticky top-0 bg-white">
+                {/* sticky+bg-white on each <th> individually, not on <thead> —
+                    position:sticky on <thead> itself is unreliably supported
+                    across mobile browser/WebView engines; <th> (a table
+                    cell) is what's consistently sticky-positionable. Putting
+                    it on <thead> only was why the header detached and
+                    floated with a gap instead of staying pinned on scroll. */}
+                <thead>
                   <tr className="text-xs font-normal text-slate-400 border-b border-slate-100">
-                    <th className="py-2 pr-4 whitespace-nowrap">Reference</th>
-                    <th className="py-2 pr-4 whitespace-nowrap">Name</th>
-                    <th className="py-2 pr-4 whitespace-nowrap">Remark</th>
-                    <th className="py-2 pr-4 whitespace-nowrap">Mode</th>
-                    <th className="py-2 pr-4 whitespace-nowrap">Type</th>
-                    <th className="py-2 pr-4 whitespace-nowrap">Status</th>
-                    <th className="py-2 pr-4 whitespace-nowrap">Robe Status</th>
-                    <th className="py-2 pr-4 whitespace-nowrap">Confirm</th>
-                    <th className="py-2 whitespace-nowrap">Receipt</th>
+                    <th className="sticky top-0 bg-white py-2 pr-4 whitespace-nowrap">Reference</th>
+                    <th className="sticky top-0 bg-white py-2 pr-4 whitespace-nowrap">Name</th>
+                    <th className="sticky top-0 bg-white py-2 pr-4 whitespace-nowrap">Remark</th>
+                    <th className="sticky top-0 bg-white py-2 pr-4 whitespace-nowrap">Mode</th>
+                    <th className="sticky top-0 bg-white py-2 pr-4 whitespace-nowrap">Type</th>
+                    <th className="sticky top-0 bg-white py-2 pr-4 whitespace-nowrap">Status</th>
+                    <th className="sticky top-0 bg-white py-2 pr-4 whitespace-nowrap">Robe Status</th>
+                    <th className="sticky top-0 bg-white py-2 pr-4 whitespace-nowrap">Confirm</th>
+                    <th className="sticky top-0 bg-white py-2 whitespace-nowrap">Receipt</th>
                   </tr>
                 </thead>
                 <tbody>
