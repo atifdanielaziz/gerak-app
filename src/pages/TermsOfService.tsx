@@ -21,7 +21,7 @@ export const TermsOfService: React.FC = () => {
         </div>
         <div>
           <h2 className="text-base font-bold text-slate-800 m-0">Terms &amp; Conditions</h2>
-          <p className="text-xs text-slate-400 font-normal mt-0.5">Last updated: 29 July 2026</p>
+          <p className="text-xs text-slate-400 font-normal mt-0.5">Last updated: 30 July 2026</p>
         </div>
       </div>
 
@@ -75,7 +75,7 @@ export const TermsOfService: React.FC = () => {
 
       <Section title="5. Payments">
         <p>
-          Payments are processed through our third-party payment gateway (ToyyibPay). Prices shown at the time of
+          Payments are processed through a third-party payment gateway. Prices shown at the time of
           booking are the amount charged; Gerak does not add hidden fees on top of what's displayed.
         </p>
         <p>
@@ -173,7 +173,7 @@ export const TermsOfService: React.FC = () => {
 
       <Section title="15. Contact us">
         <p>
-          Questions about these terms: ayamhutanrider@gmail.com
+          Questions about these terms: gerakmygroup@gmail.com
         </p>
       </Section>
 

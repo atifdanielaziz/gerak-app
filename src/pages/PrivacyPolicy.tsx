@@ -21,7 +21,7 @@ export const PrivacyPolicy: React.FC = () => {
         </div>
         <div>
           <h2 className="text-base font-bold text-slate-800 m-0">Privacy Policy</h2>
-          <p className="text-xs text-slate-400 font-normal mt-0.5">Last updated: 29 July 2026</p>
+          <p className="text-xs text-slate-400 font-normal mt-0.5">Last updated: 30 July 2026</p>
         </div>
       </div>
 
@@ -38,7 +38,7 @@ export const PrivacyPolicy: React.FC = () => {
           obligations that would apply to a registered business.
         </p>
         <p>
-          Contact for any privacy question or request: <strong>ayamhutanrider@gmail.com</strong>
+          Contact for any privacy question or request: <strong>gerakmygroup@gmail.com</strong>
         </p>
         <p>
           This policy is written to comply with Malaysia's <strong>Personal Data Protection Act 2010 (PDPA)</strong>.
@@ -66,9 +66,9 @@ export const PrivacyPolicy: React.FC = () => {
       </Section>
 
       <Section title="4. Who we share it with">
-        <p><strong>Payment processor (ToyyibPay):</strong> booking reference, amount, and your phone number, to process payment and confirm it back to us.</p>
-        <p><strong>Cloud infrastructure (Supabase):</strong> our database and file storage provider — they host your data on our behalf under their own security and data-processing terms.</p>
-        <p><strong>Email delivery (Resend):</strong> your email address and booking details, solely to send you receipts and account notifications.</p>
+        <p><strong>Payment processor:</strong> booking reference, amount, and your phone number, to process payment and confirm it back to us.</p>
+        <p><strong>Cloud infrastructure:</strong> our database and file storage provider — they host your data on our behalf under their own security and data-processing terms.</p>
+        <p><strong>Email delivery:</strong> your email address and booking details, solely to send you receipts and account notifications.</p>
         <p><strong>Internal operations spreadsheet:</strong> a subset of booking details (name, contact, booking reference, service details) is also logged to an internal Google Sheet used for day-to-day operations and record-keeping by the Gerak team.</p>
         <p><strong>Assigned driver/rider:</strong> only the details needed to fulfil your booking (name, phone number, pickup/delivery details) are shared with the specific driver or rider assigned to it.</p>
         <p><strong>University administration:</strong> where a booking (e.g. Jubah) requires coordination with your university's own convocation logistics.</p>
@@ -108,8 +108,7 @@ export const PrivacyPolicy: React.FC = () => {
         <p>• Request access to the personal data we hold about you.</p>
         <p>• Request correction of inaccurate or outdated data.</p>
         <p>• Withdraw consent to further processing, or request deletion of your account.</p>
-        <p>• Lodge a complaint with the Department of Personal Data Protection Malaysia if you believe we've mishandled your data.</p>
-        <p>To exercise any of these rights, contact us at ayamhutanrider@gmail.com or use the in-app Delete Account option.</p>
+        <p>To exercise any of these rights, contact us at gerakmygroup@gmail.com or use the in-app Delete Account option.</p>
       </Section>
 
       <Section title="9. Security">
@@ -137,7 +136,7 @@ export const PrivacyPolicy: React.FC = () => {
 
       <Section title="12. Contact us">
         <p>
-          Questions about this policy or how your data is handled: ayamhutanrider@gmail.com
+          Questions about this policy or how your data is handled: gerakmygroup@gmail.com
         </p>
       </Section>
 
