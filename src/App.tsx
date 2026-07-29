@@ -1,5 +1,5 @@
 ﻿import React, { useEffect, useRef, useState, lazy, Suspense } from 'react';
-import { AppProvider, useApp } from './context/AppContext';
+import { AppProvider, useApp, type ActivePage } from './context/AppContext';
 import { Header } from './components/Header';
 import { BottomNav } from './components/BottomNav';
 import { ConfirmModal } from './components/ConfirmModal';
@@ -144,25 +144,40 @@ const InstallPrompt: React.FC = () => {
   );
 };
 
-const SwipeBackGesture: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { goBack, canGoBack, currentPage } = useApp();
+const SwipeBackGesture: React.FC<{
+  renderPage: (page: ActivePage) => React.ReactNode;
+  children: React.ReactNode;
+}> = ({ renderPage, children }) => {
+  const { goBack, canGoBack, currentPage, peekTargetPage } = useApp();
 
   const [dragX,      setDragX]      = useState(0);
   const [gestureOn,  setGestureOn]  = useState(false); // finger is down → no CSS transition
   const [showBackUI, setShowBackUI] = useState(false); // show shadow + arrow (back mode only)
+  // The page a back-gesture would actually land on, mounted behind the
+  // current page for the duration of the drag (plus the settle animation)
+  // so it's already visible mid-drag — iOS/Shopee-style — instead of a
+  // blank white background. Stays null (falls back to the original plain
+  // slide-over-white) whenever peekTargetPage is null, i.e. a leaveGuard
+  // is registered and the gesture would run an in-page action instead of
+  // actually changing pages (Jubah's form/university steps, Rental's
+  // list/book, Transporter's provider/booking-form, etc. — none of those
+  // are given their own "peek" here, only real page-to-page navigation is).
+  const [peekPage, setPeekPage] = useState<ActivePage | null>(null);
 
-  const dragXRef      = useRef(0);
-  const modeRef       = useRef<'none' | 'back' | 'bounce'>('none');
-  const startXRef     = useRef(0);
-  const startYRef     = useRef(0);
-  const dirLockRef    = useRef<'h' | 'v' | null>(null);
-  const canGoBackRef  = useRef(canGoBack);
-  const goBackRef     = useRef(goBack);
+  const dragXRef       = useRef(0);
+  const modeRef        = useRef<'none' | 'back' | 'bounce'>('none');
+  const startXRef      = useRef(0);
+  const startYRef      = useRef(0);
+  const dirLockRef     = useRef<'h' | 'v' | null>(null);
+  const canGoBackRef   = useRef(canGoBack);
+  const goBackRef      = useRef(goBack);
   const currentPageRef = useRef(currentPage);
+  const peekTargetRef  = useRef(peekTargetPage);
 
   useEffect(() => { canGoBackRef.current = canGoBack; }, [canGoBack]);
   useEffect(() => { currentPageRef.current = currentPage; }, [currentPage]);
   useEffect(() => { goBackRef.current = goBack; }, [goBack]);
+  useEffect(() => { peekTargetRef.current = peekTargetPage; }, [peekTargetPage]);
 
   const EDGE       = 40;   // px from left edge to activate gesture
   const TRIGGER    = 90;   // px drag to commit back navigation
@@ -193,6 +208,9 @@ const SwipeBackGesture: React.FC<{ children: React.ReactNode }> = ({ children })
       dirLockRef.current = null;
       dragXRef.current   = 0;
       modeRef.current    = canGoBackRef.current ? 'back' : 'bounce';
+      if (modeRef.current === 'back' && peekTargetRef.current) {
+        setPeekPage(peekTargetRef.current);
+      }
     };
 
     const onMove = (e: TouchEvent) => {
@@ -226,7 +244,14 @@ const SwipeBackGesture: React.FC<{ children: React.ReactNode }> = ({ children })
       setGestureOn(false);
       setDragX(0);
       setShowBackUI(false);
-      if (triggered) goBackRef.current();
+      if (triggered) {
+        goBackRef.current();
+        setPeekPage(null); // the real page has already taken over
+      } else {
+        // Let the snap-back transition finish before unmounting the peek
+        // layer, so it doesn't vanish mid-animation while still visible.
+        setTimeout(() => setPeekPage(null), 300);
+      }
     };
 
     window.addEventListener('touchstart', onStart, { passive: true });
@@ -242,12 +267,27 @@ const SwipeBackGesture: React.FC<{ children: React.ReactNode }> = ({ children })
   const progress = Math.min(dragX / TRIGGER, 1);
 
   return (
-    <>
+    <div className="relative flex-1 min-h-0 flex flex-col overflow-hidden">
+      {/* Peek layer — the page a back-gesture would land on, already
+          rendered behind the current page. Non-interactive; the real
+          page (via currentPage/renderPage above) takes over the moment
+          the gesture actually commits. */}
+      {peekPage && (
+        <div
+          style={{ position: 'absolute', inset: 0, zIndex: 9989, pointerEvents: 'none' }}
+          className="flex flex-col overflow-hidden bg-white"
+        >
+          <Suspense fallback={<div className="flex-1 bg-white" />}>
+            {renderPage(peekPage)}
+          </Suspense>
+        </div>
+      )}
+
       {/* Shadow behind page — back drag only */}
       {showBackUI && dragX > 0 && (
         <div
           style={{
-            position: 'fixed', inset: 0, zIndex: 9990,
+            position: 'absolute', inset: 0, zIndex: 9990,
             background: 'linear-gradient(to right, rgba(0,0,0,0.08), rgba(0,0,0,0.18))',
             pointerEvents: 'none',
           }}
@@ -293,7 +333,7 @@ const SwipeBackGesture: React.FC<{ children: React.ReactNode }> = ({ children })
           </svg>
         </div>
       )}
-    </>
+    </div>
   );
 };
 
@@ -310,8 +350,8 @@ const AppContent: React.FC = () => {
   // just with the normal chrome kept visible.
   const hideChromeOnDesktop = currentPage === 'admin-home';
 
-  const renderPage = () => {
-    switch (currentPage) {
+  const renderPage = (page: ActivePage) => {
+    switch (page) {
       case 'splash':
         return <SplashScreen />;
       case 'login':
@@ -363,11 +403,13 @@ const AppContent: React.FC = () => {
     <div className={`mobile-container flex flex-col h-full bg-white select-none overscroll-x-none ${isDesktopUnlockedRoute ? 'desktop-unlocked' : ''}`}>
       <ConfirmModal />
       <div className={hideChromeOnDesktop ? 'lg:hidden' : ''}><Header /></div>
-      <div key={currentPage} className="flex-1 min-h-0 flex flex-col overflow-hidden page-transition bg-white">
-        <Suspense fallback={<div className="flex-1 flex items-center justify-center bg-white"><span className="w-6 h-6 rounded-full border-2 border-primary border-t-transparent animate-spin" /></div>}>
-          {renderPage()}
-        </Suspense>
-      </div>
+      <SwipeBackGesture renderPage={renderPage}>
+        <div key={currentPage} className="flex-1 min-h-0 flex flex-col overflow-hidden page-transition bg-white">
+          <Suspense fallback={<div className="flex-1 flex items-center justify-center bg-white"><span className="w-6 h-6 rounded-full border-2 border-primary border-t-transparent animate-spin" /></div>}>
+            {renderPage(currentPage)}
+          </Suspense>
+        </div>
+      </SwipeBackGesture>
       <div className={hideChromeOnDesktop ? 'lg:hidden' : ''}><BottomNav /></div>
     </div>
   );
@@ -377,9 +419,7 @@ function App() {
   return (
     <AppProvider>
       <InstallPrompt />
-      <SwipeBackGesture>
-        <AppContent />
-      </SwipeBackGesture>
+      <AppContent />
     </AppProvider>
   );
 }

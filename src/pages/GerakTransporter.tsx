@@ -71,7 +71,7 @@ Boleh saya dapatkan maklumat harga & ketersediaan? Terima kasih 🙏`
   );
 
 export const GerakTransporter: React.FC = () => {
-  const { user, showAuthGate } = useApp();
+  const { user, showAuthGate, setLeaveGuard } = useApp();
 
   const [providers,        setProviders]        = useState<TransporterProvider[]>([]);
   const [providersLoading, setProvidersLoading]  = useState(true);
@@ -111,6 +111,17 @@ export const GerakTransporter: React.FC = () => {
     setBookingError(null);
     setBookingDone(null);
   };
+
+  // Registers with AppContext's shared goBack() (header back chevron,
+  // hardware back, or the edge-swipe gesture all call it) so leaving the
+  // booking form or success screen returns to the provider list first,
+  // instead of skipping past it straight back to Dashboard — same pattern
+  // as GerakRental.tsx's book/my-bookings <-> list chain.
+  useEffect(() => {
+    if (!selectedProvider) { setLeaveGuard(null); return; }
+    setLeaveGuard(() => () => { setSelectedProvider(null); resetBookingForm(); });
+    return () => setLeaveGuard(null);
+  }, [selectedProvider, setLeaveGuard]);
 
   const canBook = selectedServices.size > 0 && !!tripPickup.trim() && !!tripDestination.trim() && !booking;
 
