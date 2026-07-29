@@ -1,4 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useRef, useCallback } from 'react';
+import { Capacitor } from '@capacitor/core';
+import { App as CapacitorApp } from '@capacitor/app';
 import { supabase } from '../lib/supabase';
 import { INACTIVITY_LIMIT_MS, isSessionExpired, touchActivity, setSessionExpiredMessage } from '../lib/idleSession';
 
@@ -226,10 +228,23 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     });
   };
 
-  // Android back button — intercept system popstate so the PWA doesn't close
+  // Android back button — intercept system popstate so the PWA doesn't close.
+  // On native, this ALSO needs @capacitor/app's own backButton event: the
+  // hardware/gesture back button is handled by Android before it reaches the
+  // WebView, and a WebView built purely from pushState() calls (never a real
+  // URL change) doesn't reliably register as "has history to go back to" —
+  // so without this, Android's own fallback kicks in and just exits the app,
+  // completely bypassing the popstate trap below.
   const pageHistoryRef = useRef(pageHistory);
   useEffect(() => { pageHistoryRef.current = pageHistory; }, [pageHistory]);
   useEffect(() => {
+    // A leave guard means there is definitely something for back to do
+    // (close an overlay, cancel a form, etc.) even when pageHistory is
+    // empty — e.g. a page reached as the very first screen of the session
+    // (a deep link) that then opens its own in-page overlay. Checking only
+    // pageHistory.length here missed that case entirely.
+    const hasSomewhereToGo = () => pageHistoryRef.current.length > 0 || !!leaveGuardRef.current;
+
     window.history.pushState(null, '');
     const handlePopState = () => {
       // Dismissing the on-screen keyboard can also fire popstate on some
@@ -242,14 +257,37 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         window.history.pushState(null, '');
         return;
       }
-      if (pageHistoryRef.current.length > 0) {
+      if (hasSomewhereToGo()) {
         goBack();
       }
       // Always re-push so the browser never runs out of history entries
       window.history.pushState(null, '');
     };
     window.addEventListener('popstate', handlePopState);
-    return () => window.removeEventListener('popstate', handlePopState);
+
+    let removeNativeListener: (() => void) | undefined;
+    if (Capacitor.isNativePlatform()) {
+      CapacitorApp.addListener('backButton', () => {
+        const active = document.activeElement as HTMLElement | null;
+        if (active && (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA')) {
+          active.blur();
+          return;
+        }
+        if (hasSomewhereToGo()) {
+          goBack();
+        } else {
+          // Truly at the root with nothing to intercept — exit, matching
+          // standard Android back-button convention, instead of leaving the
+          // press to fall through to whatever Android's own default is.
+          CapacitorApp.exitApp();
+        }
+      }).then(handle => { removeNativeListener = () => handle.remove(); });
+    }
+
+    return () => {
+      window.removeEventListener('popstate', handlePopState);
+      removeNativeListener?.();
+    };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
