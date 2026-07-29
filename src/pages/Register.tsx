@@ -9,7 +9,7 @@ import { PrivacyPolicy } from './PrivacyPolicy';
 type InviteStatus = null | 'checking' | { isDriver: boolean; campus: string; role: string };
 
 export const Register: React.FC = () => {
-  const { register, setCurrentPage } = useApp();
+  const { register, setCurrentPage, setLeaveGuard } = useApp();
   const [agreedToTerms, setAgreedToTerms] = useState(false);
   const [agreedToPrivacy, setAgreedToPrivacy] = useState(false);
   // Shown as an in-place overlay rather than a real page navigation
@@ -71,6 +71,18 @@ export const Register: React.FC = () => {
     supabase.rpc(rpc, { p_campus: effectiveCampus })
       .then(({ data }) => setGerakId(data ?? ''));
   }, [effectiveCampus, isDriver, invite?.role]);
+
+  // Without this, the phone's hardware/gesture back button isn't aware the
+  // overlay is open at all — it goes straight to AppContext's normal
+  // back-navigation (leaving Register entirely, taking the whole filled-in
+  // form with it) instead of just closing the overlay. Registering a leave
+  // guard while the overlay is open makes the back button close it first,
+  // exactly like the in-overlay back arrow already does.
+  useEffect(() => {
+    if (!viewingPolicy) { setLeaveGuard(null); return; }
+    setLeaveGuard(() => () => setViewingPolicy(null));
+    return () => setLeaveGuard(null);
+  }, [viewingPolicy, setLeaveGuard]);
 
   const handleSubmit = async (e: React.SyntheticEvent) => {
     e.preventDefault();
