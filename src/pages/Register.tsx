@@ -38,7 +38,18 @@ export const Register: React.FC = () => {
   const [showConfirm,  setShowConfirm]  = useState(false);
   const [loading,  setLoading]  = useState(false);
   const [error,    setError]    = useState('');
+  const [toast,    setToast]    = useState('');
   const [inviteStatus, setInviteStatus] = useState<InviteStatus>(null);
+
+  // For quick, fixable input mistakes (missing field, unticked consent) —
+  // same fixed-top-banner pattern used across the app (DriverHome, etc.).
+  // Reserving the inline {error} banner below for the one message that
+  // deserves to stay on screen: a real account-creation failure from the
+  // server, which the user needs time to actually read and act on.
+  const showToast = (msg: string) => {
+    setToast(msg);
+    setTimeout(() => setToast(''), 3000);
+  };
 
   // Derived helpers
   const invite = inviteStatus !== null && inviteStatus !== 'checking' ? inviteStatus : null;
@@ -86,19 +97,21 @@ export const Register: React.FC = () => {
 
   const handleSubmit = async (e: React.SyntheticEvent) => {
     e.preventDefault();
-    if (!university) { setError('Please select your university.'); return; }
-    if (!isDriver && !campus) { setError('Please select your campus.'); return; }
+    if (!university) { showToast('Please select your university.'); return; }
+    if (!isDriver && !campus) { showToast('Please select your campus.'); return; }
     if (!name || !phone || !email || !password || !confirmPassword) {
-      setError('Please fill in all fields.'); return;
+      showToast('Please fill in all fields.'); return;
     }
-    if (name.trim().length < 2) { setError('Full name must be at least 2 characters.'); return; }
+    if (name.trim().length < 2) { showToast('Full name must be at least 2 characters.'); return; }
     if (!/^\d{10,15}$/.test(phone.replace(/[\s\-+]/g, ''))) {
-      setError('Please enter a valid phone number.'); return;
+      showToast('Please enter a valid phone number.'); return;
     }
-    if (password !== confirmPassword) { setError('Passwords do not match.'); return; }
-    if (password.length < 6) { setError('Password must be at least 6 characters.'); return; }
-    if (!agreedToTerms) { setError('Please agree to the Terms & Conditions.'); return; }
-    if (!agreedToPrivacy) { setError('Please agree to the Privacy Policy.'); return; }
+    if (password !== confirmPassword) { showToast('Passwords do not match.'); return; }
+    if (password.length < 6) { showToast('Password must be at least 6 characters.'); return; }
+    if (!agreedToTerms || !agreedToPrivacy) {
+      showToast("Please tick both boxes below to let us know you've read and agree — then you're good to go!");
+      return;
+    }
 
     setLoading(true);
     setError('');
@@ -109,6 +122,13 @@ export const Register: React.FC = () => {
 
   return (
     <div className="flex-1 bg-white flex flex-col p-6 gap-4 select-none animate-fade-in h-full overflow-hidden touch-pan-y">
+
+      {/* Toast */}
+      {toast && (
+        <div className="fixed top-16 left-4 right-4 z-50 bg-slate-800 text-white text-xs font-bold px-4 py-2.5 rounded-2xl shadow-lg text-center">
+          {toast}
+        </div>
+      )}
 
       {/* Close button */}
       <div className="pt-0">
