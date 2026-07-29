@@ -1,7 +1,7 @@
 import { forwardRef, useCallback, useEffect, useImperativeHandle, useState } from 'react';
 import { supabase } from '../../../lib/supabase';
 import {
-  Users, MoreVertical, Car, KeyRound, Bike, GraduationCap, MapPin, ShieldCheck, ShieldOff, Trash2,
+  Users, MoreVertical, Car, KeyRound, Bike, GraduationCap, MapPin, ShieldCheck, ShieldOff, Trash2, Truck,
 } from 'lucide-react';
 import { WaIcon, toWa } from '../../../lib/whatsapp';
 import { useLoadOnActive } from '../../../hooks/useLoadOnActive';
@@ -10,7 +10,7 @@ import { type ProfileUser } from './ProfileSheet';
 type PendingAction =
   | { type: 'toggle-status'; u: ProfileUser }
   | { type: 'terminate';     u: ProfileUser }
-  | { type: 'toggle-cap';    u: ProfileUser; canDrive: boolean; canRent: boolean }
+  | { type: 'toggle-cap';    u: ProfileUser; canDrive: boolean; canRent: boolean; canTransport: boolean }
   | { type: 'toggle-rider-cap'; u: ProfileUser; canDaily: boolean; canRobe: boolean }
   | { type: 'campus';        u: ProfileUser; campus: 'Pekan' | 'Gambang' }
   | { type: 'toggle-role';   u: ProfileUser; newRole: 'driver' | 'admin' }
@@ -26,7 +26,7 @@ const UserCard: React.FC<{
   togglingCampus?: string | null;
   onToggle: (u: ProfileUser) => void;
   onTerminate: (u: ProfileUser) => void;
-  onCapToggle?: (u: ProfileUser, canDrive: boolean, canRent: boolean) => void;
+  onCapToggle?: (u: ProfileUser, canDrive: boolean, canRent: boolean, canTransport: boolean) => void;
   onRiderCapToggle?: (u: ProfileUser, canDaily: boolean, canRobe: boolean) => void;
   onCampusChange?: (u: ProfileUser, campus: 'Pekan' | 'Gambang') => void;
   onGateToggle?: (u: ProfileUser) => void;
@@ -83,16 +83,21 @@ const UserCard: React.FC<{
                 {/* Driver capabilities */}
                 {u.role === 'driver' && onCapToggle && (
                   <>
-                    <button onClick={() => { onCapToggle(u, !u.can_drive, u.can_rent ?? false); setShowMenu(false); }}
+                    <button onClick={() => { onCapToggle(u, !u.can_drive, u.can_rent ?? false, u.can_transport ?? false); setShowMenu(false); }}
                       className={`w-full flex items-center gap-3 px-4 py-3 text-left text-xs font-semibold transition active:scale-95 ${u.can_drive ? 'bg-slate-100 text-slate-900' : 'text-slate-500 hover:bg-slate-50'}`}>
                       <Car className="w-4 h-4 shrink-0" />
                       {u.can_drive ? 'Car ✓' : 'Car ✗'}
                       {togglingCap === u.id && <span className="ml-auto w-3 h-3 rounded-full border border-current border-t-transparent animate-spin" />}
                     </button>
-                    <button onClick={() => { onCapToggle(u, u.can_drive ?? false, !u.can_rent); setShowMenu(false); }}
+                    <button onClick={() => { onCapToggle(u, u.can_drive ?? false, !u.can_rent, u.can_transport ?? false); setShowMenu(false); }}
                       className={`w-full flex items-center gap-3 px-4 py-3 text-left text-xs font-semibold transition active:scale-95 ${u.can_rent ? 'bg-slate-100 text-slate-900' : 'text-slate-500 hover:bg-slate-50'}`}>
                       <KeyRound className="w-4 h-4 shrink-0" />
                       {u.can_rent ? 'Rental ✓' : 'Rental ✗'}
+                    </button>
+                    <button onClick={() => { onCapToggle(u, u.can_drive ?? false, u.can_rent ?? false, !u.can_transport); setShowMenu(false); }}
+                      className={`w-full flex items-center gap-3 px-4 py-3 text-left text-xs font-semibold transition active:scale-95 ${u.can_transport ? 'bg-slate-100 text-slate-900' : 'text-slate-500 hover:bg-slate-50'}`}>
+                      <Truck className="w-4 h-4 shrink-0" />
+                      {u.can_transport ? 'Transporter ✓' : 'Transporter ✗'}
                     </button>
                   </>
                 )}
@@ -270,7 +275,7 @@ export const UsersTab = forwardRef<UsersTabHandle, UsersTabProps>(function Users
     // Three independent lookups — fire together instead of awaiting one at a time.
     const [{ data: driverCaps }, { data: riderCaps }, { data: exempts }] = await Promise.all([
       driverIds.length > 0
-        ? supabase.from('profiles').select('id, can_drive, can_rent').in('id', driverIds)
+        ? supabase.from('profiles').select('id, can_drive, can_rent, can_transport').in('id', driverIds)
         : Promise.resolve({ data: null }),
       riderIds.length > 0
         ? supabase.from('profiles').select('id, can_daily, can_robe').in('id', riderIds)
@@ -283,7 +288,7 @@ export const UsersTab = forwardRef<UsersTabHandle, UsersTabProps>(function Users
     const usersById = new Map(users.map(u => [u.id, u]));
     driverCaps?.forEach(c => {
       const u = usersById.get(c.id);
-      if (u) { u.can_drive = c.can_drive; u.can_rent = c.can_rent; }
+      if (u) { u.can_drive = c.can_drive; u.can_rent = c.can_rent; u.can_transport = c.can_transport; }
     });
     riderCaps?.forEach(c => {
       const u = usersById.get(c.id);
@@ -300,7 +305,7 @@ export const UsersTab = forwardRef<UsersTabHandle, UsersTabProps>(function Users
   useLoadOnActive(active, loadUsers);
   useImperativeHandle(ref, () => ({ reload: loadUsers }), [loadUsers]);
 
-  const handleToggleCapability = async (u: ProfileUser, canDrive: boolean, canRent: boolean) => {
+  const handleToggleCapability = async (u: ProfileUser, canDrive: boolean, canRent: boolean, canTransport: boolean) => {
     const { data: { user: authUser } } = await supabase.auth.getUser();
     if (!authUser) { showToast('Session expired — please log in again.'); return; }
     setTogglingCap(u.id);
@@ -308,11 +313,12 @@ export const UsersTab = forwardRef<UsersTabHandle, UsersTabProps>(function Users
       p_user_id:  u.id,
       p_can_drive: canDrive,
       p_can_rent:  canRent,
+      p_can_transport: canTransport,
     });
     setTogglingCap(null);
     if (error) showToast('Failed to update capabilities.');
     else {
-      showToast(`${u.name}: ${canDrive ? 'Car ✓' : 'Car ✗'} · ${canRent ? 'Rental ✓' : 'Rental ✗'}`);
+      showToast(`${u.name}: ${canDrive ? 'Car ✓' : 'Car ✗'} · ${canRent ? 'Rental ✓' : 'Rental ✗'} · ${canTransport ? 'Transporter ✓' : 'Transporter ✗'}`);
       loadUsers();
     }
   };
@@ -388,7 +394,7 @@ export const UsersTab = forwardRef<UsersTabHandle, UsersTabProps>(function Users
     if (!pendingAction) return;
     if (pendingAction.type === 'toggle-status') handleToggleStatus(pendingAction.u);
     else if (pendingAction.type === 'terminate')  handleTerminate(pendingAction.u);
-    else if (pendingAction.type === 'toggle-cap') handleToggleCapability(pendingAction.u, pendingAction.canDrive, pendingAction.canRent);
+    else if (pendingAction.type === 'toggle-cap') handleToggleCapability(pendingAction.u, pendingAction.canDrive, pendingAction.canRent, pendingAction.canTransport);
     else if (pendingAction.type === 'toggle-rider-cap') handleToggleRiderCapability(pendingAction.u, pendingAction.canDaily, pendingAction.canRobe);
     else if (pendingAction.type === 'campus')     handleChangeCampus(pendingAction.u, pendingAction.campus);
     else if (pendingAction.type === 'toggle-role') handleToggleRole(pendingAction.u, pendingAction.newRole);
@@ -475,7 +481,7 @@ export const UsersTab = forwardRef<UsersTabHandle, UsersTabProps>(function Users
                         togglingCap={togglingCap} togglingCampus={togglingCampus}
                         onToggle={u => setPendingAction({ type: 'toggle-status', u })}
                         onTerminate={u => setPendingAction({ type: 'terminate', u })}
-                        onCapToggle={isSuperAdmin ? (u, canDrive, canRent) => setPendingAction({ type: 'toggle-cap', u, canDrive, canRent }) : undefined}
+                        onCapToggle={isSuperAdmin ? (u, canDrive, canRent, canTransport) => setPendingAction({ type: 'toggle-cap', u, canDrive, canRent, canTransport }) : undefined}
                         onRiderCapToggle={isSuperAdmin ? (u, canDaily, canRobe) => setPendingAction({ type: 'toggle-rider-cap', u, canDaily, canRobe }) : undefined}
                         onCampusChange={isSuperAdmin ? (u, campus) => setPendingAction({ type: 'campus', u, campus }) : undefined}
                         onGateToggle={isSuperAdmin ? (u => setPendingAction({ type: 'toggle-gate-exempt', u })) : undefined}

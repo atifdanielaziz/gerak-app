@@ -14,6 +14,7 @@ export interface ProfileUser {
   phone: string;
   can_drive?: boolean;
   can_rent?: boolean;
+  can_transport?: boolean;
   can_daily?: boolean;
   can_robe?: boolean;
   receipt_gate_exempt?: boolean;

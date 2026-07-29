@@ -1,7 +1,7 @@
 import { forwardRef, useCallback, useEffect, useImperativeHandle, useState } from 'react';
 import { supabase } from '../../../lib/supabase';
 import {
-  UserPlus, Send, MapPin, Mail, Car, KeyRound, Bike, GraduationCap, X, AlertCircle, Settings,
+  UserPlus, Send, MapPin, Mail, Car, KeyRound, Bike, GraduationCap, X, AlertCircle, Settings, Truck,
 } from 'lucide-react';
 import { useLoadOnActive } from '../../../hooks/useLoadOnActive';
 
@@ -12,6 +12,7 @@ interface DriverInvite {
   role: string;
   can_drive: boolean;
   can_rent: boolean;
+  can_transport: boolean;
   used: boolean;
   used_at: string | null;
   created_at: string;
@@ -49,6 +50,7 @@ export const DriversTab = forwardRef<DriversTabHandle, DriversTabProps>(function
   const [inviteRole, setInviteRole]          = useState<'driver' | 'rider' | 'admin'>('driver');
   const [inviteCanDrive, setInviteCanDrive]  = useState(true);
   const [inviteCanRent,  setInviteCanRent]   = useState(false);
+  const [inviteCanTransport, setInviteCanTransport] = useState(false);
   const [inviteCanDaily, setInviteCanDaily]  = useState(false);
   const [inviteCanRobe,  setInviteCanRobe]   = useState(false);
   const [inviteSending, setInviteSending]    = useState(false);
@@ -60,7 +62,7 @@ export const DriversTab = forwardRef<DriversTabHandle, DriversTabProps>(function
     setInvitesLoading(true);
     let query = supabase
       .from('driver_invites')
-      .select('id,email,campus,role,can_drive,can_rent,used,used_at,created_at')
+      .select('id,email,campus,role,can_drive,can_rent,can_transport,used,used_at,created_at')
       .order('created_at', { ascending: false });
     if (!isSuperAdmin) query = query.eq('campus', adminCampus);
     const { data } = await query;
@@ -73,7 +75,7 @@ export const DriversTab = forwardRef<DriversTabHandle, DriversTabProps>(function
 
   const handleSendInvite = async () => {
     if (!inviteEmail.trim()) return;
-    if (inviteRole === 'driver' && !inviteCanDrive && !inviteCanRent) { showToast('Select at least one capability.'); return; }
+    if (inviteRole === 'driver' && !inviteCanDrive && !inviteCanRent && !inviteCanTransport) { showToast('Select at least one capability.'); return; }
     if (inviteRole === 'rider'  && !inviteCanDaily && !inviteCanRobe)  { showToast('Select at least one capability.'); return; }
     setInviteSending(true);
     const { data: { user: authUser } } = await supabase.auth.getUser();
@@ -81,8 +83,9 @@ export const DriversTab = forwardRef<DriversTabHandle, DriversTabProps>(function
       email:      inviteEmail.trim().toLowerCase(),
       campus:     inviteCampus,
       role:       inviteRole,
-      can_drive:  inviteRole === 'driver' ? inviteCanDrive : false,
-      can_rent:   inviteRole === 'driver' ? inviteCanRent  : false,
+      can_drive:     inviteRole === 'driver' ? inviteCanDrive     : false,
+      can_rent:      inviteRole === 'driver' ? inviteCanRent      : false,
+      can_transport: inviteRole === 'driver' ? inviteCanTransport : false,
       can_daily:  inviteRole === 'rider'  ? inviteCanDaily : false,
       can_robe:   inviteRole === 'rider'  ? inviteCanRobe  : false,
       created_by: authUser?.id,
@@ -93,7 +96,7 @@ export const DriversTab = forwardRef<DriversTabHandle, DriversTabProps>(function
       showToast('Invite added!');
       setInviteEmail('');
       setInviteRole('driver');
-      setInviteCanDrive(true); setInviteCanRent(false);
+      setInviteCanDrive(true); setInviteCanRent(false); setInviteCanTransport(false);
       setInviteCanDaily(false); setInviteCanRobe(false);
       loadInvites();
     }
@@ -130,6 +133,7 @@ export const DriversTab = forwardRef<DriversTabHandle, DriversTabProps>(function
                     setInviteRole(r.id);
                     setInviteCanDrive(r.id === 'driver');
                     setInviteCanRent(false);
+                    setInviteCanTransport(false);
                     setInviteCanDaily(false);
                     setInviteCanRobe(false);
                   }}
@@ -201,6 +205,12 @@ export const DriversTab = forwardRef<DriversTabHandle, DriversTabProps>(function
                   }`}>
                   <KeyRound className="w-3 h-3" /> Rental {inviteCanRent ? '✓' : '✗'}
                 </button>
+                <button type="button" onPointerDown={(e) => { e.preventDefault(); setInviteCanTransport(v => !v); }}
+                  className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl text-xs font-semibold border transition-transform active:scale-95 ${
+                    inviteCanTransport ? 'bg-white border-slate-900 text-slate-900' : 'bg-slate-50 border-slate-200 text-slate-400'
+                  }`}>
+                  <Truck className="w-3 h-3" /> Transporter {inviteCanTransport ? '✓' : '✗'}
+                </button>
               </div>
             </div>
           )}
@@ -229,7 +239,7 @@ export const DriversTab = forwardRef<DriversTabHandle, DriversTabProps>(function
           <button
             onClick={() => {
               if (!inviteEmail.trim()) return;
-              if (inviteRole === 'driver' && !inviteCanDrive && !inviteCanRent) { showToast('Select at least one capability.'); return; }
+              if (inviteRole === 'driver' && !inviteCanDrive && !inviteCanRent && !inviteCanTransport) { showToast('Select at least one capability.'); return; }
               setShowInviteConfirm(true);
             }}
             disabled={!inviteEmail.trim()}
@@ -298,6 +308,11 @@ export const DriversTab = forwardRef<DriversTabHandle, DriversTabProps>(function
                       {inv.can_rent && (
                         <span className="text-xs font-semibold text-amber-700 bg-amber-50 px-1.5 py-0.5 rounded-full flex items-center gap-0.5">
                           <KeyRound className="w-2.5 h-2.5" /> Rental
+                        </span>
+                      )}
+                      {inv.can_transport && (
+                        <span className="text-xs font-semibold text-blue-700 bg-blue-50 px-1.5 py-0.5 rounded-full flex items-center gap-0.5">
+                          <Truck className="w-2.5 h-2.5" /> Transporter
                         </span>
                       )}
                     </div>
@@ -369,6 +384,9 @@ export const DriversTab = forwardRef<DriversTabHandle, DriversTabProps>(function
                       </span>
                       <span className={`flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full ${inviteCanRent ? 'bg-amber-50 text-amber-700' : 'bg-slate-100 text-slate-400 line-through'}`}>
                         <KeyRound className="w-3 h-3" /> Gerak Rental {inviteCanRent ? '✓' : '✗'}
+                      </span>
+                      <span className={`flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full ${inviteCanTransport ? 'bg-blue-50 text-blue-700' : 'bg-slate-100 text-slate-400 line-through'}`}>
+                        <Truck className="w-3 h-3" /> Gerak Transporter {inviteCanTransport ? '✓' : '✗'}
                       </span>
                     </>)}
                     {inviteRole === 'rider' && (<>
