@@ -84,6 +84,13 @@ export const AdminHome: React.FC = () => {
   const [jubahAdminView,     setJubahAdminView]     = useState<'list' | 'card'>('list');
   const [jubahAdminSelected, setJubahAdminSelected] = useState<JubahBookingRow | null>(null);
   const [jubahSubTab,        setJubahSubTab]        = useState<'customer' | 'rider' | 'price' | 'banner'>('rider');
+  // Defence in depth — the sub-tab button itself is already hidden for
+  // non-superadmin, but if a regular admin somehow lands on 'price' (e.g.
+  // a stale tab from before a role downgrade), render as if 'rider' were
+  // selected rather than silently rendering nothing. A derived value
+  // (not a useEffect writing back to jubahSubTab) avoids a pointless
+  // extra render on every tab switch.
+  const effectiveJubahSubTab = jubahSubTab === 'price' && !isSuperAdmin ? 'rider' : jubahSubTab;
   // Reported up by JubahCustomerSubTab's own receipt-preview modal.
   const [jubahCustomerModalOpen, setJubahCustomerModalOpen] = useState(false);
   const [jubahStatsUniversity, setJubahStatsUniversity] = useState('all');
@@ -846,11 +853,13 @@ export const AdminHome: React.FC = () => {
             {/* Customer | Rider | Price sub-tabs */}
             <div className="flex bg-white border border-slate-100 rounded-2xl p-1 gap-1">
               {([
-                { id: 'rider',    label: 'Rider' },
-                { id: 'customer', label: 'Customer' },
-                { id: 'price',    label: 'Price' },
-                { id: 'banner',   label: 'Banner' },
-              ] as const).map(t => (
+                { id: 'rider',    label: 'Rider',    superadminOnly: false },
+                { id: 'customer', label: 'Customer', superadminOnly: false },
+                { id: 'price',    label: 'Price',    superadminOnly: true },
+                { id: 'banner',   label: 'Banner',   superadminOnly: false },
+              ] as const)
+                .filter(t => !t.superadminOnly || isSuperAdmin)
+                .map(t => (
                 <button key={t.id} onPointerDown={(e) => { e.preventDefault(); setJubahSubTab(t.id); setJubahAdminView('list'); setJubahAdminSelected(null); }}
                   className={`flex-1 py-2 rounded-xl text-xs font-semibold transition-transform ${
                     jubahSubTab === t.id ? 'bg-primary text-white' : 'text-slate-400'
@@ -862,10 +871,10 @@ export const AdminHome: React.FC = () => {
           </>)}
 
           {/* ── RIDER sub-tab ── */}
-          {jubahSubTab === 'rider' && (
+          {effectiveJubahSubTab === 'rider' && (
             <JubahRiderSubTab
               ref={jubahRiderTabRef}
-              active={activeTab === 'jubah' && jubahSubTab === 'rider'}
+              active={activeTab === 'jubah' && effectiveJubahSubTab === 'rider'}
               isSuperAdmin={isSuperAdmin}
               adminCampus={adminCampus}
               showToast={showToast}
@@ -874,9 +883,9 @@ export const AdminHome: React.FC = () => {
           )}
 
           {/* -- CUSTOMER sub-tab -- */}
-          {jubahSubTab === 'customer' && (
+          {effectiveJubahSubTab === 'customer' && (
             <JubahCustomerSubTab
-              active={activeTab === 'jubah' && jubahSubTab === 'customer'}
+              active={activeTab === 'jubah' && effectiveJubahSubTab === 'customer'}
               bookings={jubahBookings}
               bookingsLoading={jubahBookingsLoading}
               setBookings={setJubahBookings}
@@ -892,10 +901,11 @@ export const AdminHome: React.FC = () => {
             />
           )}
 
-          {/* ── PRICE sub-tab ── */}
-          {jubahSubTab === 'price' && (
+          {/* ── PRICE sub-tab — superadmin only (rider commission RM
+              amounts + bank/QR payment details) ── */}
+          {effectiveJubahSubTab === 'price' && isSuperAdmin && (
             <JubahPriceSubTab
-              active={activeTab === 'jubah' && jubahSubTab === 'price'}
+              active={activeTab === 'jubah' && effectiveJubahSubTab === 'price'}
               isSuperAdmin={isSuperAdmin}
               showToast={showToast}
             />

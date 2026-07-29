@@ -61,10 +61,16 @@ export function JubahPriceSubTab({ active, isSuperAdmin, showToast }: JubahPrice
     const { data: pricesData } = await supabase.rpc('get_jubah_pricing');
     if (pricesData) {
       const drafts: Record<string, string> = {};
+      const saved: Record<string, boolean> = {};
       (pricesData as JubahPrice[]).forEach(p => {
-        drafts[`${p.remark}_${p.payment_mode}_${p.university}`] = String(p.price);
+        const key = `${p.remark}_${p.payment_mode}_${p.university}`;
+        drafts[key] = String(p.price);
+        // Freshly loaded from the DB — these ARE the current saved values,
+        // so they start locked/gray, same as right after an explicit Save.
+        saved[key] = true;
       });
       setPriceDrafts(drafts);
+      setPriceSaved(saved);
     }
   }, []);
 
@@ -103,6 +109,9 @@ export function JubahPriceSubTab({ active, isSuperAdmin, showToast }: JubahPrice
     const postage = data?.find(r => r.key === 'jubah_rider_commission_amount_postage')?.value ?? '0';
     setCommissionRates({ pickup, postage });
     setCommissionDrafts({ pickup, postage });
+    // Freshly loaded from the DB — these ARE the current saved values, so
+    // they start locked/gray, same as right after an explicit Save.
+    setCommissionSaved({ pickup: true, postage: true });
   }, []);
 
   useLoadOnActive(active, loadCommissionRates);
@@ -128,6 +137,9 @@ export function JubahPriceSubTab({ active, isSuperAdmin, showToast }: JubahPrice
     const next = { name: get('jubah_bank_name'), account: get('jubah_bank_account_number'), holder: get('jubah_bank_account_holder') };
     setBankDetails(next);
     setBankDrafts(next);
+    // Freshly loaded from the DB — these ARE the current saved values, so
+    // they start locked/gray, same as right after an explicit Save.
+    setBankSaved(true);
   }, []);
 
   useLoadOnActive(active, loadBankDetails);
@@ -185,7 +197,7 @@ export function JubahPriceSubTab({ active, isSuperAdmin, showToast }: JubahPrice
                 </div>
                 <button
                   onClick={() => handleSaveCommission(type)}
-                  disabled={savingCommission === type || commissionDrafts[type] === commissionRates?.[type]}
+                  disabled={savingCommission === type || commissionSaved[type]}
                   className="shrink-0 bg-primary text-white font-semibold text-xs px-4 py-2.5 rounded-xl transition active:scale-95 disabled:opacity-50"
                 >
                   {savingCommission === type ? '…' : 'Save'}
@@ -238,7 +250,7 @@ export function JubahPriceSubTab({ active, isSuperAdmin, showToast }: JubahPrice
             ))}
             <button
               onClick={handleSaveBankDetails}
-              disabled={savingBank}
+              disabled={savingBank || bankSaved}
               className="self-end bg-primary text-white font-semibold text-xs px-4 py-2.5 rounded-xl transition active:scale-95 disabled:opacity-50"
             >
               {savingBank ? '…' : 'Save'}
@@ -303,7 +315,7 @@ export function JubahPriceSubTab({ active, isSuperAdmin, showToast }: JubahPrice
                     </div>
                     <button
                       onClick={() => handleSavePrice(remark, mode)}
-                      disabled={savingPrice === key}
+                      disabled={savingPrice === key || priceSaved[key]}
                       className="shrink-0 bg-primary text-white font-semibold text-xs px-2.5 py-2 rounded-xl transition active:scale-95 disabled:opacity-50"
                     >
                       {savingPrice === key ? '…' : 'Save'}

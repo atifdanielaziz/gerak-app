@@ -61,17 +61,20 @@ export function JubahQrButton({ canManage = false, showToast }: JubahQrButtonPro
       </button>
 
       {open && (
+        // Floating Message Standard — centered card + heavy-blur backdrop,
+        // not a bottom drawer (Sheet/Drawer Standard is for full-height,
+        // scrollable content; this is a small fixed-size preview+actions
+        // card, same category as ConfirmModal/FloatingMessage).
         <div
-          className="fixed inset-0 z-[9998] bg-black/30 flex items-end"
-          style={{ backdropFilter: 'blur(4px)', WebkitBackdropFilter: 'blur(4px)' }}
+          className="fixed inset-0 z-[9999] flex items-center justify-center px-6"
+          style={{ background: 'rgba(0,0,0,0.25)', backdropFilter: 'blur(24px)', WebkitBackdropFilter: 'blur(24px)' }}
           onPointerDown={(e) => { e.preventDefault(); setOpen(false); }}
         >
           <div
-            className="w-full max-w-[480px] mx-auto max-h-[calc(100dvh-5rem)] bg-white rounded-t-3xl shadow-2xl animate-slide-up flex flex-col"
+            className="w-full max-w-[360px] max-h-[calc(100dvh-5rem)] overflow-y-auto no-scrollbar bg-white border border-slate-100 rounded-3xl flex flex-col"
             onPointerDown={e => e.stopPropagation()}
           >
-            <div className="w-10 h-1 bg-slate-200 rounded-full mx-auto mt-3 mb-1 shrink-0" />
-            <div className="flex items-center justify-between px-5 py-3 border-b border-slate-100 shrink-0">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100 shrink-0">
               <span className="text-sm font-bold text-slate-800 flex items-center gap-1.5">
                 <QrCode className="w-4 h-4" /> Payment QR
               </span>
@@ -80,7 +83,7 @@ export function JubahQrButton({ canManage = false, showToast }: JubahQrButtonPro
               </button>
             </div>
 
-            <div className="flex-1 overflow-y-auto no-scrollbar p-5 flex flex-col gap-4">
+            <div className="flex-1 p-5 flex flex-col gap-4">
               <div className="w-full aspect-square rounded-2xl overflow-hidden border border-slate-100 bg-slate-50 flex items-center justify-center">
                 {!imgError ? (
                   <img
