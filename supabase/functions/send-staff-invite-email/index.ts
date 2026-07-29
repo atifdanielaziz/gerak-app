@@ -117,7 +117,10 @@ async function sendInviteEmail(invite: Invite, inviterName: string) {
   const roleLabel = ROLE_LABEL[invite.role] ?? invite.role
   const roleEmoji = ROLE_EMOJI[invite.role] ?? ''
   const subject = `You're invited to join Gerak as a ${roleLabel} ${roleEmoji}`.trim()
-  const signupUrl = appBaseUrl || 'https://gerakmy.com'
+  // Straight to the register form (AppContext's /register deep link), not
+  // just the app root — with the invited email prefilled so it always
+  // matches exactly what the invite was actually issued to.
+  const signupUrl = `${appBaseUrl || 'https://gerakmy.com'}/register?email=${encodeURIComponent(invite.email)}`
 
   const tagsHtml = tags.map(t =>
     `<span style="display:inline-block;font-size:11.5px;font-weight:600;padding:5px 10px;border-radius:999px;background:rgba(220,38,38,0.08);color:#b91c1c;border:1px solid rgba(220,38,38,0.15);margin:0 4px 4px 0;">${escapeHtml(t)}</span>`

@@ -18,7 +18,11 @@ export const Register: React.FC = () => {
     if (d.length <= 3) return d;
     return `${d.slice(0, 3)}-${d.slice(3)}`;
   };
-  const [email,      setEmail]      = useState('');
+  // Prefilled from the staff-invite email's ?email= link param, if present
+  // (AppContext's /register deep link) — saves a retype and guarantees it
+  // exactly matches the address the invite was actually sent to, which is
+  // what check_driver_invite below keys off of.
+  const [email,      setEmail]      = useState(() => new URLSearchParams(window.location.search).get('email') ?? '');
   const [password,        setPassword]        = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);

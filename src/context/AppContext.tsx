@@ -186,6 +186,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     // in-app-only screen. Same deep-link mechanism as /jubah/track above.
     if (path.endsWith('/privacy')) return 'privacy-policy';
     if (path.endsWith('/terms')) return 'terms-of-service';
+    // The staff-invite email's "Create Your Account" button links here —
+    // lands the invitee straight on the register form instead of the
+    // splash/dashboard, with their invited email prefilled (Register.tsx
+    // reads the same ?email= param straight off window.location.search).
+    if (path.endsWith('/register')) return 'register';
     return null;
   });
   const [pageHistory, setPageHistory] = useState<ActivePage[]>([]);
