@@ -1,7 +1,18 @@
 import React, { useState } from 'react';
+import { Capacitor } from '@capacitor/core';
 import { useApp } from '../context/AppContext';
 import { supabase } from '../lib/supabase';
 import { Mail, ArrowLeft, CheckCircle } from 'lucide-react';
+
+// window.location.origin on web — always correct wherever the app is
+// actually being served from (gerakmy.com in production, localhost during
+// dev) rather than a hardcoded string that goes stale the moment the
+// deployment changes (confirmed live: this used to point at an old Vercel
+// URL, silently sending every password-reset email to the wrong place).
+// The native app has no such thing as a real web origin an email client
+// could open, so it falls back to the real public domain instead.
+const resetRedirectUrl = () =>
+  Capacitor.isNativePlatform() ? 'https://www.gerakmy.com' : window.location.origin;
 
 export const ForgotPassword: React.FC = () => {
   const { setCurrentPage } = useApp();
@@ -16,7 +27,7 @@ export const ForgotPassword: React.FC = () => {
     setLoading(true);
     setError('');
     const { error: err } = await supabase.auth.resetPasswordForEmail(email.trim(), {
-      redirectTo: 'https://gerak-app-pied.vercel.app',
+      redirectTo: resetRedirectUrl(),
     });
     setLoading(false);
     if (err) setError(err.message);
