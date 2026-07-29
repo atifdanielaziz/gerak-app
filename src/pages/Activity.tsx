@@ -5,7 +5,7 @@ import { ClipboardList, Car, KeyRound, GraduationCap, Truck, Repeat } from 'luci
 import type { LucideIcon } from 'lucide-react';
 import { ReceiptSheet } from '../components/Receipt';
 import {
-  buildTransportReceiptRows, buildRentalReceiptRows, buildJubahReceiptRows,
+  buildTransportReceiptRows, buildRentalReceiptRows, buildJubahReceiptRows, buildTransporterReceiptRows,
 } from '../lib/receiptRows';
 import type { ReceiptDoc } from '../lib/receiptRows';
 import { generateReceiptPdf } from '../lib/receiptPdf';
@@ -25,10 +25,10 @@ interface ActivityItem {
   doc: ReceiptDoc;
 }
 
-// Transporter/Daily are wired into the type system for a later fast-follow —
-// neither has a real data source yet, so no loader ever constructs an item
-// with these service kinds. Record<> (not Partial/switch) means TypeScript
-// itself enforces every kind still gets a badge, even ones nothing renders.
+// Daily is wired into the type system for a later fast-follow — it has no
+// real data source yet, so no loader ever constructs an item with that
+// service kind. Record<> (not Partial/switch) means TypeScript itself
+// enforces every kind still gets a badge, even ones nothing renders.
 const SERVICE_BADGE: Record<ServiceKind, { icon: LucideIcon; label: string }> = {
   transport:   { icon: Car,           label: 'Gerak' },
   rental:      { icon: KeyRound,      label: 'Rental' },
@@ -159,6 +159,30 @@ async function loadJubahItems(customerId: string): Promise<ActivityItem[]> {
   });
 }
 
+async function loadTransporterItems(customerId: string): Promise<ActivityItem[]> {
+  const { data } = await supabase
+    .from('transporter_bookings')
+    .select('*')
+    .eq('customer_id', customerId)
+    .order('created_at', { ascending: false })
+    .limit(30);
+
+  return (data ?? []).map(t => {
+    const doc = buildTransporterReceiptRows(t);
+    return {
+      id:              `transporter-${t.id}`,
+      service:         'transporter' as const,
+      createdAt:       t.created_at,
+      title:           t.destination,
+      subtitle:        `from ${t.pickup}`,
+      statusLabel:     doc.statusLabel,
+      statusClassName: doc.statusClassName,
+      amount:          'TBC',
+      doc,
+    };
+  });
+}
+
 async function loadDriverJobItems(driverId: string): Promise<ActivityItem[]> {
   const { data } = await supabase
     .from('ride_orders')
@@ -235,7 +259,7 @@ export const Activity: React.FC = () => {
   const [activeItem, setActiveItem] = useState<ActivityItem | null>(null);
 
   // Driver/rider see their own job history (single service each); everyone
-  // else sees the merged customer feed across all three services.
+  // else sees the merged customer feed across all four services.
   const effectiveRole = activeRole === 'driver' ? 'driver' : activeRole === 'rider' ? 'rider' : user.role;
 
   useEffect(() => {
@@ -246,12 +270,13 @@ export const Activity: React.FC = () => {
       if (effectiveRole === 'driver') { setItems(await loadDriverJobItems(authUser.id)); return; }
       if (effectiveRole === 'rider')  { setItems(await loadRiderJobItems(authUser.id));  return; }
 
-      const [transport, rental, jubah] = await Promise.all([
+      const [transport, rental, jubah, transporter] = await Promise.all([
         loadTransportItems(authUser.id),
         loadRentalItems(authUser.id, user.name, user.phone),
         loadJubahItems(authUser.id),
+        loadTransporterItems(authUser.id),
       ]);
-      const merged = [...transport, ...rental, ...jubah].sort(
+      const merged = [...transport, ...rental, ...jubah, ...transporter].sort(
         (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
       );
       setItems(merged);

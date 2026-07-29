@@ -393,3 +393,62 @@ export function buildJubahReceiptRows(j: JubahReceiptSource): ReceiptDoc {
     subtitle:         'Jubah Delivery — Order Receipt',
   };
 }
+
+// ── Transporter (Gerak Transporter / transporter_bookings) ──────────────────
+// No dispatch/acceptance workflow (unlike ride_orders) — a single hardcoded
+// external contact (see GerakTransporter.tsx's PROVIDER), price always TBC
+// and negotiated over WhatsApp after booking. status is admin-set only.
+
+export const TRANSPORTER_SERVICE_LABEL: Record<string, string> = {
+  motorcycle:    'Motorcycle',
+  pindah_barang: 'Pindah Barang',
+};
+
+const TRANSPORTER_STATUS_STYLE: Record<string, string> = {
+  pending:   'bg-amber-50 text-amber-600 border-amber-200',
+  contacted: 'bg-blue-50 text-blue-700 border-blue-300',
+  completed: 'bg-slate-100 text-slate-500 border-slate-200',
+  cancelled: 'bg-red-50 text-red-400 border-red-200',
+};
+
+const TRANSPORTER_STATUS_LABEL: Record<string, string> = {
+  pending:   'Pending',
+  contacted: 'Contacted',
+  completed: 'Completed',
+  cancelled: 'Cancelled',
+};
+
+export interface TransporterReceiptSource {
+  id: string;
+  services: string[];
+  pickup: string;
+  destination: string;
+  contact: string;
+  notes: string | null;
+  status: string;
+  created_at: string;
+  provider_name: string;
+  provider_phone: string;
+}
+
+export function buildTransporterReceiptRows(o: TransporterReceiptSource): ReceiptDoc {
+  const rows: ReceiptRow[] = [
+    { label: 'Services', value: o.services.map(s => TRANSPORTER_SERVICE_LABEL[s] ?? s).join(', '), emphasis: 'highlight' },
+    { label: 'Pickup', value: o.pickup },
+    { label: 'Destination', value: o.destination },
+    { label: 'Contact', value: o.contact, whatsapp: { phone: o.contact } },
+  ];
+  if (o.notes) rows.push({ label: 'Remark', value: o.notes });
+  rows.push({ label: 'Price', value: 'TBC', emphasis: 'total', dividerBefore: true });
+  rows.push({ label: 'Provider', value: o.provider_name, dividerBefore: true });
+  rows.push({ label: 'Provider Phone', value: o.provider_phone, whatsapp: { phone: o.provider_phone } });
+
+  return {
+    rows,
+    statusLabel:     TRANSPORTER_STATUS_LABEL[o.status] ?? o.status,
+    statusClassName: TRANSPORTER_STATUS_STYLE[o.status] ?? TRANSPORTER_STATUS_STYLE.pending,
+    createdAt:       o.created_at,
+    bookingRef:      `#${o.id.slice(0, 8).toUpperCase()}`,
+    subtitle:        'Gerak Transporter — Booking Receipt',
+  };
+}
