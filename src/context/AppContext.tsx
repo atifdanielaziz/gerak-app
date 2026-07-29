@@ -124,12 +124,6 @@ interface AppContextType {
   setCurrentPage: (page: ActivePage) => void;
   goBack: () => void;
   canGoBack: boolean;
-  // What page a back-gesture would actually land on right now — null
-  // whenever a leaveGuard is registered, since goBack() would run that
-  // guard instead of changing pages at all (see SwipeBackGesture's
-  // page-level peek, which only has something real to preview when this
-  // is non-null).
-  peekTargetPage: ActivePage | null;
   deepLinkPage: ActivePage | null;
   setLeaveGuard: (guard: (() => void) | null) => void;
   isPreviewMode: boolean;
@@ -226,9 +220,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       return prev.slice(0, -1);
     });
   };
-
-  const peekTargetPage: ActivePage | null =
-    leaveGuard ? null : (pageHistory.length > 0 ? pageHistory[pageHistory.length - 1] : null);
 
   // Android back button — intercept system popstate so the PWA doesn't close
   const pageHistoryRef = useRef(pageHistory);
@@ -802,7 +793,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         deepLinkPage,
         goBack,
         canGoBack: pageHistory.length > 0,
-        peekTargetPage,
         setLeaveGuard,
         isPreviewMode,
         enterPreviewMode,
