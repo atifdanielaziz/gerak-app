@@ -108,10 +108,15 @@ export const Register: React.FC = () => {
     }
     if (password !== confirmPassword) { showToast('Passwords do not match.'); return; }
     if (password.length < 6) { showToast('Password must be at least 6 characters.'); return; }
-    // No explicit agreedToTerms/agreedToPrivacy check needed here — both
-    // checkboxes are real required inputs, so the browser's own native
-    // validation blocks the submit event (and this handler) entirely
-    // before it ever reaches here if either is unticked.
+    // Deliberately not relying on native `required` validation for these —
+    // tested on a real device and the native bubble anchored to the hidden
+    // checkbox input in the wrong place (cut off by the on-screen nav bar,
+    // hid the second checkbox from view). A controlled toast at a fixed
+    // position is reliable regardless of where in the form it's triggered.
+    if (!agreedToTerms || !agreedToPrivacy) {
+      showToast("Please tick both boxes below to let us know you've read and agree — then you're good to go!");
+      return;
+    }
 
     setLoading(true);
     setError('');
@@ -342,37 +347,33 @@ export const Register: React.FC = () => {
             </div>
           </div>
 
-          {/* Terms & Privacy consent — two separate ticks, each its own real
-              <input type="checkbox" required>. Real inputs (not a custom
-              div fake) so an unticked box gets the browser's own native
-              "Please check this box" validation bubble on submit — the
-              same one the rest of this form's required fields already show
-              — instead of a custom message. The link is a sibling of the
-              <label>, not nested inside it, so tapping it can never also
-              toggle the checkbox via the label's native click-forwarding. */}
+          {/* Terms & Privacy consent — two separate ticks. Plain styled divs,
+              not real checkbox inputs — tried native `required` inputs so an
+              unticked box would trigger the browser's own validation bubble,
+              but on a real device that bubble anchored to the hidden input's
+              position instead of the visible checkbox, landing off-screen
+              behind the nav bar and hiding the second checkbox. A custom
+              toast (see handleSubmit) is reliable regardless of scroll
+              position. Each row is a div (not a button) since the inline
+              link inside it needs to be its own tappable control (a
+              <button> can't nest other interactive elements). */}
           <div className="flex flex-col gap-2">
-            <div className={`flex items-start gap-2.5 border rounded-xl py-2.5 px-3 transition-transform ${
-              agreedToTerms ? 'border-slate-900 bg-white' : 'border-slate-100 bg-white'
-            }`}>
-              <label className="p-1 -m-1 shrink-0 cursor-pointer">
-                <input
-                  type="checkbox"
-                  required
-                  checked={agreedToTerms}
-                  onChange={e => setAgreedToTerms(e.target.checked)}
-                  className="sr-only"
-                />
-                <span className={`block mt-0.5 w-4 h-4 rounded-md border flex items-center justify-center transition ${
-                  agreedToTerms ? 'bg-primary border-primary' : 'border-slate-300'
-                }`}>
-                  {agreedToTerms && <Check className="w-3 h-3 text-white" strokeWidth={3} />}
-                </span>
-              </label>
+            <div
+              onPointerDown={e => { e.preventDefault(); setAgreedToTerms(v => !v); }}
+              className={`flex items-start gap-2.5 border rounded-xl py-2.5 px-3 transition-transform active:scale-[0.99] cursor-pointer ${
+                agreedToTerms ? 'border-slate-900 bg-white' : 'border-slate-100 bg-white'
+              }`}
+            >
+              <span className={`mt-0.5 w-4 h-4 rounded-md border flex items-center justify-center shrink-0 transition ${
+                agreedToTerms ? 'bg-primary border-primary' : 'border-slate-300'
+              }`}>
+                {agreedToTerms && <Check className="w-3 h-3 text-white" strokeWidth={3} />}
+              </span>
               <span className="text-xs text-slate-500 font-normal leading-relaxed">
                 I agree to Gerak's{' '}
                 <button
                   type="button"
-                  onPointerDown={e => { e.preventDefault(); setViewingPolicy('terms'); }}
+                  onPointerDown={e => { e.stopPropagation(); e.preventDefault(); setViewingPolicy('terms'); }}
                   className="text-primary font-semibold hover:underline"
                 >
                   Terms &amp; Conditions
@@ -381,28 +382,22 @@ export const Register: React.FC = () => {
               </span>
             </div>
 
-            <div className={`flex items-start gap-2.5 border rounded-xl py-2.5 px-3 transition-transform ${
-              agreedToPrivacy ? 'border-slate-900 bg-white' : 'border-slate-100 bg-white'
-            }`}>
-              <label className="p-1 -m-1 shrink-0 cursor-pointer">
-                <input
-                  type="checkbox"
-                  required
-                  checked={agreedToPrivacy}
-                  onChange={e => setAgreedToPrivacy(e.target.checked)}
-                  className="sr-only"
-                />
-                <span className={`block mt-0.5 w-4 h-4 rounded-md border flex items-center justify-center transition ${
-                  agreedToPrivacy ? 'bg-primary border-primary' : 'border-slate-300'
-                }`}>
-                  {agreedToPrivacy && <Check className="w-3 h-3 text-white" strokeWidth={3} />}
-                </span>
-              </label>
+            <div
+              onPointerDown={e => { e.preventDefault(); setAgreedToPrivacy(v => !v); }}
+              className={`flex items-start gap-2.5 border rounded-xl py-2.5 px-3 transition-transform active:scale-[0.99] cursor-pointer ${
+                agreedToPrivacy ? 'border-slate-900 bg-white' : 'border-slate-100 bg-white'
+              }`}
+            >
+              <span className={`mt-0.5 w-4 h-4 rounded-md border flex items-center justify-center shrink-0 transition ${
+                agreedToPrivacy ? 'bg-primary border-primary' : 'border-slate-300'
+              }`}>
+                {agreedToPrivacy && <Check className="w-3 h-3 text-white" strokeWidth={3} />}
+              </span>
               <span className="text-xs text-slate-500 font-normal leading-relaxed">
                 I agree to Gerak's{' '}
                 <button
                   type="button"
-                  onPointerDown={e => { e.preventDefault(); setViewingPolicy('privacy'); }}
+                  onPointerDown={e => { e.stopPropagation(); e.preventDefault(); setViewingPolicy('privacy'); }}
                   className="text-primary font-semibold hover:underline"
                 >
                   Privacy Policy
