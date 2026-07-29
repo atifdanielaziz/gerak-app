@@ -48,8 +48,8 @@ export const PrivacyPolicy: React.FC = () => {
       </Section>
 
       <Section title="2. What we collect">
-        <p><strong>Account &amp; identity:</strong> full name, matric number, IC/MyKad number (required for Jubah riders; optional for other roles), phone number, email address, university, faculty and campus.</p>
-        <p><strong>Verification documents:</strong> drivers — a driving licence image, uploaded for admin review. Jubah riders — both an IC copy and a driving licence image, uploaded for admin review.</p>
+        <p><strong>Account &amp; identity:</strong> full name, matric number, IC/MyKad number (only where you provide one, or as part of a Jubah booking — see below), phone number, email address, university, faculty and campus.</p>
+        <p><strong>Verification documents:</strong> drivers and Jubah riders — a driving licence image, uploaded for admin review. Neither role is required to provide an IC for this.</p>
         <p><strong>Jubah booking data:</strong> robe type, chosen collection/postage method, delivery address (postage orders only), and uploaded academic documents (OSCAR, SKPG, convocation slip) required by your university.</p>
         <p><strong>Transport &amp; rental data:</strong> pickup/destination locations, ride notes, passenger count, vehicle details, booking dates and times.</p>
         <p><strong>Payment records:</strong> booking amount, payment status and reference numbers from our payment processor. We do not receive or store your card/bank credentials — these are handled directly by our payment gateway.</p>
@@ -60,7 +60,7 @@ export const PrivacyPolicy: React.FC = () => {
       <Section title="3. Why we collect it">
         <p>To create and manage your account, verify your eligibility as a student or staff member of a university we serve, and match you with drivers, riders, or rental owners.</p>
         <p>To process payments and issue receipts for services you book.</p>
-        <p>To verify driver licences and rider identity/licence documents before granting them access to carry passengers or handle deliveries — this protects everyone using the platform.</p>
+        <p>To verify driver and rider driving licences before granting them access to carry passengers or handle deliveries — this protects everyone using the platform.</p>
         <p>To communicate booking updates, respond to support requests, and send service-related notifications.</p>
         <p>To detect and prevent fraud, abuse, or violations of our Terms of Service.</p>
       </Section>
@@ -77,11 +77,11 @@ export const PrivacyPolicy: React.FC = () => {
 
       <Section title="5. IC/MyKad number handling">
         <p>
-          Your IC number is collected only where required — identity verification for Jubah riders (not drivers,
-          who are verified by licence only), and as an ownership check for Jubah booking lookups. It is masked
-          (only the first 6 digits, i.e. your date of birth, are ever shown) everywhere it's displayed after
-          initial submission, including in receipts, emails, and admin views. Full IC numbers are never included
-          in email receipts.
+          Driver and rider accounts are verified by driving licence only — neither role is required to provide an
+          IC number. Where an IC number is collected, it's for Jubah bookings specifically: customers provide it
+          when placing a Jubah order, used as an ownership check at pickup/delivery. It is masked (only the first
+          6 digits, i.e. your date of birth, are ever shown) everywhere it's displayed after initial submission,
+          including in receipts, emails, and admin views. Full IC numbers are never included in email receipts.
         </p>
       </Section>
 
@@ -97,7 +97,7 @@ export const PrivacyPolicy: React.FC = () => {
       <Section title="7. How long we keep your data">
         <p>
           We retain account and booking data for as long as your account is active and as needed to meet legal,
-          accounting, and dispute-resolution obligations. Verification documents (IC/licence images) are retained
+          accounting, and dispute-resolution obligations. Verification documents (licence images) are retained
           only as long as needed for your active driver/rider status. You can request deletion of your account and
           associated data at any time from Profile → Delete Account, or by contacting us directly — see Section 9.
         </p>

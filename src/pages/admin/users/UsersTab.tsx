@@ -167,10 +167,11 @@ const UserCard: React.FC<{
                   <a
                     href={(() => {
                       const missing: string[] = [];
-                      // Drivers only need a license — IC isn't required for them.
-                      if (u.role !== 'driver' && !u.ic_number) missing.push('nombor IC');
-                      if (u.role !== 'driver' && !u.ic_url)    missing.push('gambar IC');
-                      if ((u.role === 'driver' || u.role === 'rider') && !u.license_url) missing.push('gambar lesen memandu');
+                      // Neither drivers nor riders need an IC — only a licence.
+                      const isDriverOrRider = u.role === 'driver' || u.role === 'rider';
+                      if (!isDriverOrRider && !u.ic_number) missing.push('nombor IC');
+                      if (!isDriverOrRider && !u.ic_url)    missing.push('gambar IC');
+                      if (isDriverOrRider && !u.license_url) missing.push('gambar lesen memandu');
                       if (!u.matric_no)   missing.push('nombor matrik');
                       if (u.role === 'driver' && !u.vehicle) missing.push('maklumat kenderaan');
                       if (u.status === 'inactive') missing.push('status akaun (hubungi admin)');

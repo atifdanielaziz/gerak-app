@@ -55,13 +55,14 @@ export const TermsOfService: React.FC = () => {
       <Section title="3. Eligibility">
         <p>
           Gerak is intended for current students and staff of the universities we serve. By registering, you confirm that the matric
-          number, IC number, and other details you provide are accurate and belong to you. Providing false
-          information may result in account suspension.
+          number and other details you provide are accurate and belong to you. Providing false information may
+          result in account suspension.
         </p>
         <p>
-          Drivers must additionally pass document verification (driving licence review) before being able to
-          accept jobs. Jubah riders must pass document verification covering both an IC copy and a driving
-          licence review.
+          Drivers and Jubah riders must additionally pass document verification (driving licence review) before
+          being able to accept jobs. This is separate from the IC number Jubah booking customers provide when
+          placing an order, which is used only as an ownership check for that booking (see our Privacy Policy,
+          Section 5).
         </p>
       </Section>
 

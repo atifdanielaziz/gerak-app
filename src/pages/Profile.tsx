@@ -41,9 +41,10 @@ export const Profile: React.FC = () => {
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
 
-  // Drivers only need their license reviewed (not IC) — Jubah riders still
-  // need both, per the current verification requirements.
-  const requiresIc = ['rider', 'admin', 'superadmin'].includes(user.role);
+  // Neither drivers nor riders need an IC for their own verification anymore
+  // (licence only) — this only governs the plain IC-number text field below
+  // for admin/superadmin, a separate pre-existing requirement.
+  const requiresIc = ['admin', 'superadmin'].includes(user.role);
 
   const formatIcNumber = (val: string) => {
     const digits = val.replace(/\D/g, '').slice(0, 12);
@@ -59,36 +60,35 @@ export const Profile: React.FC = () => {
   const [uploading, setUploading]       = useState(false);
   const [verifying, setVerifying]       = useState(false);
   const [verifyMsg, setVerifyMsg]       = useState('');
-  const [uploadingDoc, setUploadingDoc] = useState<'ic' | 'license' | null>(null);
+  const [uploadingDoc, setUploadingDoc] = useState<'license' | null>(null);
   const [docMsg, setDocMsg]             = useState('');
   const fileInputRef  = useRef<HTMLInputElement>(null);
-  const icDocRef      = useRef<HTMLInputElement>(null);
   const licenseDocRef = useRef<HTMLInputElement>(null);
   const avatarInputRef = useRef<HTMLInputElement>(null);
 
-  const handleDocUpload = async (e: React.ChangeEvent<HTMLInputElement>, type: 'ic' | 'license') => {
+  // Neither drivers nor riders need an IC on file anymore — only a licence.
+  const handleDocUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
     if (file.size > 10 * 1024 * 1024) { setDocMsg('File too large. Max 10MB.'); return; }
     setDocMsg('');
-    setUploadingDoc(type);
+    setUploadingDoc('license');
     const { data: { user: authUser } } = await supabase.auth.getUser();
     if (!authUser) { setUploadingDoc(null); return; }
     let stamped = file;
     try { stamped = await stampWatermark(file); } catch (err) { console.error('[GERAK] Watermark failed, uploading original file:', err); }
     const ext  = stamped.name.split('.').pop() ?? 'jpg';
-    const path = `${authUser.id}/${type}.${ext}`;
+    const path = `${authUser.id}/license.${ext}`;
     const { error: upErr } = await supabase.storage.from('driver-documents').upload(path, stamped, { upsert: true });
     if (upErr) { setDocMsg('Upload failed. Please try again.'); setUploadingDoc(null); return; }
     const { data: signed } = await supabase.storage.from('driver-documents').createSignedUrl(path, 60 * 60 * 24 * 365);
     const url = signed?.signedUrl ?? '';
-    const col = type === 'ic' ? { ic_url: url } : { license_url: url };
-    const { error: profileErr } = await supabase.from('profiles').update({ ...col, docs_status: 'pending' }).eq('id', authUser.id);
+    const { error: profileErr } = await supabase.from('profiles').update({ license_url: url, docs_status: 'pending' }).eq('id', authUser.id);
     setUploadingDoc(null);
     if (e.target) e.target.value = '';
     if (profileErr) { setDocMsg('Upload saved, but failed to submit for review. Please try again.'); return; }
     await refreshUserData();
-    setDocMsg(type === 'ic' ? 'IC uploaded — pending admin review.' : 'License uploaded — pending admin review.');
+    setDocMsg('License uploaded — pending admin review.');
   };
 
   const initSubPage = () => {
@@ -512,37 +512,10 @@ export const Profile: React.FC = () => {
                   <p className="text-xs text-emerald-600 font-semibold bg-emerald-50 rounded-xl px-3 py-2">{docMsg}</p>
                 )}
 
-                {/* IC Upload — Jubah riders only; drivers only need a license */}
-                {user.role === 'rider' && (
-                <div className="flex flex-col gap-1.5">
-                  <span className="text-xs font-semibold text-slate-400">IC (MyKad)</span>
-                  <input ref={icDocRef} type="file" accept="image/*,.pdf" className="hidden" onChange={e => handleDocUpload(e, 'ic')} />
-                  {user.icUrl ? (
-                    <div className="flex items-center justify-between bg-emerald-50 border border-emerald-100 rounded-xl px-3 py-2.5">
-                      <div className="flex items-center gap-2">
-                        <FileImage className="w-4 h-4 text-emerald-500 shrink-0" />
-                        <span className="text-xs font-semibold text-emerald-700">IC Uploaded ✓</span>
-                      </div>
-                      <button onClick={() => icDocRef.current?.click()} disabled={uploadingDoc === 'ic'}
-                        className="text-xs font-semibold text-slate-400 underline active:scale-95 transition">
-                        {uploadingDoc === 'ic' ? 'Uploading…' : 'Replace'}
-                      </button>
-                    </div>
-                  ) : (
-                    <button onClick={() => icDocRef.current?.click()} disabled={uploadingDoc === 'ic'}
-                      className="w-full border-2 border-dashed border-slate-200 rounded-xl py-3 flex items-center justify-center gap-2 text-slate-400 hover:border-primary hover:text-primary transition active:scale-95">
-                      {uploadingDoc === 'ic'
-                        ? <span className="w-4 h-4 rounded-full border-2 border-slate-300 border-t-primary animate-spin" />
-                        : <><Upload className="w-3.5 h-3.5" /><span className="text-xs font-bold">Upload IC (MyKad)</span></>}
-                    </button>
-                  )}
-                </div>
-                )}
-
                 {/* License Upload */}
                 <div className="flex flex-col gap-1.5">
                   <span className="text-xs font-semibold text-slate-400">Driving License</span>
-                  <input ref={licenseDocRef} type="file" accept="image/*,.pdf" className="hidden" onChange={e => handleDocUpload(e, 'license')} />
+                  <input ref={licenseDocRef} type="file" accept="image/*,.pdf" className="hidden" onChange={handleDocUpload} />
                   {user.licenseUrl ? (
                     <div className="flex items-center justify-between bg-emerald-50 border border-emerald-100 rounded-xl px-3 py-2.5">
                       <div className="flex items-center gap-2">

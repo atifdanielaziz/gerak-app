@@ -57,8 +57,7 @@ export const RiderHome: React.FC = () => {
 
   const [activeTab,     setActiveTab]     = useState<RiderTab>('daily');
   const [toast,         setToast]         = useState('');
-  const [uploadingDoc,  setUploadingDoc]  = useState<'ic' | 'license' | null>(null);
-  const icDocRef      = useRef<HTMLInputElement>(null);
+  const [uploadingDoc,  setUploadingDoc]  = useState<'license' | null>(null);
   const licenseDocRef = useRef<HTMLInputElement>(null);
 
   // Jubah sub-navigation
@@ -165,33 +164,35 @@ export const RiderHome: React.FC = () => {
   };
 
   // ── Document upload ───────────────────────────────────────────────────────
-  const handleDocUpload = async (e: React.ChangeEvent<HTMLInputElement>, type: 'ic' | 'license') => {
+  // Riders only need their driving license reviewed — IC is no longer part
+  // of Gerak Rider verification (unlike the separate Jubah booking flow's
+  // own IC field, which is unaffected and still required for customers).
+  const handleDocUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
     if (file.size > 10 * 1024 * 1024) { showToast('File too large. Max 10MB.'); return; }
-    setUploadingDoc(type);
+    setUploadingDoc('license');
     const { data: { user: authUser } } = await supabase.auth.getUser();
     if (!authUser) { setUploadingDoc(null); return; }
     let stamped = file;
     try { stamped = await stampWatermark(file); } catch (err) { console.error('[GERAK] Watermark failed, uploading original file:', err); }
     const ext  = stamped.name.split('.').pop() ?? 'jpg';
-    const path = `${authUser.id}/${type}.${ext}`;
+    const path = `${authUser.id}/license.${ext}`;
     const { error: upErr } = await supabase.storage.from('driver-documents').upload(path, stamped, { upsert: true });
     if (upErr) { showToast('Upload failed. Please try again.'); setUploadingDoc(null); return; }
     const { data: signed } = await supabase.storage.from('driver-documents').createSignedUrl(path, 60 * 60 * 24 * 365);
     const url = signed?.signedUrl ?? '';
-    const col = type === 'ic' ? { ic_url: url } : { license_url: url };
-    const { error: profileErr } = await supabase.from('profiles').update({ ...col, docs_status: 'pending' }).eq('id', authUser.id);
+    const { error: profileErr } = await supabase.from('profiles').update({ license_url: url, docs_status: 'pending' }).eq('id', authUser.id);
     setUploadingDoc(null);
     if (e.target) e.target.value = '';
     if (profileErr) { showToast('Upload saved, but failed to submit for review. Please try again.'); return; }
     await refreshUserData();
-    showToast(type === 'ic' ? 'IC uploaded!' : 'License uploaded!');
+    showToast('License uploaded!');
   };
 
   // ── Gate 1: Document verification ────────────────────────────────────────
   if (!isAdminRole && user.docsStatus !== 'approved') {
-    const bothUploaded = !!user.icUrl && !!user.licenseUrl;
+    const licenseUploaded = !!user.licenseUrl;
     return (
       <div className="flex-grow bg-white overflow-y-auto no-scrollbar pb-4 px-5 flex flex-col gap-5 animate-fade-in">
         <div className="mt-6 flex flex-col items-center text-center gap-2">
@@ -212,7 +213,7 @@ export const RiderHome: React.FC = () => {
           <p className="text-xs text-slate-400 font-normal leading-relaxed max-w-xs">
             {user.docsStatus === 'pending'  ? 'Your documents are being reviewed by admin. You will be notified once approved.' :
              user.docsStatus === 'rejected' ? `Reason: ${user.docsRejectReason || 'Please re-upload correct documents.'}` :
-             'Upload your IC (MyKad) and Driving License to get verified as a Gerak Rider.'}
+             'Upload your Driving License to get verified as a Gerak Rider.'}
           </p>
         </div>
 
@@ -220,31 +221,8 @@ export const RiderHome: React.FC = () => {
           <h3 className="text-sm font-semibold text-slate-700">Required Documents</h3>
 
           <div className="flex flex-col gap-2">
-            <label className="text-xs font-semibold text-slate-500">Identity Card (MyKad) *</label>
-            <input ref={icDocRef} type="file" accept="image/*,.pdf" className="hidden" onChange={e => handleDocUpload(e, 'ic')} />
-            {user.icUrl ? (
-              <div className="flex items-center justify-between bg-emerald-50 border border-emerald-100 rounded-2xl px-4 py-3">
-                <div className="flex items-center gap-2">
-                  <FileImage className="w-4 h-4 text-emerald-500" />
-                  <span className="text-xs font-semibold text-emerald-700">IC Uploaded ✓</span>
-                </div>
-                <button onClick={() => icDocRef.current?.click()} className="text-xs font-semibold text-slate-400 underline">
-                  {uploadingDoc === 'ic' ? 'Uploading…' : 'Replace'}
-                </button>
-              </div>
-            ) : (
-              <button onClick={() => icDocRef.current?.click()} disabled={uploadingDoc === 'ic'}
-                className="w-full border-2 border-dashed border-slate-200 rounded-2xl py-4 flex items-center justify-center gap-2 text-slate-400 hover:border-primary hover:text-primary transition active:scale-95">
-                {uploadingDoc === 'ic'
-                  ? <span className="w-4 h-4 rounded-full border-2 border-slate-300 border-t-primary animate-spin" />
-                  : <><Upload className="w-4 h-4" /><span className="text-xs font-semibold">Upload IC (MyKad)</span></>}
-              </button>
-            )}
-          </div>
-
-          <div className="flex flex-col gap-2">
             <label className="text-xs font-semibold text-slate-500">Driving License *</label>
-            <input ref={licenseDocRef} type="file" accept="image/*,.pdf" className="hidden" onChange={e => handleDocUpload(e, 'license')} />
+            <input ref={licenseDocRef} type="file" accept="image/*,.pdf" className="hidden" onChange={handleDocUpload} />
             {user.licenseUrl ? (
               <div className="flex items-center justify-between bg-emerald-50 border border-emerald-100 rounded-2xl px-4 py-3">
                 <div className="flex items-center gap-2">
@@ -265,7 +243,7 @@ export const RiderHome: React.FC = () => {
             )}
           </div>
 
-          {bothUploaded && user.docsStatus === 'none' && (
+          {licenseUploaded && user.docsStatus === 'none' && (
             <div className="bg-amber-50 border border-amber-100 rounded-2xl px-4 py-3 text-center">
               <p className="text-xs font-semibold text-amber-700">Documents submitted for review</p>
               <p className="text-xs text-amber-500 font-normal mt-0.5">Admin will verify your documents shortly.</p>

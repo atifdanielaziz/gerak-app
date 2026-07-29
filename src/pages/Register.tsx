@@ -351,7 +351,7 @@ export const Register: React.FC = () => {
           <button
             type="submit"
             form="register-form"
-            disabled={loading || !agreedToTerms}
+            disabled={loading}
             className="w-full bg-primary hover:bg-primary-hover active:scale-[0.99] disabled:bg-slate-200 text-white font-semibold py-2.5 rounded-xl transition flex items-center justify-center gap-2"
           >
             {loading
