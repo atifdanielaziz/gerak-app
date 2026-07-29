@@ -780,16 +780,16 @@ export const GerakRental: React.FC = () => {
                     {fmt12(startHour)} → {fmt12(+(startHour + duration).toFixed(1))}
                   </p>
                 </div>
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2">
                   <button onPointerDown={e => { e.preventDefault(); setDuration(d => Math.max(1, d - 1)); }}
-                    className="w-8 h-8 rounded-xl bg-slate-100 text-slate-600 font-black text-lg flex items-center justify-center transition-transform active:scale-90">−</button>
-                  <span className="text-sm font-black text-slate-800 w-10 text-center">{fmtDuration(duration)}</span>
+                    className="w-10 h-10 rounded-xl border border-slate-100 bg-white text-slate-700 font-semibold text-sm active:bg-slate-50 active:scale-95 transition-transform flex items-center justify-center shrink-0">−</button>
+                  <span className="flex-1 text-center font-black text-xs text-slate-800">{fmtDuration(duration)}</span>
                   <button onPointerDown={e => {
                       e.preventDefault();
                       const ceiling = selected ? selected.operating_end - startHour : 12;
                       setDuration(d => Math.min(12, ceiling, d + 1));
                     }}
-                    className="w-8 h-8 rounded-xl bg-slate-100 text-slate-600 font-black text-lg flex items-center justify-center transition-transform active:scale-90">+</button>
+                    className="w-10 h-10 rounded-xl border border-slate-100 bg-white text-slate-700 font-semibold text-sm active:bg-slate-50 active:scale-95 transition-transform flex items-center justify-center shrink-0">+</button>
                 </div>
               </div>
 
@@ -811,12 +811,12 @@ export const GerakRental: React.FC = () => {
                 <p className="text-xs font-semibold text-slate-700 flex items-center gap-1.5">
                   <Users className="w-3.5 h-3.5 text-slate-400" /> Persons
                 </p>
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2">
                   <button onPointerDown={e => { e.preventDefault(); setPersons(p => Math.max(1, p - 1)); }}
-                    className="w-8 h-8 rounded-xl bg-slate-100 text-slate-600 font-black text-lg flex items-center justify-center transition-transform active:scale-90">−</button>
-                  <span className="text-sm font-black text-slate-800 w-6 text-center">{persons}</span>
+                    className="w-10 h-10 rounded-xl border border-slate-100 bg-white text-slate-700 font-semibold text-sm active:bg-slate-50 active:scale-95 transition-transform flex items-center justify-center shrink-0">−</button>
+                  <span className="flex-1 text-center font-black text-xs text-slate-800">{persons}</span>
                   <button onPointerDown={e => { e.preventDefault(); setPersons(p => Math.min(selected.seats, p + 1)); }}
-                    className="w-8 h-8 rounded-xl bg-slate-100 text-slate-600 font-black text-lg flex items-center justify-center transition-transform active:scale-90">+</button>
+                    className="w-10 h-10 rounded-xl border border-slate-100 bg-white text-slate-700 font-semibold text-sm active:bg-slate-50 active:scale-95 transition-transform flex items-center justify-center shrink-0">+</button>
                 </div>
               </div>
 
@@ -885,12 +885,12 @@ export const GerakRental: React.FC = () => {
                 <p className="text-xs font-semibold text-slate-700 flex items-center gap-1.5">
                   <Users className="w-3.5 h-3.5 text-slate-400" /> Persons
                 </p>
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2">
                   <button onPointerDown={e => { e.preventDefault(); setPersons(p => Math.max(1, p - 1)); }}
-                    className="w-8 h-8 rounded-xl bg-slate-100 text-slate-600 font-black text-lg flex items-center justify-center transition-transform active:scale-90">−</button>
-                  <span className="text-sm font-black text-slate-800 w-6 text-center">{persons}</span>
+                    className="w-10 h-10 rounded-xl border border-slate-100 bg-white text-slate-700 font-semibold text-sm active:bg-slate-50 active:scale-95 transition-transform flex items-center justify-center shrink-0">−</button>
+                  <span className="flex-1 text-center font-black text-xs text-slate-800">{persons}</span>
                   <button onPointerDown={e => { e.preventDefault(); setPersons(p => Math.min(selected.seats, p + 1)); }}
-                    className="w-8 h-8 rounded-xl bg-slate-100 text-slate-600 font-black text-lg flex items-center justify-center transition-transform active:scale-90">+</button>
+                    className="w-10 h-10 rounded-xl border border-slate-100 bg-white text-slate-700 font-semibold text-sm active:bg-slate-50 active:scale-95 transition-transform flex items-center justify-center shrink-0">+</button>
                 </div>
               </div>
 
