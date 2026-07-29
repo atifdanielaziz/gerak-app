@@ -2,6 +2,7 @@ import { useCallback, useState } from 'react';
 import { supabase } from '../../../lib/supabase';
 import { TrendingUp, GraduationCap, Landmark } from 'lucide-react';
 import { NativeSelect } from '../../../components/NativeSelect';
+import { JubahQrButton } from '../../../components/JubahQrButton';
 import { useLoadOnActive } from '../../../hooks/useLoadOnActive';
 
 // Abbreviated labels here (not the full names JubahLanding shows) since this
@@ -33,6 +34,11 @@ export function JubahPriceSubTab({ active, isSuperAdmin, showToast }: JubahPrice
   const [savingPrice,       setSavingPrice]       = useState<string | null>(null);
   const [priceDrafts,       setPriceDrafts]       = useState<Record<string, string>>({});
   const [pricingUniversity, setPricingUniversity] = useState('umpsa');
+  // Saved Field Standard: once a field's value is saved, its text grays out
+  // to signal "this is committed" — tapping it back unlocks editing (text
+  // returns to normal colour) without needing a separate edit/lock toggle
+  // control. Keyed the same way each field group already keys its drafts.
+  const [priceSaved,      setPriceSaved]      = useState<Record<string, boolean>>({});
 
   // Two separate rates — pickup vs postage — since a postage order's price
   // includes real shipping cost paid out to Pos Malaysia, not money the
@@ -40,12 +46,16 @@ export function JubahPriceSubTab({ active, isSuperAdmin, showToast }: JubahPrice
   const [commissionRates,  setCommissionRates]  = useState<{ pickup: string; postage: string } | null>(null);
   const [commissionDrafts, setCommissionDrafts] = useState({ pickup: '', postage: '' });
   const [savingCommission, setSavingCommission] = useState<'pickup' | 'postage' | null>(null);
+  const [commissionSaved,  setCommissionSaved]  = useState({ pickup: false, postage: false });
 
   // Bank details customers transfer to for the Jubah manual-proof payment
   // flow — superadmin-only to change, same reasoning/pattern as commission.
   const [bankDetails,  setBankDetails]  = useState<{ name: string; account: string; holder: string } | null>(null);
   const [bankDrafts,   setBankDrafts]   = useState({ name: '', account: '', holder: '' });
   const [savingBank,   setSavingBank]   = useState(false);
+  // One flag for all three fields — they share a single Save button, so
+  // they lock/unlock as a group rather than independently.
+  const [bankSaved,    setBankSaved]    = useState(false);
 
   const loadJubahPrices = useCallback(async () => {
     const { data: pricesData } = await supabase.rpc('get_jubah_pricing');
@@ -72,19 +82,25 @@ export function JubahPriceSubTab({ active, isSuperAdmin, showToast }: JubahPrice
     if (error) showToast('Failed to save price.');
     else {
       showToast(`${remark} ${paymentMode === 'pickup' ? 'Pickup' : 'Postage'} price updated.`);
+      setPriceSaved(prev => ({ ...prev, [key]: true }));
       loadJubahPrices();
     }
   };
 
   // Rider commission — superadmin-only to change (enforced server-side in
-  // set_jubah_rider_commission_rate, not just hidden here).
+  // set_jubah_rider_commission_amount, not just hidden here). Flat RM per
+  // completed order, not a percentage — a postage order's price includes
+  // real shipping cost passed through to Pos Malaysia, which isn't money
+  // the rider actually earned handling it, so a flat amount is simpler and
+  // more predictable than a percentage of a value that varies for reasons
+  // unrelated to the rider's own work.
   const loadCommissionRates = useCallback(async () => {
     const { data } = await supabase
       .from('app_settings')
       .select('key, value')
-      .in('key', ['jubah_rider_commission_percent_pickup', 'jubah_rider_commission_percent_postage']);
-    const pickup  = data?.find(r => r.key === 'jubah_rider_commission_percent_pickup')?.value  ?? '0';
-    const postage = data?.find(r => r.key === 'jubah_rider_commission_percent_postage')?.value ?? '0';
+      .in('key', ['jubah_rider_commission_amount_pickup', 'jubah_rider_commission_amount_postage']);
+    const pickup  = data?.find(r => r.key === 'jubah_rider_commission_amount_pickup')?.value  ?? '0';
+    const postage = data?.find(r => r.key === 'jubah_rider_commission_amount_postage')?.value ?? '0';
     setCommissionRates({ pickup, postage });
     setCommissionDrafts({ pickup, postage });
   }, []);
@@ -92,14 +108,15 @@ export function JubahPriceSubTab({ active, isSuperAdmin, showToast }: JubahPrice
   useLoadOnActive(active, loadCommissionRates);
 
   const handleSaveCommission = async (deliveryType: 'pickup' | 'postage') => {
-    const percent = parseFloat(commissionDrafts[deliveryType]);
-    if (isNaN(percent) || percent < 0 || percent > 100) { showToast('Enter a percentage between 0 and 100.'); return; }
+    const amount = parseFloat(commissionDrafts[deliveryType]);
+    if (isNaN(amount) || amount < 0) { showToast('Enter a valid RM amount.'); return; }
     setSavingCommission(deliveryType);
-    const { data, error } = await supabase.rpc('set_jubah_rider_commission_rate', { p_percent: percent, p_delivery_type: deliveryType });
+    const { data, error } = await supabase.rpc('set_jubah_rider_commission_amount', { p_amount: amount, p_delivery_type: deliveryType });
     setSavingCommission(null);
-    if (error || !data?.success) { showToast(data?.error ?? 'Failed to save commission rate.'); return; }
+    if (error || !data?.success) { showToast(data?.error ?? 'Failed to save commission amount.'); return; }
     showToast(`${deliveryType === 'pickup' ? 'Self Pickup' : 'Postage'} commission updated.`);
     setCommissionRates(prev => prev ? { ...prev, [deliveryType]: commissionDrafts[deliveryType] } : prev);
+    setCommissionSaved(prev => ({ ...prev, [deliveryType]: true }));
   };
 
   const loadBankDetails = useCallback(async () => {
@@ -130,6 +147,7 @@ export function JubahPriceSubTab({ active, isSuperAdmin, showToast }: JubahPrice
     if (error || !data?.success) { showToast(data?.error ?? 'Failed to save bank details.'); return; }
     showToast('Bank details updated.');
     setBankDetails(bankDrafts);
+    setBankSaved(true);
   };
 
   return (
@@ -144,7 +162,7 @@ export function JubahPriceSubTab({ active, isSuperAdmin, showToast }: JubahPrice
           <TrendingUp className="w-4 h-4" /> Rider Commission
         </h3>
         <p className="text-xs text-slate-400 font-semibold -mt-1.5">
-          Percentage of an order's total value a rider earns once it's delivered — set separately for pickup vs postage, since postage price includes real shipping cost. Only applies going forward — changing it never rewrites past earnings.
+          Flat RM amount a rider earns once an order is delivered — set separately for pickup vs postage, since postage price includes real shipping cost. Only applies going forward — changing it never rewrites past earnings.
         </p>
         {(['pickup', 'postage'] as const).map(type => (
           <div key={type} className="flex flex-col gap-1.5">
@@ -152,17 +170,18 @@ export function JubahPriceSubTab({ active, isSuperAdmin, showToast }: JubahPrice
             {isSuperAdmin ? (
               <div className="flex gap-2">
                 <div className="flex items-center bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 gap-1 flex-1 focus-within:border-primary transition">
+                  <span className="text-xs font-normal text-slate-400 shrink-0">RM</span>
                   <input
                     type="number"
                     min="0"
-                    max="100"
-                    step="0.1"
+                    step="0.01"
                     value={commissionDrafts[type]}
                     onChange={e => setCommissionDrafts(prev => ({ ...prev, [type]: e.target.value }))}
+                    readOnly={commissionSaved[type]}
+                    onClick={() => { if (commissionSaved[type]) setCommissionSaved(prev => ({ ...prev, [type]: false })); }}
                     style={{ fontSize: '13px' }}
-                    className="flex-1 bg-transparent font-semibold text-slate-700 focus:outline-none w-0"
+                    className={`flex-1 bg-transparent font-semibold focus:outline-none w-0 ${commissionSaved[type] ? 'text-slate-400 cursor-pointer' : 'text-slate-700'}`}
                   />
-                  <span className="text-xs font-normal text-slate-400 shrink-0">%</span>
                 </div>
                 <button
                   onClick={() => handleSaveCommission(type)}
@@ -175,7 +194,7 @@ export function JubahPriceSubTab({ active, isSuperAdmin, showToast }: JubahPrice
             ) : (
               <div className="bg-slate-50 border border-slate-100 rounded-xl px-3 py-2.5">
                 <span className="text-xs font-semibold text-slate-600">
-                  {commissionRates === null ? 'Loading…' : `${commissionRates[type]}% per completed order`}
+                  {commissionRates === null ? 'Loading…' : `RM${commissionRates[type]} per completed order`}
                 </span>
                 <span className="text-xs font-normal text-slate-400 ml-2">superadmin only to change</span>
               </div>
@@ -188,9 +207,12 @@ export function JubahPriceSubTab({ active, isSuperAdmin, showToast }: JubahPrice
           flow. Regular admin sees it read-only for transparency, same
           treatment as commission above. */}
       <div className="bg-white border border-slate-100 rounded-3xl p-5 flex flex-col gap-3">
-        <h3 className="text-sm font-semibold text-slate-700 flex items-center gap-1.5">
-          <Landmark className="w-4 h-4" /> Payment Bank Details
-        </h3>
+        <div className="flex items-center justify-between gap-2">
+          <h3 className="text-sm font-semibold text-slate-700 flex items-center gap-1.5">
+            <Landmark className="w-4 h-4" /> Payment Bank Details
+          </h3>
+          <JubahQrButton canManage={isSuperAdmin} showToast={showToast} />
+        </div>
         <p className="text-xs text-slate-400 font-semibold -mt-1.5">
           Shown to customers on the booking form and the balance-payment page as where to transfer payment.
         </p>
@@ -207,8 +229,10 @@ export function JubahPriceSubTab({ active, isSuperAdmin, showToast }: JubahPrice
                   type="text"
                   value={bankDrafts[key]}
                   onChange={e => setBankDrafts(prev => ({ ...prev, [key]: e.target.value }))}
+                  readOnly={bankSaved}
+                  onClick={() => { if (bankSaved) setBankSaved(false); }}
                   style={{ fontSize: '13px' }}
-                  className="bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 font-semibold text-slate-700 focus:outline-none focus:border-primary transition"
+                  className={`bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 font-semibold focus:outline-none focus:border-primary transition ${bankSaved ? 'text-slate-400 cursor-pointer' : 'text-slate-700'}`}
                 />
               </div>
             ))}
@@ -271,8 +295,10 @@ export function JubahPriceSubTab({ active, isSuperAdmin, showToast }: JubahPrice
                         step="0.01"
                         value={priceDrafts[key] ?? ''}
                         onChange={e => setPriceDrafts(prev => ({ ...prev, [key]: e.target.value }))}
+                        readOnly={priceSaved[key]}
+                        onClick={() => { if (priceSaved[key]) setPriceSaved(prev => ({ ...prev, [key]: false })); }}
                         style={{ fontSize: '12px' }}
-                        className="flex-1 bg-transparent font-semibold text-slate-700 focus:outline-none w-0"
+                        className={`flex-1 bg-transparent font-semibold focus:outline-none w-0 ${priceSaved[key] ? 'text-slate-400 cursor-pointer' : 'text-slate-700'}`}
                       />
                     </div>
                     <button

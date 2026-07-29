@@ -92,7 +92,7 @@ export const RiderHome: React.FC = () => {
   // ── Earnings ───────────────────────────────────────────────────────────────
   type JubahEarningRow = {
     reference: string; remark: string; payment_mode: string; is_postage: boolean;
-    order_value: number; rider_commission_rate: number; rider_commission_amount: number;
+    order_value: number; rider_commission_rate: number | null; rider_commission_amount: number;
     earned_at: string;
   };
   const [jubahEarnings,        setJubahEarnings]        = useState<JubahEarningRow[]>([]);
@@ -751,7 +751,12 @@ export const RiderHome: React.FC = () => {
                             </span>
                           </div>
                           <p className="text-xs text-slate-400 font-semibold mt-0.5">
-                            {e.remark} · RM{Number(e.order_value).toFixed(2)} order · {e.rider_commission_rate}%
+                            {e.remark} · RM{Number(e.order_value).toFixed(2)} order
+                            {/* Historical bookings completed under the old percentage-based
+                                commission still have a rate on record — new ones are a flat
+                                RM amount (already shown via the +RM badge), so there's
+                                nothing extra to show here for them. */}
+                            {e.rider_commission_rate != null && ` · ${e.rider_commission_rate}%`}
                           </p>
                           <p className="text-xs text-slate-300 font-normal mt-0.5">
                             {new Date(e.earned_at).toLocaleDateString('en-MY', { day: '2-digit', month: 'short', year: 'numeric' })}

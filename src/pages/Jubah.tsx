@@ -11,6 +11,7 @@ import { FloatingMessage } from '../components/FloatingMessage';
 import { RepresentativeSheet } from '../components/RepresentativeSheet';
 import { ReceiptCard } from '../components/Receipt';
 import { JubahBalancePayment } from '../components/JubahBalancePayment';
+import { JubahQrButton } from '../components/JubahQrButton';
 import { NativeSelect } from '../components/NativeSelect';
 import { buildJubahReceiptRows } from '../lib/receiptRows';
 import { getJubahProgress, JUBAH_STEP_LABEL } from '../lib/jubahStatus';
@@ -1190,7 +1191,10 @@ export const Jubah: React.FC = () => {
 
           {/* ── HOW TO PAY ── */}
           <div className="bg-blue-50 border border-blue-100 rounded-3xl p-5 flex flex-col gap-3">
-            <h3 className="text-sm font-semibold text-blue-800">How to Pay</h3>
+            <div className="flex items-center justify-between gap-2">
+              <h3 className="text-sm font-semibold text-blue-800">How to Pay</h3>
+              <JubahQrButton />
+            </div>
             {bankDetails ? (
               <div className="bg-white border border-blue-100 rounded-2xl p-4 flex flex-col gap-2 text-xs">
                 <div className="flex items-center justify-between">

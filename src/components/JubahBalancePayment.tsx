@@ -2,6 +2,7 @@ import { useState, useRef } from 'react';
 import { Upload, FileText, X, CheckCircle2 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { updateJubahBalanceProof } from '../lib/sheetsService';
+import { JubahQrButton } from './JubahQrButton';
 
 export interface JubahBankDetails {
   name: string;
@@ -97,6 +98,10 @@ export function JubahBalancePayment({
         <div className="flex flex-col gap-2">
           {bankDetails && (
             <div className="bg-blue-50 border border-blue-100 rounded-xl p-3 flex flex-col gap-1.5 text-xs">
+              <div className="flex items-center justify-between">
+                <span className="text-blue-400 font-semibold">Bank Details</span>
+                <JubahQrButton />
+              </div>
               <div className="flex items-center justify-between">
                 <span className="text-blue-400 font-semibold">Bank</span>
                 <span className="font-bold text-blue-800">{bankDetails.name}</span>
