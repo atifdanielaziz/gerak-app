@@ -1,14 +1,22 @@
 import React, { useState, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
 import { supabase } from '../lib/supabase';
-import { ShieldAlert, User, Mail, Lock, Eye, EyeOff, Phone, ArrowRight, MapPin, IdCard, Car, X, Check } from 'lucide-react';
+import { ShieldAlert, User, Mail, Lock, Eye, EyeOff, Phone, ArrowRight, MapPin, IdCard, Car, X, Check, ChevronLeft } from 'lucide-react';
 import { NativeSelect } from '../components/NativeSelect';
+import { TermsOfService } from './TermsOfService';
+import { PrivacyPolicy } from './PrivacyPolicy';
 
 type InviteStatus = null | 'checking' | { isDriver: boolean; campus: string; role: string };
 
 export const Register: React.FC = () => {
   const { register, setCurrentPage } = useApp();
   const [agreedToTerms, setAgreedToTerms] = useState(false);
+  const [agreedToPrivacy, setAgreedToPrivacy] = useState(false);
+  // Shown as an in-place overlay rather than a real page navigation
+  // (setCurrentPage) — navigating away unmounts this whole form and loses
+  // every field the user has typed so far. An overlay keeps Register.tsx
+  // mounted the entire time, so nothing is lost when it closes.
+  const [viewingPolicy, setViewingPolicy] = useState<'terms' | 'privacy' | null>(null);
   const [university, setUniversity] = useState('');
   const [campus,     setCampus]     = useState('');
   const [gerakId,    setGerakId]    = useState('');
@@ -77,11 +85,12 @@ export const Register: React.FC = () => {
     }
     if (password !== confirmPassword) { setError('Passwords do not match.'); return; }
     if (password.length < 6) { setError('Password must be at least 6 characters.'); return; }
-    if (!agreedToTerms) { setError('Please agree to the Terms & Conditions and Privacy Policy.'); return; }
+    if (!agreedToTerms) { setError('Please agree to the Terms & Conditions.'); return; }
+    if (!agreedToPrivacy) { setError('Please agree to the Privacy Policy.'); return; }
 
     setLoading(true);
     setError('');
-    const { error: authError } = await register(name, '', email, password, phone, university, effectiveCampus, agreedToTerms);
+    const { error: authError } = await register(name, '', email, password, phone, university, effectiveCampus, agreedToTerms && agreedToPrivacy);
     setLoading(false);
     if (authError) setError(authError);
   };
@@ -301,39 +310,58 @@ export const Register: React.FC = () => {
             </div>
           </div>
 
-          {/* Terms & Privacy consent — a div, not a button, since the inline
-              Terms/Privacy links inside it need to be their own tappable
-              controls (a <button> can't nest other interactive elements) */}
-          <div
-            onPointerDown={e => { e.preventDefault(); setAgreedToTerms(v => !v); }}
-            className={`flex items-start gap-2.5 border rounded-xl py-2.5 px-3 transition-transform active:scale-[0.99] cursor-pointer ${
-              agreedToTerms ? 'border-slate-900 bg-white' : 'border-slate-100 bg-white'
-            }`}
-          >
-            <span className={`mt-0.5 w-4 h-4 rounded-md border flex items-center justify-center shrink-0 transition ${
-              agreedToTerms ? 'bg-primary border-primary' : 'border-slate-300'
-            }`}>
-              {agreedToTerms && <Check className="w-3 h-3 text-white" strokeWidth={3} />}
-            </span>
-            <span className="text-xs text-slate-500 font-normal leading-relaxed">
-              I agree to Gerak's{' '}
-              <button
-                type="button"
-                onPointerDown={e => { e.stopPropagation(); e.preventDefault(); setCurrentPage('terms-of-service'); }}
-                className="text-primary font-semibold hover:underline"
-              >
-                Terms &amp; Conditions
-              </button>
-              {' '}and{' '}
-              <button
-                type="button"
-                onPointerDown={e => { e.stopPropagation(); e.preventDefault(); setCurrentPage('privacy-policy'); }}
-                className="text-primary font-semibold hover:underline"
-              >
-                Privacy Policy
-              </button>
-              .
-            </span>
+          {/* Terms & Privacy consent — two separate ticks, each its own
+              requirement. Each row is a div (not a button) since the inline
+              link inside it needs to be its own tappable control (a
+              <button> can't nest other interactive elements). */}
+          <div className="flex flex-col gap-2">
+            <div
+              onPointerDown={e => { e.preventDefault(); setAgreedToTerms(v => !v); }}
+              className={`flex items-start gap-2.5 border rounded-xl py-2.5 px-3 transition-transform active:scale-[0.99] cursor-pointer ${
+                agreedToTerms ? 'border-slate-900 bg-white' : 'border-slate-100 bg-white'
+              }`}
+            >
+              <span className={`mt-0.5 w-4 h-4 rounded-md border flex items-center justify-center shrink-0 transition ${
+                agreedToTerms ? 'bg-primary border-primary' : 'border-slate-300'
+              }`}>
+                {agreedToTerms && <Check className="w-3 h-3 text-white" strokeWidth={3} />}
+              </span>
+              <span className="text-xs text-slate-500 font-normal leading-relaxed">
+                I agree to Gerak's{' '}
+                <button
+                  type="button"
+                  onPointerDown={e => { e.stopPropagation(); e.preventDefault(); setViewingPolicy('terms'); }}
+                  className="text-primary font-semibold hover:underline"
+                >
+                  Terms &amp; Conditions
+                </button>
+                .
+              </span>
+            </div>
+
+            <div
+              onPointerDown={e => { e.preventDefault(); setAgreedToPrivacy(v => !v); }}
+              className={`flex items-start gap-2.5 border rounded-xl py-2.5 px-3 transition-transform active:scale-[0.99] cursor-pointer ${
+                agreedToPrivacy ? 'border-slate-900 bg-white' : 'border-slate-100 bg-white'
+              }`}
+            >
+              <span className={`mt-0.5 w-4 h-4 rounded-md border flex items-center justify-center shrink-0 transition ${
+                agreedToPrivacy ? 'bg-primary border-primary' : 'border-slate-300'
+              }`}>
+                {agreedToPrivacy && <Check className="w-3 h-3 text-white" strokeWidth={3} />}
+              </span>
+              <span className="text-xs text-slate-500 font-normal leading-relaxed">
+                I agree to Gerak's{' '}
+                <button
+                  type="button"
+                  onPointerDown={e => { e.stopPropagation(); e.preventDefault(); setViewingPolicy('privacy'); }}
+                  className="text-primary font-semibold hover:underline"
+                >
+                  Privacy Policy
+                </button>
+                .
+              </span>
+            </div>
           </div>
 
           {/* Error */}
@@ -369,6 +397,23 @@ export const Register: React.FC = () => {
           Sign In Here
         </button>
       </div>
+
+      {/* Terms / Privacy overlay — renders the real page content in place,
+          without navigating away from (and unmounting) this form */}
+      {viewingPolicy && (
+        <div className="fixed inset-0 z-50 bg-white flex flex-col animate-fade-in">
+          <div className="flex items-center gap-2 px-4 pt-[calc(0.75rem+env(safe-area-inset-top))] pb-3 border-b border-slate-100 shrink-0">
+            <button
+              onClick={() => setViewingPolicy(null)}
+              className="w-8 h-8 flex items-center justify-center rounded-full bg-slate-100 text-slate-500 active:scale-90 transition"
+            >
+              <ChevronLeft className="w-4 h-4" />
+            </button>
+            <span className="text-sm font-semibold text-slate-700">Back to Registration</span>
+          </div>
+          {viewingPolicy === 'terms' ? <TermsOfService /> : <PrivacyPolicy />}
+        </div>
+      )}
     </div>
   );
 };
