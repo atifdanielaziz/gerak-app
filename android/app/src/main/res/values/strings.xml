@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Gerak</string>
+    <string name="title_activity_main">Gerak</string>
+    <string name="package_name">com.gerakmy.app</string>
+    <string name="custom_url_scheme">com.gerakmy.app</string>
+</resources>

@@ -13,3 +13,15 @@ npm-debug.log
 .vercel
 supabase/.temp/
 .env*
+
+# Android/Capacitor — local.properties has a machine-specific SDK path,
+# never portable across machines/CI; build/ and .gradle/ are pure output.
+# Keystores added preemptively, before Phase B ever creates one — a signing
+# key committed to git even briefly is effectively permanently compromised.
+android/local.properties
+android/app/build/
+android/build/
+android/.gradle/
+android/captures/
+*.keystore
+*.jks

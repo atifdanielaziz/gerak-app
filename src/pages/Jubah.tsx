@@ -7,6 +7,7 @@ import { JubahLanding } from '../components/JubahLanding';
 import { supabase } from '../lib/supabase';
 import { compressImage } from '../lib/imageCompress';
 import { stampWatermark } from '../lib/watermark';
+import { saveOrShareBlob } from '../lib/nativeDownload';
 import { FloatingMessage } from '../components/FloatingMessage';
 import { RepresentativeSheet } from '../components/RepresentativeSheet';
 import { ReceiptCard } from '../components/Receipt';
@@ -208,6 +209,31 @@ export const Jubah: React.FC = () => {
     });
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Debounced auto-save — the explicit "Save Draft" button (on the
+  // back-navigation confirm dialog) only fires when the user leaves through
+  // an in-app control. Confirmed live on Android: switching to another app
+  // (e.g. Files, to check a downloaded PDF) doesn't go through that at all —
+  // the OS can simply kill the backgrounded process outright (common under
+  // memory pressure, easy to hit on an emulator), and relaunching is a full
+  // WebView reload with nothing ever having been saved. Auto-saving on every
+  // change closes that gap regardless of how/why the process gets killed,
+  // rather than depending on a specific navigation path.
+  useEffect(() => {
+    if (!fullName.trim() && !icNumber.trim() && !hpNumber.trim() && !matricId.trim()) return;
+    const id = setTimeout(() => {
+      saveFormDraft({
+        fullName, icNumber, hpNumber, email, university, faculty, matricId,
+        paymentMode, postageZone, depositMethod, remark, selectedRiderId,
+        addressLine1, addressLine2, addressPostal, addressCity, addressState,
+      });
+    }, 500);
+    return () => clearTimeout(id);
+  }, [
+    fullName, icNumber, hpNumber, email, university, faculty, matricId,
+    paymentMode, postageZone, depositMethod, remark, selectedRiderId,
+    addressLine1, addressLine2, addressPostal, addressCity, addressState,
+  ]);
 
   // Bank transfer instructions — admin-editable via app_settings, same
   // pattern as jubah_active/receipt_gate_active elsewhere in the app.
@@ -469,12 +495,7 @@ export const Jubah: React.FC = () => {
 
   const handleDownload = () => {
     if (!combinedBlob) return;
-    const url = URL.createObjectURL(combinedBlob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `${(fullName || 'combined').replace(/\s+/g, '_')}.pdf`;
-    a.click();
-    URL.revokeObjectURL(url);
+    saveOrShareBlob(combinedBlob, `${(fullName || 'combined').replace(/\s+/g, '_')}.pdf`);
   };
 
   const [booking, setBooking] = useState(false);
