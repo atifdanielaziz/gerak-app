@@ -79,7 +79,7 @@ export const DriversTab = forwardRef<DriversTabHandle, DriversTabProps>(function
     if (inviteRole === 'rider'  && !inviteCanDaily && !inviteCanRobe)  { showToast('Select at least one capability.'); return; }
     setInviteSending(true);
     const { data: { user: authUser } } = await supabase.auth.getUser();
-    const { error } = await supabase.from('driver_invites').insert({
+    const { data: inserted, error } = await supabase.from('driver_invites').insert({
       email:      inviteEmail.trim().toLowerCase(),
       campus:     inviteCampus,
       role:       inviteRole,
@@ -89,7 +89,7 @@ export const DriversTab = forwardRef<DriversTabHandle, DriversTabProps>(function
       can_daily:  inviteRole === 'rider'  ? inviteCanDaily : false,
       can_robe:   inviteRole === 'rider'  ? inviteCanRobe  : false,
       created_by: authUser?.id,
-    });
+    }).select('id').single();
     setInviteSending(false);
     if (error) showToast(error.message.includes('unique') ? 'This email already has a pending invite.' : error.message);
     else {
@@ -99,6 +99,15 @@ export const DriversTab = forwardRef<DriversTabHandle, DriversTabProps>(function
       setInviteCanDrive(true); setInviteCanRent(false); setInviteCanTransport(false);
       setInviteCanDaily(false); setInviteCanRobe(false);
       loadInvites();
+      // Best-effort — a failed email should never undo or block the invite
+      // itself, which has already committed to the database by this point.
+      if (inserted?.id) {
+        supabase.functions.invoke('send-staff-invite-email', { body: { inviteId: inserted.id } })
+          .then(({ data, error: fnError }) => {
+            if (fnError || !data?.success) console.error('send-staff-invite-email failed:', fnError ?? data?.reason);
+          })
+          .catch(err => console.error('send-staff-invite-email failed:', err));
+      }
     }
   };
 

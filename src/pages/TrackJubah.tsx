@@ -8,6 +8,7 @@ import { generateReceiptPdf } from '../lib/receiptPdf';
 import { getPendingJubahBooking, clearPendingJubahBooking } from '../lib/pendingJubahBooking';
 import { JUBAH_STEP_LABEL, getJubahProgress } from '../lib/jubahStatus';
 import { JubahBalancePayment } from '../components/JubahBalancePayment';
+import { JubahStepper } from '../components/JubahStepper';
 
 interface JubahBookingResult {
   id: string;
@@ -424,29 +425,7 @@ export const TrackJubah: React.FC = () => {
 
                 {/* Horizontal step bar */}
                 <div className="flex flex-col gap-2">
-                  <div className="flex items-center gap-1">
-                    {trackSteps.map((step, i) => (
-                      <React.Fragment key={step}>
-                        <div className={`w-5 h-5 rounded-full flex items-center justify-center shrink-0 text-[8px] font-semibold border-2 transition ${
-                          i < curStep   ? 'bg-blue-500 border-blue-500 text-white' :
-                          i === curStep ? 'bg-white border-blue-500 text-blue-500' :
-                          'bg-white border-slate-200 text-slate-300'
-                        }`}>
-                          {i < curStep ? '✓' : i + 1}
-                        </div>
-                        {i < trackSteps.length - 1 && (
-                          <div className={`flex-1 h-0.5 rounded-full transition ${i < curStep ? 'bg-blue-500' : 'bg-slate-200'}`} />
-                        )}
-                      </React.Fragment>
-                    ))}
-                  </div>
-                  <div className="flex justify-between">
-                    {trackSteps.map(step => (
-                      <span key={step} className="text-[8px] font-normal text-slate-400 flex-1 text-center first:text-left last:text-right">
-                        {JUBAH_STEP_LABEL[step]}
-                      </span>
-                    ))}
-                  </div>
+                  <JubahStepper steps={trackSteps} curStep={curStep} labels={JUBAH_STEP_LABEL} color="blue" labelWeight="normal" />
                   {isDone && b.status !== 'cancelled' && (
                     <div className="bg-emerald-50 border border-emerald-100 rounded-2xl px-4 py-3 text-center">
                       <p className="text-xs font-semibold text-emerald-700">✓ Delivery Complete</p>

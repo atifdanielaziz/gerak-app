@@ -9,13 +9,13 @@
 //
 // TrackJubah's own top-level status badge intentionally keeps separate,
 // longer customer-facing wording/colors (e.g. "Order Received" instead of
-// "New") — that's a deliberate audience difference, not drift, so it isn't
-// part of this shared module.
+// "Confirmed") — that's a deliberate audience difference, not drift, so it
+// isn't part of this shared module.
 
 export const JUBAH_STEP_LABEL: Record<string, string> = {
   ordered:    'Pending',
   paid:       'Paid',
-  booked:     'New',
+  booked:     'Confirmed',
   processing: 'Processing',
   collected:  'Collected',
   at_hub:     'At Hub',
