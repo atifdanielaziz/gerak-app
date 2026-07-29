@@ -10,7 +10,7 @@ import {
   FileImage, ShieldCheck,
   CalendarDays, Upload, Eye, ArrowLeftRight, GraduationCap,
   ChevronLeft, Check, TrendingUp, Bike,
-  Bell, User, Ban,
+  Bell, User, Ban, History,
 } from 'lucide-react';
 import { JubahBannerSubTab } from './admin/jubah/JubahBannerSubTab';
 import { JubahPriceSubTab } from './admin/jubah/JubahPriceSubTab';
@@ -26,8 +26,9 @@ import { EarningsTab, type EarningsTabHandle } from './admin/earnings/EarningsTa
 import { OrdersTab, type OrdersTabHandle } from './admin/orders/OrdersTab';
 import { JubahRiderSubTab, type JubahRiderSubTabHandle } from './admin/jubah/JubahRiderSubTab';
 import { JubahCustomerSubTab, type JubahBookingRow } from './admin/jubah/JubahCustomerSubTab';
+import { ActivityLogTab, type ActivityLogTabHandle } from './admin/activity/ActivityLogTab';
 
-type AdminTab = 'orders' | 'drivers' | 'users' | 'banners' | 'receipts' | 'calendar' | 'routes' | 'verify' | 'jubah' | 'earnings';
+type AdminTab = 'orders' | 'drivers' | 'users' | 'banners' | 'receipts' | 'calendar' | 'routes' | 'verify' | 'jubah' | 'earnings' | 'activity';
 
 // Single source of truth for tab metadata — shared by the mobile tab-strip
 // and the desktop sidebar (see AdminHome's return), so the superadmin-only
@@ -42,6 +43,7 @@ const ADMIN_TABS: { id: AdminTab; label: string; icon: React.ElementType; supera
   { id: 'routes',   label: 'Routes',    icon: ArrowLeftRight,  superadminOnly: false },
   { id: 'receipts', label: 'Receipts',  icon: FileImage,       superadminOnly: true  },
   { id: 'earnings', label: 'Earnings',  icon: TrendingUp,      superadminOnly: true  },
+  { id: 'activity', label: 'Activity',  icon: History,         superadminOnly: true  },
   { id: 'calendar', label: 'Calendar',  icon: CalendarDays,    superadminOnly: false },
 ];
 
@@ -175,6 +177,7 @@ export const AdminHome: React.FC = () => {
   const receiptsTabRef  = useRef<ReceiptsTabHandle>(null);
   const calendarTabRef  = useRef<CalendarTabHandle>(null);
   const earningsTabRef  = useRef<EarningsTabHandle>(null);
+  const activityTabRef  = useRef<ActivityLogTabHandle>(null);
   const ordersTabRef    = useRef<OrdersTabHandle>(null);
   const jubahRiderTabRef = useRef<JubahRiderSubTabHandle>(null);
   // Reported up by DriversTab's own invite-confirm modal, so the shared
@@ -389,6 +392,7 @@ export const AdminHome: React.FC = () => {
     activeTab === 'verify' ? verifyTabRef.current?.reload() :
     activeTab === 'calendar' ? calendarTabRef.current?.reload() :
     activeTab === 'earnings' ? earningsTabRef.current?.reload() :
+    activeTab === 'activity' ? activityTabRef.current?.reload() :
     bannersTabRef.current?.reload();
 
   const unreadCount = notifications.filter(n => !n.isRead).length;
@@ -938,6 +942,14 @@ export const AdminHome: React.FC = () => {
         <EarningsTab
           ref={earningsTabRef}
           active={activeTab === 'earnings'}
+        />
+      )}
+
+      {/* ── ACTIVITY LOG TAB (superadmin only) ── */}
+      {activeTab === 'activity' && user.role === 'superadmin' && (
+        <ActivityLogTab
+          ref={activityTabRef}
+          active={activeTab === 'activity'}
         />
       )}
 
