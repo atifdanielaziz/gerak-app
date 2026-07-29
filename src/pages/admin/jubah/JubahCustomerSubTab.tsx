@@ -8,6 +8,7 @@ import { WaIcon, toWa } from '../../../lib/whatsapp';
 import { getJubahDocSignedUrl, openInNewTab } from '../../../lib/jubahDocs';
 import { copyToClipboard } from '../../../lib/clipboard';
 import { ReceiptCard } from '../../../components/Receipt';
+import { JubahStepper } from '../../../components/JubahStepper';
 import { buildJubahReceiptRows, type ReceiptDoc } from '../../../lib/receiptRows';
 import {
   JUBAH_STEP_LABEL as JUBAH_STATUS_LABEL, JUBAH_STATUS_STYLE,
@@ -602,31 +603,7 @@ export function JubahCustomerSubTab({
               </div>
 
               {/* Progress stepper */}
-              <div className="flex flex-col gap-2">
-                <div className="flex items-center gap-1">
-                  {steps.map((step, i) => (
-                    <React.Fragment key={step}>
-                      <div className={`w-5 h-5 rounded-full flex items-center justify-center shrink-0 text-[8px] font-semibold border-2 transition ${
-                        i < curStep  ? 'bg-primary border-primary text-white' :
-                        i === curStep ? 'bg-white border-primary text-primary' :
-                        'bg-white border-slate-200 text-slate-300'
-                      }`}>
-                        {i < curStep ? '✓' : i + 1}
-                      </div>
-                      {i < steps.length - 1 && (
-                        <div className={`flex-1 h-0.5 rounded-full transition ${i < curStep ? 'bg-primary' : 'bg-slate-200'}`} />
-                      )}
-                    </React.Fragment>
-                  ))}
-                </div>
-                <div className="flex justify-between">
-                  {steps.map(step => (
-                    <span key={step} className="text-[8px] font-semibold text-slate-400 flex-1 text-center first:text-left last:text-right">
-                      {JUBAH_STATUS_LABEL[step]}
-                    </span>
-                  ))}
-                </div>
-              </div>
+              <JubahStepper steps={steps} curStep={curStep} labels={JUBAH_STATUS_LABEL} />
 
               {/* Delivery address (postage only) */}
               {b.payment_mode === 'postage' && b.delivery_address && (
