@@ -160,14 +160,17 @@ export const ProfileSheet: React.FC<{ u: ProfileUser; onClose: () => void }> = (
                       merged.docs_status === 'pending'  ? 'text-amber-500' : 'text-slate-400'
                     }`}>{merged.docs_status || 'none'}</span>
                   </Row>
-                  <Row label="IC Photo">
-                    {merged.ic_url
-                      ? <a href={merged.ic_url} target="_blank" rel="noopener noreferrer"
-                          className="text-xs font-semibold text-blue-600 bg-blue-50 border border-blue-100 px-2.5 py-1 rounded-lg active:scale-95 transition flex items-center gap-1">
-                          <ExternalLink className="w-3 h-3" /> View
-                        </a>
-                      : <span className="text-xs font-semibold text-slate-300">Not uploaded</span>}
-                  </Row>
+                  {/* IC — riders only; drivers only need a license on file */}
+                  {u.role === 'rider' && (
+                    <Row label="IC Photo">
+                      {merged.ic_url
+                        ? <a href={merged.ic_url} target="_blank" rel="noopener noreferrer"
+                            className="text-xs font-semibold text-blue-600 bg-blue-50 border border-blue-100 px-2.5 py-1 rounded-lg active:scale-95 transition flex items-center gap-1">
+                            <ExternalLink className="w-3 h-3" /> View
+                          </a>
+                        : <span className="text-xs font-semibold text-slate-300">Not uploaded</span>}
+                    </Row>
+                  )}
                   <Row label="License">
                     {merged.license_url
                       ? <a href={merged.license_url} target="_blank" rel="noopener noreferrer"

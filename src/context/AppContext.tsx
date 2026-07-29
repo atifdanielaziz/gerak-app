@@ -135,7 +135,7 @@ interface AppContextType {
   switchToRiderMode: () => void;
   user: UserSession;
   login: (email: string, password: string) => Promise<{ error: string | null }>;
-  register: (name: string, matricNo: string, email: string, password: string, phone: string, university: string, campus: string) => Promise<{ error: string | null }>;
+  register: (name: string, matricNo: string, email: string, password: string, phone: string, university: string, campus: string, agreedToTerms: boolean) => Promise<{ error: string | null }>;
   logout: () => void;
   updateProfile: (updates: { name?: string; matricNo?: string; email?: string; phone?: string; vehicle?: string; plateNumber?: string; icNumber?: string; feeReceiptUrl?: string; avatarUrl?: string; campus?: string }) => Promise<{ error: string | null }>;
   refreshUserData: () => Promise<void>;
@@ -517,7 +517,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return { error: null };
   };
 
-  const register = async (name: string, matricNo: string, email: string, password: string, phone: string, university: string, campus: string): Promise<{ error: string | null }> => {
+  const register = async (name: string, matricNo: string, email: string, password: string, phone: string, university: string, campus: string, agreedToTerms: boolean): Promise<{ error: string | null }> => {
+    if (!agreedToTerms) return { error: 'Please agree to the Terms & Conditions and Privacy Policy.' };
     const { error } = await supabase.auth.signUp({
       email,
       password,
@@ -528,7 +529,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     if (signInErr) return { error: 'Account created! Please sign in.' };
     const { data: { user: authUser } } = await supabase.auth.getUser();
     if (authUser) {
-      await supabase.from('profiles').update({ phone, university, campus }).eq('id', authUser.id);
+      await supabase.from('profiles').update({ phone, university, campus, terms_accepted_at: new Date().toISOString() }).eq('id', authUser.id);
       await loadProfile(authUser.id);
     }
     return { error: null };

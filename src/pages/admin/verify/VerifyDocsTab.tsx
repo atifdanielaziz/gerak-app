@@ -20,9 +20,10 @@ interface VerifyDocsTabProps {
   showToast: (msg: string) => void;
 }
 
-// Driver/rider IC + license document verification — split out of
-// AdminHome.tsx. Fully self-contained: no overlay modal (the reject-reason
-// input expands inline in the card), so no modal-open tracking needed.
+// Driver (license only) / rider (IC + license) document verification —
+// split out of AdminHome.tsx. Fully self-contained: no overlay modal (the
+// reject-reason input expands inline in the card), so no modal-open
+// tracking needed.
 export const VerifyDocsTab = forwardRef<VerifyDocsTabHandle, VerifyDocsTabProps>(function VerifyDocsTab(
   { active, isSuperAdmin, adminCampus, showToast },
   ref
@@ -150,12 +151,12 @@ export const VerifyDocsTab = forwardRef<VerifyDocsTabHandle, VerifyDocsTabProps>
               <div className="flex-1 min-w-0">
                 <p className="text-xs font-black text-slate-800 truncate">{d.name}</p>
                 <p className="text-xs text-slate-400 font-semibold mt-0.5">{d.gerak_id} · UMPSA {d.campus}</p>
-                {d.ic_number && (
+                {/* IC number — riders only; drivers only need a license on file */}
+                {verifyFilter === 'rider' && (d.ic_number ? (
                   <p className="text-xs font-semibold text-slate-500 mt-0.5">IC: {d.ic_number}</p>
-                )}
-                {!d.ic_number && (
+                ) : (
                   <p className="text-xs font-semibold text-amber-500 mt-0.5">IC number not set yet</p>
-                )}
+                ))}
               </div>
               <span className={`text-xs font-semibold px-2 py-1 rounded-full border shrink-0 ${
                 d.docs_status === 'approved' ? 'bg-emerald-50 border-emerald-100 text-emerald-700' :
@@ -176,14 +177,16 @@ export const VerifyDocsTab = forwardRef<VerifyDocsTabHandle, VerifyDocsTabProps>
               </p>
             )}
 
-            {/* Document links */}
-            <div className="grid grid-cols-2 gap-2">
-              <a href={d.ic_url ?? '#'} target="_blank" rel="noopener noreferrer"
-                className={`flex items-center justify-center gap-1.5 py-2 rounded-xl text-xs font-semibold border transition ${
-                  d.ic_url ? 'bg-blue-50 border-blue-100 text-blue-600 active:scale-95' : 'bg-slate-50 border-slate-200 text-slate-300 pointer-events-none'
-                }`}>
-                <ExternalLink className="w-3 h-3" /> IC (MyKad)
-              </a>
+            {/* Document links — drivers only need a license reviewed */}
+            <div className={`grid gap-2 ${verifyFilter === 'rider' ? 'grid-cols-2' : 'grid-cols-1'}`}>
+              {verifyFilter === 'rider' && (
+                <a href={d.ic_url ?? '#'} target="_blank" rel="noopener noreferrer"
+                  className={`flex items-center justify-center gap-1.5 py-2 rounded-xl text-xs font-semibold border transition ${
+                    d.ic_url ? 'bg-blue-50 border-blue-100 text-blue-600 active:scale-95' : 'bg-slate-50 border-slate-200 text-slate-300 pointer-events-none'
+                  }`}>
+                  <ExternalLink className="w-3 h-3" /> IC (MyKad)
+                </a>
+              )}
               <a href={d.license_url ?? '#'} target="_blank" rel="noopener noreferrer"
                 className={`flex items-center justify-center gap-1.5 py-2 rounded-xl text-xs font-semibold border transition ${
                   d.license_url ? 'bg-blue-50 border-blue-100 text-blue-600 active:scale-95' : 'bg-slate-50 border-slate-200 text-slate-300 pointer-events-none'
@@ -214,8 +217,9 @@ export const VerifyDocsTab = forwardRef<VerifyDocsTabHandle, VerifyDocsTabProps>
               </div>
             )}
 
-            {/* Actions */}
-            {d.docs_status !== 'approved' && rejectingDoc !== d.id && (d.ic_url || d.license_url) && (
+            {/* Actions — drivers need only a license on file; riders need either doc */}
+            {d.docs_status !== 'approved' && rejectingDoc !== d.id &&
+              (verifyFilter === 'driver' ? !!d.license_url : (d.ic_url || d.license_url)) && (
               <div className="flex gap-2">
                 <button onClick={() => handleApproveDoc(d.id)}
                   className="flex-1 flex items-center justify-center gap-1.5 bg-emerald-500 text-white text-xs font-semibold py-2.5 rounded-xl active:scale-95 transition">

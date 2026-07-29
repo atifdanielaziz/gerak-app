@@ -1,13 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
 import { supabase } from '../lib/supabase';
-import { ShieldAlert, User, Mail, Lock, Eye, EyeOff, Phone, ArrowRight, MapPin, IdCard, Car, X } from 'lucide-react';
+import { ShieldAlert, User, Mail, Lock, Eye, EyeOff, Phone, ArrowRight, MapPin, IdCard, Car, X, Check } from 'lucide-react';
 import { NativeSelect } from '../components/NativeSelect';
 
 type InviteStatus = null | 'checking' | { isDriver: boolean; campus: string; role: string };
 
 export const Register: React.FC = () => {
   const { register, setCurrentPage } = useApp();
+  const [agreedToTerms, setAgreedToTerms] = useState(false);
   const [university, setUniversity] = useState('');
   const [campus,     setCampus]     = useState('');
   const [gerakId,    setGerakId]    = useState('');
@@ -76,10 +77,11 @@ export const Register: React.FC = () => {
     }
     if (password !== confirmPassword) { setError('Passwords do not match.'); return; }
     if (password.length < 6) { setError('Password must be at least 6 characters.'); return; }
+    if (!agreedToTerms) { setError('Please agree to the Terms & Conditions and Privacy Policy.'); return; }
 
     setLoading(true);
     setError('');
-    const { error: authError } = await register(name, '', email, password, phone, university, effectiveCampus);
+    const { error: authError } = await register(name, '', email, password, phone, university, effectiveCampus, agreedToTerms);
     setLoading(false);
     if (authError) setError(authError);
   };
@@ -299,6 +301,41 @@ export const Register: React.FC = () => {
             </div>
           </div>
 
+          {/* Terms & Privacy consent — a div, not a button, since the inline
+              Terms/Privacy links inside it need to be their own tappable
+              controls (a <button> can't nest other interactive elements) */}
+          <div
+            onPointerDown={e => { e.preventDefault(); setAgreedToTerms(v => !v); }}
+            className={`flex items-start gap-2.5 border rounded-xl py-2.5 px-3 transition-transform active:scale-[0.99] cursor-pointer ${
+              agreedToTerms ? 'border-slate-900 bg-white' : 'border-slate-100 bg-white'
+            }`}
+          >
+            <span className={`mt-0.5 w-4 h-4 rounded-md border flex items-center justify-center shrink-0 transition ${
+              agreedToTerms ? 'bg-primary border-primary' : 'border-slate-300'
+            }`}>
+              {agreedToTerms && <Check className="w-3 h-3 text-white" strokeWidth={3} />}
+            </span>
+            <span className="text-xs text-slate-500 font-normal leading-relaxed">
+              I agree to Gerak's{' '}
+              <button
+                type="button"
+                onPointerDown={e => { e.stopPropagation(); e.preventDefault(); setCurrentPage('terms-of-service'); }}
+                className="text-primary font-semibold hover:underline"
+              >
+                Terms &amp; Conditions
+              </button>
+              {' '}and{' '}
+              <button
+                type="button"
+                onPointerDown={e => { e.stopPropagation(); e.preventDefault(); setCurrentPage('privacy-policy'); }}
+                className="text-primary font-semibold hover:underline"
+              >
+                Privacy Policy
+              </button>
+              .
+            </span>
+          </div>
+
           {/* Error */}
           {error && (
             <div className="bg-danger/10 border border-danger/20 rounded-xl p-2.5 text-xs text-danger font-semibold text-center flex items-center justify-center gap-1.5 animate-pulse">
@@ -314,7 +351,7 @@ export const Register: React.FC = () => {
           <button
             type="submit"
             form="register-form"
-            disabled={loading}
+            disabled={loading || !agreedToTerms}
             className="w-full bg-primary hover:bg-primary-hover active:scale-[0.99] disabled:bg-slate-200 text-white font-semibold py-2.5 rounded-xl transition flex items-center justify-center gap-2"
           >
             {loading

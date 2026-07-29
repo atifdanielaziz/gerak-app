@@ -21,7 +21,7 @@ export const TermsOfService: React.FC = () => {
         </div>
         <div>
           <h2 className="text-base font-bold text-slate-800 m-0">Terms &amp; Conditions</h2>
-          <p className="text-xs text-slate-400 font-normal mt-0.5">Last updated: 25 July 2026</p>
+          <p className="text-xs text-slate-400 font-normal mt-0.5">Last updated: 29 July 2026</p>
         </div>
       </div>
 
@@ -29,6 +29,10 @@ export const TermsOfService: React.FC = () => {
         <p>
           By creating an account or using any part of Gerak (Transport, Jubah, or Rental), you agree to these
           Terms &amp; Conditions and our Privacy Policy. If you don't agree, please don't use the platform.
+        </p>
+        <p>
+          You confirm this agreement by ticking the consent checkbox on the sign-up form, and the date/time of
+          that confirmation is recorded against your account.
         </p>
       </Section>
 
@@ -55,8 +59,9 @@ export const TermsOfService: React.FC = () => {
           information may result in account suspension.
         </p>
         <p>
-          Drivers and Jubah riders must additionally pass document verification (IC + driving licence review)
-          before being able to accept jobs.
+          Drivers must additionally pass document verification (driving licence review) before being able to
+          accept jobs. Jubah riders must pass document verification covering both an IC copy and a driving
+          licence review.
         </p>
       </Section>
 

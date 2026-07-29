@@ -41,7 +41,9 @@ export const Profile: React.FC = () => {
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
 
-  const requiresIc = ['driver', 'rider', 'admin', 'superadmin'].includes(user.role);
+  // Drivers only need their license reviewed (not IC) — Jubah riders still
+  // need both, per the current verification requirements.
+  const requiresIc = ['rider', 'admin', 'superadmin'].includes(user.role);
 
   const formatIcNumber = (val: string) => {
     const digits = val.replace(/\D/g, '').slice(0, 12);
@@ -510,7 +512,8 @@ export const Profile: React.FC = () => {
                   <p className="text-xs text-emerald-600 font-semibold bg-emerald-50 rounded-xl px-3 py-2">{docMsg}</p>
                 )}
 
-                {/* IC Upload */}
+                {/* IC Upload — Jubah riders only; drivers only need a license */}
+                {user.role === 'rider' && (
                 <div className="flex flex-col gap-1.5">
                   <span className="text-xs font-semibold text-slate-400">IC (MyKad)</span>
                   <input ref={icDocRef} type="file" accept="image/*,.pdf" className="hidden" onChange={e => handleDocUpload(e, 'ic')} />
@@ -534,6 +537,7 @@ export const Profile: React.FC = () => {
                     </button>
                   )}
                 </div>
+                )}
 
                 {/* License Upload */}
                 <div className="flex flex-col gap-1.5">
