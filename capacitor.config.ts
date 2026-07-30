@@ -1,3 +1,5 @@
+/// <reference types="@capacitor-community/safe-area" />
+
 import type { CapacitorConfig } from '@capacitor/cli';
 
 // Deliberately no `server.url` here — the built dist/ output is bundled
@@ -15,6 +17,12 @@ const config: CapacitorConfig = {
       launchShowDuration: 0,
       backgroundColor: '#EF4444',
       androidScaleType: 'CENTER_CROP',
+    },
+    // Required by @capacitor-community/safe-area on Capacitor v8 — lets
+    // that plugin own inset handling instead of Capacitor's own (still
+    // in-progress) SystemBars insets logic fighting it.
+    SystemBars: {
+      insetsHandling: 'disable',
     },
   },
 };
