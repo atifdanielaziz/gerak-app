@@ -446,7 +446,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         setSessionExpiredMessage();
         return;
       }
-      loadProfile(session.user.id);
+      applyPendingInviteIfAny().then(() => loadProfile(session.user.id));
     });
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
@@ -470,6 +470,26 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return () => subscription.unsubscribe();
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Picks up a driver_invites row that was created for this email AFTER
+  // the account already existed — handle_new_user() only ever applies an
+  // invite at the moment a brand-new auth.users row is inserted, so an
+  // existing account (typically a 'customer' invited to also become a
+  // rider/driver) has no other path to ever receive it. Must be awaited
+  // and finish before loadProfile() runs, since loadProfile both sets
+  // user state and does role-based routing in the same pass — applying
+  // the promotion after that would show the stale pre-promotion role for
+  // this particular load.
+  const applyPendingInviteIfAny = async () => {
+    const { data, error } = await supabase.rpc('apply_pending_invite');
+    if (error || !data?.applied) return;
+    const roleLabel = data.role === 'rider' ? 'Rider' : data.role === 'driver' ? 'Driver' : 'Admin';
+    addNotification(
+      `You now have ${roleLabel} access`,
+      `An admin granted you ${roleLabel} access for UMPSA ${data.campus}. Explore your new tab to get started.`,
+      'system',
+    );
+  };
 
   const loadProfile = async (userId: string) => {
     const { data } = await supabase.from('profiles').select('id,name,matric_no,email,phone,university,campus,gerak_id,role,status,vehicle,plate_number,fee_receipt_url,fee_receipt_verified,fee_receipt_amount,fee_receipt_date,fee_receipt_expiry,fee_receipt_reject_reason,can_drive,can_rent,can_transport,ic_number,ic_url,license_url,docs_status,docs_reject_reason,receipt_gate_exempt,avatar_url').eq('id', userId).single();
@@ -551,7 +571,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const { error } = await supabase.auth.signInWithPassword({ email, password });
     if (error) return { error: error.message };
     const { data: { user: authUser } } = await supabase.auth.getUser();
-    if (authUser) await loadProfile(authUser.id);
+    if (authUser) {
+      await applyPendingInviteIfAny();
+      await loadProfile(authUser.id);
+    }
     return { error: null };
   };
 
