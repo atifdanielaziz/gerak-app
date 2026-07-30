@@ -138,7 +138,17 @@ export const Register: React.FC = () => {
     setError('');
     const { error: authError } = await register(name, '', email, password, phone, university, effectiveCampus, agreedToTerms && agreedToPrivacy);
     setLoading(false);
-    if (authError) setError(authError);
+    if (authError) {
+      // Supabase's own duplicate-email message ("User already registered")
+      // — surfaced as its own bubble under Email, same as every other
+      // fixable mistake on this form, rather than the generic banner below
+      // (which is for errors that aren't about a specific field).
+      if (authError.toLowerCase().includes('already registered')) {
+        setFieldError({ field: 'email', message: 'This email is already registered. Try signing in instead.' });
+      } else {
+        setError(authError);
+      }
+    }
   };
 
   return (
