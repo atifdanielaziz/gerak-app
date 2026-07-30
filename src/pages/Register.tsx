@@ -152,7 +152,8 @@ export const Register: React.FC = () => {
   };
 
   return (
-    <div className="flex-1 bg-white flex flex-col p-6 gap-4 select-none animate-fade-in h-full overflow-hidden touch-pan-y">
+    <div className="flex-1 bg-white flex flex-col p-6 gap-4 select-none animate-fade-in h-full overflow-hidden touch-pan-y"
+      style={{ paddingBottom: 'calc(1.5rem + env(safe-area-inset-bottom))' }}>
 
       {/* Close button */}
       <div className="pt-0">

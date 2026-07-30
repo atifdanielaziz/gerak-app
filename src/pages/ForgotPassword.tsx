@@ -35,7 +35,8 @@ export const ForgotPassword: React.FC = () => {
   };
 
   return (
-    <div className="flex-1 bg-white flex flex-col justify-between p-6 select-none animate-fade-in h-full">
+    <div className="flex-1 bg-white flex flex-col justify-between p-6 select-none animate-fade-in h-full"
+      style={{ paddingBottom: 'calc(1.5rem + env(safe-area-inset-bottom))' }}>
 
       {/* Branding */}
       <div className="flex flex-col items-center text-center mt-6">
