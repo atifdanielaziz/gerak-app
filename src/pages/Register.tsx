@@ -8,6 +8,27 @@ import { PrivacyPolicy } from './PrivacyPolicy';
 
 type InviteStatus = null | 'checking' | { isDriver: boolean; campus: string; role: string };
 
+// Small validation bubble that sits directly under the field it's about,
+// flowing naturally in the page (not fixed/absolutely positioned via a
+// calculated getBoundingClientRect) — that's deliberate: an earlier
+// attempt used real `required` checkbox inputs to get the browser's own
+// native validation bubble, but on a real device that bubble anchored to
+// the input's actual (visually-hidden) position instead of the visible
+// checkbox next to it, landing off-screen behind the phone's nav bar.
+// Rendering this as a normal sibling in document flow, right after the
+// field it belongs to, can't have that problem — it's always exactly
+// where it visually needs to be, regardless of scroll position or how
+// the underlying control is styled.
+const FieldBubble: React.FC<{ message: string }> = ({ message }) => (
+  <div className="relative mt-1.5 animate-fade-in">
+    <div className="absolute -top-[7px] left-4 w-3 h-3 bg-white border-l border-t border-slate-200 rotate-45" />
+    <div className="relative flex items-center gap-2 bg-white border border-slate-200 rounded-xl px-3 py-2 shadow-lg">
+      <span className="w-4 h-4 rounded bg-orange-500 text-white flex items-center justify-center shrink-0 text-[11px] font-black leading-none">!</span>
+      <span className="text-xs font-semibold text-slate-700">{message}</span>
+    </div>
+  </div>
+);
+
 export const Register: React.FC = () => {
   const { register, setCurrentPage, setLeaveGuard } = useApp();
   const [agreedToTerms, setAgreedToTerms] = useState(false);
@@ -37,19 +58,13 @@ export const Register: React.FC = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirm,  setShowConfirm]  = useState(false);
   const [loading,  setLoading]  = useState(false);
+  // Reserved for the one message that deserves to stay on screen: a real
+  // account-creation failure from the server, which the user needs time to
+  // actually read and act on — separate from the per-field bubbles below,
+  // which are about fixable input mistakes and clear themselves.
   const [error,    setError]    = useState('');
-  const [toast,    setToast]    = useState('');
+  const [fieldError, setFieldError] = useState<{ field: string; message: string } | null>(null);
   const [inviteStatus, setInviteStatus] = useState<InviteStatus>(null);
-
-  // For quick, fixable input mistakes (missing field, unticked consent) —
-  // same fixed-top-banner pattern used across the app (DriverHome, etc.).
-  // Reserving the inline {error} banner below for the one message that
-  // deserves to stay on screen: a real account-creation failure from the
-  // server, which the user needs time to actually read and act on.
-  const showToast = (msg: string) => {
-    setToast(msg);
-    setTimeout(() => setToast(''), 3000);
-  };
 
   // Derived helpers
   const invite = inviteStatus !== null && inviteStatus !== 'checking' ? inviteStatus : null;
@@ -95,29 +110,30 @@ export const Register: React.FC = () => {
     return () => setLeaveGuard(null);
   }, [viewingPolicy, setLeaveGuard]);
 
+  // Any edit anywhere dismisses whatever bubble is currently showing —
+  // simplest reasonable "try again" signal, without wiring a clear call
+  // into every individual field's onChange.
+  useEffect(() => { setFieldError(null); }, [university, campus, name, phone, email, password, confirmPassword, agreedToTerms, agreedToPrivacy]);
+
   const handleSubmit = async (e: React.SyntheticEvent) => {
     e.preventDefault();
-    if (!university) { showToast('Please select your university.'); return; }
-    if (!isDriver && !campus) { showToast('Please select your campus.'); return; }
-    if (!name || !phone || !email || !password || !confirmPassword) {
-      showToast('Please fill in all fields.'); return;
-    }
-    if (name.trim().length < 2) { showToast('Full name must be at least 2 characters.'); return; }
+    if (!university) { setFieldError({ field: 'university', message: 'Please select your university.' }); return; }
+    if (!isDriver && !campus) { setFieldError({ field: 'campus', message: 'Please select your campus.' }); return; }
+    if (!name.trim()) { setFieldError({ field: 'name', message: 'Please fill out this field.' }); return; }
+    if (name.trim().length < 2) { setFieldError({ field: 'name', message: 'Full name must be at least 2 characters.' }); return; }
+    if (!phone.trim()) { setFieldError({ field: 'phone', message: 'Please fill out this field.' }); return; }
     if (!/^\d{10,15}$/.test(phone.replace(/[\s\-+]/g, ''))) {
-      showToast('Please enter a valid phone number.'); return;
+      setFieldError({ field: 'phone', message: 'Please enter a valid phone number.' }); return;
     }
-    if (password !== confirmPassword) { showToast('Passwords do not match.'); return; }
-    if (password.length < 6) { showToast('Password must be at least 6 characters.'); return; }
-    // Deliberately not relying on native `required` validation for these —
-    // tested on a real device and the native bubble anchored to the hidden
-    // checkbox input in the wrong place (cut off by the on-screen nav bar,
-    // hid the second checkbox from view). A controlled toast at a fixed
-    // position is reliable regardless of where in the form it's triggered.
-    if (!agreedToTerms || !agreedToPrivacy) {
-      showToast("Please tick both boxes below to let us know you've read and agree — then you're good to go!");
-      return;
-    }
+    if (!email.trim()) { setFieldError({ field: 'email', message: 'Please fill out this field.' }); return; }
+    if (!password) { setFieldError({ field: 'password', message: 'Please fill out this field.' }); return; }
+    if (password.length < 6) { setFieldError({ field: 'password', message: 'Password must be at least 6 characters.' }); return; }
+    if (!confirmPassword) { setFieldError({ field: 'confirmPassword', message: 'Please fill out this field.' }); return; }
+    if (password !== confirmPassword) { setFieldError({ field: 'confirmPassword', message: 'Passwords do not match.' }); return; }
+    if (!agreedToTerms) { setFieldError({ field: 'terms', message: 'Please tick this box if you want to proceed.' }); return; }
+    if (!agreedToPrivacy) { setFieldError({ field: 'privacy', message: 'Please tick this box if you want to proceed.' }); return; }
 
+    setFieldError(null);
     setLoading(true);
     setError('');
     const { error: authError } = await register(name, '', email, password, phone, university, effectiveCampus, agreedToTerms && agreedToPrivacy);
@@ -127,13 +143,6 @@ export const Register: React.FC = () => {
 
   return (
     <div className="flex-1 bg-white flex flex-col p-6 gap-4 select-none animate-fade-in h-full overflow-hidden touch-pan-y">
-
-      {/* Toast */}
-      {toast && (
-        <div className="fixed top-16 left-4 right-4 z-50 bg-slate-800 text-white text-xs font-bold px-4 py-2.5 rounded-2xl shadow-lg text-center">
-          {toast}
-        </div>
-      )}
 
       {/* Close button */}
       <div className="pt-0">
@@ -165,7 +174,12 @@ export const Register: React.FC = () => {
 
         {/* Scrollable fields */}
         <div className="flex-1 overflow-y-auto overflow-x-hidden no-scrollbar px-5 pt-5 pb-2 overscroll-contain touch-pan-y w-full">
-        <form id="register-form" onSubmit={handleSubmit} className="flex flex-col gap-4 w-full">
+        {/* noValidate — all validation is the custom FieldBubble system
+            above, so native browser bubbles (which don't fire for
+            NativeSelect/the checkboxes anyway, since neither is a real
+            form control) never show for the fields that DO support them,
+            keeping the experience consistent across every field. */}
+        <form id="register-form" onSubmit={handleSubmit} noValidate className="flex flex-col gap-4 w-full">
 
           {/* University */}
           <div className="flex flex-col gap-1">
@@ -177,6 +191,7 @@ export const Register: React.FC = () => {
               placeholder="Select your university…"
               label="Select University"
             />
+            {fieldError?.field === 'university' && <FieldBubble message={fieldError.message} />}
           </div>
 
           {/* Campus — auto-locked for drivers, selectable for customers */}
@@ -200,6 +215,7 @@ export const Register: React.FC = () => {
                   placeholder="Select your campus…"
                   label="Select Campus"
                 />
+                {fieldError?.field === 'campus' && <FieldBubble message={fieldError.message} />}
               </div>
             )
           )}
@@ -232,9 +248,9 @@ export const Register: React.FC = () => {
                 onChange={e => setName(e.target.value.replace(/\S+/g, w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()))}
                 className="w-full bg-white border border-slate-100 rounded-xl py-2.5 pl-9 pr-3 text-xs text-slate-700 focus:outline-none focus:border-primary transition"
                 placeholder="Full name"
-                required
               />
             </div>
+            {fieldError?.field === 'name' && <FieldBubble message={fieldError.message} />}
           </div>
 
           {/* Phone */}
@@ -248,9 +264,9 @@ export const Register: React.FC = () => {
                 onChange={e => setPhone(formatPhone(e.target.value))}
                 className="w-full bg-white border border-slate-100 rounded-xl py-2.5 pl-9 pr-3 text-xs text-slate-700 focus:outline-none focus:border-primary transition"
                 placeholder="e.g. 012-34567890"
-                required
               />
             </div>
+            {fieldError?.field === 'phone' && <FieldBubble message={fieldError.message} />}
           </div>
 
           {/* Email */}
@@ -264,9 +280,9 @@ export const Register: React.FC = () => {
                 onChange={e => setEmail(e.target.value)}
                 className="w-full bg-white border border-slate-100 rounded-xl py-2.5 pl-9 pr-3 text-xs text-slate-700 focus:outline-none focus:border-primary transition"
                 placeholder="smartcampus@gmail.com"
-                required
               />
             </div>
+            {fieldError?.field === 'email' && <FieldBubble message={fieldError.message} />}
 
             {/* Account type indicator */}
             {inviteStatus !== null && (
@@ -318,13 +334,13 @@ export const Register: React.FC = () => {
                 onChange={e => setPassword(e.target.value)}
                 className="w-full bg-white border border-slate-100 rounded-xl py-2.5 pl-9 pr-9 text-xs text-slate-700 focus:outline-none focus:border-primary transition"
                 placeholder="At least 6 characters"
-                required
               />
               <button type="button" onPointerDown={e => { e.preventDefault(); setShowPassword(v => !v); }}
                 className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-transform">
                 {showPassword ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
               </button>
             </div>
+            {fieldError?.field === 'password' && <FieldBubble message={fieldError.message} />}
           </div>
 
           {/* Confirm Password */}
@@ -338,72 +354,78 @@ export const Register: React.FC = () => {
                 onChange={e => setConfirmPassword(e.target.value)}
                 className="w-full bg-white border border-slate-100 rounded-xl py-2.5 pl-9 pr-9 text-xs text-slate-700 focus:outline-none focus:border-primary transition"
                 placeholder="Re-enter password"
-                required
               />
               <button type="button" onPointerDown={e => { e.preventDefault(); setShowConfirm(v => !v); }}
                 className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-transform">
                 {showConfirm ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
               </button>
             </div>
+            {fieldError?.field === 'confirmPassword' && <FieldBubble message={fieldError.message} />}
           </div>
 
-          {/* Terms & Privacy consent — two separate ticks. Plain styled divs,
-              not real checkbox inputs — tried native `required` inputs so an
+          {/* Terms & Privacy consent — two separate ticks, each with its own
+              independent bubble right underneath it. Plain styled divs, not
+              real checkbox inputs — tried native `required` inputs so an
               unticked box would trigger the browser's own validation bubble,
               but on a real device that bubble anchored to the hidden input's
-              position instead of the visible checkbox, landing off-screen
-              behind the nav bar and hiding the second checkbox. A custom
-              toast (see handleSubmit) is reliable regardless of scroll
-              position. Each row is a div (not a button) since the inline
-              link inside it needs to be its own tappable control (a
-              <button> can't nest other interactive elements). */}
+              actual position instead of the visible checkbox, landing
+              off-screen behind the nav bar. Each row is a div (not a
+              button) since the inline link inside it needs to be its own
+              tappable control (a <button> can't nest other interactive
+              elements). */}
           <div className="flex flex-col gap-2">
-            <div
-              onPointerDown={e => { e.preventDefault(); setAgreedToTerms(v => !v); }}
-              className={`flex items-start gap-2.5 border rounded-xl py-2.5 px-3 transition-transform active:scale-[0.99] cursor-pointer ${
-                agreedToTerms ? 'border-slate-900 bg-white' : 'border-slate-100 bg-white'
-              }`}
-            >
-              <span className={`mt-0.5 w-4 h-4 rounded-md border flex items-center justify-center shrink-0 transition ${
-                agreedToTerms ? 'bg-primary border-primary' : 'border-slate-300'
-              }`}>
-                {agreedToTerms && <Check className="w-3 h-3 text-white" strokeWidth={3} />}
-              </span>
-              <span className="text-xs text-slate-500 font-normal leading-relaxed">
-                I agree to Gerak's{' '}
-                <button
-                  type="button"
-                  onPointerDown={e => { e.stopPropagation(); e.preventDefault(); setViewingPolicy('terms'); }}
-                  className="text-primary font-semibold hover:underline"
-                >
-                  Terms &amp; Conditions
-                </button>
-                .
-              </span>
+            <div className="flex flex-col gap-1">
+              <div
+                onPointerDown={e => { e.preventDefault(); setAgreedToTerms(v => !v); }}
+                className={`flex items-start gap-2.5 border rounded-xl py-2.5 px-3 transition-transform active:scale-[0.99] cursor-pointer ${
+                  agreedToTerms ? 'border-slate-900 bg-white' : 'border-slate-100 bg-white'
+                }`}
+              >
+                <span className={`mt-0.5 w-4 h-4 rounded-md border flex items-center justify-center shrink-0 transition ${
+                  agreedToTerms ? 'bg-primary border-primary' : 'border-slate-300'
+                }`}>
+                  {agreedToTerms && <Check className="w-3 h-3 text-white" strokeWidth={3} />}
+                </span>
+                <span className="text-xs text-slate-500 font-normal leading-relaxed">
+                  I agree to Gerak's{' '}
+                  <button
+                    type="button"
+                    onPointerDown={e => { e.stopPropagation(); e.preventDefault(); setViewingPolicy('terms'); }}
+                    className="text-primary font-semibold hover:underline"
+                  >
+                    Terms &amp; Conditions
+                  </button>
+                  .
+                </span>
+              </div>
+              {fieldError?.field === 'terms' && <FieldBubble message={fieldError.message} />}
             </div>
 
-            <div
-              onPointerDown={e => { e.preventDefault(); setAgreedToPrivacy(v => !v); }}
-              className={`flex items-start gap-2.5 border rounded-xl py-2.5 px-3 transition-transform active:scale-[0.99] cursor-pointer ${
-                agreedToPrivacy ? 'border-slate-900 bg-white' : 'border-slate-100 bg-white'
-              }`}
-            >
-              <span className={`mt-0.5 w-4 h-4 rounded-md border flex items-center justify-center shrink-0 transition ${
-                agreedToPrivacy ? 'bg-primary border-primary' : 'border-slate-300'
-              }`}>
-                {agreedToPrivacy && <Check className="w-3 h-3 text-white" strokeWidth={3} />}
-              </span>
-              <span className="text-xs text-slate-500 font-normal leading-relaxed">
-                I agree to Gerak's{' '}
-                <button
-                  type="button"
-                  onPointerDown={e => { e.stopPropagation(); e.preventDefault(); setViewingPolicy('privacy'); }}
-                  className="text-primary font-semibold hover:underline"
-                >
-                  Privacy Policy
-                </button>
-                .
-              </span>
+            <div className="flex flex-col gap-1">
+              <div
+                onPointerDown={e => { e.preventDefault(); setAgreedToPrivacy(v => !v); }}
+                className={`flex items-start gap-2.5 border rounded-xl py-2.5 px-3 transition-transform active:scale-[0.99] cursor-pointer ${
+                  agreedToPrivacy ? 'border-slate-900 bg-white' : 'border-slate-100 bg-white'
+                }`}
+              >
+                <span className={`mt-0.5 w-4 h-4 rounded-md border flex items-center justify-center shrink-0 transition ${
+                  agreedToPrivacy ? 'bg-primary border-primary' : 'border-slate-300'
+                }`}>
+                  {agreedToPrivacy && <Check className="w-3 h-3 text-white" strokeWidth={3} />}
+                </span>
+                <span className="text-xs text-slate-500 font-normal leading-relaxed">
+                  I agree to Gerak's{' '}
+                  <button
+                    type="button"
+                    onPointerDown={e => { e.stopPropagation(); e.preventDefault(); setViewingPolicy('privacy'); }}
+                    className="text-primary font-semibold hover:underline"
+                  >
+                    Privacy Policy
+                  </button>
+                  .
+                </span>
+              </div>
+              {fieldError?.field === 'privacy' && <FieldBubble message={fieldError.message} />}
             </div>
           </div>
 
