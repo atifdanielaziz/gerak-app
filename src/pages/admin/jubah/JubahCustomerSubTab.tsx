@@ -611,6 +611,33 @@ export function JubahCustomerSubTab({
               {/* Progress stepper */}
               <JubahStepper steps={steps} curStep={curStep} labels={JUBAH_STATUS_LABEL} />
 
+              {/* Initial payment proof — shown whenever one was submitted,
+                  independent of the Confirm action's own availability below,
+                  so it stays visible (for reference/audit) even after the
+                  booking has moved on or fully completed — not just while
+                  still awaiting confirmation. */}
+              {b.payment_path && (
+                <div className="rounded-xl p-3 border bg-white border-slate-100 flex items-center justify-between gap-2">
+                  <div>
+                    <span className="text-[8px] font-semibold uppercase tracking-wider block text-slate-400">
+                      {b.payment_mode === 'deposit' ? 'Deposit Payment' : 'Initial Payment'}
+                    </span>
+                    <span className="text-xs font-bold text-slate-600">Proof on file</span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      const { url: signed, error } = await getJubahDocSignedUrl(b.payment_path);
+                      if (signed) openInNewTab(signed);
+                      else showToast(error ?? "Couldn't open proof.");
+                    }}
+                    className="text-xs text-blue-500 font-semibold flex items-center gap-0.5 hover:underline shrink-0"
+                  >
+                    <ExternalLink className="w-2.5 h-2.5" /> proof
+                  </button>
+                </div>
+              )}
+
               {/* Delivery address (postage only) */}
               {b.payment_mode === 'postage' && b.delivery_address && (
                 <div className="bg-blue-50 border border-blue-100 rounded-xl p-3">
@@ -673,31 +700,12 @@ export function JubahCustomerSubTab({
               )}
 
               {/* status='ordered' — payment hasn't been confirmed yet. Confirm
-                  right here against the uploaded proof / bank statement, no
-                  need to open the details page just to click one button.
-                  Same "view proof" link as the balance section below, for
-                  the same reason — verify before confirming without having
-                  to scroll all the way down to the Documents card. Applies
-                  to both full-payment and deposit bookings alike (whatever
-                  was uploaded as payment_path at booking time). */}
+                  right here, no need to open the details page just to click
+                  one button — the proof to verify against is already shown
+                  in the persistent card above. Applies to both full-payment
+                  and deposit bookings alike. */}
               {notStarted && b.status !== 'cancelled' && (
                 <div className="flex flex-col gap-2">
-                  <div className="bg-slate-50 border border-slate-100 rounded-xl p-3 flex items-center justify-between gap-2">
-                    <p className="text-xs font-semibold text-slate-500">Awaiting Payment Confirmation</p>
-                    {b.payment_path && (
-                      <button
-                        type="button"
-                        onClick={async () => {
-                          const { url: signed, error } = await getJubahDocSignedUrl(b.payment_path);
-                          if (signed) openInNewTab(signed);
-                          else showToast(error ?? "Couldn't open proof.");
-                        }}
-                        className="text-xs text-blue-500 font-semibold flex items-center gap-0.5 hover:underline shrink-0"
-                      >
-                        <ExternalLink className="w-2.5 h-2.5" /> proof
-                      </button>
-                    )}
-                  </div>
                   <button
                     type="button"
                     onClick={() => confirmBooking(b)}
