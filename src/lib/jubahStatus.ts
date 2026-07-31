@@ -41,13 +41,15 @@ export const JUBAH_NEXT_LABEL: Record<string, string> = {
   delivered:  'Mark Delivered',
 };
 
-// Deposit-mode bookings reach 'booked' by paying the deposit, so that's
-// their first step. Pickup/postage bookings pay in full up front and land
-// on 'paid' first — they never pass through 'booked' at all.
+// All three payment modes now share the same shape: 'paid' (payment/deposit
+// received) -> 'booked' (confirmed) -> processing -> collected -> final step.
+// Deposit mode used to skip straight from 'ordered' to 'booked', collapsing
+// "deposit received" and "confirmed" into one step — changed so a deposit
+// booking's own progress reads the same way a full-payment one does, and so
+// the outstanding balance amount isn't tied to a "Confirmed" label that
+// implied more had happened than actually had.
 export const getJubahSteps = (paymentMode: string): string[] =>
-  paymentMode === 'deposit'
-    ? ['booked', 'processing', 'collected', 'delivered']
-    : paymentMode === 'postage'
+  paymentMode === 'postage'
     ? ['paid', 'booked', 'processing', 'collected', 'at_hub']
     : ['paid', 'booked', 'processing', 'collected', 'delivered'];
 

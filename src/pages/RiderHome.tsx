@@ -240,7 +240,7 @@ export const RiderHome: React.FC = () => {
         showToast(data?.error ?? 'Failed to confirm balance.');
       }
     } else if (canConfirmPayment) {
-      const newStatus = j.payment_mode === 'deposit' ? 'booked' : 'paid';
+      const newStatus = 'paid';
       const { data, error } = await supabase.rpc('update_jubah_booking_status', { p_booking_id: j.id, p_status: newStatus });
       if (error || !data?.success) {
         showToast('Failed to confirm payment.');
@@ -767,7 +767,9 @@ export const RiderHome: React.FC = () => {
                         update_jubah_booking_status and fail with an unexplained generic
                         error, since the rider is the one actually expected to drive this. */}
                     {!notStarted && !isDone && selectedJob.status !== 'cancelled' && (() => {
-                      const balanceGateActive = selectedJob.payment_mode === 'deposit' && !selectedJob.balance_paid;
+                      // Only gate the 'booked' -> 'processing' hop — the earlier
+                      // 'paid' -> 'booked' confirm doesn't require the balance yet.
+                      const balanceGateActive = selectedJob.payment_mode === 'deposit' && selectedJob.status === 'booked' && !selectedJob.balance_paid;
                       return (
                         <button
                           onClick={handleAdvanceStatus}

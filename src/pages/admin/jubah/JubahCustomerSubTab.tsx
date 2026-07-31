@@ -214,7 +214,7 @@ export function JubahCustomerSubTab({
         showToast('Failed to confirm balance.');
       }
     } else if (canConfirmPayment) {
-      const newStatus = b.payment_mode === 'deposit' ? 'booked' : 'paid';
+      const newStatus = 'paid';
       const { data, error } = await supabase.rpc('update_jubah_booking_status', {
         p_booking_id: b.id,
         p_status:     newStatus,
@@ -225,7 +225,7 @@ export function JubahCustomerSubTab({
         const updated = { ...b, status: newStatus };
         setBookings(prev => prev.map(r => r.id === b.id ? updated : r));
         setSelected(prev => prev?.id === b.id ? updated : prev);
-        showToast(b.payment_mode === 'deposit' ? 'Deposit confirmed → Booked ✓' : 'Payment confirmed → Paid ✓');
+        showToast(b.payment_mode === 'deposit' ? 'Deposit confirmed → Paid ✓' : 'Payment confirmed → Paid ✓');
         sendReceiptEmail(b.id, b.payment_mode === 'deposit' ? 'deposit' : 'full');
       }
     }
@@ -711,7 +711,9 @@ export function JubahCustomerSubTab({
               )}
               {/* Advance status button — deposit bookings stay gated until the balance is confirmed above */}
               {!notStarted && !isDone && b.status !== 'cancelled' && (() => {
-                const balanceGateActive = b.payment_mode === 'deposit' && !b.balance_paid;
+                // Only gate the 'booked' -> 'processing' hop — the earlier
+                // 'paid' -> 'booked' confirm doesn't require the balance yet.
+                const balanceGateActive = b.payment_mode === 'deposit' && b.status === 'booked' && !b.balance_paid;
                 return (
                   <button
                     onClick={handleAdminAdvanceStatus}
