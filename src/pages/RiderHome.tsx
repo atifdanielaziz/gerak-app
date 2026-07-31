@@ -707,16 +707,42 @@ export const RiderHome: React.FC = () => {
                     )}
 
                     {notStarted && selectedJob.status !== 'cancelled' && (
-                      <button
-                        type="button"
-                        onClick={() => confirmJob(selectedJob)}
-                        disabled={confirmingJob}
-                        className="w-full flex items-center justify-center gap-1.5 bg-emerald-500 hover:bg-emerald-600 active:scale-[0.98] disabled:bg-slate-200 disabled:cursor-not-allowed text-white font-semibold text-xs px-3 py-2.5 rounded-xl transition"
-                      >
-                        {confirmingJob
-                          ? <span className="w-3.5 h-3.5 rounded-full border-2 border-white/40 border-t-white animate-spin" />
-                          : 'Confirm Payment'}
-                      </button>
+                      <>
+                        {/* Surfaced right here (not just buried in "View Customer Details" →
+                            Documents) since checking the proof is exactly what a rider needs
+                            to do right before deciding to tap Confirm below. */}
+                        <div className="rounded-xl p-3 border bg-amber-50 border-amber-100 flex items-center justify-between gap-2">
+                          <div>
+                            <span className="text-[8px] font-semibold block text-amber-500">Initial Payment</span>
+                            <span className="text-xs font-bold text-amber-700">
+                              {selectedJob.payment_path ? 'Proof Submitted — Verify Before Confirming' : 'No proof on file'}
+                            </span>
+                          </div>
+                          {selectedJob.payment_path && (
+                            <button
+                              type="button"
+                              onClick={async () => {
+                                const { url: signed, error } = await getJubahDocSignedUrl(selectedJob.payment_path);
+                                if (signed) openInNewTab(signed);
+                                else showToast(error ?? "Couldn't open proof.");
+                              }}
+                              className="text-xs text-blue-500 font-bold flex items-center gap-0.5 hover:underline shrink-0"
+                            >
+                              <ExternalLink className="w-2.5 h-2.5" /> proof
+                            </button>
+                          )}
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => confirmJob(selectedJob)}
+                          disabled={confirmingJob}
+                          className="w-full flex items-center justify-center gap-1.5 bg-emerald-500 hover:bg-emerald-600 active:scale-[0.98] disabled:bg-slate-200 disabled:cursor-not-allowed text-white font-semibold text-xs px-3 py-2.5 rounded-xl transition"
+                        >
+                          {confirmingJob
+                            ? <span className="w-3.5 h-3.5 rounded-full border-2 border-white/40 border-t-white animate-spin" />
+                            : 'Confirm Payment'}
+                        </button>
+                      </>
                     )}
                     {/* Advance status button — deposit jobs stay gated until the balance is
                         confirmed, matching AdminHome's copy of this button. Without this,
