@@ -356,7 +356,9 @@ export const TrackJubah: React.FC = () => {
                     b.payment_mode === 'postage' ? 'bg-blue-50 border-blue-100 text-blue-700' :
                     'bg-slate-50 border-slate-100 text-slate-600'
                   }`}>
-                    {b.payment_mode === 'deposit' ? 'Deposit' : b.payment_mode === 'postage' ? 'Postage' : 'Pickup'}
+                    {b.payment_mode === 'deposit'
+                      ? (b.balance_paid ? 'Full Payment (DP)' : 'Deposit')
+                      : b.payment_mode === 'postage' ? 'Postage' : 'Pickup'}
                   </span>
                 </div>
 

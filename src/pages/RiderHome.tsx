@@ -589,7 +589,9 @@ export const RiderHome: React.FC = () => {
                                 job.payment_mode === 'postage' ? 'bg-blue-50 border-blue-100 text-blue-700' :
                                 'bg-slate-50 border-slate-200 text-slate-600'
                               }`}>
-                                {job.payment_mode === 'deposit' ? 'Deposit' : job.payment_mode === 'postage' ? 'Postage' : 'Pickup'}
+                                {job.payment_mode === 'deposit'
+                                  ? (job.balance_paid ? 'Full Payment (DP)' : 'Deposit')
+                                  : job.payment_mode === 'postage' ? 'Postage' : 'Pickup'}
                               </span>
                             </td>
                             <td className="py-2.5 pr-4 whitespace-nowrap">
@@ -653,7 +655,9 @@ export const RiderHome: React.FC = () => {
                         selectedJob.payment_mode === 'postage' ? 'bg-blue-50 border-blue-100 text-blue-700' :
                         'bg-slate-50 border-slate-200 text-slate-600'
                       }`}>
-                        {selectedJob.payment_mode === 'deposit' ? 'Deposit' : selectedJob.payment_mode === 'postage' ? 'Postage' : 'Pickup'}
+                        {selectedJob.payment_mode === 'deposit'
+                          ? (selectedJob.balance_paid ? 'Full Payment (DP)' : 'Deposit')
+                          : selectedJob.payment_mode === 'postage' ? 'Postage' : 'Pickup'}
                       </span>
                     </div>
 
