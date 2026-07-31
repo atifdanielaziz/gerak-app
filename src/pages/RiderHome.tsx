@@ -12,10 +12,11 @@ import {
 import {
   RefreshCw, ShoppingBasket, GraduationCap, TrendingUp,
   Upload, FileImage, ShieldCheck, ShieldAlert,
-  ChevronLeft, Download, ExternalLink, CheckCircle2, XCircle,
+  ChevronLeft, Download, ExternalLink, CheckCircle2, XCircle, Landmark,
 } from 'lucide-react';
 import { driverIsActive } from './Profile';
 import { JubahStepper } from '../components/JubahStepper';
+import { JubahQrButton } from '../components/JubahQrButton';
 
 type RiderTab    = 'daily' | 'jubah' | 'earnings';
 type JubahView   = 'list' | 'card' | 'details';
@@ -91,6 +92,59 @@ export const RiderHome: React.FC = () => {
 
   useLoadOnActive(activeTab === 'jubah', loadJubahJobs);
 
+  // ── Self-service bank details ─────────────────────────────────────────────
+  // The rider who ends up assigned to a booking is the one who actually
+  // watches for the customer's payment and confirms it, so customers need
+  // to pay into THIS rider's own account — set here, shown to customers via
+  // get_active_jubah_riders once complete (see migration_jubah_riders_bank_filter.sql,
+  // which also hides this rider from customer selection entirely until all
+  // three fields are set).
+  const [selfRiderId,     setSelfRiderId]     = useState('');
+  const [riderBankDraft,  setRiderBankDraft]  = useState({ name: '', account: '', holder: '' });
+  const [riderBankSaved,  setRiderBankSaved]  = useState(false);
+  const [savingRiderBank, setSavingRiderBank] = useState(false);
+
+  const loadRiderBankDetails = useCallback(async () => {
+    const { data: { user: authUser } } = await supabase.auth.getUser();
+    if (!authUser) return;
+    setSelfRiderId(authUser.id);
+    const { data } = await supabase
+      .from('profiles')
+      .select('jubah_bank_name, jubah_bank_account_number, jubah_bank_account_holder')
+      .eq('id', authUser.id)
+      .maybeSingle();
+    if (data) {
+      setRiderBankDraft({
+        name:    data.jubah_bank_name ?? '',
+        account: data.jubah_bank_account_number ?? '',
+        holder:  data.jubah_bank_account_holder ?? '',
+      });
+      // Freshly loaded from the DB — these ARE the current saved values, so
+      // they start locked/gray (even if blank), same Saved Field Standard
+      // used throughout the admin Jubah tabs — tap to unlock and edit.
+      setRiderBankSaved(true);
+    }
+  }, []);
+
+  useLoadOnActive(activeTab === 'jubah', loadRiderBankDetails);
+
+  const handleSaveRiderBank = async () => {
+    if (!riderBankDraft.name.trim() || !riderBankDraft.account.trim() || !riderBankDraft.holder.trim()) {
+      showToast('All three bank detail fields are required.');
+      return;
+    }
+    setSavingRiderBank(true);
+    const { data, error } = await supabase.rpc('set_rider_bank_details', {
+      p_bank_name:       riderBankDraft.name.trim(),
+      p_account_number:  riderBankDraft.account.trim(),
+      p_account_holder:  riderBankDraft.holder.trim(),
+    });
+    setSavingRiderBank(false);
+    if (error || !data?.success) { showToast(data?.error ?? 'Failed to save bank details.'); return; }
+    showToast('Bank details updated — you\'re now bookable by customers.');
+    setRiderBankSaved(true);
+  };
+
   // ── Earnings ───────────────────────────────────────────────────────────────
   type JubahEarningRow = {
     reference: string; remark: string; payment_mode: string; is_postage: boolean;
@@ -142,6 +196,48 @@ export const RiderHome: React.FC = () => {
   };
 
   const goBack = popJubahView;
+
+  // ── Confirm payment / balance ─────────────────────────────────────────────
+  // The assigned rider can confirm both the initial payment
+  // (update_jubah_booking_status already permitted rider_id = auth.uid()) and
+  // now the deposit balance too (see migration_jubah_balance_paid_rider_
+  // parity.sql) — same two-state gate as the admin equivalent in
+  // JubahCustomerSubTab.tsx's getConfirmState/confirmBooking.
+  const [confirmingJob, setConfirmingJob] = useState(false);
+
+  const getJobConfirmState = (j: JubahJobRow) => ({
+    canConfirmPayment: j.status === 'ordered',
+    canConfirmBalance: j.payment_mode === 'deposit' && j.status !== 'ordered' && j.status !== 'cancelled' && !j.balance_paid && !!j.balance_proof_url,
+  });
+
+  const confirmJob = async (j: JubahJobRow) => {
+    setConfirmingJob(true);
+    const { canConfirmBalance, canConfirmPayment } = getJobConfirmState(j);
+
+    if (canConfirmBalance) {
+      const { data } = await supabase.rpc('mark_jubah_balance_paid', { p_booking_id: j.id });
+      if (data?.success) {
+        const updated = { ...j, balance_paid: true };
+        setSelectedJob(prev => (prev?.id === j.id ? updated : prev));
+        setJubahJobs(prev => prev.map(r => (r.id === j.id ? updated : r)));
+        showToast('Balance confirmed ✓');
+      } else {
+        showToast(data?.error ?? 'Failed to confirm balance.');
+      }
+    } else if (canConfirmPayment) {
+      const newStatus = j.payment_mode === 'deposit' ? 'booked' : 'paid';
+      const { data, error } = await supabase.rpc('update_jubah_booking_status', { p_booking_id: j.id, p_status: newStatus });
+      if (error || !data?.success) {
+        showToast('Failed to confirm payment.');
+      } else {
+        const updated = { ...j, status: newStatus, initial_paid: true };
+        setSelectedJob(prev => (prev?.id === j.id ? updated : prev));
+        setJubahJobs(prev => prev.map(r => (r.id === j.id ? updated : r)));
+        showToast('Payment confirmed ✓');
+      }
+    }
+    setConfirmingJob(false);
+  };
 
   // ── Advance status ────────────────────────────────────────────────────────
   const handleAdvanceStatus = async () => {
@@ -377,6 +473,48 @@ export const RiderHome: React.FC = () => {
         {activeTab === 'jubah' && (
           <div className="px-4 flex flex-col gap-4 flex-1">
 
+            {/* PAGE 1 — My Bank Details (self-service) */}
+            {jubahView === 'list' && (
+              <div className="bg-white border border-slate-100 rounded-3xl p-5 flex flex-col gap-3">
+                <div className="flex items-center justify-between gap-2">
+                  <h3 className="text-sm font-semibold text-slate-700 flex items-center gap-1.5">
+                    <Landmark className="w-4 h-4" /> My Bank Details
+                  </h3>
+                  {selfRiderId && <JubahQrButton riderId={selfRiderId} canManage showToast={showToast} />}
+                </div>
+                <p className="text-xs text-slate-400 font-semibold -mt-1.5">
+                  Customers who choose you pay into this account. You won't appear as a selectable rider until all three fields are set.
+                </p>
+                <div className="flex flex-col gap-2.5">
+                  {([
+                    { key: 'name' as const,    label: 'Bank Name' },
+                    { key: 'account' as const, label: 'Account Number' },
+                    { key: 'holder' as const,  label: 'Account Holder' },
+                  ]).map(({ key, label }) => (
+                    <div key={key} className="flex flex-col gap-1.5">
+                      <label className="text-xs font-normal text-slate-400">{label}</label>
+                      <input
+                        type="text"
+                        value={riderBankDraft[key]}
+                        onChange={e => setRiderBankDraft(prev => ({ ...prev, [key]: e.target.value }))}
+                        readOnly={riderBankSaved}
+                        onClick={() => { if (riderBankSaved) setRiderBankSaved(false); }}
+                        style={{ fontSize: '13px' }}
+                        className={`bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 font-semibold focus:outline-none focus:border-primary transition ${riderBankSaved ? 'text-slate-400 cursor-pointer' : 'text-slate-700'}`}
+                      />
+                    </div>
+                  ))}
+                  <button
+                    onClick={handleSaveRiderBank}
+                    disabled={savingRiderBank || riderBankSaved}
+                    className="self-end bg-primary text-white font-semibold text-xs px-4 py-2.5 rounded-xl transition active:scale-95 disabled:opacity-50"
+                  >
+                    {savingRiderBank ? '…' : 'Save'}
+                  </button>
+                </div>
+              </div>
+            )}
+
             {/* PAGE 1 — Assignment List */}
             {jubahView === 'list' && (
               <div className="bg-white border border-slate-100 rounded-3xl p-5 flex flex-col gap-4">
@@ -553,11 +691,32 @@ export const RiderHome: React.FC = () => {
                         )}
                       </div>
                     )}
+                    {/* Confirm Balance — only once the customer's balance proof is in;
+                        same gate as admin's equivalent button. */}
+                    {getJobConfirmState(selectedJob).canConfirmBalance && (
+                      <button
+                        type="button"
+                        onClick={() => confirmJob(selectedJob)}
+                        disabled={confirmingJob}
+                        className="w-full flex items-center justify-center gap-1.5 bg-emerald-500 hover:bg-emerald-600 active:scale-[0.98] disabled:bg-slate-200 disabled:cursor-not-allowed text-white font-semibold text-xs px-3 py-2.5 rounded-xl transition"
+                      >
+                        {confirmingJob
+                          ? <span className="w-3.5 h-3.5 rounded-full border-2 border-white/40 border-t-white animate-spin" />
+                          : 'Confirm Balance'}
+                      </button>
+                    )}
 
                     {notStarted && selectedJob.status !== 'cancelled' && (
-                      <div className="bg-slate-50 border border-slate-100 rounded-2xl px-4 py-3 text-center">
-                        <p className="text-xs font-semibold text-slate-500">Awaiting Payment Confirmation</p>
-                      </div>
+                      <button
+                        type="button"
+                        onClick={() => confirmJob(selectedJob)}
+                        disabled={confirmingJob}
+                        className="w-full flex items-center justify-center gap-1.5 bg-emerald-500 hover:bg-emerald-600 active:scale-[0.98] disabled:bg-slate-200 disabled:cursor-not-allowed text-white font-semibold text-xs px-3 py-2.5 rounded-xl transition"
+                      >
+                        {confirmingJob
+                          ? <span className="w-3.5 h-3.5 rounded-full border-2 border-white/40 border-t-white animate-spin" />
+                          : 'Confirm Payment'}
+                      </button>
                     )}
                     {/* Advance status button — deposit jobs stay gated until the balance is
                         confirmed, matching AdminHome's copy of this button. Without this,

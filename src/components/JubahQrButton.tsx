@@ -3,38 +3,42 @@ import { QrCode, Upload, Trash2, X } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 
 const QR_BUCKET = 'jubah-qr';
-const QR_PATH = 'qr.jpg';
 
 interface JubahQrButtonProps {
-  // Superadmin-only, matching the bank details fields it sits next to —
-  // shows Upload/Replace/Delete controls in the sheet. Real enforcement is
-  // server-side (see migration_jubah_qr_bucket.sql); this only controls
-  // whether THIS instance renders the controls, not access itself.
+  // Which rider's QR this instance shows/manages — one object per rider,
+  // at qr-{riderId}.jpg (see migration_jubah_qr_per_rider.sql). No fallback:
+  // every usage site now always knows the relevant rider by the time this
+  // renders (selected in the booking form, or the assigned rider_id on an
+  // existing booking).
+  riderId: string;
+  // Shows Upload/Replace/Delete controls in the sheet. Real enforcement is
+  // server-side (storage RLS: superadmin, or the rider writing their own
+  // path) — this only controls whether THIS instance renders the controls.
   canManage?: boolean;
   showToast?: (msg: string) => void;
 }
 
-// Payment QR code shown wherever Jubah's bank transfer details appear —
-// one global image (not per-university, unlike JubahBannerSubTab), so
-// customers can scan instead of typing account numbers. Same bucket/
-// upload mechanics as JubahBannerSubTab (upsert:true so a new upload
-// overwrites the old file in place — nothing orphaned to separately
-// delete — plus a cache-busting query param), just a single fixed path.
-export function JubahQrButton({ canManage = false, showToast }: JubahQrButtonProps) {
+// Payment QR code shown wherever a rider's bank transfer details appear —
+// one image per rider so customers can scan instead of typing account
+// numbers. upsert:true so a new upload overwrites the rider's old file in
+// place — nothing orphaned to separately delete — plus a cache-busting
+// query param.
+export function JubahQrButton({ riderId, canManage = false, showToast }: JubahQrButtonProps) {
   const [open, setOpen] = useState(false);
   const [imgError, setImgError] = useState(false);
   const [refreshKey, setRefreshKey] = useState(() => Date.now());
   const [uploading, setUploading] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
-  const { data } = supabase.storage.from(QR_BUCKET).getPublicUrl(QR_PATH);
+  const qrPath = `qr-${riderId}.jpg`;
+  const { data } = supabase.storage.from(QR_BUCKET).getPublicUrl(qrPath);
   const url = `${data.publicUrl}?t=${refreshKey}`;
 
   const handleUpload = async (file: File) => {
     setUploading(true);
     const { error } = await supabase.storage
       .from(QR_BUCKET)
-      .upload(QR_PATH, file, { upsert: true, contentType: file.type });
+      .upload(qrPath, file, { upsert: true, contentType: file.type });
     setUploading(false);
     if (error) { showToast?.(`QR upload failed: ${error.message}`); return; }
     showToast?.('Payment QR updated ✓');
@@ -43,7 +47,7 @@ export function JubahQrButton({ canManage = false, showToast }: JubahQrButtonPro
   };
 
   const handleDelete = async () => {
-    const { error } = await supabase.storage.from(QR_BUCKET).remove([QR_PATH]);
+    const { error } = await supabase.storage.from(QR_BUCKET).remove([qrPath]);
     if (error) { showToast?.('Delete failed: ' + error.message); return; }
     setImgError(true);
     setRefreshKey(Date.now());

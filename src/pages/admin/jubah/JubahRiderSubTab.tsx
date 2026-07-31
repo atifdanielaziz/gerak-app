@@ -10,6 +10,7 @@ import { useLoadOnActive } from '../../../hooks/useLoadOnActive';
 type JubahRider = {
   id: string; name: string; gerak_id: string; campus: string; status: string; can_robe: boolean;
   ic_number: string | null; phone: string | null; jubah_method: string | null; jubah_drop_point: string | null;
+  jubah_bank_name: string | null; jubah_bank_account_number: string | null; jubah_bank_account_holder: string | null;
 };
 type JubahAssignment = {
   id: string; rider_id: string; name: string; drop_point: string | null; method: string; campus: string;
@@ -333,7 +334,7 @@ export const JubahRiderSubTab = forwardRef<JubahRiderSubTabHandle, JubahRiderSub
   const loadJubahRiders = useCallback(async () => {
     setJubahRidersLoading(true);
     let ridersQ = supabase.from('profiles')
-      .select('id, name, gerak_id, campus, status, can_robe, ic_number, phone, jubah_method, jubah_drop_point')
+      .select('id, name, gerak_id, campus, status, can_robe, ic_number, phone, jubah_method, jubah_drop_point, jubah_bank_name, jubah_bank_account_number, jubah_bank_account_holder')
       .eq('role', 'rider')
       .eq('can_robe', true)
       .order('name');
@@ -419,11 +420,21 @@ export const JubahRiderSubTab = forwardRef<JubahRiderSubTabHandle, JubahRiderSub
                   <p className="text-xs font-semibold text-slate-700 truncate">{r.name}</p>
                   <p className="text-xs text-slate-400 font-semibold mt-0.5">{r.gerak_id} · UMPSA {r.campus}</p>
                 </div>
-                <span className={`text-xs font-semibold px-2 py-1 rounded-full border shrink-0 ${
-                  r.status === 'active' ? 'bg-emerald-50 border-emerald-100 text-emerald-700' : 'bg-slate-50 border-slate-200 text-slate-400'
-                }`}>
-                  {r.status === 'active' ? 'Active' : 'Inactive'}
-                </span>
+                <div className="flex flex-col items-end gap-1 shrink-0">
+                  <span className={`text-xs font-semibold px-2 py-1 rounded-full border ${
+                    r.status === 'active' ? 'bg-emerald-50 border-emerald-100 text-emerald-700' : 'bg-slate-50 border-slate-200 text-slate-400'
+                  }`}>
+                    {r.status === 'active' ? 'Active' : 'Inactive'}
+                  </span>
+                  {/* Self-service only (see migration_jubah_rider_bank_details.sql) —
+                      admin can see this is why a rider with an active assignment
+                      still isn't showing up for customers, but can't edit it here. */}
+                  {!(r.jubah_bank_name && r.jubah_bank_account_number && r.jubah_bank_account_holder) && (
+                    <span className="text-xs font-semibold px-2 py-1 rounded-full border bg-amber-50 border-amber-100 text-amber-600">
+                      Bank details missing
+                    </span>
+                  )}
+                </div>
               </button>
             ))}
           </div>

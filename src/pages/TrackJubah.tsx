@@ -22,9 +22,13 @@ interface JubahBookingResult {
   rider_phone: string | null;
   status: string;
   payment_mode: string;
+  rider_id: string | null;
   balance_due: number;
   balance_paid: boolean;
   balance_proof_url: string | null;
+  rider_bank_name: string | null;
+  rider_bank_account_number: string | null;
+  rider_bank_account_holder: string | null;
   created_at: string;
 }
 
@@ -89,23 +93,6 @@ export const TrackJubah: React.FC = () => {
   const [searched, setSearched]   = useState(false);
   const [results, setResults]     = useState<JubahBookingResult[]>([]);
   const [error, setError]         = useState('');
-
-  // Bank transfer instructions — same app_settings keys Jubah.tsx reads.
-  const [bankDetails, setBankDetails] = useState<{ name: string; account: string; holder: string } | null>(null);
-  useEffect(() => {
-    supabase.from('app_settings')
-      .select('key, value')
-      .in('key', ['jubah_bank_name', 'jubah_bank_account_number', 'jubah_bank_account_holder'])
-      .then(({ data }) => {
-        if (!data) return;
-        const get = (k: string) => data.find(r => r.key === k)?.value ?? '';
-        setBankDetails({
-          name:   get('jubah_bank_name'),
-          account: get('jubah_bank_account_number'),
-          holder: get('jubah_bank_account_holder'),
-        });
-      });
-  }, []);
 
   // Cancel state — id of the booking whose inline confirm is expanded, plus
   // loading/error state, same per-booking pattern as payment.
@@ -446,7 +433,12 @@ export const TrackJubah: React.FC = () => {
                     balanceDue={b.balance_due}
                     balancePaid={b.balance_paid}
                     balanceProofUrl={b.balance_proof_url}
-                    bankDetails={bankDetails}
+                    bankDetails={b.rider_bank_name ? {
+                      name: b.rider_bank_name,
+                      account: b.rider_bank_account_number ?? '',
+                      holder: b.rider_bank_account_holder ?? '',
+                    } : null}
+                    riderId={b.rider_id ?? undefined}
                     onSubmitted={proof => setResults(prev => prev.map(r => r.id === b.id ? { ...r, balance_proof_url: proof } : r))}
                   />
                 )}
