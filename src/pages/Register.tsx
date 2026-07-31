@@ -115,6 +115,17 @@ export const Register: React.FC = () => {
   // into every individual field's onChange.
   useEffect(() => { setFieldError(null); }, [university, campus, name, phone, email, password, confirmPassword, agreedToTerms, agreedToPrivacy]);
 
+  // Without this, a bubble for a field above the current scroll position
+  // (e.g. University, right at the top) renders completely off-screen —
+  // from the user's seat, tapping Register while scrolled down to
+  // Password/the checkboxes looks like nothing happened at all, when
+  // really a bubble appeared somewhere they can't see.
+  useEffect(() => {
+    if (!fieldError) return;
+    document.querySelector(`[data-field="${fieldError.field}"]`)
+      ?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }, [fieldError]);
+
   const handleSubmit = async (e: React.SyntheticEvent) => {
     e.preventDefault();
     if (!university) { setFieldError({ field: 'university', message: 'Please select your university.' }); return; }
@@ -193,7 +204,7 @@ export const Register: React.FC = () => {
         <form id="register-form" onSubmit={handleSubmit} noValidate className="flex flex-col gap-4 w-full">
 
           {/* University */}
-          <div className="flex flex-col gap-1">
+          <div className="flex flex-col gap-1" data-field="university">
             <label className="text-xs font-semibold text-slate-400 pl-1">University</label>
             <NativeSelect
               value={university}
@@ -217,7 +228,7 @@ export const Register: React.FC = () => {
                 </div>
               </div>
             ) : (
-              <div className="flex flex-col gap-1">
+              <div className="flex flex-col gap-1" data-field="campus">
                 <label className="text-xs font-semibold text-slate-400 pl-1">Campus</label>
                 <NativeSelect
                   value={campus}
@@ -249,7 +260,7 @@ export const Register: React.FC = () => {
           )}
 
           {/* Full Name */}
-          <div className="flex flex-col gap-1">
+          <div className="flex flex-col gap-1" data-field="name">
             <label className="text-xs font-semibold text-slate-400 pl-1">Full Name</label>
             <div className="relative">
               <User className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
@@ -265,7 +276,7 @@ export const Register: React.FC = () => {
           </div>
 
           {/* Phone */}
-          <div className="flex flex-col gap-1">
+          <div className="flex flex-col gap-1" data-field="phone">
             <label className="text-xs font-semibold text-slate-400 pl-1">Phone Number</label>
             <div className="relative">
               <Phone className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
@@ -281,7 +292,7 @@ export const Register: React.FC = () => {
           </div>
 
           {/* Email */}
-          <div className="flex flex-col gap-1">
+          <div className="flex flex-col gap-1" data-field="email">
             <label className="text-xs font-semibold text-slate-400 pl-1">Email Address</label>
             <div className="relative">
               <Mail className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
@@ -335,7 +346,7 @@ export const Register: React.FC = () => {
           </div>
 
           {/* Password */}
-          <div className="flex flex-col gap-1">
+          <div className="flex flex-col gap-1" data-field="password">
             <label className="text-xs font-semibold text-slate-400 pl-1">Password</label>
             <div className="relative">
               <Lock className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
@@ -355,7 +366,7 @@ export const Register: React.FC = () => {
           </div>
 
           {/* Confirm Password */}
-          <div className="flex flex-col gap-1">
+          <div className="flex flex-col gap-1" data-field="confirmPassword">
             <label className="text-xs font-semibold text-slate-400 pl-1">Confirm Password</label>
             <div className="relative">
               <Lock className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
@@ -385,7 +396,7 @@ export const Register: React.FC = () => {
               tappable control (a <button> can't nest other interactive
               elements). */}
           <div className="flex flex-col gap-2">
-            <div className="flex flex-col gap-1">
+            <div className="flex flex-col gap-1" data-field="terms">
               <div
                 onPointerDown={e => { e.preventDefault(); setAgreedToTerms(v => !v); }}
                 className={`flex items-start gap-2.5 border rounded-xl py-2.5 px-3 transition-transform active:scale-[0.99] cursor-pointer ${
@@ -412,7 +423,7 @@ export const Register: React.FC = () => {
               {fieldError?.field === 'terms' && <FieldBubble message={fieldError.message} />}
             </div>
 
-            <div className="flex flex-col gap-1">
+            <div className="flex flex-col gap-1" data-field="privacy">
               <div
                 onPointerDown={e => { e.preventDefault(); setAgreedToPrivacy(v => !v); }}
                 className={`flex items-start gap-2.5 border rounded-xl py-2.5 px-3 transition-transform active:scale-[0.99] cursor-pointer ${
