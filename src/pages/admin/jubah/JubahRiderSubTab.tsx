@@ -399,9 +399,19 @@ export const JubahRiderSubTab = forwardRef<JubahRiderSubTabHandle, JubahRiderSub
             ) : jubahRiders.map(r => (
               <button key={r.id} type="button"
                 onClick={() => {
+                  // Seeded from the rider's real jubah_rider_assignments row
+                  // (assignments is already sorted by created_at, so the
+                  // first match is "Method 1") — not from
+                  // profiles.jubah_method/jubah_drop_point, which turned out
+                  // to be a disconnected legacy pair the actual booking flow
+                  // never reads, and could silently drift out of sync with
+                  // what's really assigned (confirmed live: exactly this
+                  // happened for a rider whose profile said one thing while
+                  // no matching assignment row existed at all).
+                  const primary = jubahAssignments.find(a => a.rider_id === r.id);
                   setJubahSheetRider(r);
-                  setJubahMethodDraft((r.jubah_method as 'pickup' | 'postage') || '');
-                  setJubahDropPointDraft(r.jubah_drop_point || '');
+                  setJubahMethodDraft((primary?.method as 'pickup' | 'postage') || '');
+                  setJubahDropPointDraft(primary?.drop_point || '');
                 }}
                 className="flex items-center justify-between gap-3 px-3 py-2.5 rounded-2xl border border-slate-100 bg-white active:opacity-70 transition text-left"
               >

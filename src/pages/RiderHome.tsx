@@ -70,7 +70,9 @@ export const RiderHome: React.FC = () => {
   const showToast = (msg: string) => { setToast(msg); setTimeout(() => setToast(''), 3000); };
 
   const isAdminRole = user.role === 'admin' || user.role === 'superadmin';
-  const isActive    = driverIsActive({ ...user, role: 'driver' }, receiptGateActive) || isAdminRole;
+  // driverIsActive now handles 'rider' natively — no longer needs a faked
+  // role: 'driver' override to evaluate correctly.
+  const isActive    = driverIsActive(user, receiptGateActive) || isAdminRole;
 
   // ── Load jubah assignments ────────────────────────────────────────────────
   const loadJubahJobs = useCallback(async () => {

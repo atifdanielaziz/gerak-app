@@ -10,12 +10,19 @@ import {
   Wallet, MessageCircle, MapPin, User,
 } from 'lucide-react';
 
-/* Derive active status from verified + non-expired receipt, with gate bypass */
+/* Derive active status from verified + non-expired receipt, with gate bypass.
+   Covers both driver and rider — both are subject to the same monthly
+   receipt gate (see ReceiptsTab.tsx's driver/rider toggle). Was hardcoded
+   to 'driver' only, so a rider's own Profile page permanently showed
+   "Account inactive" no matter their real receipt status; RiderHome.tsx
+   had already worked around this by passing a faked `role: 'driver'` into
+   this same function — that workaround is removed below now that the
+   function itself handles rider natively. */
 export const driverIsActive = (
   user: { role: string; feeReceiptVerified: boolean; feeReceiptExpiry: string; receiptGateExempt?: boolean },
   gateActive: boolean = true,
 ) =>
-  user.role === 'driver' &&
+  (user.role === 'driver' || user.role === 'rider') &&
   (!gateActive || user.receiptGateExempt || (
     user.feeReceiptVerified &&
     !!user.feeReceiptExpiry &&
