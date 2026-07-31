@@ -210,6 +210,20 @@ export const RiderHome: React.FC = () => {
     canConfirmBalance: j.payment_mode === 'deposit' && j.status !== 'ordered' && j.status !== 'cancelled' && !j.balance_paid && !!j.balance_proof_url,
   });
 
+  // Best-effort, same as the admin equivalent in JubahCustomerSubTab.tsx —
+  // a failed email should never undo or block a payment confirmation
+  // that's already committed to the database by the time this runs.
+  const sendReceiptEmail = async (bookingId: string, stage: 'full' | 'deposit' | 'balance') => {
+    try {
+      const { data, error } = await supabase.functions.invoke('send-jubah-receipt-email', {
+        body: { bookingId, stage },
+      });
+      if (error || !data?.success) console.error('send-jubah-receipt-email failed:', error ?? data?.reason);
+    } catch (err) {
+      console.error('send-jubah-receipt-email failed:', err);
+    }
+  };
+
   const confirmJob = async (j: JubahJobRow) => {
     setConfirmingJob(true);
     const { canConfirmBalance, canConfirmPayment } = getJobConfirmState(j);
@@ -221,6 +235,7 @@ export const RiderHome: React.FC = () => {
         setSelectedJob(prev => (prev?.id === j.id ? updated : prev));
         setJubahJobs(prev => prev.map(r => (r.id === j.id ? updated : r)));
         showToast('Balance confirmed ✓');
+        sendReceiptEmail(j.id, 'balance');
       } else {
         showToast(data?.error ?? 'Failed to confirm balance.');
       }
@@ -234,6 +249,7 @@ export const RiderHome: React.FC = () => {
         setSelectedJob(prev => (prev?.id === j.id ? updated : prev));
         setJubahJobs(prev => prev.map(r => (r.id === j.id ? updated : r)));
         showToast('Payment confirmed ✓');
+        sendReceiptEmail(j.id, j.payment_mode === 'deposit' ? 'deposit' : 'full');
       }
     }
     setConfirmingJob(false);

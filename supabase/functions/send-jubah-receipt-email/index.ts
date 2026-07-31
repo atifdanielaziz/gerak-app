@@ -51,13 +51,6 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
     )
 
-    // Only admin/superadmin can trigger this — it's called right after
-    // their own Confirm Payment/Confirm Balance action, never by a customer.
-    const { data: profile } = await admin.from('profiles').select('role').eq('id', user.id).single()
-    if (!profile || !['admin', 'superadmin'].includes(profile.role)) {
-      return json({ success: false, reason: 'Forbidden' }, 403)
-    }
-
     const { bookingId, stage } = await req.json()
     if (!bookingId || !['full', 'deposit', 'balance'].includes(stage)) {
       return json({ success: false, reason: 'Missing or invalid parameters.' }, 400)
@@ -71,6 +64,19 @@ serve(async (req) => {
       .maybeSingle<Booking>()
 
     if (fetchErr || !booking) return json({ success: false, reason: 'Booking not found.' }, 404)
+
+    // Triggered right after admin/superadmin's own Confirm Payment/Confirm
+    // Balance action, or the assigned rider's equivalent buttons in Rider
+    // Hub (riders can confirm their own bookings — see
+    // migration_jubah_status_transition_guard.sql / migration_jubah_
+    // balance_paid_rider_parity.sql for the matching RPC-level permission).
+    // Never by a customer, and never by a rider for someone else's booking.
+    const { data: profile } = await admin.from('profiles').select('role').eq('id', user.id).single()
+    const isAdmin = !!profile && ['admin', 'superadmin'].includes(profile.role)
+    const isAssignedRider = booking.rider_id === user.id
+    if (!isAdmin && !isAssignedRider) {
+      return json({ success: false, reason: 'Forbidden' }, 403)
+    }
 
     await sendReceiptEmail(admin, booking, stage as 'full' | 'deposit' | 'balance')
     return json({ success: true })
