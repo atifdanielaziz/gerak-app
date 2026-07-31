@@ -585,8 +585,9 @@ export const RiderHome: React.FC = () => {
                             <td className="py-2.5 pr-4 text-slate-500 font-normal whitespace-nowrap">{job.remark}</td>
                             <td className="py-2.5 pr-4 whitespace-nowrap">
                               <span className={`font-semibold px-2 py-0.5 rounded-full border text-xs ${
-                                job.payment_mode === 'deposit' ? 'bg-amber-50 border-amber-100 text-amber-700' :
-                                job.payment_mode === 'postage' ? 'bg-blue-50 border-blue-100 text-blue-700' :
+                                job.payment_mode === 'deposit'
+                                  ? (job.balance_paid ? 'bg-blue-50 border-blue-100 text-blue-700' : 'bg-amber-50 border-amber-100 text-amber-700')
+                                  : job.payment_mode === 'postage' ? 'bg-blue-50 border-blue-100 text-blue-700' :
                                 'bg-slate-50 border-slate-200 text-slate-600'
                               }`}>
                                 {job.payment_mode === 'deposit'
@@ -651,8 +652,9 @@ export const RiderHome: React.FC = () => {
                         </a>
                       </div>
                       <span className={`text-xs font-semibold px-3 py-2 rounded-xl border shrink-0 ${
-                        selectedJob.payment_mode === 'deposit' ? 'bg-amber-50 border-amber-100 text-amber-700' :
-                        selectedJob.payment_mode === 'postage' ? 'bg-blue-50 border-blue-100 text-blue-700' :
+                        selectedJob.payment_mode === 'deposit'
+                          ? (selectedJob.balance_paid ? 'bg-blue-50 border-blue-100 text-blue-700' : 'bg-amber-50 border-amber-100 text-amber-700')
+                          : selectedJob.payment_mode === 'postage' ? 'bg-blue-50 border-blue-100 text-blue-700' :
                         'bg-slate-50 border-slate-200 text-slate-600'
                       }`}>
                         {selectedJob.payment_mode === 'deposit'

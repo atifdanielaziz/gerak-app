@@ -352,8 +352,9 @@ export const TrackJubah: React.FC = () => {
                     )}
                   </div>
                   <span className={`text-xs font-semibold px-3 py-2 rounded-xl border shrink-0 ${
-                    b.payment_mode === 'deposit' ? 'bg-amber-50 border-amber-100 text-amber-700' :
-                    b.payment_mode === 'postage' ? 'bg-blue-50 border-blue-100 text-blue-700' :
+                    b.payment_mode === 'deposit'
+                      ? (b.balance_paid ? 'bg-blue-50 border-blue-100 text-blue-700' : 'bg-amber-50 border-amber-100 text-amber-700')
+                      : b.payment_mode === 'postage' ? 'bg-blue-50 border-blue-100 text-blue-700' :
                     'bg-slate-50 border-slate-100 text-slate-600'
                   }`}>
                     {b.payment_mode === 'deposit'
