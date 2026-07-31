@@ -526,7 +526,16 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         isLoggedIn:             true,
       });
       setPageHistory([]);
-      if (deepLinkPage) {
+      // 'register' is deliberately excluded here — unlike /jubah/track,
+      // /privacy, /terms (genuinely "take me back to this page after
+      // auth"), deepLinkPage never gets cleared once set, so reaching
+      // this same loadProfile() call right after a SUCCESSFUL
+      // registration — which is exactly what always happens next — kept
+      // bouncing the user straight back to the form they just completed,
+      // instead of their real role-based home. Confirmed live: the
+      // account was created correctly every time: this redirect, not
+      // registration itself, was the actual bug.
+      if (deepLinkPage && deepLinkPage !== 'register') {
         _setCurrentPage(deepLinkPage);
       } else if (role === 'driver') {
         _setCurrentPage('driver-home');
