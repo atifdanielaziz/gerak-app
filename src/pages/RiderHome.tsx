@@ -12,11 +12,14 @@ import {
 import {
   RefreshCw, ShoppingBasket, GraduationCap, TrendingUp,
   Upload, FileImage, ShieldCheck, ShieldAlert,
-  ChevronLeft, Download, ExternalLink, CheckCircle2, XCircle, Landmark,
+  ChevronLeft, Download, ExternalLink, CheckCircle2, XCircle, Landmark, Eye, X, Clock,
 } from 'lucide-react';
 import { driverIsActive } from './Profile';
 import { JubahStepper } from '../components/JubahStepper';
 import { JubahQrButton } from '../components/JubahQrButton';
+import { ReceiptCard } from '../components/Receipt';
+import { buildJubahReceiptRows, type ReceiptDoc } from '../lib/receiptRows';
+import { generateReceiptPdf } from '../lib/receiptPdf';
 
 type RiderTab    = 'daily' | 'jubah' | 'earnings';
 type JubahView   = 'list' | 'card' | 'details';
@@ -27,6 +30,7 @@ type JubahJobRow = {
   full_name: string;
   ic_number: string;
   hp_number: string;
+  email: string | null;
   matric_id: string;
   university: string;
   campus: string;
@@ -36,7 +40,9 @@ type JubahJobRow = {
   cost: number;
   balance_due: number;
   balance_paid: boolean;
+  balance_paid_at: string | null;
   initial_paid: boolean;
+  initial_paid_at: string | null;
   balance_proof_url: string | null;
   delivery_address: string | null;
   docs_path: string | null;
@@ -67,6 +73,7 @@ export const RiderHome: React.FC = () => {
   const [jubahJobs,      setJubahJobs]     = useState<JubahJobRow[]>([]);
   const [jubahLoading,   setJubahLoading]  = useState(false);
   const [updatingStatus, setUpdatingStatus] = useState(false);
+  const [receiptModal,   setReceiptModal]  = useState<ReceiptDoc | null>(null);
 
   const showToast = (msg: string) => { setToast(msg); setTimeout(() => setToast(''), 3000); };
 
@@ -82,7 +89,7 @@ export const RiderHome: React.FC = () => {
     if (!authUser) { setJubahLoading(false); return; }
     const { data, error } = await supabase
       .from('jubah_bookings')
-      .select('id, reference, full_name, ic_number, hp_number, matric_id, university, campus, faculty, remark, payment_mode, cost, balance_due, balance_paid, initial_paid, balance_proof_url, delivery_address, docs_path, payment_path, oscar_path, skpg_path, konvo_path, ic_path, status, rider_name, created_at')
+      .select('id, reference, full_name, ic_number, hp_number, email, matric_id, university, campus, faculty, remark, payment_mode, cost, balance_due, balance_paid, balance_paid_at, initial_paid, initial_paid_at, balance_proof_url, delivery_address, docs_path, payment_path, oscar_path, skpg_path, konvo_path, ic_path, status, rider_name, created_at')
       .eq('rider_id', authUser.id)
       .order('created_at', { ascending: false });
     if (error) console.error('[GERAK] jubah jobs load error:', error.message);
@@ -203,7 +210,7 @@ export const RiderHome: React.FC = () => {
   // now the deposit balance too (see migration_jubah_balance_paid_rider_
   // parity.sql) — same two-state gate as the admin equivalent in
   // JubahCustomerSubTab.tsx's getConfirmState/confirmBooking.
-  const [confirmingJob, setConfirmingJob] = useState(false);
+  const [confirmingJobId, setConfirmingJobId] = useState<string | null>(null);
 
   const getJobConfirmState = (j: JubahJobRow) => ({
     canConfirmPayment: j.status === 'ordered',
@@ -225,7 +232,7 @@ export const RiderHome: React.FC = () => {
   };
 
   const confirmJob = async (j: JubahJobRow) => {
-    setConfirmingJob(true);
+    setConfirmingJobId(j.id);
     const { canConfirmBalance, canConfirmPayment } = getJobConfirmState(j);
 
     if (canConfirmBalance) {
@@ -252,7 +259,7 @@ export const RiderHome: React.FC = () => {
         sendReceiptEmail(j.id, j.payment_mode === 'deposit' ? 'deposit' : 'full');
       }
     }
-    setConfirmingJob(false);
+    setConfirmingJobId(null);
   };
 
   // ── Advance status ────────────────────────────────────────────────────────
@@ -562,8 +569,11 @@ export const RiderHome: React.FC = () => {
                           <th className="py-2 pr-4 whitespace-nowrap">Name</th>
                           <th className="py-2 pr-4 whitespace-nowrap">Remark</th>
                           <th className="py-2 pr-4 whitespace-nowrap">Mode</th>
+                          <th className="py-2 pr-4 whitespace-nowrap">Type</th>
                           <th className="py-2 pr-4 whitespace-nowrap">Status</th>
-                          <th className="py-2 whitespace-nowrap">Confirm</th>
+                          <th className="py-2 pr-4 whitespace-nowrap">Robe Status</th>
+                          <th className="py-2 pr-4 whitespace-nowrap">Confirm</th>
+                          <th className="py-2 whitespace-nowrap">Receipt</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -575,7 +585,29 @@ export const RiderHome: React.FC = () => {
                           // status (that inference is exactly what broke the receipt's paid
                           // state once 'cancelled' became a real status, earlier tonight).
                           const isPaid = job.payment_mode === 'deposit' ? job.balance_paid : job.initial_paid;
-                          const depositOnly = job.payment_mode === 'deposit' && job.initial_paid && !job.balance_paid;
+                          const buildDoc = () => buildJubahReceiptRows({
+                            reference:    job.reference,
+                            fullName:     job.full_name,
+                            icNumber:     job.ic_number,
+                            hpNumber:     job.hp_number,
+                            email:        job.email,
+                            university:   job.university,
+                            faculty:      job.faculty,
+                            matricId:     job.matric_id,
+                            remark:       job.remark,
+                            paymentMode:  job.payment_mode as 'pickup' | 'postage' | 'deposit',
+                            cost:         job.cost,
+                            balanceDue:   job.balance_due,
+                            balancePaid:  job.balance_paid,
+                            balancePaidAt: job.balance_paid_at,
+                            deliveryAddress: job.delivery_address,
+                            status:       job.status,
+                            initialPaid:   job.initial_paid,
+                            initialPaidAt: job.initial_paid_at,
+                            riderName:    job.rider_name,
+                            riderPhone:   user.phone,
+                            createdAt:    job.created_at,
+                          });
                           return (
                           <tr key={job.id}
                             onClick={() => goToCard(job)}
@@ -595,17 +627,84 @@ export const RiderHome: React.FC = () => {
                                   : job.payment_mode === 'postage' ? 'Postage' : 'Pickup'}
                               </span>
                             </td>
+                            {/* Independent of payment_mode — deposit mode can't distinguish this
+                                on its own (it's literally 'deposit' for both delivery methods). */}
                             <td className="py-2.5 pr-4 whitespace-nowrap">
-                              <span className={`font-semibold px-2 py-0.5 rounded-full border text-xs ${STATUS_STYLE[job.status] ?? 'bg-slate-50 border-slate-200 text-slate-400'}`}>
-                                {STATUS_LABEL[job.status] ?? job.status}
+                              <span className="font-semibold px-2 py-0.5 rounded-full border text-xs bg-slate-50 border-slate-200 text-slate-600">
+                                {(job.payment_mode === 'postage' || (job.payment_mode === 'deposit' && !!job.delivery_address)) ? 'Postage' : 'Pickup'}
                               </span>
                             </td>
-                            <td className="py-2.5 whitespace-nowrap">
+                            {/* Payment completion — distinct from Robe Status below, same split
+                                admin's Customer Directory uses. */}
+                            <td className="py-2.5 pr-4 whitespace-nowrap">
+                              <span className={`font-semibold px-2 py-0.5 rounded-full border text-xs ${
+                                job.status === 'cancelled' ? 'bg-red-50 border-red-100 text-red-600' :
+                                isPaid ? 'bg-emerald-50 border-emerald-100 text-emerald-700' : 'bg-amber-50 border-amber-100 text-amber-700'
+                              }`}>
+                                {job.status === 'cancelled' ? 'Cancelled' : !isPaid ? 'Booked' : 'Full Paid'}
+                              </span>
+                            </td>
+                            <td className="py-2.5 pr-4 whitespace-nowrap">
                               {job.status === 'cancelled' ? (
-                                <XCircle className="w-4 h-4 text-red-500" />
+                                <span className="text-slate-300 text-xs">—</span>
                               ) : (
-                                <CheckCircle2 className={`w-4 h-4 ${isPaid ? 'text-emerald-500' : depositOnly ? 'text-blue-500' : 'text-slate-200'}`} />
+                                <span className={`font-semibold px-2 py-0.5 rounded-full border text-xs ${STATUS_STYLE[job.status] ?? 'bg-slate-50 border-slate-200 text-slate-400'}`}>
+                                  {STATUS_LABEL[job.status] ?? job.status}
+                                </span>
                               )}
+                            </td>
+                            <td className="py-2.5 pr-4 whitespace-nowrap">
+                              {(() => {
+                                if (job.status === 'cancelled') {
+                                  return <span title="Cancelled"><XCircle className="w-4 h-4 text-red-500" /></span>;
+                                }
+                                const { canConfirmBalance, canConfirmPayment } = getJobConfirmState(job);
+                                const awaitingBalanceProof = job.payment_mode === 'deposit' && job.initial_paid && !job.balance_paid && !job.balance_proof_url;
+                                if (awaitingBalanceProof) {
+                                  return <span title="Waiting on customer to submit balance payment proof"><Clock className="w-4 h-4 text-slate-300" /></span>;
+                                }
+                                if (!canConfirmBalance && !canConfirmPayment) {
+                                  return <span title="Fully paid"><CheckCircle2 className="w-4 h-4 text-emerald-500" /></span>;
+                                }
+                                const depositOnly = job.payment_mode === 'deposit' && job.initial_paid && !job.balance_paid;
+                                return (
+                                  <button
+                                    type="button"
+                                    onClick={(e) => { e.stopPropagation(); confirmJob(job); }}
+                                    disabled={confirmingJobId === job.id}
+                                    title={canConfirmBalance ? 'Confirm Balance' : 'Confirm Payment'}
+                                    className={`w-7 h-7 flex items-center justify-center rounded-lg border transition active:scale-95 disabled:opacity-50 ${
+                                      depositOnly
+                                        ? 'bg-blue-50 border-blue-100 text-blue-600 hover:bg-blue-100'
+                                        : 'bg-slate-50 border-slate-200 text-slate-400 hover:bg-emerald-50 hover:border-emerald-100 hover:text-emerald-600'
+                                    }`}
+                                  >
+                                    {confirmingJobId === job.id
+                                      ? <span className="w-3.5 h-3.5 rounded-full border-2 border-slate-300 border-t-slate-600 animate-spin" />
+                                      : <CheckCircle2 className="w-4 h-4" />}
+                                  </button>
+                                );
+                              })()}
+                            </td>
+                            <td className="py-2.5 whitespace-nowrap">
+                              <div className="flex items-center gap-1.5">
+                                <button
+                                  type="button"
+                                  onClick={(e) => { e.stopPropagation(); setReceiptModal(buildDoc()); }}
+                                  title="View Receipt"
+                                  className="w-7 h-7 flex items-center justify-center rounded-lg bg-blue-50 border border-blue-100 text-blue-600 hover:bg-blue-100 active:scale-95 transition"
+                                >
+                                  <Eye className="w-3.5 h-3.5" />
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={(e) => { e.stopPropagation(); generateReceiptPdf(buildDoc()); }}
+                                  title="Download Receipt"
+                                  className="w-7 h-7 flex items-center justify-center rounded-lg bg-slate-800 text-white hover:bg-slate-700 active:scale-95 transition"
+                                >
+                                  <Download className="w-3.5 h-3.5" />
+                                </button>
+                              </div>
                             </td>
                           </tr>
                           );
@@ -746,10 +845,10 @@ export const RiderHome: React.FC = () => {
                       <button
                         type="button"
                         onClick={() => confirmJob(selectedJob)}
-                        disabled={confirmingJob}
+                        disabled={confirmingJobId === selectedJob.id}
                         className="w-full flex items-center justify-center gap-1.5 bg-emerald-500 hover:bg-emerald-600 active:scale-[0.98] disabled:bg-slate-200 disabled:cursor-not-allowed text-white font-semibold text-xs px-3 py-2.5 rounded-xl transition"
                       >
-                        {confirmingJob
+                        {confirmingJobId === selectedJob.id
                           ? <span className="w-3.5 h-3.5 rounded-full border-2 border-white/40 border-t-white animate-spin" />
                           : 'Confirm Balance'}
                       </button>
@@ -759,10 +858,10 @@ export const RiderHome: React.FC = () => {
                       <button
                         type="button"
                         onClick={() => confirmJob(selectedJob)}
-                        disabled={confirmingJob}
+                        disabled={confirmingJobId === selectedJob.id}
                         className="w-full flex items-center justify-center gap-1.5 bg-emerald-500 hover:bg-emerald-600 active:scale-[0.98] disabled:bg-slate-200 disabled:cursor-not-allowed text-white font-semibold text-xs px-3 py-2.5 rounded-xl transition"
                       >
-                        {confirmingJob
+                        {confirmingJobId === selectedJob.id
                           ? <span className="w-3.5 h-3.5 rounded-full border-2 border-white/40 border-t-white animate-spin" />
                           : 'Confirm Payment'}
                       </button>
@@ -940,6 +1039,25 @@ export const RiderHome: React.FC = () => {
         )}
 
       </div>
+
+      {/* ── Receipt Preview Modal ── */}
+      {receiptModal && (
+        <div className="fixed inset-0 z-50 bg-black/40 flex items-end justify-center"
+          onPointerDown={(e) => { e.preventDefault(); setReceiptModal(null); }}>
+          <div className="w-full max-w-sm max-h-[calc(100dvh-5rem)] overflow-y-auto no-scrollbar bg-white rounded-t-3xl p-6 pb-10 shadow-2xl animate-slide-up"
+            onPointerDown={e => e.stopPropagation()}>
+            <div className="w-10 h-1 bg-slate-200 rounded-full mx-auto mb-5" />
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-sm font-black text-slate-800">Receipt</h3>
+              <button onClick={() => setReceiptModal(null)}
+                className="w-7 h-7 flex items-center justify-center rounded-lg bg-slate-100 text-slate-500 hover:bg-slate-200 transition active:scale-95">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            <ReceiptCard doc={receiptModal} onSavePdf={() => generateReceiptPdf(receiptModal)} />
+          </div>
+        </div>
+      )}
     </>
   );
 };
