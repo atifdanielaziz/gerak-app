@@ -1,6 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
-const getTimestamp = () => Date.now();
 import { CheckCircle2, X, Upload, FileText, ShieldAlert, Download, User, Pencil, MapPin, Copy, Check, Info, GraduationCap, FileUser } from 'lucide-react';
 import { submitJubahToSheets } from '../lib/sheetsService';
 import { JubahLanding } from '../components/JubahLanding';
@@ -384,8 +383,17 @@ export const Jubah: React.FC = () => {
       setDocFields(fields);
       const urls: Record<string, string> = {};
       fields.forEach(f => {
+        // No cache-busting param here on purpose — these are static
+        // reference images admin uploads rarely, and this runs on every
+        // customer's visit to the booking form. Busting on every load (the
+        // old behavior) meant every single customer re-downloaded every
+        // sample image every time, defeating browser/CDN caching entirely
+        // for what should be near-immutable content. Admin's own upload
+        // preview (AdminHome.tsx's sampleUrls) still busts on its own —
+        // that's a separate, low-traffic management view where seeing the
+        // just-uploaded file immediately actually matters.
         const { data } = supabase.storage.from('jubah-banners').getPublicUrl(`samples/${univKey}/${f.field_key}.jpg`);
-        urls[f.id] = `${data.publicUrl}?t=${getTimestamp()}`;
+        urls[f.id] = data.publicUrl;
       });
       setSampleUrls(urls);
     };

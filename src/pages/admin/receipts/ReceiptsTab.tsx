@@ -1,4 +1,4 @@
-import { forwardRef, useCallback, useEffect, useImperativeHandle, useState } from 'react';
+import { forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useState } from 'react';
 import { supabase } from '../../../lib/supabase';
 import { ShieldCheck, ShieldOff, AlertCircle, FileImage, RefreshCw, ExternalLink } from 'lucide-react';
 import { useLoadOnActive } from '../../../hooks/useLoadOnActive';
@@ -48,6 +48,9 @@ export const ReceiptsTab = forwardRef<ReceiptsTabHandle, ReceiptsTabProps>(funct
   ref
 ) {
   const [driverReceipts, setDriverReceipts] = useState<DriverReceipt[]>([]);
+  // Real total vs driverReceipts.length, which is capped below — only used
+  // to show "showing X of Y" if that cap is ever actually hit.
+  const [driverReceiptsTotalCount, setDriverReceiptsTotalCount] = useState<number | null>(null);
   const [receiptsLoading, setReceiptsLoading] = useState(false);
   const [receiptFilter, setReceiptFilter] = useState<'all' | 'verified' | 'pending' | 'rejected' | 'expired'>('all');
   const [receiptRoleFilter, setReceiptRoleFilter] = useState<'driver' | 'rider'>('driver');
@@ -62,14 +65,16 @@ export const ReceiptsTab = forwardRef<ReceiptsTabHandle, ReceiptsTabProps>(funct
 
   const loadReceipts = useCallback(async () => {
     setReceiptsLoading(true);
-    const [{ data }, { data: setting }] = await Promise.all([
+    const [{ data, count }, { data: setting }] = await Promise.all([
       supabase
         .from('profiles')
-        .select('id, name, gerak_id, campus, email, phone, status, fee_receipt_url, fee_receipt_verified, fee_receipt_auto_verified, fee_receipt_amount, fee_receipt_date, fee_receipt_expiry, fee_receipt_reject_reason')
+        .select('id, name, gerak_id, campus, email, phone, status, fee_receipt_url, fee_receipt_verified, fee_receipt_auto_verified, fee_receipt_amount, fee_receipt_date, fee_receipt_expiry, fee_receipt_reject_reason', { count: 'exact' })
         .eq('role', receiptRoleFilter)
-        .order('name'),
+        .order('name')
+        .limit(1000),
       supabase.from('app_settings').select('value').eq('key', 'receipt_gate_active').single(),
     ]);
+    setDriverReceiptsTotalCount(count ?? null);
     setDriverReceipts((data as DriverReceipt[]) ?? []);
     if (setting) setReceiptGateOn(setting.value === 'true');
     setReceiptsLoading(false);
@@ -95,14 +100,16 @@ export const ReceiptsTab = forwardRef<ReceiptsTabHandle, ReceiptsTabProps>(funct
     return 'pending';
   };
 
-  const filteredReceipts = (receiptFilter === 'all'
+  // Was recomputed raw on every render — memoized so a search keystroke
+  // doesn't re-filter the full list synchronously each time.
+  const filteredReceipts = useMemo(() => (receiptFilter === 'all'
     ? driverReceipts
     : driverReceipts.filter(r => receiptStatus(r) === receiptFilter)
   ).filter(r =>
     !receiptSearch.trim() ||
     r.name.toLowerCase().includes(receiptSearch.toLowerCase()) ||
     r.gerak_id.toLowerCase().includes(receiptSearch.toLowerCase())
-  );
+  ), [driverReceipts, receiptFilter, receiptSearch]);
 
   const handleApproveReceipt = async (r: DriverReceipt) => {
     setApprovingReceipt(r.id);
@@ -215,6 +222,12 @@ export const ReceiptsTab = forwardRef<ReceiptsTabHandle, ReceiptsTabProps>(funct
             </button>
           </div>
         </div>
+
+        {driverReceiptsTotalCount !== null && driverReceiptsTotalCount > driverReceipts.length && (
+          <p className="text-xs text-amber-600 font-semibold bg-amber-50 border border-amber-100 rounded-xl px-3 py-2">
+            Showing {driverReceipts.length} of {driverReceiptsTotalCount} — use search to find someone else.
+          </p>
+        )}
 
         {/* Receipt list */}
         <div className="bg-white border border-slate-100 rounded-3xl p-5 flex flex-col gap-4">

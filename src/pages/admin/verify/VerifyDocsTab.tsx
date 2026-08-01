@@ -1,4 +1,4 @@
-import { forwardRef, useCallback, useImperativeHandle, useState } from 'react';
+import { forwardRef, useCallback, useImperativeHandle, useMemo, useState } from 'react';
 import { supabase } from '../../../lib/supabase';
 import { AlertCircle, ShieldCheck, ShieldOff, ExternalLink } from 'lucide-react';
 import { useLoadOnActive } from '../../../hooks/useLoadOnActive';
@@ -30,6 +30,9 @@ export const VerifyDocsTab = forwardRef<VerifyDocsTabHandle, VerifyDocsTabProps>
   ref
 ) {
   const [verifyDocs, setVerifyDocs] = useState<VerifyDoc[]>([]);
+  // Real total vs verifyDocs.length, which is capped below — only used to
+  // show "showing X of Y" if that cap is ever actually hit.
+  const [verifyDocsTotalCount, setVerifyDocsTotalCount] = useState<number | null>(null);
   const [verifyLoading, setVerifyLoading] = useState(false);
   const [verifyFilter, setVerifyFilter] = useState<'driver' | 'rider'>('driver');
   const [verifyStatusFilter, setVerifyStatusFilter] = useState<'pending' | 'approved' | 'rejected' | 'none' | 'all'>('pending');
@@ -40,11 +43,13 @@ export const VerifyDocsTab = forwardRef<VerifyDocsTabHandle, VerifyDocsTabProps>
   const loadVerifyDocs = useCallback(async () => {
     setVerifyLoading(true);
     let q = supabase.from('profiles')
-      .select('id,name,gerak_id,campus,role,license_url,docs_status,docs_reject_reason')
+      .select('id,name,gerak_id,campus,role,license_url,docs_status,docs_reject_reason', { count: 'exact' })
       .eq('role', verifyFilter)
-      .order('name');
+      .order('name')
+      .limit(1000);
     if (!isSuperAdmin) q = q.eq('campus', adminCampus);
-    const { data } = await q;
+    const { data, count } = await q;
+    setVerifyDocsTotalCount(count ?? null);
     setVerifyDocs((data as VerifyDoc[]) ?? []);
     setVerifyLoading(false);
   }, [verifyFilter, isSuperAdmin, adminCampus]);
@@ -67,12 +72,14 @@ export const VerifyDocsTab = forwardRef<VerifyDocsTabHandle, VerifyDocsTabProps>
     loadVerifyDocs();
   };
 
-  const filteredVerifyDocs = verifyDocs.filter(d =>
+  // Was recomputed raw on every render — memoized so a search keystroke
+  // doesn't re-filter the full list synchronously each time.
+  const filteredVerifyDocs = useMemo(() => verifyDocs.filter(d =>
     (verifyStatusFilter === 'all' || d.docs_status === verifyStatusFilter) &&
     (!verifySearch.trim() ||
       d.name.toLowerCase().includes(verifySearch.toLowerCase()) ||
       d.gerak_id.toLowerCase().includes(verifySearch.toLowerCase()))
-  );
+  ), [verifyDocs, verifyStatusFilter, verifySearch]);
 
   return (
     <div className="flex flex-col gap-4">
@@ -130,6 +137,12 @@ export const VerifyDocsTab = forwardRef<VerifyDocsTabHandle, VerifyDocsTabProps>
           </button>
         </div>
       </div>
+
+      {verifyDocsTotalCount !== null && verifyDocsTotalCount > verifyDocs.length && (
+        <p className="text-xs text-amber-600 font-semibold bg-amber-50 border border-amber-100 rounded-xl px-3 py-2">
+          Showing {verifyDocs.length} of {verifyDocsTotalCount} — use search to find someone else.
+        </p>
+      )}
 
       {/* Doc list */}
       <div className="bg-white border border-slate-100 rounded-3xl p-5 flex flex-col gap-4">

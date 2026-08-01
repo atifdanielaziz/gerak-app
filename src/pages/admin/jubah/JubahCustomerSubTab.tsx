@@ -80,6 +80,10 @@ interface JubahCustomerSubTabProps {
   // the confirm/advance controls render as clickable here.
   isSuperAdmin: boolean;
   bookings: JubahBookingRow[];
+  // Real DB row count vs bookings.length (capped at 1000, see AdminHome.tsx's
+  // loadJubahData) — only used to show a "showing X of Y" note when the cap
+  // actually truncated something; null while unknown/not yet loaded.
+  bookingsTotalCount: number | null;
   bookingsLoading: boolean;
   setBookings: Dispatch<SetStateAction<JubahBookingRow[]>>;
   reload: () => void;
@@ -111,7 +115,7 @@ interface JubahCustomerSubTabProps {
 // fragmented across list/card/details files — those three views share one
 // tightly-coupled navigation state machine that's clearer kept together.
 export function JubahCustomerSubTab({
-  isSuperAdmin, bookings, bookingsLoading, setBookings, reload,
+  isSuperAdmin, bookings, bookingsTotalCount, bookingsLoading, setBookings, reload,
   adminView, selected, setSelected, onGoToCard, onGoBack, onGoToList,
   showToast, onModalOpenChange,
 }: JubahCustomerSubTabProps) {
@@ -331,6 +335,16 @@ export function JubahCustomerSubTab({
               {filteredBookings.length} bookings
             </span>
           </h3>
+
+          {/* Only ever shows once there are genuinely more rows than the
+              1000-row cap fetches — not real pagination, just visibility
+              into the cap so it never silently hides data (see AdminHome.tsx's
+              loadJubahData). Search only covers what's actually loaded. */}
+          {bookingsTotalCount !== null && bookingsTotalCount > bookings.length && (
+            <p className="text-xs text-amber-600 font-semibold bg-amber-50 border border-amber-100 rounded-xl px-3 py-2 -mt-2">
+              Showing the latest {bookings.length} of {bookingsTotalCount} bookings — use search to find an older one.
+            </p>
+          )}
 
           {bookingsLoading ? (
             <div className="flex justify-center py-8"><span className="w-5 h-5 rounded-full border-2 border-slate-200 border-t-primary animate-spin" /></div>
