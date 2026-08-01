@@ -4,6 +4,14 @@ import { App as CapacitorApp } from '@capacitor/app';
 import { supabase } from '../lib/supabase';
 import { INACTIVITY_LIMIT_MS, isSessionExpired, touchActivity, setSessionExpiredMessage } from '../lib/idleSession';
 
+// window.location.origin on web — always correct wherever the app is
+// actually being served from (gerakmy.com in production, localhost during
+// dev) rather than Supabase's dashboard-configured Site URL fallback, which
+// still points at an old Vercel deployment URL (same issue ForgotPassword.tsx
+// already fixed for password-reset emails; signUp() never got the same fix).
+const authRedirectUrl = () =>
+  Capacitor.isNativePlatform() ? 'https://www.gerakmy.com' : window.location.origin;
+
 // Definitions
 export type ActivePage =
   | 'splash'
@@ -606,7 +614,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const { error } = await supabase.auth.signUp({
       email,
       password,
-      options: { data: { name, matric_no: matricNo.toUpperCase(), phone, university, campus } },
+      options: {
+        data: { name, matric_no: matricNo.toUpperCase(), phone, university, campus },
+        emailRedirectTo: authRedirectUrl(),
+      },
     });
     if (error) return { error: error.message };
     const { error: signInErr } = await supabase.auth.signInWithPassword({ email, password });
