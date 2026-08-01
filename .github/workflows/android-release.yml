@@ -1,0 +1,47 @@
+name: Android Release Build
+
+# Builds an unsigned debug APK in CI so a release doesn't depend on
+# whoever's local machine happens to have Android Studio + JAVA_HOME set
+# up correctly. Triggered by pushing a version tag (e.g. `v1.2.0`).
+#
+# This produces a debug-signed APK only, suitable for sideload testing.
+# A real Play Store release additionally needs a release signing keystore
+# — store it as a GitHub secret (ANDROID_KEYSTORE_BASE64 + passwords) and
+# extend the `gradlew` step to `bundleRelease` once that's provisioned;
+# not added here since that keystore doesn't exist yet and creating one
+# is a one-time decision for the project owner, not something to do
+# silently as part of a CI workflow.
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - run: npx cap sync android
+
+      - name: Build debug APK
+        working-directory: android
+        run: ./gradlew assembleDebug
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: gerak-${{ github.ref_name }}-debug.apk
+          path: android/app/build/outputs/apk/debug/app-debug.apk
+          retention-days: 90
