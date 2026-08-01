@@ -699,23 +699,17 @@ export function JubahCustomerSubTab({
                   {/* Was an unlabeled icon-only circle button here — easy to miss
                       next to the clearly labeled "Confirm" button for the initial
                       payment just below. Same action, matching visible label now. */}
-                  {!b.balance_paid && (
-                    isSuperAdmin ? (
-                      <button
-                        type="button"
-                        onClick={() => confirmBooking(b)}
-                        disabled={confirmingId === b.id || !b.balance_proof_url}
-                        title={!b.balance_proof_url ? 'Waiting on the customer to upload a balance payment receipt' : undefined}
-                        className="w-full flex items-center justify-center gap-1.5 bg-emerald-500 hover:bg-emerald-600 active:scale-[0.98] disabled:bg-slate-200 disabled:cursor-not-allowed text-white font-semibold text-xs px-3 py-2.5 rounded-xl transition">
-                        {confirmingId === b.id
-                          ? <span className="w-3.5 h-3.5 rounded-full border-2 border-white/40 border-t-white animate-spin" />
-                          : <><BadgeCheck className="w-3.5 h-3.5" />Confirm Balance</>}
-                      </button>
-                    ) : (
-                      <p className="text-xs text-slate-400 font-semibold text-center flex items-center justify-center gap-1.5">
-                        <Eye className="w-3.5 h-3.5" /> View only — only the assigned rider or superadmin can confirm.
-                      </p>
-                    )
+                  {!b.balance_paid && isSuperAdmin && (
+                    <button
+                      type="button"
+                      onClick={() => confirmBooking(b)}
+                      disabled={confirmingId === b.id || !b.balance_proof_url}
+                      title={!b.balance_proof_url ? 'Waiting on the customer to upload a balance payment receipt' : undefined}
+                      className="w-full flex items-center justify-center gap-1.5 bg-emerald-500 hover:bg-emerald-600 active:scale-[0.98] disabled:bg-slate-200 disabled:cursor-not-allowed text-white font-semibold text-xs px-3 py-2.5 rounded-xl transition">
+                      {confirmingId === b.id
+                        ? <span className="w-3.5 h-3.5 rounded-full border-2 border-white/40 border-t-white animate-spin" />
+                        : <><BadgeCheck className="w-3.5 h-3.5" />Confirm Balance</>}
+                    </button>
                   )}
                 </div>
               )}
@@ -725,50 +719,38 @@ export function JubahCustomerSubTab({
                   one button — the proof to verify against is already shown
                   in the persistent card above. Applies to both full-payment
                   and deposit bookings alike. */}
-              {notStarted && b.status !== 'cancelled' && (
+              {notStarted && b.status !== 'cancelled' && isSuperAdmin && (
                 <div className="flex flex-col gap-2">
-                  {isSuperAdmin ? (
-                    <button
-                      type="button"
-                      onClick={() => confirmBooking(b)}
-                      disabled={confirmingId === b.id}
-                      className="w-full flex items-center justify-center gap-1.5 bg-emerald-500 hover:bg-emerald-600 active:scale-[0.98] disabled:opacity-50 text-white font-semibold text-xs px-3 py-2.5 rounded-xl transition">
-                      {confirmingId === b.id
-                        ? <span className="w-3.5 h-3.5 rounded-full border-2 border-white/40 border-t-white animate-spin" />
-                        : <><BadgeCheck className="w-3.5 h-3.5" />Confirm</>}
-                    </button>
-                  ) : (
-                    <p className="text-xs text-slate-400 font-semibold text-center flex items-center justify-center gap-1.5">
-                      <Eye className="w-3.5 h-3.5" /> View only — only the assigned rider or superadmin can confirm.
-                    </p>
-                  )}
+                  <button
+                    type="button"
+                    onClick={() => confirmBooking(b)}
+                    disabled={confirmingId === b.id}
+                    className="w-full flex items-center justify-center gap-1.5 bg-emerald-500 hover:bg-emerald-600 active:scale-[0.98] disabled:opacity-50 text-white font-semibold text-xs px-3 py-2.5 rounded-xl transition">
+                    {confirmingId === b.id
+                      ? <span className="w-3.5 h-3.5 rounded-full border-2 border-white/40 border-t-white animate-spin" />
+                      : <><BadgeCheck className="w-3.5 h-3.5" />Confirm</>}
+                  </button>
                 </div>
               )}
               {/* Advance status button — deposit bookings stay gated until the balance is
                   confirmed above. View-only for regular admin — see isSuperAdmin note. */}
-              {!notStarted && !isDone && b.status !== 'cancelled' && (
-                isSuperAdmin ? (() => {
-                  // Only gate the 'booked' -> 'processing' hop — the earlier
-                  // 'paid' -> 'booked' confirm doesn't require the balance yet.
-                  const balanceGateActive = b.payment_mode === 'deposit' && b.status === 'booked' && !b.balance_paid;
-                  return (
-                    <button
-                      onClick={handleAdminAdvanceStatus}
-                      disabled={jubahAdminUpdating || balanceGateActive}
-                      className="w-full bg-primary hover:bg-primary-hover active:scale-[0.98] disabled:bg-slate-200 disabled:cursor-not-allowed text-white font-semibold py-3 rounded-2xl transition flex items-center justify-center gap-2 text-sm">
-                      {jubahAdminUpdating
-                        ? <span className="w-4 h-4 rounded-full border-2 border-white/40 border-t-white animate-spin" />
-                        : balanceGateActive
-                          ? 'Awaiting Balance Payment'
-                          : `→ ${JUBAH_NEXT_LABEL[nextStat ?? ''] ?? `Mark ${JUBAH_STATUS_LABEL[nextStat ?? '']}`}`}
-                    </button>
-                  );
-                })() : (
-                  <p className="text-xs text-slate-400 font-semibold text-center flex items-center justify-center gap-1.5 py-2">
-                    <Eye className="w-3.5 h-3.5" /> View only — only the assigned rider or superadmin can advance this.
-                  </p>
-                )
-              )}
+              {!notStarted && !isDone && b.status !== 'cancelled' && isSuperAdmin && (() => {
+                // Only gate the 'booked' -> 'processing' hop — the earlier
+                // 'paid' -> 'booked' confirm doesn't require the balance yet.
+                const balanceGateActive = b.payment_mode === 'deposit' && b.status === 'booked' && !b.balance_paid;
+                return (
+                  <button
+                    onClick={handleAdminAdvanceStatus}
+                    disabled={jubahAdminUpdating || balanceGateActive}
+                    className="w-full bg-primary hover:bg-primary-hover active:scale-[0.98] disabled:bg-slate-200 disabled:cursor-not-allowed text-white font-semibold py-3 rounded-2xl transition flex items-center justify-center gap-2 text-sm">
+                    {jubahAdminUpdating
+                      ? <span className="w-4 h-4 rounded-full border-2 border-white/40 border-t-white animate-spin" />
+                      : balanceGateActive
+                        ? 'Awaiting Balance Payment'
+                        : `→ ${JUBAH_NEXT_LABEL[nextStat ?? ''] ?? `Mark ${JUBAH_STATUS_LABEL[nextStat ?? '']}`}`}
+                  </button>
+                );
+              })()}
               {isDone && b.status !== 'cancelled' && (
                 <div className="bg-emerald-50 border border-emerald-100 rounded-2xl px-4 py-3 text-center">
                   <p className="text-xs font-semibold text-emerald-700">✓ Delivery Complete</p>
@@ -973,18 +955,12 @@ export function JubahCustomerSubTab({
               {/* Cancellation is view-only for regular admin too — only the
                   assigned rider or superadmin can actually cancel (server-
                   enforced, see migration_jubah_cancel_superadmin_rider_only.sql). */}
-              {b.status !== 'cancelled' && (
-                isSuperAdmin ? (
-                  <button
-                    onClick={() => setCancelModalBooking(b)}
-                    className="w-full flex items-center justify-center gap-2 border border-amber-200 text-amber-600 hover:bg-amber-50 active:scale-[0.98] font-semibold py-3 rounded-2xl text-sm transition">
-                    <Ban className="w-4 h-4" />Cancel Booking
-                  </button>
-                ) : (
-                  <p className="text-xs text-slate-400 font-semibold text-center flex items-center justify-center gap-1.5 py-2">
-                    <Eye className="w-3.5 h-3.5" /> View only — only the assigned rider or superadmin can cancel.
-                  </p>
-                )
+              {b.status !== 'cancelled' && isSuperAdmin && (
+                <button
+                  onClick={() => setCancelModalBooking(b)}
+                  className="w-full flex items-center justify-center gap-2 border border-amber-200 text-amber-600 hover:bg-amber-50 active:scale-[0.98] font-semibold py-3 rounded-2xl text-sm transition">
+                  <Ban className="w-4 h-4" />Cancel Booking
+                </button>
               )}
             </div>
           </div>
