@@ -380,9 +380,13 @@ export const AdminHome: React.FC = () => {
   }
 
   // Shared by the mobile refresh button and the desktop topbar's refresh
-  // button. Only Banners and Jubah fall through to the catch-all — Jubah
-  // has no case of its own here (pre-existing: refreshing on that tab is
-  // a silent no-op, not something this refactor changes).
+  // button. Only Banners falls through to the catch-all now — Jubah used to
+  // as well (a silent no-op: it fell through to bannersTabRef's reload,
+  // which does nothing visible since Banners isn't the active sub-view).
+  // loadJubahData() covers both the Overview/Status Breakdown stats and the
+  // Customer Directory (it's the same function JubahCustomerSubTab's own
+  // "reload" prop already points to); the Rider sub-tab loads its directory
+  // separately, so it needs its own ref reload on top of that.
   const refreshActiveTab = () =>
     activeTab === 'orders' ? ordersTabRef.current?.reload() :
     activeTab === 'drivers' ? driversTabRef.current?.reload() :
@@ -393,6 +397,7 @@ export const AdminHome: React.FC = () => {
     activeTab === 'calendar' ? calendarTabRef.current?.reload() :
     activeTab === 'earnings' ? earningsTabRef.current?.reload() :
     activeTab === 'activity' ? activityTabRef.current?.reload() :
+    activeTab === 'jubah' ? (loadJubahData(), effectiveJubahSubTab === 'rider' && jubahRiderTabRef.current?.reload()) :
     bannersTabRef.current?.reload();
 
   const unreadCount = notifications.filter(n => !n.isRead).length;
