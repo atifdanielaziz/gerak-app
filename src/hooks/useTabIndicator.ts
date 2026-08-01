@@ -14,11 +14,20 @@ import { useCallback, useLayoutEffect, useRef } from 'react';
 // transform-based changes (the tap-scale animation) painting correctly
 // every single time. Moving one shared indicator via transform sidesteps
 // the bug instead of continuing to fight it.
+// Repositions caused by mount-settling (fonts, safe-area insets, header
+// content above the bar still loading in) jump instantly instead of
+// animating — only a real, later tab switch should slide. Confirmed live:
+// the very first measurement right after reopening the installed PWA can
+// run before layout has fully settled, producing a collapsed/wrong size
+// that never gets corrected because activeKey doesn't change again until
+// the user taps something.
+const SETTLE_WINDOW_MS = 600;
+
 export function useTabIndicator<T extends HTMLElement = HTMLElement>(activeKey: string) {
   const containerRef = useRef<T | null>(null);
   const indicatorRef = useRef<HTMLDivElement | null>(null);
   const buttonRefs = useRef<Map<string, HTMLButtonElement>>(new Map());
-  const mountedRef = useRef(false);
+  const mountedAtRef = useRef<number | null>(null);
 
   const reposition = useCallback(() => {
     const container = containerRef.current;
@@ -31,21 +40,31 @@ export function useTabIndicator<T extends HTMLElement = HTMLElement>(activeKey: 
     const x = btnRect.left - containerRect.left;
     const y = btnRect.top - containerRect.top;
 
-    // First placement shouldn't animate in from the top-left corner —
-    // jump straight there, then re-enable the transition for every
-    // subsequent tab change.
-    if (!mountedRef.current) indicator.style.transition = 'none';
+    if (mountedAtRef.current === null) mountedAtRef.current = Date.now();
+    const settling = Date.now() - mountedAtRef.current < SETTLE_WINDOW_MS;
+
+    if (settling) indicator.style.transition = 'none';
     indicator.style.width = `${btnRect.width}px`;
     indicator.style.height = `${btnRect.height}px`;
     indicator.style.transform = `translate(${x}px, ${y}px)`;
-    if (!mountedRef.current) {
+    if (settling) {
       void indicator.offsetWidth;
       indicator.style.transition = '';
-      mountedRef.current = true;
     }
   }, [activeKey]);
 
   useLayoutEffect(() => { reposition(); }, [reposition]);
+
+  // Re-measure a few times during the settle window to catch layout that
+  // finishes shifting after the first paint (web fonts, safe-area insets,
+  // images/icons above the bar loading in) — each one still jumps instead
+  // of animating, since they're all within SETTLE_WINDOW_MS of mount.
+  useLayoutEffect(() => {
+    const timers = [50, 150, 350, 600].map(ms => setTimeout(reposition, ms));
+    document.fonts?.ready?.then(reposition).catch(() => {});
+    return () => timers.forEach(clearTimeout);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- intentionally mount-only, not re-run per activeKey change
+  }, []);
 
   useLayoutEffect(() => {
     window.addEventListener('resize', reposition);
