@@ -13,6 +13,7 @@ npm-debug.log
 .vercel
 supabase/.temp/
 .env*
+!.env.example
 
 # Android/Capacitor — local.properties has a machine-specific SDK path,
 # never portable across machines/CI; build/ and .gradle/ are pure output.
