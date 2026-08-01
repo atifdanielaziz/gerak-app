@@ -970,12 +970,21 @@ export function JubahCustomerSubTab({
                   ? <span className="w-4 h-4 rounded-full border-2 border-red-300 border-t-red-500 animate-spin" />
                   : <><Trash2 className="w-4 h-4" />Delete</>}
               </button>
+              {/* Cancellation is view-only for regular admin too — only the
+                  assigned rider or superadmin can actually cancel (server-
+                  enforced, see migration_jubah_cancel_superadmin_rider_only.sql). */}
               {b.status !== 'cancelled' && (
-                <button
-                  onClick={() => setCancelModalBooking(b)}
-                  className="w-full flex items-center justify-center gap-2 border border-amber-200 text-amber-600 hover:bg-amber-50 active:scale-[0.98] font-semibold py-3 rounded-2xl text-sm transition">
-                  <Ban className="w-4 h-4" />Cancel Booking
-                </button>
+                isSuperAdmin ? (
+                  <button
+                    onClick={() => setCancelModalBooking(b)}
+                    className="w-full flex items-center justify-center gap-2 border border-amber-200 text-amber-600 hover:bg-amber-50 active:scale-[0.98] font-semibold py-3 rounded-2xl text-sm transition">
+                    <Ban className="w-4 h-4" />Cancel Booking
+                  </button>
+                ) : (
+                  <p className="text-xs text-slate-400 font-semibold text-center flex items-center justify-center gap-1.5 py-2">
+                    <Eye className="w-3.5 h-3.5" /> View only — only the assigned rider or superadmin can cancel.
+                  </p>
+                )
               )}
             </div>
           </div>
