@@ -1,6 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
-const getTimestamp = () => Date.now();
 import { CheckCircle2, X, Upload, FileText, ShieldAlert, Download, User, Pencil, MapPin, Copy, Check, Info, GraduationCap, FileUser } from 'lucide-react';
 import { submitJubahToSheets } from '../lib/sheetsService';
 import { JubahLanding } from '../components/JubahLanding';
@@ -384,8 +383,17 @@ export const Jubah: React.FC = () => {
       setDocFields(fields);
       const urls: Record<string, string> = {};
       fields.forEach(f => {
+        // No cache-busting param here on purpose — these are static
+        // reference images admin uploads rarely, and this runs on every
+        // customer's visit to the booking form. Busting on every load (the
+        // old behavior) meant every single customer re-downloaded every
+        // sample image every time, defeating browser/CDN caching entirely
+        // for what should be near-immutable content. Admin's own upload
+        // preview (AdminHome.tsx's sampleUrls) still busts on its own —
+        // that's a separate, low-traffic management view where seeing the
+        // just-uploaded file immediately actually matters.
         const { data } = supabase.storage.from('jubah-banners').getPublicUrl(`samples/${univKey}/${f.field_key}.jpg`);
-        urls[f.id] = `${data.publicUrl}?t=${getTimestamp()}`;
+        urls[f.id] = data.publicUrl;
       });
       setSampleUrls(urls);
     };
@@ -630,8 +638,10 @@ export const Jubah: React.FC = () => {
     // unlikely to collide with another booking, but not impossible at scale.
     // Retry once with a fresh one rather than surfacing the raw DB error;
     // already-uploaded files stay valid since their paths are stored as-is,
-    // independent of this label.
-    if (!result.success && /duplicate key|unique constraint/i.test(result.error ?? '')) {
+    // independent of this label. Checked via a stable error code, not the
+    // raw Postgres message text — create_jubah_booking no longer returns
+    // that verbatim (see migration_jubah_booking_generic_errors.sql).
+    if (!result.success && result.code === 'duplicate_reference') {
       reference = generateReference();
       result = await bookJubah(reference, fullName, icNumber, hpNumber, university, faculty, matricId, paymentMode, remark, combinedFileName, depositMethod, postageZone, selectedRiderId, selectedRider?.name, selectedRider?.jubah_bank_name ?? undefined, selectedRider?.jubah_bank_account_number ?? undefined, selectedRider?.jubah_bank_account_holder ?? undefined, bookingCampus, addr, docsPath, oscarPath, skpgPath, konvoPath, icPath, landingUniversity, email, paymentPath);
     }

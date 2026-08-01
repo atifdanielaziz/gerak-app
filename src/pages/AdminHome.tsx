@@ -89,6 +89,10 @@ export const AdminHome: React.FC = () => {
   // ── Jubah tab state ────────────────────────────────────────────────────────
   const [jubahBookings,      setJubahBookings]      = useState<JubahBookingRow[]>([]);
   const [jubahBookingsLoading, setJubahBookingsLoading] = useState(false);
+  // Real total row count from the DB (via the query's count:'exact'), vs
+  // jubahBookings.length which is capped at 1000 — lets the UI show
+  // "showing X of Y" only when the cap actually truncated something.
+  const [jubahBookingsTotalCount, setJubahBookingsTotalCount] = useState<number | null>(null);
   const [jubahAdminView,     setJubahAdminView]     = useState<'list' | 'card'>('list');
   const [jubahAdminSelected, setJubahAdminSelected] = useState<JubahBookingRow | null>(null);
   const [jubahSubTab,        setJubahSubTab]        = useState<'customer' | 'rider' | 'price' | 'banner'>('rider');
@@ -219,11 +223,19 @@ export const AdminHome: React.FC = () => {
     const { data: setting } = await supabase.from('app_settings').select('value').eq('key', 'jubah_active').single();
     if (setting && jubahActiveSeqRef.current === mySeq) setJubahActive(setting.value === 'true');
 
+    // Capped, not truly paginated — the Customer Directory's search box
+    // filters over whatever's already loaded, so real "load more" paging
+    // would silently make search miss anything not yet loaded. A generous
+    // cap plus a visible "showing X of Y" note (see JubahCustomerSubTab)
+    // bounds the worst case without touching how search behaves; at actual
+    // current row counts (dozens–hundreds) this never engages.
     let bookingsQ = supabase.from('jubah_bookings')
-      .select('id, reference, full_name, ic_number, hp_number, email, matric_id, university, campus, faculty, remark, rider_name, rider_phone, status, payment_mode, cost, balance_due, balance_paid, balance_paid_at, balance_proof_url, initial_paid, initial_paid_at, delivery_address, docs_path, payment_path, oscar_path, skpg_path, konvo_path, ic_path, created_at, needs_reconciliation, reconciliation_note')
-      .order('created_at', { ascending: false });
+      .select('id, reference, full_name, ic_number, hp_number, email, matric_id, university, campus, faculty, remark, rider_name, rider_phone, status, payment_mode, cost, balance_due, balance_paid, balance_paid_at, balance_proof_url, initial_paid, initial_paid_at, delivery_address, docs_path, payment_path, oscar_path, skpg_path, konvo_path, ic_path, created_at, needs_reconciliation, reconciliation_note', { count: 'exact' })
+      .order('created_at', { ascending: false })
+      .limit(1000);
     if (!isSuperAdmin) bookingsQ = bookingsQ.eq('campus', adminCampus);
-    const { data: bookingsData, error: bookingsError } = await bookingsQ;
+    const { data: bookingsData, count: bookingsCount, error: bookingsError } = await bookingsQ;
+    setJubahBookingsTotalCount(bookingsCount ?? null);
     if (bookingsError) {
       console.error('[GERAK] jubah_bookings load error:', bookingsError.message, bookingsError.details);
       // Fallback: fetch without new columns in case migration not yet applied
@@ -349,7 +361,7 @@ export const AdminHome: React.FC = () => {
     if (!sampleDocsPage) return;
     setSampleUploading(fieldId);
     const path = `samples/${sampleDocsPage.key}/${fieldId}.jpg`;
-    const { error } = await supabase.storage.from(BANNER_BUCKET).upload(path, file, { upsert: true, contentType: file.type });
+    const { error } = await supabase.storage.from(BANNER_BUCKET).upload(path, file, { upsert: true, contentType: file.type, cacheControl: '31536000' });
     if (error) { showToast('Upload failed: ' + error.message); setSampleUploading(null); return; }
     const { data } = supabase.storage.from(BANNER_BUCKET).getPublicUrl(path);
     setSampleUrls(prev => ({ ...prev, [fieldId]: `${data.publicUrl}?t=${Date.now()}` }));
@@ -388,9 +400,13 @@ export const AdminHome: React.FC = () => {
   }
 
   // Shared by the mobile refresh button and the desktop topbar's refresh
-  // button. Only Banners and Jubah fall through to the catch-all — Jubah
-  // has no case of its own here (pre-existing: refreshing on that tab is
-  // a silent no-op, not something this refactor changes).
+  // button. Only Banners falls through to the catch-all now — Jubah used to
+  // as well (a silent no-op: it fell through to bannersTabRef's reload,
+  // which does nothing visible since Banners isn't the active sub-view).
+  // loadJubahData() covers both the Overview/Status Breakdown stats and the
+  // Customer Directory (it's the same function JubahCustomerSubTab's own
+  // "reload" prop already points to); the Rider sub-tab loads its directory
+  // separately, so it needs its own ref reload on top of that.
   const refreshActiveTab = () =>
     activeTab === 'orders' ? ordersTabRef.current?.reload() :
     activeTab === 'drivers' ? driversTabRef.current?.reload() :
@@ -401,6 +417,7 @@ export const AdminHome: React.FC = () => {
     activeTab === 'calendar' ? calendarTabRef.current?.reload() :
     activeTab === 'earnings' ? earningsTabRef.current?.reload() :
     activeTab === 'activity' ? activityTabRef.current?.reload() :
+    activeTab === 'jubah' ? (loadJubahData(), effectiveJubahSubTab === 'rider' && jubahRiderTabRef.current?.reload()) :
     bannersTabRef.current?.reload();
 
   const unreadCount = notifications.filter(n => !n.isRead).length;
@@ -903,7 +920,9 @@ export const AdminHome: React.FC = () => {
           {effectiveJubahSubTab === 'customer' && (
             <JubahCustomerSubTab
               active={activeTab === 'jubah' && effectiveJubahSubTab === 'customer'}
+              isSuperAdmin={isSuperAdmin}
               bookings={jubahBookings}
+              bookingsTotalCount={jubahBookingsTotalCount}
               bookingsLoading={jubahBookingsLoading}
               setBookings={setJubahBookings}
               reload={loadJubahData}

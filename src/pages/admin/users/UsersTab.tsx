@@ -1,4 +1,4 @@
-import { forwardRef, useCallback, useEffect, useImperativeHandle, useState } from 'react';
+import { forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useState } from 'react';
 import { supabase } from '../../../lib/supabase';
 import {
   Users, MoreVertical, Car, KeyRound, Bike, GraduationCap, MapPin, ShieldCheck, ShieldOff, Trash2, Truck,
@@ -250,6 +250,10 @@ export const UsersTab = forwardRef<UsersTabHandle, UsersTabProps>(function Users
   useEffect(() => { supabase.auth.getUser().then(({ data }) => setMyUserId(data.user?.id ?? null)); }, []);
 
   const [profileUsers, setProfileUsers] = useState<ProfileUser[]>([]);
+  // Real total vs profileUsers.length, which is capped at 1000 (see
+  // migration_get_all_profiles_cap.sql) — only used to show "showing X of
+  // Y" if that cap is ever actually hit.
+  const [profileUsersTotalCount, setProfileUsersTotalCount] = useState<number | null>(null);
   const [usersLoading, setUsersLoading] = useState(false);
   const [staffSearch, setStaffSearch]   = useState('');
   const [staffFilter, setStaffFilter]   = useState<'all' | 'drivers' | 'riders' | 'admins'>('all');
@@ -263,13 +267,20 @@ export const UsersTab = forwardRef<UsersTabHandle, UsersTabProps>(function Users
 
   const loadUsers = useCallback(async () => {
     setUsersLoading(true);
-    const { data } = await supabase.rpc('get_all_profiles');
+    // Campus scoping now happens server-side (get_all_profiles(p_campus)) —
+    // previously fetched every admin/driver/rider in the whole system and
+    // threw most of it away here, which also meant the three capability
+    // lookups below scaled with the unfiltered total instead of just this
+    // campus's users.
+    let countQ = supabase.from('profiles').select('id', { count: 'exact', head: true }).in('role', ['admin', 'driver', 'rider']);
+    if (!isSuperAdmin) countQ = countQ.eq('campus', adminCampus);
+    const [{ data }, { count }] = await Promise.all([
+      supabase.rpc('get_all_profiles', { p_campus: isSuperAdmin ? null : adminCampus }),
+      countQ,
+    ]);
+    setProfileUsersTotalCount(count ?? null);
     // Enrich drivers with capability flags from profiles table
-    let users = (data as ProfileUser[]) ?? [];
-    // Non-superadmin: scope to their campus only
-    if (!isSuperAdmin) {
-      users = users.filter(u => u.campus.toLowerCase() === adminCampus.toLowerCase());
-    }
+    const users = (data as ProfileUser[]) ?? [];
     const driverIds      = users.filter(u => u.role === 'driver').map(u => u.id);
     const riderIds       = users.filter(u => u.role === 'rider').map(u => u.id);
     const driverRiderIds = [...driverIds, ...riderIds];
@@ -410,6 +421,22 @@ export const UsersTab = forwardRef<UsersTabHandle, UsersTabProps>(function Users
     return !['admin', 'superadmin'].includes(targetRole);
   };
 
+  // Was recomputed raw in the render body on every render, so every
+  // keystroke into the search box re-filtered the full list synchronously.
+  const filteredUsers = useMemo(() => {
+    return profileUsers.filter(u => {
+      const roleMatch =
+        staffFilter === 'all'     ? true :
+        staffFilter === 'drivers' ? u.role === 'driver' :
+        staffFilter === 'riders'  ? u.role === 'rider' :
+        ['admin', 'superadmin'].includes(u.role);
+      if (!roleMatch) return false;
+      if (!staffSearch.trim()) return true;
+      const q = staffSearch.toLowerCase();
+      return u.name?.toLowerCase().includes(q) || u.gerak_id?.toLowerCase().includes(q);
+    });
+  }, [profileUsers, staffFilter, staffSearch]);
+
   return (
     <>
       <div className="flex flex-col gap-4">
@@ -456,23 +483,19 @@ export const UsersTab = forwardRef<UsersTabHandle, UsersTabProps>(function Users
             ))}
           </div>
 
+          {profileUsersTotalCount !== null && profileUsersTotalCount > profileUsers.length && (
+            <p className="text-xs text-amber-600 font-semibold bg-amber-50 border border-amber-100 rounded-xl px-3 py-2">
+              Showing {profileUsers.length} of {profileUsersTotalCount} staff — use search to find someone else.
+            </p>
+          )}
+
           <div className="overflow-y-auto no-scrollbar max-h-[420px] flex flex-col gap-2">
             {usersLoading ? (
               <div className="flex justify-center py-8">
                 <span className="w-5 h-5 rounded-full border-2 border-slate-200 border-t-primary animate-spin" />
               </div>
             ) : (() => {
-              const filtered = profileUsers.filter(u => {
-                const roleMatch =
-                  staffFilter === 'all'     ? true :
-                  staffFilter === 'drivers' ? u.role === 'driver' :
-                  staffFilter === 'riders'  ? u.role === 'rider' :
-                  ['admin', 'superadmin'].includes(u.role);
-                if (!roleMatch) return false;
-                if (!staffSearch.trim()) return true;
-                const q = staffSearch.toLowerCase();
-                return u.name?.toLowerCase().includes(q) || u.gerak_id?.toLowerCase().includes(q);
-              });
+              const filtered = filteredUsers;
               return filtered.length === 0
                 ? <p className="text-xs text-slate-400 text-center py-4">No {staffFilter === 'all' ? 'staff' : staffFilter} found</p>
                 : (

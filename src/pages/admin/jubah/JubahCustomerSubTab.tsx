@@ -1,4 +1,4 @@
-import React, { useEffect, useState, type Dispatch, type SetStateAction } from 'react';
+import React, { useEffect, useMemo, useState, type Dispatch, type SetStateAction } from 'react';
 import { supabase } from '../../../lib/supabase';
 import {
   Users, RefreshCw, AlertCircle, Copy, Check, Eye, Download, ChevronLeft,
@@ -73,7 +73,17 @@ export type JubahBookingRow = {
 
 interface JubahCustomerSubTabProps {
   active: boolean;
+  // Regular admin is view-only for confirming Jubah payments — only the
+  // assigned rider or superadmin can actually approve (server-enforced in
+  // update_jubah_booking_status/mark_jubah_balance_paid, see migration_
+  // jubah_confirm_superadmin_rider_only.sql). This just controls whether
+  // the confirm/advance controls render as clickable here.
+  isSuperAdmin: boolean;
   bookings: JubahBookingRow[];
+  // Real DB row count vs bookings.length (capped at 1000, see AdminHome.tsx's
+  // loadJubahData) — only used to show a "showing X of Y" note when the cap
+  // actually truncated something; null while unknown/not yet loaded.
+  bookingsTotalCount: number | null;
   bookingsLoading: boolean;
   setBookings: Dispatch<SetStateAction<JubahBookingRow[]>>;
   reload: () => void;
@@ -105,7 +115,7 @@ interface JubahCustomerSubTabProps {
 // fragmented across list/card/details files — those three views share one
 // tightly-coupled navigation state machine that's clearer kept together.
 export function JubahCustomerSubTab({
-  bookings, bookingsLoading, setBookings, reload,
+  isSuperAdmin, bookings, bookingsTotalCount, bookingsLoading, setBookings, reload,
   adminView, selected, setSelected, onGoToCard, onGoBack, onGoToList,
   showToast, onModalOpenChange,
 }: JubahCustomerSubTabProps) {
@@ -252,6 +262,30 @@ export function JubahCustomerSubTab({
     setJubahAdminUpdating(false);
   };
 
+  // Was recomputed twice (once for the header count, once for the table
+  // rows) on every render with no memoization — invisible at the current
+  // row count, but every keystroke into the search box would re-filter the
+  // full bookings array twice, synchronously, as that array grows.
+  const filteredBookings = useMemo(() => {
+    const q = jubahSearch.trim().toLowerCase();
+    return bookings.filter(b => {
+      // payment_mode !== 'deposit' alone is NOT "paid" — it just means
+      // "not deposit mode," true for a pickup/postage booking that's
+      // never been paid at all (still status='ordered'). initial_paid is
+      // the actual fact to check for non-deposit modes, same formula
+      // RiderHome already uses correctly.
+      const isPaid = b.payment_mode === 'deposit' ? b.balance_paid : b.initial_paid;
+      const isCancelled = b.status === 'cancelled';
+      const matchFilter =
+        jubahPayFilter === 'all'       ? true :
+        jubahPayFilter === 'cancelled' ? isCancelled :
+        jubahPayFilter === 'paid'       ? (isPaid && !isCancelled) :
+                                           (!isPaid && !isCancelled);
+      const matchSearch = !q || b.full_name.toLowerCase().includes(q) || b.hp_number.includes(q) || b.reference.toLowerCase().includes(q);
+      return matchFilter && matchSearch;
+    });
+  }, [bookings, jubahPayFilter, jubahSearch]);
+
   return (
     <>
       {adminView === 'list' && (<>
@@ -298,25 +332,19 @@ export function JubahCustomerSubTab({
           <h3 className="text-sm font-semibold text-slate-700 flex items-center justify-between">
             <span className="flex items-center gap-1.5"><Users className="w-4 h-4" /> Customer Directory</span>
             <span className="font-normal text-slate-300 normal-case tracking-normal">
-              {bookings.filter(b => {
-                // payment_mode !== 'deposit' alone is NOT "paid" — it just means
-                // "not deposit mode," true for a pickup/postage booking that's
-                // never been paid at all (still status='ordered'). initial_paid is
-                // the actual fact to check for non-deposit modes, same formula
-                // RiderHome already uses correctly.
-                const isPaid = b.payment_mode === 'deposit' ? b.balance_paid : b.initial_paid;
-                const isCancelled = b.status === 'cancelled';
-                const matchFilter =
-                  jubahPayFilter === 'all'       ? true :
-                  jubahPayFilter === 'cancelled' ? isCancelled :
-                  jubahPayFilter === 'paid'       ? (isPaid && !isCancelled) :
-                                                     (!isPaid && !isCancelled);
-                const q = jubahSearch.trim().toLowerCase();
-                const matchSearch = !q || b.full_name.toLowerCase().includes(q) || b.hp_number.includes(q) || b.reference.toLowerCase().includes(q);
-                return matchFilter && matchSearch;
-              }).length} bookings
+              {filteredBookings.length} bookings
             </span>
           </h3>
+
+          {/* Only ever shows once there are genuinely more rows than the
+              1000-row cap fetches — not real pagination, just visibility
+              into the cap so it never silently hides data (see AdminHome.tsx's
+              loadJubahData). Search only covers what's actually loaded. */}
+          {bookingsTotalCount !== null && bookingsTotalCount > bookings.length && (
+            <p className="text-xs text-amber-600 font-semibold bg-amber-50 border border-amber-100 rounded-xl px-3 py-2 -mt-2">
+              Showing the latest {bookings.length} of {bookingsTotalCount} bookings — use search to find an older one.
+            </p>
+          )}
 
           {bookingsLoading ? (
             <div className="flex justify-center py-8"><span className="w-5 h-5 rounded-full border-2 border-slate-200 border-t-primary animate-spin" /></div>
@@ -355,18 +383,7 @@ export function JubahCustomerSubTab({
                   </tr>
                 </thead>
                 <tbody>
-                  {bookings.filter(b => {
-                    const isPaid = b.payment_mode === 'deposit' ? b.balance_paid : b.initial_paid;
-                    const isCancelled = b.status === 'cancelled';
-                    const matchFilter =
-                      jubahPayFilter === 'all'       ? true :
-                      jubahPayFilter === 'cancelled' ? isCancelled :
-                      jubahPayFilter === 'paid'       ? (isPaid && !isCancelled) :
-                                                         (!isPaid && !isCancelled);
-                    const q = jubahSearch.trim().toLowerCase();
-                    const matchSearch = !q || b.full_name.toLowerCase().includes(q) || b.hp_number.includes(q) || b.reference.toLowerCase().includes(q);
-                    return matchFilter && matchSearch;
-                  }).map(b => {
+                  {filteredBookings.map(b => {
                     const isPaid = b.payment_mode === 'deposit' ? b.balance_paid : b.initial_paid;
                     return (
                       <tr key={b.id}
@@ -460,6 +477,15 @@ export function JubahCustomerSubTab({
                               return (
                                 <span title="Fully paid">
                                   <CheckCircle2 className="w-4 h-4 text-emerald-500" />
+                                </span>
+                              );
+                            }
+                            // View-only for regular admin — only the assigned rider or
+                            // superadmin can actually approve (server-enforced too).
+                            if (!isSuperAdmin) {
+                              return (
+                                <span title="Only the assigned rider or superadmin can confirm this">
+                                  <Eye className="w-4 h-4 text-slate-300" />
                                 </span>
                               );
                             }
@@ -684,7 +710,7 @@ export function JubahCustomerSubTab({
                   {/* Was an unlabeled icon-only circle button here — easy to miss
                       next to the clearly labeled "Confirm" button for the initial
                       payment just below. Same action, matching visible label now. */}
-                  {!b.balance_paid && (
+                  {!b.balance_paid && isSuperAdmin && (
                     <button
                       type="button"
                       onClick={() => confirmBooking(b)}
@@ -704,7 +730,7 @@ export function JubahCustomerSubTab({
                   one button — the proof to verify against is already shown
                   in the persistent card above. Applies to both full-payment
                   and deposit bookings alike. */}
-              {notStarted && b.status !== 'cancelled' && (
+              {notStarted && b.status !== 'cancelled' && isSuperAdmin && (
                 <div className="flex flex-col gap-2">
                   <button
                     type="button"
@@ -717,8 +743,9 @@ export function JubahCustomerSubTab({
                   </button>
                 </div>
               )}
-              {/* Advance status button — deposit bookings stay gated until the balance is confirmed above */}
-              {!notStarted && !isDone && b.status !== 'cancelled' && (() => {
+              {/* Advance status button — deposit bookings stay gated until the balance is
+                  confirmed above. View-only for regular admin — see isSuperAdmin note. */}
+              {!notStarted && !isDone && b.status !== 'cancelled' && isSuperAdmin && (() => {
                 // Only gate the 'booked' -> 'processing' hop — the earlier
                 // 'paid' -> 'booked' confirm doesn't require the balance yet.
                 const balanceGateActive = b.payment_mode === 'deposit' && b.status === 'booked' && !b.balance_paid;
@@ -936,7 +963,10 @@ export function JubahCustomerSubTab({
                   ? <span className="w-4 h-4 rounded-full border-2 border-red-300 border-t-red-500 animate-spin" />
                   : <><Trash2 className="w-4 h-4" />Delete</>}
               </button>
-              {b.status !== 'cancelled' && (
+              {/* Cancellation is view-only for regular admin too — only the
+                  assigned rider or superadmin can actually cancel (server-
+                  enforced, see migration_jubah_cancel_superadmin_rider_only.sql). */}
+              {b.status !== 'cancelled' && isSuperAdmin && (
                 <button
                   onClick={() => setCancelModalBooking(b)}
                   className="w-full flex items-center justify-center gap-2 border border-amber-200 text-amber-600 hover:bg-amber-50 active:scale-[0.98] font-semibold py-3 rounded-2xl text-sm transition">

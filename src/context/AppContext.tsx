@@ -4,6 +4,14 @@ import { App as CapacitorApp } from '@capacitor/app';
 import { supabase } from '../lib/supabase';
 import { INACTIVITY_LIMIT_MS, isSessionExpired, touchActivity, setSessionExpiredMessage } from '../lib/idleSession';
 
+// window.location.origin on web — always correct wherever the app is
+// actually being served from (gerakmy.com in production, localhost during
+// dev) rather than Supabase's dashboard-configured Site URL fallback, which
+// still points at an old Vercel deployment URL (same issue ForgotPassword.tsx
+// already fixed for password-reset emails; signUp() never got the same fix).
+const authRedirectUrl = () =>
+  Capacitor.isNativePlatform() ? 'https://www.gerakmy.com' : window.location.origin;
+
 // Definitions
 export type ActivePage =
   | 'splash'
@@ -141,7 +149,7 @@ interface AppContextType {
   switchToRiderMode: () => void;
   user: UserSession;
   login: (email: string, password: string) => Promise<{ error: string | null }>;
-  register: (name: string, matricNo: string, email: string, password: string, phone: string, university: string, campus: string, agreedToTerms: boolean) => Promise<{ error: string | null }>;
+  register: (name: string, matricNo: string, email: string, password: string, phone: string, university: string, campus: string, agreedToTerms: boolean) => Promise<{ error: string | null; needsConfirmation?: boolean }>;
   logout: () => void;
   updateProfile: (updates: { name?: string; matricNo?: string; email?: string; phone?: string; vehicle?: string; plateNumber?: string; icNumber?: string; feeReceiptUrl?: string; avatarUrl?: string; campus?: string }) => Promise<{ error: string | null }>;
   refreshUserData: () => Promise<void>;
@@ -166,7 +174,7 @@ interface AppContextType {
 
   // Jubah Delivery Module
   jubahBooking: JubahBooking | null;
-  bookJubah: (reference: string, fullName: string, icNumber: string, hpNumber: string, university: string, faculty: string, matricId: string, paymentMode: 'pickup' | 'postage' | 'deposit', remark: 'Master' | 'PHD' | 'Degree' | 'Diploma', combinedFileName: string, depositMethod: 'pickup' | 'postage' | undefined, postageZone: 'SM' | 'SS' | undefined, riderId?: string, riderName?: string, riderBankName?: string, riderBankAccountNumber?: string, riderBankAccountHolder?: string, campus?: 'Pekan' | 'Gambang', deliveryAddress?: string, docsPath?: string, oscarPath?: string, skpgPath?: string, konvoPath?: string, icPath?: string, universityKey?: string, email?: string, paymentPath?: string) => Promise<{ success: boolean; error?: string; booking?: JubahBooking }>;
+  bookJubah: (reference: string, fullName: string, icNumber: string, hpNumber: string, university: string, faculty: string, matricId: string, paymentMode: 'pickup' | 'postage' | 'deposit', remark: 'Master' | 'PHD' | 'Degree' | 'Diploma', combinedFileName: string, depositMethod: 'pickup' | 'postage' | undefined, postageZone: 'SM' | 'SS' | undefined, riderId?: string, riderName?: string, riderBankName?: string, riderBankAccountNumber?: string, riderBankAccountHolder?: string, campus?: 'Pekan' | 'Gambang', deliveryAddress?: string, docsPath?: string, oscarPath?: string, skpgPath?: string, konvoPath?: string, icPath?: string, universityKey?: string, email?: string, paymentPath?: string) => Promise<{ success: boolean; error?: string; code?: string; booking?: JubahBooking }>;
   commitJubahBooking: (booking: JubahBooking) => void;
   scheduleReturn: (method: 'self' | 'locker' | 'courier', date: string, time: string) => void;
   cancelJubahBooking: () => void;
@@ -442,6 +450,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   // ── Supabase: restore session on app load ──────────────────────────
   useEffect(() => {
     const isRecovery = window.location.hash.includes('type=recovery');
+    // Same hash-based artifact as isRecovery above — clicking the "Confirm
+    // your email" link lands here with a real, already-valid session (this
+    // project uses Supabase's implicit auth flow, same as the recovery
+    // link), not just a "you're verified, now go log in" marker. Detected
+    // once on this same initial-load check so the welcome notification
+    // fires exactly once, not on every subsequent session restore.
+    const isEmailConfirmation = window.location.hash.includes('type=signup');
 
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (!session?.user || isRecovery) return;
@@ -449,6 +464,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         supabase.auth.signOut();
         setSessionExpiredMessage();
         return;
+      }
+      if (isEmailConfirmation) {
+        addNotification('Email confirmed ✓', 'Your Gerak account is now verified — welcome aboard!', 'system');
       }
       applyPendingInviteIfAny().then(() => loadProfile(session.user.id));
     });
@@ -591,16 +609,30 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return { error: null };
   };
 
-  const register = async (name: string, matricNo: string, email: string, password: string, phone: string, university: string, campus: string, agreedToTerms: boolean): Promise<{ error: string | null }> => {
+  const register = async (name: string, matricNo: string, email: string, password: string, phone: string, university: string, campus: string, agreedToTerms: boolean): Promise<{ error: string | null; needsConfirmation?: boolean }> => {
     if (!agreedToTerms) return { error: 'Please agree to the Terms & Conditions and Privacy Policy.' };
     const { error } = await supabase.auth.signUp({
       email,
       password,
-      options: { data: { name, matric_no: matricNo.toUpperCase(), phone, university, campus } },
+      options: {
+        data: { name, matric_no: matricNo.toUpperCase(), phone, university, campus },
+        emailRedirectTo: authRedirectUrl(),
+      },
     });
     if (error) return { error: error.message };
     const { error: signInErr } = await supabase.auth.signInWithPassword({ email, password });
-    if (signInErr) return { error: 'Account created! Please sign in.' };
+    if (signInErr) {
+      // Email confirmation is required project-wide — signUp() succeeds and
+      // creates the row, but this immediate sign-in attempt always fails
+      // until the user clicks the link Supabase just emailed them. Distinct
+      // from a real failure: the account genuinely was created, it's just
+      // not usable yet, so the UI needs to say that instead of "please sign
+      // in" (which would just fail again with the same error).
+      if (signInErr.message.toLowerCase().includes('email not confirmed')) {
+        return { error: null, needsConfirmation: true };
+      }
+      return { error: 'Account created, but automatic sign-in failed. Please try signing in manually.' };
+    }
     const { data: { user: authUser } } = await supabase.auth.getUser();
     if (authUser) {
       await supabase.from('profiles').update({ phone, university, campus, terms_accepted_at: new Date().toISOString() }).eq('id', authUser.id);
@@ -771,7 +803,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     universityKey?: string,
     email?: string,
     paymentPath?: string,
-  ): Promise<{ success: boolean; error?: string; booking?: JubahBooking }> => {
+  ): Promise<{ success: boolean; error?: string; code?: string; booking?: JubahBooking }> => {
     if (!campus) return { success: false, error: 'Missing campus information.' };
 
     const { data: { user: authUser } } = await supabase.auth.getUser();
@@ -807,7 +839,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     if (error || !data?.success) {
       console.error('[GERAK] Booking save failed:', error ?? data?.error);
-      return { success: false, error: (data?.error as string) ?? 'Could not save your booking. Please try again.' };
+      return { success: false, error: (data?.error as string) ?? 'Could not save your booking. Please try again.', code: data?.code as string | undefined };
     }
 
     const cost       = Number(data.cost);

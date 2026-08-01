@@ -1,9 +1,16 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
-const CORS = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+// Locked to the real app origin instead of '*' — this is called with a real
+// admin's Bearer token, so an arbitrary site being allowed to trigger it
+// cross-origin serves no purpose.
+const ALLOWED_ORIGIN = 'https://www.gerakmy.com'
+function corsHeaders(req: Request) {
+  const origin = req.headers.get('origin')
+  return {
+    'Access-Control-Allow-Origin': origin === ALLOWED_ORIGIN ? origin : ALLOWED_ORIGIN,
+    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  }
 }
 
 type Invite = {
@@ -31,7 +38,7 @@ type Invite = {
 // uses: bookingId in, real row fetched server-side, not trusted from
 // the caller).
 serve(async (req) => {
-  if (req.method === 'OPTIONS') return new Response('ok', { headers: CORS })
+  if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders(req) })
 
   try {
     const authHeader = req.headers.get('Authorization')
@@ -86,7 +93,7 @@ serve(async (req) => {
 function json(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
     status,
-    headers: { ...CORS, 'Content-Type': 'application/json' },
+    headers: { ...corsHeaders(req), 'Content-Type': 'application/json' },
   })
 }
 
@@ -128,13 +135,10 @@ async function sendInviteEmail(invite: Invite, inviterName: string) {
 
   const html = `
   <div style="font-family: -apple-system, Helvetica, Arial, sans-serif; max-width: 480px; margin: 0 auto; color: #1e293b;">
-    <div style="background: linear-gradient(135deg, #ef4444, #dc2626); padding: 22px 24px; border-radius: 12px 12px 0 0;">
-      <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="border-collapse: collapse;"><tr>
-        ${appBaseUrl ? `<td style="padding-right: 10px; vertical-align: middle;"><img src="${appBaseUrl}/icon-192-light.png" width="30" height="30" alt="" style="display: block; border-radius: 8px;" /></td>` : ''}
-        <td style="vertical-align: middle;"><span style="color: #ffffff; font-size: 22px; font-weight: 300; letter-spacing: -0.3px;">ger<span style="font-weight:700;">a</span>k</span></td>
-      </tr></table>
+    <div style="background: #dc2626; padding: 22px 26px; border-radius: 14px 14px 0 0;">
+      <span style="color: #ffffff; font-size: 22px; font-weight: 300; letter-spacing: -0.3px;">ger<span style="font-weight:800;">a</span>k</span>
     </div>
-    <div style="border: 1px solid #f1f5f9; border-top: none; border-radius: 0 0 12px 12px; padding: 28px 24px 24px;">
+    <div style="background: #ffffff; border: 1px solid #f1f5f9; border-top: none; border-radius: 0 0 14px 14px; padding: 28px 26px 24px;">
       <span style="display:inline-block;font-size:10.5px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:#dc2626;background:rgba(220,38,38,0.08);padding:4px 10px;border-radius:999px;margin-bottom:14px;">Staff Invite</span>
       <h1 style="font-size: 20px; margin: 6px 0 6px;">You've been invited to Gerak</h1>
       <p style="font-size: 13.5px; color: #64748b; line-height: 1.6; margin: 0 0 22px;">

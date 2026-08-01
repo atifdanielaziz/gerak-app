@@ -159,7 +159,7 @@ export const Profile: React.FC = () => {
     if (!authUser) { setUploadingAvatar(false); return; }
     const ext = file.name.split('.').pop() ?? 'jpg';
     const path = `${authUser.id}/avatar.${ext}`;
-    const { error } = await supabase.storage.from('profile-photos').upload(path, file, { upsert: true });
+    const { error } = await supabase.storage.from('profile-photos').upload(path, file, { upsert: true, cacheControl: '31536000' });
     if (error) { setUploadingAvatar(false); return; }
     const { data: { publicUrl } } = supabase.storage.from('profile-photos').getPublicUrl(path);
     await updateProfile({ avatarUrl: `${publicUrl}?t=${Date.now()}` });

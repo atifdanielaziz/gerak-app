@@ -26,19 +26,24 @@ interface JubahQrButtonProps {
 export function JubahQrButton({ riderId, canManage = false, showToast }: JubahQrButtonProps) {
   const [open, setOpen] = useState(false);
   const [imgError, setImgError] = useState(false);
-  const [refreshKey, setRefreshKey] = useState(() => Date.now());
+  // Stable across mounts (not Date.now()) — the old per-mount value meant
+  // every single visit to a page rendering this component produced a new
+  // URL, bypassing any browser/CDN cache even when the QR hadn't changed
+  // since the last visit. Only bumped explicitly after a real upload/
+  // delete below, which is the only time a fresh fetch is actually needed.
+  const [refreshKey, setRefreshKey] = useState(0);
   const [uploading, setUploading] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
   const qrPath = `qr-${riderId}.jpg`;
   const { data } = supabase.storage.from(QR_BUCKET).getPublicUrl(qrPath);
-  const url = `${data.publicUrl}?t=${refreshKey}`;
+  const url = refreshKey ? `${data.publicUrl}?t=${refreshKey}` : data.publicUrl;
 
   const handleUpload = async (file: File) => {
     setUploading(true);
     const { error } = await supabase.storage
       .from(QR_BUCKET)
-      .upload(qrPath, file, { upsert: true, contentType: file.type });
+      .upload(qrPath, file, { upsert: true, contentType: file.type, cacheControl: '31536000' });
     setUploading(false);
     if (error) { showToast?.(`QR upload failed: ${error.message}`); return; }
     showToast?.('Payment QR updated ✓');

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
 import { supabase } from '../lib/supabase';
-import { ShieldAlert, User, Mail, Lock, Eye, EyeOff, Phone, ArrowRight, MapPin, IdCard, Car, X, Check, ChevronLeft } from 'lucide-react';
+import { ShieldAlert, User, Mail, Lock, Eye, EyeOff, Phone, ArrowRight, MapPin, IdCard, Car, X, Check, ChevronLeft, CheckCircle } from 'lucide-react';
 import { NativeSelect } from '../components/NativeSelect';
 import { TermsOfService } from './TermsOfService';
 import { PrivacyPolicy } from './PrivacyPolicy';
@@ -58,6 +58,7 @@ export const Register: React.FC = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirm,  setShowConfirm]  = useState(false);
   const [loading,  setLoading]  = useState(false);
+  const [needsConfirmation, setNeedsConfirmation] = useState(false);
   // Reserved for the one message that deserves to stay on screen: a real
   // account-creation failure from the server, which the user needs time to
   // actually read and act on — separate from the per-field bubbles below,
@@ -147,8 +148,12 @@ export const Register: React.FC = () => {
     setFieldError(null);
     setLoading(true);
     setError('');
-    const { error: authError } = await register(name, '', email, password, phone, university, effectiveCampus, agreedToTerms && agreedToPrivacy);
+    const { error: authError, needsConfirmation: pendingConfirmation } = await register(name, '', email, password, phone, university, effectiveCampus, agreedToTerms && agreedToPrivacy);
     setLoading(false);
+    if (pendingConfirmation) {
+      setNeedsConfirmation(true);
+      return;
+    }
     if (authError) {
       // Supabase's own duplicate-email message ("User already registered")
       // — surfaced as its own bubble under Email, same as every other
@@ -193,7 +198,30 @@ export const Register: React.FC = () => {
 
       {/* Form Card — flex-1 so it fills remaining space, fields scroll, button fixed */}
       <div className="flex-1 w-full bg-white rounded-3xl border border-slate-100 flex flex-col overflow-hidden min-h-0">
-
+      {needsConfirmation ? (
+        // Email confirmation is required project-wide — the account was
+        // genuinely created, but isn't usable until this link is clicked.
+        // Same "check your inbox" pattern as ForgotPassword.tsx's success
+        // state, not the red error banner: this isn't a failure, it's the
+        // expected next step.
+        <div className="flex-1 flex flex-col items-center justify-center gap-3 text-center px-6 py-8">
+          <div className="w-14 h-14 rounded-full bg-emerald-50 flex items-center justify-center">
+            <CheckCircle className="w-7 h-7 text-emerald-500" />
+          </div>
+          <p className="text-sm font-bold text-slate-800">Almost done — confirm your email</p>
+          <p className="text-xs text-slate-400 font-normal leading-relaxed max-w-xs">
+            We sent a confirmation link to <span className="text-slate-700 font-semibold">{email}</span>.
+            Open it on this device and tap the link — you'll be signed in automatically.
+          </p>
+          <button
+            onClick={() => setCurrentPage('login')}
+            className="mt-2 bg-primary hover:bg-primary-hover active:scale-[0.98] text-white font-semibold text-xs px-5 py-2.5 rounded-xl transition"
+          >
+            Sign In Manually Instead
+          </button>
+        </div>
+      ) : (
+      <>
         {/* Scrollable fields */}
         <div className="flex-1 overflow-y-auto overflow-x-hidden no-scrollbar px-5 pt-5 pb-2 overscroll-contain touch-pan-y w-full">
         {/* noValidate — all validation is the custom FieldBubble system
@@ -474,6 +502,8 @@ export const Register: React.FC = () => {
               : <><span>Register Account</span><ArrowRight className="w-3.5 h-3.5" /></>}
           </button>
         </div>
+      </>
+      )}
       </div>
 
       {/* Footer — fixed outside card */}
