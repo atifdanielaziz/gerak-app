@@ -75,6 +75,12 @@ export const AdminHome: React.FC = () => {
   // declared here (pre-existing quirk, not moved as part of this refactor).
   const [jubahActive, setJubahActive]   = useState(false);
   const [togglingJubah, setTogglingJubah] = useState(false);
+  // Bumped every time handleToggleJubah writes a fresh value, so a slower
+  // loadJubahData() settings-fetch that was already in flight before the
+  // toggle (common on a slow connection) can detect it's now stale and skip
+  // overwriting the just-toggled value — was previously clobbering the
+  // toggle back to its old colour a moment after it changed.
+  const jubahActiveSeqRef = useRef(0);
 
   // Reported up by ReceiptsTab's own gate-master confirm dialog, so the
   // shared "hide BottomNav while any sheet is open" effect still sees it.
@@ -209,8 +215,9 @@ export const AdminHome: React.FC = () => {
   const loadJubahData = useCallback(async () => {
     setJubahBookingsLoading(true);
 
+    const mySeq = jubahActiveSeqRef.current;
     const { data: setting } = await supabase.from('app_settings').select('value').eq('key', 'jubah_active').single();
-    if (setting) setJubahActive(setting.value === 'true');
+    if (setting && jubahActiveSeqRef.current === mySeq) setJubahActive(setting.value === 'true');
 
     let bookingsQ = supabase.from('jubah_bookings')
       .select('id, reference, full_name, ic_number, hp_number, email, matric_id, university, campus, faculty, remark, rider_name, rider_phone, status, payment_mode, cost, balance_due, balance_paid, balance_paid_at, balance_proof_url, initial_paid, initial_paid_at, delivery_address, docs_path, payment_path, oscar_path, skpg_path, konvo_path, ic_path, created_at, needs_reconciliation, reconciliation_note')
@@ -368,6 +375,7 @@ export const AdminHome: React.FC = () => {
     setTogglingJubah(true);
     const newVal = (!jubahActive).toString();
     await supabase.from('app_settings').update({ value: newVal }).eq('key', 'jubah_active');
+    jubahActiveSeqRef.current += 1; // invalidate any older in-flight settings fetch
     setJubahActive(!jubahActive);
     setTogglingJubah(false);
     showToast(`Jubah delivery ${!jubahActive ? 'activated' : 'deactivated'}.`);
@@ -423,7 +431,7 @@ export const AdminHome: React.FC = () => {
                 return (
                   <button key={tab.id}
                     onPointerDown={(e) => { e.preventDefault(); setActiveTab(tab.id); }}
-                    className={`flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-sm font-semibold text-left transition-transform active:scale-[0.98] ${
+                    className={`flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-sm font-semibold text-left transition-transform transform-gpu active:scale-[0.98] ${
                       activeTab === tab.id ? 'bg-primary text-white' : 'text-slate-500 hover:bg-slate-100'
                     }`}
                   >
@@ -455,19 +463,19 @@ export const AdminHome: React.FC = () => {
               <div className="flex flex-col gap-1 pt-2 mt-1 border-t border-slate-100">
                 <p className="px-3 pb-1 text-[10px] font-semibold text-slate-300 uppercase tracking-wider">Preview as</p>
                 <button onPointerDown={(e) => { e.preventDefault(); switchToDriverMode(); }}
-                  className={`flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-semibold text-left transition-transform active:scale-[0.98] ${
+                  className={`flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-semibold text-left transition-transform transform-gpu active:scale-[0.98] ${
                     activeRole === 'driver' ? 'bg-slate-100 text-slate-900' : 'text-slate-500 hover:bg-slate-100'
                   }`}>
                   <Car className="w-3.5 h-3.5 shrink-0" /> Driver
                 </button>
                 <button onPointerDown={(e) => { e.preventDefault(); switchToRiderMode(); }}
-                  className={`flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-semibold text-left transition-transform active:scale-[0.98] ${
+                  className={`flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-semibold text-left transition-transform transform-gpu active:scale-[0.98] ${
                     activeRole === 'rider' ? 'bg-slate-100 text-slate-900' : 'text-slate-500 hover:bg-slate-100'
                   }`}>
                   <Bike className="w-3.5 h-3.5 shrink-0" /> Rider
                 </button>
                 <button onPointerDown={(e) => { e.preventDefault(); enterPreviewMode(); }}
-                  className={`flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-semibold text-left transition-transform active:scale-[0.98] ${
+                  className={`flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-semibold text-left transition-transform transform-gpu active:scale-[0.98] ${
                     isPreviewMode ? 'bg-slate-100 text-slate-900' : 'text-slate-500 hover:bg-slate-100'
                   }`}>
                   <Eye className="w-3.5 h-3.5 shrink-0" /> Customer
@@ -615,7 +623,7 @@ export const AdminHome: React.FC = () => {
           .map(tab => (
             <button key={tab.id}
               onPointerDown={(e) => { e.preventDefault(); setActiveTab(tab.id); }}
-              className={`shrink-0 px-4 py-2 rounded-xl text-xs font-semibold transition-transform flex items-center justify-center gap-1.5 ${
+              className={`shrink-0 px-4 py-2 rounded-xl text-xs font-semibold transition-transform transform-gpu flex items-center justify-center gap-1.5 ${
                 activeTab === tab.id ? 'bg-primary text-white' : 'text-slate-400'
               }`}
             >
@@ -715,7 +723,7 @@ export const AdminHome: React.FC = () => {
                 </div>
               </div>
               <button onPointerDown={e => { e.preventDefault(); handleToggleJubah(); }} disabled={togglingJubah}
-                className={`shrink-0 px-4 py-2 rounded-xl text-xs font-semibold border transition-transform active:scale-95 disabled:opacity-50 ${
+                className={`shrink-0 px-4 py-2 rounded-xl text-xs font-semibold border transition-transform transform-gpu active:scale-95 disabled:opacity-50 ${
                   jubahActive ? 'bg-blue-50 border-blue-200 text-blue-700' : 'bg-slate-50 border-slate-200 text-slate-500'
                 }`}>
                 {togglingJubah ? '…' : jubahActive ? <><span className="inline-block w-2 h-2 rounded-full bg-emerald-400 mr-1" />ON</> : <><span className="inline-block w-2 h-2 rounded-full bg-slate-400 mr-1" />OFF</>}
@@ -870,7 +878,7 @@ export const AdminHome: React.FC = () => {
                 .filter(t => !t.superadminOnly || isSuperAdmin)
                 .map(t => (
                 <button key={t.id} onPointerDown={(e) => { e.preventDefault(); setJubahSubTab(t.id); setJubahAdminView('list'); setJubahAdminSelected(null); }}
-                  className={`flex-1 py-2 rounded-xl text-xs font-semibold transition-transform ${
+                  className={`flex-1 py-2 rounded-xl text-xs font-semibold transition-transform transform-gpu ${
                     jubahSubTab === t.id ? 'bg-primary text-white' : 'text-slate-400'
                   }`}>
                   {t.label}

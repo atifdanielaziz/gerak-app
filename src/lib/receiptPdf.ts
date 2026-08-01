@@ -1,4 +1,6 @@
+import { Capacitor } from '@capacitor/core';
 import type { ReceiptDoc, ReceiptRow } from './receiptRows';
+import { NativePrint } from './nativePrint';
 
 const printDate = () =>
   new Date().toLocaleDateString('en-MY', { day: '2-digit', month: 'short', year: 'numeric' });
@@ -80,6 +82,15 @@ ${rowsHtml}
 
 export function generateReceiptPdf(doc: ReceiptDoc, extraRows: ReceiptRow[] = []) {
   const html = buildReceiptHtml(doc, extraRows);
+
+  // Android's WebView doesn't implement window.print() at all (silent
+  // no-op) — bridge to a native plugin that hands the same HTML to
+  // Android's own PrintManager instead. Web/iOS keep the iframe approach.
+  if (Capacitor.getPlatform() === 'android') {
+    NativePrint.print({ html, jobName: `${doc.subtitle} ${doc.bookingRef}` })
+      .catch(err => console.error('[GERAK] Native print failed:', err));
+    return;
+  }
 
   const iframe = document.createElement('iframe');
   iframe.style.cssText = 'position:fixed;width:0;height:0;border:none;opacity:0';

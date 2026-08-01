@@ -464,7 +464,7 @@ export const GerakRental: React.FC = () => {
         </div>
         <div className="flex gap-2">
           <button onPointerDown={(e) => { e.preventDefault(); setView('my-bookings'); loadMyBookings(); setSelected(null); }}
-            className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-transform ${view === 'my-bookings' ? 'bg-primary text-white' : 'bg-white border border-slate-100 text-slate-500'}`}>
+            className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-transform transform-gpu ${view === 'my-bookings' ? 'bg-primary text-white' : 'bg-white border border-slate-100 text-slate-500'}`}>
             My Bookings
           </button>
           {!selected && view === 'list' && (

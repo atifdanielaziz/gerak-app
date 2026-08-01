@@ -145,7 +145,7 @@ export const CalendarTab = forwardRef<CalendarTabHandle, CalendarTabProps>(funct
             <div className="flex gap-1.5 overflow-x-auto no-scrollbar">
               {calParsed.semesters?.map((s: any, i: number) => (
                 <button key={s.id} onPointerDown={e => { e.preventDefault(); setCalPreviewSem(i); }}
-                  className={`shrink-0 px-3 py-1.5 rounded-xl text-xs font-semibold transition-transform ${calPreviewSem === i ? 'bg-primary text-white' : 'bg-slate-100 text-slate-500'}`}>
+                  className={`shrink-0 px-3 py-1.5 rounded-xl text-xs font-semibold transition-transform transform-gpu ${calPreviewSem === i ? 'bg-primary text-white' : 'bg-slate-100 text-slate-500'}`}>
                   {s.short}
                 </button>
               ))}
