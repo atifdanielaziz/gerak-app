@@ -141,7 +141,7 @@ interface AppContextType {
   switchToRiderMode: () => void;
   user: UserSession;
   login: (email: string, password: string) => Promise<{ error: string | null }>;
-  register: (name: string, matricNo: string, email: string, password: string, phone: string, university: string, campus: string, agreedToTerms: boolean) => Promise<{ error: string | null }>;
+  register: (name: string, matricNo: string, email: string, password: string, phone: string, university: string, campus: string, agreedToTerms: boolean) => Promise<{ error: string | null; needsConfirmation?: boolean }>;
   logout: () => void;
   updateProfile: (updates: { name?: string; matricNo?: string; email?: string; phone?: string; vehicle?: string; plateNumber?: string; icNumber?: string; feeReceiptUrl?: string; avatarUrl?: string; campus?: string }) => Promise<{ error: string | null }>;
   refreshUserData: () => Promise<void>;
@@ -591,7 +591,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return { error: null };
   };
 
-  const register = async (name: string, matricNo: string, email: string, password: string, phone: string, university: string, campus: string, agreedToTerms: boolean): Promise<{ error: string | null }> => {
+  const register = async (name: string, matricNo: string, email: string, password: string, phone: string, university: string, campus: string, agreedToTerms: boolean): Promise<{ error: string | null; needsConfirmation?: boolean }> => {
     if (!agreedToTerms) return { error: 'Please agree to the Terms & Conditions and Privacy Policy.' };
     const { error } = await supabase.auth.signUp({
       email,
@@ -600,7 +600,18 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     });
     if (error) return { error: error.message };
     const { error: signInErr } = await supabase.auth.signInWithPassword({ email, password });
-    if (signInErr) return { error: 'Account created! Please sign in.' };
+    if (signInErr) {
+      // Email confirmation is required project-wide — signUp() succeeds and
+      // creates the row, but this immediate sign-in attempt always fails
+      // until the user clicks the link Supabase just emailed them. Distinct
+      // from a real failure: the account genuinely was created, it's just
+      // not usable yet, so the UI needs to say that instead of "please sign
+      // in" (which would just fail again with the same error).
+      if (signInErr.message.toLowerCase().includes('email not confirmed')) {
+        return { error: null, needsConfirmation: true };
+      }
+      return { error: 'Account created, but automatic sign-in failed. Please try signing in manually.' };
+    }
     const { data: { user: authUser } } = await supabase.auth.getUser();
     if (authUser) {
       await supabase.from('profiles').update({ phone, university, campus, terms_accepted_at: new Date().toISOString() }).eq('id', authUser.id);
