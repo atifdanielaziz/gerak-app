@@ -73,6 +73,12 @@ export type JubahBookingRow = {
 
 interface JubahCustomerSubTabProps {
   active: boolean;
+  // Regular admin is view-only for confirming Jubah payments — only the
+  // assigned rider or superadmin can actually approve (server-enforced in
+  // update_jubah_booking_status/mark_jubah_balance_paid, see migration_
+  // jubah_confirm_superadmin_rider_only.sql). This just controls whether
+  // the confirm/advance controls render as clickable here.
+  isSuperAdmin: boolean;
   bookings: JubahBookingRow[];
   bookingsLoading: boolean;
   setBookings: Dispatch<SetStateAction<JubahBookingRow[]>>;
@@ -105,7 +111,7 @@ interface JubahCustomerSubTabProps {
 // fragmented across list/card/details files — those three views share one
 // tightly-coupled navigation state machine that's clearer kept together.
 export function JubahCustomerSubTab({
-  bookings, bookingsLoading, setBookings, reload,
+  isSuperAdmin, bookings, bookingsLoading, setBookings, reload,
   adminView, selected, setSelected, onGoToCard, onGoBack, onGoToList,
   showToast, onModalOpenChange,
 }: JubahCustomerSubTabProps) {
@@ -463,6 +469,15 @@ export function JubahCustomerSubTab({
                                 </span>
                               );
                             }
+                            // View-only for regular admin — only the assigned rider or
+                            // superadmin can actually approve (server-enforced too).
+                            if (!isSuperAdmin) {
+                              return (
+                                <span title="Only the assigned rider or superadmin can confirm this">
+                                  <Eye className="w-4 h-4 text-slate-300" />
+                                </span>
+                              );
+                            }
                             const depositOnly = b.payment_mode === 'deposit' && b.initial_paid && !b.balance_paid;
                             return (
                               <button
@@ -685,16 +700,22 @@ export function JubahCustomerSubTab({
                       next to the clearly labeled "Confirm" button for the initial
                       payment just below. Same action, matching visible label now. */}
                   {!b.balance_paid && (
-                    <button
-                      type="button"
-                      onClick={() => confirmBooking(b)}
-                      disabled={confirmingId === b.id || !b.balance_proof_url}
-                      title={!b.balance_proof_url ? 'Waiting on the customer to upload a balance payment receipt' : undefined}
-                      className="w-full flex items-center justify-center gap-1.5 bg-emerald-500 hover:bg-emerald-600 active:scale-[0.98] disabled:bg-slate-200 disabled:cursor-not-allowed text-white font-semibold text-xs px-3 py-2.5 rounded-xl transition">
-                      {confirmingId === b.id
-                        ? <span className="w-3.5 h-3.5 rounded-full border-2 border-white/40 border-t-white animate-spin" />
-                        : <><BadgeCheck className="w-3.5 h-3.5" />Confirm Balance</>}
-                    </button>
+                    isSuperAdmin ? (
+                      <button
+                        type="button"
+                        onClick={() => confirmBooking(b)}
+                        disabled={confirmingId === b.id || !b.balance_proof_url}
+                        title={!b.balance_proof_url ? 'Waiting on the customer to upload a balance payment receipt' : undefined}
+                        className="w-full flex items-center justify-center gap-1.5 bg-emerald-500 hover:bg-emerald-600 active:scale-[0.98] disabled:bg-slate-200 disabled:cursor-not-allowed text-white font-semibold text-xs px-3 py-2.5 rounded-xl transition">
+                        {confirmingId === b.id
+                          ? <span className="w-3.5 h-3.5 rounded-full border-2 border-white/40 border-t-white animate-spin" />
+                          : <><BadgeCheck className="w-3.5 h-3.5" />Confirm Balance</>}
+                      </button>
+                    ) : (
+                      <p className="text-xs text-slate-400 font-semibold text-center flex items-center justify-center gap-1.5">
+                        <Eye className="w-3.5 h-3.5" /> View only — only the assigned rider or superadmin can confirm.
+                      </p>
+                    )
                   )}
                 </div>
               )}
@@ -706,35 +727,48 @@ export function JubahCustomerSubTab({
                   and deposit bookings alike. */}
               {notStarted && b.status !== 'cancelled' && (
                 <div className="flex flex-col gap-2">
-                  <button
-                    type="button"
-                    onClick={() => confirmBooking(b)}
-                    disabled={confirmingId === b.id}
-                    className="w-full flex items-center justify-center gap-1.5 bg-emerald-500 hover:bg-emerald-600 active:scale-[0.98] disabled:opacity-50 text-white font-semibold text-xs px-3 py-2.5 rounded-xl transition">
-                    {confirmingId === b.id
-                      ? <span className="w-3.5 h-3.5 rounded-full border-2 border-white/40 border-t-white animate-spin" />
-                      : <><BadgeCheck className="w-3.5 h-3.5" />Confirm</>}
-                  </button>
+                  {isSuperAdmin ? (
+                    <button
+                      type="button"
+                      onClick={() => confirmBooking(b)}
+                      disabled={confirmingId === b.id}
+                      className="w-full flex items-center justify-center gap-1.5 bg-emerald-500 hover:bg-emerald-600 active:scale-[0.98] disabled:opacity-50 text-white font-semibold text-xs px-3 py-2.5 rounded-xl transition">
+                      {confirmingId === b.id
+                        ? <span className="w-3.5 h-3.5 rounded-full border-2 border-white/40 border-t-white animate-spin" />
+                        : <><BadgeCheck className="w-3.5 h-3.5" />Confirm</>}
+                    </button>
+                  ) : (
+                    <p className="text-xs text-slate-400 font-semibold text-center flex items-center justify-center gap-1.5">
+                      <Eye className="w-3.5 h-3.5" /> View only — only the assigned rider or superadmin can confirm.
+                    </p>
+                  )}
                 </div>
               )}
-              {/* Advance status button — deposit bookings stay gated until the balance is confirmed above */}
-              {!notStarted && !isDone && b.status !== 'cancelled' && (() => {
-                // Only gate the 'booked' -> 'processing' hop — the earlier
-                // 'paid' -> 'booked' confirm doesn't require the balance yet.
-                const balanceGateActive = b.payment_mode === 'deposit' && b.status === 'booked' && !b.balance_paid;
-                return (
-                  <button
-                    onClick={handleAdminAdvanceStatus}
-                    disabled={jubahAdminUpdating || balanceGateActive}
-                    className="w-full bg-primary hover:bg-primary-hover active:scale-[0.98] disabled:bg-slate-200 disabled:cursor-not-allowed text-white font-semibold py-3 rounded-2xl transition flex items-center justify-center gap-2 text-sm">
-                    {jubahAdminUpdating
-                      ? <span className="w-4 h-4 rounded-full border-2 border-white/40 border-t-white animate-spin" />
-                      : balanceGateActive
-                        ? 'Awaiting Balance Payment'
-                        : `→ ${JUBAH_NEXT_LABEL[nextStat ?? ''] ?? `Mark ${JUBAH_STATUS_LABEL[nextStat ?? '']}`}`}
-                  </button>
-                );
-              })()}
+              {/* Advance status button — deposit bookings stay gated until the balance is
+                  confirmed above. View-only for regular admin — see isSuperAdmin note. */}
+              {!notStarted && !isDone && b.status !== 'cancelled' && (
+                isSuperAdmin ? (() => {
+                  // Only gate the 'booked' -> 'processing' hop — the earlier
+                  // 'paid' -> 'booked' confirm doesn't require the balance yet.
+                  const balanceGateActive = b.payment_mode === 'deposit' && b.status === 'booked' && !b.balance_paid;
+                  return (
+                    <button
+                      onClick={handleAdminAdvanceStatus}
+                      disabled={jubahAdminUpdating || balanceGateActive}
+                      className="w-full bg-primary hover:bg-primary-hover active:scale-[0.98] disabled:bg-slate-200 disabled:cursor-not-allowed text-white font-semibold py-3 rounded-2xl transition flex items-center justify-center gap-2 text-sm">
+                      {jubahAdminUpdating
+                        ? <span className="w-4 h-4 rounded-full border-2 border-white/40 border-t-white animate-spin" />
+                        : balanceGateActive
+                          ? 'Awaiting Balance Payment'
+                          : `→ ${JUBAH_NEXT_LABEL[nextStat ?? ''] ?? `Mark ${JUBAH_STATUS_LABEL[nextStat ?? '']}`}`}
+                    </button>
+                  );
+                })() : (
+                  <p className="text-xs text-slate-400 font-semibold text-center flex items-center justify-center gap-1.5 py-2">
+                    <Eye className="w-3.5 h-3.5" /> View only — only the assigned rider or superadmin can advance this.
+                  </p>
+                )
+              )}
               {isDone && b.status !== 'cancelled' && (
                 <div className="bg-emerald-50 border border-emerald-100 rounded-2xl px-4 py-3 text-center">
                   <p className="text-xs font-semibold text-emerald-700">✓ Delivery Complete</p>

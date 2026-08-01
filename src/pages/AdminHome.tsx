@@ -900,6 +900,7 @@ export const AdminHome: React.FC = () => {
           {effectiveJubahSubTab === 'customer' && (
             <JubahCustomerSubTab
               active={activeTab === 'jubah' && effectiveJubahSubTab === 'customer'}
+              isSuperAdmin={isSuperAdmin}
               bookings={jubahBookings}
               bookingsLoading={jubahBookingsLoading}
               setBookings={setJubahBookings}
