@@ -1,6 +1,3 @@
-import { Capacitor } from '@capacitor/core';
-import { ForceRedraw } from './forceRedrawNative';
-
 // A React state update inside onPointerDown updates the DOM/className
 // correctly and immediately (confirmed live: page content switches on the
 // first tap) — but the tab button's own background-color repaint can still
@@ -16,27 +13,19 @@ import { ForceRedraw } from './forceRedrawNative';
 // web-layer technique — the correct frame simply isn't being presented to
 // the display.
 //
-// This needs to work on BOTH the installed PWA (pure web, no native bridge
-// at all — a Capacitor plugin call is a no-op there) and the Capacitor APK
-// (a real native shell), so two independent techniques run together:
+// Needs to work on both the installed PWA and the Capacitor APK, so this
+// stays pure DOM/JS — no native bridge involved (a native visibility-toggle
+// attempt was tried and reverted: it caused a visible black flash, since
+// toggling the WebView invisible briefly exposes the window's blank
+// background, and it still didn't fix the actual colour bug either).
 //
-// 1. A 1px scroll-and-back. Scroll gestures get the highest compositor
-//    priority on virtually every mobile browser engine (they're tied
-//    directly to the touch/gesture recognizer that's guaranteed to trigger
-//    a fresh frame) — this is pure DOM/JS, so it's the only lever available
-//    to the installed PWA, which has no native code to call into at all.
-// 2. On native Android specifically, also call the local ForceRedrawPlugin,
-//    which toggles the WebView's own Android View visibility off and back
-//    on — forceful enough to make the window manager recompute the whole
-//    surface stack, not just ask the WebView to redraw itself.
+// A 1px scroll-and-back: scroll gestures get the highest compositor
+// priority on virtually every mobile browser engine, tied directly to the
+// touch/gesture recognizer that's guaranteed to trigger a fresh frame.
 export function forceRepaint(el?: Element | null) {
   void (el ?? document.body).getBoundingClientRect().height;
   requestAnimationFrame(() => requestAnimationFrame(() => {}));
 
   window.scrollBy(0, 1);
   requestAnimationFrame(() => window.scrollBy(0, -1));
-
-  if (Capacitor.isNativePlatform() && Capacitor.getPlatform() === 'android') {
-    ForceRedraw.redraw().catch(() => {});
-  }
 }

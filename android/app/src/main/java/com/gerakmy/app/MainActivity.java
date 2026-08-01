@@ -9,7 +9,6 @@ public class MainActivity extends BridgeActivity {
     @Override
     public void onCreate(Bundle savedInstanceState) {
         registerPlugin(NativePrintPlugin.class);
-        registerPlugin(ForceRedrawPlugin.class);
         super.onCreate(savedInstanceState);
         EdgeToEdge.enable(this);
         // Debug builds only - lets chrome://inspect on a connected computer
