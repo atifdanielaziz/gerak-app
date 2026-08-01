@@ -12,6 +12,18 @@ const config: CapacitorConfig = {
   appId: 'com.gerakmy.app',
   appName: 'Gerak',
   webDir: 'dist',
+  server: {
+    // NOT the same thing as server.url above — this doesn't fetch content
+    // from the network at all, it only changes what origin string the
+    // bundled local WebView reports (Referer header, document.location,
+    // etc). Content still loads from dist/ exactly as before. Set so the
+    // app's origin matches the production website's, letting HTTP-referrer-
+    // restricted API keys (e.g. Google Places) allowlist just one entry
+    // (gerakmy.com) instead of needing a separate https://localhost/* rule
+    // for native builds.
+    hostname: 'gerakmy.com',
+    androidScheme: 'https',
+  },
   plugins: {
     SplashScreen: {
       launchShowDuration: 0,
