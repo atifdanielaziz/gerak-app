@@ -1,18 +1,19 @@
 // A React state update inside onPointerDown updates the DOM/className
 // correctly and immediately (confirmed live: page content switches on the
-// first tap) — but on Android's Chromium WebView, the tab button's own
-// background-color repaint can still be deferred by the compositor until
-// an unrelated later touch forces a new frame (confirmed live: the tab
-// stays unstyled until a different tab is tapped, at which point the
-// PREVIOUS tab's color finally appears). transform-gpu (layer promotion)
-// already fixed this exact class of bug on iOS Safari/WebKit, but isn't
-// sufficient for this Chromium quirk on its own.
-//
-// Scheduling two nested requestAnimationFrame callbacks forces the browser
-// to actually run two full paint cycles before this function's promise
-// resolves — a widely-used technique for nudging an engine to flush a
-// pending-but-not-yet-committed repaint instead of leaving it queued
-// indefinitely.
-export function forceRepaint() {
+// first tap) — but the tab button's own background-color repaint can still
+// be deferred until an unrelated later touch forces a new frame. Narrowed
+// down live: this only happens in standalone display mode (installed PWA
+// and the Capacitor APK) — a regular mobile browser tab is unaffected, and
+// a first double-requestAnimationFrame attempt alone did NOT fix it there.
+// Mobile browsers are known to throttle/skip repaints to save power when
+// running standalone with no continuous animation in flight — reading a
+// layout property back synchronously forces the engine to flush any
+// pending style/layout work immediately, rather than leaving it queued for
+// whenever it next decides a repaint is worth the battery cost. Combined
+// with the double rAF (forces two real paint cycles to actually run) as a
+// second layer, since neither technique alone had been confirmed to work
+// in isolation.
+export function forceRepaint(el?: Element | null) {
+  void (el ?? document.body).getBoundingClientRect().height;
   requestAnimationFrame(() => requestAnimationFrame(() => {}));
 }
