@@ -1,11 +1,18 @@
 import Anthropic from 'npm:@anthropic-ai/sdk';
 import { createClient } from 'npm:@supabase/supabase-js@2';
 
-const CORS = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Methods': 'POST, OPTIONS',
-  'Access-Control-Allow-Headers': 'authorization, content-type, x-client-info, apikey',
-};
+// Locked to the real app origin instead of '*' — this is called with a real
+// admin's Bearer token, so an arbitrary site being allowed to trigger it
+// cross-origin serves no purpose.
+const ALLOWED_ORIGIN = 'https://www.gerakmy.com';
+function corsHeaders(req: Request) {
+  const origin = req.headers.get('origin');
+  return {
+    'Access-Control-Allow-Origin': origin === ALLOWED_ORIGIN ? origin : ALLOWED_ORIGIN,
+    'Access-Control-Allow-Methods': 'POST, OPTIONS',
+    'Access-Control-Allow-Headers': 'authorization, content-type, x-client-info, apikey',
+  };
+}
 
 const PROMPT = `You are parsing a UMPSA (Universiti Malaysia Pahang Al-Sultan Abdullah) academic calendar PDF.
 
@@ -50,13 +57,13 @@ Rules:
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: CORS });
+    return new Response('ok', { headers: corsHeaders(req) });
   }
 
   try {
     // Auth check
     const auth = req.headers.get('Authorization');
-    if (!auth) return new Response('Unauthorized', { status: 401, headers: CORS });
+    if (!auth) return new Response('Unauthorized', { status: 401, headers: corsHeaders(req) });
 
     const supabase = createClient(
       Deno.env.get('SUPABASE_URL')!,
@@ -65,19 +72,19 @@ Deno.serve(async (req) => {
     );
 
     const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return new Response('Unauthorized', { status: 401, headers: CORS });
+    if (!user) return new Response('Unauthorized', { status: 401, headers: corsHeaders(req) });
 
     const { data: profile } = await supabase
       .from('profiles').select('role').eq('id', user.id).single();
 
     if (!profile || !['admin', 'superadmin'].includes(profile.role)) {
-      return new Response('Forbidden', { status: 403, headers: CORS });
+      return new Response('Forbidden', { status: 403, headers: corsHeaders(req) });
     }
 
     // Parse PDF from FormData
     const form = await req.formData();
     const file = form.get('pdf') as File | null;
-    if (!file) return new Response('No PDF provided', { status: 400, headers: CORS });
+    if (!file) return new Response('No PDF provided', { status: 400, headers: corsHeaders(req) });
 
     // Convert to base64
     const buf = await file.arrayBuffer();
@@ -110,14 +117,14 @@ Deno.serve(async (req) => {
     const parsed = JSON.parse(json);
 
     return new Response(JSON.stringify(parsed), {
-      headers: { ...CORS, 'Content-Type': 'application/json' },
+      headers: { ...corsHeaders(req), 'Content-Type': 'application/json' },
     });
 
   } catch (err) {
     console.error('parse-calendar:', err);
     return new Response(JSON.stringify({ error: String(err) }), {
       status: 500,
-      headers: { ...CORS, 'Content-Type': 'application/json' },
+      headers: { ...corsHeaders(req), 'Content-Type': 'application/json' },
     });
   }
 });

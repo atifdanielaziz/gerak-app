@@ -1,9 +1,16 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
-const CORS = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+// Locked to the real app origin instead of '*' — this one's cron/service-
+// role-only anyway, so it's not reachable from a browser at all, but kept
+// consistent with every other function here.
+const ALLOWED_ORIGIN = 'https://www.gerakmy.com'
+function corsHeaders(req: Request) {
+  const origin = req.headers.get('origin')
+  return {
+    'Access-Control-Allow-Origin': origin === ALLOWED_ORIGIN ? origin : ALLOWED_ORIGIN,
+    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  }
 }
 
 // Plain !== short-circuits on the first differing byte, leaking a timing
@@ -19,7 +26,7 @@ function timingSafeEqual(a: string, b: string): boolean {
 }
 
 serve(async (req) => {
-  if (req.method === 'OPTIONS') return new Response('ok', { headers: CORS })
+  if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders(req) })
 
   try {
     // Only allow calls with service role key (from pg_cron or admin)
@@ -108,6 +115,6 @@ serve(async (req) => {
 function json(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
     status,
-    headers: { ...CORS, 'Content-Type': 'application/json' },
+    headers: { ...corsHeaders(req), 'Content-Type': 'application/json' },
   })
 }

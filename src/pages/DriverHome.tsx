@@ -243,9 +243,12 @@ export const DriverHome: React.FC = () => {
     let enriched: RentalBookingOwner[] = [];
     if (bookings?.length) {
       const customerIds = [...new Set(bookings.map(b => b.customer_id))];
+      // Not a raw profiles select — RLS only grants a rental owner their
+      // customer's full row (IC number, signed document URLs, etc.) via
+      // this RPC's explicit column allowlist, not the base table.
       const { data: profiles } = await supabase
-        .from('profiles').select('id, name, phone').in('id', customerIds);
-      const profileById = new Map(profiles?.map(p => [p.id, p]) ?? []);
+        .rpc('get_related_customers_public', { p_customer_ids: customerIds });
+      const profileById = new Map((profiles as { id: string; name: string; phone: string; gerak_id: string }[] | null ?? []).map(p => [p.id, p]));
       enriched = bookings.map(b => {
         const p = profileById.get(b.customer_id);
         return {

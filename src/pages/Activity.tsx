@@ -73,8 +73,11 @@ async function loadRentalItems(customerId: string, renterName: string, renterPho
   // Same enrichment fan-out as GerakRental.tsx's loadMyBookings — rental_bookings
   // only stores owner_id, no denormalized owner/vehicle fields.
   const ownerIds = [...new Set(rows.map(r => r.owner_id))];
+  // rental_owner_public, not the base profiles table — same safe view
+  // GerakRental.tsx already uses for this exact lookup (id/name/gerak_id/
+  // phone only, not the owner's IC/document fields).
   const [{ data: profiles }, { data: vehicles }] = await Promise.all([
-    supabase.from('profiles').select('id, name, gerak_id, phone').in('id', ownerIds),
+    supabase.from('rental_owner_public').select('id, name, gerak_id, phone').in('id', ownerIds),
     supabase.from('rental_vehicles').select('owner_id, car_type, plate_no, color, price_hour').in('owner_id', ownerIds),
   ]);
 

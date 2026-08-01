@@ -638,8 +638,10 @@ export const Jubah: React.FC = () => {
     // unlikely to collide with another booking, but not impossible at scale.
     // Retry once with a fresh one rather than surfacing the raw DB error;
     // already-uploaded files stay valid since their paths are stored as-is,
-    // independent of this label.
-    if (!result.success && /duplicate key|unique constraint/i.test(result.error ?? '')) {
+    // independent of this label. Checked via a stable error code, not the
+    // raw Postgres message text — create_jubah_booking no longer returns
+    // that verbatim (see migration_jubah_booking_generic_errors.sql).
+    if (!result.success && result.code === 'duplicate_reference') {
       reference = generateReference();
       result = await bookJubah(reference, fullName, icNumber, hpNumber, university, faculty, matricId, paymentMode, remark, combinedFileName, depositMethod, postageZone, selectedRiderId, selectedRider?.name, selectedRider?.jubah_bank_name ?? undefined, selectedRider?.jubah_bank_account_number ?? undefined, selectedRider?.jubah_bank_account_holder ?? undefined, bookingCampus, addr, docsPath, oscarPath, skpgPath, konvoPath, icPath, landingUniversity, email, paymentPath);
     }

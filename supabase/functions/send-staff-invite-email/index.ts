@@ -1,9 +1,16 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
-const CORS = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+// Locked to the real app origin instead of '*' — this is called with a real
+// admin's Bearer token, so an arbitrary site being allowed to trigger it
+// cross-origin serves no purpose.
+const ALLOWED_ORIGIN = 'https://www.gerakmy.com'
+function corsHeaders(req: Request) {
+  const origin = req.headers.get('origin')
+  return {
+    'Access-Control-Allow-Origin': origin === ALLOWED_ORIGIN ? origin : ALLOWED_ORIGIN,
+    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  }
 }
 
 type Invite = {
@@ -31,7 +38,7 @@ type Invite = {
 // uses: bookingId in, real row fetched server-side, not trusted from
 // the caller).
 serve(async (req) => {
-  if (req.method === 'OPTIONS') return new Response('ok', { headers: CORS })
+  if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders(req) })
 
   try {
     const authHeader = req.headers.get('Authorization')
@@ -86,7 +93,7 @@ serve(async (req) => {
 function json(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
     status,
-    headers: { ...CORS, 'Content-Type': 'application/json' },
+    headers: { ...corsHeaders(req), 'Content-Type': 'application/json' },
   })
 }
 
