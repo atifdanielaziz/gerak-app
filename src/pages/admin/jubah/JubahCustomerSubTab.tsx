@@ -1,4 +1,4 @@
-import React, { useEffect, useState, type Dispatch, type SetStateAction } from 'react';
+import React, { useEffect, useMemo, useState, type Dispatch, type SetStateAction } from 'react';
 import { supabase } from '../../../lib/supabase';
 import {
   Users, RefreshCw, AlertCircle, Copy, Check, Eye, Download, ChevronLeft,
@@ -258,6 +258,30 @@ export function JubahCustomerSubTab({
     setJubahAdminUpdating(false);
   };
 
+  // Was recomputed twice (once for the header count, once for the table
+  // rows) on every render with no memoization — invisible at the current
+  // row count, but every keystroke into the search box would re-filter the
+  // full bookings array twice, synchronously, as that array grows.
+  const filteredBookings = useMemo(() => {
+    const q = jubahSearch.trim().toLowerCase();
+    return bookings.filter(b => {
+      // payment_mode !== 'deposit' alone is NOT "paid" — it just means
+      // "not deposit mode," true for a pickup/postage booking that's
+      // never been paid at all (still status='ordered'). initial_paid is
+      // the actual fact to check for non-deposit modes, same formula
+      // RiderHome already uses correctly.
+      const isPaid = b.payment_mode === 'deposit' ? b.balance_paid : b.initial_paid;
+      const isCancelled = b.status === 'cancelled';
+      const matchFilter =
+        jubahPayFilter === 'all'       ? true :
+        jubahPayFilter === 'cancelled' ? isCancelled :
+        jubahPayFilter === 'paid'       ? (isPaid && !isCancelled) :
+                                           (!isPaid && !isCancelled);
+      const matchSearch = !q || b.full_name.toLowerCase().includes(q) || b.hp_number.includes(q) || b.reference.toLowerCase().includes(q);
+      return matchFilter && matchSearch;
+    });
+  }, [bookings, jubahPayFilter, jubahSearch]);
+
   return (
     <>
       {adminView === 'list' && (<>
@@ -304,23 +328,7 @@ export function JubahCustomerSubTab({
           <h3 className="text-sm font-semibold text-slate-700 flex items-center justify-between">
             <span className="flex items-center gap-1.5"><Users className="w-4 h-4" /> Customer Directory</span>
             <span className="font-normal text-slate-300 normal-case tracking-normal">
-              {bookings.filter(b => {
-                // payment_mode !== 'deposit' alone is NOT "paid" — it just means
-                // "not deposit mode," true for a pickup/postage booking that's
-                // never been paid at all (still status='ordered'). initial_paid is
-                // the actual fact to check for non-deposit modes, same formula
-                // RiderHome already uses correctly.
-                const isPaid = b.payment_mode === 'deposit' ? b.balance_paid : b.initial_paid;
-                const isCancelled = b.status === 'cancelled';
-                const matchFilter =
-                  jubahPayFilter === 'all'       ? true :
-                  jubahPayFilter === 'cancelled' ? isCancelled :
-                  jubahPayFilter === 'paid'       ? (isPaid && !isCancelled) :
-                                                     (!isPaid && !isCancelled);
-                const q = jubahSearch.trim().toLowerCase();
-                const matchSearch = !q || b.full_name.toLowerCase().includes(q) || b.hp_number.includes(q) || b.reference.toLowerCase().includes(q);
-                return matchFilter && matchSearch;
-              }).length} bookings
+              {filteredBookings.length} bookings
             </span>
           </h3>
 
@@ -361,18 +369,7 @@ export function JubahCustomerSubTab({
                   </tr>
                 </thead>
                 <tbody>
-                  {bookings.filter(b => {
-                    const isPaid = b.payment_mode === 'deposit' ? b.balance_paid : b.initial_paid;
-                    const isCancelled = b.status === 'cancelled';
-                    const matchFilter =
-                      jubahPayFilter === 'all'       ? true :
-                      jubahPayFilter === 'cancelled' ? isCancelled :
-                      jubahPayFilter === 'paid'       ? (isPaid && !isCancelled) :
-                                                         (!isPaid && !isCancelled);
-                    const q = jubahSearch.trim().toLowerCase();
-                    const matchSearch = !q || b.full_name.toLowerCase().includes(q) || b.hp_number.includes(q) || b.reference.toLowerCase().includes(q);
-                    return matchFilter && matchSearch;
-                  }).map(b => {
+                  {filteredBookings.map(b => {
                     const isPaid = b.payment_mode === 'deposit' ? b.balance_paid : b.initial_paid;
                     return (
                       <tr key={b.id}

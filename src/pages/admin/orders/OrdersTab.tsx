@@ -66,8 +66,11 @@ export const OrdersTab = forwardRef<OrdersTabHandle, OrdersTabProps>(function Or
   const [loading, setLoading] = useState(true);
   const [deleting, setDeleting] = useState<string | null>(null);
 
-  const loadOrders = useCallback(async () => {
-    setLoading(true);
+  // silent=true skips the loading-spinner toggle — used for realtime-driven
+  // reloads so an unrelated order elsewhere in this campus doesn't flash the
+  // whole list to a loading state out from under whoever's looking at it.
+  const loadOrders = useCallback(async (opts?: { silent?: boolean }) => {
+    if (!opts?.silent) setLoading(true);
     const q = supabase
       .from('ride_orders')
       .select('id,customer_name,campus,date,time,pickup,destination,passengers,contact,fare,night_charge,notes,status,driver_id,driver_name,driver_contact,created_at,accepted_at')
@@ -76,17 +79,20 @@ export const OrdersTab = forwardRef<OrdersTabHandle, OrdersTabProps>(function Or
 
     const { data } = await q;
     setOrders((data as RideOrder[]) ?? []);
-    setLoading(false);
+    if (!opts?.silent) setLoading(false);
   }, [campusView]);
 
   useEffect(() => {
     loadOrders();
+    // Server-side filter (not just the .eq('campus', ...) on the read
+    // above) — without it, this subscription fired a full reload for every
+    // order change on EVERY campus, not just the one currently on screen.
     const channel = supabase
       .channel('ride_orders_admin')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'ride_orders' }, loadOrders)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'ride_orders', filter: `campus=eq.${campusView}` }, () => loadOrders({ silent: true }))
       .subscribe();
     return () => { supabase.removeChannel(channel); };
-  }, [loadOrders]);
+  }, [loadOrders, campusView]);
 
   useImperativeHandle(ref, () => ({ reload: loadOrders }), [loadOrders]);
 

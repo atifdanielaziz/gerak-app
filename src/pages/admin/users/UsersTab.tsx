@@ -263,13 +263,14 @@ export const UsersTab = forwardRef<UsersTabHandle, UsersTabProps>(function Users
 
   const loadUsers = useCallback(async () => {
     setUsersLoading(true);
-    const { data } = await supabase.rpc('get_all_profiles');
+    // Campus scoping now happens server-side (get_all_profiles(p_campus)) —
+    // previously fetched every admin/driver/rider in the whole system and
+    // threw most of it away here, which also meant the three capability
+    // lookups below scaled with the unfiltered total instead of just this
+    // campus's users.
+    const { data } = await supabase.rpc('get_all_profiles', { p_campus: isSuperAdmin ? null : adminCampus });
     // Enrich drivers with capability flags from profiles table
-    let users = (data as ProfileUser[]) ?? [];
-    // Non-superadmin: scope to their campus only
-    if (!isSuperAdmin) {
-      users = users.filter(u => u.campus.toLowerCase() === adminCampus.toLowerCase());
-    }
+    const users = (data as ProfileUser[]) ?? [];
     const driverIds      = users.filter(u => u.role === 'driver').map(u => u.id);
     const riderIds       = users.filter(u => u.role === 'rider').map(u => u.id);
     const driverRiderIds = [...driverIds, ...riderIds];
