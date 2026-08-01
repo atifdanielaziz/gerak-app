@@ -442,6 +442,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   // ── Supabase: restore session on app load ──────────────────────────
   useEffect(() => {
     const isRecovery = window.location.hash.includes('type=recovery');
+    // Same hash-based artifact as isRecovery above — clicking the "Confirm
+    // your email" link lands here with a real, already-valid session (this
+    // project uses Supabase's implicit auth flow, same as the recovery
+    // link), not just a "you're verified, now go log in" marker. Detected
+    // once on this same initial-load check so the welcome notification
+    // fires exactly once, not on every subsequent session restore.
+    const isEmailConfirmation = window.location.hash.includes('type=signup');
 
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (!session?.user || isRecovery) return;
@@ -449,6 +456,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         supabase.auth.signOut();
         setSessionExpiredMessage();
         return;
+      }
+      if (isEmailConfirmation) {
+        addNotification('Email confirmed ✓', 'Your Gerak account is now verified — welcome aboard!', 'system');
       }
       applyPendingInviteIfAny().then(() => loadProfile(session.user.id));
     });

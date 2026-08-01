@@ -211,13 +211,13 @@ export const Register: React.FC = () => {
           <p className="text-sm font-bold text-slate-800">Almost done — confirm your email</p>
           <p className="text-xs text-slate-400 font-normal leading-relaxed max-w-xs">
             We sent a confirmation link to <span className="text-slate-700 font-semibold">{email}</span>.
-            Open it and tap the link, then come back here and sign in.
+            Open it on this device and tap the link — you'll be signed in automatically.
           </p>
           <button
             onClick={() => setCurrentPage('login')}
             className="mt-2 bg-primary hover:bg-primary-hover active:scale-[0.98] text-white font-semibold text-xs px-5 py-2.5 rounded-xl transition"
           >
-            Go to Sign In
+            Sign In Manually Instead
           </button>
         </div>
       ) : (
