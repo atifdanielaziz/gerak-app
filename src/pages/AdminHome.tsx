@@ -449,7 +449,7 @@ export const AdminHome: React.FC = () => {
 
           {/* eslint-disable react-hooks/refs -- refs returned from useTabIndicator (a custom hook), attached the standard way via JSX ref= attributes. The rule can't statically trace ref-ness through a custom hook's return object and flags plain ref attachment as if it were a during-render .current read; it isn't. Re-enabled right after this block. */}
           <nav ref={mainNavIndicator.containerRef as React.RefObject<HTMLElement>} className="relative flex-1 flex flex-col gap-1 p-3">
-            <div ref={mainNavIndicator.indicatorRef} className="absolute top-0 left-0 rounded-xl bg-primary pointer-events-none" style={{ transition: 'transform 220ms cubic-bezier(0.16, 1, 0.3, 1)' }} />
+            <div ref={mainNavIndicator.indicatorRef} className="absolute top-0 left-0 rounded-xl bg-primary pointer-events-none" />
             {ADMIN_TABS
               .filter(t => !t.superadminOnly || user.role === 'superadmin')
               .map(tab => {
@@ -647,7 +647,7 @@ export const AdminHome: React.FC = () => {
         {/* Tab bar */}
       {/* eslint-disable react-hooks/refs -- refs returned from useTabIndicator, standard JSX ref attachment, not a during-render .current read. Re-enabled right after this block. */}
       <div ref={mobileNavIndicator.containerRef} className="relative flex bg-white border border-slate-100 rounded-2xl p-1 gap-1 overflow-x-auto no-scrollbar">
-        <div ref={mobileNavIndicator.indicatorRef} className="absolute top-0 left-0 rounded-xl bg-primary pointer-events-none" style={{ transition: 'transform 220ms cubic-bezier(0.16, 1, 0.3, 1)' }} />
+        <div ref={mobileNavIndicator.indicatorRef} className="absolute top-0 left-0 rounded-xl bg-primary pointer-events-none" />
         {ADMIN_TABS
           .filter(t => !t.superadminOnly || user.role === 'superadmin')
           .map(tab => (
@@ -902,7 +902,7 @@ export const AdminHome: React.FC = () => {
             {/* Customer | Rider | Price sub-tabs */}
             {/* eslint-disable react-hooks/refs -- refs returned from useTabIndicator, standard JSX ref attachment, not a during-render .current read. Re-enabled right after this block. */}
             <div ref={jubahSubIndicator.containerRef} className="relative flex bg-white border border-slate-100 rounded-2xl p-1 gap-1">
-              <div ref={jubahSubIndicator.indicatorRef} className="absolute top-0 left-0 rounded-xl bg-primary pointer-events-none" style={{ transition: 'transform 220ms cubic-bezier(0.16, 1, 0.3, 1)' }} />
+              <div ref={jubahSubIndicator.indicatorRef} className="absolute top-0 left-0 rounded-xl bg-primary pointer-events-none" />
               {([
                 { id: 'rider',    label: 'Rider',    superadminOnly: false },
                 { id: 'customer', label: 'Customer', superadminOnly: false },
