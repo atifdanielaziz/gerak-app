@@ -2,6 +2,7 @@ import React, { useEffect, useState, useCallback, useRef, useMemo } from 'react'
 import { useApp } from '../context/AppContext';
 import { supabase } from '../lib/supabase';
 import { useLoadOnActive } from '../hooks/useLoadOnActive';
+import { useTabIndicator } from '../hooks/useTabIndicator';
 import { NativeSelect } from '../components/NativeSelect';
 import {
   BarChart3, Car, Users, Clock,
@@ -27,7 +28,6 @@ import { OrdersTab, type OrdersTabHandle } from './admin/orders/OrdersTab';
 import { JubahRiderSubTab, type JubahRiderSubTabHandle } from './admin/jubah/JubahRiderSubTab';
 import { JubahCustomerSubTab, type JubahBookingRow } from './admin/jubah/JubahCustomerSubTab';
 import { ActivityLogTab, type ActivityLogTabHandle } from './admin/activity/ActivityLogTab';
-import { forceRepaint } from '../lib/forceRepaint';
 
 type AdminTab = 'orders' | 'drivers' | 'users' | 'banners' | 'receipts' | 'calendar' | 'routes' | 'verify' | 'jubah' | 'earnings' | 'activity';
 
@@ -61,6 +61,11 @@ export const AdminHome: React.FC = () => {
   ) as 'Pekan' | 'Gambang';
 
   const [activeTab, setActiveTab] = useState<AdminTab>('orders');
+  // Two independent indicators (same activeTab value, different DOM
+  // containers/buttons) — one for the desktop sidebar nav, one for the
+  // mobile horizontal tab bar. See useTabIndicator.ts for why.
+  const mainNavIndicator = useTabIndicator<HTMLElement>(activeTab);
+  const mobileNavIndicator = useTabIndicator<HTMLDivElement>(activeTab);
   const [campusView, setCampusView] = useState<'Pekan' | 'Gambang'>(
     isSuperAdmin ? 'Gambang' : adminCampus
   );
@@ -97,6 +102,7 @@ export const AdminHome: React.FC = () => {
   const [jubahAdminView,     setJubahAdminView]     = useState<'list' | 'card'>('list');
   const [jubahAdminSelected, setJubahAdminSelected] = useState<JubahBookingRow | null>(null);
   const [jubahSubTab,        setJubahSubTab]        = useState<'customer' | 'rider' | 'price' | 'banner'>('rider');
+  const jubahSubIndicator = useTabIndicator<HTMLDivElement>(jubahSubTab);
   // Defence in depth — the sub-tab button itself is already hidden for
   // non-superadmin, but if a regular admin somehow lands on 'price' (e.g.
   // a stale tab from before a role downgrade), render as if 'rider' were
@@ -441,27 +447,20 @@ export const AdminHome: React.FC = () => {
             <p className="text-xs text-slate-400 font-semibold mt-0.5">{user.name} · {user.gerakId}</p>
           </div>
 
-          <nav className="flex-1 flex flex-col gap-1 p-3">
+          {/* eslint-disable react-hooks/refs -- refs returned from useTabIndicator (a custom hook), attached the standard way via JSX ref= attributes. The rule can't statically trace ref-ness through a custom hook's return object and flags plain ref attachment as if it were a during-render .current read; it isn't. Re-enabled right after this block. */}
+          <nav ref={mainNavIndicator.containerRef as React.RefObject<HTMLElement>} className="relative flex-1 flex flex-col gap-1 p-3">
+            <div ref={mainNavIndicator.indicatorRef} className="absolute top-0 left-0 rounded-xl bg-primary pointer-events-none" style={{ transition: 'transform 220ms cubic-bezier(0.16, 1, 0.3, 1)' }} />
             {ADMIN_TABS
               .filter(t => !t.superadminOnly || user.role === 'superadmin')
               .map(tab => {
                 const Icon = tab.icon;
                 return (
                   <button key={tab.id}
-                    onPointerDown={(e) => { e.preventDefault(); setActiveTab(tab.id); forceRepaint(e.currentTarget); }}
-                    className={`flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-sm font-semibold text-left transition-transform transform-gpu active:scale-[0.98] ${
-                      activeTab === tab.id ? '' : 'text-slate-500 hover:bg-slate-100'
+                    ref={mainNavIndicator.setButtonRef(tab.id)}
+                    onPointerDown={(e) => { e.preventDefault(); setActiveTab(tab.id); }}
+                    className={`relative z-10 flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-sm font-semibold text-left transition-transform transform-gpu active:scale-[0.98] ${
+                      activeTab === tab.id ? 'text-white' : 'text-slate-500 hover:bg-slate-100'
                     }`}
-                    // Diagnosed live via chrome://inspect: getComputedStyle
-                    // sometimes reads white instead of red for this exact
-                    // element right after a tap, even though .bg-primary is
-                    // present in the className and every static CSS rule
-                    // (specificity, layer order, no @property complication)
-                    // is correct — the one remaining suspect is var()
-                    // custom-property resolution timing for background-color
-                    // specifically. A literal inline colour removes that
-                    // indirection entirely; testing whether that's the fix.
-                    style={activeTab === tab.id ? { backgroundColor: '#EF4444', color: '#FFFFFF' } : undefined}
                   >
                     <Icon className="w-4 h-4 shrink-0" />
                     {tab.label}
@@ -469,6 +468,7 @@ export const AdminHome: React.FC = () => {
                 );
               })}
           </nav>
+          {/* eslint-enable react-hooks/refs */}
 
           <div className="p-3 border-t border-slate-100 flex flex-col gap-1">
             <button onPointerDown={(e) => { e.preventDefault(); setCurrentPage('notifications'); }}
@@ -645,21 +645,24 @@ export const AdminHome: React.FC = () => {
         </div>
 
         {/* Tab bar */}
-      <div className="flex bg-white border border-slate-100 rounded-2xl p-1 gap-1 overflow-x-auto no-scrollbar">
+      {/* eslint-disable react-hooks/refs -- refs returned from useTabIndicator, standard JSX ref attachment, not a during-render .current read. Re-enabled right after this block. */}
+      <div ref={mobileNavIndicator.containerRef} className="relative flex bg-white border border-slate-100 rounded-2xl p-1 gap-1 overflow-x-auto no-scrollbar">
+        <div ref={mobileNavIndicator.indicatorRef} className="absolute top-0 left-0 rounded-xl bg-primary pointer-events-none" style={{ transition: 'transform 220ms cubic-bezier(0.16, 1, 0.3, 1)' }} />
         {ADMIN_TABS
           .filter(t => !t.superadminOnly || user.role === 'superadmin')
           .map(tab => (
             <button key={tab.id}
-              onPointerDown={(e) => { e.preventDefault(); setActiveTab(tab.id); forceRepaint(e.currentTarget); }}
-              className={`shrink-0 px-4 py-2 rounded-xl text-xs font-semibold transition-transform transform-gpu flex items-center justify-center gap-1.5 ${
-                activeTab === tab.id ? '' : 'text-slate-400'
+              ref={mobileNavIndicator.setButtonRef(tab.id)}
+              onPointerDown={(e) => { e.preventDefault(); setActiveTab(tab.id); }}
+              className={`relative z-10 shrink-0 px-4 py-2 rounded-xl text-xs font-semibold transition-transform transform-gpu flex items-center justify-center gap-1.5 ${
+                activeTab === tab.id ? 'text-white' : 'text-slate-400'
               }`}
-              style={activeTab === tab.id ? { backgroundColor: '#EF4444', color: '#FFFFFF' } : undefined}
             >
               {tab.label}
             </button>
           ))}
       </div>
+      {/* eslint-enable react-hooks/refs */}
       </div>
 
       {/* ── DRIVERS TAB ── */}
@@ -897,7 +900,9 @@ export const AdminHome: React.FC = () => {
             </div>
 
             {/* Customer | Rider | Price sub-tabs */}
-            <div className="flex bg-white border border-slate-100 rounded-2xl p-1 gap-1">
+            {/* eslint-disable react-hooks/refs -- refs returned from useTabIndicator, standard JSX ref attachment, not a during-render .current read. Re-enabled right after this block. */}
+            <div ref={jubahSubIndicator.containerRef} className="relative flex bg-white border border-slate-100 rounded-2xl p-1 gap-1">
+              <div ref={jubahSubIndicator.indicatorRef} className="absolute top-0 left-0 rounded-xl bg-primary pointer-events-none" style={{ transition: 'transform 220ms cubic-bezier(0.16, 1, 0.3, 1)' }} />
               {([
                 { id: 'rider',    label: 'Rider',    superadminOnly: false },
                 { id: 'customer', label: 'Customer', superadminOnly: false },
@@ -906,15 +911,17 @@ export const AdminHome: React.FC = () => {
               ] as const)
                 .filter(t => !t.superadminOnly || isSuperAdmin)
                 .map(t => (
-                <button key={t.id} onPointerDown={(e) => { e.preventDefault(); setJubahSubTab(t.id); setJubahAdminView('list'); setJubahAdminSelected(null); forceRepaint(e.currentTarget); }}
-                  className={`flex-1 py-2 rounded-xl text-xs font-semibold transition-transform transform-gpu ${
-                    jubahSubTab === t.id ? '' : 'text-slate-400'
-                  }`}
-                  style={jubahSubTab === t.id ? { backgroundColor: '#EF4444', color: '#FFFFFF' } : undefined}>
+                <button key={t.id}
+                  ref={jubahSubIndicator.setButtonRef(t.id)}
+                  onPointerDown={(e) => { e.preventDefault(); setJubahSubTab(t.id); setJubahAdminView('list'); setJubahAdminSelected(null); }}
+                  className={`relative z-10 flex-1 py-2 rounded-xl text-xs font-semibold transition-transform transform-gpu ${
+                    jubahSubTab === t.id ? 'text-white' : 'text-slate-400'
+                  }`}>
                   {t.label}
                 </button>
               ))}
             </div>
+            {/* eslint-enable react-hooks/refs */}
           </>)}
 
           {/* ── RIDER sub-tab ── */}
