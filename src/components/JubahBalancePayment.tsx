@@ -43,6 +43,12 @@ export function JubahBalancePayment({
 
     // Upload proof to Supabase Storage — foldered by booking reference (not
     // a public URL) so the jubah-docs storage policies can verify ownership.
+    // A failed upload used to fall back to storing the literal string
+    // "submitted" as the proof path, which unblocked the rider/admin
+    // Confirm Balance button while leaving nothing real for them to view
+    // (confirmed live — a booking stuck with balance_proof_url = 'submitted'
+    // and no matching object in the bucket at all). Now a failed upload
+    // blocks submission entirely instead of faking a receipt that isn't there.
     let proofPath: string | undefined;
     try {
       const ext = file.name.split('.').pop() ?? 'pdf';
@@ -51,23 +57,27 @@ export function JubahBalancePayment({
       const { data, error: storageError } = await supabase.storage
         .from('jubah-docs')
         .upload(path, file, { contentType: file.type, upsert: false });
-      if (!storageError && data) proofPath = data.path;
+      if (storageError || !data) throw storageError ?? new Error('Upload returned no data.');
+      proofPath = data.path;
     } catch (err) {
       console.error('[GERAK] Balance proof upload failed:', err);
+      setSubmitting(false);
+      setError('Upload failed — please check your connection and try again.');
+      return;
     }
 
     const { data } = await supabase.rpc('submit_jubah_balance', {
       p_reference:         reference,
       p_hp_number:         hpNumber,
-      p_balance_proof_url: proofPath ?? 'submitted',
+      p_balance_proof_url: proofPath,
     });
 
     setSubmitting(false);
     if (data?.success) {
-      onSubmitted(proofPath ?? 'submitted');
+      onSubmitted(proofPath);
       setFile(null);
       if (fileRef.current) fileRef.current.value = '';
-      if (proofPath) updateJubahBalanceProof(reference, proofPath);
+      updateJubahBalanceProof(reference, proofPath);
     } else {
       setError(data?.error ?? 'Submission failed. Please try again.');
     }
