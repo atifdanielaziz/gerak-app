@@ -132,8 +132,8 @@ export const Jubah: React.FC = () => {
   const [selectedRiderId,   setSelectedRiderId]   = useState('');
   const [riders,            setRiders]            = useState<{
     id: string; name: string; jubah_drop_point: string | null; ic_number: string | null; phone: string | null;
-    jubah_bank_name: string | null; jubah_bank_account_number: string | null; jubah_bank_account_holder: string | null;
   }[]>([]);
+  const [bankDetails,       setBankDetails]       = useState<{ name: string; account: string; holder: string } | null>(null);
   const [ridersLoading,     setRidersLoading]     = useState(false);
   const [riderProfileOpen,  setRiderProfileOpen]  = useState(false);
 
@@ -368,6 +368,21 @@ export const Jubah: React.FC = () => {
       .rpc('get_active_jubah_riders', { p_campus: campus, p_method: paymentMode === 'deposit' ? depositMethod : paymentMode })
       .then(({ data }) => { setRiders(data ?? []); setRidersLoading(false); });
   }, [university, paymentMode, depositMethod]);
+
+  // Shared Jubah bank account — one account for every rider/customer, set by
+  // superadmin (JubahPriceSubTab.tsx). Public read, same as jubah_active.
+  useEffect(() => {
+    supabase
+      .from('app_settings')
+      .select('key, value')
+      .in('key', ['jubah_bank_name', 'jubah_bank_account_number', 'jubah_bank_account_holder'])
+      .then(({ data }) => {
+        const name   = data?.find(r => r.key === 'jubah_bank_name')?.value;
+        const account = data?.find(r => r.key === 'jubah_bank_account_number')?.value;
+        const holder  = data?.find(r => r.key === 'jubah_bank_account_holder')?.value;
+        if (name && account && holder) setBankDetails({ name, account, holder });
+      });
+  }, []);
 
   // Load doc fields for the selected university; fall back to UMPSA then hardcoded defaults
   useEffect(() => {
@@ -632,7 +647,7 @@ export const Jubah: React.FC = () => {
       console.error('[GERAK] Storage upload failed:', err);
     }
 
-    let result = await bookJubah(reference, fullName, icNumber, hpNumber, university, faculty, matricId, paymentMode, remark, combinedFileName, depositMethod, postageZone, selectedRiderId, selectedRider?.name, selectedRider?.jubah_bank_name ?? undefined, selectedRider?.jubah_bank_account_number ?? undefined, selectedRider?.jubah_bank_account_holder ?? undefined, bookingCampus, addr, docsPath, oscarPath, skpgPath, konvoPath, icPath, landingUniversity, email, paymentPath);
+    let result = await bookJubah(reference, fullName, icNumber, hpNumber, university, faculty, matricId, paymentMode, remark, combinedFileName, depositMethod, postageZone, selectedRiderId, selectedRider?.name, bookingCampus, addr, docsPath, oscarPath, skpgPath, konvoPath, icPath, landingUniversity, email, paymentPath);
 
     // The reference is a short client-generated random string — vanishingly
     // unlikely to collide with another booking, but not impossible at scale.
@@ -643,7 +658,7 @@ export const Jubah: React.FC = () => {
     // that verbatim (see migration_jubah_booking_generic_errors.sql).
     if (!result.success && result.code === 'duplicate_reference') {
       reference = generateReference();
-      result = await bookJubah(reference, fullName, icNumber, hpNumber, university, faculty, matricId, paymentMode, remark, combinedFileName, depositMethod, postageZone, selectedRiderId, selectedRider?.name, selectedRider?.jubah_bank_name ?? undefined, selectedRider?.jubah_bank_account_number ?? undefined, selectedRider?.jubah_bank_account_holder ?? undefined, bookingCampus, addr, docsPath, oscarPath, skpgPath, konvoPath, icPath, landingUniversity, email, paymentPath);
+      result = await bookJubah(reference, fullName, icNumber, hpNumber, university, faculty, matricId, paymentMode, remark, combinedFileName, depositMethod, postageZone, selectedRiderId, selectedRider?.name, bookingCampus, addr, docsPath, oscarPath, skpgPath, konvoPath, icPath, landingUniversity, email, paymentPath);
     }
 
     if (!result.success) {
@@ -1208,29 +1223,26 @@ export const Jubah: React.FC = () => {
           <div className="bg-blue-50 border border-blue-100 rounded-3xl p-5 flex flex-col gap-3">
             <div className="flex items-center justify-between gap-2">
               <h3 className="text-sm font-semibold text-blue-800">How to Pay</h3>
-              {selectedRiderId && <JubahQrButton riderId={selectedRiderId} />}
+              <JubahQrButton />
             </div>
-            {(() => {
-              const payRider = riders.find(r => r.id === selectedRiderId);
-              return payRider ? (
-                <div className="bg-white border border-blue-100 rounded-2xl p-4 flex flex-col gap-2 text-xs">
-                  <div className="flex items-center justify-between">
-                    <span className="text-slate-400 font-semibold">Bank</span>
-                    <span className="font-bold text-slate-800">{payRider.jubah_bank_name}</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-slate-400 font-semibold">Account No.</span>
-                    <span className="font-bold text-slate-800 font-mono">{payRider.jubah_bank_account_number}</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-slate-400 font-semibold">Account Holder</span>
-                    <span className="font-bold text-slate-800">{payRider.jubah_bank_account_holder}</span>
-                  </div>
+            {bankDetails ? (
+              <div className="bg-white border border-blue-100 rounded-2xl p-4 flex flex-col gap-2 text-xs">
+                <div className="flex items-center justify-between">
+                  <span className="text-slate-400 font-semibold">Bank</span>
+                  <span className="font-bold text-slate-800">{bankDetails.name}</span>
                 </div>
-              ) : (
-                <p className="text-xs text-blue-600">Select a rider above to see payment details.</p>
-              );
-            })()}
+                <div className="flex items-center justify-between">
+                  <span className="text-slate-400 font-semibold">Account No.</span>
+                  <span className="font-bold text-slate-800 font-mono">{bankDetails.account}</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-slate-400 font-semibold">Account Holder</span>
+                  <span className="font-bold text-slate-800">{bankDetails.holder}</span>
+                </div>
+              </div>
+            ) : (
+              <p className="text-xs text-blue-600">Payment details not set yet — contact admin.</p>
+            )}
             <p className="text-xs text-blue-700 leading-relaxed">
               Transfer <span className="font-bold">RM{cost.toFixed(2)}</span>{paymentMode === 'deposit' && <> (RM{DEPOSIT_AMOUNT} deposit)</>} using the details above — put your <span className="font-bold">full name</span> as the transfer reference so it's easy to match. Then upload your receipt below and tap Book.
             </p>
@@ -1463,12 +1475,7 @@ export const Jubah: React.FC = () => {
                 balanceDue={jubahBooking.balanceDue}
                 balancePaid={liveBalancePaid}
                 balanceProofUrl={liveBalanceProofUrl}
-                bankDetails={jubahBooking.riderBankName ? {
-                  name: jubahBooking.riderBankName,
-                  account: jubahBooking.riderBankAccountNumber ?? '',
-                  holder: jubahBooking.riderBankAccountHolder ?? '',
-                } : null}
-                riderId={jubahBooking.riderId}
+                bankDetails={bankDetails}
                 onSubmitted={proof => setLiveBalanceProofUrl(proof)}
               />
             </div>

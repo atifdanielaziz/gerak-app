@@ -1,8 +1,9 @@
 import { useCallback, useState } from 'react';
 import { supabase } from '../../../lib/supabase';
-import { TrendingUp, GraduationCap } from 'lucide-react';
+import { TrendingUp, GraduationCap, Landmark } from 'lucide-react';
 import { NativeSelect } from '../../../components/NativeSelect';
 import { useLoadOnActive } from '../../../hooks/useLoadOnActive';
+import { JubahQrButton } from '../../../components/JubahQrButton';
 
 // Abbreviated labels here (not the full names JubahLanding shows) since this
 // sits compactly in a card header — keeps the Jubah Pricing Matrix's
@@ -118,8 +119,99 @@ export function JubahPriceSubTab({ active, isSuperAdmin, showToast }: JubahPrice
     setCommissionSaved(prev => ({ ...prev, [deliveryType]: true }));
   };
 
+  // Payment Bank Details — one shared account every customer pays into,
+  // superadmin-only to change (enforced server-side in set_jubah_bank_details,
+  // not just hidden here). A mistaken or malicious edit here silently
+  // redirects real customer payments, so this is deliberately stricter than
+  // the admin-or-superadmin default most app_settings rows allow.
+  const [bankDraft, setBankDraft] = useState({ name: '', account: '', holder: '' });
+  const [bankSaved, setBankSaved] = useState(false);
+  const [savingBank, setSavingBank] = useState(false);
+
+  const loadBankDetails = useCallback(async () => {
+    const { data } = await supabase
+      .from('app_settings')
+      .select('key, value')
+      .in('key', ['jubah_bank_name', 'jubah_bank_account_number', 'jubah_bank_account_holder']);
+    const name    = data?.find(r => r.key === 'jubah_bank_name')?.value ?? '';
+    const account = data?.find(r => r.key === 'jubah_bank_account_number')?.value ?? '';
+    const holder  = data?.find(r => r.key === 'jubah_bank_account_holder')?.value ?? '';
+    setBankDraft({ name, account, holder });
+    setBankSaved(true);
+  }, []);
+
+  useLoadOnActive(active, loadBankDetails);
+
+  const handleSaveBank = async () => {
+    if (!bankDraft.name.trim() || !bankDraft.account.trim() || !bankDraft.holder.trim()) {
+      showToast('All three bank detail fields are required.');
+      return;
+    }
+    setSavingBank(true);
+    const { data, error } = await supabase.rpc('set_jubah_bank_details', {
+      p_bank_name:      bankDraft.name.trim(),
+      p_account_number: bankDraft.account.trim(),
+      p_account_holder: bankDraft.holder.trim(),
+    });
+    setSavingBank(false);
+    if (error || !data?.success) { showToast(data?.error ?? 'Failed to save bank details.'); return; }
+    showToast('Payment bank details updated ✓');
+    setBankSaved(true);
+  };
+
   return (
     <div className="flex flex-col gap-4">
+
+      {/* Payment Bank Details — the one shared account every customer pays
+          into. Regular admin sees it read-only for transparency, same
+          pattern as Rider Commission below. */}
+      <div className="bg-white border border-slate-100 rounded-3xl p-5 flex flex-col gap-3">
+        <div className="flex items-center justify-between gap-2">
+          <h3 className="text-sm font-semibold text-slate-700 flex items-center gap-1.5">
+            <Landmark className="w-4 h-4" /> Payment Bank Details
+          </h3>
+          {isSuperAdmin && <JubahQrButton canManage showToast={showToast} />}
+        </div>
+        <p className="text-xs text-slate-400 font-semibold -mt-1.5">
+          Customers transfer here for every Jubah booking.
+        </p>
+        {isSuperAdmin ? (
+          <div className="flex flex-col gap-2.5">
+            {([
+              { key: 'name' as const,    label: 'Bank Name' },
+              { key: 'account' as const, label: 'Account Number' },
+              { key: 'holder' as const,  label: 'Account Holder' },
+            ]).map(({ key, label }) => (
+              <div key={key} className="flex flex-col gap-1.5">
+                <label className="text-xs font-normal text-slate-400">{label}</label>
+                <input
+                  type="text"
+                  value={bankDraft[key]}
+                  onChange={e => setBankDraft(prev => ({ ...prev, [key]: e.target.value }))}
+                  readOnly={bankSaved}
+                  onClick={() => { if (bankSaved) setBankSaved(false); }}
+                  style={{ fontSize: '13px' }}
+                  className={`bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 font-semibold focus:outline-none focus:border-primary transition ${bankSaved ? 'text-slate-400 cursor-pointer' : 'text-slate-700'}`}
+                />
+              </div>
+            ))}
+            <button
+              onClick={handleSaveBank}
+              disabled={savingBank || bankSaved}
+              className="self-end bg-primary text-white font-semibold text-xs px-4 py-2.5 rounded-xl transition active:scale-95 disabled:opacity-50"
+            >
+              {savingBank ? '…' : 'Save'}
+            </button>
+          </div>
+        ) : (
+          <div className="bg-slate-50 border border-slate-100 rounded-xl px-3 py-2.5 flex flex-col gap-1">
+            <span className="text-xs font-semibold text-slate-600">{bankDraft.name || 'Not set yet'}</span>
+            <span className="text-xs font-semibold text-slate-600 font-mono">{bankDraft.account}</span>
+            <span className="text-xs font-semibold text-slate-600">{bankDraft.holder}</span>
+            <span className="text-xs font-normal text-slate-400 mt-1">superadmin only to change</span>
+          </div>
+        )}
+      </div>
 
       {/* Rider commission — regular admin sees it read-only for
           transparency. Applies only to bookings that complete from now on —

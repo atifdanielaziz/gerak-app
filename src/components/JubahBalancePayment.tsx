@@ -18,7 +18,6 @@ interface JubahBalancePaymentProps {
   balancePaid: boolean;
   balanceProofUrl: string | null;
   bankDetails: JubahBankDetails | null;
-  riderId?: string;
   onSubmitted: (proofPathOrSubmitted: string) => void;
 }
 
@@ -29,7 +28,7 @@ interface JubahBalancePaymentProps {
 // instance owns its own file/submitting/error state, so TrackJubah.tsx
 // rendering one per search result needs no id-keyed state of its own.
 export function JubahBalancePayment({
-  reference, hpNumber, fullName, balanceDue, balancePaid, balanceProofUrl, bankDetails, riderId, onSubmitted,
+  reference, hpNumber, fullName, balanceDue, balancePaid, balanceProofUrl, bankDetails, onSubmitted,
 }: JubahBalancePaymentProps) {
   const [file, setFile] = useState<File | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
@@ -111,7 +110,7 @@ export function JubahBalancePayment({
             <div className="bg-blue-50 border border-blue-100 rounded-xl p-3 flex flex-col gap-1.5 text-xs">
               <div className="flex items-center justify-between">
                 <span className="text-blue-400 font-semibold">Bank Details</span>
-                {riderId && <JubahQrButton riderId={riderId} />}
+                <JubahQrButton />
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-blue-400 font-semibold">Bank</span>

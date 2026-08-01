@@ -3,27 +3,21 @@ import { QrCode, Upload, Trash2, X } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 
 const QR_BUCKET = 'jubah-qr';
+const QR_PATH = 'qr.jpg';
 
 interface JubahQrButtonProps {
-  // Which rider's QR this instance shows/manages — one object per rider,
-  // at qr-{riderId}.jpg (see migration_jubah_qr_per_rider.sql). No fallback:
-  // every usage site now always knows the relevant rider by the time this
-  // renders (selected in the booking form, or the assigned rider_id on an
-  // existing booking).
-  riderId: string;
   // Shows Upload/Replace/Delete controls in the sheet. Real enforcement is
-  // server-side (storage RLS: superadmin, or the rider writing their own
-  // path) — this only controls whether THIS instance renders the controls.
+  // server-side (storage RLS: superadmin only) — this only controls whether
+  // THIS instance renders the controls.
   canManage?: boolean;
   showToast?: (msg: string) => void;
 }
 
-// Payment QR code shown wherever a rider's bank transfer details appear —
-// one image per rider so customers can scan instead of typing account
-// numbers. upsert:true so a new upload overwrites the rider's old file in
-// place — nothing orphaned to separately delete — plus a cache-busting
-// query param.
-export function JubahQrButton({ riderId, canManage = false, showToast }: JubahQrButtonProps) {
+// Payment QR code for the one shared Jubah bank account, so customers can
+// scan instead of typing account numbers. upsert:true so a new upload
+// overwrites the old file in place — nothing orphaned to separately
+// delete — plus a cache-busting query param.
+export function JubahQrButton({ canManage = false, showToast }: JubahQrButtonProps) {
   const [open, setOpen] = useState(false);
   const [imgError, setImgError] = useState(false);
   // Stable across mounts (not Date.now()) — the old per-mount value meant
@@ -35,7 +29,7 @@ export function JubahQrButton({ riderId, canManage = false, showToast }: JubahQr
   const [uploading, setUploading] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
-  const qrPath = `qr-${riderId}.jpg`;
+  const qrPath = QR_PATH;
   const { data } = supabase.storage.from(QR_BUCKET).getPublicUrl(qrPath);
   const url = refreshKey ? `${data.publicUrl}?t=${refreshKey}` : data.publicUrl;
 

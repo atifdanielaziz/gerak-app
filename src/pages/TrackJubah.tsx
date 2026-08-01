@@ -26,9 +26,6 @@ interface JubahBookingResult {
   balance_due: number;
   balance_paid: boolean;
   balance_proof_url: string | null;
-  rider_bank_name: string | null;
-  rider_bank_account_number: string | null;
-  rider_bank_account_holder: string | null;
   created_at: string;
 }
 
@@ -108,6 +105,22 @@ export const TrackJubah: React.FC = () => {
   const [verifyingReceipt, setVerifyingReceipt] = useState(false);
   const [receiptErrors, setReceiptErrors]   = useState<Record<string, string>>({});
   const [receiptData, setReceiptData]       = useState<Record<string, JubahReceiptData>>({});
+
+  // Shared Jubah bank account — one account for every rider/customer, set by
+  // superadmin (JubahPriceSubTab.tsx). Public read, same as jubah_active.
+  const [bankDetails, setBankDetails] = useState<{ name: string; account: string; holder: string } | null>(null);
+  useEffect(() => {
+    supabase
+      .from('app_settings')
+      .select('key, value')
+      .in('key', ['jubah_bank_name', 'jubah_bank_account_number', 'jubah_bank_account_holder'])
+      .then(({ data }) => {
+        const name    = data?.find(r => r.key === 'jubah_bank_name')?.value;
+        const account = data?.find(r => r.key === 'jubah_bank_account_number')?.value;
+        const holder  = data?.find(r => r.key === 'jubah_bank_account_holder')?.value;
+        if (name && account && holder) setBankDetails({ name, account, holder });
+      });
+  }, []);
 
   const runSearch = async (refOverride?: string) => {
     setError('');
@@ -436,12 +449,7 @@ export const TrackJubah: React.FC = () => {
                     balanceDue={b.balance_due}
                     balancePaid={b.balance_paid}
                     balanceProofUrl={b.balance_proof_url}
-                    bankDetails={b.rider_bank_name ? {
-                      name: b.rider_bank_name,
-                      account: b.rider_bank_account_number ?? '',
-                      holder: b.rider_bank_account_holder ?? '',
-                    } : null}
-                    riderId={b.rider_id ?? undefined}
+                    bankDetails={bankDetails}
                     onSubmitted={proof => setResults(prev => prev.map(r => r.id === b.id ? { ...r, balance_proof_url: proof } : r))}
                   />
                 )}

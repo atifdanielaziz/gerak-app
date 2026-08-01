@@ -12,11 +12,10 @@ import {
 import {
   RefreshCw, ShoppingBasket, GraduationCap, TrendingUp,
   Upload, FileImage, ShieldCheck, ShieldAlert,
-  ChevronLeft, Download, ExternalLink, CheckCircle2, XCircle, Landmark, Eye, X, Clock,
+  ChevronLeft, Download, ExternalLink, CheckCircle2, XCircle, Eye, X, Clock,
 } from 'lucide-react';
 import { driverIsActive } from './Profile';
 import { JubahStepper } from '../components/JubahStepper';
-import { JubahQrButton } from '../components/JubahQrButton';
 import { ReceiptCard } from '../components/Receipt';
 import { buildJubahReceiptRows, type ReceiptDoc } from '../lib/receiptRows';
 import { generateReceiptPdf } from '../lib/receiptPdf';
@@ -98,59 +97,6 @@ export const RiderHome: React.FC = () => {
   }, []);
 
   useLoadOnActive(activeTab === 'jubah', loadJubahJobs);
-
-  // ── Self-service bank details ─────────────────────────────────────────────
-  // The rider who ends up assigned to a booking is the one who actually
-  // watches for the customer's payment and confirms it, so customers need
-  // to pay into THIS rider's own account — set here, shown to customers via
-  // get_active_jubah_riders once complete (see migration_jubah_riders_bank_filter.sql,
-  // which also hides this rider from customer selection entirely until all
-  // three fields are set).
-  const [selfRiderId,     setSelfRiderId]     = useState('');
-  const [riderBankDraft,  setRiderBankDraft]  = useState({ name: '', account: '', holder: '' });
-  const [riderBankSaved,  setRiderBankSaved]  = useState(false);
-  const [savingRiderBank, setSavingRiderBank] = useState(false);
-
-  const loadRiderBankDetails = useCallback(async () => {
-    const { data: { user: authUser } } = await supabase.auth.getUser();
-    if (!authUser) return;
-    setSelfRiderId(authUser.id);
-    const { data } = await supabase
-      .from('profiles')
-      .select('jubah_bank_name, jubah_bank_account_number, jubah_bank_account_holder')
-      .eq('id', authUser.id)
-      .maybeSingle();
-    if (data) {
-      setRiderBankDraft({
-        name:    data.jubah_bank_name ?? '',
-        account: data.jubah_bank_account_number ?? '',
-        holder:  data.jubah_bank_account_holder ?? '',
-      });
-      // Freshly loaded from the DB — these ARE the current saved values, so
-      // they start locked/gray (even if blank), same Saved Field Standard
-      // used throughout the admin Jubah tabs — tap to unlock and edit.
-      setRiderBankSaved(true);
-    }
-  }, []);
-
-  useLoadOnActive(activeTab === 'jubah', loadRiderBankDetails);
-
-  const handleSaveRiderBank = async () => {
-    if (!riderBankDraft.name.trim() || !riderBankDraft.account.trim() || !riderBankDraft.holder.trim()) {
-      showToast('All three bank detail fields are required.');
-      return;
-    }
-    setSavingRiderBank(true);
-    const { data, error } = await supabase.rpc('set_rider_bank_details', {
-      p_bank_name:       riderBankDraft.name.trim(),
-      p_account_number:  riderBankDraft.account.trim(),
-      p_account_holder:  riderBankDraft.holder.trim(),
-    });
-    setSavingRiderBank(false);
-    if (error || !data?.success) { showToast(data?.error ?? 'Failed to save bank details.'); return; }
-    showToast('Bank details updated — you\'re now bookable by customers.');
-    setRiderBankSaved(true);
-  };
 
   // ── Earnings ───────────────────────────────────────────────────────────────
   type JubahEarningRow = {
@@ -495,48 +441,6 @@ export const RiderHome: React.FC = () => {
         {/* ── Jubah Job Tab ── */}
         {activeTab === 'jubah' && (
           <div className="px-4 flex flex-col gap-4 flex-1">
-
-            {/* PAGE 1 — My Bank Details (self-service) */}
-            {jubahView === 'list' && (
-              <div className="bg-white border border-slate-100 rounded-3xl p-5 flex flex-col gap-3">
-                <div className="flex items-center justify-between gap-2">
-                  <h3 className="text-sm font-semibold text-slate-700 flex items-center gap-1.5">
-                    <Landmark className="w-4 h-4" /> My Bank Details
-                  </h3>
-                  {selfRiderId && <JubahQrButton riderId={selfRiderId} canManage showToast={showToast} />}
-                </div>
-                <p className="text-xs text-slate-400 font-semibold -mt-1.5">
-                  Customers who choose you pay into this account. You won't appear as a selectable rider until all three fields are set.
-                </p>
-                <div className="flex flex-col gap-2.5">
-                  {([
-                    { key: 'name' as const,    label: 'Bank Name' },
-                    { key: 'account' as const, label: 'Account Number' },
-                    { key: 'holder' as const,  label: 'Account Holder' },
-                  ]).map(({ key, label }) => (
-                    <div key={key} className="flex flex-col gap-1.5">
-                      <label className="text-xs font-normal text-slate-400">{label}</label>
-                      <input
-                        type="text"
-                        value={riderBankDraft[key]}
-                        onChange={e => setRiderBankDraft(prev => ({ ...prev, [key]: e.target.value }))}
-                        readOnly={riderBankSaved}
-                        onClick={() => { if (riderBankSaved) setRiderBankSaved(false); }}
-                        style={{ fontSize: '13px' }}
-                        className={`bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 font-semibold focus:outline-none focus:border-primary transition ${riderBankSaved ? 'text-slate-400 cursor-pointer' : 'text-slate-700'}`}
-                      />
-                    </div>
-                  ))}
-                  <button
-                    onClick={handleSaveRiderBank}
-                    disabled={savingRiderBank || riderBankSaved}
-                    className="self-end bg-primary text-white font-semibold text-xs px-4 py-2.5 rounded-xl transition active:scale-95 disabled:opacity-50"
-                  >
-                    {savingRiderBank ? '…' : 'Save'}
-                  </button>
-                </div>
-              </div>
-            )}
 
             {/* PAGE 1 — Assignment List */}
             {jubahView === 'list' && (
