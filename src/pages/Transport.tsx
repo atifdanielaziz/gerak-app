@@ -707,13 +707,13 @@ export const Transport: React.FC = () => {
                     <button
                       key={from}
                       type="button"
-                      onPointerDown={onRowPointerDown}
-                      onPointerUp={e => onRowPointerUp(e, () => {
+                      onPointerDown={e => {
+                        e.preventDefault();
                         setSelectedFrom(from);
                         setSelectedRoute(null);
                         setShowRouteList(true);
                         setShowFromDropdown(false);
-                      })}
+                      }}
                       className={`w-full text-left px-4 py-3 text-sm font-normal transition ${
                         i < fromOptions.length - 1 ? 'border-b border-slate-50' : ''
                       } ${
