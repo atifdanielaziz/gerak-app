@@ -49,6 +49,10 @@
     0% { background-position: -200% 0; }
     100% { background-position: 200% 0; }
   }
+  @keyframes keep-compositor-awake {
+    0%, 100% { opacity: 0.001; }
+    50% { opacity: 0.002; }
+  }
 }
 
 /* ─── Base resets ─────────────────────────────────────────────────── */
@@ -87,6 +91,30 @@ html {
   width: 100%;
   overflow-x: hidden;
   background-color: #FFFFFF;
+}
+
+/* Mobile browser engines throttle/skip repaints once they decide nothing
+   on the page is animating — confirmed live (Android + iOS, both
+   standalone-mode PWA/APK, not a regular browser tab): a React state
+   change can be fully correct in the DOM and Chrome's own internal
+   compositor output, yet not get presented to the screen until an
+   unrelated later touch wakes the compositor up again. Every attempt at
+   forcing a single repaint reactively, after a change, failed (see git
+   history on AdminHome.tsx's tab bars for the full list). This instead
+   keeps something *always* animating, so the compositor never enters
+   that idle/throttled state in the first place — any subsequent style
+   change should just ride the next already-scheduled frame instead of
+   needing to be specially woken up. Fully invisible (near-zero opacity,
+   1x1px, behind everything, no pointer events) — costs a negligible,
+   GPU-composited opacity animation, nothing else.  */
+body::after {
+  content: '';
+  position: fixed;
+  top: 0; left: 0;
+  width: 1px; height: 1px;
+  pointer-events: none;
+  z-index: -1;
+  animation: keep-compositor-awake 2s infinite linear;
 }
 
 body {
