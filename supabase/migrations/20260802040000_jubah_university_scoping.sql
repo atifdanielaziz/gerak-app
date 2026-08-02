@@ -17,10 +17,17 @@ UPDATE public.jubah_bookings SET university_key = 'umpsa' WHERE university_key I
 
 ALTER TABLE public.jubah_bookings ALTER COLUMN university_key SET NOT NULL;
 ALTER TABLE public.jubah_bookings ALTER COLUMN university_key SET DEFAULT 'umpsa';
-ALTER TABLE public.jubah_bookings ADD CONSTRAINT jubah_bookings_university_key_check
-  CHECK (university_key = ANY (ARRAY['umpsa', 'uitm', 'umk', 'ukm', 'uiam']::text[]));
 
-ALTER TABLE public.jubah_bookings DROP CONSTRAINT jubah_bookings_campus_check;
+-- CHECK constraints have no "ADD IF NOT EXISTS" — guard manually so this
+-- whole script is safe to re-run (e.g. after an unrelated later statement
+-- failed partway through a previous attempt).
+DO $$ BEGIN
+  ALTER TABLE public.jubah_bookings ADD CONSTRAINT jubah_bookings_university_key_check
+    CHECK (university_key = ANY (ARRAY['umpsa', 'uitm', 'umk', 'ukm', 'uiam']::text[]));
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+
+ALTER TABLE public.jubah_bookings DROP CONSTRAINT IF EXISTS jubah_bookings_campus_check;
 ALTER TABLE public.jubah_bookings ADD CONSTRAINT jubah_bookings_campus_check
   CHECK (campus = ANY (ARRAY['Pekan', 'Gambang', 'UiTM', 'UMK', 'UKM', 'UIAM']::text[]));
 
