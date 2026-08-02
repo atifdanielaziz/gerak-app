@@ -382,6 +382,13 @@ export const Transport: React.FC = () => {
       aerbus_direction:     bookMode === 'aerbus' ? aerbusDirection : null,
       aerbus_point:         bookMode === 'aerbus' ? aerbusPoint : null,
       aerbus_customer_time: bookMode === 'aerbus' ? time : null,
+      // Only map-pin bookings have real, driver-navigable coordinates
+      // (GPS for pickup, Google Places for destination) — everything else
+      // (quick/custom/aerbus) is a named hub, not a geocoded point.
+      pickup_lat:      bookMode === 'map' && pickupPin ? pickupPin.coords[1] : null,
+      pickup_lng:      bookMode === 'map' && pickupPin ? pickupPin.coords[0] : null,
+      destination_lat: bookMode === 'map' && destPin   ? destPin.coords[1]   : null,
+      destination_lng: bookMode === 'map' && destPin   ? destPin.coords[0]   : null,
     };
 
     const { data: { user: authUser } } = await supabase.auth.getUser();
@@ -859,8 +866,8 @@ export const Transport: React.FC = () => {
           <Suspense fallback={<div className="flex justify-center py-12"><span className="w-6 h-6 rounded-full border-2 border-primary border-t-transparent animate-spin" /></div>}>
             <MapboxRideMap
               campusCenter={CAMPUS_CENTERS[campus]}
-              onPickupChange={name => setPickupPin(name ? { address: name, coords: [0, 0] } : null)}
-              onDestinationChange={name => setDestPin(name ? { address: name, coords: [0, 0] } : null)}
+              onPickupChange={(name, coords) => setPickupPin(name ? { address: name, coords: coords ?? [0, 0] } : null)}
+              onDestinationChange={(name, coords) => setDestPin(name ? { address: name, coords: coords ?? [0, 0] } : null)}
             />
           </Suspense>
           <p className="text-xs text-slate-400 font-normal text-center italic">
