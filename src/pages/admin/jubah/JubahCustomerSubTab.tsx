@@ -746,9 +746,9 @@ export function JubahCustomerSubTab({
               {/* Advance status button — deposit bookings stay gated until the balance is
                   confirmed above. View-only for regular admin — see isSuperAdmin note. */}
               {!notStarted && !isDone && b.status !== 'cancelled' && isSuperAdmin && (() => {
-                // Only gate the 'booked' -> 'processing' hop — the earlier
-                // 'paid' -> 'booked' confirm doesn't require the balance yet.
-                const balanceGateActive = b.payment_mode === 'deposit' && b.status === 'booked' && !b.balance_paid;
+                // Only gate the 'paid' -> 'processing' hop — reaching 'paid'
+                // itself doesn't require the balance yet, only advancing past it.
+                const balanceGateActive = b.payment_mode === 'deposit' && b.status === 'paid' && !b.balance_paid;
                 return (
                   <button
                     onClick={handleAdminAdvanceStatus}

@@ -1427,7 +1427,6 @@ export const Jubah: React.FC = () => {
                   (jubahBooking.paymentMode === 'deposit' && !!jubahBooking.deliveryAddress);
                 const STEP_INFO: Record<string, { label: string; desc: string }> = {
                   paid:       { label: 'Payment Confirmed', desc: 'Payment received — your order is in the queue.' },
-                  booked:     { label: 'Order Confirmed',   desc: 'Booking registered in system.' },
                   processing: { label: 'Processing',        desc: isPostageDelivery ? 'Robe being prepared for delivery.' : 'Robe being prepared for collection.' },
                   collected:  { label: isPostageDelivery ? 'Collected' : 'Ready for Pickup', desc: isPostageDelivery ? 'Robe collected from university.' : 'Available at collection counter.' },
                   at_hub:     { label: 'Out for Delivery',  desc: 'Arrived at postage hub.' },

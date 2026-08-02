@@ -60,7 +60,6 @@ interface JubahReceiptData {
 const STATUS_LABEL: Record<string, string> = {
   ordered:    'Payment Pending',
   paid:       'Paid',
-  booked:     'Order Received',
   processing: 'Processing Documents',
   collected:  'Robe Collected',
   at_hub:     'Delivered to Postage Hub',
@@ -73,7 +72,6 @@ const STATUS_LABEL: Record<string, string> = {
 const STATUS_STYLE: Record<string, string> = {
   ordered:    'bg-slate-50 border-slate-200 text-slate-500',
   paid:       'bg-emerald-50 border-emerald-100 text-emerald-700',
-  booked:     'bg-amber-50 border-amber-100 text-amber-700',
   processing: 'bg-violet-50 border-violet-100 text-violet-700',
   collected:  'bg-blue-50 border-blue-100 text-blue-700',
   at_hub:     'bg-emerald-50 border-emerald-100 text-emerald-700',

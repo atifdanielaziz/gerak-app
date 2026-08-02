@@ -84,7 +84,7 @@ serve(async (req) => {
       .maybeSingle<Booking>()
 
     if (initialMatch) {
-      const newStatus = initialMatch.payment_mode === 'deposit' ? 'booked' : 'paid'
+      const newStatus = 'paid'
       // The status='ordered' guard makes this idempotent against ToyyibPay
       // retrying the callback delivery.
       const { data: updated, error: updateErr } = await admin.from('jubah_bookings')

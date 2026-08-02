@@ -253,7 +253,7 @@ export interface JubahReceiptSource {
 }
 
 const JUBAH_STATUS_STYLE: Record<string, string> = {
-  booked:      'bg-amber-50 text-amber-600 border-amber-200',
+  paid:        'bg-amber-50 text-amber-600 border-amber-200',
   processing:  'bg-amber-50 text-amber-600 border-amber-200',
   collected:   'bg-blue-50 text-blue-700 border-blue-300',
   at_hub:      'bg-blue-50 text-blue-700 border-blue-300',
@@ -264,7 +264,7 @@ const JUBAH_STATUS_STYLE: Record<string, string> = {
 };
 
 const JUBAH_STATUS_LABEL: Record<string, string> = {
-  booked:      'Booked',
+  paid:        'Paid',
   processing:  'Processing',
   collected:   'Collected',
   at_hub:      'Out for Delivery',
@@ -378,16 +378,17 @@ export function buildJubahReceiptRows(j: JubahReceiptSource): ReceiptDoc {
 
   // A non-deposit booking is already fully paid up front, and a deposit
   // booking whose balance has since been settled is equally fully paid —
-  // both should read "Full Paid" instead of "Booked" (the deposit flow's
-  // own initial, still-partial state). Fulfillment states beyond this
-  // (processing/delivered/etc.) still apply to every payment mode equally,
-  // so only the initial 'booked' status needs this override.
-  const isFullyPaid = j.status === 'booked' && (j.paymentMode !== 'deposit' || !!j.balancePaid);
+  // both should read "Full Paid" instead of "Paid" (which, for a deposit
+  // booking still awaiting its balance, means only the deposit is in).
+  // Fulfillment states beyond this (processing/delivered/etc.) still apply
+  // to every payment mode equally, so only the initial 'paid' status needs
+  // this override.
+  const isFullyPaid = j.status === 'paid' && (j.paymentMode !== 'deposit' || !!j.balancePaid);
 
   return {
     rows,
     statusLabel:     isFullyPaid ? 'Full Paid' : (JUBAH_STATUS_LABEL[j.status] ?? j.status),
-    statusClassName: isFullyPaid ? 'bg-emerald-50 text-emerald-600 border-emerald-200' : (JUBAH_STATUS_STYLE[j.status] ?? JUBAH_STATUS_STYLE.booked),
+    statusClassName: isFullyPaid ? 'bg-emerald-50 text-emerald-600 border-emerald-200' : (JUBAH_STATUS_STYLE[j.status] ?? JUBAH_STATUS_STYLE.paid),
     createdAt:        j.createdAt,
     bookingRef:       j.reference,
     subtitle:         'Jubah Delivery — Order Receipt',

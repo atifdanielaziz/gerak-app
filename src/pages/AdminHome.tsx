@@ -851,12 +851,7 @@ export const AdminHome: React.FC = () => {
                   <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">Status Breakdown</p>
                   {([
                     { label: 'Pending',    statuses: ['ordered'],       color: 'bg-slate-400' },
-                    // Merges 'booked' (deposit's confirm) and 'paid' (pickup/
-                    // postage's confirm) into one row — same milestone across
-                    // payment modes, just reached via a different status
-                    // value. Labeled to match JUBAH_STEP_LABEL's 'booked' ->
-                    // 'Confirmed' in jubahStatus.ts, not a distinct new status.
-                    { label: 'Confirmed',  statuses: ['booked', 'paid'], color: 'bg-blue-500' },
+                    { label: 'Paid',       statuses: ['paid'],          color: 'bg-blue-500' },
                     { label: 'Processing', statuses: ['processing'],    color: 'bg-violet-500' },
                     { label: 'Collected',  statuses: ['collected'],     color: 'bg-amber-500' },
                     // 'at_hub' is postage mode's own terminal step (its
