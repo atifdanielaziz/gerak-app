@@ -23,6 +23,20 @@ import { fmt12, fmtDuration, todayStr } from '../lib/format';
 
 const getTimestamp = () => Date.now();
 
+// Quick Routes / AerBus store short internal hub names ("DHUAM", "Taman
+// Beruas", "TSK") — geocodable, but ambiguous without campus context (a
+// same-named place could exist anywhere in the country). Custom/map-pin
+// bookings already store full, specific addresses, so context is only
+// appended for the two modes that don't.
+const CAMPUS_GEO_CONTEXT: Record<string, string> = {
+  Pekan:   'Pekan, Pahang, Malaysia',
+  Gambang: 'Gambang, Kuantan, Pahang, Malaysia',
+};
+const navAddress = (address: string, campus: string, bookMode?: string | null) =>
+  (bookMode === 'quick' || bookMode === 'aerbus') && CAMPUS_GEO_CONTEXT[campus]
+    ? `${address}, ${CAMPUS_GEO_CONTEXT[campus]}`
+    : address;
+
 interface RentalVehicle {
   owner_id: string;
   car_type: string;
@@ -1141,6 +1155,30 @@ export const DriverHome: React.FC = () => {
                       </div>
                     </div>
                   </div>
+                </div>
+
+                {/* Navigate — targets pickup before the trip starts, destination
+                    once it's in progress, matching the Start/Complete Trip flow
+                    right below. Plain https:// links so Android's own "Open
+                    with" chooser offers whichever nav apps the driver has
+                    installed, rather than hardcoding just one. */}
+                <div className="mx-4 mb-3 flex gap-2" onClick={e => e.stopPropagation()}>
+                  <a
+                    href={`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(navAddress(myJob.status === 'in_progress' ? myJob.destination : myJob.pickup, myJob.campus, myJob.book_mode))}&travelmode=driving`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex-1 flex items-center justify-center gap-1.5 bg-slate-50 border border-slate-100 text-slate-600 text-xs font-semibold py-2.5 rounded-xl active:scale-95 transition"
+                  >
+                    <Navigation className="w-3.5 h-3.5" /> Google Maps
+                  </a>
+                  <a
+                    href={`https://waze.com/ul?q=${encodeURIComponent(navAddress(myJob.status === 'in_progress' ? myJob.destination : myJob.pickup, myJob.campus, myJob.book_mode))}&navigate=yes`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex-1 flex items-center justify-center gap-1.5 bg-slate-50 border border-slate-100 text-slate-600 text-xs font-semibold py-2.5 rounded-xl active:scale-95 transition"
+                  >
+                    <Navigation className="w-3.5 h-3.5" /> Waze
+                  </a>
                 </div>
 
                 {myJob.notes && (
