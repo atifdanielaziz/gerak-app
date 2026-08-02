@@ -776,9 +776,9 @@ export const RiderHome: React.FC = () => {
                         update_jubah_booking_status and fail with an unexplained generic
                         error, since the rider is the one actually expected to drive this. */}
                     {!notStarted && !isDone && selectedJob.status !== 'cancelled' && (() => {
-                      // Only gate the 'booked' -> 'processing' hop — the earlier
-                      // 'paid' -> 'booked' confirm doesn't require the balance yet.
-                      const balanceGateActive = selectedJob.payment_mode === 'deposit' && selectedJob.status === 'booked' && !selectedJob.balance_paid;
+                      // Only gate the 'paid' -> 'processing' hop — reaching 'paid'
+                      // itself doesn't require the balance yet, only advancing past it.
+                      const balanceGateActive = selectedJob.payment_mode === 'deposit' && selectedJob.status === 'paid' && !selectedJob.balance_paid;
                       return (
                         <button
                           onClick={handleAdvanceStatus}

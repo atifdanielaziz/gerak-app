@@ -3,16 +3,16 @@ import { supabase } from '../../../lib/supabase';
 import { FileImage, Upload, Trash2, Info, X, Check } from 'lucide-react';
 import ReactCrop, { centerCrop, makeAspectCrop, type Crop, type PixelCrop } from 'react-image-crop';
 import 'react-image-crop/dist/ReactCrop.css';
+import { JUBAH_UNIVERSITIES } from '../../../lib/jubahUniversities';
 
 const BANNER_BUCKET = 'jubah-banners';
+const MAX_IMAGES_PER_UNIVERSITY = 10;
 const BANNER_ITEMS = [
   { key: 'default', label: 'Default Banner (RUNNER GERAK)' },
-  { key: 'umpsa',   label: 'Universiti Malaysia Pahang Al-Sultan Abdullah (UMPSA)' },
-  { key: 'uitm',    label: 'Universiti Teknologi MARA (UiTM)' },
-  { key: 'umk',     label: 'Universiti Malaysia Kelantan (UMK)' },
-  { key: 'ukm',     label: 'Universiti Kebangsaan Malaysia (UKM)' },
-  { key: 'uiam',    label: 'Universiti Islam Antarabangsa Malaysia (UIA)' },
+  ...JUBAH_UNIVERSITIES.map(u => ({ key: u.key, label: u.label })),
 ];
+
+type BannerImage = { id: string; university_key: string; storage_path: string; position: number };
 
 interface JubahBannerSubTabProps {
   // Whether this sub-tab is the one currently visible — banner URLs are
@@ -22,16 +22,18 @@ interface JubahBannerSubTabProps {
   showToast: (msg: string) => void;
 }
 
-// Per-university Jubah promo banner management: upload, crop, and delete the
-// banner image shown to customers for each campus. Split out of AdminHome.tsx
-// as a self-contained unit — its state/handlers were never referenced outside
-// this feature's own render block.
+// Per-university Jubah promo banner management: upload (up to
+// MAX_IMAGES_PER_UNIVERSITY images each), crop, and delete individual
+// banner images shown to customers as a swipeable carousel on the landing
+// page. Previously one fixed-path image per university (upload always
+// replaced it) — now a real jubah_banner_images row per image, ordered by
+// upload order (position), no drag-reorder.
 export function JubahBannerSubTab({ active, onOpenSampleDocs, showToast }: JubahBannerSubTabProps) {
-  const [bannerUrls,       setBannerUrls]       = useState<Record<string, string>>({});
-  const [bannerImgError,   setBannerImgError]   = useState<Record<string, boolean>>({});
-  const [bannerRefreshKey, setBannerRefreshKey] = useState<Record<string, number>>({});
-  const [bannerUploading,  setBannerUploading]  = useState<string | null>(null);
-  const [bannerUploadKey,  setBannerUploadKey]  = useState<string | null>(null);
+  const [images, setImages] = useState<Record<string, BannerImage[]>>({});
+  const [imageUrls, setImageUrls] = useState<Record<string, string>>({});
+  const [uploading, setUploading] = useState<string | null>(null);
+  const [uploadTargetKey, setUploadTargetKey] = useState<string | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
   const bannerFileRef = useRef<HTMLInputElement>(null);
 
   const [cropSrc,       setCropSrc]       = useState<string>('');
@@ -39,15 +41,24 @@ export function JubahBannerSubTab({ active, onOpenSampleDocs, showToast }: Jubah
   const [completedCrop, setCompletedCrop] = useState<PixelCrop | undefined>(undefined);
   const cropImgRef = useRef<HTMLImageElement>(null);
 
+  const loadImages = async () => {
+    const { data } = await supabase
+      .from('jubah_banner_images')
+      .select('id, university_key, storage_path, position')
+      .order('position');
+    const grouped: Record<string, BannerImage[]> = {};
+    const urls: Record<string, string> = {};
+    (data as BannerImage[] ?? []).forEach(img => {
+      (grouped[img.university_key] ??= []).push(img);
+      urls[img.id] = supabase.storage.from(BANNER_BUCKET).getPublicUrl(img.storage_path).data.publicUrl;
+    });
+    setImages(grouped);
+    setImageUrls(urls);
+  };
+
   useEffect(() => {
     if (!active) return;
-    const urls: Record<string, string> = {};
-    BANNER_ITEMS.forEach(b => {
-      const { data } = supabase.storage.from(BANNER_BUCKET).getPublicUrl(`${b.key}.jpg`);
-      urls[b.key] = `${data.publicUrl}?t=${Date.now()}`;
-    });
-    setBannerUrls(urls);
-    setBannerImgError({});
+    queueMicrotask(() => { loadImages(); });
   }, [active]);
 
   const getCroppedBlob = (image: HTMLImageElement, px: PixelCrop): Promise<Blob> => {
@@ -69,46 +80,52 @@ export function JubahBannerSubTab({ active, onOpenSampleDocs, showToast }: Jubah
   };
 
   const handleBannerUpload = async (file: File) => {
-    if (!bannerUploadKey) return;
-    const key = bannerUploadKey;
-    setBannerUploading(key);
-    const path = `${key}.jpg`;
-    const { error: uploadError } = await supabase.storage
-      .from(BANNER_BUCKET)
-      .upload(path, file, { upsert: true, contentType: file.type });
+    if (!uploadTargetKey) return;
+    const key = uploadTargetKey;
+    setUploading(key);
+    const existing = images[key] ?? [];
+    const path = `${key}/${crypto.randomUUID()}.jpg`;
+    const { error: uploadError } = await supabase.storage.from(BANNER_BUCKET).upload(path, file, { contentType: file.type });
     if (uploadError) {
       showToast(`Banner upload failed: ${uploadError.message}`);
-      setBannerUploading(null);
+      setUploading(null);
       return;
     }
-    const { data } = supabase.storage.from(BANNER_BUCKET).getPublicUrl(path);
-    setBannerUploading(null);
+    const nextPosition = existing.length > 0 ? Math.max(...existing.map(i => i.position)) + 1 : 0;
+    const { error: insertError } = await supabase.from('jubah_banner_images')
+      .insert({ university_key: key, storage_path: path, position: nextPosition });
+    setUploading(null);
+    if (insertError) {
+      showToast(`Banner save failed: ${insertError.message}`);
+      await supabase.storage.from(BANNER_BUCKET).remove([path]);
+      return;
+    }
     showToast('Banner uploaded ✓');
-    // Give Supabase CDN ~1s to propagate, then force fresh load
-    setTimeout(() => {
-      setBannerImgError(prev => ({ ...prev, [key]: false }));
-      setBannerUrls(prev => ({ ...prev, [key]: `${data.publicUrl}?t=${Date.now()}` }));
-      setBannerRefreshKey(prev => ({ ...prev, [key]: (prev[key] ?? 0) + 1 }));
-    }, 1000);
+    await loadImages();
   };
 
   const handleCropConfirm = async () => {
-    if (!completedCrop || !cropImgRef.current || !bannerUploadKey) return;
+    if (!completedCrop || !cropImgRef.current || !uploadTargetKey) return;
     const blob = await getCroppedBlob(cropImgRef.current, completedCrop);
     setCropSrc('');
     setCropObj(undefined);
     setCompletedCrop(undefined);
-    const file = new File([blob], `${bannerUploadKey}.jpg`, { type: 'image/jpeg' });
+    const file = new File([blob], `${uploadTargetKey}.jpg`, { type: 'image/jpeg' });
     handleBannerUpload(file);
   };
 
-  const handleBannerDelete = async (key: string) => {
-    const { error } = await supabase.storage.from(BANNER_BUCKET).remove([`${key}.jpg`]);
-    if (error) { showToast('Delete failed: ' + error.message); return; }
-    setBannerUrls(prev => ({ ...prev, [key]: '' }));
-    setBannerImgError(prev => ({ ...prev, [key]: true }));
-    setBannerRefreshKey(prev => ({ ...prev, [key]: (prev[key] ?? 0) + 1 }));
+  const handleImageDelete = async (img: BannerImage) => {
+    setDeletingId(img.id);
+    const { error: deleteRowError } = await supabase.from('jubah_banner_images').delete().eq('id', img.id);
+    if (deleteRowError) {
+      showToast('Delete failed: ' + deleteRowError.message);
+      setDeletingId(null);
+      return;
+    }
+    await supabase.storage.from(BANNER_BUCKET).remove([img.storage_path]);
+    setDeletingId(null);
     showToast('Banner deleted.');
+    await loadImages();
   };
 
   return (
@@ -129,10 +146,15 @@ export function JubahBannerSubTab({ active, onOpenSampleDocs, showToast }: Jubah
             if (bannerFileRef.current) bannerFileRef.current.value = '';
           }}
         />
-        {BANNER_ITEMS.map(item => (
+        {BANNER_ITEMS.map(item => {
+          const itemImages = images[item.key] ?? [];
+          const atLimit = itemImages.length >= MAX_IMAGES_PER_UNIVERSITY;
+          return (
           <div key={item.key} className="bg-white border border-slate-100 rounded-3xl p-5 flex flex-col gap-4">
             <div className="flex items-start justify-between gap-2">
-              <h3 className="text-sm font-semibold text-slate-700 flex-1 min-w-0">{item.label}</h3>
+              <h3 className="text-sm font-semibold text-slate-700 flex-1 min-w-0">
+                {item.label} <span className="text-xs font-normal text-slate-400">({itemImages.length}/{MAX_IMAGES_PER_UNIVERSITY})</span>
+              </h3>
               {item.key !== 'default' && (
                 <button
                   onClick={() => onOpenSampleDocs({ key: item.key, label: item.label })}
@@ -141,51 +163,54 @@ export function JubahBannerSubTab({ active, onOpenSampleDocs, showToast }: Jubah
                 </button>
               )}
             </div>
-            <div className="w-full h-56 rounded-2xl overflow-hidden border border-slate-100 bg-slate-50 flex items-center justify-center">
-              {bannerUrls[item.key] && !bannerImgError[item.key] ? (
-                <img
-                  key={`${item.key}-${bannerRefreshKey[item.key] ?? 0}`}
-                  src={bannerUrls[item.key]}
-                  alt={`${item.label} banner`}
-                  className="max-w-full max-h-full w-auto h-auto object-contain block"
-                  onError={() => setBannerImgError(prev => ({ ...prev, [item.key]: true }))}
-                />
+
+            {itemImages.length > 0 ? (
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                {itemImages.map(img => (
+                  <div key={img.id} className="relative aspect-video rounded-2xl overflow-hidden border border-slate-100 bg-slate-50 group">
+                    <img src={imageUrls[img.id]} alt={`${item.label} banner`} className="w-full h-full object-cover block" />
+                    <button
+                      type="button"
+                      disabled={deletingId === img.id}
+                      onClick={() => handleImageDelete(img)}
+                      className="absolute top-1.5 right-1.5 w-7 h-7 flex items-center justify-center rounded-full bg-black/50 text-white active:scale-90 transition disabled:opacity-50"
+                    >
+                      {deletingId === img.id
+                        ? <span className="w-3 h-3 rounded-full border-2 border-white/40 border-t-white animate-spin" />
+                        : <Trash2 className="w-3.5 h-3.5" />}
+                    </button>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="w-full h-40 rounded-2xl overflow-hidden border border-slate-100 bg-slate-50 flex flex-col items-center justify-center gap-2 text-slate-300">
+                <FileImage className="w-10 h-10" />
+                <span className="text-xs font-semibold">No banners uploaded yet</span>
+              </div>
+            )}
+
+            <button
+              type="button"
+              disabled={uploading === item.key || atLimit}
+              onClick={() => { setUploadTargetKey(item.key); setTimeout(() => bannerFileRef.current?.click(), 0); }}
+              className="w-full flex items-center justify-center gap-2 border-2 border-dashed border-slate-200 rounded-xl py-2.5 text-slate-400 hover:border-blue-400 hover:text-blue-500 hover:bg-blue-50/30 transition text-xs font-semibold disabled:opacity-50"
+            >
+              {uploading === item.key ? (
+                <><span className="w-3.5 h-3.5 rounded-full border-2 border-slate-300 border-t-blue-500 animate-spin" /> Uploading…</>
+              ) : atLimit ? (
+                <>Maximum {MAX_IMAGES_PER_UNIVERSITY} images reached</>
               ) : (
-                <div className="min-h-[120px] flex flex-col items-center justify-center gap-2 text-slate-300 p-4 text-center">
-                  <FileImage className="w-10 h-10" />
-                  <span className="text-xs font-semibold">No banner uploaded yet</span>
-                </div>
+                <><Upload className="w-3.5 h-3.5" /> Add Banner Image</>
               )}
-            </div>
-            <div className="flex gap-2">
-              <button
-                type="button"
-                disabled={bannerUploading === item.key}
-                onClick={() => { setBannerUploadKey(item.key); setTimeout(() => bannerFileRef.current?.click(), 0); }}
-                className="flex-1 flex items-center justify-center gap-2 border-2 border-dashed border-slate-200 rounded-xl py-2.5 text-slate-400 hover:border-blue-400 hover:text-blue-500 hover:bg-blue-50/30 transition text-xs font-semibold disabled:opacity-50"
-              >
-                {bannerUploading === item.key ? (
-                  <><span className="w-3.5 h-3.5 rounded-full border-2 border-slate-300 border-t-blue-500 animate-spin" /> Uploading…</>
-                ) : (
-                  <><Upload className="w-3.5 h-3.5" /> Upload Banner</>
-                )}
-              </button>
-              <button
-                type="button"
-                disabled={!bannerUrls[item.key] || bannerImgError[item.key]}
-                onClick={() => handleBannerDelete(item.key)}
-                className="flex-1 flex items-center justify-center border-2 border-dashed border-red-200 rounded-xl py-2.5 text-red-400 hover:border-red-400 hover:text-red-500 hover:bg-red-50/30 transition disabled:opacity-30 disabled:cursor-not-allowed"
-              >
-                <Trash2 className="w-3.5 h-3.5" />
-              </button>
-            </div>
+            </button>
           </div>
-        ))}
+          );
+        })}
       </div>
 
       {/* ── Banner Crop Modal ── */}
       {cropSrc && (
-        <div className="absolute inset-0 z-[80] bg-black flex flex-col">
+        <div className="fixed inset-0 z-[80] bg-black flex flex-col">
           <div className="flex items-center justify-between px-5 py-4 shrink-0">
             <button
               onClick={() => { setCropSrc(''); setCropObj(undefined); setCompletedCrop(undefined); }}

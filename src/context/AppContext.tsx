@@ -172,7 +172,7 @@ interface AppContextType {
 
   // Jubah Delivery Module
   jubahBooking: JubahBooking | null;
-  bookJubah: (reference: string, fullName: string, icNumber: string, hpNumber: string, university: string, faculty: string, matricId: string, paymentMode: 'pickup' | 'postage' | 'deposit', remark: 'Master' | 'PHD' | 'Degree' | 'Diploma', combinedFileName: string, depositMethod: 'pickup' | 'postage' | undefined, postageZone: 'SM' | 'SS' | undefined, riderId?: string, riderName?: string, campus?: 'Pekan' | 'Gambang', deliveryAddress?: string, docsPath?: string, oscarPath?: string, skpgPath?: string, konvoPath?: string, icPath?: string, universityKey?: string, email?: string, paymentPath?: string) => Promise<{ success: boolean; error?: string; code?: string; booking?: JubahBooking }>;
+  bookJubah: (reference: string, fullName: string, icNumber: string, hpNumber: string, university: string, faculty: string, matricId: string, paymentMode: 'pickup' | 'postage' | 'deposit', remark: 'Master' | 'PHD' | 'Degree' | 'Diploma', combinedFileName: string, depositMethod: 'pickup' | 'postage' | undefined, postageZone: 'SM' | 'SS' | undefined, riderId?: string, riderName?: string, campus?: string, deliveryAddress?: string, docsPath?: string, oscarPath?: string, skpgPath?: string, konvoPath?: string, icPath?: string, universityKey?: string, email?: string, paymentPath?: string) => Promise<{ success: boolean; error?: string; code?: string; booking?: JubahBooking }>;
   commitJubahBooking: (booking: JubahBooking) => void;
   scheduleReturn: (method: 'self' | 'locker' | 'courier', date: string, time: string) => void;
   cancelJubahBooking: () => void;
@@ -791,7 +791,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     postageZone: 'SM' | 'SS' | undefined,
     riderId?: string,
     riderName?: string,
-    campus?: 'Pekan' | 'Gambang',
+    campus?: string,
     deliveryAddress?: string,
     docsPath?: string,
     oscarPath?: string,

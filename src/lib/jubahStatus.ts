@@ -15,7 +15,6 @@
 export const JUBAH_STEP_LABEL: Record<string, string> = {
   ordered:    'Pending',
   paid:       'Paid',
-  booked:     'Confirmed',
   processing: 'Processing',
   collected:  'Collected',
   at_hub:     'At Hub',
@@ -26,7 +25,6 @@ export const JUBAH_STEP_LABEL: Record<string, string> = {
 export const JUBAH_STATUS_STYLE: Record<string, string> = {
   ordered:    'bg-slate-50 border-slate-200 text-slate-500',
   paid:       'bg-emerald-50 border-emerald-100 text-emerald-700',
-  booked:     'bg-blue-50 border-blue-100 text-blue-700',
   processing: 'bg-violet-50 border-violet-100 text-violet-700',
   collected:  'bg-amber-50 border-amber-100 text-amber-700',
   at_hub:     'bg-emerald-50 border-emerald-100 text-emerald-700',
@@ -41,17 +39,18 @@ export const JUBAH_NEXT_LABEL: Record<string, string> = {
   delivered:  'Mark Delivered',
 };
 
-// All three payment modes now share the same shape: 'paid' (payment/deposit
-// received) -> 'booked' (confirmed) -> processing -> collected -> final step.
-// Deposit mode used to skip straight from 'ordered' to 'booked', collapsing
-// "deposit received" and "confirmed" into one step — changed so a deposit
-// booking's own progress reads the same way a full-payment one does, and so
-// the outstanding balance amount isn't tied to a "Confirmed" label that
-// implied more had happened than actually had.
+// All three payment modes share the same shape: 'paid' (payment/deposit
+// received) -> processing -> collected -> final step. The separate
+// 'booked'/"Confirmed" checkpoint between 'paid' and 'processing' was
+// removed — it never represented anything a customer/rider could act on
+// differently than 'paid' already did, just an extra tap for admins/riders
+// to advance through. Deposit mode now lands on 'paid' the moment the
+// deposit clears too, matching the other two modes (previously it skipped
+// straight from 'ordered' to 'booked', bypassing 'paid' entirely).
 export const getJubahSteps = (paymentMode: string): string[] =>
   paymentMode === 'postage'
-    ? ['paid', 'booked', 'processing', 'collected', 'at_hub']
-    : ['paid', 'booked', 'processing', 'collected', 'delivered'];
+    ? ['paid', 'processing', 'collected', 'at_hub']
+    : ['paid', 'processing', 'collected', 'delivered'];
 
 export type JubahProgress = {
   steps: string[];
@@ -89,7 +88,6 @@ export const jubahWaMsg = (
   }
   const msgs: Record<string, string> = {
     paid:       `Assalamualaikum ${name} 🎓\n\nPembayaran anda telah berjaya diterima oleh Gerak Jubah! ✅\n\nKami akan maklumkan perkembangan seterusnya tidak lama lagi.\n\nRujukan: ${ref}\n\nTerima kasih 🙏`,
-    booked:     `Assalamualaikum ${name} 🎓\n\nTempahan jubah anda telah berjaya diterima oleh Gerak Jubah! ✅\n\nKami akan maklumkan perkembangan seterusnya tidak lama lagi.\n\nRujukan: ${ref}\n\nTerima kasih 🙏`,
     processing: `Assalamualaikum ${name} 🎓\n\nJubah anda sedang dalam proses pembersihan dan pengemasan. 🔄\n\nKami akan maklumkan apabila ia siap untuk diambil.\n\nRujukan: ${ref}\n\nTerima kasih 🙏`,
     collected:  `Assalamualaikum ${name} 🎓\n\nJubah anda telah berjaya diambil! ✅\n\nSila hubungi kami sekiranya ada sebarang pertanyaan.\n\nRujukan: ${ref}\n\nTerima kasih 🙏`,
     at_hub:     `Assalamualaikum ${name} 🎓\n\nJubah anda telah sampai di hab pos. 📦\n\nIa akan dihantar ke alamat anda tidak lama lagi.\n\nRujukan: ${ref}\n\nTerima kasih 🙏`,

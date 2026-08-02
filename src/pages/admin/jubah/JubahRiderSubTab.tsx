@@ -6,6 +6,7 @@ import {
 import { WaIcon, toWa } from '../../../lib/whatsapp';
 import { NativeSelect } from '../../../components/NativeSelect';
 import { useLoadOnActive } from '../../../hooks/useLoadOnActive';
+import { JUBAH_UNIVERSITY_MAP, jubahLocationLabel, universityKeyFromCampus } from '../../../lib/jubahUniversities';
 
 type JubahRider = {
   id: string; name: string; gerak_id: string; campus: string; status: string; can_robe: boolean;
@@ -94,7 +95,7 @@ const JubahRiderSheet: React.FC<{
         {/* Info block */}
         <div className="mx-4 mb-4 bg-slate-50 border border-slate-100 rounded-2xl p-4 text-xs font-mono text-slate-700 space-y-1.5 leading-relaxed">
           <p><span className="text-slate-400">Gerak ID:</span> <span className="text-blue-600 font-semibold">{rider.gerak_id}</span></p>
-          <p><span className="text-slate-400">Campus:</span> UMPSA {rider.campus}</p>
+          <p><span className="text-slate-400">Campus:</span> {jubahLocationLabel(universityKeyFromCampus(rider.campus) ?? 'umpsa', rider.campus)}</p>
           <p><span className="text-slate-400">IC Number:</span> {rider.ic_number || '—'}</p>
           <div className="flex items-center gap-2">
             <span><span className="text-slate-400">H/P:</span> {rider.phone || '—'}</span>
@@ -308,6 +309,9 @@ interface JubahRiderSubTabProps {
   active: boolean;
   isSuperAdmin: boolean;
   adminCampus: 'Pekan' | 'Gambang';
+  // Which university's riders to show for superadmin (regular admin still
+  // uses adminCampus, same lock-in as every other campus-scoped admin tab).
+  jubahUniversityView: string;
   showToast: (msg: string) => void;
   onModalOpenChange: (open: boolean) => void;
 }
@@ -317,7 +321,7 @@ interface JubahRiderSubTabProps {
 // that also fetched bookings (used by the Customer sub-tab) — decomposed
 // here into its own independent fetch of riders + their assignments only.
 export const JubahRiderSubTab = forwardRef<JubahRiderSubTabHandle, JubahRiderSubTabProps>(function JubahRiderSubTab(
-  { active, isSuperAdmin, adminCampus, showToast, onModalOpenChange },
+  { active, isSuperAdmin, adminCampus, jubahUniversityView, showToast, onModalOpenChange },
   ref
 ) {
   const [jubahRiders, setJubahRiders] = useState<JubahRider[]>([]);
@@ -338,7 +342,9 @@ export const JubahRiderSubTab = forwardRef<JubahRiderSubTabHandle, JubahRiderSub
       .eq('role', 'rider')
       .eq('can_robe', true)
       .order('name');
-    if (!isSuperAdmin) ridersQ = ridersQ.eq('campus', adminCampus);
+    ridersQ = isSuperAdmin
+      ? ridersQ.in('campus', JUBAH_UNIVERSITY_MAP[jubahUniversityView]?.campuses ?? [])
+      : ridersQ.eq('campus', adminCampus);
     const { data: ridersData } = await ridersQ;
     setJubahRiders((ridersData as JubahRider[]) ?? []);
     setJubahRidersLoading(false);
@@ -362,7 +368,7 @@ export const JubahRiderSubTab = forwardRef<JubahRiderSubTabHandle, JubahRiderSub
     } else {
       setJubahAssignments([]);
     }
-  }, [isSuperAdmin, adminCampus]);
+  }, [isSuperAdmin, adminCampus, jubahUniversityView]);
 
   useLoadOnActive(active, loadJubahRiders);
   useImperativeHandle(ref, () => ({ reload: loadJubahRiders }), [loadJubahRiders]);
@@ -418,7 +424,7 @@ export const JubahRiderSubTab = forwardRef<JubahRiderSubTabHandle, JubahRiderSub
               >
                 <div className="flex-1 min-w-0">
                   <p className="text-xs font-semibold text-slate-700 truncate">{r.name}</p>
-                  <p className="text-xs text-slate-400 font-semibold mt-0.5">{r.gerak_id} · UMPSA {r.campus}</p>
+                  <p className="text-xs text-slate-400 font-semibold mt-0.5">{r.gerak_id} · {jubahLocationLabel(universityKeyFromCampus(r.campus) ?? 'umpsa', r.campus)}</p>
                 </div>
                 <div className="flex flex-col items-end gap-1 shrink-0">
                   <span className={`text-xs font-semibold px-2 py-1 rounded-full border ${
@@ -498,7 +504,7 @@ export const JubahRiderSubTab = forwardRef<JubahRiderSubTabHandle, JubahRiderSub
 
       {/* Representative Directory row sheet */}
       {dirSheet && (() => {
-        const univ = (dirSheet.campus === 'Pekan' || dirSheet.campus === 'Gambang') ? 'UMPSA' : dirSheet.campus;
+        const univ = JUBAH_UNIVERSITY_MAP[universityKeyFromCampus(dirSheet.campus) ?? 'umpsa']?.shortLabel ?? dirSheet.campus;
         const ic   = dirSheet.ic_number ? dirSheet.ic_number.replace(/\D/g,'').slice(0,6) + '-XX-XXXX' : null;
         const waMsg = `Asslammualaikum Jubah rider, saya perlukan 6 digit IC ${ic ?? 'XXXXXX-XX-XXXX'} terakhir awak untuk pengisian representative jubah ${univ}`;
         return (

@@ -19,10 +19,12 @@ import { generateReceiptPdf } from '../lib/receiptPdf';
 import { copyToClipboard } from '../lib/clipboard';
 import { savePendingJubahBooking, clearPendingJubahBooking } from '../lib/pendingJubahBooking';
 import { formatPhone } from '../lib/format';
+import { JUBAH_UNIVERSITY_MAP, deriveJubahCampus, jubahLocationLabel } from '../lib/jubahUniversities';
 
 const UNIVERSITIES = [
   'Universiti Malaysia Pahang Al-Sultan Abdullah (Pekan)',
   'Universiti Malaysia Pahang Al-Sultan Abdullah (Gambang)',
+  'Universiti Kebangsaan Malaysia (UKM)',
 ];
 
 const UNIVERSITY_FACULTIES: Record<string, string[]> = {
@@ -32,10 +34,20 @@ const UNIVERSITY_FACULTIES: Record<string, string[]> = {
   'Universiti Malaysia Pahang Al-Sultan Abdullah (Gambang)': [
     'FKOM', 'FIST', 'FTKKP', 'FTKMA', 'FTKEE', 'FTKA', 'FTKPM', 'FIM', 'PSM', 'PSK',
   ],
-};
-
-const UNIV_ABBREV: Record<string, string> = {
-  umpsa: 'UMPSA', uitm: 'UiTM', umk: 'UMK', ukm: 'UKM', uiam: 'UIAM',
+  'Universiti Kebangsaan Malaysia (UKM)': [
+    'Faculty of Islamic Studies (FPI)',
+    'Faculty of Social Sciences and Humanities (FSSK)',
+    'Faculty of Science and Technology (FST)',
+    'Faculty of Medicine (PPUKM/HPKK)',
+    'Faculty of Economics and Management (FEP)',
+    'Faculty of Engineering and Built Environment (FKAB)',
+    'Faculty of Education (FPEND)',
+    'Faculty of Dentistry (FGG)',
+    'Faculty of Health Sciences (FSK)',
+    'Faculty of Information Science and Technology (FTSM)',
+    'Faculty of Law (FUU)',
+    'Faculty of Pharmacy (FF)',
+  ],
 };
 
 const REMARKS = ['Master', 'PHD', 'Degree', 'Diploma'] as const;
@@ -97,7 +109,7 @@ export const Jubah: React.FC = () => {
   const [hpNumber, setHpNumber]       = useState('');
   const [email, setEmail]             = useState('');
   const [university, setUniversity]   = useState('');
-  const uniAbbrev = UNIV_ABBREV[landingUniversity] ?? 'UMPSA';
+  const uniAbbrev = JUBAH_UNIVERSITY_MAP[landingUniversity]?.shortLabel ?? 'UMPSA';
   // Stamped onto every uploaded document (IC, OSCAR, SKPG, Konvo slip,
   // payment proof) before it ever leaves the browser — these carry IC
   // numbers, bank details and other PII, so every one of them gets the
@@ -209,6 +221,18 @@ export const Jubah: React.FC = () => {
     });
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // UMPSA is the only university where the customer actually picks between
+  // two real campuses (Pekan/Gambang) — every other live university has
+  // exactly one, so there's nothing to ask; auto-select it the moment
+  // landingUniversity changes, skipping the "Select Campus" step for those.
+  useEffect(() => {
+    if (landingUniversity === 'umpsa' || draftRestoredRef.current) return;
+    const uni = JUBAH_UNIVERSITY_MAP[landingUniversity];
+    if (uni && uni.campuses.length === 1) {
+      queueMicrotask(() => setUniversity(uni.label));
+    }
+  }, [landingUniversity]);
 
   // Debounced auto-save — the explicit "Save Draft" button (on the
   // back-navigation confirm dialog) only fires when the user leaves through
@@ -359,7 +383,7 @@ export const Jubah: React.FC = () => {
       });
       return;
     }
-    const campus = university.includes('Pekan') ? 'Pekan' : 'Gambang';
+    const campus = deriveJubahCampus(landingUniversity, university);
     queueMicrotask(() => {
       setRidersLoading(true);
       setSelectedRiderId('');
@@ -367,7 +391,7 @@ export const Jubah: React.FC = () => {
     supabase
       .rpc('get_active_jubah_riders', { p_campus: campus, p_method: paymentMode === 'deposit' ? depositMethod : paymentMode })
       .then(({ data }) => { setRiders(data ?? []); setRidersLoading(false); });
-  }, [university, paymentMode, depositMethod]);
+  }, [university, paymentMode, depositMethod, landingUniversity]);
 
   // Shared Jubah bank account — one account for every rider/customer, set by
   // superadmin (JubahPriceSubTab.tsx). Public read, same as jubah_active.
@@ -593,7 +617,7 @@ export const Jubah: React.FC = () => {
     let reference = generateReference();
     const combinedFileName = `${(fullName || 'combined').replace(/\s+/g, '_')}_combined.pdf`;
     const selectedRider = riders.find(r => r.id === selectedRiderId);
-    const bookingCampus = university.includes('Pekan') ? 'Pekan' : 'Gambang';
+    const bookingCampus = deriveJubahCampus(landingUniversity, university);
     const zonePrefix = postageZone === 'SS' ? '[SS - Sabah & Sarawak]\n' : '';
     const addr = isPostageDelivery ? `${zonePrefix}${fullAddress}` : undefined;
 
@@ -639,10 +663,17 @@ export const Jubah: React.FC = () => {
         uploadFile(paymentProof, 'payment'),
       ]);
       [docsPath, paymentPath] = results;
-      oscarPath = docUploads[0];
-      skpgPath  = docUploads[1];
-      konvoPath = docUploads[2];
-      icPath    = docUploads[3];
+      // Routed by field_key, not array position — a university's doc field
+      // set can differ in count/order from UMPSA's (e.g. UKM has no 'oscar'
+      // field at all), so positional docUploads[0]/[1]/[2]/[3] would
+      // silently file uploads into the wrong DB column once that stopped
+      // being true.
+      const uploadsByKey: Record<string, string | undefined> = {};
+      docFields.forEach((f, i) => { uploadsByKey[f.field_key] = docUploads[i]; });
+      oscarPath = uploadsByKey.oscar;
+      skpgPath  = uploadsByKey.skpg;
+      konvoPath = uploadsByKey.konvo;
+      icPath    = uploadsByKey.ic;
     } catch (err) {
       console.error('[GERAK] Storage upload failed:', err);
     }
@@ -702,20 +733,12 @@ export const Jubah: React.FC = () => {
     commitJubahBooking(result.booking!);
   };
 
-  const UNIVERSITY_LABELS: Record<string, string> = {
-    umpsa: 'Universiti Malaysia Pahang Al-Sultan Abdullah',
-    uitm:  'Universiti Teknologi MARA (UiTM)',
-    umk:   'Universiti Malaysia Kelantan',
-    ukm:   'Universiti Kebangsaan Malaysia',
-    uiam:  'Universiti Islam Antarabangsa Malaysia',
-  };
-
   if (peekLanding || (!jubahBooking && !landingUniversity)) {
     return <JubahLanding onProceed={u => { setPeekLanding(false); setLandingUniversity(u); }} />;
   }
 
-  // Non-UMPSA universities: form not yet available
-  if (!jubahBooking && landingUniversity !== 'umpsa') {
+  // Universities not yet configured for booking (see JUBAH_UNIVERSITIES' `live` flag)
+  if (!jubahBooking && !JUBAH_UNIVERSITY_MAP[landingUniversity]?.live) {
     return (
       <div className="flex-grow bg-white overflow-y-auto no-scrollbar pb-4 px-5 animate-fade-in flex flex-col gap-5 items-center justify-center text-center">
         <div className="bg-white border border-slate-100 rounded-3xl p-8 flex flex-col items-center gap-4 mx-2">
@@ -728,7 +751,7 @@ export const Jubah: React.FC = () => {
               The booking form for
             </p>
             <p className="text-xs font-black text-blue-600 mt-0.5">
-              {UNIVERSITY_LABELS[landingUniversity]}
+              {JUBAH_UNIVERSITY_MAP[landingUniversity]?.fullName}
             </p>
             <p className="text-xs text-slate-500 font-semibold mt-1 leading-relaxed">
               is not yet available. We're working on it!
@@ -755,7 +778,7 @@ export const Jubah: React.FC = () => {
           <GraduationCap className="w-5 h-5 text-slate-400" /> Jubah Delivery
         </h2>
         <p className="text-xs text-slate-400 font-normal mt-0.5">
-          {UNIVERSITY_LABELS[landingUniversity]} · Official Robe Bookings
+          {JUBAH_UNIVERSITY_MAP[landingUniversity]?.fullName} · Official Robe Bookings
         </p>
         {!jubahBooking && (
           <button
@@ -863,19 +886,24 @@ export const Jubah: React.FC = () => {
           <div className="bg-white border border-slate-100 rounded-3xl p-5 flex flex-col gap-4">
             <h3 className="text-sm font-semibold text-slate-700">Academic Information</h3>
 
-            {/* University */}
-            <div className="flex flex-col gap-1.5">
-              <label className="text-xs font-semibold text-slate-400">
-                Campus <span className="text-danger">*</span>
-              </label>
-              <NativeSelect
-                value={university}
-                onChange={u => { setUniversity(u); setFaculty(''); }}
-                options={UNIVERSITIES.map(u => ({ value: u, label: u.includes('Pekan') ? 'UMPSA Pekan' : 'UMPSA Gambang' }))}
-                placeholder="Select your campus..."
-                label="Select Campus"
-              />
-            </div>
+            {/* Campus — UMPSA is the only university with a real choice here
+                (Pekan/Gambang); every other university has exactly one
+                campus, auto-selected on landing (see the effect above), so
+                there's nothing to ask and this step is skipped entirely. */}
+            {landingUniversity === 'umpsa' && (
+              <div className="flex flex-col gap-1.5">
+                <label className="text-xs font-semibold text-slate-400">
+                  Campus <span className="text-danger">*</span>
+                </label>
+                <NativeSelect
+                  value={university}
+                  onChange={u => { setUniversity(u); setFaculty(''); }}
+                  options={UNIVERSITIES.filter(u => u.includes('Pekan') || u.includes('Gambang')).map(u => ({ value: u, label: u.includes('Pekan') ? 'UMPSA Pekan' : 'UMPSA Gambang' }))}
+                  placeholder="Select your campus..."
+                  label="Select Campus"
+                />
+              </div>
+            )}
 
             {/* Faculty — list changes based on selected university */}
             <div className="flex flex-col gap-1.5">
@@ -998,7 +1026,7 @@ export const Jubah: React.FC = () => {
                   Full Payment (RM{pickupPrice}) — Pickup Point
                 </span>
                 <span className="text-xs text-slate-400 leading-relaxed block mt-0.5">
-                  Service charge for pickup only at UMPSA Pekan on your scheduled date. We store, manage and maintain all items (jubah, mortarboard, kad jemputan, cenderahati &amp; selempang) until handover.
+                  Service charge for pickup only at {jubahLocationLabel(landingUniversity, deriveJubahCampus(landingUniversity, university))} on your scheduled date. We store, manage and maintain all items (jubah, mortarboard, kad jemputan, cenderahati &amp; selempang) until handover.
                 </span>
               </div>
             </label>
@@ -1427,7 +1455,6 @@ export const Jubah: React.FC = () => {
                   (jubahBooking.paymentMode === 'deposit' && !!jubahBooking.deliveryAddress);
                 const STEP_INFO: Record<string, { label: string; desc: string }> = {
                   paid:       { label: 'Payment Confirmed', desc: 'Payment received — your order is in the queue.' },
-                  booked:     { label: 'Order Confirmed',   desc: 'Booking registered in system.' },
                   processing: { label: 'Processing',        desc: isPostageDelivery ? 'Robe being prepared for delivery.' : 'Robe being prepared for collection.' },
                   collected:  { label: isPostageDelivery ? 'Collected' : 'Ready for Pickup', desc: isPostageDelivery ? 'Robe collected from university.' : 'Available at collection counter.' },
                   at_hub:     { label: 'Out for Delivery',  desc: 'Arrived at postage hub.' },
@@ -1610,7 +1637,7 @@ export const Jubah: React.FC = () => {
           method={isPostageDelivery ? 'Pickup & Postage' : 'Self Pickup'}
           icNumber={r.ic_number}
           phone={r.phone}
-          waMessage={`Asslammualaikum Jubah rider, saya perlukan 6 digit IC ${r.ic_number ? r.ic_number.replace(/\D/g,'').slice(0,6) + '-XX-XXXX' : 'XXXXXX-XX-XXXX'} terakhir awak untuk pengisian representative jubah ${university.includes('Pahang') ? 'UMPSA' : university.includes('UiTM') || university.includes('MARA') ? 'UiTM' : university.includes('Kelantan') ? 'UMK' : university.includes('Kebangsaan') ? 'UKM' : 'UIAM'}`}
+          waMessage={`Asslammualaikum Jubah rider, saya perlukan 6 digit IC ${r.ic_number ? r.ic_number.replace(/\D/g,'').slice(0,6) + '-XX-XXXX' : 'XXXXXX-XX-XXXX'} terakhir awak untuk pengisian representative jubah ${uniAbbrev}`}
           onClose={close}
         />
       );
