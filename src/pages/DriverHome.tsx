@@ -54,6 +54,18 @@ const navAddress = (address: string, campus: string, bookMode?: string | null) =
     : cleaned;
 };
 
+// Map-pin bookings carry real GPS/Places coordinates (set when the pin was
+// dropped) — used directly when present, since a second geocoder re-parsing
+// address text can land on the wrong place entirely. Quick/custom/aerbus
+// bookings have no coordinates, so those fall back to the cleaned text.
+const googleMapsUrl = (
+  address: string, lat: number | null | undefined, lng: number | null | undefined,
+  campus: string, bookMode?: string | null
+) => {
+  const dest = (lat != null && lng != null) ? `${lat},${lng}` : navAddress(address, campus, bookMode);
+  return `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(dest)}&travelmode=driving`;
+};
+
 interface RentalVehicle {
   owner_id: string;
   car_type: string;
@@ -1178,50 +1190,26 @@ export const DriverHome: React.FC = () => {
                   </div>
                 </div>
 
-                {/* Navigate — targets pickup before the trip starts, destination
-                    once it's in progress, matching the Start/Complete Trip flow
-                    right below. Map-pin bookings carry real GPS/Places
-                    coordinates (set when the pin was dropped) — used directly
-                    when present, since a second geocoder re-parsing address
-                    text can land on the wrong place entirely (e.g. an address
-                    containing "Kajang Municipal Council" resolving to that
-                    building instead of the actual street). Quick/custom/aerbus
-                    bookings have no coordinates, so those fall back to the
-                    cleaned address text. Plain https:// links so Android's own
-                    "Open with" chooser offers whichever nav apps are installed. */}
+                {/* Navigate — both stops always available, not just the
+                    "current" one, since the driver may want to check the
+                    destination before starting or route back to pickup. */}
                 <div className="mx-4 mb-3 flex gap-2" onClick={e => e.stopPropagation()}>
-                  {(() => {
-                    const toDest = myJob.status === 'in_progress';
-                    const lat = toDest ? myJob.destination_lat : myJob.pickup_lat;
-                    const lng = toDest ? myJob.destination_lng : myJob.pickup_lng;
-                    const address = toDest ? myJob.destination : myJob.pickup;
-                    const googleDest = (lat != null && lng != null)
-                      ? `${lat},${lng}`
-                      : navAddress(address, myJob.campus, myJob.book_mode);
-                    const wazeParam = (lat != null && lng != null)
-                      ? `ll=${lat}%2C${lng}`
-                      : `q=${encodeURIComponent(navAddress(address, myJob.campus, myJob.book_mode))}`;
-                    return (
-                      <>
-                        <a
-                          href={`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(googleDest)}&travelmode=driving`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="flex-1 flex items-center justify-center gap-1.5 bg-slate-50 border border-slate-100 text-slate-600 text-xs font-semibold py-2.5 rounded-xl active:scale-95 transition"
-                        >
-                          <Navigation className="w-3.5 h-3.5" /> Google Maps
-                        </a>
-                        <a
-                          href={`https://waze.com/ul?${wazeParam}&navigate=yes`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="flex-1 flex items-center justify-center gap-1.5 bg-slate-50 border border-slate-100 text-slate-600 text-xs font-semibold py-2.5 rounded-xl active:scale-95 transition"
-                        >
-                          <Navigation className="w-3.5 h-3.5" /> Waze
-                        </a>
-                      </>
-                    );
-                  })()}
+                  <a
+                    href={googleMapsUrl(myJob.pickup, myJob.pickup_lat, myJob.pickup_lng, myJob.campus, myJob.book_mode)}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex-1 flex items-center justify-center gap-1.5 bg-slate-50 border border-slate-100 text-slate-600 text-xs font-semibold py-2.5 rounded-xl active:scale-95 transition text-center"
+                  >
+                    <Navigation className="w-3.5 h-3.5 shrink-0" /> Navigate to Pickup
+                  </a>
+                  <a
+                    href={googleMapsUrl(myJob.destination, myJob.destination_lat, myJob.destination_lng, myJob.campus, myJob.book_mode)}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex-1 flex items-center justify-center gap-1.5 bg-slate-50 border border-slate-100 text-slate-600 text-xs font-semibold py-2.5 rounded-xl active:scale-95 transition text-center"
+                  >
+                    <Navigation className="w-3.5 h-3.5 shrink-0" /> Navigate to Destination
+                  </a>
                 </div>
 
                 {myJob.notes && (
