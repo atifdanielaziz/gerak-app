@@ -35,7 +35,18 @@ const UNIVERSITY_FACULTIES: Record<string, string[]> = {
     'FKOM', 'FIST', 'FTKKP', 'FTKMA', 'FTKEE', 'FTKA', 'FTKPM', 'FIM', 'PSM', 'PSK',
   ],
   'Universiti Kebangsaan Malaysia (UKM)': [
-    'FPI', 'FSSK', 'FST', 'PPUKM/HPKK', 'FEP', 'FKAB', 'FPEND', 'FGG', 'FSK', 'FTSM', 'FUU', 'FF',
+    'Faculty of Islamic Studies (FPI)',
+    'Faculty of Social Sciences and Humanities (FSSK)',
+    'Faculty of Science and Technology (FST)',
+    'Faculty of Medicine (PPUKM/HPKK)',
+    'Faculty of Economics and Management (FEP)',
+    'Faculty of Engineering and Built Environment (FKAB)',
+    'Faculty of Education (FPEND)',
+    'Faculty of Dentistry (FGG)',
+    'Faculty of Health Sciences (FSK)',
+    'Faculty of Information Science and Technology (FTSM)',
+    'Faculty of Law (FUU)',
+    'Faculty of Pharmacy (FF)',
   ],
 };
 
