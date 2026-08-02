@@ -19,7 +19,7 @@ import { generateReceiptPdf } from '../lib/receiptPdf';
 import { copyToClipboard } from '../lib/clipboard';
 import { savePendingJubahBooking, clearPendingJubahBooking } from '../lib/pendingJubahBooking';
 import { formatPhone } from '../lib/format';
-import { JUBAH_UNIVERSITY_MAP, deriveJubahCampus } from '../lib/jubahUniversities';
+import { JUBAH_UNIVERSITY_MAP, deriveJubahCampus, jubahLocationLabel } from '../lib/jubahUniversities';
 
 const UNIVERSITIES = [
   'Universiti Malaysia Pahang Al-Sultan Abdullah (Pekan)',
@@ -1026,7 +1026,7 @@ export const Jubah: React.FC = () => {
                   Full Payment (RM{pickupPrice}) — Pickup Point
                 </span>
                 <span className="text-xs text-slate-400 leading-relaxed block mt-0.5">
-                  Service charge for pickup only at UMPSA Pekan on your scheduled date. We store, manage and maintain all items (jubah, mortarboard, kad jemputan, cenderahati &amp; selempang) until handover.
+                  Service charge for pickup only at {jubahLocationLabel(landingUniversity, deriveJubahCampus(landingUniversity, university))} on your scheduled date. We store, manage and maintain all items (jubah, mortarboard, kad jemputan, cenderahati &amp; selempang) until handover.
                 </span>
               </div>
             </label>
@@ -1637,7 +1637,7 @@ export const Jubah: React.FC = () => {
           method={isPostageDelivery ? 'Pickup & Postage' : 'Self Pickup'}
           icNumber={r.ic_number}
           phone={r.phone}
-          waMessage={`Asslammualaikum Jubah rider, saya perlukan 6 digit IC ${r.ic_number ? r.ic_number.replace(/\D/g,'').slice(0,6) + '-XX-XXXX' : 'XXXXXX-XX-XXXX'} terakhir awak untuk pengisian representative jubah ${university.includes('Pahang') ? 'UMPSA' : university.includes('UiTM') || university.includes('MARA') ? 'UiTM' : university.includes('Kelantan') ? 'UMK' : university.includes('Kebangsaan') ? 'UKM' : 'UIAM'}`}
+          waMessage={`Asslammualaikum Jubah rider, saya perlukan 6 digit IC ${r.ic_number ? r.ic_number.replace(/\D/g,'').slice(0,6) + '-XX-XXXX' : 'XXXXXX-XX-XXXX'} terakhir awak untuk pengisian representative jubah ${uniAbbrev}`}
           onClose={close}
         />
       );
