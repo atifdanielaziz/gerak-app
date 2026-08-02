@@ -22,14 +22,19 @@ create index if not exists jubah_banner_images_univ_pos
 
 alter table public.jubah_banner_images enable row level security;
 
+-- Policies have no "CREATE IF NOT EXISTS" — drop-then-create so this whole
+-- script is safe to re-run regardless of what already succeeded.
+
 -- Public read — the Jubah landing page's university/banner picker is
 -- reachable by guests (no login required), same as the jubah-banners
 -- storage bucket itself already being publicly readable.
+drop policy if exists "jubah_banner_images_read" on public.jubah_banner_images;
 create policy "jubah_banner_images_read" on public.jubah_banner_images
   for select
   using (true);
 
 -- Admins manage everything.
+drop policy if exists "jubah_banner_images_admin_all" on public.jubah_banner_images;
 create policy "jubah_banner_images_admin_all" on public.jubah_banner_images
   for all to authenticated
   using (exists (select 1 from public.profiles where id = auth.uid() and role in ('admin', 'superadmin')))
