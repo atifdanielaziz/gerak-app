@@ -32,10 +32,27 @@ const CAMPUS_GEO_CONTEXT: Record<string, string> = {
   Pekan:   'Pekan, Pahang, Malaysia',
   Gambang: 'Gambang, Kuantan, Pahang, Malaysia',
 };
-const navAddress = (address: string, campus: string, bookMode?: string | null) =>
-  (bookMode === 'quick' || bookMode === 'aerbus') && CAMPUS_GEO_CONTEXT[campus]
-    ? `${address}, ${CAMPUS_GEO_CONTEXT[campus]}`
-    : address;
+
+// Malaysian reverse-geocoded addresses often include the local government
+// authority as its own comma segment (e.g. "...Kajang Municipal Council...").
+// That phrase is itself a real, named place in Google's map data, and its
+// geocoder has been seen latching onto it instead of the actual street
+// address earlier in the same string — sending the driver to the council
+// office instead of the pickup/destination. Stripping these segments before
+// building the nav URL removes the ambiguity.
+const stripAdminBoilerplate = (address: string) =>
+  address
+    .split(',')
+    .filter(part => !/\b(municipal council|district council|city council|majlis (perbandaran|daerah|bandaraya))\b/i.test(part))
+    .map(part => part.trim())
+    .join(', ');
+
+const navAddress = (address: string, campus: string, bookMode?: string | null) => {
+  const cleaned = stripAdminBoilerplate(address);
+  return (bookMode === 'quick' || bookMode === 'aerbus') && CAMPUS_GEO_CONTEXT[campus]
+    ? `${cleaned}, ${CAMPUS_GEO_CONTEXT[campus]}`
+    : cleaned;
+};
 
 interface RentalVehicle {
   owner_id: string;
