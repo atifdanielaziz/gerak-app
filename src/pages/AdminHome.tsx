@@ -447,7 +447,7 @@ export const AdminHome: React.FC = () => {
                 const Icon = tab.icon;
                 return (
                   <button key={tab.id}
-                    onPointerDown={(e) => { e.preventDefault(); setActiveTab(tab.id); }}
+                    onClick={() => setActiveTab(tab.id)}
                     className={`flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-sm font-semibold text-left transition-transform transform-gpu active:scale-[0.98] ${
                       activeTab === tab.id ? 'bg-primary text-white' : 'text-slate-500 hover:bg-slate-100'
                     }`}
@@ -639,7 +639,7 @@ export const AdminHome: React.FC = () => {
           .filter(t => !t.superadminOnly || user.role === 'superadmin')
           .map(tab => (
             <button key={tab.id}
-              onPointerDown={(e) => { e.preventDefault(); setActiveTab(tab.id); }}
+              onClick={() => setActiveTab(tab.id)}
               className={`shrink-0 px-4 py-2 rounded-xl text-xs font-semibold transition-transform transform-gpu flex items-center justify-center gap-1.5 ${
                 activeTab === tab.id ? 'bg-primary text-white' : 'text-slate-400'
               }`}
@@ -894,7 +894,7 @@ export const AdminHome: React.FC = () => {
               ] as const)
                 .filter(t => !t.superadminOnly || isSuperAdmin)
                 .map(t => (
-                <button key={t.id} onPointerDown={(e) => { e.preventDefault(); setJubahSubTab(t.id); setJubahAdminView('list'); setJubahAdminSelected(null); }}
+                <button key={t.id} onClick={() => { setJubahSubTab(t.id); setJubahAdminView('list'); setJubahAdminSelected(null); }}
                   className={`flex-1 py-2 rounded-xl text-xs font-semibold transition-transform transform-gpu ${
                     jubahSubTab === t.id ? 'bg-primary text-white' : 'text-slate-400'
                   }`}>
