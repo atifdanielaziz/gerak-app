@@ -801,9 +801,9 @@ export const DriverHome: React.FC = () => {
               <ListOrdered className="w-3.5 h-3.5" />
               Job Pool
               {pendingOrders.length > 0 && (
-                <span className={`text-xs font-semibold px-1.5 py-0.5 rounded-full min-w-[18px] text-center ${
+                <span className={`absolute top-1 right-1.5 text-[10px] font-bold leading-none px-1.5 py-0.5 rounded-full min-w-[16px] text-center ${
                   activeTab === 'pool'
-                    ? 'bg-white/25 text-white'
+                    ? 'bg-white text-primary'
                     : `bg-primary text-white ${newPing ? 'animate-bounce' : ''}`
                 }`}>
                   {pendingOrders.length}
@@ -823,7 +823,7 @@ export const DriverHome: React.FC = () => {
               <Briefcase className="w-3.5 h-3.5" />
               My Jobs
               {myJob && (
-                <span className={`w-2 h-2 rounded-full ${
+                <span className={`absolute top-1.5 right-2 w-2 h-2 rounded-full ${
                   myJob.status === 'in_progress' ? 'bg-blue-400' : 'bg-emerald-400'
                 } ${activeTab === 'my-jobs' ? 'bg-white' : ''} animate-pulse`} />
               )}
@@ -841,8 +841,8 @@ export const DriverHome: React.FC = () => {
               <KeyRound className="w-3.5 h-3.5" />
               Rental
               {pendingRentals > 0 && (
-                <span className={`text-xs font-semibold px-1.5 py-0.5 rounded-full min-w-[18px] text-center ${
-                  activeTab === 'rental' ? 'bg-white/25 text-white' : 'bg-primary text-white'
+                <span className={`absolute top-1 right-1.5 text-[10px] font-bold leading-none px-1.5 py-0.5 rounded-full min-w-[16px] text-center ${
+                  activeTab === 'rental' ? 'bg-white text-primary' : 'bg-primary text-white'
                 }`}>
                   {pendingRentals}
                 </span>
