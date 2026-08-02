@@ -35,12 +35,9 @@ export const JUBAH_UNIVERSITIES: JubahUniversity[] = [
     campuses: ['UMK'], live: false,
   },
   {
-    // live flips to true once UKM's faculty list is wired into Jubah.tsx's
-    // UNIVERSITY_FACULTIES — document fields/admin scoping are ready now,
-    // but the booking form itself needs real faculty data, not a guess.
     key: 'ukm', label: 'Universiti Kebangsaan Malaysia (UKM)',
     shortLabel: 'UKM', fullName: 'Universiti Kebangsaan Malaysia',
-    campuses: ['UKM'], live: false,
+    campuses: ['UKM'], live: true,
   },
   {
     key: 'uiam', label: 'Universiti Islam Antarabangsa Malaysia (UIA)',

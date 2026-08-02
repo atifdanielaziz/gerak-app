@@ -24,6 +24,7 @@ import { JUBAH_UNIVERSITY_MAP, deriveJubahCampus } from '../lib/jubahUniversitie
 const UNIVERSITIES = [
   'Universiti Malaysia Pahang Al-Sultan Abdullah (Pekan)',
   'Universiti Malaysia Pahang Al-Sultan Abdullah (Gambang)',
+  'Universiti Kebangsaan Malaysia (UKM)',
 ];
 
 const UNIVERSITY_FACULTIES: Record<string, string[]> = {
@@ -32,6 +33,9 @@ const UNIVERSITY_FACULTIES: Record<string, string[]> = {
   ],
   'Universiti Malaysia Pahang Al-Sultan Abdullah (Gambang)': [
     'FKOM', 'FIST', 'FTKKP', 'FTKMA', 'FTKEE', 'FTKA', 'FTKPM', 'FIM', 'PSM', 'PSK',
+  ],
+  'Universiti Kebangsaan Malaysia (UKM)': [
+    'FPI', 'FSSK', 'FST', 'PPUKM/HPKK', 'FEP', 'FKAB', 'FPEND', 'FGG', 'FSK', 'FTSM', 'FUU', 'FF',
   ],
 };
 
@@ -206,6 +210,18 @@ export const Jubah: React.FC = () => {
     });
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // UMPSA is the only university where the customer actually picks between
+  // two real campuses (Pekan/Gambang) — every other live university has
+  // exactly one, so there's nothing to ask; auto-select it the moment
+  // landingUniversity changes, skipping the "Select Campus" step for those.
+  useEffect(() => {
+    if (landingUniversity === 'umpsa' || draftRestoredRef.current) return;
+    const uni = JUBAH_UNIVERSITY_MAP[landingUniversity];
+    if (uni && uni.campuses.length === 1) {
+      queueMicrotask(() => setUniversity(uni.label));
+    }
+  }, [landingUniversity]);
 
   // Debounced auto-save — the explicit "Save Draft" button (on the
   // back-navigation confirm dialog) only fires when the user leaves through
@@ -859,19 +875,24 @@ export const Jubah: React.FC = () => {
           <div className="bg-white border border-slate-100 rounded-3xl p-5 flex flex-col gap-4">
             <h3 className="text-sm font-semibold text-slate-700">Academic Information</h3>
 
-            {/* University */}
-            <div className="flex flex-col gap-1.5">
-              <label className="text-xs font-semibold text-slate-400">
-                Campus <span className="text-danger">*</span>
-              </label>
-              <NativeSelect
-                value={university}
-                onChange={u => { setUniversity(u); setFaculty(''); }}
-                options={UNIVERSITIES.map(u => ({ value: u, label: u.includes('Pekan') ? 'UMPSA Pekan' : 'UMPSA Gambang' }))}
-                placeholder="Select your campus..."
-                label="Select Campus"
-              />
-            </div>
+            {/* Campus — UMPSA is the only university with a real choice here
+                (Pekan/Gambang); every other university has exactly one
+                campus, auto-selected on landing (see the effect above), so
+                there's nothing to ask and this step is skipped entirely. */}
+            {landingUniversity === 'umpsa' && (
+              <div className="flex flex-col gap-1.5">
+                <label className="text-xs font-semibold text-slate-400">
+                  Campus <span className="text-danger">*</span>
+                </label>
+                <NativeSelect
+                  value={university}
+                  onChange={u => { setUniversity(u); setFaculty(''); }}
+                  options={UNIVERSITIES.filter(u => u.includes('Pekan') || u.includes('Gambang')).map(u => ({ value: u, label: u.includes('Pekan') ? 'UMPSA Pekan' : 'UMPSA Gambang' }))}
+                  placeholder="Select your campus..."
+                  label="Select Campus"
+                />
+              </div>
+            )}
 
             {/* Faculty — list changes based on selected university */}
             <div className="flex flex-col gap-1.5">
