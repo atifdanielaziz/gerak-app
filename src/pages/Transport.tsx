@@ -153,6 +153,22 @@ export const Transport: React.FC = () => {
   }, [user.isLoggedIn]);
 
   const bookRecentRoute = (pickup: string, destination: string) => {
+    // A recent route may happen to match a fixed-fare Quick Route exactly
+    // (e.g. its own reverse direction) — route into Quick mode with that
+    // fare pre-selected instead of Custom mode, which always shows "TBC"
+    // and would otherwise quietly downgrade an already-known price.
+    const routeList = campus === 'pekan' ? PEKAN_ROUTES : GAMBANG_ROUTES;
+    const match = routeList.find(
+      r => r.from.toLowerCase() === pickup.toLowerCase() && r.to.toLowerCase() === destination.toLowerCase()
+    );
+    if (match) {
+      setBookMode('quick');
+      setSelectedFrom(match.from);
+      setSelectedRoute(match);
+      setShowRouteList(false);
+      setShowFromDropdown(false);
+      return;
+    }
     setBookMode('custom');
     setCustomPickup(pickup);
     setCustomDest(destination);
