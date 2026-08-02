@@ -26,6 +26,7 @@ const TrackJubah          = lazy(() => import('./pages/TrackJubah').then(m => ({
 const GerakTransporter    = lazy(() => import('./pages/GerakTransporter').then(m => ({ default: m.GerakTransporter })));
 const PrivacyPolicy       = lazy(() => import('./pages/PrivacyPolicy').then(m => ({ default: m.PrivacyPolicy })));
 const TermsOfService      = lazy(() => import('./pages/TermsOfService').then(m => ({ default: m.TermsOfService })));
+const RepaintRepro        = lazy(() => import('./pages/RepaintRepro').then(m => ({ default: m.RepaintRepro })));
 interface BeforeInstallPromptEvent extends Event {
   prompt: () => Promise<void>;
   userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>;
@@ -354,6 +355,8 @@ const AppContent: React.FC = () => {
         return <PrivacyPolicy />;
       case 'terms-of-service':
         return <TermsOfService />;
+      case 'repaint-repro':
+        return <RepaintRepro />;
       default:
         return <Dashboard />;
     }

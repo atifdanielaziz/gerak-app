@@ -34,7 +34,8 @@ export type ActivePage =
   | 'track-jubah'
   | 'gerak-transporter'
   | 'privacy-policy'
-  | 'terms-of-service';
+  | 'terms-of-service'
+  | 'repaint-repro';
 
 export interface UserSession {
   name: string;
@@ -197,6 +198,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     // in-app-only screen. Same deep-link mechanism as /jubah/track above.
     if (path.endsWith('/privacy')) return 'privacy-policy';
     if (path.endsWith('/terms')) return 'terms-of-service';
+    // Minimal, auth-free reproduction page for a real repaint bug filed
+    // against Chromium/Android WebView — see RepaintRepro.tsx.
+    if (path.endsWith('/repro')) return 'repaint-repro';
     // The staff-invite email's "Create Your Account" button links here —
     // lands the invitee straight on the register form instead of the
     // splash/dashboard, with their invited email prefilled (Register.tsx
