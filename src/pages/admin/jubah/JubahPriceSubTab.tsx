@@ -4,17 +4,12 @@ import { TrendingUp, GraduationCap, Landmark } from 'lucide-react';
 import { NativeSelect } from '../../../components/NativeSelect';
 import { useLoadOnActive } from '../../../hooks/useLoadOnActive';
 import { JubahQrButton } from '../../../components/JubahQrButton';
+import { JUBAH_UNIVERSITIES } from '../../../lib/jubahUniversities';
 
 // Abbreviated labels here (not the full names JubahLanding shows) since this
 // sits compactly in a card header — keeps the Jubah Pricing Matrix's
 // university switcher wired to the exact same list customers pick from.
-const JUBAH_PRICING_UNIVERSITIES = [
-  { key: 'umpsa', label: 'UMPSA' },
-  { key: 'uitm',  label: 'UiTM' },
-  { key: 'umk',   label: 'UMK' },
-  { key: 'ukm',   label: 'UKM' },
-  { key: 'uiam',  label: 'UIA' },
-];
+const JUBAH_PRICING_UNIVERSITIES = JUBAH_UNIVERSITIES.map(u => ({ key: u.key, label: u.shortLabel }));
 
 type JubahPrice = { remark: string; payment_mode: string; price: number; university: string };
 

@@ -3,15 +3,12 @@ import { supabase } from '../../../lib/supabase';
 import { FileImage, Upload, Trash2, Info, X, Check } from 'lucide-react';
 import ReactCrop, { centerCrop, makeAspectCrop, type Crop, type PixelCrop } from 'react-image-crop';
 import 'react-image-crop/dist/ReactCrop.css';
+import { JUBAH_UNIVERSITIES } from '../../../lib/jubahUniversities';
 
 const BANNER_BUCKET = 'jubah-banners';
 const BANNER_ITEMS = [
   { key: 'default', label: 'Default Banner (RUNNER GERAK)' },
-  { key: 'umpsa',   label: 'Universiti Malaysia Pahang Al-Sultan Abdullah (UMPSA)' },
-  { key: 'uitm',    label: 'Universiti Teknologi MARA (UiTM)' },
-  { key: 'umk',     label: 'Universiti Malaysia Kelantan (UMK)' },
-  { key: 'ukm',     label: 'Universiti Kebangsaan Malaysia (UKM)' },
-  { key: 'uiam',    label: 'Universiti Islam Antarabangsa Malaysia (UIA)' },
+  ...JUBAH_UNIVERSITIES.map(u => ({ key: u.key, label: u.label })),
 ];
 
 interface JubahBannerSubTabProps {

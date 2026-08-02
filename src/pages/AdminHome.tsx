@@ -3,6 +3,7 @@ import { useApp } from '../context/AppContext';
 import { supabase } from '../lib/supabase';
 import { useLoadOnActive } from '../hooks/useLoadOnActive';
 import { NativeSelect } from '../components/NativeSelect';
+import { JUBAH_UNIVERSITIES } from '../lib/jubahUniversities';
 import {
   BarChart3, Car, Users, Clock,
   AlertCircle, RefreshCw, Trash2,
@@ -105,24 +106,18 @@ export const AdminHome: React.FC = () => {
   const effectiveJubahSubTab = jubahSubTab === 'price' && !isSuperAdmin ? 'rider' : jubahSubTab;
   // Reported up by JubahCustomerSubTab's own receipt-preview modal.
   const [jubahCustomerModalOpen, setJubahCustomerModalOpen] = useState(false);
-  const [jubahStatsUniversity, setJubahStatsUniversity] = useState('all');
-
-  // jubah_bookings.university stores the verbose display string (e.g.
-  // "Universiti Malaysia Pahang Al-Sultan Abdullah (Pekan)"), not the short
-  // key used elsewhere (that key only ever existed as a pricing-lookup
-  // parameter, never persisted on the booking row) — so grouping by exact
-  // string would split Pekan and Gambang into separate "universities".
-  // Stripping the trailing "(...)" campus suffix gives the real university
-  // grouping without needing to hardcode/guess a name-to-key mapping.
-  const jubahUniversityBase = (u: string | null | undefined) => (u ?? '').replace(/\s*\([^)]*\)\s*$/, '').trim();
+  // Which university's Jubah data the panel shows — superadmin can switch
+  // freely (see the University selector below); regular admin never changes
+  // this (locked to 'umpsa', their implicit university today — see
+  // loadJubahData, which uses their existing campus lock instead once this
+  // isn't superadmin).
+  const [jubahUniversityView, setJubahUniversityView] = useState('umpsa');
 
   const jubahStats = useMemo(() => {
-    const inScope = jubahStatsUniversity === 'all'
-      ? jubahBookings
-      : jubahBookings.filter(b => jubahUniversityBase(b.university) === jubahStatsUniversity);
-
-    const active    = inScope.filter(b => b.status !== 'cancelled');
-    const cancelled = inScope.length - active.length;
+    // jubahBookings is already scoped to one university/campus by
+    // loadJubahData's query — no further filtering needed here.
+    const active    = jubahBookings.filter(b => b.status !== 'cancelled');
+    const cancelled = jubahBookings.length - active.length;
 
     let collected = 0;
     let outstanding = 0;
@@ -152,21 +147,12 @@ export const AdminHome: React.FC = () => {
     });
 
     return { total: active.length, cancelled, collected, outstanding, statusCounts, modeCounts };
-  }, [jubahBookings, jubahStatsUniversity]);
+  }, [jubahBookings]);
 
-  // Independent of the university filter above — this is an operational
-  // alert list, not a revenue view, so it should never disappear just
-  // because a filter is set to a different university.
   const jubahNeedsReconciliation = useMemo(
     () => jubahBookings.filter(b => b.needs_reconciliation),
     [jubahBookings]
   );
-
-  const jubahUniversityOptions = useMemo(() => {
-    const set = new Set<string>();
-    jubahBookings.forEach(b => { if (b.university) set.add(jubahUniversityBase(b.university)); });
-    return Array.from(set).sort();
-  }, [jubahBookings]);
 
   const BANNER_BUCKET = 'jubah-banners';
   type DocField = { id: string; field_key: string; label: string; hint: string | null; position: number };
@@ -230,10 +216,17 @@ export const AdminHome: React.FC = () => {
     // bounds the worst case without touching how search behaves; at actual
     // current row counts (dozens–hundreds) this never engages.
     let bookingsQ = supabase.from('jubah_bookings')
-      .select('id, reference, full_name, ic_number, hp_number, email, matric_id, university, campus, faculty, remark, rider_name, rider_phone, status, payment_mode, cost, balance_due, balance_paid, balance_paid_at, balance_proof_url, initial_paid, initial_paid_at, delivery_address, docs_path, payment_path, oscar_path, skpg_path, konvo_path, ic_path, created_at, needs_reconciliation, reconciliation_note', { count: 'exact' })
+      .select('id, reference, full_name, ic_number, hp_number, email, matric_id, university, university_key, campus, faculty, remark, rider_name, rider_phone, status, payment_mode, cost, balance_due, balance_paid, balance_paid_at, balance_proof_url, initial_paid, initial_paid_at, delivery_address, docs_path, payment_path, oscar_path, skpg_path, konvo_path, ic_path, created_at, needs_reconciliation, reconciliation_note', { count: 'exact' })
       .order('created_at', { ascending: false })
       .limit(1000);
-    if (!isSuperAdmin) bookingsQ = bookingsQ.eq('campus', adminCampus);
+    // Superadmin scopes by the new University switcher (any university);
+    // regular admin keeps their existing Pekan/Gambang campus lock exactly
+    // as before — every campus-scoped admin today is implicitly UMPSA-only,
+    // so this isn't a narrowing, and it avoids widening their scope to all
+    // of UMPSA (both campuses) the moment university-level filtering exists.
+    bookingsQ = isSuperAdmin
+      ? bookingsQ.eq('university_key', jubahUniversityView)
+      : bookingsQ.eq('campus', adminCampus);
     const { data: bookingsData, count: bookingsCount, error: bookingsError } = await bookingsQ;
     setJubahBookingsTotalCount(bookingsCount ?? null);
     if (bookingsError) {
@@ -242,12 +235,12 @@ export const AdminHome: React.FC = () => {
       let fallbackQ = supabase.from('jubah_bookings')
         .select('id, reference, full_name, hp_number, matric_id, campus, faculty, remark, rider_name, status, payment_mode, created_at')
         .order('created_at', { ascending: false });
-      if (!isSuperAdmin) fallbackQ = fallbackQ.eq('campus', adminCampus);
+      fallbackQ = isSuperAdmin ? fallbackQ : fallbackQ.eq('campus', adminCampus);
       const { data: fallbackData, error: fallbackError } = await fallbackQ;
       if (fallbackError) console.error('[GERAK] jubah_bookings fallback error:', fallbackError.message);
       setJubahBookings(((fallbackData ?? []) as JubahBookingRow[]).map(r => ({
         ...r,
-        ic_number: '', email: null, university: '', cost: 0, balance_due: 0, balance_paid: false, balance_paid_at: null, balance_proof_url: null,
+        ic_number: '', email: null, university: '', university_key: 'umpsa', cost: 0, balance_due: 0, balance_paid: false, balance_paid_at: null, balance_proof_url: null,
         initial_paid: false, initial_paid_at: null,
         delivery_address: null, docs_path: null, payment_path: null, oscar_path: null,
         skpg_path: null, konvo_path: null, ic_path: null,
@@ -257,7 +250,7 @@ export const AdminHome: React.FC = () => {
       setJubahBookings((bookingsData as JubahBookingRow[]) ?? []);
     }
     setJubahBookingsLoading(false);
-  }, [isSuperAdmin, adminCampus]);
+  }, [isSuperAdmin, adminCampus, jubahUniversityView]);
 
   useLoadOnActive(activeTab === 'jubah', loadJubahData);
 
@@ -727,6 +720,21 @@ export const AdminHome: React.FC = () => {
 
           {/* Jubah Period Toggle + sub-tab switcher — hidden when inside customer sub-pages */}
           {!(jubahSubTab === 'customer' && jubahAdminView !== 'list') && (<>
+            {/* University switcher — superadmin only; regular admin is locked to
+                their own university (today, that's always UMPSA — see
+                loadJubahData's campus-based branch), matching how the existing
+                campus lock already works for other tabs. Changing this re-scopes
+                the entire Jubah panel below: stats, riders, customers, pricing. */}
+            {isSuperAdmin && (
+              <div className="w-full sm:w-56">
+                <NativeSelect
+                  value={jubahUniversityView}
+                  onChange={v => { setJubahUniversityView(v); setJubahAdminView('list'); setJubahAdminSelected(null); }}
+                  options={JUBAH_UNIVERSITIES.map(u => ({ value: u.key, label: u.label }))}
+                  label="University"
+                />
+              </div>
+            )}
             <div className="bg-white border border-slate-100 rounded-3xl p-5 flex items-center justify-between gap-4">
               <div className="flex items-center gap-3">
                 <div className={`w-10 h-10 rounded-2xl flex items-center justify-center ${jubahActive ? 'bg-blue-50' : 'bg-slate-100'}`}>
@@ -783,21 +791,7 @@ export const AdminHome: React.FC = () => {
             {/* Overview stats — computed client-side from jubahBookings, already
                 loaded for the Customer Directory below; no extra query. */}
             <div className="bg-white border border-slate-100 rounded-3xl p-5 flex flex-col gap-4">
-              <div className="flex items-center justify-between gap-2 flex-wrap">
-                <p className="text-xs font-black text-slate-800">Overview</p>
-                {jubahUniversityOptions.length > 1 && (
-                  <div className="w-40">
-                    <NativeSelect
-                      value={jubahStatsUniversity}
-                      onChange={setJubahStatsUniversity}
-                      options={[
-                        { value: 'all', label: 'All Universities' },
-                        ...jubahUniversityOptions.map(u => ({ value: u, label: u })),
-                      ]}
-                    />
-                  </div>
-                )}
-              </div>
+              <p className="text-xs font-black text-slate-800">Overview</p>
 
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                 <div className="border border-slate-100 rounded-2xl p-3.5 flex flex-col gap-1.5">
@@ -906,6 +900,7 @@ export const AdminHome: React.FC = () => {
               active={activeTab === 'jubah' && effectiveJubahSubTab === 'rider'}
               isSuperAdmin={isSuperAdmin}
               adminCampus={adminCampus}
+              jubahUniversityView={jubahUniversityView}
               showToast={showToast}
               onModalOpenChange={setJubahRiderModalOpen}
             />

@@ -15,6 +15,7 @@ import {
   JUBAH_NEXT_LABEL, getJubahProgress, jubahWaMsg,
 } from '../../../lib/jubahStatus';
 import { generateReceiptPdf } from '../../../lib/receiptPdf';
+import { jubahLocationLabel } from '../../../lib/jubahUniversities';
 
 // Shared by the "Upload Documents & Combined Document" and "Proof of
 // Payment" sections below — same view/download-via-signed-URL row, reused
@@ -60,7 +61,7 @@ const DocLinkRow: React.FC<{ label: string; url: string | null; showToast: (msg:
 export type JubahBookingRow = {
   id: string; reference: string; full_name: string; ic_number: string; hp_number: string;
   email: string | null;
-  matric_id: string; university: string; campus: string; faculty: string; remark: string;
+  matric_id: string; university: string; university_key: string; campus: string; faculty: string; remark: string;
   rider_name: string | null; rider_phone: string | null; status: string; payment_mode: string; cost: number;
   balance_due: number; balance_paid: boolean; balance_paid_at: string | null; balance_proof_url: string | null;
   initial_paid: boolean; initial_paid_at: string | null;
@@ -605,7 +606,7 @@ export function JubahCustomerSubTab({
                   <p className="text-xs text-primary font-semibold">{b.reference}</p>
                   <h3 className="text-base font-black text-slate-800 mt-0.5">{b.full_name}</h3>
                   <p className="text-xs text-slate-400 font-semibold mt-0.5">
-                    {b.remark} · {b.faculty} · UMPSA {b.campus}
+                    {b.remark} · {b.faculty} · {jubahLocationLabel(b.university_key, b.campus)}
                   </p>
                 </div>
                 <span className={`text-xs font-semibold px-2.5 py-1 rounded-full border shrink-0 ${JUBAH_STATUS_STYLE[b.status] ?? ''}`}>
@@ -832,7 +833,7 @@ export function JubahCustomerSubTab({
             <div className="bg-white border border-slate-100 rounded-3xl p-5 flex flex-col gap-4">
               <h3 className="text-sm font-semibold text-slate-700">Academic Information</h3>
               {([
-                { label: 'Campus',  value: `UMPSA ${b.campus}` },
+                { label: 'Campus',  value: jubahLocationLabel(b.university_key, b.campus) },
                 { label: 'Faculty', value: b.faculty },
                 { label: 'Remark',  value: b.remark },
               ]).map(({ label, value }) => (

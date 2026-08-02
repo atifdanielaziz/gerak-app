@@ -6,6 +6,7 @@ import { WaIcon } from '../lib/whatsapp';
 import { RepresentativeSheet } from './RepresentativeSheet';
 import { NativeSelect } from './NativeSelect';
 import { getPendingJubahBooking, clearPendingJubahBooking, type PendingJubahBooking } from '../lib/pendingJubahBooking';
+import { JUBAH_UNIVERSITIES, JUBAH_UNIVERSITY_MAP } from '../lib/jubahUniversities';
 
 type RiderDir = { id: string; name: string; drop_point: string | null; method: string | null; ic_number: string | null; phone: string | null };
 
@@ -23,14 +24,6 @@ const IcMasked: React.FC<{ ic: string | null }> = ({ ic }) => {
     </span>
   );
 };
-
-const UNIVERSITIES = [
-  { key: 'umpsa', label: 'Universiti Malaysia Pahang Al-Sultan Abdullah (UMPSA)' },
-  { key: 'uitm',  label: 'Universiti Teknologi MARA (UiTM)' },
-  { key: 'umk',   label: 'Universiti Malaysia Kelantan (UMK)' },
-  { key: 'ukm',   label: 'Universiti Kebangsaan Malaysia (UKM)' },
-  { key: 'uiam',  label: 'Universiti Islam Antarabangsa Malaysia (UIA)' },
-];
 
 const BUCKET = 'jubah-banners';
 
@@ -73,25 +66,12 @@ export const JubahLanding: React.FC<Props> = ({ onProceed }) => {
     return () => setSheetOpen(false);
   }, [selectedRider, setSheetOpen]);
 
-  // Campus list per university key — matches what admin uses in jubah_rider_assignments
-  const CAMPUS_LIST: Record<string, string[]> = {
-    umpsa: ['Pekan', 'Gambang'],
-    uitm:  ['UiTM'],
-    umk:   ['UMK'],
-    ukm:   ['UKM'],
-    uiam:  ['UIAM'],
-  };
-
-  const UNIV_SHORT: Record<string, string> = {
-    umpsa: 'UMPSA', uitm: 'UiTM', umk: 'UMK', ukm: 'UKM', uiam: 'UIAM',
-  };
-
   // Compute public URLs once on mount — daily bust so browser caches within the day
   // but everyone auto-fetches fresh after midnight if admin updates a banner
   useEffect(() => {
     const urls: Record<string, string> = {};
     const bust = new Date().toISOString().slice(0, 10); // YYYY-MM-DD
-    ['default', ...UNIVERSITIES.map(u => u.key)].forEach(key => {
+    ['default', ...JUBAH_UNIVERSITIES.map(u => u.key)].forEach(key => {
       const { data } = supabase.storage.from(BUCKET).getPublicUrl(`${key}.jpg`);
       urls[key] = `${data.publicUrl}?v=${bust}`;
     });
@@ -104,7 +84,7 @@ export const JubahLanding: React.FC<Props> = ({ onProceed }) => {
     setSelectedKey(key);
     setImgError(prev => ({ ...prev, [key]: false }));
     if (!key) { setRiderDir([]); return; }
-    const campusList = CAMPUS_LIST[key] ?? [key];
+    const campusList = JUBAH_UNIVERSITY_MAP[key]?.campuses ?? [key];
 
     // SECURITY DEFINER RPC — works for anon/guest (direct profiles query is blocked by RLS)
     supabase.rpc('get_jubah_riders_directory_v2', { p_campuses: campusList })
@@ -119,7 +99,7 @@ export const JubahLanding: React.FC<Props> = ({ onProceed }) => {
   const displayKey     = showDefault ? 'default' : selectedKey;
   const currentBanner  = bannerUrls[displayKey];
   const hasBannerError = imgError[displayKey];
-  const selectedLabel  = UNIVERSITIES.find(u => u.key === selectedKey)?.label ?? '';
+  const selectedLabel  = JUBAH_UNIVERSITIES.find(u => u.key === selectedKey)?.label ?? '';
 
   return (
     <div className="flex-grow bg-white overflow-y-auto overflow-x-hidden no-scrollbar pb-4 px-4 animate-fade-in flex flex-col gap-4">
@@ -195,7 +175,7 @@ export const JubahLanding: React.FC<Props> = ({ onProceed }) => {
         <NativeSelect
           value={selectedKey}
           onChange={handleUniversityChange}
-          options={UNIVERSITIES.map(u => ({ value: u.key, label: u.label }))}
+          options={JUBAH_UNIVERSITIES.map(u => ({ value: u.key, label: u.label }))}
           placeholder="Choose your university…"
           label="Select University"
         />
@@ -219,7 +199,7 @@ export const JubahLanding: React.FC<Props> = ({ onProceed }) => {
           {isAdmin && selectedKey && imgError[selectedKey] && (
             <div className="absolute bottom-2 left-2 right-2 flex justify-center">
               <span className="bg-black/60 text-white text-[10px] font-bold px-2.5 py-1 rounded-full tracking-wide">
-                Default banner · Upload {UNIV_SHORT[selectedKey] ?? selectedKey.toUpperCase()} banner via admin
+                Default banner · Upload {JUBAH_UNIVERSITY_MAP[selectedKey]?.shortLabel ?? selectedKey.toUpperCase()} banner via admin
               </span>
             </div>
           )}
@@ -295,7 +275,7 @@ export const JubahLanding: React.FC<Props> = ({ onProceed }) => {
           method={selectedRider.method === 'pickup' ? 'Self Pickup' : selectedRider.method === 'postage' ? 'Pickup & Postage' : '—'}
           icNumber={selectedRider.ic_number}
           phone={selectedRider.phone}
-          waMessage={`Asslammualaikum Jubah rider, saya perlukan 6 digit IC ${selectedRider.ic_number ? selectedRider.ic_number.replace(/\D/g,'').slice(0,6) + '-XX-XXXX' : 'XXXXXX-XX-XXXX'} terakhir awak untuk pengisian representative jubah ${UNIV_SHORT[selectedKey] ?? selectedKey.toUpperCase()}`}
+          waMessage={`Asslammualaikum Jubah rider, saya perlukan 6 digit IC ${selectedRider.ic_number ? selectedRider.ic_number.replace(/\D/g,'').slice(0,6) + '-XX-XXXX' : 'XXXXXX-XX-XXXX'} terakhir awak untuk pengisian representative jubah ${JUBAH_UNIVERSITY_MAP[selectedKey]?.shortLabel ?? selectedKey.toUpperCase()}`}
           onClose={closeRider}
         />
       )}

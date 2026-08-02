@@ -19,6 +19,7 @@ import { generateReceiptPdf } from '../lib/receiptPdf';
 import { copyToClipboard } from '../lib/clipboard';
 import { savePendingJubahBooking, clearPendingJubahBooking } from '../lib/pendingJubahBooking';
 import { formatPhone } from '../lib/format';
+import { JUBAH_UNIVERSITY_MAP, deriveJubahCampus } from '../lib/jubahUniversities';
 
 const UNIVERSITIES = [
   'Universiti Malaysia Pahang Al-Sultan Abdullah (Pekan)',
@@ -32,10 +33,6 @@ const UNIVERSITY_FACULTIES: Record<string, string[]> = {
   'Universiti Malaysia Pahang Al-Sultan Abdullah (Gambang)': [
     'FKOM', 'FIST', 'FTKKP', 'FTKMA', 'FTKEE', 'FTKA', 'FTKPM', 'FIM', 'PSM', 'PSK',
   ],
-};
-
-const UNIV_ABBREV: Record<string, string> = {
-  umpsa: 'UMPSA', uitm: 'UiTM', umk: 'UMK', ukm: 'UKM', uiam: 'UIAM',
 };
 
 const REMARKS = ['Master', 'PHD', 'Degree', 'Diploma'] as const;
@@ -97,7 +94,7 @@ export const Jubah: React.FC = () => {
   const [hpNumber, setHpNumber]       = useState('');
   const [email, setEmail]             = useState('');
   const [university, setUniversity]   = useState('');
-  const uniAbbrev = UNIV_ABBREV[landingUniversity] ?? 'UMPSA';
+  const uniAbbrev = JUBAH_UNIVERSITY_MAP[landingUniversity]?.shortLabel ?? 'UMPSA';
   // Stamped onto every uploaded document (IC, OSCAR, SKPG, Konvo slip,
   // payment proof) before it ever leaves the browser — these carry IC
   // numbers, bank details and other PII, so every one of them gets the
@@ -359,7 +356,7 @@ export const Jubah: React.FC = () => {
       });
       return;
     }
-    const campus = university.includes('Pekan') ? 'Pekan' : 'Gambang';
+    const campus = deriveJubahCampus(landingUniversity, university);
     queueMicrotask(() => {
       setRidersLoading(true);
       setSelectedRiderId('');
@@ -367,7 +364,7 @@ export const Jubah: React.FC = () => {
     supabase
       .rpc('get_active_jubah_riders', { p_campus: campus, p_method: paymentMode === 'deposit' ? depositMethod : paymentMode })
       .then(({ data }) => { setRiders(data ?? []); setRidersLoading(false); });
-  }, [university, paymentMode, depositMethod]);
+  }, [university, paymentMode, depositMethod, landingUniversity]);
 
   // Shared Jubah bank account — one account for every rider/customer, set by
   // superadmin (JubahPriceSubTab.tsx). Public read, same as jubah_active.
@@ -593,7 +590,7 @@ export const Jubah: React.FC = () => {
     let reference = generateReference();
     const combinedFileName = `${(fullName || 'combined').replace(/\s+/g, '_')}_combined.pdf`;
     const selectedRider = riders.find(r => r.id === selectedRiderId);
-    const bookingCampus = university.includes('Pekan') ? 'Pekan' : 'Gambang';
+    const bookingCampus = deriveJubahCampus(landingUniversity, university);
     const zonePrefix = postageZone === 'SS' ? '[SS - Sabah & Sarawak]\n' : '';
     const addr = isPostageDelivery ? `${zonePrefix}${fullAddress}` : undefined;
 
@@ -639,10 +636,17 @@ export const Jubah: React.FC = () => {
         uploadFile(paymentProof, 'payment'),
       ]);
       [docsPath, paymentPath] = results;
-      oscarPath = docUploads[0];
-      skpgPath  = docUploads[1];
-      konvoPath = docUploads[2];
-      icPath    = docUploads[3];
+      // Routed by field_key, not array position — a university's doc field
+      // set can differ in count/order from UMPSA's (e.g. UKM has no 'oscar'
+      // field at all), so positional docUploads[0]/[1]/[2]/[3] would
+      // silently file uploads into the wrong DB column once that stopped
+      // being true.
+      const uploadsByKey: Record<string, string | undefined> = {};
+      docFields.forEach((f, i) => { uploadsByKey[f.field_key] = docUploads[i]; });
+      oscarPath = uploadsByKey.oscar;
+      skpgPath  = uploadsByKey.skpg;
+      konvoPath = uploadsByKey.konvo;
+      icPath    = uploadsByKey.ic;
     } catch (err) {
       console.error('[GERAK] Storage upload failed:', err);
     }
@@ -702,20 +706,12 @@ export const Jubah: React.FC = () => {
     commitJubahBooking(result.booking!);
   };
 
-  const UNIVERSITY_LABELS: Record<string, string> = {
-    umpsa: 'Universiti Malaysia Pahang Al-Sultan Abdullah',
-    uitm:  'Universiti Teknologi MARA (UiTM)',
-    umk:   'Universiti Malaysia Kelantan',
-    ukm:   'Universiti Kebangsaan Malaysia',
-    uiam:  'Universiti Islam Antarabangsa Malaysia',
-  };
-
   if (peekLanding || (!jubahBooking && !landingUniversity)) {
     return <JubahLanding onProceed={u => { setPeekLanding(false); setLandingUniversity(u); }} />;
   }
 
-  // Non-UMPSA universities: form not yet available
-  if (!jubahBooking && landingUniversity !== 'umpsa') {
+  // Universities not yet configured for booking (see JUBAH_UNIVERSITIES' `live` flag)
+  if (!jubahBooking && !JUBAH_UNIVERSITY_MAP[landingUniversity]?.live) {
     return (
       <div className="flex-grow bg-white overflow-y-auto no-scrollbar pb-4 px-5 animate-fade-in flex flex-col gap-5 items-center justify-center text-center">
         <div className="bg-white border border-slate-100 rounded-3xl p-8 flex flex-col items-center gap-4 mx-2">
@@ -728,7 +724,7 @@ export const Jubah: React.FC = () => {
               The booking form for
             </p>
             <p className="text-xs font-black text-blue-600 mt-0.5">
-              {UNIVERSITY_LABELS[landingUniversity]}
+              {JUBAH_UNIVERSITY_MAP[landingUniversity]?.fullName}
             </p>
             <p className="text-xs text-slate-500 font-semibold mt-1 leading-relaxed">
               is not yet available. We're working on it!
@@ -755,7 +751,7 @@ export const Jubah: React.FC = () => {
           <GraduationCap className="w-5 h-5 text-slate-400" /> Jubah Delivery
         </h2>
         <p className="text-xs text-slate-400 font-normal mt-0.5">
-          {UNIVERSITY_LABELS[landingUniversity]} · Official Robe Bookings
+          {JUBAH_UNIVERSITY_MAP[landingUniversity]?.fullName} · Official Robe Bookings
         </p>
         {!jubahBooking && (
           <button

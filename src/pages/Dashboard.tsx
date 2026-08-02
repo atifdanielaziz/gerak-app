@@ -247,27 +247,26 @@ export const Dashboard: React.FC = () => {
           <ChevronRight className="w-5 h-5 text-slate-300 shrink-0" />
         </div>
 
-        {/* B. Jubah Delivery Module */}
-        <div
-          onClick={() => jubahActive ? setCurrentPage('jubah') : null}
-          className={`bg-white border border-slate-100 rounded-3xl p-5 flex items-center justify-between transition duration-200 ${
-            jubahActive ? 'cursor-pointer active:scale-[0.99] active:bg-slate-50' : 'opacity-40 cursor-not-allowed'
-          }`}
-        >
-          <div className="flex items-center gap-3">
-            <GraduationCap className="w-5 h-5 text-slate-400 shrink-0" />
-            <div>
-              <div className="flex items-center gap-2">
+        {/* B. Jubah Delivery Module — hidden entirely while closed, not just
+            greyed out (was previously always visible, disabled + "Closed"
+            badge; now the tile doesn't render at all outside the period). */}
+        {jubahActive && (
+          <div
+            onClick={() => setCurrentPage('jubah')}
+            className="bg-white border border-slate-100 rounded-3xl p-5 flex items-center justify-between cursor-pointer active:scale-[0.99] active:bg-slate-50 transition duration-200"
+          >
+            <div className="flex items-center gap-3">
+              <GraduationCap className="w-5 h-5 text-slate-400 shrink-0" />
+              <div>
                 <h4 className="text-base font-semibold text-slate-800 m-0 leading-tight">Jubah Delivery</h4>
-                {!jubahActive && <span className="text-xs font-semibold text-slate-400 bg-slate-100 border border-slate-100 px-2 py-0.5 rounded-full">Closed</span>}
+                <p className="text-xs text-slate-400 font-normal mt-0.5">
+                  Convocation robe size calculator, deliveries & returns.
+                </p>
               </div>
-              <p className="text-xs text-slate-400 font-normal mt-0.5">
-                {jubahActive ? 'Convocation robe size calculator, deliveries & returns.' : 'Service unavailable outside convocation period.'}
-              </p>
             </div>
+            <ChevronRight className="w-5 h-5 text-slate-300 shrink-0" />
           </div>
-          {jubahActive && <ChevronRight className="w-5 h-5 text-slate-300 shrink-0" />}
-        </div>
+        )}
 
         {/* C. Gerak Daily Module */}
         <div className="bg-white border border-slate-100 rounded-3xl p-5 flex items-center justify-between opacity-40 cursor-not-allowed">
