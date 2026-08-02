@@ -1143,30 +1143,6 @@ export const DriverHome: React.FC = () => {
                   </div>
                 </div>
 
-                {/* Navigate — targets pickup before the trip starts, destination
-                    once it's in progress, matching the Start/Complete Trip flow
-                    right below. Plain https:// links so Android's own "Open
-                    with" chooser offers whichever nav apps the driver has
-                    installed, rather than hardcoding just one. */}
-                <div className="mx-4 mb-3 flex gap-2" onClick={e => e.stopPropagation()}>
-                  <a
-                    href={`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(myJob.status === 'in_progress' ? myJob.destination : myJob.pickup)}&travelmode=driving`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex-1 flex items-center justify-center gap-1.5 bg-slate-50 border border-slate-100 text-slate-600 text-xs font-semibold py-2.5 rounded-xl active:scale-95 transition"
-                  >
-                    <Navigation className="w-3.5 h-3.5" /> Google Maps
-                  </a>
-                  <a
-                    href={`https://waze.com/ul?q=${encodeURIComponent(myJob.status === 'in_progress' ? myJob.destination : myJob.pickup)}&navigate=yes`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex-1 flex items-center justify-center gap-1.5 bg-slate-50 border border-slate-100 text-slate-600 text-xs font-semibold py-2.5 rounded-xl active:scale-95 transition"
-                  >
-                    <Navigation className="w-3.5 h-3.5" /> Waze
-                  </a>
-                </div>
-
                 {myJob.notes && (
                   <p className="mx-4 mb-3 text-xs text-slate-500 italic bg-amber-50 border border-amber-100 rounded-xl px-3 py-2">
                     Remark: "{myJob.notes}"

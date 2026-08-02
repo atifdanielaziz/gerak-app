@@ -1,4 +1,4 @@
-const CACHE_NAME = 'gerak-cache-v353';
+const CACHE_NAME = 'gerak-cache-v354';
 const ASSETS_TO_CACHE = [
   '/',
   '/index.html',
