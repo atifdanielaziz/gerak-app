@@ -470,6 +470,16 @@ export const Transport: React.FC = () => {
     setNotes('');
   };
 
+  // Auto-advance to My Orders a few seconds after a successful booking, so
+  // the customer sees live status/driver info instead of this static
+  // "Searching for your driver" screen. Cancelled if they navigate away
+  // (bookingDone flips false) or tap Edit/New Booking first.
+  useEffect(() => {
+    if (!bookingDone) return;
+    const timer = setTimeout(() => setCurrentPage('my-orders'), 3000);
+    return () => clearTimeout(timer);
+  }, [bookingDone, setCurrentPage]);
+
   // ── Success screen ───────────────────────────────────────────────────────────
 
   if (bookingDone) {
