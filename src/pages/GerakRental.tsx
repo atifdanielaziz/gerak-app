@@ -463,9 +463,19 @@ export const GerakRental: React.FC = () => {
           </div>
         </div>
         <div className="flex gap-2">
+          {/* Two stacked layers instead of toggling bg-primary directly —
+              this WebView unreliably repaints colour changes; opacity
+              changes repaint reliably, so only opacity is toggled here. */}
           <button onPointerDown={(e) => { e.preventDefault(); setView('my-bookings'); loadMyBookings(); setSelected(null); }}
-            className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-transform transform-gpu ${view === 'my-bookings' ? 'bg-primary text-white' : 'bg-white border border-slate-100 text-slate-500'}`}>
-            My Bookings
+            className="relative rounded-xl transition-transform transform-gpu">
+            <span className="block px-3 py-1.5 rounded-xl text-xs font-semibold bg-white border border-slate-100 text-slate-500">My Bookings</span>
+            <span
+              className={`absolute inset-0 flex items-center justify-center px-3 py-1.5 rounded-xl bg-primary text-white text-xs font-semibold transition-opacity duration-150 ${
+                view === 'my-bookings' ? 'opacity-100' : 'opacity-0 pointer-events-none'
+              }`}
+            >
+              My Bookings
+            </span>
           </button>
           {!selected && view === 'list' && (
             <button onClick={loadOwners} className="w-8 h-8 flex items-center justify-center rounded-xl bg-white border border-slate-100 text-slate-400 hover:text-primary transition active:scale-90">

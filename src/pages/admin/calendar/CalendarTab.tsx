@@ -144,9 +144,19 @@ export const CalendarTab = forwardRef<CalendarTabHandle, CalendarTabProps>(funct
             {/* Semester mini-tabs */}
             <div className="flex gap-1.5 overflow-x-auto no-scrollbar">
               {calParsed.semesters?.map((s: any, i: number) => (
+                // Two stacked layers instead of toggling bg-primary directly —
+                // this WebView unreliably repaints colour changes; opacity
+                // changes repaint reliably, so only opacity is toggled here.
                 <button key={s.id} onPointerDown={e => { e.preventDefault(); setCalPreviewSem(i); }}
-                  className={`shrink-0 px-3 py-1.5 rounded-xl text-xs font-semibold transition-transform transform-gpu ${calPreviewSem === i ? 'bg-primary text-white' : 'bg-slate-100 text-slate-500'}`}>
-                  {s.short}
+                  className="relative shrink-0 rounded-xl transition-transform transform-gpu">
+                  <span className="block px-3 py-1.5 rounded-xl text-xs font-semibold bg-slate-100 text-slate-500">{s.short}</span>
+                  <span
+                    className={`absolute inset-0 flex items-center justify-center rounded-xl bg-primary text-white text-xs font-semibold transition-opacity duration-150 ${
+                      calPreviewSem === i ? 'opacity-100' : 'opacity-0 pointer-events-none'
+                    }`}
+                  >
+                    {s.short}
+                  </span>
                 </button>
               ))}
             </div>

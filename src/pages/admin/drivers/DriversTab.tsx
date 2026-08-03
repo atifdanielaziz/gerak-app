@@ -136,6 +136,9 @@ export const DriversTab = forwardRef<DriversTabHandle, DriversTabProps>(function
                 { id: 'rider',  label: 'Rider',  color: 'bg-emerald-600 text-white' },
                 { id: 'admin',  label: 'Admin',  color: 'bg-violet-600 text-white' },
               ] as const).map(r => (
+                // Two stacked layers instead of toggling colour classes
+                // directly — this WebView unreliably repaints colour
+                // changes; opacity changes repaint reliably.
                 <button key={r.id} type="button"
                   onPointerDown={e => {
                     e.preventDefault();
@@ -146,10 +149,15 @@ export const DriversTab = forwardRef<DriversTabHandle, DriversTabProps>(function
                     setInviteCanDaily(false);
                     setInviteCanRobe(false);
                   }}
-                  className={`flex-1 py-2 rounded-xl text-xs font-semibold transition-transform ${
-                    inviteRole === r.id ? r.color : 'text-slate-400'
-                  }`}>
-                  {r.label}
+                  className="relative flex-1 rounded-xl transition-transform">
+                  <span className="block py-2 text-xs font-semibold text-slate-400">{r.label}</span>
+                  <span
+                    className={`absolute inset-0 flex items-center justify-center py-2 rounded-xl text-xs font-semibold transition-opacity duration-150 ${r.color} ${
+                      inviteRole === r.id ? 'opacity-100' : 'opacity-0 pointer-events-none'
+                    }`}
+                  >
+                    {r.label}
+                  </span>
                 </button>
               ))}
             </div>
@@ -166,12 +174,18 @@ export const DriversTab = forwardRef<DriversTabHandle, DriversTabProps>(function
               <p className="text-sm font-semibold text-slate-700 mb-2">Campus</p>
               <div className="flex bg-slate-50 border border-slate-200 rounded-2xl p-1 gap-1">
                 {(['Gambang', 'Pekan'] as const).map(c => (
+                  // Same opacity-overlay technique as the role selector above.
                   <button key={c} type="button" onPointerDown={(e) => { e.preventDefault(); setInviteCampus(c); }}
-                    className={`flex-1 py-2 rounded-xl text-xs font-semibold transition-transform ${
-                      inviteCampus === c ? 'bg-primary text-white' : 'text-slate-400'
-                    }`}
+                    className="relative flex-1 rounded-xl transition-transform"
                   >
-                    {c}
+                    <span className="block py-2 text-xs font-semibold text-slate-400">{c}</span>
+                    <span
+                      className={`absolute inset-0 flex items-center justify-center py-2 rounded-xl bg-primary text-white text-xs font-semibold transition-opacity duration-150 ${
+                        inviteCampus === c ? 'opacity-100' : 'opacity-0 pointer-events-none'
+                      }`}
+                    >
+                      {c}
+                    </span>
                   </button>
                 ))}
               </div>

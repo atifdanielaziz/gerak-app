@@ -86,14 +86,25 @@ export const VerifyDocsTab = forwardRef<VerifyDocsTabHandle, VerifyDocsTabProps>
 
       {/* Driver / Rider toggle */}
       <div className="flex bg-white border border-slate-100 rounded-2xl p-1 gap-1">
-        {(['driver', 'rider'] as const).map(r => (
-          <button key={r} onPointerDown={(e) => { e.preventDefault(); setVerifyFilter(r); }}
-            className={`flex-1 py-2 rounded-xl text-xs font-semibold transition-transform ${
-              verifyFilter === r ? 'bg-primary text-white' : 'text-slate-400'
-            }`}>
-            {r === 'driver' ? 'Drivers' : 'Riders'}
-          </button>
-        ))}
+        {(['driver', 'rider'] as const).map(r => {
+          const label = r === 'driver' ? 'Drivers' : 'Riders';
+          // Two stacked layers instead of toggling bg-primary directly —
+          // this WebView unreliably repaints colour changes; opacity
+          // changes repaint reliably, so only opacity is toggled here.
+          return (
+            <button key={r} onPointerDown={(e) => { e.preventDefault(); setVerifyFilter(r); }}
+              className="relative flex-1 rounded-xl transition-transform">
+              <span className="block py-2 text-xs font-semibold text-slate-400">{label}</span>
+              <span
+                className={`absolute inset-0 flex items-center justify-center py-2 rounded-xl bg-primary text-white text-xs font-semibold transition-opacity duration-150 ${
+                  verifyFilter === r ? 'opacity-100' : 'opacity-0 pointer-events-none'
+                }`}
+              >
+                {label}
+              </span>
+            </button>
+          );
+        })}
       </div>
 
       {/* Status filter chips */}
@@ -104,14 +115,23 @@ export const VerifyDocsTab = forwardRef<VerifyDocsTabHandle, VerifyDocsTabProps>
           { id: 'approved', label: 'Approved' },
           { id: 'rejected', label: 'Rejected' },
           { id: 'none',     label: 'None' },
-        ] as const).map(f => (
-          <button key={f.id} onPointerDown={e => { e.preventDefault(); setVerifyStatusFilter(f.id); }}
-            className={`shrink-0 px-4 py-1.5 rounded-xl text-xs font-semibold transition-transform ${
-              verifyStatusFilter === f.id ? 'bg-white text-slate-800' : 'text-slate-400'
-            }`}>
-            {f.label} ({f.id === 'all' ? verifyDocs.length : verifyDocs.filter(d => d.docs_status === f.id).length})
-          </button>
-        ))}
+        ] as const).map(f => {
+          const count = f.id === 'all' ? verifyDocs.length : verifyDocs.filter(d => d.docs_status === f.id).length;
+          // Same opacity-overlay technique as the Driver/Rider toggle above.
+          return (
+            <button key={f.id} onPointerDown={e => { e.preventDefault(); setVerifyStatusFilter(f.id); }}
+              className="relative shrink-0 rounded-xl transition-transform">
+              <span className="block px-4 py-1.5 text-xs font-semibold text-slate-400 whitespace-nowrap">{f.label} ({count})</span>
+              <span
+                className={`absolute inset-0 flex items-center justify-center px-4 py-1.5 rounded-xl bg-white text-slate-800 text-xs font-semibold whitespace-nowrap transition-opacity duration-150 ${
+                  verifyStatusFilter === f.id ? 'opacity-100' : 'opacity-0 pointer-events-none'
+                }`}
+              >
+                {f.label} ({count})
+              </span>
+            </button>
+          );
+        })}
       </div>
 
       {/* Search */}

@@ -164,14 +164,25 @@ export const ReceiptsTab = forwardRef<ReceiptsTabHandle, ReceiptsTabProps>(funct
 
         {/* Driver / Rider toggle */}
         <div className="flex bg-white border border-slate-100 rounded-2xl p-1 gap-1">
-          {(['driver', 'rider'] as const).map(r => (
-            <button key={r} onPointerDown={e => { e.preventDefault(); setReceiptRoleFilter(r); }}
-              className={`flex-1 py-2 rounded-xl text-xs font-semibold transition-transform ${
-                receiptRoleFilter === r ? 'bg-primary text-white' : 'text-slate-400'
-              }`}>
-              {r === 'driver' ? 'Drivers' : 'Riders'}
-            </button>
-          ))}
+          {(['driver', 'rider'] as const).map(r => {
+            const label = r === 'driver' ? 'Drivers' : 'Riders';
+            // Two stacked layers instead of toggling bg-primary directly —
+            // this WebView unreliably repaints colour changes; opacity
+            // changes repaint reliably, so only opacity is toggled here.
+            return (
+              <button key={r} onPointerDown={e => { e.preventDefault(); setReceiptRoleFilter(r); }}
+                className="relative flex-1 rounded-xl transition-transform">
+                <span className="block py-2 text-xs font-semibold text-slate-400">{label}</span>
+                <span
+                  className={`absolute inset-0 flex items-center justify-center py-2 rounded-xl bg-primary text-white text-xs font-semibold transition-opacity duration-150 ${
+                    receiptRoleFilter === r ? 'opacity-100' : 'opacity-0 pointer-events-none'
+                  }`}
+                >
+                  {label}
+                </span>
+              </button>
+            );
+          })}
         </div>
 
         {/* Summary cards */}

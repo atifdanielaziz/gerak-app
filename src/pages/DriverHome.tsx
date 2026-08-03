@@ -837,18 +837,31 @@ export const DriverHome: React.FC = () => {
       <div className="px-4 mb-1">
         <div className="flex bg-white border border-slate-100 rounded-2xl p-1 gap-1">
 
-          {/* Pool tab — only if can_drive */}
+          {/* Pool tab — only if can_drive.
+              Two stacked layers instead of toggling bg-primary directly —
+              this WebView unreliably repaints colour changes; opacity
+              changes repaint reliably, so only opacity is toggled here.
+              The badge stays a sibling of both, positioned relative to the
+              outer button so it's unaffected by which layer is visible. */}
           {effectiveCanDrive && (
             <button
               onPointerDown={(e) => { e.preventDefault(); setActiveTab('pool'); }}
-              className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-xs font-semibold transition-transform transform-gpu relative ${
-                activeTab === 'pool' ? 'bg-primary text-white' : 'text-slate-400'
-              }`}
+              className="relative flex-1 rounded-xl transition-transform transform-gpu"
             >
-              <ListOrdered className="w-3.5 h-3.5" />
-              Job Pool
+              <span className="flex items-center justify-center gap-1.5 py-2.5 text-xs font-semibold text-slate-400">
+                <ListOrdered className="w-3.5 h-3.5" />
+                Job Pool
+              </span>
+              <span
+                className={`absolute inset-0 flex items-center justify-center gap-1.5 py-2.5 rounded-xl bg-primary text-white text-xs font-semibold transition-opacity duration-150 ${
+                  activeTab === 'pool' ? 'opacity-100' : 'opacity-0 pointer-events-none'
+                }`}
+              >
+                <ListOrdered className="w-3.5 h-3.5" />
+                Job Pool
+              </span>
               {pendingOrders.length > 0 && (
-                <span className={`absolute top-1 right-1.5 text-[10px] font-bold leading-none px-1.5 py-0.5 rounded-full min-w-[16px] text-center ${
+                <span className={`absolute top-1 right-1.5 z-10 text-[10px] font-bold leading-none px-1.5 py-0.5 rounded-full min-w-[16px] text-center ${
                   activeTab === 'pool'
                     ? 'bg-white text-primary'
                     : `bg-primary text-white ${newPing ? 'animate-bounce' : ''}`
@@ -859,36 +872,54 @@ export const DriverHome: React.FC = () => {
             </button>
           )}
 
-          {/* My Jobs tab — only if can_drive */}
+          {/* My Jobs tab — only if can_drive. Same opacity-overlay technique
+              as the Pool tab above. */}
           {effectiveCanDrive && (
             <button
               onPointerDown={(e) => { e.preventDefault(); setActiveTab('my-jobs'); }}
-              className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-xs font-semibold transition-transform transform-gpu relative ${
-                activeTab === 'my-jobs' ? 'bg-primary text-white' : 'text-slate-400'
-              }`}
+              className="relative flex-1 rounded-xl transition-transform transform-gpu"
             >
-              <Briefcase className="w-3.5 h-3.5" />
-              My Jobs
+              <span className="flex items-center justify-center gap-1.5 py-2.5 text-xs font-semibold text-slate-400">
+                <Briefcase className="w-3.5 h-3.5" />
+                My Jobs
+              </span>
+              <span
+                className={`absolute inset-0 flex items-center justify-center gap-1.5 py-2.5 rounded-xl bg-primary text-white text-xs font-semibold transition-opacity duration-150 ${
+                  activeTab === 'my-jobs' ? 'opacity-100' : 'opacity-0 pointer-events-none'
+                }`}
+              >
+                <Briefcase className="w-3.5 h-3.5" />
+                My Jobs
+              </span>
               {myJob && (
-                <span className={`absolute top-1.5 right-2 w-2 h-2 rounded-full ${
+                <span className={`absolute top-1.5 right-2 z-10 w-2 h-2 rounded-full ${
                   myJob.status === 'in_progress' ? 'bg-blue-400' : 'bg-emerald-400'
                 } ${activeTab === 'my-jobs' ? 'bg-white' : ''} animate-pulse`} />
               )}
             </button>
           )}
 
-          {/* Rental tab — owners + admins */}
+          {/* Rental tab — owners + admins. Same opacity-overlay technique
+              as the Pool tab above. */}
           {effectiveCanRent && (
             <button
               onPointerDown={(e) => { e.preventDefault(); setActiveTab('rental'); }}
-              className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-xs font-semibold transition-transform transform-gpu relative ${
-                activeTab === 'rental' ? 'bg-primary text-white' : 'text-slate-400'
-              }`}
+              className="relative flex-1 rounded-xl transition-transform transform-gpu"
             >
-              <KeyRound className="w-3.5 h-3.5" />
-              Rental
+              <span className="flex items-center justify-center gap-1.5 py-2.5 text-xs font-semibold text-slate-400">
+                <KeyRound className="w-3.5 h-3.5" />
+                Rental
+              </span>
+              <span
+                className={`absolute inset-0 flex items-center justify-center gap-1.5 py-2.5 rounded-xl bg-primary text-white text-xs font-semibold transition-opacity duration-150 ${
+                  activeTab === 'rental' ? 'opacity-100' : 'opacity-0 pointer-events-none'
+                }`}
+              >
+                <KeyRound className="w-3.5 h-3.5" />
+                Rental
+              </span>
               {pendingRentals > 0 && (
-                <span className={`absolute top-1 right-1.5 text-[10px] font-bold leading-none px-1.5 py-0.5 rounded-full min-w-[16px] text-center ${
+                <span className={`absolute top-1 right-1.5 z-10 text-[10px] font-bold leading-none px-1.5 py-0.5 rounded-full min-w-[16px] text-center ${
                   activeTab === 'rental' ? 'bg-white text-primary' : 'bg-primary text-white'
                 }`}>
                   {pendingRentals}
@@ -897,16 +928,25 @@ export const DriverHome: React.FC = () => {
             </button>
           )}
 
-          {/* Earnings tab — only if can_drive */}
+          {/* Earnings tab — only if can_drive. Same opacity-overlay technique
+              as the Pool tab above. */}
           {effectiveCanDrive && (
             <button
               onPointerDown={(e) => { e.preventDefault(); setActiveTab('earnings'); }}
-              className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-xs font-semibold transition-transform transform-gpu ${
-                activeTab === 'earnings' ? 'bg-primary text-white' : 'text-slate-400'
-              }`}
+              className="relative flex-1 rounded-xl transition-transform transform-gpu"
             >
-              <TrendingUp className="w-3.5 h-3.5" />
-              Earnings
+              <span className="flex items-center justify-center gap-1.5 py-2.5 text-xs font-semibold text-slate-400">
+                <TrendingUp className="w-3.5 h-3.5" />
+                Earnings
+              </span>
+              <span
+                className={`absolute inset-0 flex items-center justify-center gap-1.5 py-2.5 rounded-xl bg-primary text-white text-xs font-semibold transition-opacity duration-150 ${
+                  activeTab === 'earnings' ? 'opacity-100' : 'opacity-0 pointer-events-none'
+                }`}
+              >
+                <TrendingUp className="w-3.5 h-3.5" />
+                Earnings
+              </span>
             </button>
           )}
 
@@ -1402,12 +1442,23 @@ export const DriverHome: React.FC = () => {
             return subViews.length > 1 && (
               <div className="flex bg-white border border-slate-100 rounded-2xl p-1 gap-1">
                 {subViews.map(({ v, Icon, label }) => (
+                  // Two stacked layers instead of toggling bg-primary directly —
+                  // this WebView unreliably repaints colour changes; opacity
+                  // changes repaint reliably, so only opacity is toggled here.
                   <button key={v} onPointerDown={(e) => { e.preventDefault(); setRentalSubView(v); }}
-                    className={`flex-1 py-2 rounded-xl text-xs font-semibold transition-transform transform-gpu flex flex-col items-center gap-0.5 ${
-                      rentalSubView === v ? 'bg-primary text-white' : 'text-slate-400'
-                    }`}>
-                    <Icon className="w-3 h-3" />
-                    {label}
+                    className="relative flex-1 rounded-xl transition-transform transform-gpu">
+                    <span className="flex flex-col items-center gap-0.5 py-2 text-xs font-semibold text-slate-400">
+                      <Icon className="w-3 h-3" />
+                      {label}
+                    </span>
+                    <span
+                      className={`absolute inset-0 flex flex-col items-center justify-center gap-0.5 py-2 rounded-xl bg-primary text-white text-xs font-semibold transition-opacity duration-150 ${
+                        rentalSubView === v ? 'opacity-100' : 'opacity-0 pointer-events-none'
+                      }`}
+                    >
+                      <Icon className="w-3 h-3" />
+                      {label}
+                    </span>
                   </button>
                 ))}
               </div>

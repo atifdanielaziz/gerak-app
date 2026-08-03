@@ -410,14 +410,25 @@ export const RiderHome: React.FC = () => {
                 { id: 'earnings', label: 'Earnings',    icon: TrendingUp },
               ] as { id: RiderTab; label: string; icon: React.ElementType }[]).map(tab => {
                 const Icon = tab.icon;
+                // Two stacked layers instead of toggling bg-primary directly —
+                // this WebView unreliably repaints colour changes; opacity
+                // changes repaint reliably, so only opacity is toggled here.
                 return (
                   <button key={tab.id}
                     onPointerDown={(e) => { e.preventDefault(); setActiveTab(tab.id); setJubahView('list'); setSelectedJob(null); }}
-                    className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-xs font-semibold transition-transform ${
-                      activeTab === tab.id ? 'bg-primary text-white' : 'text-slate-400'
-                    }`}>
-                    <Icon className="w-3.5 h-3.5" />
-                    {tab.label}
+                    className="relative flex-1 rounded-xl transition-transform">
+                    <span className="flex items-center justify-center gap-1.5 py-2.5 text-xs font-semibold text-slate-400">
+                      <Icon className="w-3.5 h-3.5" />
+                      {tab.label}
+                    </span>
+                    <span
+                      className={`absolute inset-0 flex items-center justify-center gap-1.5 py-2.5 rounded-xl bg-primary text-white text-xs font-semibold transition-opacity duration-150 ${
+                        activeTab === tab.id ? 'opacity-100' : 'opacity-0 pointer-events-none'
+                      }`}
+                    >
+                      <Icon className="w-3.5 h-3.5" />
+                      {tab.label}
+                    </span>
                   </button>
                 );
               })}

@@ -127,16 +127,22 @@ export const OrdersTab = forwardRef<OrdersTabHandle, OrdersTabProps>(function Or
       {isSuperAdmin && (
         <div className="flex bg-white border border-slate-100 rounded-2xl p-1 gap-1">
           {(['Gambang', 'Pekan'] as const).map(c => (
+            // Two stacked layers instead of toggling bg-primary directly —
+            // this WebView unreliably repaints colour changes; opacity
+            // changes repaint reliably, so only opacity is toggled here.
             <button
               key={c}
               onPointerDown={(e) => { e.preventDefault(); onCampusViewChange(c); }}
-              className={`flex-1 py-2 rounded-xl text-xs font-semibold transition-transform ${
-                campusView === c
-                  ? 'bg-primary text-white'
-                  : 'text-slate-400 hover:text-slate-600'
-              }`}
+              className="relative flex-1 rounded-xl transition-transform"
             >
-              {c}
+              <span className="block py-2 text-xs font-semibold text-slate-400">{c}</span>
+              <span
+                className={`absolute inset-0 flex items-center justify-center py-2 rounded-xl bg-primary text-white text-xs font-semibold transition-opacity duration-150 ${
+                  campusView === c ? 'opacity-100' : 'opacity-0 pointer-events-none'
+                }`}
+              >
+                {c}
+              </span>
             </button>
           ))}
         </div>
