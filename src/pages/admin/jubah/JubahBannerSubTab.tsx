@@ -123,6 +123,10 @@ export function JubahBannerSubTab({ active, onOpenSampleDocs, showToast }: Jubah
       return;
     }
     showToast('Banner uploaded ✓');
+    // Jump the carousel to the just-added image — it's appended at the end
+    // (nextPosition), so without this the view stays on whatever slide it
+    // was already showing and the new upload looks like it never appeared.
+    setActiveIdx(prev => ({ ...prev, [key]: existing.length }));
     await loadImages();
   };
 
