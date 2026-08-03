@@ -16,6 +16,7 @@ import {
 } from '../../../lib/jubahStatus';
 import { generateReceiptPdf } from '../../../lib/receiptPdf';
 import { jubahLocationLabel } from '../../../lib/jubahUniversities';
+import { useApp } from '../../../context/AppContext';
 
 // Shared by the "Upload Documents & Combined Document" and "Proof of
 // Payment" sections below — same view/download-via-signed-URL row, reused
@@ -120,6 +121,7 @@ export function JubahCustomerSubTab({
   adminView, selected, setSelected, onGoToCard, onGoBack, onGoToList,
   showToast, onModalOpenChange,
 }: JubahCustomerSubTabProps) {
+  const { showConfirmModal } = useApp();
   const [jubahSearch, setJubahSearch] = useState('');
   const [jubahPayFilter, setJubahPayFilter] = useState<'all' | 'booked' | 'paid' | 'cancelled'>('all');
   const [jubahAdminUpdating, setJubahAdminUpdating] = useState(false);
@@ -143,7 +145,6 @@ export function JubahCustomerSubTab({
   }, [receiptModal, onModalOpenChange]);
 
   const handleDeleteJubahBooking = async (b: JubahBookingRow) => {
-    if (!window.confirm(`Delete booking ${b.reference} for ${b.full_name}? This cannot be undone.`)) return;
     setDeletingBooking(b.id);
     const { error } = await supabase.from('jubah_bookings').delete().eq('id', b.id);
     setDeletingBooking(null);
@@ -954,10 +955,15 @@ export function JubahCustomerSubTab({
                 so it isn't repeated down here too. */}
             <div className="flex flex-col gap-3">
               <button
-                onClick={async () => {
-                  onGoToList();
-                  await handleDeleteJubahBooking(b);
-                }}
+                onClick={() => showConfirmModal({
+                  title: 'Delete Booking?',
+                  message: `This deletes booking ${b.reference} for ${b.full_name}. This can't be undone.`,
+                  confirmLabel: 'DELETE',
+                  onConfirm: async () => {
+                    onGoToList();
+                    await handleDeleteJubahBooking(b);
+                  },
+                })}
                 disabled={deletingBooking === b.id}
                 className="w-full flex items-center justify-center gap-2 border border-red-200 text-red-500 hover:bg-red-50 active:scale-[0.98] font-semibold py-3 rounded-2xl text-sm transition disabled:opacity-50">
                 {deletingBooking === b.id

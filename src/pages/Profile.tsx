@@ -236,7 +236,6 @@ export const Profile: React.FC = () => {
   };
 
   const handleDeleteAccount = async () => {
-    if (!confirm('Are you sure you want to delete your account? This action cannot be undone.')) return;
     const { data: { user: authUser } } = await supabase.auth.getUser();
     if (!authUser) { alert('Could not verify your session. Please log in again and retry.'); return; }
     const { error } = await supabase.from('account_deletion_requests').insert({
@@ -682,7 +681,12 @@ export const Profile: React.FC = () => {
         </div>
 
         <div className="mt-8 text-center">
-          <button onClick={handleDeleteAccount}
+          <button onClick={() => showConfirmModal({
+              title: 'Delete Account?',
+              message: 'This files a request to permanently delete your account. This action cannot be undone.',
+              confirmLabel: 'DELETE',
+              onConfirm: handleDeleteAccount,
+            })}
             className="text-xs font-semibold text-danger hover:underline active:scale-95 transition cursor-pointer">
             Delete Account
           </button>

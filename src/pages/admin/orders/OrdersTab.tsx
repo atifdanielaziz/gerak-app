@@ -1,6 +1,7 @@
 import { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState } from 'react';
 import { supabase } from '../../../lib/supabase';
 import { BarChart3, Car, Users, MapPin, Navigation, AlertCircle, Clock, Trash2, ChevronDown, ChevronUp } from 'lucide-react';
+import { useApp } from '../../../context/AppContext';
 
 interface RideOrder {
   id: string;
@@ -59,6 +60,7 @@ export const OrdersTab = forwardRef<OrdersTabHandle, OrdersTabProps>(function Or
   { isSuperAdmin, campusView, onCampusViewChange, showToast },
   ref
 ) {
+  const { showConfirmModal } = useApp();
   const [orders, setOrders] = useState<RideOrder[]>([]);
   const [filter, setFilter] = useState<FilterStatus>('all');
   const [showFilterDropdown, setShowFilterDropdown] = useState(false);
@@ -284,7 +286,12 @@ export const OrdersTab = forwardRef<OrdersTabHandle, OrdersTabProps>(function Or
                     </button>
                   )}
                   <button
-                    onClick={() => handleDelete(order.id)}
+                    onClick={() => showConfirmModal({
+                      title: 'Delete Order?',
+                      message: 'This permanently removes this order. This can\'t be undone.',
+                      confirmLabel: 'DELETE',
+                      onConfirm: () => handleDelete(order.id),
+                    })}
                     disabled={deleting === order.id}
                     className="px-3 bg-slate-50 border border-slate-200 text-slate-400 hover:text-red-500 font-semibold text-xs py-2 rounded-xl transition active:scale-95 flex items-center justify-center gap-1 disabled:opacity-50"
                   >

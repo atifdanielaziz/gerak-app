@@ -52,7 +52,7 @@ export const AdminHome: React.FC = () => {
   const {
     user, setCurrentPage, setSheetOpen, notifications,
     activeRole, isPreviewMode, switchToDriverMode, switchToRiderMode, enterPreviewMode,
-    setLeaveGuard,
+    setLeaveGuard, showConfirmModal,
   } = useApp();
 
   const isSuperAdmin = user.role === 'superadmin';
@@ -588,7 +588,12 @@ export const AdminHome: React.FC = () => {
                       className="text-slate-400 active:scale-90 transition shrink-0 p-1">
                       <Upload className="w-4 h-4" />
                     </button>
-                    <button type="button" onClick={() => handleSampleDelete(field.field_key)}
+                    <button type="button" onClick={() => showConfirmModal({
+                        title: 'Delete Sample?',
+                        message: `This removes the sample image for "${field.label}". This can't be undone.`,
+                        confirmLabel: 'DELETE',
+                        onConfirm: () => handleSampleDelete(field.field_key),
+                      })}
                       className="text-slate-400 active:scale-90 transition shrink-0 p-1">
                       <Trash2 className="w-4 h-4" />
                     </button>

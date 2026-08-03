@@ -2,6 +2,7 @@ import { forwardRef, useCallback, useImperativeHandle, useState } from 'react';
 import { supabase } from '../../../lib/supabase';
 import { Plus, ArrowLeftRight, Pencil, Trash2 } from 'lucide-react';
 import { useLoadOnActive } from '../../../hooks/useLoadOnActive';
+import { useApp } from '../../../context/AppContext';
 
 interface Route {
   id: string;
@@ -35,6 +36,7 @@ export const RoutesTab = forwardRef<RoutesTabHandle, RoutesTabProps>(function Ro
   { active, isSuperAdmin, adminCampus, campusView, onCampusViewChange, showToast },
   ref
 ) {
+  const { showConfirmModal } = useApp();
   const [routes, setRoutes]               = useState<Route[]>([]);
   const [routesLoading, setRoutesLoading] = useState(false);
   const [showRouteForm, setShowRouteForm] = useState(false);
@@ -90,7 +92,6 @@ export const RoutesTab = forwardRef<RoutesTabHandle, RoutesTabProps>(function Ro
   };
 
   const handleDeleteRoute = async (id: string) => {
-    if (!window.confirm('Delete this route?')) return;
     await supabase.from('routes').delete().eq('id', id);
     showToast('Route deleted.');
     loadRoutes();
@@ -234,7 +235,12 @@ export const RoutesTab = forwardRef<RoutesTabHandle, RoutesTabProps>(function Ro
                     <Pencil className="w-3 h-3" /> Edit
                   </button>
                   <button
-                    onClick={() => handleDeleteRoute(r.id)}
+                    onClick={() => showConfirmModal({
+                      title: 'Delete Route?',
+                      message: `This removes the ${r.point_a} ↔ ${r.point_b} route. This can't be undone.`,
+                      confirmLabel: 'DELETE',
+                      onConfirm: () => handleDeleteRoute(r.id),
+                    })}
                     className="px-3 bg-red-50 border border-red-100 text-red-400 font-semibold text-xs py-2 rounded-xl transition active:scale-95 flex items-center justify-center gap-1">
                     <Trash2 className="w-3 h-3" />
                   </button>

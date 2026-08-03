@@ -5,6 +5,7 @@ import { FileImage, Upload, Trash2, Info, X, Check } from 'lucide-react';
 import ReactCrop, { centerCrop, makeAspectCrop, type Crop, type PixelCrop } from 'react-image-crop';
 import 'react-image-crop/dist/ReactCrop.css';
 import { JUBAH_UNIVERSITIES } from '../../../lib/jubahUniversities';
+import { useApp } from '../../../context/AppContext';
 
 const BANNER_BUCKET = 'jubah-banners';
 const BANNER_ITEMS = [
@@ -24,6 +25,7 @@ interface JubahBannerSubTabProps {
 // banner image shown to customers for each campus. One fixed-path image per
 // university — a new upload always replaces the previous one in place.
 export function JubahBannerSubTab({ active, onOpenSampleDocs, showToast }: JubahBannerSubTabProps) {
+  const { showConfirmModal } = useApp();
   const [bannerUrls,       setBannerUrls]       = useState<Record<string, string>>({});
   const [bannerImgError,   setBannerImgError]   = useState<Record<string, boolean>>({});
   const [bannerRefreshKey, setBannerRefreshKey] = useState<Record<string, number>>({});
@@ -174,7 +176,12 @@ export function JubahBannerSubTab({ active, onOpenSampleDocs, showToast }: Jubah
               <button
                 type="button"
                 disabled={!bannerUrls[item.key] || bannerImgError[item.key]}
-                onClick={() => handleBannerDelete(item.key)}
+                onClick={() => showConfirmModal({
+                  title: 'Delete Banner?',
+                  message: `This removes the ${item.label} banner. This can't be undone.`,
+                  confirmLabel: 'DELETE',
+                  onConfirm: () => handleBannerDelete(item.key),
+                })}
                 className="flex-1 flex items-center justify-center border-2 border-dashed border-red-200 rounded-xl py-2.5 text-red-400 hover:border-red-400 hover:text-red-500 hover:bg-red-50/30 transition disabled:opacity-30 disabled:cursor-not-allowed"
               >
                 <Trash2 className="w-3.5 h-3.5" />

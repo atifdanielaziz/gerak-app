@@ -7,6 +7,7 @@ import { WaIcon, toWa } from '../../../lib/whatsapp';
 import { NativeSelect } from '../../../components/NativeSelect';
 import { useLoadOnActive } from '../../../hooks/useLoadOnActive';
 import { JUBAH_UNIVERSITY_MAP, jubahLocationLabel, universityKeyFromCampus } from '../../../lib/jubahUniversities';
+import { useApp } from '../../../context/AppContext';
 
 type JubahRider = {
   id: string; name: string; gerak_id: string; campus: string; status: string; can_robe: boolean;
@@ -32,6 +33,7 @@ const JubahRiderSheet: React.FC<{
   onDeleteAssignment: (id: string) => Promise<void>;
   onClose: () => void;
 }> = ({ rider, method, dropPoint, saving, assignments, onMethodChange, onDropPointChange, onSave, onAddAssignment, onDeleteAssignment, onClose }) => {
+  const { showConfirmModal } = useApp();
   const [isEditingDropPoint, setIsEditingDropPoint] = useState(!dropPoint);
   const dropPointDisabled = method === 'postage' || !isEditingDropPoint;
 
@@ -155,7 +157,15 @@ const JubahRiderSheet: React.FC<{
                 <span className="text-xs font-normal text-slate-400">Method {i + 2}</span>
                 <div className="flex items-center gap-2">
                   {deleteMode && (
-                    <button onClick={() => onDeleteAssignment(a.id)} className="text-red-500 active:scale-90 transition shrink-0">
+                    <button
+                      onClick={() => showConfirmModal({
+                        title: 'Remove Method?',
+                        message: 'This removes this delivery method from the rider\'s assignment.',
+                        confirmLabel: 'REMOVE',
+                        onConfirm: () => onDeleteAssignment(a.id),
+                      })}
+                      className="text-red-500 active:scale-90 transition shrink-0"
+                    >
                       <Minus className="w-4 h-4" />
                     </button>
                   )}

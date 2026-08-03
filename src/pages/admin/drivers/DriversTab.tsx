@@ -4,6 +4,7 @@ import {
   UserPlus, Send, MapPin, Mail, Car, KeyRound, Bike, GraduationCap, X, AlertCircle, Settings, Truck,
 } from 'lucide-react';
 import { useLoadOnActive } from '../../../hooks/useLoadOnActive';
+import { useApp } from '../../../context/AppContext';
 
 interface DriverInvite {
   id: string;
@@ -42,6 +43,7 @@ export const DriversTab = forwardRef<DriversTabHandle, DriversTabProps>(function
   { active, isSuperAdmin, adminCampus, userName, showToast, onModalOpenChange },
   ref
 ) {
+  const { showConfirmModal } = useApp();
   const [invites, setInvites]               = useState<DriverInvite[]>([]);
   const [invitesLoading, setInvitesLoading]  = useState(false);
   const [inviteSearch, setInviteSearch]      = useState('');
@@ -342,7 +344,12 @@ export const DriversTab = forwardRef<DriversTabHandle, DriversTabProps>(function
                   </div>
                   {!inv.used && (
                     <button
-                      onClick={() => handleRevokeInvite(inv.id)}
+                      onClick={() => showConfirmModal({
+                        title: 'Revoke Invite?',
+                        message: `This cancels the pending invite for ${inv.email}. This can't be undone.`,
+                        confirmLabel: 'REVOKE',
+                        onConfirm: () => handleRevokeInvite(inv.id),
+                      })}
                       className="w-7 h-7 flex items-center justify-center rounded-xl bg-red-50 border border-red-100 text-red-400 hover:text-red-600 transition active:scale-90 shrink-0"
                     >
                       <X className="w-3.5 h-3.5" />

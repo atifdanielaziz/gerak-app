@@ -1,6 +1,7 @@
 import { useRef, useState } from 'react';
 import { QrCode, Upload, Trash2, X } from 'lucide-react';
 import { supabase } from '../lib/supabase';
+import { useApp } from '../context/AppContext';
 
 const QR_BUCKET = 'jubah-qr';
 const QR_PATH = 'qr.jpg';
@@ -18,6 +19,7 @@ interface JubahQrButtonProps {
 // overwrites the old file in place — nothing orphaned to separately
 // delete — plus a cache-busting query param.
 export function JubahQrButton({ canManage = false, showToast }: JubahQrButtonProps) {
+  const { showConfirmModal } = useApp();
   const [open, setOpen] = useState(false);
   const [imgError, setImgError] = useState(false);
   // Stable across mounts (not Date.now()) — the old per-mount value meant
@@ -133,7 +135,12 @@ export function JubahQrButton({ canManage = false, showToast }: JubahQrButtonPro
                     <button
                       type="button"
                       disabled={imgError}
-                      onClick={handleDelete}
+                      onClick={() => showConfirmModal({
+                        title: 'Delete Payment QR?',
+                        message: 'Customers will no longer see a QR to scan for this payment method. This can\'t be undone.',
+                        confirmLabel: 'DELETE',
+                        onConfirm: handleDelete,
+                      })}
                       className="flex-1 flex items-center justify-center border-2 border-dashed border-red-200 rounded-xl py-2.5 text-red-400 hover:border-red-400 hover:text-red-500 hover:bg-red-50/30 transition disabled:opacity-30 disabled:cursor-not-allowed"
                     >
                       <Trash2 className="w-3.5 h-3.5" />

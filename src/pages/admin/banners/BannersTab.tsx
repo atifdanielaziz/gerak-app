@@ -3,6 +3,7 @@ import { supabase } from '../../../lib/supabase';
 import { Plus, Megaphone, ToggleLeft, ToggleRight, Trash2 } from 'lucide-react';
 import { NativeSelect } from '../../../components/NativeSelect';
 import { useLoadOnActive } from '../../../hooks/useLoadOnActive';
+import { useApp } from '../../../context/AppContext';
 
 interface Announcement {
   id: string;
@@ -50,6 +51,7 @@ export const BannersTab = forwardRef<BannersTabHandle, BannersTabProps>(function
   { active, showToast },
   ref
 ) {
+  const { showConfirmModal } = useApp();
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   const [bannersLoading, setBannersLoading] = useState(false);
   const [showBannerForm, setShowBannerForm] = useState(false);
@@ -100,7 +102,6 @@ export const BannersTab = forwardRef<BannersTabHandle, BannersTabProps>(function
   };
 
   const handleDeleteBanner = async (id: string) => {
-    if (!window.confirm('Delete this banner?')) return;
     await supabase.from('announcements').delete().eq('id', id);
     showToast('Banner deleted.'); loadAnnouncements();
   };
@@ -292,7 +293,12 @@ export const BannersTab = forwardRef<BannersTabHandle, BannersTabProps>(function
                       : <><ToggleLeft className="w-3.5 h-3.5" /> Inactive</>}
                   </button>
                   <button
-                    onClick={() => handleDeleteBanner(a.id)}
+                    onClick={() => showConfirmModal({
+                      title: 'Delete Banner?',
+                      message: `This removes the "${a.title}" announcement. This can't be undone.`,
+                      confirmLabel: 'DELETE',
+                      onConfirm: () => handleDeleteBanner(a.id),
+                    })}
                     className="px-3 bg-red-50 border border-red-100 text-red-400 hover:text-red-600 font-semibold text-xs py-2 rounded-xl transition active:scale-95 flex items-center justify-center gap-1"
                   >
                     <Trash2 className="w-3 h-3" /> Delete
