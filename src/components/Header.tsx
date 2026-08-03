@@ -367,26 +367,46 @@ export const Header: React.FC = () => {
             </div>
           )}
 
-          {/* Regular admin + canDrive — 2-segment pill toggle */}
+          {/* Regular admin + canDrive — 2-segment pill toggle.
+              Two stacked layers instead of toggling colour classes
+              directly — this WebView unreliably repaints colour changes;
+              opacity changes repaint reliably, so only opacity is
+              toggled here. */}
           {user.role === 'admin' && user.canDrive && (
             <div className="flex bg-slate-100 rounded-xl p-0.5 gap-0.5">
               <button
                 onPointerDown={(e) => { e.preventDefault(); switchToAdminMode(); }}
-                className={`flex items-center gap-1 px-2.5 py-1.5 rounded-[10px] text-xs font-extrabold transition-transform active:scale-95 ${
-                  activeRole !== 'driver' ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-400 hover:text-slate-600'
-                }`}
+                className="relative rounded-[10px] transition-transform active:scale-95"
               >
-                <ShieldCheck className="w-3 h-3" />
-                Admin
+                <span className="flex items-center gap-1 px-2.5 py-1.5 text-xs font-extrabold text-slate-400">
+                  <ShieldCheck className="w-3 h-3" />
+                  Admin
+                </span>
+                <span
+                  className={`absolute inset-0 flex items-center justify-center gap-1 px-2.5 py-1.5 rounded-[10px] bg-white text-slate-800 shadow-sm text-xs font-extrabold transition-opacity duration-150 ${
+                    activeRole !== 'driver' ? 'opacity-100' : 'opacity-0 pointer-events-none'
+                  }`}
+                >
+                  <ShieldCheck className="w-3 h-3" />
+                  Admin
+                </span>
               </button>
               <button
                 onPointerDown={(e) => { e.preventDefault(); switchToDriverMode(); }}
-                className={`flex items-center gap-1 px-2.5 py-1.5 rounded-[10px] text-xs font-extrabold transition-transform active:scale-95 ${
-                  activeRole === 'driver' ? 'bg-primary text-white shadow-sm' : 'text-slate-400 hover:text-slate-600'
-                }`}
+                className="relative rounded-[10px] transition-transform active:scale-95"
               >
-                <Car className="w-3 h-3" />
-                Driver
+                <span className="flex items-center gap-1 px-2.5 py-1.5 text-xs font-extrabold text-slate-400">
+                  <Car className="w-3 h-3" />
+                  Driver
+                </span>
+                <span
+                  className={`absolute inset-0 flex items-center justify-center gap-1 px-2.5 py-1.5 rounded-[10px] bg-primary text-white shadow-sm text-xs font-extrabold transition-opacity duration-150 ${
+                    activeRole === 'driver' ? 'opacity-100' : 'opacity-0 pointer-events-none'
+                  }`}
+                >
+                  <Car className="w-3 h-3" />
+                  Driver
+                </span>
               </button>
             </div>
           )}

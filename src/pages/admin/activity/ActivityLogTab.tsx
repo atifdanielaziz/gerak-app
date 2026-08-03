@@ -188,21 +188,37 @@ export const ActivityLogTab = forwardRef<ActivityLogTabHandle, ActivityLogTabPro
             <RefreshCw className="w-3.5 h-3.5" />
           </button>
         </div>
+        {/* Two stacked layers instead of toggling colour classes directly —
+            this WebView unreliably repaints colour changes; opacity
+            changes repaint reliably, so only opacity is toggled here. */}
         <div className="flex gap-1.5 overflow-x-auto no-scrollbar">
           <button onPointerDown={e => { e.preventDefault(); setTableFilter('all'); }}
-            className={`shrink-0 px-3 py-1.5 rounded-full text-xs font-semibold border transition ${
-              tableFilter === 'all' ? 'bg-primary text-white border-primary' : 'bg-white text-slate-500 border-slate-200'
-            }`}>
-            All
+            className="relative shrink-0 rounded-full transition">
+            <span className="block px-3 py-1.5 rounded-full text-xs font-semibold border bg-white text-slate-500 border-slate-200">All</span>
+            <span
+              className={`absolute inset-0 flex items-center justify-center px-3 py-1.5 rounded-full text-xs font-semibold border bg-primary text-white border-primary transition-opacity duration-150 ${
+                tableFilter === 'all' ? 'opacity-100' : 'opacity-0 pointer-events-none'
+              }`}
+            >
+              All
+            </span>
           </button>
-          {tablesPresent.map(t => (
-            <button key={t} onPointerDown={e => { e.preventDefault(); setTableFilter(t); }}
-              className={`shrink-0 px-3 py-1.5 rounded-full text-xs font-semibold border transition ${
-                tableFilter === t ? 'bg-primary text-white border-primary' : 'bg-white text-slate-500 border-slate-200'
-              }`}>
-              {TABLE_LABEL[t] ?? t}
-            </button>
-          ))}
+          {tablesPresent.map(t => {
+            const label = TABLE_LABEL[t] ?? t;
+            return (
+              <button key={t} onPointerDown={e => { e.preventDefault(); setTableFilter(t); }}
+                className="relative shrink-0 rounded-full transition">
+                <span className="block px-3 py-1.5 rounded-full text-xs font-semibold border bg-white text-slate-500 border-slate-200 whitespace-nowrap">{label}</span>
+                <span
+                  className={`absolute inset-0 flex items-center justify-center px-3 py-1.5 rounded-full text-xs font-semibold border bg-primary text-white border-primary whitespace-nowrap transition-opacity duration-150 ${
+                    tableFilter === t ? 'opacity-100' : 'opacity-0 pointer-events-none'
+                  }`}
+                >
+                  {label}
+                </span>
+              </button>
+            );
+          })}
         </div>
       </div>
 
