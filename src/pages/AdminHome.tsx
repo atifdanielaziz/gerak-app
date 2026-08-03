@@ -611,7 +611,7 @@ export const AdminHome: React.FC = () => {
       ) : (<>
 
       {/* Sticky header + tab switcher — mobile only; desktop uses the sidebar + topbar instead */}
-      <div ref={stickyHeaderRef} className="lg:hidden sticky top-0 z-10 -mx-4 px-4 pt-4 pb-2 bg-slate-50/95 backdrop-blur-sm flex flex-col gap-4">
+      <div ref={stickyHeaderRef} className="lg:hidden sticky top-0 z-20 -mx-4 px-4 pt-4 pb-2 bg-slate-50/95 backdrop-blur-sm flex flex-col gap-4">
 
         {/* Header */}
         <div className="flex items-center justify-between">
