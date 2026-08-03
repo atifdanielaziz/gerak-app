@@ -439,14 +439,24 @@ export const AdminHome: React.FC = () => {
               .map(tab => {
                 const Icon = tab.icon;
                 return (
+                  // Same opacity-overlay technique as the mobile tab bar
+                  // below — see its comment for why (WebView repaint bug).
                   <button key={tab.id}
                     onClick={() => setActiveTab(tab.id)}
-                    className={`flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-sm font-semibold text-left transition-transform transform-gpu active:scale-[0.98] ${
-                      activeTab === tab.id ? 'bg-primary text-white' : 'text-slate-500 hover:bg-slate-100'
-                    }`}
+                    className="relative w-full rounded-xl transition-transform transform-gpu active:scale-[0.98]"
                   >
-                    <Icon className="w-4 h-4 shrink-0" />
-                    {tab.label}
+                    <span className="flex items-center gap-2.5 px-3 py-2.5 text-sm font-semibold text-left text-slate-500">
+                      <Icon className="w-4 h-4 shrink-0" />
+                      {tab.label}
+                    </span>
+                    <span
+                      className={`absolute inset-0 flex items-center gap-2.5 px-3 py-2.5 rounded-xl bg-primary text-white text-sm font-semibold text-left transition-opacity duration-150 ${
+                        activeTab === tab.id ? 'opacity-100' : 'opacity-0 pointer-events-none'
+                      }`}
+                    >
+                      <Icon className="w-4 h-4 shrink-0" />
+                      {tab.label}
+                    </span>
                   </button>
                 );
               })}
@@ -631,13 +641,26 @@ export const AdminHome: React.FC = () => {
         {ADMIN_TABS
           .filter(t => !t.superadminOnly || user.role === 'superadmin')
           .map(tab => (
+            // Two stacked layers instead of toggling bg-primary/text-white
+            // directly — this WebView unreliably repaints background/text
+            // color changes (confirmed live: the pill stays uncolored for
+            // a tap or more after switching), but reliably repaints opacity.
+            // The red+white layer always exists at full opacity underneath;
+            // only its opacity is toggled, so there's nothing to repaint.
             <button key={tab.id}
               onClick={() => setActiveTab(tab.id)}
-              className={`shrink-0 px-4 py-2 rounded-xl text-xs font-semibold transition-transform transform-gpu flex items-center justify-center gap-1.5 ${
-                activeTab === tab.id ? 'bg-primary text-white' : 'text-slate-400'
-              }`}
+              className="relative shrink-0 rounded-xl transition-transform transform-gpu active:scale-95"
             >
-              {tab.label}
+              <span className="block px-4 py-2 text-xs font-semibold text-slate-400 whitespace-nowrap">
+                {tab.label}
+              </span>
+              <span
+                className={`absolute inset-0 flex items-center justify-center px-4 py-2 rounded-xl bg-primary text-white text-xs font-semibold whitespace-nowrap transition-opacity duration-150 ${
+                  activeTab === tab.id ? 'opacity-100' : 'opacity-0 pointer-events-none'
+                }`}
+              >
+                {tab.label}
+              </span>
             </button>
           ))}
       </div>
@@ -883,11 +906,18 @@ export const AdminHome: React.FC = () => {
               ] as const)
                 .filter(t => !t.superadminOnly || isSuperAdmin)
                 .map(t => (
+                // Same opacity-overlay technique as the mobile admin tab
+                // bar above — see its comment for why (WebView repaint bug).
                 <button key={t.id} onClick={() => { setJubahSubTab(t.id); setJubahAdminView('list'); setJubahAdminSelected(null); }}
-                  className={`flex-1 py-2 rounded-xl text-xs font-semibold transition-transform transform-gpu ${
-                    jubahSubTab === t.id ? 'bg-primary text-white' : 'text-slate-400'
-                  }`}>
-                  {t.label}
+                  className="relative flex-1 rounded-xl transition-transform transform-gpu">
+                  <span className="block py-2 text-xs font-semibold text-slate-400">{t.label}</span>
+                  <span
+                    className={`absolute inset-0 flex items-center justify-center py-2 rounded-xl bg-primary text-white text-xs font-semibold transition-opacity duration-150 ${
+                      jubahSubTab === t.id ? 'opacity-100' : 'opacity-0 pointer-events-none'
+                    }`}
+                  >
+                    {t.label}
+                  </span>
                 </button>
               ))}
             </div>
