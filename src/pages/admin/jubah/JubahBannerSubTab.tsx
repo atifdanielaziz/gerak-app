@@ -47,6 +47,13 @@ export function JubahBannerSubTab({ active, onOpenSampleDocs, showToast }: Jubah
     setBannerImgError({});
   }, [active]);
 
+  // [debug] Detect a silent unmount/remount right after picking a file,
+  // which would reset cropSrc without any explicit close call.
+  useEffect(() => {
+    console.log('[debug] JubahBannerSubTab MOUNTED');
+    return () => console.log('[debug] JubahBannerSubTab UNMOUNTING');
+  }, []);
+
   const getCroppedBlob = (image: HTMLImageElement, px: PixelCrop): Promise<Blob> => {
     const canvas = document.createElement('canvas');
     const scaleX = image.naturalWidth  / image.width;
@@ -112,6 +119,8 @@ export function JubahBannerSubTab({ active, onOpenSampleDocs, showToast }: Jubah
     showToast('Banner deleted.');
   };
 
+  console.log('[debug] JubahBannerSubTab render, cropSrc=', cropSrc ? `(${cropSrc.length} chars)` : '(empty)');
+
   return (
     <>
       <div className="flex flex-col gap-4">
@@ -122,9 +131,16 @@ export function JubahBannerSubTab({ active, onOpenSampleDocs, showToast }: Jubah
           className="hidden"
           onChange={e => {
             const file = e.target.files?.[0];
+            showToast(file ? `[debug] onChange fired, file=${file.name}` : '[debug] onChange fired, NO file');
             if (file) {
               const reader = new FileReader();
-              reader.onload = () => { setCropSrc(reader.result as string); setCropObj(undefined); setCompletedCrop(undefined); };
+              reader.onerror = () => showToast(`[debug] FileReader error: ${String(reader.error)}`);
+              reader.onload = () => {
+                showToast(`[debug] FileReader onload, result length=${(reader.result as string)?.length ?? 0}`);
+                setCropSrc(reader.result as string);
+                setCropObj(undefined);
+                setCompletedCrop(undefined);
+              };
               reader.readAsDataURL(file);
             }
             if (bannerFileRef.current) bannerFileRef.current.value = '';
