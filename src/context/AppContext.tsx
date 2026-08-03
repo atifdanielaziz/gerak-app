@@ -193,6 +193,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [deepLinkPage] = useState<ActivePage | null>(() => {
     const path = window.location.pathname.replace(/\/+$/, '');
     if (path.endsWith('/jubah/track')) return 'track-jubah';
+    // Standalone marketing link (posters, WhatsApp shares, etc.) — lands
+    // guests straight on the Jubah landing/university picker without
+    // needing to log in or navigate from the dashboard first. Checked
+    // before the /jubah/track case above would ever conflict — this only
+    // matches a path ending in exactly "/jubah", not "/jubah/track".
+    if (path.endsWith('/jubah')) return 'jubah';
     // Privacy Policy / Terms need a stable, publicly reachable URL — required
     // for app store submission and just generally expected — not just an
     // in-app-only screen. Same deep-link mechanism as /jubah/track above.
