@@ -200,7 +200,7 @@ export function JubahBannerSubTab({ active, onOpenSampleDocs, showToast }: Jubah
                     key={img.id}
                     src={imageUrls[img.id]}
                     alt={`${item.label} banner ${idx + 1}`}
-                    className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-500 ${
+                    className={`absolute inset-0 w-full h-full object-contain transition-opacity duration-500 ${
                       idx === curIdx ? 'opacity-100' : 'opacity-0 pointer-events-none'
                     }`}
                   />
