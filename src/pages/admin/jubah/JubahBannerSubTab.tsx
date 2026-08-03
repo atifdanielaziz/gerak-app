@@ -211,7 +211,7 @@ export function JubahBannerSubTab({ active, onOpenSampleDocs, showToast }: Jubah
       {/* ── Banner Crop Modal ── */}
       {cropSrc && (
         <div className="fixed inset-0 z-[80] bg-black flex flex-col">
-          <div className="flex items-center justify-between px-5 py-4 shrink-0">
+          <div className="flex items-center justify-between px-5 pb-4 shrink-0" style={{ paddingTop: 'calc(1rem + env(safe-area-inset-top))' }}>
             <button
               onClick={() => { setCropSrc(''); setCropObj(undefined); setCompletedCrop(undefined); }}
               className="w-8 h-8 flex items-center justify-center rounded-full bg-white/10 text-white active:bg-white/20 transition">
