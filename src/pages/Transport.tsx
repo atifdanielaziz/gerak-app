@@ -7,6 +7,7 @@ const MapboxRideMap = lazy(() => import('../components/MapboxRideMap').then(m =>
 import {
   Map, List, ChevronDown, PencilLine, Car, PlaneTakeoff, PlaneLanding,
   Info, CheckCircle2, RotateCcw, Users, Clock, CalendarDays, Phone, ClipboardList, X,
+  ArrowLeftRight, History,
 } from 'lucide-react';
 import { submitRideToSheets } from '../lib/sheetsService';
 import { useTapVsScroll } from '../lib/useTapVsScroll';
@@ -117,6 +118,61 @@ export const Transport: React.FC = () => {
   );
   const [bookMode, setBookMode] = useState<'quick' | 'custom' | 'map' | 'aerbus'>(user.isLoggedIn ? 'quick' : 'map');
   const [showTerms, setShowTerms] = useState(false);
+
+  // Recent routes — the student's own past pickup/destination pairs,
+  // deduplicated (most-recent occurrence wins) so a route booked 5 times
+  // shows once, not five times. RLS on ride_orders already scopes this to
+  // the logged-in customer's own rows (auth.uid() = customer_id), so no
+  // customer_id needs to be passed from the client. Lets a returning
+  // student skip typing a route they've already used before, with a swap
+  // option for the return trip instead of needing a second, reversed entry.
+  const [recentRoutes, setRecentRoutes] = useState<{ pickup: string; destination: string }[]>([]);
+  useEffect(() => {
+    if (!user.isLoggedIn) return;
+    supabase
+      .from('ride_orders')
+      .select('pickup, destination')
+      .order('created_at', { ascending: false })
+      .limit(20)
+      .then(({ data }) => {
+        if (!data) return;
+        const seen = new Set<string>();
+        const deduped: { pickup: string; destination: string }[] = [];
+        for (const row of data) {
+          const pickup = row.pickup?.trim();
+          const destination = row.destination?.trim();
+          if (!pickup || !destination) continue;
+          const key = `${pickup.toLowerCase()}→${destination.toLowerCase()}`;
+          if (seen.has(key)) continue;
+          seen.add(key);
+          deduped.push({ pickup, destination });
+          if (deduped.length >= 3) break;
+        }
+        setRecentRoutes(deduped);
+      });
+  }, [user.isLoggedIn]);
+
+  const bookRecentRoute = (pickup: string, destination: string) => {
+    // A recent route may happen to match a fixed-fare Quick Route exactly
+    // (e.g. its own reverse direction) — route into Quick mode with that
+    // fare pre-selected instead of Custom mode, which always shows "TBC"
+    // and would otherwise quietly downgrade an already-known price.
+    const routeList = campus === 'pekan' ? PEKAN_ROUTES : GAMBANG_ROUTES;
+    const match = routeList.find(
+      r => r.from.toLowerCase() === pickup.toLowerCase() && r.to.toLowerCase() === destination.toLowerCase()
+    );
+    if (match) {
+      setBookMode('quick');
+      setSelectedFrom(match.from);
+      setSelectedRoute(match);
+      setShowRouteList(false);
+      setShowFromDropdown(false);
+      return;
+    }
+    setBookMode('custom');
+    setCustomPickup(pickup);
+    setCustomDest(destination);
+  };
 
   // AerBus state
   const [aerbusDirection, setAerbusDirection] = useState<'to' | 'from'>('to');
@@ -326,6 +382,13 @@ export const Transport: React.FC = () => {
       aerbus_direction:     bookMode === 'aerbus' ? aerbusDirection : null,
       aerbus_point:         bookMode === 'aerbus' ? aerbusPoint : null,
       aerbus_customer_time: bookMode === 'aerbus' ? time : null,
+      // Only map-pin bookings have real, driver-navigable coordinates
+      // (GPS for pickup, Google Places for destination) — everything else
+      // (quick/custom/aerbus) is a named hub, not a geocoded point.
+      pickup_lat:      bookMode === 'map' && pickupPin ? pickupPin.coords[1] : null,
+      pickup_lng:      bookMode === 'map' && pickupPin ? pickupPin.coords[0] : null,
+      destination_lat: bookMode === 'map' && destPin   ? destPin.coords[1]   : null,
+      destination_lng: bookMode === 'map' && destPin   ? destPin.coords[0]   : null,
     };
 
     const { data: { user: authUser } } = await supabase.auth.getUser();
@@ -413,6 +476,16 @@ export const Transport: React.FC = () => {
     setPassengers(1);
     setNotes('');
   };
+
+  // Auto-advance to My Orders a few seconds after a successful booking, so
+  // the customer sees live status/driver info instead of this static
+  // "Searching for your driver" screen. Cancelled if they navigate away
+  // (bookingDone flips false) or tap Edit/New Booking first.
+  useEffect(() => {
+    if (!bookingDone) return;
+    const timer = setTimeout(() => setCurrentPage('my-orders'), 3000);
+    return () => clearTimeout(timer);
+  }, [bookingDone, setCurrentPage]);
 
   // ── Success screen ───────────────────────────────────────────────────────────
 
@@ -566,6 +639,45 @@ export const Transport: React.FC = () => {
         </div>
       </div>
 
+      {/* Recent routes — the student's own past pickups/destinations, one
+          tap to rebook, one more tap (swap icon) to book the return trip.
+          Sits above the mode selector since a returning student doesn't
+          need to go through Quick/Custom/Map/AerBus at all if their route
+          is already here. */}
+      {user.isLoggedIn && recentRoutes.length > 0 && (
+        <div className="px-4 mt-3 flex flex-col gap-1.5">
+          <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider flex items-center gap-1 pl-1">
+            <History className="w-3 h-3" /> Recent Routes
+          </p>
+          <div className="flex gap-2 overflow-x-auto no-scrollbar">
+            {recentRoutes.map(({ pickup, destination }) => (
+              <div
+                key={`${pickup}→${destination}`}
+                className="shrink-0 flex items-center gap-1.5 bg-white border border-slate-100 rounded-2xl pl-3 pr-1.5 py-2"
+              >
+                <button
+                  type="button"
+                  onPointerDown={e => { e.preventDefault(); bookRecentRoute(pickup, destination); }}
+                  className="flex items-center gap-1.5 text-xs font-semibold text-slate-700 active:opacity-60 transition"
+                >
+                  <span className="max-w-[90px] truncate">{pickup}</span>
+                  <span className="text-slate-300">→</span>
+                  <span className="max-w-[90px] truncate">{destination}</span>
+                </button>
+                <button
+                  type="button"
+                  onPointerDown={e => { e.preventDefault(); bookRecentRoute(destination, pickup); }}
+                  title="Book the return trip"
+                  className="w-6 h-6 flex items-center justify-center rounded-full bg-slate-50 text-slate-400 active:scale-90 active:bg-slate-100 transition shrink-0"
+                >
+                  <ArrowLeftRight className="w-3 h-3" />
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Mode selector — 4 modes */}
       {user.isLoggedIn && (
         <div className="px-4 mt-3 flex gap-2">
@@ -612,13 +724,13 @@ export const Transport: React.FC = () => {
                     <button
                       key={from}
                       type="button"
-                      onPointerDown={onRowPointerDown}
-                      onPointerUp={e => onRowPointerUp(e, () => {
+                      onPointerDown={e => {
+                        e.preventDefault();
                         setSelectedFrom(from);
                         setSelectedRoute(null);
                         setShowRouteList(true);
                         setShowFromDropdown(false);
-                      })}
+                      }}
                       className={`w-full text-left px-4 py-3 text-sm font-normal transition ${
                         i < fromOptions.length - 1 ? 'border-b border-slate-50' : ''
                       } ${
@@ -754,8 +866,8 @@ export const Transport: React.FC = () => {
           <Suspense fallback={<div className="flex justify-center py-12"><span className="w-6 h-6 rounded-full border-2 border-primary border-t-transparent animate-spin" /></div>}>
             <MapboxRideMap
               campusCenter={CAMPUS_CENTERS[campus]}
-              onPickupChange={name => setPickupPin(name ? { address: name, coords: [0, 0] } : null)}
-              onDestinationChange={name => setDestPin(name ? { address: name, coords: [0, 0] } : null)}
+              onPickupChange={(name, coords) => setPickupPin(name ? { address: name, coords: coords ?? [0, 0] } : null)}
+              onDestinationChange={(name, coords) => setDestPin(name ? { address: name, coords: coords ?? [0, 0] } : null)}
             />
           </Suspense>
           <p className="text-xs text-slate-400 font-normal text-center italic">

@@ -18,8 +18,8 @@ interface GoogleSuggestion {
 
 interface Props {
   campusCenter:        [number, number]; // [lng, lat]
-  onPickupChange:      (name: string) => void;
-  onDestinationChange: (name: string) => void;
+  onPickupChange:      (name: string, coords: [number, number] | null) => void;
+  onDestinationChange: (name: string, coords: [number, number] | null) => void;
 }
 
 // Format raw minutes → "45 min" or "1 hr 2 min"
@@ -154,17 +154,17 @@ export const MapboxRideMap: React.FC<Props> = ({ campusCenter, onPickupChange, o
           const json = await res.json();
           const name = (json.display_name as string | undefined) ?? 'Current Location';
           setPickupName(name);
-          onPickupChange(name);
+          onPickupChange(name, coords);
         } catch {
           setPickupName('Current Location');
-          onPickupChange('Current Location');
+          onPickupChange('Current Location', coords);
         }
         setLocating(false);
       },
       () => {
         placePickupMarker(campusCenter);
         setPickupName('UMPSA Campus');
-        onPickupChange('UMPSA Campus');
+        onPickupChange('UMPSA Campus', campusCenter);
         setLocating(false);
       },
       { timeout: 10000 },
@@ -243,7 +243,7 @@ export const MapboxRideMap: React.FC<Props> = ({ campusCenter, onPickupChange, o
       const coords: [number, number] = [lng, lat];
       setDestCoords(coords);
       setDestName(label);
-      onDestinationChange(label);
+      onDestinationChange(label, coords);
 
       if (destMarker.current) destMarker.current.remove();
       const el = Object.assign(document.createElement('div'), {
@@ -261,7 +261,7 @@ export const MapboxRideMap: React.FC<Props> = ({ campusCenter, onPickupChange, o
     setDestName('');
     setDestCoords(null);
     setRouteInfo(null);
-    onDestinationChange('');
+    onDestinationChange('', null);
     setSuggestions([]);
     setShowSuggestions(false);
     if (destMarker.current) { destMarker.current.remove(); destMarker.current = null; }

@@ -18,6 +18,12 @@ const PLACEHOLDER_EMAIL = 'jubah@atepgerak.app'
 serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders(req) })
 
+  const json = (body: unknown, status = 200) =>
+    new Response(JSON.stringify(body), {
+      status,
+      headers: { ...corsHeaders(req), 'Content-Type': 'application/json' },
+    })
+
   try {
     const admin = createClient(
       Deno.env.get('SUPABASE_URL')!,
@@ -144,10 +150,3 @@ serve(async (req) => {
     return json({ success: false, error: 'Server error. Please try again.' }, 500)
   }
 })
-
-function json(body: unknown, status = 200) {
-  return new Response(JSON.stringify(body), {
-    status,
-    headers: { ...corsHeaders(req), 'Content-Type': 'application/json' },
-  })
-}

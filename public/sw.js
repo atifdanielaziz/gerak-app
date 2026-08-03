@@ -1,4 +1,4 @@
-const CACHE_NAME = 'gerak-cache-v346';
+const CACHE_NAME = 'gerak-cache-v359';
 const ASSETS_TO_CACHE = [
   '/',
   '/index.html',
@@ -56,7 +56,14 @@ self.addEventListener('fetch', (event) => {
       caches.match(event.request).then((cached) => {
         if (cached) return cached;
         return fetch(event.request).then((response) => {
-          if (response && response.status === 200 && response.type === 'basic') {
+          // A hashed /assets/ path should never come back as HTML — if it
+          // does, it's Vercel's SPA catch-all rewrite serving index.html for
+          // a chunk that 404'd (e.g. deploy-propagation lag right after a
+          // new build), still with a 200 status. Caching that here would
+          // permanently poison this URL, since /assets/ entries are treated
+          // as immutable and never revalidated once cached.
+          const contentType = response.headers.get('content-type') || '';
+          if (response && response.status === 200 && response.type === 'basic' && !contentType.includes('text/html')) {
             const responseToCache = response.clone();
             caches.open(CACHE_NAME).then((cache) => cache.put(event.request, responseToCache));
           }

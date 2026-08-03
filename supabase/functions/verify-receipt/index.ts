@@ -19,6 +19,12 @@ const MAX_DAY               = 3
 serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders(req) })
 
+  const json = (body: unknown, status = 200) =>
+    new Response(JSON.stringify(body), {
+      status,
+      headers: { ...corsHeaders(req), 'Content-Type': 'application/json' },
+    })
+
   try {
     const authHeader = req.headers.get('Authorization')
     if (!authHeader) {
@@ -198,10 +204,3 @@ Return ONLY the raw JSON object.`,
     return json({ success: false, reason: 'Server error. Please try again.' }, 500)
   }
 })
-
-function json(body: unknown, status = 200) {
-  return new Response(JSON.stringify(body), {
-    status,
-    headers: { ...corsHeaders(req), 'Content-Type': 'application/json' },
-  })
-}

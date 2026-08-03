@@ -41,6 +41,12 @@ type Booking = {
 serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders(req) })
 
+  const json = (body: unknown, status = 200) =>
+    new Response(JSON.stringify(body), {
+      status,
+      headers: { ...corsHeaders(req), 'Content-Type': 'application/json' },
+    })
+
   try {
     const authHeader = req.headers.get('Authorization')
     if (!authHeader) return json({ success: false, reason: 'Unauthorized' }, 401)
@@ -93,13 +99,6 @@ serve(async (req) => {
     return json({ success: false, reason: 'Server error.' }, 500)
   }
 })
-
-function json(body: unknown, status = 200) {
-  return new Response(JSON.stringify(body), {
-    status,
-    headers: { ...corsHeaders(req), 'Content-Type': 'application/json' },
-  })
-}
 
 // Same masking convention used everywhere else customer-facing (TrackJubah's
 // IC-gated receipt, buildJubahReceiptRows) — an email landing in the

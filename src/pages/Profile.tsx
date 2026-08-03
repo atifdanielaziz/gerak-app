@@ -221,7 +221,17 @@ export const Profile: React.FC = () => {
     setVerifying(false);
     if (fileInputRef.current) fileInputRef.current.value = '';
     if (result.error) { setVerifyMsg('Verification service error. Please try again.'); return; }
+
+    const data = result.data as { success?: boolean; pending?: boolean; reason?: string } | null;
     await refreshUserData();
+    if (!data?.success) {
+      setVerifyMsg(
+        data?.pending
+          ? `Could not auto-verify: ${data.reason}. Submitted for manual admin review instead.`
+          : (data?.reason || 'Verification failed. Please try again.')
+      );
+      return;
+    }
     setVerifyMsg('');
   };
 

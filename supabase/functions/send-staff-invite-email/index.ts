@@ -40,6 +40,12 @@ type Invite = {
 serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders(req) })
 
+  const json = (body: unknown, status = 200) =>
+    new Response(JSON.stringify(body), {
+      status,
+      headers: { ...corsHeaders(req), 'Content-Type': 'application/json' },
+    })
+
   try {
     const authHeader = req.headers.get('Authorization')
     if (!authHeader) return json({ success: false, reason: 'Unauthorized' }, 401)
@@ -89,13 +95,6 @@ serve(async (req) => {
     return json({ success: false, reason: 'Server error.' }, 500)
   }
 })
-
-function json(body: unknown, status = 200) {
-  return new Response(JSON.stringify(body), {
-    status,
-    headers: { ...corsHeaders(req), 'Content-Type': 'application/json' },
-  })
-}
 
 // Same escaping convention as send-jubah-receipt-email — role/campus here
 // are admin-selected dropdown values today, not free text, but escaping

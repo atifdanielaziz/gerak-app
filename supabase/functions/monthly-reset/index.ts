@@ -28,6 +28,12 @@ function timingSafeEqual(a: string, b: string): boolean {
 serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders(req) })
 
+  const json = (body: unknown, status = 200) =>
+    new Response(JSON.stringify(body), {
+      status,
+      headers: { ...corsHeaders(req), 'Content-Type': 'application/json' },
+    })
+
   try {
     // Only allow calls with service role key (from pg_cron or admin)
     const authHeader = req.headers.get('Authorization') ?? ''
@@ -111,10 +117,3 @@ serve(async (req) => {
     return json({ success: false, reason: 'Server error.' }, 500)
   }
 })
-
-function json(body: unknown, status = 200) {
-  return new Response(JSON.stringify(body), {
-    status,
-    headers: { ...corsHeaders(req), 'Content-Type': 'application/json' },
-  })
-}

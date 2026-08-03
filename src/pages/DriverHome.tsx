@@ -23,6 +23,49 @@ import { fmt12, fmtDuration, todayStr } from '../lib/format';
 
 const getTimestamp = () => Date.now();
 
+// Quick Routes / AerBus store short internal hub names ("DHUAM", "Taman
+// Beruas", "TSK") — geocodable, but ambiguous without campus context (a
+// same-named place could exist anywhere in the country). Custom/map-pin
+// bookings already store full, specific addresses, so context is only
+// appended for the two modes that don't.
+const CAMPUS_GEO_CONTEXT: Record<string, string> = {
+  Pekan:   'Pekan, Pahang, Malaysia',
+  Gambang: 'Gambang, Kuantan, Pahang, Malaysia',
+};
+
+// Malaysian reverse-geocoded addresses often include the local government
+// authority as its own comma segment (e.g. "...Kajang Municipal Council...").
+// That phrase is itself a real, named place in Google's map data, and its
+// geocoder has been seen latching onto it instead of the actual street
+// address earlier in the same string — sending the driver to the council
+// office instead of the pickup/destination. Stripping these segments before
+// building the nav URL removes the ambiguity.
+const stripAdminBoilerplate = (address: string) =>
+  address
+    .split(',')
+    .filter(part => !/\b(municipal council|district council|city council|majlis (perbandaran|daerah|bandaraya))\b/i.test(part))
+    .map(part => part.trim())
+    .join(', ');
+
+const navAddress = (address: string, campus: string, bookMode?: string | null) => {
+  const cleaned = stripAdminBoilerplate(address);
+  return (bookMode === 'quick' || bookMode === 'aerbus') && CAMPUS_GEO_CONTEXT[campus]
+    ? `${cleaned}, ${CAMPUS_GEO_CONTEXT[campus]}`
+    : cleaned;
+};
+
+// Map-pin bookings carry real GPS/Places coordinates (set when the pin was
+// dropped) — used directly when present, since a second geocoder re-parsing
+// address text can land on the wrong place entirely. Quick/custom/aerbus
+// bookings have no coordinates, so those fall back to the cleaned text.
+const googleMapsUrl = (
+  address: string, lat: number | null | undefined, lng: number | null | undefined,
+  campus: string, bookMode?: string | null
+) => {
+  const dest = (lat != null && lng != null) ? `${lat},${lng}` : navAddress(address, campus, bookMode);
+  return `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(dest)}&travelmode=driving`;
+};
+
 interface RentalVehicle {
   owner_id: string;
   car_type: string;
@@ -90,6 +133,10 @@ interface RideOrder {
   book_mode?: string | null;
   aerbus_direction?: string | null;
   aerbus_customer_time?: string | null;
+  pickup_lat?: number | null;
+  pickup_lng?: number | null;
+  destination_lat?: number | null;
+  destination_lng?: number | null;
   status: string;
   driver_id: string | null;
   driver_name: string | null;
@@ -369,7 +416,7 @@ export const DriverHome: React.FC = () => {
     const { data: { user: authUser } } = await supabase.auth.getUser();
     const uid = authUser?.id ?? '';
 
-    const RIDE_FIELDS = 'id,customer_name,campus,date,time,pickup,destination,passengers,contact,fare,night_charge,notes,book_mode,aerbus_direction,aerbus_customer_time,status,driver_id,driver_name,created_at,accepted_at';
+    const RIDE_FIELDS = 'id,customer_name,campus,date,time,pickup,destination,passengers,contact,fare,night_charge,notes,book_mode,aerbus_direction,aerbus_customer_time,pickup_lat,pickup_lng,destination_lat,destination_lng,status,driver_id,driver_name,created_at,accepted_at';
 
     // Pool: pending orders for this campus, sorted by scheduled date+time (FIFO)
     let pendingQ = supabase
@@ -801,9 +848,9 @@ export const DriverHome: React.FC = () => {
               <ListOrdered className="w-3.5 h-3.5" />
               Job Pool
               {pendingOrders.length > 0 && (
-                <span className={`text-xs font-semibold px-1.5 py-0.5 rounded-full min-w-[18px] text-center ${
+                <span className={`absolute top-1 right-1.5 text-[10px] font-bold leading-none px-1.5 py-0.5 rounded-full min-w-[16px] text-center ${
                   activeTab === 'pool'
-                    ? 'bg-white/25 text-white'
+                    ? 'bg-white text-primary'
                     : `bg-primary text-white ${newPing ? 'animate-bounce' : ''}`
                 }`}>
                   {pendingOrders.length}
@@ -823,7 +870,7 @@ export const DriverHome: React.FC = () => {
               <Briefcase className="w-3.5 h-3.5" />
               My Jobs
               {myJob && (
-                <span className={`w-2 h-2 rounded-full ${
+                <span className={`absolute top-1.5 right-2 w-2 h-2 rounded-full ${
                   myJob.status === 'in_progress' ? 'bg-blue-400' : 'bg-emerald-400'
                 } ${activeTab === 'my-jobs' ? 'bg-white' : ''} animate-pulse`} />
               )}
@@ -841,8 +888,8 @@ export const DriverHome: React.FC = () => {
               <KeyRound className="w-3.5 h-3.5" />
               Rental
               {pendingRentals > 0 && (
-                <span className={`text-xs font-semibold px-1.5 py-0.5 rounded-full min-w-[18px] text-center ${
-                  activeTab === 'rental' ? 'bg-white/25 text-white' : 'bg-primary text-white'
+                <span className={`absolute top-1 right-1.5 text-[10px] font-bold leading-none px-1.5 py-0.5 rounded-full min-w-[16px] text-center ${
+                  activeTab === 'rental' ? 'bg-white text-primary' : 'bg-primary text-white'
                 }`}>
                   {pendingRentals}
                 </span>
@@ -1141,6 +1188,28 @@ export const DriverHome: React.FC = () => {
                       </div>
                     </div>
                   </div>
+                </div>
+
+                {/* Navigate — both stops always available, not just the
+                    "current" one, since the driver may want to check the
+                    destination before starting or route back to pickup. */}
+                <div className="mx-4 mb-3 flex gap-2" onClick={e => e.stopPropagation()}>
+                  <a
+                    href={googleMapsUrl(myJob.pickup, myJob.pickup_lat, myJob.pickup_lng, myJob.campus, myJob.book_mode)}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex-1 flex items-center justify-center gap-1.5 bg-slate-50 border border-slate-100 text-slate-600 text-xs font-semibold py-2.5 rounded-xl active:scale-95 transition text-center"
+                  >
+                    <Navigation className="w-3.5 h-3.5 shrink-0" /> Navigate to Pickup
+                  </a>
+                  <a
+                    href={googleMapsUrl(myJob.destination, myJob.destination_lat, myJob.destination_lng, myJob.campus, myJob.book_mode)}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex-1 flex items-center justify-center gap-1.5 bg-slate-50 border border-slate-100 text-slate-600 text-xs font-semibold py-2.5 rounded-xl active:scale-95 transition text-center"
+                  >
+                    <Navigation className="w-3.5 h-3.5 shrink-0" /> Navigate to Destination
+                  </a>
                 </div>
 
                 {myJob.notes && (
