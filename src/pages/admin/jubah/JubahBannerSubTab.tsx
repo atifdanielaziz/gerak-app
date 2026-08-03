@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { supabase } from '../../../lib/supabase';
 import { FileImage, Upload, Trash2, Info, X, Check } from 'lucide-react';
 import ReactCrop, { centerCrop, makeAspectCrop, type Crop, type PixelCrop } from 'react-image-crop';
@@ -209,7 +210,15 @@ export function JubahBannerSubTab({ active, onOpenSampleDocs, showToast }: Jubah
       </div>
 
       {/* ── Banner Crop Modal ── */}
-      {cropSrc && (
+      {/* Portalled to document.body: SwipeBackGesture's always-present
+          transform (App.tsx) makes itself the containing block for every
+          position:fixed element app-wide, and App.tsx's page-content wrapper
+          (overflow-hidden, sits between Header and BottomNav) clips fixed
+          descendants down to just that content pane. Other fixed sheets never
+          exposed this since they only cover the content area anyway — this
+          modal needs the full screen including where the header sits, so it
+          has to render outside that ancestor chain entirely. */}
+      {cropSrc && createPortal(
         <div className="fixed inset-0 z-[80] bg-black flex flex-col">
           <div className="flex items-center justify-between px-5 pb-4 shrink-0" style={{ paddingTop: 'calc(1rem + env(safe-area-inset-top))' }}>
             <button
@@ -247,7 +256,8 @@ export function JubahBannerSubTab({ active, onOpenSampleDocs, showToast }: Jubah
           <div className="px-4 pb-8 text-center shrink-0">
             <span className="text-white/40 text-xs">Drag corners to adjust · Free crop, any shape</span>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </>
   );
