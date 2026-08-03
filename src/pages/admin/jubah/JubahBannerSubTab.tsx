@@ -169,15 +169,23 @@ export function JubahBannerSubTab({ active, onOpenSampleDocs, showToast }: Jubah
           className="hidden"
           onChange={e => {
             const file = e.target.files?.[0];
-            if (file) {
-              // Object URL instead of FileReader.readAsDataURL — a data URL
-              // holds the whole photo as a giant base64 string in memory,
-              // which on iOS standalone PWAs raises the odds of the WebView
-              // being reloaded (losing this in-progress crop) right as it
-              // hands off to the native photo picker.
-              setCropSrc(URL.createObjectURL(file));
+            if (!file) {
+              showToast('[debug] onChange fired, no file selected');
+              return;
+            }
+            // Object URL instead of FileReader.readAsDataURL — a data URL
+            // holds the whole photo as a giant base64 string in memory,
+            // which on iOS standalone PWAs raises the odds of the WebView
+            // being reloaded (losing this in-progress crop) right as it
+            // hands off to the native photo picker.
+            try {
+              const objUrl = URL.createObjectURL(file);
+              setCropSrc(objUrl);
               setCropObj(undefined);
               setCompletedCrop(undefined);
+              showToast(`[debug] picked ${file.name}, cropSrc set ✓`);
+            } catch (err) {
+              showToast(`[debug] createObjectURL threw: ${err instanceof Error ? err.message : String(err)}`);
             }
             if (bannerFileRef.current) bannerFileRef.current.value = '';
           }}
