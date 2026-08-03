@@ -83,6 +83,14 @@ export function JubahBannerSubTab({ active, onOpenSampleDocs, showToast }: Jubah
     queueMicrotask(() => { loadImages(); });
   }, [active]);
 
+  // [debug] Detect whether this component silently unmounts/remounts right
+  // after a file is picked (would reset cropSrc without any explicit close
+  // call) — console entries persist even if the toast is missed.
+  useEffect(() => {
+    console.log('[debug] JubahBannerSubTab MOUNTED');
+    return () => console.log('[debug] JubahBannerSubTab UNMOUNTING');
+  }, []);
+
   const getCroppedBlob = (image: HTMLImageElement, px: PixelCrop): Promise<Blob> => {
     const canvas = document.createElement('canvas');
     const scaleX = image.naturalWidth  / image.width;
@@ -158,6 +166,8 @@ export function JubahBannerSubTab({ active, onOpenSampleDocs, showToast }: Jubah
     showToast('Banner deleted.');
     await loadImages();
   };
+
+  console.log('[debug] JubahBannerSubTab render, cropSrc=', cropSrc || '(empty)');
 
   return (
     <>
