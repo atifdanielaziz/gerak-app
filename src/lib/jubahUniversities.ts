@@ -73,12 +73,3 @@ export const jubahLocationLabel = (universityKey: string, campus: string): strin
  *  except UMPSA's Pekan/Gambang split, so the university is recoverable. */
 export const universityKeyFromCampus = (campus: string): string | null =>
   JUBAH_UNIVERSITIES.find(u => u.campuses.includes(campus))?.key ?? null;
-
-/** Best-effort university key lookup from a booking's free-text `university` column
- *  (e.g. "Universiti Malaysia Pahang Al-Sultan Abdullah (Pekan)") for rows saved
- *  before university_key existed, or wherever only the text is available. */
-export const jubahUniversityKeyFromText = (universityText: string | null | undefined): string | null => {
-  if (!universityText) return null;
-  const found = JUBAH_UNIVERSITIES.find(u => universityText.startsWith(u.fullName));
-  return found?.key ?? null;
-};

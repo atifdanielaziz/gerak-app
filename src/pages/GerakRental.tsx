@@ -378,23 +378,22 @@ export const GerakRental: React.FC = () => {
       showToast('Selected slot is no longer available.'); return;
     }
     setBookLoading(true);
-    const { data: { user: authUser } } = await supabase.auth.getUser();
-    const bookStart = bookingType === 'hourly' ? startHour! : selected.operating_start;
-    const { error } = await supabase.from('rental_bookings').insert({
-      owner_id:     selected.id,
-      customer_id:  authUser?.id,
-      date:         rangeStart,
-      end_date:     rangeEnd || rangeStart,
-      booking_type: bookingType,
-      start_hour:   bookStart,
-      duration:     totalHours,
-      persons,
-      total_price:  totalPrice,
-      notes,
-      license_url:  '',
+    // total_price is computed server-side from rental_vehicles (price_hour
+    // + night surcharge) inside create_rental_booking — never trusted from
+    // the client. See 20260804100000_rental_bookings_price_trust_and_
+    // lockdown.sql.
+    const { data, error } = await supabase.rpc('create_rental_booking', {
+      p_owner_id:     selected.id,
+      p_date:         rangeStart,
+      p_end_date:     rangeEnd || rangeStart,
+      p_booking_type: bookingType,
+      p_start_hour:   bookingType === 'hourly' ? startHour : null,
+      p_duration:     bookingType === 'hourly' ? duration : null,
+      p_persons:      persons,
+      p_notes:        notes,
     });
     setBookLoading(false);
-    if (error) {
+    if (error || !data?.success) {
       // 23P01 = exclusion_violation — rental_bookings_no_overlap caught a
       // real race: someone else booked (part of) this slot between when
       // this page last fetched availability and this insert landing. The
@@ -403,7 +402,7 @@ export const GerakRental: React.FC = () => {
       // constraint can, atomically, at the moment two inserts actually
       // collide. Refresh availability so the calendar reflects reality
       // immediately, rather than continuing to show the now-taken slot as free.
-      if (error.code === '23P01') {
+      if (data?.code === '23P01') {
         showToast('That slot was just booked by someone else. Please pick another time.');
         loadAvailability(selected.id, calMonth);
       } else {
