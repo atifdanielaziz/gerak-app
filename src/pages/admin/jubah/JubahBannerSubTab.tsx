@@ -130,12 +130,17 @@ export function JubahBannerSubTab({ active, onOpenSampleDocs, showToast }: Jubah
     await loadImages();
   };
 
-  const handleCropConfirm = async () => {
-    if (!completedCrop || !cropImgRef.current || !uploadTargetKey) return;
-    const blob = await getCroppedBlob(cropImgRef.current, completedCrop);
+  const closeCropModal = () => {
+    if (cropSrc) URL.revokeObjectURL(cropSrc);
     setCropSrc('');
     setCropObj(undefined);
     setCompletedCrop(undefined);
+  };
+
+  const handleCropConfirm = async () => {
+    if (!completedCrop || !cropImgRef.current || !uploadTargetKey) return;
+    const blob = await getCroppedBlob(cropImgRef.current, completedCrop);
+    closeCropModal();
     const file = new File([blob], `${uploadTargetKey}.jpg`, { type: 'image/jpeg' });
     handleBannerUpload(file);
   };
@@ -165,9 +170,14 @@ export function JubahBannerSubTab({ active, onOpenSampleDocs, showToast }: Jubah
           onChange={e => {
             const file = e.target.files?.[0];
             if (file) {
-              const reader = new FileReader();
-              reader.onload = () => { setCropSrc(reader.result as string); setCropObj(undefined); setCompletedCrop(undefined); };
-              reader.readAsDataURL(file);
+              // Object URL instead of FileReader.readAsDataURL — a data URL
+              // holds the whole photo as a giant base64 string in memory,
+              // which on iOS standalone PWAs raises the odds of the WebView
+              // being reloaded (losing this in-progress crop) right as it
+              // hands off to the native photo picker.
+              setCropSrc(URL.createObjectURL(file));
+              setCropObj(undefined);
+              setCompletedCrop(undefined);
             }
             if (bannerFileRef.current) bannerFileRef.current.value = '';
           }}
@@ -275,7 +285,7 @@ export function JubahBannerSubTab({ active, onOpenSampleDocs, showToast }: Jubah
         <div className="fixed inset-0 z-[80] bg-black flex flex-col">
           <div className="flex items-center justify-between px-5 pb-4 shrink-0" style={{ paddingTop: 'calc(1rem + env(safe-area-inset-top))' }}>
             <button
-              onClick={() => { setCropSrc(''); setCropObj(undefined); setCompletedCrop(undefined); }}
+              onClick={closeCropModal}
               className="w-8 h-8 flex items-center justify-center rounded-full bg-white/10 text-white active:bg-white/20 transition">
               <X className="w-4 h-4" />
             </button>
