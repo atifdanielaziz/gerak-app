@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { useApp } from '../context/AppContext';
 import { ChevronRight, Image as ImageIcon, Users, PackageSearch, GraduationCap, Clock, X } from 'lucide-react';
@@ -36,10 +36,8 @@ export const JubahLanding: React.FC<Props> = ({ onProceed }) => {
   const isAdmin = user.role === 'admin' || user.role === 'superadmin';
 
   const [selectedKey, setSelectedKey]   = useState('');
-  const [bannerImages, setBannerImages] = useState<Record<string, { id: string; url: string }[]>>({});
-  const [activeBannerIdx, setActiveBannerIdx] = useState(0);
-  const touchStartX = useRef(0);
-  const touchEndX   = useRef(0);
+  const [bannerUrls, setBannerUrls]     = useState<Record<string, string>>({});
+  const [imgError, setImgError]         = useState<Record<string, boolean>>({});
   const [riderDir, setRiderDir]         = useState<RiderDir[]>([]);
   const [selectedRider, setSelectedRider] = useState<RiderDir | null>(null);
   const [pendingBooking, setPendingBooking] = useState<PendingJubahBooking | null>(null);
@@ -68,27 +66,23 @@ export const JubahLanding: React.FC<Props> = ({ onProceed }) => {
     return () => setSheetOpen(false);
   }, [selectedRider, setSheetOpen]);
 
-  // Fetch every university's banner images once on mount, grouped by
-  // university_key — replaces the old single-fixed-path-per-university
-  // scheme, so a university with zero uploaded images is now known for
-  // certain (an empty array) rather than inferred from an <img> onError.
+  // Compute public URLs once on mount — daily bust so browser caches within the day
+  // but everyone auto-fetches fresh after midnight if admin updates a banner
   useEffect(() => {
-    supabase
-      .from('jubah_banner_images')
-      .select('id, university_key, storage_path')
-      .order('position')
-      .then(({ data }) => {
-        const grouped: Record<string, { id: string; url: string }[]> = {};
-        (data ?? []).forEach((row: { id: string; university_key: string; storage_path: string }) => {
-          const { data: pub } = supabase.storage.from(BUCKET).getPublicUrl(row.storage_path);
-          (grouped[row.university_key] ??= []).push({ id: row.id, url: pub.publicUrl });
-        });
-        queueMicrotask(() => setBannerImages(grouped));
-      });
+    const urls: Record<string, string> = {};
+    const bust = new Date().toISOString().slice(0, 10); // YYYY-MM-DD
+    ['default', ...JUBAH_UNIVERSITIES.map(u => u.key)].forEach(key => {
+      const { data } = supabase.storage.from(BUCKET).getPublicUrl(`${key}.jpg`);
+      urls[key] = `${data.publicUrl}?v=${bust}`;
+    });
+    queueMicrotask(() => {
+      setBannerUrls(urls);
+    });
   }, []);
 
   const handleUniversityChange = (key: string) => {
     setSelectedKey(key);
+    setImgError(prev => ({ ...prev, [key]: false }));
     if (!key) { setRiderDir([]); return; }
     const campusList = JUBAH_UNIVERSITY_MAP[key]?.campuses ?? [key];
 
@@ -101,33 +95,10 @@ export const JubahLanding: React.FC<Props> = ({ onProceed }) => {
       });
   };
 
-  const hasOwnBanner   = !!selectedKey && (bannerImages[selectedKey]?.length ?? 0) > 0;
-  const displayKey     = hasOwnBanner ? selectedKey : 'default';
-  const displayImages  = bannerImages[displayKey] ?? [];
-  const selectedLabel  = JUBAH_UNIVERSITIES.find(u => u.key === selectedKey)?.label ?? '';
-
-  // Reset to the first slide whenever the displayed set changes (switching
-  // university, or falling back to 'default') — an index left over from a
-  // longer previous set could otherwise point past the end of a shorter one.
-  useEffect(() => { queueMicrotask(() => setActiveBannerIdx(0)); }, [displayKey]);
-
-  useEffect(() => {
-    if (displayImages.length <= 1) return;
-    const t = setInterval(() => setActiveBannerIdx(p => (p + 1) % displayImages.length), 4500);
-    return () => clearInterval(t);
-  }, [displayImages.length, displayKey]);
-
-  const onBannerTouchStart = (e: React.TouchEvent) => { touchStartX.current = e.touches[0].clientX; };
-  const onBannerTouchEnd   = (e: React.TouchEvent) => {
-    if (displayImages.length <= 1) return;
-    touchEndX.current = e.changedTouches[0].clientX;
-    const diff = touchStartX.current - touchEndX.current;
-    if (Math.abs(diff) > 40) {
-      setActiveBannerIdx(p => diff > 0
-        ? (p + 1) % displayImages.length
-        : (p - 1 + displayImages.length) % displayImages.length);
-    }
-  };
+  const showDefault    = !selectedKey || imgError[selectedKey];
+  const displayKey     = showDefault ? 'default' : selectedKey;
+  const currentBanner  = bannerUrls[displayKey];
+  const hasBannerError = imgError[displayKey];
 
   return (
     <div className="flex-grow bg-white overflow-y-auto overflow-x-hidden no-scrollbar pb-4 px-4 animate-fade-in flex flex-col gap-4">
@@ -208,59 +179,29 @@ export const JubahLanding: React.FC<Props> = ({ onProceed }) => {
           label="Select University"
         />
 
-        {/* Banner area — swipeable carousel when a university has multiple
-            images uploaded; a fixed aspect ratio is required here (unlike
-            the old single dynamic-height <img>) since multiple slides are
-            stacked via absolute positioning and need a shared frame. */}
-        <div
-          className="w-full rounded-2xl overflow-hidden border border-slate-100 bg-slate-50 relative"
-          style={{ aspectRatio: '16 / 9' }}
-          onTouchStart={onBannerTouchStart}
-          onTouchEnd={onBannerTouchEnd}
-        >
-          {displayImages.length > 0 ? (
-            displayImages.map((img, idx) => (
-              <img
-                key={img.id}
-                src={img.url}
-                alt={`${selectedLabel || 'Gerak'} banner ${idx + 1}`}
-                className={`absolute inset-0 w-full h-full object-contain transition-opacity duration-500 ${
-                  idx === activeBannerIdx ? 'opacity-100' : 'opacity-0 pointer-events-none'
-                }`}
-              />
-            ))
-          ) : (
-            <div className="min-h-[120px] flex flex-col items-center justify-center gap-2 text-slate-300 p-4 text-center">
-              <ImageIcon className="w-10 h-10" />
-              <span className="text-xs font-bold">No banner uploaded yet</span>
-            </div>
-          )}
-
-          {/* Dot indicators — only meaningful with more than one slide */}
-          {displayImages.length > 1 && (
-            <div className="absolute bottom-2 left-0 right-0 flex justify-center gap-1.5 z-10">
-              {displayImages.map((_, idx) => (
-                <button
-                  key={idx}
-                  type="button"
-                  onPointerDown={e => { e.preventDefault(); setActiveBannerIdx(idx); }}
-                  className={`h-1.5 rounded-full transition-all duration-300 ${
-                    idx === activeBannerIdx ? 'w-5 bg-white' : 'w-1.5 bg-white/50'
-                  }`}
-                />
-              ))}
-            </div>
-          )}
-
-          {/* Admin hint: shows when a university is selected but has no banner of its own → falling back to default */}
-          {isAdmin && selectedKey && !hasOwnBanner && (
-            <div className="absolute top-2 left-2 right-2 flex justify-center">
-              <span className="bg-black/60 text-white text-[10px] font-bold px-2.5 py-1 rounded-full tracking-wide">
-                Default banner · Upload {JUBAH_UNIVERSITY_MAP[selectedKey]?.shortLabel ?? selectedKey.toUpperCase()} banner via admin
-              </span>
-            </div>
-          )}
-        </div>
+        {currentBanner && !hasBannerError ? (
+          <div className="w-full rounded-2xl overflow-hidden border border-slate-100 bg-slate-50 relative">
+            <img
+              src={currentBanner}
+              alt="Jubah banner"
+              className="w-full h-auto block"
+              onError={() => setImgError(prev => ({ ...prev, [displayKey]: true }))}
+            />
+            {/* Admin hint: shows when a university is selected but has no banner of its own → falling back to default */}
+            {isAdmin && selectedKey && showDefault && (
+              <div className="absolute top-2 left-2 right-2 flex justify-center">
+                <span className="bg-black/60 text-white text-[10px] font-bold px-2.5 py-1 rounded-full tracking-wide">
+                  Default banner · Upload {JUBAH_UNIVERSITY_MAP[selectedKey]?.shortLabel ?? selectedKey.toUpperCase()} banner via admin
+                </span>
+              </div>
+            )}
+          </div>
+        ) : (
+          <div className="w-full rounded-2xl overflow-hidden border border-slate-100 bg-slate-50 flex flex-col items-center justify-center gap-2 text-slate-300 min-h-[120px] p-4 text-center">
+            <ImageIcon className="w-10 h-10" />
+            <span className="text-xs font-bold">No banner uploaded yet</span>
+          </div>
+        )}
 
       </div>
 
