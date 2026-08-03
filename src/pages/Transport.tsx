@@ -596,20 +596,29 @@ export const Transport: React.FC = () => {
         {user.isLoggedIn && (
           user.role === 'superadmin' ? (
             <div className="flex bg-slate-100 rounded-2xl p-1 gap-1">
-              {(['gambang', 'pekan'] as const).map(c => (
-                <button
-                  key={c}
-                  type="button"
-                  onPointerDown={(e) => { e.preventDefault(); switchCampus(c); }}
-                  className={`flex-1 py-2 rounded-xl text-xs font-semibold transition-transform ${
-                    campus === c
-                      ? 'bg-white text-primary'
-                      : 'text-slate-500 hover:text-slate-700'
-                  }`}
-                >
-                  {c === 'gambang' ? 'UMPSA Gambang' : 'UMPSA Pekan'}
-                </button>
-              ))}
+              {(['gambang', 'pekan'] as const).map(c => {
+                const label = c === 'gambang' ? 'UMPSA Gambang' : 'UMPSA Pekan';
+                // Two stacked layers instead of toggling colour classes
+                // directly — this WebView unreliably repaints colour
+                // changes; opacity changes repaint reliably.
+                return (
+                  <button
+                    key={c}
+                    type="button"
+                    onPointerDown={(e) => { e.preventDefault(); switchCampus(c); }}
+                    className="relative flex-1 rounded-xl transition-transform"
+                  >
+                    <span className="block py-2 text-xs font-semibold text-slate-500">{label}</span>
+                    <span
+                      className={`absolute inset-0 flex items-center justify-center py-2 rounded-xl bg-white text-primary text-xs font-semibold transition-opacity duration-150 ${
+                        campus === c ? 'opacity-100' : 'opacity-0 pointer-events-none'
+                      }`}
+                    >
+                      {label}
+                    </span>
+                  </button>
+                );
+              })}
             </div>
           ) : (
             <div className="bg-primary/10 rounded-2xl px-4 py-2.5 text-center">

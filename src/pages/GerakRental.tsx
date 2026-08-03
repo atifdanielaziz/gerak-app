@@ -706,24 +706,39 @@ export const GerakRental: React.FC = () => {
             <div className="grid grid-cols-7 gap-0.5">
               {calDays().map((dateStr, i) => {
                 if (!dateStr) return <div key={i} />;
+                // isBlocked/isPast are static facts about this date, fixed
+                // regardless of taps — safe as a plain base layer. Only
+                // the selection highlight actually toggles via tapping,
+                // which is what needs the opacity-overlay treatment below
+                // (this WebView unreliably repaints colour changes, but
+                // reliably repaints opacity).
                 const isPast      = dateStr < today();
                 const isBlocked   = isDateFullyBlocked(dateStr);
                 const isStart     = dateStr === rangeStart;
                 const isEnd       = dateStr === rangeEnd;
                 const isInRange   = rangeStart && rangeEnd && dateStr > rangeStart && dateStr < rangeEnd;
                 const isSelected  = isStart || isEnd;
+                const highlighted = isSelected || isInRange;
+                const day = parseInt(dateStr.split('-')[2]);
                 return (
                   <button key={dateStr}
                     disabled={isPast || isBlocked}
                     onPointerDown={(e) => { if (isPast || isBlocked) return; e.preventDefault(); handleDateTap(dateStr); }}
-                    className={`aspect-square text-xs font-normal transition active:scale-90 ${
-                      isSelected  ? 'bg-primary text-white font-semibold rounded-xl' :
-                      isInRange   ? 'bg-primary/15 text-primary rounded-sm' :
-                      isBlocked   ? 'bg-red-50 text-red-300 cursor-not-allowed rounded-xl' :
-                      isPast      ? 'text-slate-200 cursor-not-allowed rounded-xl' :
-                                    'text-slate-700 hover:bg-slate-100 rounded-xl'
+                    className="relative aspect-square rounded-xl transition active:scale-90">
+                    <span className={`absolute inset-0 flex items-center justify-center text-xs font-normal rounded-xl ${
+                      isBlocked ? 'bg-red-50 text-red-300 cursor-not-allowed' :
+                      isPast    ? 'text-slate-200 cursor-not-allowed' :
+                                  'text-slate-700 hover:bg-slate-100'
                     }`}>
-                    {parseInt(dateStr.split('-')[2])}
+                      {day}
+                    </span>
+                    <span
+                      className={`absolute inset-0 flex items-center justify-center text-xs transition-opacity duration-150 ${
+                        isSelected ? 'bg-primary text-white font-semibold rounded-xl' : 'bg-primary/15 text-primary font-normal rounded-sm'
+                      } ${highlighted ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
+                    >
+                      {day}
+                    </span>
                   </button>
                 );
               })}
@@ -753,18 +768,34 @@ export const GerakRental: React.FC = () => {
                   const picked  = startHour === h;
                   const inSlot  = startHour !== null && h > startHour && h <= startHour + duration;
                   const isNight = h >= 22 || h < 5;
+                  const highlighted = picked || inSlot;
+                  const label = fmt12(h);
+                  // avail/isNight are static facts about this hour slot,
+                  // fixed regardless of taps — safe as a plain base layer.
+                  // Only picked/inSlot actually toggle via tapping (start
+                  // hour + duration selection), which is what needs the
+                  // opacity-overlay treatment below (this WebView
+                  // unreliably repaints colour changes, but reliably
+                  // repaints opacity).
                   return (
                     <button key={h} disabled={!avail}
                       onPointerDown={(e) => { if (!avail) return; e.preventDefault(); setStartHour(h); }}
-                      className={`py-2 rounded-xl text-xs font-semibold transition-transform active:scale-95 relative ${
-                        picked   ? 'bg-primary text-white' :
+                      className="relative py-2 rounded-xl transition-transform active:scale-95">
+                      <span className={`block text-xs font-semibold rounded-xl ${
                         !avail   ? 'bg-slate-100 text-slate-300 cursor-not-allowed' :
-                        inSlot   ? 'bg-primary/20 text-primary' :
                         isNight  ? 'bg-indigo-50 text-indigo-600 hover:bg-indigo-100' :
                                    'bg-slate-50 text-slate-600 hover:bg-slate-100'
                       }`}>
-                      {fmt12(h)}
-                      {isNight && avail && <span className="absolute top-0.5 right-0.5 w-1.5 h-1.5 bg-indigo-400 rounded-full" />}
+                        {label}
+                      </span>
+                      <span
+                        className={`absolute inset-0 flex items-center justify-center rounded-xl text-xs font-semibold transition-opacity duration-150 ${
+                          picked ? 'bg-primary text-white' : 'bg-primary/20 text-primary'
+                        } ${highlighted ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
+                      >
+                        {label}
+                      </span>
+                      {isNight && avail && <span className="absolute top-0.5 right-0.5 z-10 w-1.5 h-1.5 bg-indigo-400 rounded-full" />}
                     </button>
                   );
                 })}
