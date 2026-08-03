@@ -47,13 +47,6 @@ export function JubahBannerSubTab({ active, onOpenSampleDocs, showToast }: Jubah
     setBannerImgError({});
   }, [active]);
 
-  // [debug] Detect a silent unmount/remount right after picking a file,
-  // which would reset cropSrc without any explicit close call.
-  useEffect(() => {
-    console.log('[debug] JubahBannerSubTab MOUNTED');
-    return () => console.log('[debug] JubahBannerSubTab UNMOUNTING');
-  }, []);
-
   const getCroppedBlob = (image: HTMLImageElement, px: PixelCrop): Promise<Blob> => {
     const canvas = document.createElement('canvas');
     const scaleX = image.naturalWidth  / image.width;
@@ -119,8 +112,6 @@ export function JubahBannerSubTab({ active, onOpenSampleDocs, showToast }: Jubah
     showToast('Banner deleted.');
   };
 
-  console.log('[debug] JubahBannerSubTab render, cropSrc=', cropSrc ? `(${cropSrc.length} chars)` : '(empty)');
-
   return (
     <>
       <div className="flex flex-col gap-4">
@@ -131,16 +122,9 @@ export function JubahBannerSubTab({ active, onOpenSampleDocs, showToast }: Jubah
           className="hidden"
           onChange={e => {
             const file = e.target.files?.[0];
-            showToast(file ? `[debug] onChange fired, file=${file.name}` : '[debug] onChange fired, NO file');
             if (file) {
               const reader = new FileReader();
-              reader.onerror = () => showToast(`[debug] FileReader error: ${String(reader.error)}`);
-              reader.onload = () => {
-                showToast(`[debug] FileReader onload, result length=${(reader.result as string)?.length ?? 0}`);
-                setCropSrc(reader.result as string);
-                setCropObj(undefined);
-                setCompletedCrop(undefined);
-              };
+              reader.onload = () => { setCropSrc(reader.result as string); setCropObj(undefined); setCompletedCrop(undefined); };
               reader.readAsDataURL(file);
             }
             if (bannerFileRef.current) bannerFileRef.current.value = '';
@@ -208,9 +192,15 @@ export function JubahBannerSubTab({ active, onOpenSampleDocs, showToast }: Jubah
           descendants down to just that content pane. Other fixed sheets never
           exposed this since they only cover the content area anyway — this
           modal needs the full screen including where the header sits, so it
-          has to render outside that ancestor chain entirely. */}
+          has to render outside that ancestor chain entirely.
+          z-index must beat SwipeBackGesture's "sliding page" wrapper
+          (App.tsx, position:relative + zIndex:9991) — since that div and
+          this portal are BOTH direct children of <body>, they compete in
+          the same stacking context, and z-9991 would otherwise bury a
+          lower z-index portal completely behind the entire app UI even
+          though it's genuinely mounted, sized, and styled correctly. */}
       {cropSrc && createPortal(
-        <div className="fixed inset-0 z-[80] bg-black flex flex-col">
+        <div className="fixed inset-0 z-[999999] bg-black flex flex-col">
           <div className="flex items-center justify-between px-5 pb-4 shrink-0" style={{ paddingTop: 'calc(1rem + env(safe-area-inset-top))' }}>
             <button
               onClick={closeCropModal}
