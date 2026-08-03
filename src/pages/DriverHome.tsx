@@ -160,7 +160,11 @@ export const DriverHome: React.FC = () => {
 
   // Admin/superadmin who switched the pill to Driver should manage rental as the car's owner-driver
   const isAdminForRental = (user.role === 'admin' || user.role === 'superadmin') && activeRole !== 'driver';
-  const effectiveCanRent = user.canRent || isAdminForRental;
+  // Superadmin keeps Rental tab access even while previewing as Driver —
+  // isAdminForRental alone would drop out here since it's gated on
+  // activeRole !== 'driver', which otherwise hides the tab entirely unless
+  // the superadmin's own account happens to have canRent set.
+  const effectiveCanRent = user.canRent || isAdminForRental || user.role === 'superadmin';
   const [activeTab, setActiveTab]           = useState<DriverTab>(!effectiveCanDrive && effectiveCanRent ? 'rental' : 'pool');
   const [pendingOrders, setPendingOrders]   = useState<RideOrder[]>([]);
   const [myJob, setMyJob]                   = useState<RideOrder | null>(null);
