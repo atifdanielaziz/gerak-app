@@ -37,27 +37,6 @@ export function JubahBannerSubTab({ active, onOpenSampleDocs, showToast }: Jubah
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const bannerFileRef = useRef<HTMLInputElement>(null);
 
-  // Per-university carousel position — same swipe mechanic as the customer
-  // Jubah landing page's banner carousel (JubahLanding.tsx), so admin sees
-  // banners exactly as customers will.
-  const [activeIdx, setActiveIdx] = useState<Record<string, number>>({});
-  const touchStartX = useRef(0);
-  const touchEndX   = useRef(0);
-
-  const onCarouselTouchStart = (e: React.TouchEvent) => { touchStartX.current = e.touches[0].clientX; };
-  const onCarouselTouchEnd = (e: React.TouchEvent, key: string, length: number) => {
-    if (length <= 1) return;
-    touchEndX.current = e.changedTouches[0].clientX;
-    const diff = touchStartX.current - touchEndX.current;
-    if (Math.abs(diff) > 40) {
-      setActiveIdx(prev => {
-        const cur = prev[key] ?? 0;
-        const next = diff > 0 ? (cur + 1) % length : (cur - 1 + length) % length;
-        return { ...prev, [key]: next };
-      });
-    }
-  };
-
   const [cropSrc,       setCropSrc]       = useState<string>('');
   const [cropObj,       setCropObj]       = useState<Crop | undefined>(undefined);
   const [completedCrop, setCompletedCrop] = useState<PixelCrop | undefined>(undefined);
@@ -82,14 +61,6 @@ export function JubahBannerSubTab({ active, onOpenSampleDocs, showToast }: Jubah
     if (!active) return;
     queueMicrotask(() => { loadImages(); });
   }, [active]);
-
-  // [debug] Detect whether this component silently unmounts/remounts right
-  // after a file is picked (would reset cropSrc without any explicit close
-  // call) — console entries persist even if the toast is missed.
-  useEffect(() => {
-    console.log('[debug] JubahBannerSubTab MOUNTED');
-    return () => console.log('[debug] JubahBannerSubTab UNMOUNTING');
-  }, []);
 
   const getCroppedBlob = (image: HTMLImageElement, px: PixelCrop): Promise<Blob> => {
     const canvas = document.createElement('canvas');
@@ -131,24 +102,15 @@ export function JubahBannerSubTab({ active, onOpenSampleDocs, showToast }: Jubah
       return;
     }
     showToast('Banner uploaded ✓');
-    // Jump the carousel to the just-added image — it's appended at the end
-    // (nextPosition), so without this the view stays on whatever slide it
-    // was already showing and the new upload looks like it never appeared.
-    setActiveIdx(prev => ({ ...prev, [key]: existing.length }));
     await loadImages();
-  };
-
-  const closeCropModal = () => {
-    if (cropSrc) URL.revokeObjectURL(cropSrc);
-    setCropSrc('');
-    setCropObj(undefined);
-    setCompletedCrop(undefined);
   };
 
   const handleCropConfirm = async () => {
     if (!completedCrop || !cropImgRef.current || !uploadTargetKey) return;
     const blob = await getCroppedBlob(cropImgRef.current, completedCrop);
-    closeCropModal();
+    setCropSrc('');
+    setCropObj(undefined);
+    setCompletedCrop(undefined);
     const file = new File([blob], `${uploadTargetKey}.jpg`, { type: 'image/jpeg' });
     handleBannerUpload(file);
   };
@@ -167,8 +129,6 @@ export function JubahBannerSubTab({ active, onOpenSampleDocs, showToast }: Jubah
     await loadImages();
   };
 
-  console.log('[debug] JubahBannerSubTab render, cropSrc=', cropSrc || '(empty)');
-
   return (
     <>
       <div className="flex flex-col gap-4">
@@ -179,23 +139,10 @@ export function JubahBannerSubTab({ active, onOpenSampleDocs, showToast }: Jubah
           className="hidden"
           onChange={e => {
             const file = e.target.files?.[0];
-            if (!file) {
-              showToast('[debug] onChange fired, no file selected');
-              return;
-            }
-            // Object URL instead of FileReader.readAsDataURL — a data URL
-            // holds the whole photo as a giant base64 string in memory,
-            // which on iOS standalone PWAs raises the odds of the WebView
-            // being reloaded (losing this in-progress crop) right as it
-            // hands off to the native photo picker.
-            try {
-              const objUrl = URL.createObjectURL(file);
-              setCropSrc(objUrl);
-              setCropObj(undefined);
-              setCompletedCrop(undefined);
-              showToast(`[debug] picked ${file.name}, cropSrc set ✓`);
-            } catch (err) {
-              showToast(`[debug] createObjectURL threw: ${err instanceof Error ? err.message : String(err)}`);
+            if (file) {
+              const reader = new FileReader();
+              reader.onload = () => { setCropSrc(reader.result as string); setCropObj(undefined); setCompletedCrop(undefined); };
+              reader.readAsDataURL(file);
             }
             if (bannerFileRef.current) bannerFileRef.current.value = '';
           }}
@@ -203,8 +150,6 @@ export function JubahBannerSubTab({ active, onOpenSampleDocs, showToast }: Jubah
         {BANNER_ITEMS.map(item => {
           const itemImages = images[item.key] ?? [];
           const atLimit = itemImages.length >= MAX_IMAGES_PER_UNIVERSITY;
-          const curIdx = itemImages.length > 0 ? Math.min(activeIdx[item.key] ?? 0, itemImages.length - 1) : 0;
-          const curImg = itemImages[curIdx];
           return (
           <div key={item.key} className="bg-white border border-slate-100 rounded-3xl p-5 flex flex-col gap-4">
             <div className="flex items-start justify-between gap-2">
@@ -220,49 +165,23 @@ export function JubahBannerSubTab({ active, onOpenSampleDocs, showToast }: Jubah
               )}
             </div>
 
-            {itemImages.length > 0 && curImg ? (
-              <div
-                className="relative w-full rounded-2xl overflow-hidden border border-slate-100 bg-slate-50"
-                style={{ aspectRatio: '16 / 9' }}
-                onTouchStart={onCarouselTouchStart}
-                onTouchEnd={e => onCarouselTouchEnd(e, item.key, itemImages.length)}
-              >
-                {itemImages.map((img, idx) => (
-                  <img
-                    key={img.id}
-                    src={imageUrls[img.id]}
-                    alt={`${item.label} banner ${idx + 1}`}
-                    className={`absolute inset-0 w-full h-full object-contain transition-opacity duration-500 ${
-                      idx === curIdx ? 'opacity-100' : 'opacity-0 pointer-events-none'
-                    }`}
-                  />
-                ))}
-
-                <button
-                  type="button"
-                  disabled={deletingId === curImg.id}
-                  onClick={() => handleImageDelete(curImg)}
-                  className="absolute top-2 right-2 z-10 w-8 h-8 flex items-center justify-center rounded-full bg-black/50 text-white active:scale-90 transition disabled:opacity-50"
-                >
-                  {deletingId === curImg.id
-                    ? <span className="w-3 h-3 rounded-full border-2 border-white/40 border-t-white animate-spin" />
-                    : <Trash2 className="w-3.5 h-3.5" />}
-                </button>
-
-                {itemImages.length > 1 && (
-                  <div className="absolute bottom-2 left-0 right-0 flex justify-center gap-1.5 z-10">
-                    {itemImages.map((_, idx) => (
-                      <button
-                        key={idx}
-                        type="button"
-                        onPointerDown={e => { e.preventDefault(); setActiveIdx(prev => ({ ...prev, [item.key]: idx })); }}
-                        className={`h-1.5 rounded-full transition-all duration-300 ${
-                          idx === curIdx ? 'w-5 bg-white' : 'w-1.5 bg-white/50'
-                        }`}
-                      />
-                    ))}
+            {itemImages.length > 0 ? (
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                {itemImages.map(img => (
+                  <div key={img.id} className="relative aspect-video rounded-2xl overflow-hidden border border-slate-100 bg-slate-50 group">
+                    <img src={imageUrls[img.id]} alt={`${item.label} banner`} className="w-full h-full object-cover block" />
+                    <button
+                      type="button"
+                      disabled={deletingId === img.id}
+                      onClick={() => handleImageDelete(img)}
+                      className="absolute top-1.5 right-1.5 w-7 h-7 flex items-center justify-center rounded-full bg-black/50 text-white active:scale-90 transition disabled:opacity-50"
+                    >
+                      {deletingId === img.id
+                        ? <span className="w-3 h-3 rounded-full border-2 border-white/40 border-t-white animate-spin" />
+                        : <Trash2 className="w-3.5 h-3.5" />}
+                    </button>
                   </div>
-                )}
+                ))}
               </div>
             ) : (
               <div className="w-full h-40 rounded-2xl overflow-hidden border border-slate-100 bg-slate-50 flex flex-col items-center justify-center gap-2 text-slate-300">
@@ -303,7 +222,7 @@ export function JubahBannerSubTab({ active, onOpenSampleDocs, showToast }: Jubah
         <div className="fixed inset-0 z-[80] bg-black flex flex-col">
           <div className="flex items-center justify-between px-5 pb-4 shrink-0" style={{ paddingTop: 'calc(1rem + env(safe-area-inset-top))' }}>
             <button
-              onClick={closeCropModal}
+              onClick={() => { setCropSrc(''); setCropObj(undefined); setCompletedCrop(undefined); }}
               className="w-8 h-8 flex items-center justify-center rounded-full bg-white/10 text-white active:bg-white/20 transition">
               <X className="w-4 h-4" />
             </button>
