@@ -222,13 +222,14 @@ export const MyOrders: React.FC = () => {
   // eslint-disable-next-line react-hooks/purity
   const now = Date.now();
 
-  // Ticks every 30s purely to re-evaluate pendingBanner()'s elapsed-time
-  // thresholds — no network call, just a re-render so "just placed"/"may
-  // auto-cancel soon" flip on schedule instead of only when unrelated
-  // realtime activity happens to re-render this page.
+  // Ticks every second purely to re-evaluate pendingBanner()'s elapsed-time
+  // thresholds and the Cancel Order countdown — no network call, just a
+  // re-render so both stay live instead of only updating when unrelated
+  // realtime activity happens to re-render this page. Matches the driver's
+  // own 1s cancel-countdown tick in DriverHome.tsx.
   const [, forceTick] = useState(0);
   useEffect(() => {
-    const id = setInterval(() => forceTick(t => t + 1), 30_000);
+    const id = setInterval(() => forceTick(t => t + 1), 1_000);
     return () => clearInterval(id);
   }, []);
 
