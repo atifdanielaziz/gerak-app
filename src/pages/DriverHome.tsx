@@ -179,6 +179,7 @@ export const DriverHome: React.FC = () => {
   const [loading, setLoading]               = useState(true);
   const [newPing, setNewPing]               = useState(false);
   const prevPoolCount                       = useRef(0);
+  const prevMyJobId                         = useRef<string | null>(null);
 
   // ── Rental state ──────────────────────────────────────────────────────────
   const [rentalVehicle,   setRentalVehicle]   = useState<RentalVehicle | null>(null);
@@ -460,6 +461,27 @@ export const DriverHome: React.FC = () => {
       setTimeout(() => setNewPing(false), 2000);
     }
     prevPoolCount.current = pool.length;
+
+    // myJob vanishing has two causes: the driver just completed it
+    // (expected, already has its own toast) or the customer cancelled
+    // within their own 5-minute window (cancel_customer_order — leaves
+    // driver_id intact, only flips status, so it's still findable in
+    // history). Without this, an accepted job just silently disappears.
+    if (prevMyJobId.current && !mine) {
+      const vanished = (history ?? []).find(o => o.id === prevMyJobId.current);
+      if (vanished?.status === 'cancelled') {
+        showToast('Your customer cancelled this ride.');
+        if ('Notification' in window && Notification.permission === 'granted') {
+          new Notification('Gerak — Ride Cancelled', {
+            body: 'Your customer cancelled this ride.',
+            icon: '/icon-192.png',
+            badge: '/icon-192.png',
+            tag: 'gerak-customer-cancelled',
+          });
+        }
+      }
+    }
+    prevMyJobId.current = mine?.id ?? null;
 
     setPendingOrders(pool);
     setMyJob(mine ?? null);

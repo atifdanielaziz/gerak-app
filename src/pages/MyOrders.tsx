@@ -33,6 +33,7 @@ interface RideOrder {
   driver_plate: string | null;
   driver_gerak_id: string | null;
   created_at: string;
+  accepted_at: string | null;
 }
 
 const hasDriver = (o: RideOrder) =>
@@ -151,11 +152,31 @@ const InfoRow: React.FC<{
 );
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
-// Actionable for as long as the order is still pending or accepted — no time
-// limit; cancel_customer_order's own status checks are the real gate (blocks
-// once a driver has accepted, same as this always did server-side).
+// Quick actions block is shown for as long as the order is still pending or
+// accepted — New Booking is always useful here regardless of the
+// cancel/edit deadline below.
 const canAct = (o: RideOrder) =>
   ['pending', 'accepted'].includes(o.status);
+
+// Cancel/Edit are only actionable while pending, or within 5 minutes of a
+// driver accepting — mirrors cancel_customer_order's own server-side gate
+// (which both handleCancel and handleEdit call), and the driver's own
+// symmetric 3-minute cancel_ride_order window on the other side.
+const CANCEL_GRACE_MS = 5 * 60 * 1000;
+const canCancel = (o: RideOrder, now: number): boolean => {
+  if (o.status === 'pending') return true;
+  if (o.status === 'accepted' && o.accepted_at) {
+    return now - new Date(o.accepted_at).getTime() <= CANCEL_GRACE_MS;
+  }
+  return false;
+};
+const cancelSecsLeft = (o: RideOrder, now: number): number | null => {
+  if (o.status !== 'accepted' || !o.accepted_at) return null;
+  const secs = Math.floor((CANCEL_GRACE_MS - (now - new Date(o.accepted_at).getTime())) / 1000);
+  return secs > 0 ? secs : null;
+};
+const fmtCountdown = (secs: number) =>
+  `${Math.floor(secs / 60)}:${(secs % 60).toString().padStart(2, '0')}`;
 
 // Before-the-fact heads-up for a still-pending order — reassurance in the
 // first minute, then a concrete auto-cancel deadline for the last 10 of the
@@ -195,6 +216,11 @@ export const MyOrders: React.FC = () => {
   const [cancellingId, setCancellingId] = useState<string | null>(null);
   const prevStatuses                = useRef<Record<string, string>>({});
   const prevFares                   = useRef<Record<string, string>>({});
+  // Deliberately impure — re-evaluated every render (forceTick below drives
+  // a render every 30s) to keep pendingBanner()/canCancel()'s elapsed-time
+  // thresholds current, same pattern as OrdersTab.tsx's own `now`.
+  // eslint-disable-next-line react-hooks/purity
+  const now = Date.now();
 
   // Ticks every 30s purely to re-evaluate pendingBanner()'s elapsed-time
   // thresholds — no network call, just a re-render so "just placed"/"may
@@ -414,7 +440,7 @@ export const MyOrders: React.FC = () => {
               )}
 
               {(() => {
-                const banner = pendingBanner(o, Date.now());
+                const banner = pendingBanner(o, now);
                 if (!banner) return null;
                 return (
                   <p className={`text-xs font-semibold rounded-xl px-3 py-2 -mt-1 ${
@@ -427,45 +453,53 @@ export const MyOrders: React.FC = () => {
                 );
               })()}
 
-              {canAct(o) && (
-                <div className="flex flex-col gap-2">
-                  <div className="flex items-center justify-between text-xs font-normal px-0.5">
-                    <span className="text-slate-400">Quick actions</span>
-                  </div>
+              {canAct(o) && (() => {
+                const cancellable = canCancel(o, now);
+                const secsLeft = cancelSecsLeft(o, now);
+                return (
+                  <div className="flex flex-col gap-2">
+                    <div className="flex items-center justify-between text-xs font-normal px-0.5">
+                      <span className="text-slate-400">Quick actions</span>
+                    </div>
 
-                  <div className="flex gap-2">
-                    <button
-                      onClick={() => handleEdit(o)}
-                      disabled={!!cancellingId}
-                      className="flex-1 flex items-center justify-center gap-1.5 bg-slate-100 text-slate-700 font-semibold text-xs py-2.5 rounded-xl transition active:scale-[0.98] disabled:opacity-40"
-                    >
-                      Edit Booking
-                    </button>
-                    <button
-                      onClick={() => setCurrentPage('transport')}
-                      className="flex-1 flex items-center justify-center gap-1.5 bg-primary text-white font-semibold text-xs py-2.5 rounded-xl shadow-md shadow-primary/20 transition active:scale-[0.98]"
-                    >
-                      <RotateCcw className="w-3.5 h-3.5" />
-                      New Booking
-                    </button>
-                  </div>
+                    <div className="flex gap-2">
+                      {cancellable && (
+                        <button
+                          onClick={() => handleEdit(o)}
+                          disabled={!!cancellingId}
+                          className="flex-1 flex items-center justify-center gap-1.5 bg-slate-100 text-slate-700 font-semibold text-xs py-2.5 rounded-xl transition active:scale-[0.98] disabled:opacity-40"
+                        >
+                          Edit Booking
+                        </button>
+                      )}
+                      <button
+                        onClick={() => setCurrentPage('transport')}
+                        className="flex-1 flex items-center justify-center gap-1.5 bg-primary text-white font-semibold text-xs py-2.5 rounded-xl shadow-md shadow-primary/20 transition active:scale-[0.98]"
+                      >
+                        <RotateCcw className="w-3.5 h-3.5" />
+                        New Booking
+                      </button>
+                    </div>
 
-                  <button
-                    onClick={() => handleCancel(o)}
-                    disabled={!!cancellingId}
-                    className="w-full flex items-center justify-center gap-1.5 border border-red-200 text-red-500 bg-red-50 font-semibold text-xs py-2.5 rounded-xl transition active:scale-[0.98] disabled:opacity-40"
-                  >
-                    {cancellingId === o.id ? (
-                      <span className="w-4 h-4 border-2 border-red-300 border-t-red-500 rounded-full animate-spin" />
-                    ) : (
-                      <>
-                        <XCircle className="w-3.5 h-3.5" />
-                        Cancel Order
-                      </>
+                    {cancellable && (
+                      <button
+                        onClick={() => handleCancel(o)}
+                        disabled={!!cancellingId}
+                        className="w-full flex items-center justify-center gap-1.5 border border-red-200 text-red-500 bg-red-50 font-semibold text-xs py-2.5 rounded-xl transition active:scale-[0.98] disabled:opacity-40"
+                      >
+                        {cancellingId === o.id ? (
+                          <span className="w-4 h-4 border-2 border-red-300 border-t-red-500 rounded-full animate-spin" />
+                        ) : (
+                          <>
+                            <XCircle className="w-3.5 h-3.5" />
+                            Cancel Order{secsLeft !== null ? ` · ${fmtCountdown(secsLeft)}` : ''}
+                          </>
+                        )}
+                      </button>
                     )}
-                  </button>
-                </div>
-              )}
+                  </div>
+                );
+              })()}
             </div>
             );
           })}
