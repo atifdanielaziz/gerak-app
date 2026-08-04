@@ -602,7 +602,8 @@ export const OrdersTab = forwardRef<OrdersTabHandle, OrdersTabProps>(function Or
       {showEarnings && (
         <div className="fixed inset-0 z-50 bg-black/40 flex items-end justify-center"
           onPointerDown={(e) => { e.preventDefault(); setShowEarnings(false); }}>
-          <div className="w-full max-w-sm max-h-[calc(100dvh-5rem)] overflow-y-auto no-scrollbar bg-white rounded-t-3xl p-6 pb-10 shadow-2xl animate-slide-up"
+          <div className="w-full max-w-sm max-h-[calc(100dvh-5rem)] overflow-y-auto no-scrollbar bg-white rounded-t-3xl p-6 shadow-2xl animate-slide-up"
+            style={{ paddingBottom: 'calc(2.5rem + env(safe-area-inset-bottom))' }}
             onPointerDown={e => e.stopPropagation()}>
             <div className="w-10 h-1 bg-slate-200 rounded-full mx-auto mb-5" />
             <div className="flex items-center justify-between mb-4">
