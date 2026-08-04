@@ -17,6 +17,7 @@ import {
 import { generateReceiptPdf } from '../../../lib/receiptPdf';
 import { jubahLocationLabel } from '../../../lib/universities';
 import { useApp } from '../../../context/AppContext';
+import { NativeSelect } from '../../../components/NativeSelect';
 
 // Shared by the "Upload Documents & Combined Document" and "Proof of
 // Payment" sections below — same view/download-via-signed-URL row, reused
@@ -124,6 +125,10 @@ export function JubahCustomerSubTab({
   const { showConfirmModal } = useApp();
   const [jubahSearch, setJubahSearch] = useState('');
   const [jubahPayFilter, setJubahPayFilter] = useState<'all' | 'booked' | 'paid' | 'cancelled'>('all');
+  const [jubahModeFilter, setJubahModeFilter] = useState('all');
+  const [jubahTypeFilter, setJubahTypeFilter] = useState('all');
+  const [jubahRobeStatusFilter, setJubahRobeStatusFilter] = useState('all');
+  const [jubahRiderFilter, setJubahRiderFilter] = useState('all');
   const [jubahAdminUpdating, setJubahAdminUpdating] = useState(false);
   const [copiedRef, setCopiedRef] = useState(false);
   const [copiedIc, setCopiedIc] = useState(false);
@@ -264,6 +269,34 @@ export function JubahCustomerSubTab({
     setJubahAdminUpdating(false);
   };
 
+  // Mirrors the Mode column's own display logic exactly — used both to
+  // render the cell and to drive the Mode filter, so the two can never
+  // silently drift apart.
+  const modeLabel = (b: JubahBookingRow) =>
+    b.payment_mode !== 'deposit' ? 'Full Payment' : b.balance_paid ? 'Full Payment (DP)' : 'Deposit';
+
+  // Mirrors the Type column's own display logic — deposit mode alone can't
+  // distinguish Postage vs Pickup, it's literally 'deposit' for both, so
+  // this checks deliveryAddress the same way the cell (and the receipt
+  // builder) already do.
+  const typeLabel = (b: JubahBookingRow) =>
+    (b.payment_mode === 'postage' || (b.payment_mode === 'deposit' && !!b.delivery_address)) ? 'Postage' : 'Pickup';
+
+  // Distinct dropdown option lists, derived from whatever's actually present
+  // in the loaded bookings — a rider filter listing riders with zero
+  // bookings would just be dead weight in the dropdown.
+  const riderOptions = useMemo(() => {
+    const names = new Set(bookings.map(b => b.rider_name).filter((n): n is string => !!n));
+    return [{ value: 'all', label: 'All Riders' }, ...[...names].sort().map(n => ({ value: n, label: n }))];
+  }, [bookings]);
+  const robeStatusOptions = useMemo(() => {
+    const statuses = new Set(bookings.map(b => b.status));
+    return [
+      { value: 'all', label: 'All Robe Status' },
+      ...[...statuses].map(s => ({ value: s, label: JUBAH_STATUS_LABEL[s] ?? s })),
+    ];
+  }, [bookings]);
+
   // Was recomputed twice (once for the header count, once for the table
   // rows) on every render with no memoization — invisible at the current
   // row count, but every keystroke into the search box would re-filter the
@@ -283,10 +316,14 @@ export function JubahCustomerSubTab({
         jubahPayFilter === 'cancelled' ? isCancelled :
         jubahPayFilter === 'paid'       ? (isPaid && !isCancelled) :
                                            (!isPaid && !isCancelled);
+      const matchMode        = jubahModeFilter === 'all' || modeLabel(b) === jubahModeFilter;
+      const matchType        = jubahTypeFilter === 'all' || typeLabel(b) === jubahTypeFilter;
+      const matchRobeStatus  = jubahRobeStatusFilter === 'all' || b.status === jubahRobeStatusFilter;
+      const matchRider       = jubahRiderFilter === 'all' || b.rider_name === jubahRiderFilter;
       const matchSearch = !q || b.full_name.toLowerCase().includes(q) || b.hp_number.includes(q) || b.reference.toLowerCase().includes(q);
-      return matchFilter && matchSearch;
+      return matchFilter && matchMode && matchType && matchRobeStatus && matchRider && matchSearch;
     });
-  }, [bookings, jubahPayFilter, jubahSearch]);
+  }, [bookings, jubahPayFilter, jubahModeFilter, jubahTypeFilter, jubahRobeStatusFilter, jubahRiderFilter, jubahSearch]);
 
   return (
     <>
@@ -300,8 +337,13 @@ export function JubahCustomerSubTab({
               style={{ fontSize: '12px' }}
               className="flex-1 bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 font-semibold text-slate-700 focus:outline-none focus:border-primary transition placeholder:font-normal placeholder:text-slate-300"
             />
-            <button onClick={() => { setJubahSearch(''); setJubahPayFilter('all'); }}
-              disabled={!jubahSearch.trim() && jubahPayFilter === 'all'}
+            <button onClick={() => {
+                setJubahSearch(''); setJubahPayFilter('all');
+                setJubahModeFilter('all'); setJubahTypeFilter('all');
+                setJubahRobeStatusFilter('all'); setJubahRiderFilter('all');
+              }}
+              disabled={!jubahSearch.trim() && jubahPayFilter === 'all' && jubahModeFilter === 'all' &&
+                jubahTypeFilter === 'all' && jubahRobeStatusFilter === 'all' && jubahRiderFilter === 'all'}
               className="px-3.5 bg-primary text-white font-semibold text-xs rounded-lg transition active:scale-95 disabled:opacity-40 flex items-center gap-1.5">
               Clear
             </button>
@@ -329,6 +371,45 @@ export function JubahCustomerSubTab({
                 </span>
               </button>
             ))}
+          </div>
+
+          {/* Per-column filters — Reference/Name/Remark are free text,
+              already covered by the search box above; Status mirrors the
+              payment-status pills above it, so it isn't duplicated here. */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+            <NativeSelect
+              value={jubahModeFilter}
+              onChange={setJubahModeFilter}
+              placeholder="Mode"
+              options={[
+                { value: 'all', label: 'All Modes' },
+                { value: 'Full Payment', label: 'Full Payment' },
+                { value: 'Full Payment (DP)', label: 'Full Payment (DP)' },
+                { value: 'Deposit', label: 'Deposit' },
+              ]}
+            />
+            <NativeSelect
+              value={jubahTypeFilter}
+              onChange={setJubahTypeFilter}
+              placeholder="Type"
+              options={[
+                { value: 'all', label: 'All Types' },
+                { value: 'Postage', label: 'Postage' },
+                { value: 'Pickup', label: 'Pickup' },
+              ]}
+            />
+            <NativeSelect
+              value={jubahRobeStatusFilter}
+              onChange={setJubahRobeStatusFilter}
+              placeholder="Robe Status"
+              options={robeStatusOptions}
+            />
+            <NativeSelect
+              value={jubahRiderFilter}
+              onChange={setJubahRiderFilter}
+              placeholder="Rider"
+              options={riderOptions}
+            />
           </div>
         </div>
 
@@ -383,6 +464,7 @@ export function JubahCustomerSubTab({
                     <th className="sticky top-0 bg-white py-2 pr-4 whitespace-nowrap">Type</th>
                     <th className="sticky top-0 bg-white py-2 pr-4 whitespace-nowrap">Status</th>
                     <th className="sticky top-0 bg-white py-2 pr-4 whitespace-nowrap">Robe Status</th>
+                    <th className="sticky top-0 bg-white py-2 pr-4 whitespace-nowrap">Rider</th>
                     <th className="sticky top-0 bg-white py-2 pr-4 whitespace-nowrap">Confirm</th>
                     <th className="sticky top-0 bg-white py-2 whitespace-nowrap">Receipt</th>
                   </tr>
@@ -423,15 +505,12 @@ export function JubahCustomerSubTab({
                             b.payment_mode === 'deposit' && !b.balance_paid ? 'bg-amber-50 border-amber-100 text-amber-700' :
                             'bg-blue-50 border-blue-100 text-blue-700'
                           }`}>
-                            {b.payment_mode !== 'deposit' ? 'Full Payment' : b.balance_paid ? 'Full Payment (DP)' : 'Deposit'}
+                            {modeLabel(b)}
                           </span>
                         </td>
                         <td className="py-2.5 pr-4 whitespace-nowrap">
-                          {/* Independent of payment_mode — deposit mode can't distinguish this on
-                              its own (it's literally 'deposit' for both delivery methods), so this
-                              checks deliveryAddress the same way buildJubahReceiptRows now does. */}
                           <span className="font-semibold px-2 py-0.5 rounded-full border text-xs bg-slate-50 border-slate-200 text-slate-600">
-                            {(b.payment_mode === 'postage' || (b.payment_mode === 'deposit' && !!b.delivery_address)) ? 'Postage' : 'Pickup'}
+                            {typeLabel(b)}
                           </span>
                         </td>
                         <td className="py-2.5 pr-4 whitespace-nowrap">
@@ -451,6 +530,7 @@ export function JubahCustomerSubTab({
                             </span>
                           )}
                         </td>
+                        <td className="py-2.5 pr-4 text-slate-600 font-semibold whitespace-nowrap">{b.rider_name ?? '—'}</td>
                         <td className="py-2.5 pr-4 whitespace-nowrap">
                           {(() => {
                             // Cancelled (red X — will never become paid) and fully paid (green,
