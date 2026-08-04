@@ -59,11 +59,11 @@ export function CampusStatusToggle({ bare, variant = 'row' }: CampusStatusToggle
         disabled={saving}
         title={isIn ? 'In Campus — tap to set Out of Campus' : 'Out of Campus — tap to set In Campus'}
         aria-label={isIn ? 'Currently In Campus, tap to switch to Out of Campus' : 'Currently Out of Campus, tap to switch to In Campus'}
-        className="w-8 h-8 flex items-center justify-center rounded-xl bg-white border border-slate-100 transition-transform transform-gpu active:scale-90 disabled:opacity-50"
+        className="flex items-center justify-center transition-transform transform-gpu active:scale-90 disabled:opacity-50"
       >
         {isIn
-          ? <ToggleRight className="w-5 h-5 text-emerald-500" />
-          : <ToggleLeft className="w-5 h-5 text-slate-400" />}
+          ? <ToggleRight className="w-8 h-8 text-emerald-500" />
+          : <ToggleLeft className="w-8 h-8 text-slate-400" />}
       </button>
     );
   }
