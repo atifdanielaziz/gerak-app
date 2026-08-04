@@ -339,7 +339,7 @@ export const MyOrders: React.FC = () => {
               </ReceiptCard>
 
               {o.status === 'cancelled' && o.cancel_reason && (
-                <p className="text-xs text-slate-400 font-normal bg-slate-50 border border-slate-100 rounded-xl px-3 py-2 -mt-1">
+                <p className="text-xs text-amber-700 font-semibold bg-amber-50 border border-amber-100 rounded-xl px-3 py-2 -mt-1">
                   {o.cancel_reason}
                 </p>
               )}

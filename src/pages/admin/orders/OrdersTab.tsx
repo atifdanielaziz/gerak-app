@@ -17,6 +17,7 @@ interface RideOrder {
   night_charge: number;
   notes: string;
   status: string;
+  cancel_reason: string | null;
   driver_id: string | null;
   driver_name: string | null;
   driver_contact: string | null;
@@ -75,7 +76,7 @@ export const OrdersTab = forwardRef<OrdersTabHandle, OrdersTabProps>(function Or
     if (!opts?.silent) setLoading(true);
     const q = supabase
       .from('ride_orders')
-      .select('id,customer_name,campus,date,time,pickup,destination,passengers,contact,fare,night_charge,notes,status,driver_id,driver_name,driver_contact,created_at,accepted_at')
+      .select('id,customer_name,campus,date,time,pickup,destination,passengers,contact,fare,night_charge,notes,status,cancel_reason,driver_id,driver_name,driver_contact,created_at,accepted_at')
       .eq('campus', campusView)
       .order('created_at', { ascending: false });
 
@@ -273,6 +274,12 @@ export const OrdersTab = forwardRef<OrdersTabHandle, OrdersTabProps>(function Or
 
                 {order.notes && (
                   <p className="text-xs text-slate-400 italic">"{order.notes}"</p>
+                )}
+
+                {order.status === 'cancelled' && order.cancel_reason && (
+                  <p className="text-xs text-amber-700 font-semibold bg-amber-50 border border-amber-100 rounded-xl px-3 py-2">
+                    {order.cancel_reason}
+                  </p>
                 )}
 
                 {/* Admin actions */}
