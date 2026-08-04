@@ -26,8 +26,28 @@ export interface ProfileUser {
   plate_number?: string;
   docs_status?: string;
   fee_receipt_verified?: boolean;
+  fee_receipt_url?: string;
+  fee_receipt_expiry?: string | null;
+  fee_receipt_reject_reason?: string;
   campus_status?: 'in_campus' | 'out_campus';
 }
+
+// Same logic as ReceiptsTab.tsx's receiptStatus — kept in sync manually
+// since they read the same columns but live in different components.
+const receiptStatus = (u: Partial<ProfileUser>): 'verified' | 'expired' | 'rejected' | 'pending' => {
+  if (!u.fee_receipt_url) return 'pending';
+  if (u.fee_receipt_verified && u.fee_receipt_expiry && new Date(u.fee_receipt_expiry) <= new Date()) return 'expired';
+  if (u.fee_receipt_verified) return 'verified';
+  if (u.fee_receipt_reject_reason) return 'rejected';
+  return 'pending';
+};
+
+const RECEIPT_STATUS_STYLE = {
+  verified: 'text-emerald-600',
+  expired:  'text-red-500',
+  rejected: 'text-orange-500',
+  pending:  'text-amber-500',
+};
 
 // Staff/driver/rider profile detail sheet — shared by the Users tab AND the
 // Receipts tab (tapping a receipt row opens the same sheet for that driver),
@@ -39,7 +59,7 @@ export const ProfileSheet: React.FC<{ u: ProfileUser; onClose: () => void; showT
 
   useEffect(() => {
     supabase.from('profiles')
-      .select('matric_no, ic_number, ic_url, license_url, vehicle, plate_number, docs_status, fee_receipt_verified, campus_status')
+      .select('matric_no, ic_number, ic_url, license_url, vehicle, plate_number, docs_status, fee_receipt_verified, fee_receipt_url, fee_receipt_expiry, fee_receipt_reject_reason, campus_status')
       .eq('id', u.id)
       .single()
       .then(({ data }) => { if (data) setExtra(data); setLoading(false); });
@@ -132,6 +152,17 @@ export const ProfileSheet: React.FC<{ u: ProfileUser; onClose: () => void; showT
                 <Row label="Status">
                   <span className={`text-xs font-semibold ${u.status === 'active' ? 'text-emerald-600' : 'text-red-500'}`}>{u.status}</span>
                 </Row>
+                {/* Monthly driver fee receipt — separate from account Status
+                    above (that's only whether the account is suspended).
+                    Driver-only: riders/admins don't have this fee. Same
+                    verified/expired/rejected/pending logic as ReceiptsTab. */}
+                {u.role === 'driver' && (
+                  <Row label="Payment Status">
+                    <span className={`text-xs font-semibold capitalize ${RECEIPT_STATUS_STYLE[receiptStatus(merged)]}`}>
+                      {receiptStatus(merged)}
+                    </span>
+                  </Row>
+                )}
                 {/* Purely informational — separate from Status above and
                     unrelated to ride availability; just where the driver
                     physically is. Driver sets it themselves day-to-day
@@ -170,11 +201,6 @@ export const ProfileSheet: React.FC<{ u: ProfileUser; onClose: () => void; showT
                 <div className="bg-slate-50 border border-slate-100 rounded-2xl px-4 py-1 mb-3">
                   <Row label="Vehicle" value={merged.vehicle} />
                   <Row label="Plate" value={merged.plate_number} />
-                  <Row label="Receipt">
-                    <span className={`text-xs font-semibold ${merged.fee_receipt_verified ? 'text-emerald-600' : 'text-amber-500'}`}>
-                      {merged.fee_receipt_verified ? 'Verified ✓' : 'Pending'}
-                    </span>
-                  </Row>
                 </div>
               )}
 
