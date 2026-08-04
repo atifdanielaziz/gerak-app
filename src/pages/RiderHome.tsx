@@ -13,6 +13,7 @@ import {
   RefreshCw, ShoppingBasket, GraduationCap, TrendingUp,
   Upload, FileImage, ShieldCheck, ShieldAlert,
   ChevronLeft, Download, ExternalLink, CheckCircle2, XCircle, Eye, X, Clock,
+  Copy,
 } from 'lucide-react';
 import { driverIsActive } from './Profile';
 import { CampusStatusToggle } from '../components/CampusStatusToggle';
@@ -530,7 +531,20 @@ export const RiderHome: React.FC = () => {
                           <tr key={job.id}
                             onClick={() => goToCard(job)}
                             className="border-b border-slate-50 text-xs hover:bg-slate-50 active:bg-slate-100 transition cursor-pointer">
-                            <td className="py-2.5 pr-4 font-mono font-bold text-primary whitespace-nowrap">{job.reference}</td>
+                            <td className="py-2.5 pr-4 font-mono font-bold text-primary whitespace-nowrap">
+                              <button
+                                type="button"
+                                onClick={e => {
+                                  e.stopPropagation();
+                                  navigator.clipboard.writeText(job.reference);
+                                  showToast('Reference copied ✓');
+                                }}
+                                className="flex items-center gap-1 active:opacity-60 transition"
+                              >
+                                {job.reference}
+                                <Copy className="w-3 h-3 text-slate-300 shrink-0" />
+                              </button>
+                            </td>
                             <td className="py-2.5 pr-4 font-semibold text-slate-800 whitespace-nowrap">{job.full_name}</td>
                             <td className="py-2.5 pr-4 text-slate-500 font-normal whitespace-nowrap">{job.remark}</td>
                             <td className="py-2.5 pr-4 whitespace-nowrap">
