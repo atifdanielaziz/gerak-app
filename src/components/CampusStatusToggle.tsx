@@ -63,7 +63,7 @@ export function CampusStatusToggle({ bare, variant = 'row' }: CampusStatusToggle
         aria-label={isIn ? 'Currently In Campus, tap to switch to Out of Campus' : 'Currently Out of Campus, tap to switch to In Campus'}
         className="relative w-11 h-6 shrink-0 rounded-full transition-transform transform-gpu active:scale-95 disabled:opacity-50"
       >
-        <span className="absolute inset-0 rounded-full bg-slate-300" />
+        <span className="absolute inset-0 rounded-full bg-primary" />
         <span className={`absolute inset-0 rounded-full bg-emerald-500 transition-opacity duration-150 ${isIn ? 'opacity-100' : 'opacity-0'}`} />
         <span className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow-md transition-transform duration-200 transform-gpu ${isIn ? 'translate-x-5' : 'translate-x-0'}`} />
       </button>
