@@ -16,7 +16,7 @@ export interface VerifyDocsTabHandle {
 interface VerifyDocsTabProps {
   active: boolean;
   isSuperAdmin: boolean;
-  adminCampus: 'Pekan' | 'Gambang';
+  adminCampus: string;
   showToast: (msg: string) => void;
 }
 

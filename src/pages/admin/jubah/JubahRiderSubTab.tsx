@@ -6,7 +6,7 @@ import {
 import { WaIcon, toWa } from '../../../lib/whatsapp';
 import { NativeSelect } from '../../../components/NativeSelect';
 import { useLoadOnActive } from '../../../hooks/useLoadOnActive';
-import { JUBAH_UNIVERSITY_MAP, jubahLocationLabel, universityKeyFromCampus } from '../../../lib/jubahUniversities';
+import { UNIVERSITY_MAP, jubahLocationLabel, universityKeyFromCampus } from '../../../lib/universities';
 import { useApp } from '../../../context/AppContext';
 
 type JubahRider = {
@@ -317,7 +317,7 @@ export interface JubahRiderSubTabHandle {
 interface JubahRiderSubTabProps {
   active: boolean;
   isSuperAdmin: boolean;
-  adminCampus: 'Pekan' | 'Gambang';
+  adminCampus: string;
   // Which university's riders to show for superadmin (regular admin still
   // uses adminCampus, same lock-in as every other campus-scoped admin tab).
   jubahUniversityView: string;
@@ -352,7 +352,7 @@ export const JubahRiderSubTab = forwardRef<JubahRiderSubTabHandle, JubahRiderSub
       .eq('can_robe', true)
       .order('name');
     ridersQ = isSuperAdmin
-      ? ridersQ.in('campus', JUBAH_UNIVERSITY_MAP[jubahUniversityView]?.campuses ?? [])
+      ? ridersQ.in('campus', UNIVERSITY_MAP[jubahUniversityView]?.campuses ?? [])
       : ridersQ.eq('campus', adminCampus);
     const { data: ridersData } = await ridersQ;
     setJubahRiders((ridersData as JubahRider[]) ?? []);
@@ -505,7 +505,7 @@ export const JubahRiderSubTab = forwardRef<JubahRiderSubTabHandle, JubahRiderSub
 
       {/* Representative Directory row sheet */}
       {dirSheet && (() => {
-        const univ = JUBAH_UNIVERSITY_MAP[universityKeyFromCampus(dirSheet.campus) ?? 'umpsa']?.shortLabel ?? dirSheet.campus;
+        const univ = UNIVERSITY_MAP[universityKeyFromCampus(dirSheet.campus) ?? 'umpsa']?.shortLabel ?? dirSheet.campus;
         const ic   = dirSheet.ic_number ? dirSheet.ic_number.replace(/\D/g,'').slice(0,6) + '-XX-XXXX' : null;
         const waMsg = `Asslammualaikum Jubah rider, saya perlukan 6 digit IC ${ic ?? 'XXXXXX-XX-XXXX'} terakhir awak untuk pengisian representative jubah ${univ}`;
         return (

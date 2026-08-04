@@ -15,7 +15,7 @@ import {
   JUBAH_NEXT_LABEL, getJubahProgress, jubahWaMsg,
 } from '../../../lib/jubahStatus';
 import { generateReceiptPdf } from '../../../lib/receiptPdf';
-import { jubahLocationLabel } from '../../../lib/jubahUniversities';
+import { jubahLocationLabel } from '../../../lib/universities';
 import { useApp } from '../../../context/AppContext';
 
 // Shared by the "Upload Documents & Combined Document" and "Proof of

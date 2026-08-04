@@ -5,8 +5,9 @@ import { ShieldAlert, User, Mail, Lock, Eye, EyeOff, Phone, ArrowRight, MapPin, 
 import { NativeSelect } from '../components/NativeSelect';
 import { TermsOfService } from './TermsOfService';
 import { PrivacyPolicy } from './PrivacyPolicy';
+import { UNIVERSITIES, jubahLocationLabel, universityKeyFromCampus } from '../lib/universities';
 
-type InviteStatus = null | 'checking' | { isDriver: boolean; campus: string; role: string };
+type InviteStatus = null | 'checking' | { isDriver: boolean; campus: string; university: string; role: string };
 
 // Small validation bubble that sits directly under the field it's about,
 // flowing naturally in the page (not fixed/absolutely positioned via a
@@ -71,6 +72,8 @@ export const Register: React.FC = () => {
   const invite = inviteStatus !== null && inviteStatus !== 'checking' ? inviteStatus : null;
   const isDriver = invite?.isDriver === true;
   const effectiveCampus = isDriver ? invite!.campus : campus;
+  const effectiveUniversity = isDriver ? invite!.university : university;
+  const selectedUni = UNIVERSITIES.find(u => u.fullName === university);
 
   // Live invite check — debounced 600ms after email changes
   useEffect(() => {
@@ -81,23 +84,22 @@ export const Register: React.FC = () => {
     queueMicrotask(() => setInviteStatus('checking'));
     const timer = setTimeout(async () => {
       const { data } = await supabase.rpc('check_driver_invite', { p_email: email });
-      setInviteStatus({ isDriver: data?.is_driver ?? false, campus: data?.campus ?? '', role: data?.role ?? 'driver' });
+      setInviteStatus({
+        isDriver: data?.is_driver ?? false,
+        campus: data?.campus ?? '',
+        university: data?.university ?? '',
+        role: data?.role ?? 'driver',
+      });
     }, 600);
     return () => clearTimeout(timer);
   }, [email]);
 
-  // Gerak ID preview
+  // Gerak ID preview — campus/role-independent now (GRK + sequential),
+  // so this just fetches once rather than re-triggering on every
+  // university/campus/invite change like the old per-campus RPCs did.
   useEffect(() => {
-    if (!effectiveCampus) {
-      queueMicrotask(() => setGerakId(''));
-      return;
-    }
-    const rpc = invite?.role === 'rider'
-      ? 'get_next_rider_gerak_id'
-      : isDriver ? 'get_next_driver_gerak_id' : 'get_next_gerak_id';
-    supabase.rpc(rpc, { p_campus: effectiveCampus })
-      .then(({ data }) => setGerakId(data ?? ''));
-  }, [effectiveCampus, isDriver, invite?.role]);
+    supabase.rpc('get_next_gerak_id').then(({ data }) => setGerakId(data ?? ''));
+  }, []);
 
   // Without this, the phone's hardware/gesture back button isn't aware the
   // overlay is open at all — it goes straight to AppContext's normal
@@ -129,7 +131,7 @@ export const Register: React.FC = () => {
 
   const handleSubmit = async (e: React.SyntheticEvent) => {
     e.preventDefault();
-    if (!university) { setFieldError({ field: 'university', message: 'Please select your university.' }); return; }
+    if (!effectiveUniversity) { setFieldError({ field: 'university', message: 'Please select your university.' }); return; }
     if (!isDriver && !campus) { setFieldError({ field: 'campus', message: 'Please select your campus.' }); return; }
     if (!name.trim()) { setFieldError({ field: 'name', message: 'Please fill out this field.' }); return; }
     if (name.trim().length < 2) { setFieldError({ field: 'name', message: 'Full name must be at least 2 characters.' }); return; }
@@ -148,7 +150,7 @@ export const Register: React.FC = () => {
     setFieldError(null);
     setLoading(true);
     setError('');
-    const { error: authError, needsConfirmation: pendingConfirmation } = await register(name, '', email, password, phone, university, effectiveCampus, agreedToTerms && agreedToPrivacy);
+    const { error: authError, needsConfirmation: pendingConfirmation } = await register(name, '', email, password, phone, effectiveUniversity, effectiveCampus, agreedToTerms && agreedToPrivacy);
     setLoading(false);
     if (pendingConfirmation) {
       setNeedsConfirmation(true);
@@ -231,44 +233,59 @@ export const Register: React.FC = () => {
             keeping the experience consistent across every field. */}
         <form id="register-form" onSubmit={handleSubmit} noValidate className="flex flex-col gap-4 w-full">
 
-          {/* University */}
+          {/* University — locked/auto-assigned for an invited user (their
+              university was set by whoever invited them, not self-chosen);
+              a real picker for everyone else. */}
           <div className="flex flex-col gap-1" data-field="university">
             <label className="text-xs font-semibold text-slate-400 pl-1">University</label>
-            <NativeSelect
-              value={university}
-              onChange={u => { setUniversity(u); setCampus(''); }}
-              options={[{ value: 'Universiti Malaysia Pahang Al-Sultan Abdullah', label: 'Universiti Malaysia Pahang Al-Sultan Abdullah (UMPSA)' }]}
-              placeholder="Select your university…"
-              label="Select University"
-            />
+            {isDriver ? (
+              <div className="flex items-center gap-2 bg-emerald-50 border border-emerald-200 rounded-xl py-2 px-3">
+                <MapPin className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
+                <span className="text-xs font-semibold text-emerald-700 flex-1">{invite!.university}</span>
+                <span className="text-[8px] font-normal text-emerald-500 bg-emerald-100 px-1.5 py-0.5 rounded-full">Auto-assigned</span>
+              </div>
+            ) : (
+              <NativeSelect
+                value={university}
+                onChange={u => {
+                  setUniversity(u);
+                  const uni = UNIVERSITIES.find(x => x.fullName === u);
+                  setCampus(uni && uni.campuses.length === 1 ? uni.campuses[0] : '');
+                }}
+                options={UNIVERSITIES.map(u => ({ value: u.fullName, label: u.label }))}
+                placeholder="Select your university…"
+                label="Select University"
+              />
+            )}
             {fieldError?.field === 'university' && <FieldBubble message={fieldError.message} />}
           </div>
 
-          {/* Campus — auto-locked for drivers, selectable for customers */}
-          {university && (
-            isDriver ? (
-              <div className="flex flex-col gap-1">
-                <label className="text-xs font-semibold text-slate-400 pl-1">Campus</label>
-                <div className="flex items-center gap-2 bg-emerald-50 border border-emerald-200 rounded-xl py-2 px-3">
-                  <MapPin className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
-                  <span className="text-xs font-semibold text-emerald-700 flex-1">UMPSA {invite!.campus}</span>
-                  <span className="text-[8px] font-normal text-emerald-500 bg-emerald-100 px-1.5 py-0.5 rounded-full">Auto-assigned</span>
-                </div>
+          {/* Campus — auto-locked for an invited user; for everyone else,
+              only shown once a university with a real multi-campus split
+              is selected (a single-campus university auto-fills above,
+              nothing left to ask). */}
+          {isDriver ? (
+            <div className="flex flex-col gap-1">
+              <label className="text-xs font-semibold text-slate-400 pl-1">Campus</label>
+              <div className="flex items-center gap-2 bg-emerald-50 border border-emerald-200 rounded-xl py-2 px-3">
+                <MapPin className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
+                <span className="text-xs font-semibold text-emerald-700 flex-1">{invite!.campus}</span>
+                <span className="text-[8px] font-normal text-emerald-500 bg-emerald-100 px-1.5 py-0.5 rounded-full">Auto-assigned</span>
               </div>
-            ) : (
-              <div className="flex flex-col gap-1" data-field="campus">
-                <label className="text-xs font-semibold text-slate-400 pl-1">Campus</label>
-                <NativeSelect
-                  value={campus}
-                  onChange={setCampus}
-                  options={[{ value: 'Gambang', label: 'Gambang' }, { value: 'Pekan', label: 'Pekan' }]}
-                  placeholder="Select your campus…"
-                  label="Select Campus"
-                />
-                {fieldError?.field === 'campus' && <FieldBubble message={fieldError.message} />}
-              </div>
-            )
-          )}
+            </div>
+          ) : (selectedUni && selectedUni.campuses.length > 1 && (
+            <div className="flex flex-col gap-1" data-field="campus">
+              <label className="text-xs font-semibold text-slate-400 pl-1">Campus</label>
+              <NativeSelect
+                value={campus}
+                onChange={setCampus}
+                options={selectedUni.campuses.map(c => ({ value: c, label: c }))}
+                placeholder="Select your campus…"
+                label="Select Campus"
+              />
+              {fieldError?.field === 'campus' && <FieldBubble message={fieldError.message} />}
+            </div>
+          ))}
 
           {/* Gerak ID preview */}
           {gerakId && (
@@ -356,7 +373,7 @@ export const Register: React.FC = () => {
                         {invite!.role === 'admin' ? 'Pre-approved Admin' : invite!.role === 'rider' ? 'Pre-approved Rider' : 'Pre-approved Driver'}
                       </p>
                       <p className="text-xs font-normal opacity-70 mt-0.5">
-                        UMPSA {invite!.campus} · {invite!.role === 'admin' ? 'Admin Account' : invite!.role === 'rider' ? 'Rider Account' : 'Driver Account'}
+                        {jubahLocationLabel(universityKeyFromCampus(invite!.campus) ?? '', invite!.campus)} · {invite!.role === 'admin' ? 'Admin Account' : invite!.role === 'rider' ? 'Rider Account' : 'Driver Account'}
                       </p>
                     </div>
                   </>
@@ -365,7 +382,7 @@ export const Register: React.FC = () => {
                     <User className="w-4 h-4 shrink-0" />
                     <div>
                       <p className="font-semibold leading-tight">Standard Account</p>
-                      <p className="text-xs font-normal opacity-70 mt-0.5">Customer · {campus ? `UMPSA ${campus}` : 'Select campus above'}</p>
+                      <p className="text-xs font-normal opacity-70 mt-0.5">Customer · {campus ? jubahLocationLabel(selectedUni?.key ?? '', campus) : 'Select campus above'}</p>
                     </div>
                   </>
                 )}

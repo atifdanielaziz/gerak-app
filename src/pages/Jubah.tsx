@@ -19,13 +19,7 @@ import { generateReceiptPdf } from '../lib/receiptPdf';
 import { copyToClipboard } from '../lib/clipboard';
 import { savePendingJubahBooking, clearPendingJubahBooking } from '../lib/pendingJubahBooking';
 import { formatPhone } from '../lib/format';
-import { JUBAH_UNIVERSITY_MAP, deriveJubahCampus, jubahLocationLabel } from '../lib/jubahUniversities';
-
-const UNIVERSITIES = [
-  'Universiti Malaysia Pahang Al-Sultan Abdullah (Pekan)',
-  'Universiti Malaysia Pahang Al-Sultan Abdullah (Gambang)',
-  'Universiti Kebangsaan Malaysia (UKM)',
-];
+import { UNIVERSITY_MAP, deriveJubahCampus, jubahLocationLabel } from '../lib/universities';
 
 const UNIVERSITY_FACULTIES: Record<string, string[]> = {
   'Universiti Malaysia Pahang Al-Sultan Abdullah (Pekan)': [
@@ -109,7 +103,8 @@ export const Jubah: React.FC = () => {
   const [hpNumber, setHpNumber]       = useState('');
   const [email, setEmail]             = useState('');
   const [university, setUniversity]   = useState('');
-  const uniAbbrev = JUBAH_UNIVERSITY_MAP[landingUniversity]?.shortLabel ?? 'UMPSA';
+  const landingUni = UNIVERSITY_MAP[landingUniversity];
+  const uniAbbrev = landingUni?.shortLabel ?? 'UMPSA';
   // Stamped onto every uploaded document (IC, OSCAR, SKPG, Konvo slip,
   // payment proof) before it ever leaves the browser — these carry IC
   // numbers, bank details and other PII, so every one of them gets the
@@ -222,13 +217,13 @@ export const Jubah: React.FC = () => {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // UMPSA is the only university where the customer actually picks between
-  // two real campuses (Pekan/Gambang) — every other live university has
-  // exactly one, so there's nothing to ask; auto-select it the moment
-  // landingUniversity changes, skipping the "Select Campus" step for those.
+  // A university with only one real campus has nothing to ask — auto-select
+  // it the moment landingUniversity changes, skipping the "Select Campus"
+  // step for those. Universities with a real multi-campus split (UMPSA,
+  // and now UMK/UiTM/UIA) fall through and show the picker below instead.
   useEffect(() => {
-    if (landingUniversity === 'umpsa' || draftRestoredRef.current) return;
-    const uni = JUBAH_UNIVERSITY_MAP[landingUniversity];
+    if (draftRestoredRef.current) return;
+    const uni = UNIVERSITY_MAP[landingUniversity];
     if (uni && uni.campuses.length === 1) {
       queueMicrotask(() => setUniversity(uni.label));
     }
@@ -737,8 +732,8 @@ export const Jubah: React.FC = () => {
     return <JubahLanding onProceed={u => { setPeekLanding(false); setLandingUniversity(u); }} />;
   }
 
-  // Universities not yet configured for booking (see JUBAH_UNIVERSITIES' `live` flag)
-  if (!jubahBooking && !JUBAH_UNIVERSITY_MAP[landingUniversity]?.live) {
+  // Universities not yet configured for booking (see UNIVERSITIES' `live` flag)
+  if (!jubahBooking && !landingUni?.live) {
     return (
       <div className="flex-grow bg-white overflow-y-auto no-scrollbar pb-4 px-5 animate-fade-in flex flex-col gap-5 items-center justify-center text-center">
         <div className="bg-white border border-slate-100 rounded-3xl p-8 flex flex-col items-center gap-4 mx-2">
@@ -751,7 +746,7 @@ export const Jubah: React.FC = () => {
               The booking form for
             </p>
             <p className="text-xs font-black text-blue-600 mt-0.5">
-              {JUBAH_UNIVERSITY_MAP[landingUniversity]?.fullName}
+              {landingUni?.fullName}
             </p>
             <p className="text-xs text-slate-500 font-semibold mt-1 leading-relaxed">
               is not yet available. We're working on it!
@@ -778,7 +773,7 @@ export const Jubah: React.FC = () => {
           <GraduationCap className="w-5 h-5 text-slate-400" /> Jubah Delivery
         </h2>
         <p className="text-xs text-slate-400 font-normal mt-0.5">
-          {JUBAH_UNIVERSITY_MAP[landingUniversity]?.fullName} · Official Robe Bookings
+          {landingUni?.fullName} · Official Robe Bookings
         </p>
         {!jubahBooking && (
           <button
@@ -886,11 +881,11 @@ export const Jubah: React.FC = () => {
           <div className="bg-white border border-slate-100 rounded-3xl p-5 flex flex-col gap-4">
             <h3 className="text-sm font-semibold text-slate-700">Academic Information</h3>
 
-            {/* Campus — UMPSA is the only university with a real choice here
-                (Pekan/Gambang); every other university has exactly one
-                campus, auto-selected on landing (see the effect above), so
-                there's nothing to ask and this step is skipped entirely. */}
-            {landingUniversity === 'umpsa' && (
+            {/* Campus — only shown for a university with a real multi-campus
+                split (UMPSA, and now UMK/UiTM/UIA); a single-campus
+                university is auto-selected on landing (see the effect
+                above), so there's nothing to ask and this step is skipped. */}
+            {landingUni && landingUni.campuses.length > 1 && (
               <div className="flex flex-col gap-1.5">
                 <label className="text-xs font-semibold text-slate-400">
                   Campus <span className="text-danger">*</span>
@@ -898,7 +893,10 @@ export const Jubah: React.FC = () => {
                 <NativeSelect
                   value={university}
                   onChange={u => { setUniversity(u); setFaculty(''); }}
-                  options={UNIVERSITIES.filter(u => u.includes('Pekan') || u.includes('Gambang')).map(u => ({ value: u, label: u.includes('Pekan') ? 'UMPSA Pekan' : 'UMPSA Gambang' }))}
+                  options={landingUni.campuses.map(c => ({
+                    value: `${landingUni.fullName} (${c})`,
+                    label: `${landingUni.shortLabel} ${c}`,
+                  }))}
                   placeholder="Select your campus..."
                   label="Select Campus"
                 />

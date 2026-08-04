@@ -4,7 +4,7 @@ import { supabase } from '../lib/supabase';
 import { useLoadOnActive } from '../hooks/useLoadOnActive';
 import { NativeSelect } from '../components/NativeSelect';
 import { CampusStatusToggle } from '../components/CampusStatusToggle';
-import { JUBAH_UNIVERSITIES } from '../lib/jubahUniversities';
+import { UNIVERSITIES } from '../lib/universities';
 import {
   BarChart3, Car, Users, Clock,
   AlertCircle, RefreshCw, Trash2,
@@ -57,13 +57,20 @@ export const AdminHome: React.FC = () => {
   } = useApp();
 
   const isSuperAdmin = user.role === 'superadmin';
-  const adminCampus = (
-    user.campus.charAt(0).toUpperCase() + user.campus.slice(1).toLowerCase()
-  ) as 'Pekan' | 'Gambang';
+  // profiles.campus is always written by our own UI (Register, Invite,
+  // the Staff tab's campus picker) using the exact canonical casing from
+  // src/lib/universities.ts, so it's used as-is — no per-word title-casing
+  // here, which used to only ever run on single-word Pekan/Gambang and
+  // would otherwise mangle multi-word campuses like "Kota Bharu".
+  const adminCampus = user.campus;
 
   const [activeTab, setActiveTab] = useState<AdminTab>('orders');
+  // campusView only ever drives Routes/Orders (Gerak Rides transport,
+  // deliberately UMPSA-only) — default Gambang unless this admin's own
+  // campus is literally Pekan; a non-UMPSA admin has no meaningful
+  // default here anyway since those tabs aren't relevant to them.
   const [campusView, setCampusView] = useState<'Pekan' | 'Gambang'>(
-    isSuperAdmin ? 'Gambang' : adminCampus
+    adminCampus === 'Pekan' ? 'Pekan' : 'Gambang'
   );
   const [toast, setToast] = useState('');
 
@@ -756,7 +763,7 @@ export const AdminHome: React.FC = () => {
                 <NativeSelect
                   value={jubahUniversityView}
                   onChange={v => { setJubahUniversityView(v); setJubahAdminView('list'); setJubahAdminSelected(null); }}
-                  options={JUBAH_UNIVERSITIES.map(u => ({ value: u.key, label: u.label }))}
+                  options={UNIVERSITIES.map(u => ({ value: u.key, label: u.label }))}
                   placeholder="Select university"
                   icon={GraduationCap}
                 />

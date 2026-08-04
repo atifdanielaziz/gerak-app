@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { supabase } from '../../../lib/supabase';
 import { X, Car, Bike, ShieldCheck, ExternalLink, Phone } from 'lucide-react';
 import { WaBtn } from '../../../lib/whatsapp';
+import { jubahLocationLabel, universityKeyFromCampus } from '../../../lib/universities';
 
 export interface ProfileUser {
   id: string;
@@ -146,7 +147,7 @@ export const ProfileSheet: React.FC<{ u: ProfileUser; onClose: () => void; showT
               {/* Identity */}
               <div className="bg-slate-50 border border-slate-100 rounded-2xl px-4 py-1 mb-3">
                 <Row label="Gerak ID"><span className="text-xs font-semibold text-primary">{u.gerak_id}</span></Row>
-                <Row label="Campus" value={`UMPSA ${u.campus}`} />
+                <Row label="Campus" value={jubahLocationLabel(universityKeyFromCampus(u.campus) ?? '', u.campus)} />
                 <Row label="Matric No." value={merged.matric_no} />
                 <Row label="IC Number" value={merged.ic_number} />
                 <Row label="Status">

@@ -6,13 +6,15 @@ import {
 import { WaIcon, toWa } from '../../../lib/whatsapp';
 import { useLoadOnActive } from '../../../hooks/useLoadOnActive';
 import { type ProfileUser } from './ProfileSheet';
+import { NativeSelect } from '../../../components/NativeSelect';
+import { UNIVERSITIES, UNIVERSITY_MAP, jubahLocationLabel, universityKeyFromCampus } from '../../../lib/universities';
 
 type PendingAction =
   | { type: 'toggle-status'; u: ProfileUser }
   | { type: 'terminate';     u: ProfileUser }
   | { type: 'toggle-cap';    u: ProfileUser; canDrive: boolean; canRent: boolean; canTransport: boolean }
   | { type: 'toggle-rider-cap'; u: ProfileUser; canDaily: boolean; canRobe: boolean }
-  | { type: 'campus';        u: ProfileUser; campus: 'Pekan' | 'Gambang' }
+  | { type: 'campus';        u: ProfileUser }
   | { type: 'toggle-role';   u: ProfileUser; newRole: 'driver' | 'admin' }
   | { type: 'toggle-gate-exempt'; u: ProfileUser };
 
@@ -28,13 +30,18 @@ const UserCard: React.FC<{
   onTerminate: (u: ProfileUser) => void;
   onCapToggle?: (u: ProfileUser, canDrive: boolean, canRent: boolean, canTransport: boolean) => void;
   onRiderCapToggle?: (u: ProfileUser, canDaily: boolean, canRobe: boolean) => void;
-  onCampusChange?: (u: ProfileUser, campus: 'Pekan' | 'Gambang') => void;
+  onCampusChange?: (u: ProfileUser) => void;
   onGateToggle?: (u: ProfileUser) => void;
   onRoleToggle?: (u: ProfileUser, newRole: 'driver' | 'admin') => void;
   onViewProfile?: (u: ProfileUser) => void;
 }> = ({ u, canManage, togglingStatus, terminating, togglingCap, togglingCampus, onToggle, onTerminate, onCapToggle, onRiderCapToggle, onCampusChange, onGateToggle, onRoleToggle, onViewProfile }) => {
   const [showMenu, setShowMenu] = useState(false);
   const isDriverOrRider = u.role === 'driver' || u.role === 'rider';
+  // University/campus reassignment is now open to admin cards too (not
+  // just driver/rider) — separate from isDriverOrRider since that gate is
+  // still used below for capability/gate/role-toggle menu items, which
+  // stay role-specific.
+  const canChangeCampus = isDriverOrRider || u.role === 'admin';
 
   return (
     <div className={`rounded-2xl border p-5 flex flex-col gap-2.5 ${
@@ -62,7 +69,7 @@ const UserCard: React.FC<{
               </span>
             )}
           </div>
-          <p className="text-xs text-slate-400 font-semibold mt-0.5">{u.gerak_id} · UMPSA {u.campus}</p>
+          <p className="text-xs text-slate-400 font-semibold mt-0.5">{u.gerak_id} · {jubahLocationLabel(universityKeyFromCampus(u.campus) ?? '', u.campus)}</p>
           <p className="text-xs text-slate-400 truncate">{u.email}</p>
         </button>
 
@@ -119,19 +126,19 @@ const UserCard: React.FC<{
                   </>
                 )}
 
-                {/* Campus toggle */}
-                {isDriverOrRider && onCampusChange && (
-                  (['Gambang', 'Pekan'] as const).map(c => (
-                    <button key={c}
-                      onClick={() => { if (u.campus !== c) onCampusChange(u, c); setShowMenu(false); }}
-                      disabled={togglingCampus === u.id}
-                      className={`w-full flex items-center gap-3 px-4 py-3 text-left text-xs font-semibold transition active:scale-95 disabled:opacity-40 ${u.campus === c ? 'bg-slate-100 text-slate-900' : 'text-slate-500 hover:bg-slate-50'}`}>
-                      <MapPin className="w-4 h-4 shrink-0" />
-                      {c}
-                      {u.campus === c && <span className="ml-auto text-[8px] bg-indigo-100 text-indigo-600 px-1.5 py-0.5 rounded-full">Active</span>}
-                      {togglingCampus === u.id && u.campus !== c && <span className="ml-auto w-3 h-3 rounded-full border border-current border-t-transparent animate-spin" />}
-                    </button>
-                  ))
+                {/* Campus/university reassignment — opens a picker sheet
+                    rather than listing every one of the 12 campuses inline
+                    here, which stopped scaling once campus assignment grew
+                    beyond UMPSA's 2 options. */}
+                {canChangeCampus && onCampusChange && (
+                  <button
+                    onClick={() => { onCampusChange(u); setShowMenu(false); }}
+                    disabled={togglingCampus === u.id}
+                    className="w-full flex items-center gap-3 px-4 py-3 text-left text-xs font-semibold text-slate-500 hover:bg-slate-50 transition active:scale-95 disabled:opacity-40">
+                    <MapPin className="w-4 h-4 shrink-0" />
+                    Change Campus
+                    {togglingCampus === u.id && <span className="ml-auto w-3 h-3 rounded-full border border-current border-t-transparent animate-spin" />}
+                  </button>
                 )}
 
                 {/* Gate toggle */}
@@ -232,7 +239,7 @@ export interface UsersTabHandle {
 interface UsersTabProps {
   active: boolean;
   isSuperAdmin: boolean;
-  adminCampus: 'Pekan' | 'Gambang';
+  adminCampus: string;
   showToast: (msg: string) => void;
   onViewProfile: (u: ProfileUser) => void;
   onModalOpenChange: (open: boolean) => void;
@@ -268,6 +275,12 @@ export const UsersTab = forwardRef<UsersTabHandle, UsersTabProps>(function Users
   const [togglingCap, setTogglingCap]       = useState<string | null>(null);
   const [togglingCampus, setTogglingCampus] = useState<string | null>(null);
   const [pendingAction, setPendingAction]   = useState<PendingAction | null>(null);
+  // Picker state for the 'campus' pendingAction — pre-filled to the
+  // target user's current university/campus when the sheet opens, chosen
+  // live in the sheet rather than fixed at the moment the ⋮ menu item
+  // was tapped (there are 12 campuses now, too many for inline buttons).
+  const [campusPickerUniversity, setCampusPickerUniversity] = useState('');
+  const [campusPickerCampus, setCampusPickerCampus]         = useState('');
 
   useEffect(() => { onModalOpenChange(!!pendingAction); }, [pendingAction, onModalOpenChange]);
 
@@ -374,15 +387,16 @@ export const UsersTab = forwardRef<UsersTabHandle, UsersTabProps>(function Users
     }
   };
 
-  const handleChangeCampus = async (u: ProfileUser, campus: 'Pekan' | 'Gambang') => {
+  const handleChangeCampus = async (u: ProfileUser, universityKey: string, campus: string) => {
     setTogglingCampus(u.id);
     const { error } = await supabase.rpc('set_driver_campus', {
-      p_user_id: u.id,
-      p_campus:  campus,
+      p_user_id:    u.id,
+      p_university: UNIVERSITY_MAP[universityKey]?.fullName ?? '',
+      p_campus:     campus,
     });
     setTogglingCampus(null);
     if (error) showToast('Failed to update campus.');
-    else { showToast(`${u.name} moved to UMPSA ${campus}.`); loadUsers(); }
+    else { showToast(`${u.name} moved to ${jubahLocationLabel(universityKey, campus)}.`); loadUsers(); }
   };
 
   const handleToggleRole = async (u: ProfileUser, newRole: 'driver' | 'admin') => {
@@ -415,7 +429,7 @@ export const UsersTab = forwardRef<UsersTabHandle, UsersTabProps>(function Users
     else if (pendingAction.type === 'terminate')  handleTerminate(pendingAction.u);
     else if (pendingAction.type === 'toggle-cap') handleToggleCapability(pendingAction.u, pendingAction.canDrive, pendingAction.canRent, pendingAction.canTransport);
     else if (pendingAction.type === 'toggle-rider-cap') handleToggleRiderCapability(pendingAction.u, pendingAction.canDaily, pendingAction.canRobe);
-    else if (pendingAction.type === 'campus')     handleChangeCampus(pendingAction.u, pendingAction.campus);
+    else if (pendingAction.type === 'campus')     handleChangeCampus(pendingAction.u, campusPickerUniversity, campusPickerCampus);
     else if (pendingAction.type === 'toggle-role') handleToggleRole(pendingAction.u, pendingAction.newRole);
     else if (pendingAction.type === 'toggle-gate-exempt') handleToggleReceiptGateExempt(pendingAction.u);
     setPendingAction(null);
@@ -609,7 +623,11 @@ export const UsersTab = forwardRef<UsersTabHandle, UsersTabProps>(function Users
                         onTerminate={u => setPendingAction({ type: 'terminate', u })}
                         onCapToggle={isSuperAdmin ? (u, canDrive, canRent, canTransport) => setPendingAction({ type: 'toggle-cap', u, canDrive, canRent, canTransport }) : undefined}
                         onRiderCapToggle={isSuperAdmin ? (u, canDaily, canRobe) => setPendingAction({ type: 'toggle-rider-cap', u, canDaily, canRobe }) : undefined}
-                        onCampusChange={isSuperAdmin ? (u, campus) => setPendingAction({ type: 'campus', u, campus }) : undefined}
+                        onCampusChange={isSuperAdmin ? (u => {
+                          setCampusPickerUniversity(universityKeyFromCampus(u.campus) ?? 'umpsa');
+                          setCampusPickerCampus(u.campus);
+                          setPendingAction({ type: 'campus', u });
+                        }) : undefined}
                         onGateToggle={isSuperAdmin ? (u => setPendingAction({ type: 'toggle-gate-exempt', u })) : undefined}
                         onRoleToggle={isSuperAdmin ? (u, newRole) => setPendingAction({ type: 'toggle-role', u, newRole }) : undefined}
                         onViewProfile={onViewProfile} />
@@ -623,6 +641,66 @@ export const UsersTab = forwardRef<UsersTabHandle, UsersTabProps>(function Users
       </div>
 
       {pendingAction && (() => {
+        // Campus/university reassignment needs live pickers, not a static
+        // title/desc string — handled as its own sheet, separate from the
+        // generic confirm pattern below.
+        if (pendingAction.type === 'campus') {
+          const u = pendingAction.u;
+          return (
+            <div className="fixed inset-0 z-50 bg-black/40 flex items-end justify-center"
+              onPointerDown={(e) => { e.preventDefault(); setPendingAction(null); }}>
+              <div className="w-full max-w-sm max-h-[calc(100dvh-5rem)] overflow-y-auto no-scrollbar bg-white rounded-t-3xl p-6 pb-10 shadow-2xl animate-slide-up"
+                onPointerDown={e => e.stopPropagation()}>
+                <div className="w-10 h-1 bg-slate-200 rounded-full mx-auto mb-5" />
+                <div className="w-10 h-10 rounded-2xl mx-auto mb-3 flex items-center justify-center bg-primary/10">
+                  <MapPin className="w-5 h-5 text-primary" />
+                </div>
+                <h3 className="text-sm font-black text-slate-800 text-center mb-1">Move {u.name}</h3>
+                <p className="text-xs text-slate-400 font-semibold text-center mb-5">
+                  Currently {jubahLocationLabel(universityKeyFromCampus(u.campus) ?? '', u.campus)}.
+                </p>
+                <div className="flex flex-col gap-3 mb-6">
+                  <div>
+                    <p className="text-xs font-semibold text-slate-700 mb-1.5">University</p>
+                    <NativeSelect
+                      value={campusPickerUniversity}
+                      onChange={key => {
+                        setCampusPickerUniversity(key);
+                        setCampusPickerCampus(UNIVERSITY_MAP[key]?.campuses[0] ?? '');
+                      }}
+                      options={UNIVERSITIES.map(uni => ({ value: uni.key, label: uni.label }))}
+                      placeholder="Select university..."
+                      label="Select University"
+                    />
+                  </div>
+                  {(UNIVERSITY_MAP[campusPickerUniversity]?.campuses.length ?? 0) > 1 && (
+                    <div>
+                      <p className="text-xs font-semibold text-slate-700 mb-1.5">Campus</p>
+                      <NativeSelect
+                        value={campusPickerCampus}
+                        onChange={setCampusPickerCampus}
+                        options={(UNIVERSITY_MAP[campusPickerUniversity]?.campuses ?? []).map(c => ({ value: c, label: c }))}
+                        placeholder="Select campus..."
+                        label="Select Campus"
+                      />
+                    </div>
+                  )}
+                </div>
+                <div className="flex gap-3">
+                  <button onClick={() => setPendingAction(null)}
+                    className="flex-1 bg-slate-100 text-slate-600 font-semibold text-xs py-3 rounded-2xl transition active:scale-95">
+                    Cancel
+                  </button>
+                  <button onClick={executePendingAction}
+                    className="flex-1 font-semibold text-xs py-3 rounded-2xl transition active:scale-95 text-white bg-primary">
+                    Yes, Move
+                  </button>
+                </div>
+              </div>
+            </div>
+          );
+        }
+
         const { u } = pendingAction;
         const isTerminate = pendingAction.type === 'terminate';
         const isStop = pendingAction.type === 'toggle-status' && u.status === 'active';
@@ -635,8 +713,7 @@ export const UsersTab = forwardRef<UsersTabHandle, UsersTabProps>(function Users
           pendingAction.type === 'toggle-cap'    ? `Update capabilities for ${u.name}?` :
           pendingAction.type === 'toggle-rider-cap' ? `Update capabilities for ${u.name}?` :
           pendingAction.type === 'toggle-role'   ? (isRoleToAdmin ? `Promote ${u.name} to Admin?` : `Change ${u.name} to Driver?`) :
-          pendingAction.type === 'toggle-gate-exempt' ? (u.receipt_gate_exempt ? `Remove gate exemption for ${u.name}?` : `Exempt ${u.name} from receipt gate?`) :
-          `Move ${u.name} to UMPSA ${(pendingAction as { campus: string }).campus}?`;
+          (u.receipt_gate_exempt ? `Remove gate exemption for ${u.name}?` : `Exempt ${u.name} from receipt gate?`);
 
         const desc =
           isTerminate  ? 'This will permanently remove their account. This cannot be undone.' :
@@ -645,8 +722,7 @@ export const UsersTab = forwardRef<UsersTabHandle, UsersTabProps>(function Users
           pendingAction.type === 'toggle-cap'    ? 'Their service capabilities will be updated immediately.' :
           pendingAction.type === 'toggle-rider-cap' ? 'Their service capabilities will be updated immediately.' :
           pendingAction.type === 'toggle-role'   ? (isRoleToAdmin ? 'They will gain Admin panel access + full driving capabilities.' : 'They will lose Admin panel access and become a driver only.') :
-          pendingAction.type === 'toggle-gate-exempt' ? (u.receipt_gate_exempt ? 'They will need a valid monthly receipt again to stay active.' : 'They will bypass the monthly receipt requirement and stay active regardless.') :
-          'Their campus assignment will change immediately.';
+          (u.receipt_gate_exempt ? 'They will need a valid monthly receipt again to stay active.' : 'They will bypass the monthly receipt requirement and stay active regardless.');
 
         return (
           <div className="fixed inset-0 z-50 bg-black/40 flex items-end justify-center"

@@ -5,11 +5,14 @@ import {
 } from 'lucide-react';
 import { useLoadOnActive } from '../../../hooks/useLoadOnActive';
 import { useApp } from '../../../context/AppContext';
+import { NativeSelect } from '../../../components/NativeSelect';
+import { UNIVERSITIES, UNIVERSITY_MAP, jubahLocationLabel, universityKeyFromCampus } from '../../../lib/universities';
 
 interface DriverInvite {
   id: string;
   email: string;
   campus: string;
+  university: string | null;
   role: string;
   can_drive: boolean;
   can_rent: boolean;
@@ -26,7 +29,7 @@ export interface DriversTabHandle {
 interface DriversTabProps {
   active: boolean;
   isSuperAdmin: boolean;
-  adminCampus: 'Pekan' | 'Gambang';
+  adminCampus: string;
   userName: string;
   showToast: (msg: string) => void;
   // Bubbles the confirm-modal's open state up so AdminHome's shared
@@ -48,7 +51,8 @@ export const DriversTab = forwardRef<DriversTabHandle, DriversTabProps>(function
   const [invitesLoading, setInvitesLoading]  = useState(false);
   const [inviteSearch, setInviteSearch]      = useState('');
   const [inviteEmail, setInviteEmail]        = useState('');
-  const [inviteCampus, setInviteCampus]      = useState<'Pekan' | 'Gambang'>(isSuperAdmin ? 'Gambang' : adminCampus);
+  const [inviteUniversityKey, setInviteUniversityKey] = useState(isSuperAdmin ? 'umpsa' : (universityKeyFromCampus(adminCampus) ?? 'umpsa'));
+  const [inviteCampus, setInviteCampus]      = useState(isSuperAdmin ? 'Gambang' : adminCampus);
   const [inviteRole, setInviteRole]          = useState<'driver' | 'rider' | 'admin'>('driver');
   const [inviteCanDrive, setInviteCanDrive]  = useState(true);
   const [inviteCanRent,  setInviteCanRent]   = useState(false);
@@ -64,7 +68,7 @@ export const DriversTab = forwardRef<DriversTabHandle, DriversTabProps>(function
     setInvitesLoading(true);
     let query = supabase
       .from('driver_invites')
-      .select('id,email,campus,role,can_drive,can_rent,can_transport,used,used_at,created_at')
+      .select('id,email,campus,university,role,can_drive,can_rent,can_transport,used,used_at,created_at')
       .order('created_at', { ascending: false });
     if (!isSuperAdmin) query = query.eq('campus', adminCampus);
     const { data } = await query;
@@ -84,6 +88,7 @@ export const DriversTab = forwardRef<DriversTabHandle, DriversTabProps>(function
     const { data: inserted, error } = await supabase.from('driver_invites').insert({
       email:      inviteEmail.trim().toLowerCase(),
       campus:     inviteCampus,
+      university: UNIVERSITY_MAP[inviteUniversityKey]?.fullName ?? '',
       role:       inviteRole,
       can_drive:     inviteRole === 'driver' ? inviteCanDrive     : false,
       can_rent:      inviteRole === 'driver' ? inviteCanRent      : false,
@@ -170,32 +175,43 @@ export const DriversTab = forwardRef<DriversTabHandle, DriversTabProps>(function
             )}
           </div>
 
-          {/* Campus picker — superadmin only; regular admin locked to their campus */}
+          {/* University + Campus picker — superadmin only; regular admin
+              locked to their own university/campus */}
           {isSuperAdmin ? (
-            <div>
-              <p className="text-sm font-semibold text-slate-700 mb-2">Campus</p>
-              <div className="flex bg-slate-50 border border-slate-200 rounded-2xl p-1 gap-1">
-                {(['Gambang', 'Pekan'] as const).map(c => (
-                  // Same opacity-overlay technique as the role selector above.
-                  <button key={c} type="button" onPointerDown={(e) => { e.preventDefault(); setInviteCampus(c); }}
-                    className="relative flex-1 rounded-xl transition-transform"
-                  >
-                    <span className="block py-2 text-xs font-semibold text-slate-400">{c}</span>
-                    <span
-                      className={`absolute inset-0 flex items-center justify-center py-2 rounded-xl bg-primary text-white text-xs font-semibold transition-opacity duration-150 ${
-                        inviteCampus === c ? 'opacity-100' : 'opacity-0 pointer-events-none'
-                      }`}
-                    >
-                      {c}
-                    </span>
-                  </button>
-                ))}
+            <div className="flex flex-col gap-3">
+              <div>
+                <p className="text-sm font-semibold text-slate-700 mb-2">University</p>
+                <NativeSelect
+                  value={inviteUniversityKey}
+                  onChange={key => {
+                    setInviteUniversityKey(key);
+                    setInviteCampus(UNIVERSITY_MAP[key]?.campuses[0] ?? '');
+                  }}
+                  options={UNIVERSITIES.map(u => ({ value: u.key, label: u.label }))}
+                  placeholder="Select university..."
+                  label="Select University"
+                />
               </div>
+              {/* Campus only shown when the chosen university has a real
+                  multi-campus split — a single-campus university is
+                  auto-filled above, nothing left to ask. */}
+              {(UNIVERSITY_MAP[inviteUniversityKey]?.campuses.length ?? 0) > 1 && (
+                <div>
+                  <p className="text-sm font-semibold text-slate-700 mb-2">Campus</p>
+                  <NativeSelect
+                    value={inviteCampus}
+                    onChange={setInviteCampus}
+                    options={(UNIVERSITY_MAP[inviteUniversityKey]?.campuses ?? []).map(c => ({ value: c, label: c }))}
+                    placeholder="Select campus..."
+                    label="Select Campus"
+                  />
+                </div>
+              )}
             </div>
           ) : (
             <div className="flex items-center gap-2 bg-slate-50 border border-slate-200 rounded-2xl px-4 py-2.5">
               <MapPin className="w-3.5 h-3.5 text-primary shrink-0" />
-              <p className="text-xs font-semibold text-slate-700">UMPSA {adminCampus}</p>
+              <p className="text-xs font-semibold text-slate-700">{jubahLocationLabel(inviteUniversityKey, adminCampus)}</p>
               <span className="text-xs font-normal text-slate-400 ml-auto">campus locked</span>
             </div>
           )}
@@ -400,7 +416,7 @@ export const DriversTab = forwardRef<DriversTabHandle, DriversTabProps>(function
 
                 <div className="flex items-center justify-between gap-2">
                   <p className="text-xs font-normal text-slate-400">Campus</p>
-                  <span className="text-xs font-semibold text-slate-800">UMPSA {inviteCampus}</span>
+                  <span className="text-xs font-semibold text-slate-800">{jubahLocationLabel(inviteUniversityKey, inviteCampus)}</span>
                 </div>
 
                 <div className="h-px bg-slate-100" />

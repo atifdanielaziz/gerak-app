@@ -21,7 +21,7 @@ export interface RoutesTabHandle {
 interface RoutesTabProps {
   active: boolean;
   isSuperAdmin: boolean;
-  adminCampus: 'Pekan' | 'Gambang';
+  adminCampus: string;
   // campusView is shared with the Orders tab's own campus switcher — read
   // and written here, not owned here.
   campusView: 'Pekan' | 'Gambang';
