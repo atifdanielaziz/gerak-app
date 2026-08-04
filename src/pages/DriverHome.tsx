@@ -1387,7 +1387,7 @@ export const DriverHome: React.FC = () => {
                           </span>
                         </div>
                         <p className="text-xs text-slate-400 font-normal mt-0.5 flex items-center gap-1">
-                          <Clock className="w-3 h-3" /> {order.date} · {order.time} &nbsp;·&nbsp;
+                          <Clock className="w-3 h-3" /> {order.date} · {new Date(order.created_at).toLocaleTimeString('en-GB')} &nbsp;·&nbsp;
                           <Users className="w-3 h-3" /> {order.passengers} pax
                         </p>
                       </div>
