@@ -242,6 +242,17 @@ export const MyOrders: React.FC = () => {
             'transport',
           );
         }
+        // cancel_reason is only ever set by the 30-minute auto-expire cron —
+        // customer self-cancel and admin force-cancel both leave it null, so
+        // this can't fire for a cancellation the customer already knows about.
+        if (o.status === 'cancelled' && o.cancel_reason) {
+          showToast('No driver was found for your ride request.');
+          addNotification(
+            'No Driver Found',
+            `Your ride request for ${o.date}, ${o.time} didn't get accepted in time and was cancelled. Feel free to try again.`,
+            'transport',
+          );
+        }
       }
       prevStatuses.current[o.id] = o.status;
     });
