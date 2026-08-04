@@ -457,22 +457,34 @@ export const UsersTab = forwardRef<UsersTabHandle, UsersTabProps>(function Users
             <Users className="w-4 h-4" /> Admins and Staff
           </h3>
 
-          {/* Staff List vs In/Out Status sub-tab */}
-          <div className="flex bg-slate-50 border border-slate-200 rounded-2xl p-1 gap-1">
+          {/* Role filter + In/Out — one combined row. In/Out switches the
+              whole view (staffView), the other four stay within the normal
+              staff list (staffView='list' + staffFilter). */}
+          <div className="flex bg-slate-50 border border-slate-200 rounded-2xl p-1 gap-1 overflow-x-auto no-scrollbar">
             {([
-              { id: 'list',   label: 'Staff List' },
-              { id: 'campus', label: 'In/Out Status' },
-            ] as const).map(v => (
-              <button key={v.id} onPointerDown={e => { e.preventDefault(); setStaffView(v.id); }}
-                className="relative flex-1 rounded-xl transition-transform transform-gpu active:scale-95">
-                <span className="block px-4 py-1.5 text-xs font-semibold text-slate-400 text-center whitespace-nowrap">{v.label}</span>
-                <span className={`absolute inset-0 flex items-center justify-center px-4 py-1.5 rounded-xl bg-primary text-white text-xs font-semibold whitespace-nowrap transition-opacity duration-150 ${
-                  staffView === v.id ? 'opacity-100' : 'opacity-0 pointer-events-none'
-                }`}>
-                  {v.label}
-                </span>
-              </button>
-            ))}
+              { id: 'all',     label: 'All' },
+              { id: 'drivers', label: 'Drivers' },
+              { id: 'riders',  label: 'Riders' },
+              { id: 'admins',  label: 'Admins' },
+              { id: 'campus',  label: 'In/Out' },
+            ] as const).map(f => {
+              const isActive = f.id === 'campus' ? staffView === 'campus' : (staffView === 'list' && staffFilter === f.id);
+              return (
+                <button key={f.id} onPointerDown={e => {
+                  e.preventDefault();
+                  if (f.id === 'campus') setStaffView('campus');
+                  else { setStaffView('list'); setStaffFilter(f.id); }
+                }}
+                  className="relative shrink-0 rounded-xl transition-transform transform-gpu active:scale-95">
+                  <span className="block px-4 py-1.5 text-xs font-semibold text-slate-400 whitespace-nowrap">{f.label}</span>
+                  <span className={`absolute inset-0 flex items-center justify-center px-4 py-1.5 rounded-xl bg-white text-slate-800 text-xs font-semibold whitespace-nowrap transition-opacity duration-150 ${
+                    isActive ? 'opacity-100' : 'opacity-0 pointer-events-none'
+                  }`}>
+                    {f.label}
+                  </span>
+                </button>
+              );
+            })}
           </div>
 
           {staffView === 'campus' ? (
@@ -545,26 +557,6 @@ export const UsersTab = forwardRef<UsersTabHandle, UsersTabProps>(function Users
             >
               Clear
             </button>
-          </div>
-
-          {/* Filter toggle — scrollable */}
-          <div className="flex bg-slate-50 border border-slate-200 rounded-2xl p-1 gap-1 overflow-x-auto no-scrollbar">
-            {([
-              { id: 'all',     label: 'All' },
-              { id: 'drivers', label: 'Drivers' },
-              { id: 'riders',  label: 'Riders' },
-              { id: 'admins',  label: 'Admins' },
-            ] as const).map(f => (
-              <button key={f.id} onPointerDown={e => { e.preventDefault(); setStaffFilter(f.id); }}
-                className="relative shrink-0 rounded-xl transition-transform transform-gpu active:scale-95">
-                <span className="block px-4 py-1.5 text-xs font-semibold text-slate-400 whitespace-nowrap">{f.label}</span>
-                <span className={`absolute inset-0 flex items-center justify-center px-4 py-1.5 rounded-xl bg-white text-slate-800 text-xs font-semibold whitespace-nowrap transition-opacity duration-150 ${
-                  staffFilter === f.id ? 'opacity-100' : 'opacity-0 pointer-events-none'
-                }`}>
-                  {f.label}
-                </span>
-              </button>
-            ))}
           </div>
 
           {profileUsersTotalCount !== null && profileUsersTotalCount > profileUsers.length && (
