@@ -81,6 +81,15 @@ const fmtCreated = (iso: string) => {
   return { date: d.toLocaleDateString('en-CA'), time: d.toLocaleTimeString('en-GB') };
 };
 
+// A cancelled order can still carry a quoted fare, but it never happened —
+// showing that figure next to "CANCELLED" reads as counted revenue even
+// though it's already excluded from the Revenue/Earnings math.
+const fmtPrice = (o: RideOrder) => {
+  if (o.status === 'cancelled') return <span className="text-slate-300">—</span>;
+  if (o.fare === 'TBC') return <span className="text-slate-300 font-semibold">TBC</span>;
+  return `RM${(Number(o.fare) + o.night_charge).toFixed(0)}`;
+};
+
 const fmtAccept = (mins: number | null) => {
   if (mins === null) return <span className="text-slate-300">—</span>;
   const cls = mins > 30 ? 'text-red-500 font-bold' : mins >= 10 ? 'text-amber-600 font-semibold' : 'text-emerald-600 font-semibold';
@@ -365,7 +374,7 @@ export const OrdersTab = forwardRef<OrdersTabHandle, OrdersTabProps>(function Or
                       </td>
                       <td className="py-2.5 pr-4 text-slate-500 whitespace-nowrap">{order.passengers} pax</td>
                       <td className="py-2.5 pr-4 font-bold text-slate-800 whitespace-nowrap">
-                        {order.fare === 'TBC' ? <span className="text-slate-300 font-semibold">TBC</span> : `RM${(Number(order.fare) + order.night_charge).toFixed(0)}`}
+                        {fmtPrice(order)}
                       </td>
                       <td className="py-2.5 pr-4 whitespace-nowrap">{fmtAccept(acceptMinutes(order, now))}</td>
                       <td className="py-2.5 pr-4 text-slate-500 whitespace-nowrap">{order.driver_name ?? <span className="text-slate-300">—</span>}</td>
@@ -447,7 +456,7 @@ export const OrdersTab = forwardRef<OrdersTabHandle, OrdersTabProps>(function Or
                     <p className="text-xs text-slate-400 mt-0.5">{fmtCreated(order.created_at).date} · {fmtCreated(order.created_at).time}</p>
                   </div>
                   <span className="text-sm font-black text-slate-800 shrink-0">
-                    RM{order.fare === 'TBC' ? 'TBC' : (Number(order.fare) + order.night_charge).toFixed(0)}
+                    {fmtPrice(order)}
                   </span>
                 </div>
 
