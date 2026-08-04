@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { LogIn, LogOut } from 'lucide-react';
+import { ToggleLeft, ToggleRight } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 
 // Self-service In Campus / Out of Campus presence toggle — shown on every
@@ -49,29 +49,22 @@ export function CampusStatusToggle({ bare, variant = 'row' }: CampusStatusToggle
   };
 
   if (variant === 'icon') {
+    // Single switch-style icon, same idea as the Active/Inactive toggle in
+    // BannersTab.tsx — ToggleRight (switch to the right) = In Campus,
+    // ToggleLeft (switch to the left) = Out of Campus. Tapping flips it.
+    const isIn = status === 'in_campus';
     return (
-      <div className="flex items-center gap-1 bg-white border border-slate-100 rounded-xl p-1">
-        {(['in_campus', 'out_campus'] as const).map(s => {
-          const Icon = s === 'in_campus' ? LogIn : LogOut;
-          return (
-            <button
-              key={s}
-              onPointerDown={e => { e.preventDefault(); handleSet(s); }}
-              disabled={saving}
-              title={s === 'in_campus' ? 'In Campus' : 'Out of Campus'}
-              aria-label={s === 'in_campus' ? 'Set status: In Campus' : 'Set status: Out of Campus'}
-              className="relative w-7 h-7 flex items-center justify-center rounded-lg transition-transform transform-gpu active:scale-90 disabled:opacity-50"
-            >
-              <Icon className="w-3.5 h-3.5 text-slate-400" />
-              <span className={`absolute inset-0 flex items-center justify-center rounded-lg text-white transition-opacity duration-150 ${
-                s === 'in_campus' ? 'bg-emerald-500' : 'bg-slate-500'
-              } ${status === s ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
-                <Icon className="w-3.5 h-3.5" />
-              </span>
-            </button>
-          );
-        })}
-      </div>
+      <button
+        onPointerDown={e => { e.preventDefault(); handleSet(isIn ? 'out_campus' : 'in_campus'); }}
+        disabled={saving}
+        title={isIn ? 'In Campus — tap to set Out of Campus' : 'Out of Campus — tap to set In Campus'}
+        aria-label={isIn ? 'Currently In Campus, tap to switch to Out of Campus' : 'Currently Out of Campus, tap to switch to In Campus'}
+        className="w-8 h-8 flex items-center justify-center rounded-xl bg-white border border-slate-100 transition-transform transform-gpu active:scale-90 disabled:opacity-50"
+      >
+        {isIn
+          ? <ToggleRight className="w-5 h-5 text-emerald-500" />
+          : <ToggleLeft className="w-5 h-5 text-slate-400" />}
+      </button>
     );
   }
 
