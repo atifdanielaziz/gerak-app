@@ -73,6 +73,14 @@ const acceptMinutes = (o: RideOrder, now: number): number | null => {
   return null;
 };
 
+// The "Created" column and its sort both key off created_at, not the
+// customer's chosen pickup date/time (order.date/order.time) — those can
+// differ for "Later" bookings, so this must not reuse those fields.
+const fmtCreated = (iso: string) => {
+  const d = new Date(iso);
+  return { date: d.toLocaleDateString('en-CA'), time: d.toLocaleTimeString('en-GB') };
+};
+
 const fmtAccept = (mins: number | null) => {
   if (mins === null) return <span className="text-slate-300">—</span>;
   const cls = mins > 30 ? 'text-red-500 font-bold' : mins >= 10 ? 'text-amber-600 font-semibold' : 'text-emerald-600 font-semibold';
@@ -345,8 +353,8 @@ export const OrdersTab = forwardRef<OrdersTabHandle, OrdersTabProps>(function Or
                   {filtered.map(order => (
                     <tr key={order.id} className="border-b border-slate-50 text-xs hover:bg-slate-50 transition">
                       <td className="py-2.5 pr-4 whitespace-nowrap">
-                        <span className="font-semibold text-slate-700">{order.date}</span>
-                        <br /><span className="text-slate-400">{order.time}</span>
+                        <span className="font-semibold text-slate-700">{fmtCreated(order.created_at).date}</span>
+                        <br /><span className="text-slate-400">{fmtCreated(order.created_at).time}</span>
                       </td>
                       <td className="py-2.5 pr-4 font-semibold text-slate-800 whitespace-nowrap">{order.customer_name}</td>
                       <td className="py-2.5 pr-4 text-slate-500 whitespace-nowrap">{order.contact}</td>
@@ -436,7 +444,7 @@ export const OrdersTab = forwardRef<OrdersTabHandle, OrdersTabProps>(function Or
                         {order.status.replace('_', ' ')}
                       </span>
                     </div>
-                    <p className="text-xs text-slate-400 mt-0.5">{order.date} · {order.time}</p>
+                    <p className="text-xs text-slate-400 mt-0.5">{fmtCreated(order.created_at).date} · {fmtCreated(order.created_at).time}</p>
                   </div>
                   <span className="text-sm font-black text-slate-800 shrink-0">
                     RM{order.fare === 'TBC' ? 'TBC' : (Number(order.fare) + order.night_charge).toFixed(0)}
