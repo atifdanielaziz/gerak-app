@@ -46,7 +46,7 @@ async function loadTransportItems(customerId: string): Promise<ActivityItem[]> {
     .limit(30);
 
   return (data ?? []).map(o => {
-    const doc = buildTransportReceiptRows(o);
+    const doc = buildTransportReceiptRows(o, { showCreatedTime: true });
     return {
       id:              `transport-${o.id}`,
       service:         'transport' as const,
@@ -195,7 +195,7 @@ async function loadDriverJobItems(driverId: string): Promise<ActivityItem[]> {
     .limit(30);
 
   return (data ?? []).map(o => {
-    const doc = buildTransportReceiptRows(o);
+    const doc = buildTransportReceiptRows(o, { showCreatedTime: true });
     return {
       id:              `transport-${o.id}`,
       service:         'transport' as const,

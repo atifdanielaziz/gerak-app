@@ -814,6 +814,7 @@ export const DriverHome: React.FC = () => {
       <ReceiptSheet
         doc={buildTransportReceiptRows(sheetOrder, {
           showContactWhatsApp: sheetOrder.status === 'completed' || sheetOrder.status === 'cancelled',
+          showCreatedTime: true,
         })}
         onClose={() => setSheetOrder(null)}
       />
