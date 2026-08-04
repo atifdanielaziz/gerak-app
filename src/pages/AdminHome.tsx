@@ -633,13 +633,6 @@ export const AdminHome: React.FC = () => {
 
           <div className="flex items-center gap-2">
             <CampusStatusToggle variant="icon" />
-            {/* Refresh */}
-            <button
-              onClick={refreshActiveTab}
-              className="w-8 h-8 flex items-center justify-center rounded-xl bg-white border border-slate-100 text-slate-400 hover:text-primary transition active:scale-90"
-            >
-              <RefreshCw className="w-4 h-4" />
-            </button>
           </div>
         </div>
 
