@@ -254,6 +254,18 @@ export const MyOrders: React.FC = () => {
             'transport',
           );
         }
+        // Driver backed out within their own 3-minute window
+        // (cancel_ride_order) — the only path that sends an order from
+        // accepted back to pending. Without this, the card just silently
+        // flips from "Driver Assigned" back to "Pending" with no explanation.
+        if (o.status === 'pending' && prev === 'accepted') {
+          showToast('Your driver became unavailable — finding you another one.');
+          addNotification(
+            'Driver Unavailable',
+            `Your driver for the ${o.date}, ${o.time} ride became unavailable. We're finding you another driver.`,
+            'transport',
+          );
+        }
       }
       prevStatuses.current[o.id] = o.status;
 
