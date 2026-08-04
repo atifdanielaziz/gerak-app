@@ -257,6 +257,12 @@ export const UsersTab = forwardRef<UsersTabHandle, UsersTabProps>(function Users
   const [usersLoading, setUsersLoading] = useState(false);
   const [staffSearch, setStaffSearch]   = useState('');
   const [staffFilter, setStaffFilter]   = useState<'all' | 'drivers' | 'riders' | 'admins'>('all');
+  // Sub-tab within Staff: the normal manage-everything list, or a lighter
+  // read-focused view for spotting who's physically around campus vs away
+  // for a stretch (semester break, holiday) — separate from staffFilter,
+  // which is about role, not presence.
+  const [staffView,   setStaffView]     = useState<'list' | 'campus'>('list');
+  const [campusFilter, setCampusFilter] = useState<'all' | 'in_campus' | 'out_campus'>('all');
   const [togglingStatus, setTogglingStatus] = useState<string | null>(null);
   const [terminating, setTerminating]       = useState<string | null>(null);
   const [togglingCap, setTogglingCap]       = useState<string | null>(null);
@@ -437,6 +443,11 @@ export const UsersTab = forwardRef<UsersTabHandle, UsersTabProps>(function Users
     });
   }, [profileUsers, staffFilter, staffSearch]);
 
+  const campusFilteredUsers = useMemo(() => {
+    if (campusFilter === 'all') return profileUsers;
+    return profileUsers.filter(u => (u.campus_status ?? 'in_campus') === campusFilter);
+  }, [profileUsers, campusFilter]);
+
   return (
     <>
       <div className="flex flex-col gap-4">
@@ -447,6 +458,78 @@ export const UsersTab = forwardRef<UsersTabHandle, UsersTabProps>(function Users
             <Users className="w-4 h-4" /> Admins and Staff
           </h3>
 
+          {/* Staff List vs In/Out Status sub-tab */}
+          <div className="flex bg-slate-50 border border-slate-200 rounded-2xl p-1 gap-1">
+            {([
+              { id: 'list',   label: 'Staff List' },
+              { id: 'campus', label: 'In/Out Status' },
+            ] as const).map(v => (
+              <button key={v.id} onPointerDown={e => { e.preventDefault(); setStaffView(v.id); }}
+                className="relative flex-1 rounded-xl transition-transform transform-gpu active:scale-95">
+                <span className="block px-4 py-1.5 text-xs font-semibold text-slate-400 text-center whitespace-nowrap">{v.label}</span>
+                <span className={`absolute inset-0 flex items-center justify-center px-4 py-1.5 rounded-xl bg-primary text-white text-xs font-semibold whitespace-nowrap transition-opacity duration-150 ${
+                  staffView === v.id ? 'opacity-100' : 'opacity-0 pointer-events-none'
+                }`}>
+                  {v.label}
+                </span>
+              </button>
+            ))}
+          </div>
+
+          {staffView === 'campus' ? (
+            <>
+              {/* In/Out Campus filter — same opacity-overlay pill technique
+                  as every other toggle in this app. */}
+              <div className="flex bg-slate-50 border border-slate-200 rounded-2xl p-1 gap-1">
+                {([
+                  { id: 'all',        label: 'All' },
+                  { id: 'in_campus',  label: 'In Campus' },
+                  { id: 'out_campus', label: 'Out Campus' },
+                ] as const).map(f => (
+                  <button key={f.id} onPointerDown={e => { e.preventDefault(); setCampusFilter(f.id); }}
+                    className="relative flex-1 rounded-xl transition-transform transform-gpu active:scale-95">
+                    <span className="block px-2 py-1.5 text-xs font-semibold text-slate-400 text-center whitespace-nowrap">{f.label}</span>
+                    <span className={`absolute inset-0 flex items-center justify-center px-2 py-1.5 rounded-xl bg-white text-slate-800 text-xs font-semibold whitespace-nowrap transition-opacity duration-150 ${
+                      campusFilter === f.id ? 'opacity-100' : 'opacity-0 pointer-events-none'
+                    }`}>
+                      {f.label}
+                    </span>
+                  </button>
+                ))}
+              </div>
+
+              <div className="overflow-y-auto no-scrollbar max-h-[420px] flex flex-col gap-2">
+                {usersLoading ? (
+                  <div className="flex justify-center py-8">
+                    <span className="w-5 h-5 rounded-full border-2 border-slate-200 border-t-primary animate-spin" />
+                  </div>
+                ) : campusFilteredUsers.length === 0 ? (
+                  <p className="text-xs text-slate-400 text-center py-4">No staff found</p>
+                ) : (
+                  campusFilteredUsers.map(u => (
+                    <button
+                      key={u.id}
+                      type="button"
+                      onClick={() => onViewProfile(u)}
+                      className="w-full bg-white border border-slate-100 rounded-2xl px-4 py-3 flex items-center justify-between gap-3 active:bg-slate-50 transition text-left"
+                    >
+                      <div className="min-w-0">
+                        <p className="text-xs font-black text-slate-800 truncate">{u.name}</p>
+                        <p className="text-xs text-slate-400 font-semibold mt-0.5 capitalize">{u.role} · {u.gerak_id}</p>
+                      </div>
+                      <span className={`shrink-0 text-xs font-semibold px-2.5 py-1 rounded-full border ${
+                        (u.campus_status ?? 'in_campus') === 'in_campus'
+                          ? 'bg-emerald-50 border-emerald-100 text-emerald-600'
+                          : 'bg-slate-50 border-slate-200 text-slate-500'
+                      }`}>
+                        {(u.campus_status ?? 'in_campus') === 'in_campus' ? 'In Campus' : 'Out of Campus'}
+                      </span>
+                    </button>
+                  ))
+                )}
+              </div>
+            </>
+          ) : (<>
           {/* Search input */}
           <div className="flex gap-2">
             <input
@@ -520,6 +603,7 @@ export const UsersTab = forwardRef<UsersTabHandle, UsersTabProps>(function Users
                 );
             })()}
           </div>
+          </>)}
         </div>
       </div>
 

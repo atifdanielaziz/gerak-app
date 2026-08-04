@@ -534,7 +534,7 @@ export const AdminHome: React.FC = () => {
       )}
 
       {/* Profile sheet */}
-      {sheetUser && <ProfileSheet u={sheetUser} onClose={() => setSheetUser(null)} />}
+      {sheetUser && <ProfileSheet u={sheetUser} onClose={() => setSheetUser(null)} showToast={showToast} />}
 
       {/* ── Sub-page Standard: replace all tab content when active ── */}
       {sampleDocsPage ? (

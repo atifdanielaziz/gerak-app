@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '../../../lib/supabase';
 import { X, Car, Bike, ShieldCheck, ExternalLink, Phone } from 'lucide-react';
-import { WaBtn, WaIcon, toWa } from '../../../lib/whatsapp';
+import { WaBtn } from '../../../lib/whatsapp';
 
 export interface ProfileUser {
   id: string;
@@ -26,22 +26,33 @@ export interface ProfileUser {
   plate_number?: string;
   docs_status?: string;
   fee_receipt_verified?: boolean;
+  campus_status?: 'in_campus' | 'out_campus';
 }
 
 // Staff/driver/rider profile detail sheet — shared by the Users tab AND the
 // Receipts tab (tapping a receipt row opens the same sheet for that driver),
 // so this stays a standalone component rather than living inside UsersTab.
-export const ProfileSheet: React.FC<{ u: ProfileUser; onClose: () => void }> = ({ u, onClose }) => {
+export const ProfileSheet: React.FC<{ u: ProfileUser; onClose: () => void; showToast?: (msg: string) => void }> = ({ u, onClose, showToast }) => {
   const [extra, setExtra] = useState<Partial<ProfileUser>>({});
   const [loading, setLoading] = useState(true);
+  const [savingCampusStatus, setSavingCampusStatus] = useState(false);
 
   useEffect(() => {
     supabase.from('profiles')
-      .select('matric_no, ic_number, ic_url, license_url, vehicle, plate_number, docs_status, fee_receipt_verified')
+      .select('matric_no, ic_number, ic_url, license_url, vehicle, plate_number, docs_status, fee_receipt_verified, campus_status')
       .eq('id', u.id)
       .single()
       .then(({ data }) => { if (data) setExtra(data); setLoading(false); });
   }, [u.id]);
+
+  const handleSetCampusStatus = async (status: 'in_campus' | 'out_campus') => {
+    if (status === extra.campus_status || savingCampusStatus) return;
+    setSavingCampusStatus(true);
+    const { data, error } = await supabase.rpc('set_staff_campus_status', { p_user_id: u.id, p_status: status });
+    setSavingCampusStatus(false);
+    if (error || !data?.success) { showToast?.(data?.error ?? 'Failed to update status.'); return; }
+    setExtra(prev => ({ ...prev, campus_status: status }));
+  };
 
   const merged = { ...u, ...extra };
   const isDriverOrRider = u.role === 'driver' || u.role === 'rider';
@@ -121,20 +132,37 @@ export const ProfileSheet: React.FC<{ u: ProfileUser; onClose: () => void }> = (
                 <Row label="Status">
                   <span className={`text-xs font-semibold ${u.status === 'active' ? 'text-emerald-600' : 'text-red-500'}`}>{u.status}</span>
                 </Row>
+                {/* Purely informational — separate from Status above and
+                    unrelated to ride availability; just where the driver
+                    physically is. Driver sets it themselves day-to-day
+                    (Driver Hub); this is the admin override for corrections. */}
+                <Row label="Campus Presence">
+                  <div className="flex bg-slate-100 border border-slate-200 rounded-full p-0.5 gap-0.5">
+                    {(['in_campus', 'out_campus'] as const).map(s => (
+                      <button
+                        key={s}
+                        onClick={() => handleSetCampusStatus(s)}
+                        disabled={savingCampusStatus}
+                        className="relative rounded-full transition-transform transform-gpu active:scale-95 disabled:opacity-50"
+                      >
+                        <span className="block px-2 py-1 text-[10px] font-semibold text-slate-400 whitespace-nowrap">
+                          {s === 'in_campus' ? 'In' : 'Out'}
+                        </span>
+                        <span className={`absolute inset-0 flex items-center justify-center px-2 py-1 rounded-full text-[10px] font-semibold text-white whitespace-nowrap transition-opacity duration-150 ${
+                          s === 'in_campus' ? 'bg-emerald-500' : 'bg-slate-500'
+                        } ${(extra.campus_status ?? 'in_campus') === s ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
+                          {s === 'in_campus' ? 'In' : 'Out'}
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                </Row>
               </div>
 
               {/* Contact */}
               <div className="bg-slate-50 border border-slate-100 rounded-2xl px-4 py-1 mb-3">
                 <Row label="Email" value={u.email} />
-                <Row label="Phone">
-                  <span className="text-xs font-semibold text-slate-700">{u.phone || '—'}</span>
-                  {u.phone && (
-                    <a href={`https://wa.me/${toWa(u.phone)}`} target="_blank" rel="noopener noreferrer"
-                      onClick={e => e.stopPropagation()} className="text-[#25D366] active:scale-90 transition">
-                      <WaIcon className="w-3.5 h-3.5" />
-                    </a>
-                  )}
-                </Row>
+                <Row label="Phone" value={u.phone} />
               </div>
 
               {/* Vehicle — drivers only */}
@@ -176,7 +204,7 @@ export const ProfileSheet: React.FC<{ u: ProfileUser; onClose: () => void }> = (
 
         {/* Footer: Call + WhatsApp */}
         {u.phone && (
-          <div className="px-4 pt-3 pb-6 flex gap-3 shrink-0 border-t border-slate-100">
+          <div className="px-4 pt-3 pb-6 flex items-center gap-3 shrink-0 border-t border-slate-100">
             <a href={`tel:${u.phone}`}
               className="flex-1 flex items-center justify-center gap-2 bg-slate-800 text-white font-semibold text-xs py-3.5 rounded-2xl active:scale-[0.98] transition">
               <Phone className="w-4 h-4" /> Call

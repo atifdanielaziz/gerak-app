@@ -173,6 +173,14 @@ export const DriverHome: React.FC = () => {
   const [updating, setUpdating]             = useState(false);
   const [cancelSecsLeft, setCancelSecsLeft] = useState<number>(0);
   const [toast, setToast]                   = useState('');
+
+  // In/out-of-campus presence — purely informational for admin (e.g. a
+  // driver away for semester break stays "active" but isn't around), fully
+  // separate from ride availability. Self-service: driver toggles their own
+  // row directly (no RPC needed — new columns are self-editable by default,
+  // see 20260804120000_staff_campus_status.sql).
+  const [campusStatus, setCampusStatus]         = useState<'in_campus' | 'out_campus'>('in_campus');
+  const [savingCampusStatus, setSavingCampusStatus] = useState(false);
   const [uploadingDoc, setUploadingDoc]     = useState<'license' | null>(null);
   const licenseDocRef                       = useRef<HTMLInputElement>(null);
   const [loading, setLoading]               = useState(true);
@@ -214,6 +222,28 @@ export const DriverHome: React.FC = () => {
   const showToast = (msg: string) => {
     setToast(msg);
     setTimeout(() => setToast(''), 3000);
+  };
+
+  useEffect(() => {
+    (async () => {
+      const { data: { user: authUser } } = await supabase.auth.getUser();
+      if (!authUser) return;
+      const { data } = await supabase.from('profiles').select('campus_status').eq('id', authUser.id).single();
+      if (data?.campus_status === 'in_campus' || data?.campus_status === 'out_campus') {
+        setCampusStatus(data.campus_status);
+      }
+    })();
+  }, []);
+
+  const handleSetCampusStatus = async (status: 'in_campus' | 'out_campus') => {
+    if (status === campusStatus || savingCampusStatus) return;
+    setSavingCampusStatus(true);
+    const { data: { user: authUser } } = await supabase.auth.getUser();
+    if (!authUser) { setSavingCampusStatus(false); return; }
+    const { error } = await supabase.from('profiles').update({ campus_status: status }).eq('id', authUser.id);
+    setSavingCampusStatus(false);
+    if (error) { showToast('Failed to update status.'); return; }
+    setCampusStatus(status);
   };
 
   // Admins in driver mode, gate-exempted drivers, or a globally-OFF gate all bypass the receipt check
@@ -828,6 +858,31 @@ export const DriverHome: React.FC = () => {
         >
           <RefreshCw className="w-4 h-4" />
         </button>
+      </div>
+
+      {/* In/out-of-campus presence — same opacity-overlay toggle technique
+          used everywhere else (this WebView unreliably repaints colour
+          changes; opacity changes repaint reliably). */}
+      <div className="px-4 pb-3">
+        <div className="flex bg-white border border-slate-100 rounded-2xl p-1 gap-1">
+          {(['in_campus', 'out_campus'] as const).map(s => (
+            <button
+              key={s}
+              onPointerDown={e => { e.preventDefault(); handleSetCampusStatus(s); }}
+              disabled={savingCampusStatus}
+              className="relative flex-1 rounded-xl transition-transform transform-gpu active:scale-95 disabled:opacity-50"
+            >
+              <span className="block py-2 text-xs font-semibold text-slate-400 text-center">
+                {s === 'in_campus' ? 'In Campus' : 'Out of Campus'}
+              </span>
+              <span className={`absolute inset-0 flex items-center justify-center py-2 rounded-xl text-xs font-semibold text-white transition-opacity duration-150 ${
+                s === 'in_campus' ? 'bg-emerald-500' : 'bg-slate-500'
+              } ${campusStatus === s ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
+                {s === 'in_campus' ? 'In Campus' : 'Out of Campus'}
+              </span>
+            </button>
+          ))}
+        </div>
       </div>
 
       {/* Toast */}
