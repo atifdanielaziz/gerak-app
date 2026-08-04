@@ -26,6 +26,7 @@ interface RideOrder {
   aerbus_direction: string | null;
   aerbus_customer_time: string | null;
   status: string;
+  cancel_reason: string | null;
   driver_name: string | null;
   driver_contact: string | null;
   driver_vehicle: string | null;
@@ -150,14 +151,11 @@ const InfoRow: React.FC<{
 );
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
-const secsLeft = (o: RideOrder) =>
-  Math.max(0, 300 - Math.floor((Date.now() - new Date(o.created_at).getTime()) / 1000));
-
+// Actionable for as long as the order is still pending or accepted — no time
+// limit; cancel_customer_order's own status checks are the real gate (blocks
+// once a driver has accepted, same as this always did server-side).
 const canAct = (o: RideOrder) =>
-  secsLeft(o) > 0 && ['pending', 'accepted'].includes(o.status);
-
-const fmtCountdown = (s: number) =>
-  `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
+  ['pending', 'accepted'].includes(o.status);
 
 // ── Main page ─────────────────────────────────────────────────────────────────
 export const MyOrders: React.FC = () => {
@@ -175,7 +173,6 @@ export const MyOrders: React.FC = () => {
     return () => setSheetOpen(false);
   }, [sheetOrderId, setSheetOpen]);
   const [cancellingId, setCancellingId] = useState<string | null>(null);
-  const [, forceUpdate]             = useState(0);
   const prevStatuses                = useRef<Record<string, string>>({});
 
   const showToast = (msg: string) => {
@@ -240,12 +237,6 @@ export const MyOrders: React.FC = () => {
     return () => { supabase.removeChannel(channel); };
   }, []);
 
-  // Tick every second while any order is within the action window
-  useEffect(() => {
-    if (!orders.some(canAct)) return;
-    const id = setInterval(() => forceUpdate(n => n + 1), 1000);
-    return () => clearInterval(id);
-  }, [orders]);
 
   const handleCancel = async (o: RideOrder) => {
     if (cancellingId) return;
@@ -347,12 +338,16 @@ export const MyOrders: React.FC = () => {
                 )}
               </ReceiptCard>
 
-              {/* 5-minute action window */}
+              {o.status === 'cancelled' && o.cancel_reason && (
+                <p className="text-xs text-slate-400 font-normal bg-slate-50 border border-slate-100 rounded-xl px-3 py-2 -mt-1">
+                  {o.cancel_reason}
+                </p>
+              )}
+
               {canAct(o) && (
                 <div className="flex flex-col gap-2">
                   <div className="flex items-center justify-between text-xs font-normal px-0.5">
                     <span className="text-slate-400">Quick actions</span>
-                    <span className="font-mono text-primary">{fmtCountdown(secsLeft(o))} left</span>
                   </div>
 
                   <div className="flex gap-2">

@@ -62,7 +62,10 @@ serve(async (req) => {
     // this one (nobody has shown up at all).
     const { error, count } = await admin
       .from('ride_orders')
-      .update({ status: 'cancelled' }, { count: 'exact' })
+      .update({
+        status: 'cancelled',
+        cancel_reason: 'No driver accepted within 30 minutes.',
+      }, { count: 'exact' })
       .eq('status', 'pending')
       .lt('created_at', cutoff)
 
