@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { LogIn, LogOut } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 
 // Self-service In Campus / Out of Campus presence toggle — shown on every
@@ -16,9 +17,13 @@ interface CampusStatusToggleProps {
   // component's own px-4 so it doesn't get doubled up. Callers without
   // that (Driver Hub, Rider Hub) rely on the default padding.
   bare?: boolean;
+  // 'row' — full-width labeled pills (Driver Hub, Rider Hub). 'icon' —
+  // compact icon-only pair sized to sit inline with a header's other
+  // small action buttons (Admin Panel, next to Refresh).
+  variant?: 'row' | 'icon';
 }
 
-export function CampusStatusToggle({ bare }: CampusStatusToggleProps) {
+export function CampusStatusToggle({ bare, variant = 'row' }: CampusStatusToggleProps) {
   const [status, setStatus]   = useState<'in_campus' | 'out_campus'>('in_campus');
   const [saving, setSaving]   = useState(false);
 
@@ -42,6 +47,33 @@ export function CampusStatusToggle({ bare }: CampusStatusToggleProps) {
     setSaving(false);
     if (!error) setStatus(next);
   };
+
+  if (variant === 'icon') {
+    return (
+      <div className="flex items-center gap-1 bg-white border border-slate-100 rounded-xl p-1">
+        {(['in_campus', 'out_campus'] as const).map(s => {
+          const Icon = s === 'in_campus' ? LogIn : LogOut;
+          return (
+            <button
+              key={s}
+              onPointerDown={e => { e.preventDefault(); handleSet(s); }}
+              disabled={saving}
+              title={s === 'in_campus' ? 'In Campus' : 'Out of Campus'}
+              aria-label={s === 'in_campus' ? 'Set status: In Campus' : 'Set status: Out of Campus'}
+              className="relative w-7 h-7 flex items-center justify-center rounded-lg transition-transform transform-gpu active:scale-90 disabled:opacity-50"
+            >
+              <Icon className="w-3.5 h-3.5 text-slate-400" />
+              <span className={`absolute inset-0 flex items-center justify-center rounded-lg text-white transition-opacity duration-150 ${
+                s === 'in_campus' ? 'bg-emerald-500' : 'bg-slate-500'
+              } ${status === s ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
+                <Icon className="w-3.5 h-3.5" />
+              </span>
+            </button>
+          );
+        })}
+      </div>
+    );
+  }
 
   return (
     <div className={bare ? '' : 'px-4 pb-3'}>

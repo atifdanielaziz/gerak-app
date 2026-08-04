@@ -632,6 +632,7 @@ export const AdminHome: React.FC = () => {
           </div>
 
           <div className="flex items-center gap-2">
+            <CampusStatusToggle variant="icon" />
             {/* Refresh */}
             <button
               onClick={refreshActiveTab}
@@ -641,8 +642,6 @@ export const AdminHome: React.FC = () => {
             </button>
           </div>
         </div>
-
-        <CampusStatusToggle bare />
 
         {/* Tab bar */}
       <div className="flex bg-white border border-slate-100 rounded-2xl p-1 gap-1 overflow-x-auto no-scrollbar">
