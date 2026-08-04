@@ -239,7 +239,7 @@ export const JubahLanding: React.FC<Props> = ({ onProceed }) => {
                   <tr key={r.id} onClick={() => openRider(r)}
                     className="border-b border-slate-50 text-xs cursor-pointer hover:bg-slate-50 active:bg-slate-100 transition">
                     <td className="py-2.5 pr-4 text-slate-600 font-semibold align-top whitespace-nowrap">
-                      {r.method === 'pickup' ? 'Self Pickup' : r.method === 'postage' ? 'Pickup & Postage' : '—'}
+                      {r.method === 'pickup' ? 'Pickup Only' : r.method === 'postage' ? 'Pickup & Postage' : '—'}
                     </td>
                     <td className="py-2.5 pr-4 font-semibold text-slate-800 align-top">
                       {r.name}
@@ -270,7 +270,7 @@ export const JubahLanding: React.FC<Props> = ({ onProceed }) => {
         <RepresentativeSheet
           name={selectedRider.name}
           dropPoint={selectedRider.drop_point || '—'}
-          method={selectedRider.method === 'pickup' ? 'Self Pickup' : selectedRider.method === 'postage' ? 'Pickup & Postage' : '—'}
+          method={selectedRider.method === 'pickup' ? 'Pickup Only' : selectedRider.method === 'postage' ? 'Pickup & Postage' : '—'}
           icNumber={selectedRider.ic_number}
           phone={selectedRider.phone}
           waMessage={`Asslammualaikum Jubah rider, saya perlukan 6 digit IC ${selectedRider.ic_number ? selectedRider.ic_number.replace(/\D/g,'').slice(0,6) + '-XX-XXXX' : 'XXXXXX-XX-XXXX'} terakhir awak untuk pengisian representative jubah ${JUBAH_UNIVERSITY_MAP[selectedKey]?.shortLabel ?? selectedKey.toUpperCase()}`}

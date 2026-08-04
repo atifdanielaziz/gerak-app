@@ -959,10 +959,10 @@ export const Jubah: React.FC = () => {
                   Pay RM{DEPOSIT_AMOUNT} now to secure your booking. Pay the remaining RM{depositBalancePreview} <span className="font-bold text-slate-500">1 day before collection day</span> via Track My Order. <span className="bg-yellow-200 text-slate-800 font-semibold px-1 rounded">The RM{DEPOSIT_AMOUNT} deposit is non-refundable once paid — you can cancel for free before paying it, but not after.</span>
                 </span>
 
-                {/* Sub-choices: Self Pickup or Pickup & Postage */}
+                {/* Sub-choices: Pickup Only or Pickup & Postage */}
                 {paymentMode === 'deposit' && (
                   <div className="flex flex-col gap-1 mt-3" onClick={e => e.preventDefault()}>
-                    {/* Self Pickup */}
+                    {/* Pickup Only */}
                     <button
                       type="button"
                       onPointerDown={(e) => { e.preventDefault(); setDepositMethod('pickup'); }}
@@ -972,7 +972,7 @@ export const Jubah: React.FC = () => {
                           : 'border-slate-100 bg-white text-slate-600'
                       }`}
                     >
-                      <span className="flex-1 text-left">Self Pickup</span>
+                      <span className="flex-1 text-left">Pickup Only</span>
                       <span className={`shrink-0 ml-2 font-normal text-xs ${depositMethod === 'pickup' ? 'text-slate-500' : 'text-slate-400'}`}>
                         Balance RM{pickupPrice - DEPOSIT_AMOUNT}
                       </span>
@@ -1634,7 +1634,7 @@ export const Jubah: React.FC = () => {
         <RepresentativeSheet
           name={r.name}
           dropPoint={r.jubah_drop_point || '—'}
-          method={isPostageDelivery ? 'Pickup & Postage' : 'Self Pickup'}
+          method={isPostageDelivery ? 'Pickup & Postage' : 'Pickup Only'}
           icNumber={r.ic_number}
           phone={r.phone}
           waMessage={`Asslammualaikum Jubah rider, saya perlukan 6 digit IC ${r.ic_number ? r.ic_number.replace(/\D/g,'').slice(0,6) + '-XX-XXXX' : 'XXXXXX-XX-XXXX'} terakhir awak untuk pengisian representative jubah ${uniAbbrev}`}

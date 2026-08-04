@@ -753,30 +753,25 @@ export const AdminHome: React.FC = () => {
                 loadJubahData's campus-based branch), matching how the existing
                 campus lock already works for other tabs. Changing this re-scopes
                 the entire Jubah panel below: stats, riders, customers, pricing. */}
-            {isSuperAdmin && (
-              <div className="w-full sm:w-56">
+            {/* University selector (icon-only, opens the same dropdown list as
+                before) + Jubah delivery period ON/OFF, one compact row instead
+                of a full-width dropdown and a whole descriptive card each. */}
+            <div className="flex items-center gap-2">
+              {isSuperAdmin && (
                 <NativeSelect
                   value={jubahUniversityView}
                   onChange={v => { setJubahUniversityView(v); setJubahAdminView('list'); setJubahAdminSelected(null); }}
                   options={JUBAH_UNIVERSITIES.map(u => ({ value: u.key, label: u.label }))}
-                  label="University"
+                  placeholder="Select university"
+                  icon={GraduationCap}
                 />
-              </div>
-            )}
-            <div className="bg-white border border-slate-100 rounded-3xl p-5 flex items-center justify-between gap-4">
-              <div className="flex items-center gap-3">
-                <div className={`w-10 h-10 rounded-2xl flex items-center justify-center ${jubahActive ? 'bg-blue-50' : 'bg-slate-100'}`}>
-                  <GraduationCap className="w-5 h-5" />
-                </div>
-                <div>
-                  <p className="text-xs font-black text-slate-800">Jubah Delivery Period</p>
-                  <p className="text-xs text-slate-400 font-semibold mt-0.5">
-                    {jubahActive ? 'Currently OPEN — students can book' : 'Currently CLOSED — booking disabled'}
-                  </p>
-                </div>
-              </div>
-              <button onPointerDown={e => { e.preventDefault(); handleToggleJubah(); }} disabled={togglingJubah}
-                className={`shrink-0 px-4 py-2 rounded-xl text-xs font-semibold border transition-transform transform-gpu active:scale-95 disabled:opacity-50 ${
+              )}
+              <button
+                onPointerDown={e => { e.preventDefault(); handleToggleJubah(); }}
+                disabled={togglingJubah}
+                aria-label="Toggle Jubah delivery period"
+                title={jubahActive ? 'Jubah delivery period: OPEN — students can book' : 'Jubah delivery period: CLOSED — booking disabled'}
+                className={`shrink-0 px-3 py-2 rounded-xl text-xs font-semibold border transition-transform transform-gpu active:scale-95 disabled:opacity-50 ${
                   jubahActive ? 'bg-blue-50 border-blue-200 text-blue-700' : 'bg-slate-50 border-slate-200 text-slate-500'
                 }`}>
                 {togglingJubah ? '…' : jubahActive ? <><span className="inline-block w-2 h-2 rounded-full bg-emerald-400 mr-1" />ON</> : <><span className="inline-block w-2 h-2 rounded-full bg-slate-400 mr-1" />OFF</>}

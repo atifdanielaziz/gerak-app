@@ -26,14 +26,13 @@ interface JubahPriceSubTabProps {
 // only when this sub-tab is actually viewed — same data, same RPCs, just no
 // longer tangled with riders/bookings loading that this sub-tab never uses.
 export function JubahPriceSubTab({ active, isSuperAdmin, showToast }: JubahPriceSubTabProps) {
-  const [savingPrice,       setSavingPrice]       = useState<string | null>(null);
   const [priceDrafts,       setPriceDrafts]       = useState<Record<string, string>>({});
+  // Last-saved values — compared against priceDrafts to know which fields
+  // are actually dirty, so the one global Save button below the matrix
+  // only sends what changed and can disable itself when nothing has.
+  const [priceOriginal,     setPriceOriginal]     = useState<Record<string, string>>({});
   const [pricingUniversity, setPricingUniversity] = useState('umpsa');
-  // Saved Field Standard: once a field's value is saved, its text grays out
-  // to signal "this is committed" — tapping it back unlocks editing (text
-  // returns to normal colour) without needing a separate edit/lock toggle
-  // control. Keyed the same way each field group already keys its drafts.
-  const [priceSaved,      setPriceSaved]      = useState<Record<string, boolean>>({});
+  const [savingAllPrices,   setSavingAllPrices]   = useState(false);
 
   // Two separate rates — pickup vs postage — since a postage order's price
   // includes real shipping cost paid out to Pos Malaysia, not money the
@@ -47,36 +46,45 @@ export function JubahPriceSubTab({ active, isSuperAdmin, showToast }: JubahPrice
     const { data: pricesData } = await supabase.rpc('get_jubah_pricing');
     if (pricesData) {
       const drafts: Record<string, string> = {};
-      const saved: Record<string, boolean> = {};
       (pricesData as JubahPrice[]).forEach(p => {
         const key = `${p.remark}_${p.payment_mode}_${p.university}`;
         drafts[key] = String(p.price);
-        // Freshly loaded from the DB — these ARE the current saved values,
-        // so they start locked/gray, same as right after an explicit Save.
-        saved[key] = true;
       });
       setPriceDrafts(drafts);
-      setPriceSaved(saved);
+      setPriceOriginal(drafts);
     }
   }, []);
 
   useLoadOnActive(active, loadJubahPrices);
 
-  const handleSavePrice = async (remark: string, paymentMode: string) => {
-    const key = `${remark}_${paymentMode}_${pricingUniversity}`;
-    const price = parseFloat(priceDrafts[key] ?? '0');
-    if (isNaN(price) || price < 0) { showToast('Invalid price.'); return; }
-    setSavingPrice(key);
-    const { error } = await supabase.rpc('set_jubah_price', {
-      p_remark: remark, p_payment_mode: paymentMode, p_price: price, p_university: pricingUniversity,
-    });
-    setSavingPrice(null);
-    if (error) showToast('Failed to save price.');
-    else {
-      showToast(`${remark} ${paymentMode === 'pickup' ? 'Pickup' : 'Postage'} price updated.`);
-      setPriceSaved(prev => ({ ...prev, [key]: true }));
-      loadJubahPrices();
+  const pricesDirty = Object.keys(priceDrafts).some(k => priceDrafts[k] !== priceOriginal[k]);
+
+  // One global Save instead of a Save button per field — individual saves
+  // were easy to miss (a value could look "changed" but never actually get
+  // sent). Only fields that actually changed get written; each is still its
+  // own set_jubah_price call (no bulk RPC exists), just fired together
+  // under one button instead of one at a time.
+  const handleSaveAllPrices = async () => {
+    const dirtyKeys = Object.keys(priceDrafts).filter(k => priceDrafts[k] !== priceOriginal[k]);
+    if (dirtyKeys.length === 0) return;
+    setSavingAllPrices(true);
+    const results = await Promise.all(dirtyKeys.map(async key => {
+      const [remark, paymentMode, university] = key.split('_');
+      const price = parseFloat(priceDrafts[key] ?? '0');
+      if (isNaN(price) || price < 0) return { key, ok: false };
+      const { error } = await supabase.rpc('set_jubah_price', {
+        p_remark: remark, p_payment_mode: paymentMode, p_price: price, p_university: university,
+      });
+      return { key, ok: !error };
+    }));
+    setSavingAllPrices(false);
+    const failedCount = results.filter(r => !r.ok).length;
+    if (failedCount > 0) {
+      showToast(`${failedCount} price${failedCount > 1 ? 's' : ''} failed to save — please try again.`);
+    } else {
+      showToast('Pricing matrix saved ✓');
     }
+    loadJubahPrices();
   };
 
   // Rider commission — superadmin-only to change (enforced server-side in
@@ -109,7 +117,7 @@ export function JubahPriceSubTab({ active, isSuperAdmin, showToast }: JubahPrice
     const { data, error } = await supabase.rpc('set_jubah_rider_commission_amount', { p_amount: amount, p_delivery_type: deliveryType });
     setSavingCommission(null);
     if (error || !data?.success) { showToast(data?.error ?? 'Failed to save commission amount.'); return; }
-    showToast(`${deliveryType === 'pickup' ? 'Self Pickup' : 'Postage'} commission updated.`);
+    showToast(`${deliveryType === 'pickup' ? 'Pickup Only' : 'Postage'} commission updated.`);
     setCommissionRates(prev => prev ? { ...prev, [deliveryType]: commissionDrafts[deliveryType] } : prev);
     setCommissionSaved(prev => ({ ...prev, [deliveryType]: true }));
   };
@@ -221,7 +229,7 @@ export function JubahPriceSubTab({ active, isSuperAdmin, showToast }: JubahPrice
         </p>
         {(['pickup', 'postage'] as const).map(type => (
           <div key={type} className="flex flex-col gap-1.5">
-            <label className="text-xs font-normal text-slate-400">{type === 'pickup' ? 'Self Pickup' : 'Postage'}</label>
+            <label className="text-xs font-normal text-slate-400">{type === 'pickup' ? 'Pickup Only' : 'Postage'}</label>
             {isSuperAdmin ? (
               <div className="flex gap-2">
                 <div className="flex items-center bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 gap-1 flex-1 focus-within:border-primary transition">
@@ -272,7 +280,7 @@ export function JubahPriceSubTab({ active, isSuperAdmin, showToast }: JubahPrice
           />
         </div>
       </div>
-      <p className="text-xs text-slate-400 font-semibold -mt-2">Set price per study level × service option. Tap Save after editing each value.</p>
+      <p className="text-xs text-slate-400 font-semibold -mt-2">Set price per study level × service option, then tap Save Changes below.</p>
 
       {(['Master', 'PHD', 'Degree', 'Diploma'] as const).map(remark => (
         <div key={remark} className="border border-slate-100 rounded-2xl p-5 flex flex-col gap-4">
@@ -283,30 +291,19 @@ export function JubahPriceSubTab({ active, isSuperAdmin, showToast }: JubahPrice
               return (
                 <div key={mode} className="flex flex-col gap-1.5">
                   <label className="text-xs font-normal text-slate-400">
-                    {mode === 'pickup' ? 'Self Pickup' : 'Pickup & Postage'}
+                    {mode === 'pickup' ? 'Pickup Only' : 'Pickup & Postage'}
                   </label>
-                  <div className="flex gap-1.5">
-                    <div className="flex items-center bg-slate-50 border border-slate-200 rounded-xl px-2 py-2 gap-1 flex-1 focus-within:border-primary transition">
-                      <span className="text-xs font-normal text-slate-400 shrink-0">RM</span>
-                      <input
-                        type="number"
-                        min="0"
-                        step="0.01"
-                        value={priceDrafts[key] ?? ''}
-                        onChange={e => setPriceDrafts(prev => ({ ...prev, [key]: e.target.value }))}
-                        readOnly={priceSaved[key]}
-                        onClick={() => { if (priceSaved[key]) setPriceSaved(prev => ({ ...prev, [key]: false })); }}
-                        style={{ fontSize: '12px' }}
-                        className={`flex-1 bg-transparent font-semibold focus:outline-none w-0 ${priceSaved[key] ? 'text-slate-400 cursor-pointer' : 'text-slate-700'}`}
-                      />
-                    </div>
-                    <button
-                      onClick={() => handleSavePrice(remark, mode)}
-                      disabled={savingPrice === key || priceSaved[key]}
-                      className="shrink-0 bg-primary text-white font-semibold text-xs px-2.5 py-2 rounded-xl transition active:scale-95 disabled:opacity-50"
-                    >
-                      {savingPrice === key ? '…' : 'Save'}
-                    </button>
+                  <div className="flex items-center bg-slate-50 border border-slate-200 rounded-xl px-2 py-2 gap-1 focus-within:border-primary transition">
+                    <span className="text-xs font-normal text-slate-400 shrink-0">RM</span>
+                    <input
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      value={priceDrafts[key] ?? ''}
+                      onChange={e => setPriceDrafts(prev => ({ ...prev, [key]: e.target.value }))}
+                      style={{ fontSize: '12px' }}
+                      className="flex-1 bg-transparent font-semibold text-slate-700 focus:outline-none w-0"
+                    />
                   </div>
                 </div>
               );
@@ -314,6 +311,14 @@ export function JubahPriceSubTab({ active, isSuperAdmin, showToast }: JubahPrice
           </div>
         </div>
       ))}
+
+      <button
+        onClick={handleSaveAllPrices}
+        disabled={savingAllPrices || !pricesDirty}
+        className="w-full bg-primary text-white font-semibold text-sm py-3 rounded-2xl transition active:scale-95 shadow-lg shadow-primary/30 disabled:opacity-40 disabled:shadow-none"
+      >
+        {savingAllPrices ? 'Saving…' : pricesDirty ? 'Save Changes' : 'Saved'}
+      </button>
       </div>
     </div>
   );

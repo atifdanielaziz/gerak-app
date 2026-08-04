@@ -142,7 +142,7 @@ const JubahRiderSheet: React.FC<{
                   <NativeSelect
                     value={method}
                     onChange={v => onMethodChange(v as 'pickup' | 'postage')}
-                    options={[{ value: 'pickup', label: 'Self Pickup' }, { value: 'postage', label: 'Pickup & Postage' }]}
+                    options={[{ value: 'pickup', label: 'Pickup Only' }, { value: 'postage', label: 'Pickup & Postage' }]}
                     placeholder="Select method..."
                     label="Select Method"
                   />
@@ -169,7 +169,7 @@ const JubahRiderSheet: React.FC<{
                     </button>
                   )}
                   <div style={{ fontSize: '12px' }} className="flex-1 bg-slate-50 border border-slate-100 rounded-xl py-2.5 px-3 font-semibold text-slate-600">
-                    {a.method === 'pickup' ? 'Self Pickup' : 'Pickup & Postage'}
+                    {a.method === 'pickup' ? 'Pickup Only' : 'Pickup & Postage'}
                   </div>
                 </div>
               </div>
@@ -184,7 +184,7 @@ const JubahRiderSheet: React.FC<{
                 <NativeSelect
                   value={addMethod}
                   onChange={v => setAddMethod(v as 'pickup' | 'postage')}
-                  options={[{ value: 'pickup', label: 'Self Pickup' }, { value: 'postage', label: 'Pickup & Postage' }]}
+                  options={[{ value: 'pickup', label: 'Pickup Only' }, { value: 'postage', label: 'Pickup & Postage' }]}
                   label="Select Method"
                 />
               </div>
@@ -477,7 +477,7 @@ export const JubahRiderSubTab = forwardRef<JubahRiderSubTabHandle, JubahRiderSub
                         onClick={() => setDirSheet(a)}
                         className="border-b border-slate-100 text-xs cursor-pointer hover:bg-slate-50 active:bg-slate-100 transition">
                         <td className="py-2.5 pr-4 text-slate-600 font-semibold align-top whitespace-nowrap">
-                          {a.method === 'pickup' ? 'Self Pickup' : a.method === 'postage' ? 'Pickup & Postage' : '—'}
+                          {a.method === 'pickup' ? 'Pickup Only' : a.method === 'postage' ? 'Pickup & Postage' : '—'}
                         </td>
                         <td className="py-2.5 pr-4 font-semibold text-slate-800 align-top">{a.name}</td>
                         <td className="py-2.5 pr-4 font-mono text-slate-700 align-top whitespace-nowrap">{a.ic_number || '—'}</td>
@@ -526,7 +526,7 @@ export const JubahRiderSubTab = forwardRef<JubahRiderSubTabHandle, JubahRiderSub
                   {[
                     { label: 'Representative Name', value: dirSheet.name },
                     { label: 'Drop Point',           value: dirSheet.drop_point || '—' },
-                    { label: 'Method',               value: dirSheet.method === 'pickup' ? 'Self Pickup' : 'Pickup & Postage' },
+                    { label: 'Method',               value: dirSheet.method === 'pickup' ? 'Pickup Only' : 'Pickup & Postage' },
                     { label: 'I/C Number',           value: ic ?? '—' },
                   ].map(({ label, value }) => (
                     <div key={label} className="flex flex-col gap-0.5">

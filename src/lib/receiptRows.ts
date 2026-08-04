@@ -286,7 +286,7 @@ export function buildJubahReceiptRows(j: JubahReceiptSource): ReceiptDoc {
   const paymentLabel =
     j.paymentMode === 'deposit' ? (j.balancePaid ? 'Full Payment (DP)' : 'Deposit') :
     j.paymentMode === 'postage' ? 'Full Payment — Postage' :
-                                   'Full Payment — Self Pickup';
+                                   'Full Payment — Pickup Only';
 
   const rows: ReceiptRow[] = [
     { label: 'Reference Number', value: j.reference, emphasis: 'highlight', copyable: true },
@@ -304,7 +304,7 @@ export function buildJubahReceiptRows(j: JubahReceiptSource): ReceiptDoc {
     // postage bookings (plain postage mode and deposit's postage
     // sub-choice both go through the same isPostageDelivery flag in
     // Jubah.tsx), so its presence is the actual reliable signal here.
-    { label: 'Booking Type', value: (j.paymentMode === 'postage' || (j.paymentMode === 'deposit' && !!j.deliveryAddress)) ? 'Postage / Delivery' : 'Self Pickup' },
+    { label: 'Booking Type', value: (j.paymentMode === 'postage' || (j.paymentMode === 'deposit' && !!j.deliveryAddress)) ? 'Postage / Delivery' : 'Pickup Only' },
     { label: 'Payment Mode', value: paymentLabel, dividerBefore: true },
   ];
 

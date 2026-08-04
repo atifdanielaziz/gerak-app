@@ -862,7 +862,7 @@ export function JubahCustomerSubTab({
                 <div className="flex-1">
                   <span className="text-xs font-semibold block text-slate-900">
                     {b.payment_mode === 'deposit'
-                      ? `Deposit — ${b.delivery_address ? 'Pickup & Postage' : 'Self Pickup'}`
+                      ? `Deposit — ${b.delivery_address ? 'Pickup & Postage' : 'Pickup Only'}`
                       : b.payment_mode === 'postage'
                       ? 'Full Payment — Pickup & Postage'
                       : 'Full Payment — Pickup Point'}
