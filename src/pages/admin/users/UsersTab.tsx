@@ -454,10 +454,10 @@ export const UsersTab = forwardRef<UsersTabHandle, UsersTabProps>(function Users
 
   return (
     <>
-      <div className="flex flex-col gap-4">
+      <div className="flex flex-col gap-4 w-full">
 
         {/* Admins & Drivers list */}
-        <div className="bg-white border border-slate-100 rounded-3xl p-5 flex flex-col gap-4">
+        <div className="bg-white border border-slate-100 rounded-3xl p-5 flex flex-col gap-4 w-full">
           <h3 className="text-sm font-semibold text-slate-700 flex items-center gap-1.5">
             <Users className="w-4 h-4" /> Admins and Staff
           </h3>
@@ -533,7 +533,7 @@ export const UsersTab = forwardRef<UsersTabHandle, UsersTabProps>(function Users
                 ))}
               </div>
 
-              <div className="overflow-y-auto no-scrollbar max-h-[420px] flex flex-col gap-2">
+              <div className="overflow-y-auto no-scrollbar max-h-[420px] lg:max-h-none flex flex-col gap-2">
                 {usersLoading ? (
                   <div className="flex justify-center py-8">
                     <span className="w-5 h-5 rounded-full border-2 border-slate-200 border-t-primary animate-spin" />
