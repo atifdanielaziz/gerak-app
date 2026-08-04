@@ -364,7 +364,7 @@ export const MyOrders: React.FC = () => {
       {!loading && orders.length > 0 && (
         <div className="px-4 flex flex-col gap-4">
           {orders.map(o => {
-            const doc = buildTransportReceiptRows(o);
+            const doc = buildTransportReceiptRows(o, { showCreatedTime: true });
             return (
             <div key={o.id} className="bg-white border border-slate-100 rounded-3xl p-5 flex flex-col gap-4">
 

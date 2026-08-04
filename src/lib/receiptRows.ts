@@ -81,13 +81,22 @@ const fareLabel = (o: TransportReceiptSource) =>
 
 export function buildTransportReceiptRows(
   o: TransportReceiptSource,
-  opts?: { showContactWhatsApp?: boolean },
+  opts?: { showContactWhatsApp?: boolean; showCreatedTime?: boolean },
 ): ReceiptDoc {
   const isAerbus = o.book_mode === 'aerbus';
 
+  // showCreatedTime swaps the display to the real created_at moment (with
+  // seconds) instead of the customer's requested pickup time — only safe
+  // for the customer's own "Time" row. Aerbus's dispatch time is a
+  // fundamentally different value (buffered against a flight/bus ticket,
+  // not when the booking was made) and must never be swapped.
+  const timeValue = (!isAerbus && opts?.showCreatedTime)
+    ? new Date(o.created_at).toLocaleTimeString('en-GB')
+    : o.time;
+
   const rows: ReceiptRow[] = [
     { label: 'Date', value: o.date, emphasis: 'highlight' },
-    { label: isAerbus ? 'Driver Dispatch Time' : 'Time', value: o.time + (o.night_charge > 0 ? ' (Night +RM5)' : ''), emphasis: 'highlight' },
+    { label: isAerbus ? 'Driver Dispatch Time' : 'Time', value: timeValue + (o.night_charge > 0 ? ' (Night +RM5)' : ''), emphasis: 'highlight' },
   ];
   // The buffer already applied to o.time — shown alongside it, not instead
   // of it, so the customer/driver can see both the ticket time they gave
@@ -106,7 +115,14 @@ export function buildTransportReceiptRows(
     { label: 'Contact', value: o.contact, whatsapp: opts?.showContactWhatsApp ? { phone: o.contact } : undefined },
   );
   if (o.notes) rows.push({ label: 'Remark', value: o.notes });
-  rows.push({ label: 'Price', value: fareLabel(o), emphasis: 'total', dividerBefore: true });
+  // A driver-set price on a TBC (custom/map) booking is easy to miss sitting
+  // in the same plain styling as every other row — 'highlight' (blue-600
+  // bold, same as Date/Time) makes it visually distinct from a fixed,
+  // known-upfront fare, until the trip actually completes.
+  const isDriverSetFare = (o.book_mode === 'custom' || o.book_mode === 'map')
+    && o.fare !== 'TBC'
+    && ['accepted', 'in_progress'].includes(o.status);
+  rows.push({ label: 'Price', value: fareLabel(o), emphasis: isDriverSetFare ? 'highlight' : 'total', dividerBefore: true });
   if (o.driver_name) {
     rows.push({
       label: 'Driver',
