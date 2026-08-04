@@ -320,10 +320,13 @@ export function JubahCustomerSubTab({
               { id: 'cancelled', label: 'Cancelled' },
             ] as const).map(f => (
               <button key={f.id} onPointerDown={e => { e.preventDefault(); setJubahPayFilter(f.id); }}
-                className={`flex-1 py-1.5 rounded-[10px] text-xs font-semibold transition-transform active:scale-95 ${
-                  jubahPayFilter === f.id ? 'bg-white text-slate-800' : 'text-slate-400'
+                className="relative flex-1 rounded-[10px] transition-transform transform-gpu active:scale-95">
+                <span className="block py-1.5 text-xs font-semibold text-slate-400 text-center">{f.label}</span>
+                <span className={`absolute inset-0 flex items-center justify-center py-1.5 rounded-[10px] bg-white text-slate-800 text-xs font-semibold transition-opacity duration-150 ${
+                  jubahPayFilter === f.id ? 'opacity-100' : 'opacity-0 pointer-events-none'
                 }`}>
-                {f.label}
+                  {f.label}
+                </span>
               </button>
             ))}
           </div>

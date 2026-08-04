@@ -1146,25 +1146,25 @@ export const DriverHome: React.FC = () => {
           {/* ── Active job ── */}
           {myJob ? (
             <div className="flex flex-col gap-4">
-              <div className={`rounded-2xl px-4 py-2.5 flex items-center justify-between ${
+              <div className={`rounded-2xl px-4 py-2.5 flex items-center justify-between gap-2 ${
                 myJob.status === 'in_progress' ? 'bg-blue-600' : 'bg-emerald-600'
               }`}>
-                <div className="flex items-center gap-2">
-                  <Car className="w-4 h-4 text-white opacity-80" />
-                  <span className="text-white text-xs font-semibold uppercase tracking-wide">
-                    {myJob.status === 'in_progress' ? 'Trip In Progress' : 'Job Accepted'}
+                <div className="flex items-center gap-1.5 min-w-0">
+                  <Car className="w-4 h-4 text-white opacity-80 shrink-0" />
+                  <span className="text-white text-xs font-semibold uppercase tracking-wide whitespace-nowrap">
+                    {myJob.status === 'in_progress' ? 'Current Trip' : 'Job Accepted'}
                   </span>
                   {myJob.book_mode && BOOKING_METHOD_LABEL[myJob.book_mode] && (() => {
                     const MethodIcon = BOOKING_METHOD_ICON[myJob.book_mode!];
                     return (
-                      <span className="inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[10px] font-semibold bg-white/15 text-white">
+                      <span className="inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[10px] font-semibold bg-white/15 text-white whitespace-nowrap shrink-0">
                         {MethodIcon && <MethodIcon className="w-3 h-3" />}
                         {BOOKING_METHOD_LABEL[myJob.book_mode]}
                       </span>
                     );
                   })()}
                 </div>
-                <span className="text-white/70 text-xs font-normal">{myJob.date} · {myJob.time}</span>
+                <span className="text-white/70 text-xs font-normal whitespace-nowrap shrink-0">{myJob.date} · {myJob.time}</span>
               </div>
 
               {myJob.book_mode === 'aerbus' && (
@@ -1263,7 +1263,7 @@ export const DriverHome: React.FC = () => {
                 )}
 
                 {/* Action row: primary action + WhatsApp */}
-                <div className="px-4 pb-5 flex gap-2" onClick={e => e.stopPropagation()}>
+                <div className="px-4 pb-5 flex items-center gap-2" onClick={e => e.stopPropagation()}>
 
                   {/* Primary — Start Trip or Complete Trip */}
                   {myJob.status === 'accepted' && (
