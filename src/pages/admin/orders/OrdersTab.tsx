@@ -43,6 +43,14 @@ const STATUS_COLORS: Record<string, string> = {
 type FilterStatus = 'all' | 'pending' | 'accepted' | 'in_progress' | 'completed' | 'cancelled';
 type SortKey = 'created_at' | 'passengers' | 'fare' | 'accept';
 
+// Built once at module load, not re-derived from BOOKING_METHOD_LABEL on
+// every render inside JSX — same stable-reference pattern as the other
+// filter dropdowns' option lists.
+const BOOK_MODE_OPTIONS: { value: string; label: string }[] = [
+  { value: 'all', label: 'All Modes' },
+  ...Object.entries(BOOKING_METHOD_LABEL).map(([value, label]) => ({ value, label })),
+];
+
 const COL_KEYS = ['created', 'customer', 'phone', 'route', 'pax', 'price', 'accept', 'driver', 'status', 'actions'] as const;
 type ColKey = typeof COL_KEYS[number];
 const DEFAULT_COL_WIDTHS: Record<ColKey, number> = {
@@ -210,7 +218,7 @@ export const OrdersTab = forwardRef<OrdersTabHandle, OrdersTabProps>(function Or
     const q = search.trim().toLowerCase();
     let list = orders.filter(o => {
       const matchStatus = statusFilter === 'all' || o.status === statusFilter;
-      const matchMode = bookModeFilter === 'all' || o.book_mode === bookModeFilter;
+      const matchMode = bookModeFilter === 'all' || (o.book_mode ?? '').trim() === bookModeFilter.trim();
       const matchSearch = !q || o.customer_name.toLowerCase().includes(q) || o.contact.includes(q);
       return matchStatus && matchMode && matchSearch;
     });
@@ -347,10 +355,7 @@ export const OrdersTab = forwardRef<OrdersTabHandle, OrdersTabProps>(function Or
           <NativeSelect
             value={bookModeFilter}
             onChange={setBookModeFilter}
-            options={[
-              { value: 'all', label: 'All Modes' },
-              ...Object.entries(BOOKING_METHOD_LABEL).map(([value, label]) => ({ value, label })),
-            ]}
+            options={BOOK_MODE_OPTIONS}
           />
         </div>
       </div>
