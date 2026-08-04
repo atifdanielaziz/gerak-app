@@ -1209,9 +1209,9 @@ export const DriverHome: React.FC = () => {
                       <button
                         onClick={e => { e.stopPropagation(); handleCancel(); }}
                         disabled={updating}
-                        className="text-xs text-slate-400 font-normal flex items-center gap-1 active:opacity-60 transition disabled:opacity-50"
+                        className="text-xs font-semibold flex items-center gap-1 bg-red-50 border border-red-100 text-red-500 rounded-full pl-2 pr-2.5 py-1 active:scale-95 transition disabled:opacity-50"
                       >
-                        <Clock className="w-3 h-3" /> {fmtCountdown(cancelSecsLeft)}
+                        <Clock className="w-3 h-3" /> Cancel · {fmtCountdown(cancelSecsLeft)}
                       </button>
                     )}
                   </div>
