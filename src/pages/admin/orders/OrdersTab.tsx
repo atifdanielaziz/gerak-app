@@ -127,7 +127,7 @@ export const OrdersTab = forwardRef<OrdersTabHandle, OrdersTabProps>(function Or
   { isSuperAdmin, campusView, onCampusViewChange, showToast },
   ref
 ) {
-  const { showConfirmModal } = useApp();
+  const { showConfirmModal, setSheetOpen } = useApp();
   const [orders, setOrders] = useState<RideOrder[]>([]);
   const [statusFilter, setStatusFilter] = useState<FilterStatus>('all');
   const [bookModeFilter, setBookModeFilter] = useState('all');
@@ -139,6 +139,16 @@ export const OrdersTab = forwardRef<OrdersTabHandle, OrdersTabProps>(function Or
   const [showEarnings, setShowEarnings] = useState(false);
   const [colWidths, setColWidths] = useState<Record<ColKey, number>>(DEFAULT_COL_WIDTHS);
   const [copiedRouteId, setCopiedRouteId] = useState<string | null>(null);
+
+  // Report to AppContext whenever this modal is open, so BottomNav hides
+  // itself — same pattern MyOrders.tsx's driver sheet uses. Without this,
+  // BottomNav keeps rendering underneath the modal, overlapping its
+  // bottom-most content.
+  useEffect(() => {
+    if (!showEarnings) return;
+    setSheetOpen(true);
+    return () => setSheetOpen(false);
+  }, [showEarnings, setSheetOpen]);
 
   const copyRoute = async (order: RideOrder) => {
     if (!(await copyToClipboard(`${order.pickup} → ${order.destination}`))) return;
