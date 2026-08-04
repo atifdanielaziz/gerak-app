@@ -194,6 +194,7 @@ export const MyOrders: React.FC = () => {
   }, [sheetOrderId, setSheetOpen]);
   const [cancellingId, setCancellingId] = useState<string | null>(null);
   const prevStatuses                = useRef<Record<string, string>>({});
+  const prevFares                   = useRef<Record<string, string>>({});
 
   // Ticks every 30s purely to re-evaluate pendingBanner()'s elapsed-time
   // thresholds — no network call, just a re-render so "just placed"/"may
@@ -255,6 +256,21 @@ export const MyOrders: React.FC = () => {
         }
       }
       prevStatuses.current[o.id] = o.status;
+
+      // Fare-only change — status stays 'accepted', so the block above never
+      // fires for this. A driver setting the price on a TBC booking is the
+      // only way this happens (set_ride_fare only runs while accepted/
+      // in_progress), so this can't misfire for anything else.
+      const prevFare = prevFares.current[o.id];
+      if (prevFare === 'TBC' && o.fare !== 'TBC' && ['accepted', 'in_progress'].includes(o.status)) {
+        showToast(`Your driver set the fare to RM${Number(o.fare).toFixed(2)}.`);
+        addNotification(
+          'Price Set',
+          `Your driver has set the fare to RM${Number(o.fare).toFixed(2)} for your ride on ${o.date} at ${o.time}.`,
+          'transport',
+        );
+      }
+      prevFares.current[o.id] = o.fare;
     });
 
     if (Object.keys(prevStatuses.current).length === 0) {
