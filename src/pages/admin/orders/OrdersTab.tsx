@@ -2,11 +2,12 @@ import { forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useSt
 import { supabase } from '../../../lib/supabase';
 import {
   BarChart3, Car, Users, MapPin, Navigation, Clock, Trash2,
-  Search, RefreshCw, X, TrendingUp, Phone,
+  Search, RefreshCw, X, TrendingUp, Phone, Copy, Check,
 } from 'lucide-react';
 import { useApp } from '../../../context/AppContext';
 import { NativeSelect } from '../../../components/NativeSelect';
 import { BOOKING_METHOD_LABEL } from '../../../lib/receiptRows';
+import { copyToClipboard } from '../../../lib/clipboard';
 
 interface RideOrder {
   id: string;
@@ -41,6 +42,14 @@ const STATUS_COLORS: Record<string, string> = {
 
 type FilterStatus = 'all' | 'pending' | 'accepted' | 'in_progress' | 'completed' | 'cancelled';
 type SortKey = 'created_at' | 'passengers' | 'fare' | 'accept';
+
+const COL_KEYS = ['created', 'customer', 'phone', 'route', 'pax', 'price', 'accept', 'driver', 'status', 'actions'] as const;
+type ColKey = typeof COL_KEYS[number];
+const DEFAULT_COL_WIDTHS: Record<ColKey, number> = {
+  created: 120, customer: 150, phone: 120, route: 280, pax: 70,
+  price: 90, accept: 130, driver: 150, status: 130, actions: 90,
+};
+const MIN_COL_WIDTH = 60;
 
 export interface OrdersTabHandle {
   reload: () => void;
@@ -120,6 +129,38 @@ export const OrdersTab = forwardRef<OrdersTabHandle, OrdersTabProps>(function Or
   const [sortKey, setSortKey] = useState<SortKey | null>(null);
   const [sortDir, setSortDir] = useState<1 | -1>(1);
   const [showEarnings, setShowEarnings] = useState(false);
+  const [colWidths, setColWidths] = useState<Record<ColKey, number>>(DEFAULT_COL_WIDTHS);
+  const [copiedRouteId, setCopiedRouteId] = useState<string | null>(null);
+
+  const copyRoute = async (order: RideOrder) => {
+    if (!(await copyToClipboard(`${order.pickup} → ${order.destination}`))) return;
+    setCopiedRouteId(order.id);
+    setTimeout(() => setCopiedRouteId(prev => prev === order.id ? null : prev), 2000);
+  };
+
+  // Drag-to-resize desktop table columns — width lives in local state only
+  // (not persisted), reset on refresh/reload like any other transient UI
+  // state such as the current sort.
+  const beginResize = (key: ColKey) => (e: React.PointerEvent) => {
+    e.preventDefault();
+    const startX = e.clientX;
+    const startWidth = colWidths[key];
+    const onMove = (ev: PointerEvent) => {
+      setColWidths(w => ({ ...w, [key]: Math.max(MIN_COL_WIDTH, startWidth + (ev.clientX - startX)) }));
+    };
+    const onUp = () => {
+      window.removeEventListener('pointermove', onMove);
+      window.removeEventListener('pointerup', onUp);
+    };
+    window.addEventListener('pointermove', onMove);
+    window.addEventListener('pointerup', onUp);
+  };
+  const resizeHandle = (key: ColKey) => (
+    <span
+      onPointerDown={beginResize(key)}
+      className="absolute top-0 right-0 h-full w-2 cursor-col-resize touch-none hover:bg-primary/30 active:bg-primary/50"
+    />
+  );
 
   // silent=true skips the loading-spinner toggle — used for realtime-driven
   // reloads so an unrelated order elsewhere in this campus doesn't flash the
@@ -335,27 +376,30 @@ export const OrdersTab = forwardRef<OrdersTabHandle, OrdersTabProps>(function Or
         ) : (
           <div className="overflow-x-auto no-scrollbar">
             <div className="overflow-y-auto no-scrollbar max-h-[560px]">
-              <table className="min-w-full border-collapse text-left">
+              <table className="border-collapse text-left" style={{ tableLayout: 'fixed', width: COL_KEYS.reduce((sum, k) => sum + colWidths[k], 0) }}>
+                <colgroup>
+                  {COL_KEYS.map(k => <col key={k} style={{ width: colWidths[k] }} />)}
+                </colgroup>
                 <thead>
                   <tr className="text-xs font-normal text-slate-400 border-b border-slate-100">
-                    <th onClick={() => toggleSort('created_at')} className="sticky top-0 bg-white py-2 pr-4 whitespace-nowrap cursor-pointer select-none hover:text-slate-600">
-                      Created{sortArrow('created_at')}
+                    <th onClick={() => toggleSort('created_at')} className="relative sticky top-0 bg-white py-2 pr-4 whitespace-nowrap cursor-pointer select-none hover:text-slate-600 overflow-hidden">
+                      Created{sortArrow('created_at')}{resizeHandle('created')}
                     </th>
-                    <th className="sticky top-0 bg-white py-2 pr-4 whitespace-nowrap">Customer</th>
-                    <th className="sticky top-0 bg-white py-2 pr-4 whitespace-nowrap">Phone</th>
-                    <th className="sticky top-0 bg-white py-2 pr-4 whitespace-nowrap">Route</th>
-                    <th onClick={() => toggleSort('passengers')} className="sticky top-0 bg-white py-2 pr-4 whitespace-nowrap cursor-pointer select-none hover:text-slate-600">
-                      Pax{sortArrow('passengers')}
+                    <th className="relative sticky top-0 bg-white py-2 pr-4 whitespace-nowrap overflow-hidden">Customer{resizeHandle('customer')}</th>
+                    <th className="relative sticky top-0 bg-white py-2 pr-4 whitespace-nowrap overflow-hidden">Phone{resizeHandle('phone')}</th>
+                    <th className="relative sticky top-0 bg-white py-2 pr-4 whitespace-nowrap overflow-hidden">Route{resizeHandle('route')}</th>
+                    <th onClick={() => toggleSort('passengers')} className="relative sticky top-0 bg-white py-2 pr-4 whitespace-nowrap cursor-pointer select-none hover:text-slate-600 overflow-hidden">
+                      Pax{sortArrow('passengers')}{resizeHandle('pax')}
                     </th>
-                    <th onClick={() => toggleSort('fare')} className="sticky top-0 bg-white py-2 pr-4 whitespace-nowrap cursor-pointer select-none hover:text-slate-600">
-                      Price{sortArrow('fare')}
+                    <th onClick={() => toggleSort('fare')} className="relative sticky top-0 bg-white py-2 pr-4 whitespace-nowrap cursor-pointer select-none hover:text-slate-600 overflow-hidden">
+                      Price{sortArrow('fare')}{resizeHandle('price')}
                     </th>
-                    <th onClick={() => toggleSort('accept')} className="sticky top-0 bg-white py-2 pr-4 whitespace-nowrap cursor-pointer select-none hover:text-slate-600">
-                      Time to Accept{sortArrow('accept')}
+                    <th onClick={() => toggleSort('accept')} className="relative sticky top-0 bg-white py-2 pr-4 whitespace-nowrap cursor-pointer select-none hover:text-slate-600 overflow-hidden">
+                      Time to Accept{sortArrow('accept')}{resizeHandle('accept')}
                     </th>
-                    <th className="sticky top-0 bg-white py-2 pr-4 whitespace-nowrap">Driver</th>
-                    <th className="sticky top-0 bg-white py-2 pr-4 whitespace-nowrap">Status</th>
-                    <th className="sticky top-0 bg-white py-2 whitespace-nowrap">Actions</th>
+                    <th className="relative sticky top-0 bg-white py-2 pr-4 whitespace-nowrap overflow-hidden">Driver{resizeHandle('driver')}</th>
+                    <th className="relative sticky top-0 bg-white py-2 pr-4 whitespace-nowrap overflow-hidden">Status{resizeHandle('status')}</th>
+                    <th className="relative sticky top-0 bg-white py-2 whitespace-nowrap overflow-hidden">Actions{resizeHandle('actions')}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -365,19 +409,28 @@ export const OrdersTab = forwardRef<OrdersTabHandle, OrdersTabProps>(function Or
                         <span className="font-semibold text-slate-700">{fmtCreated(order.created_at).date}</span>
                         <br /><span className="text-slate-400">{fmtCreated(order.created_at).time}</span>
                       </td>
-                      <td className="py-2.5 pr-4 font-semibold text-slate-800 whitespace-nowrap">{order.customer_name}</td>
-                      <td className="py-2.5 pr-4 text-slate-500 whitespace-nowrap">{order.contact}</td>
-                      <td className="py-2.5 pr-4 text-slate-500 max-w-[260px]">
-                        <span className="truncate block" title={`${order.pickup} → ${order.destination}`}>
-                          {order.pickup} <span className="text-slate-300">→</span> {order.destination}
-                        </span>
+                      <td className="py-2.5 pr-4 font-semibold text-slate-800 truncate">{order.customer_name}</td>
+                      <td className="py-2.5 pr-4 text-slate-500 truncate">{order.contact}</td>
+                      <td className="py-2.5 pr-4 text-slate-500">
+                        <div className="flex items-center gap-1 min-w-0">
+                          <span className="truncate" title={`${order.pickup} → ${order.destination}`}>
+                            {order.pickup} <span className="text-slate-300">→</span> {order.destination}
+                          </span>
+                          <button
+                            onClick={() => copyRoute(order)}
+                            title="Copy route"
+                            className="shrink-0 text-slate-300 hover:text-primary transition active:scale-90"
+                          >
+                            {copiedRouteId === order.id ? <Check className="w-3 h-3 text-emerald-500" /> : <Copy className="w-3 h-3" />}
+                          </button>
+                        </div>
                       </td>
                       <td className="py-2.5 pr-4 text-slate-500 whitespace-nowrap">{order.passengers} pax</td>
                       <td className="py-2.5 pr-4 font-bold text-slate-800 whitespace-nowrap">
                         {fmtPrice(order)}
                       </td>
                       <td className="py-2.5 pr-4 whitespace-nowrap">{fmtAccept(acceptMinutes(order, now))}</td>
-                      <td className="py-2.5 pr-4 text-slate-500 whitespace-nowrap">{order.driver_name ?? <span className="text-slate-300">—</span>}</td>
+                      <td className="py-2.5 pr-4 text-slate-500 truncate">{order.driver_name ?? <span className="text-slate-300">—</span>}</td>
                       <td className="py-2.5 pr-4 whitespace-nowrap">
                         <span className={`text-xs font-semibold px-2 py-0.5 rounded-full border uppercase ${STATUS_COLORS[order.status]}`}>
                           {order.status.replace('_', ' ')}
@@ -460,15 +513,24 @@ export const OrdersTab = forwardRef<OrdersTabHandle, OrdersTabProps>(function Or
                   </span>
                 </div>
 
-                <div className="bg-slate-50 rounded-xl px-3 py-2 flex flex-col gap-1 text-xs">
-                  <div className="flex items-center gap-1.5 text-slate-600">
-                    <MapPin className="w-3 h-3 text-blue-500 shrink-0" />
-                    <span className="font-semibold truncate">{order.pickup}</span>
+                <div className="bg-slate-50 rounded-xl px-3 py-2 flex items-center gap-2 text-xs">
+                  <div className="flex-1 min-w-0 flex flex-col gap-1">
+                    <div className="flex items-center gap-1.5 text-slate-600">
+                      <MapPin className="w-3 h-3 text-blue-500 shrink-0" />
+                      <span className="font-semibold truncate">{order.pickup}</span>
+                    </div>
+                    <div className="flex items-center gap-1.5 text-slate-600">
+                      <Navigation className="w-3 h-3 text-red-500 shrink-0" />
+                      <span className="font-semibold truncate">{order.destination}</span>
+                    </div>
                   </div>
-                  <div className="flex items-center gap-1.5 text-slate-600">
-                    <Navigation className="w-3 h-3 text-red-500 shrink-0" />
-                    <span className="font-semibold truncate">{order.destination}</span>
-                  </div>
+                  <button
+                    onClick={() => copyRoute(order)}
+                    title="Copy route"
+                    className="shrink-0 text-slate-300 hover:text-primary transition active:scale-90"
+                  >
+                    {copiedRouteId === order.id ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5" />}
+                  </button>
                 </div>
 
                 <div className="flex items-center flex-wrap gap-3 text-xs text-slate-400">
