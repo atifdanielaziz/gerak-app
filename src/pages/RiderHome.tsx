@@ -15,6 +15,7 @@ import {
   ChevronLeft, Download, ExternalLink, CheckCircle2, XCircle, Eye, X, Clock,
 } from 'lucide-react';
 import { driverIsActive } from './Profile';
+import { CampusStatusToggle } from '../components/CampusStatusToggle';
 import { JubahStepper } from '../components/JubahStepper';
 import { ReceiptCard } from '../components/Receipt';
 import { buildJubahReceiptRows, type ReceiptDoc } from '../lib/receiptRows';
@@ -399,6 +400,8 @@ export const RiderHome: React.FC = () => {
             </button>
           )}
         </div>
+
+        {(activeTab !== 'jubah' || jubahView === 'list') && <CampusStatusToggle />}
 
         {/* Tab Switcher — hide when in jubah sub-pages */}
         {(activeTab !== 'jubah' || jubahView === 'list') && (

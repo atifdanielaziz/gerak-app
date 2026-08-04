@@ -3,6 +3,7 @@ import { useApp } from '../context/AppContext';
 import { supabase } from '../lib/supabase';
 import { useLoadOnActive } from '../hooks/useLoadOnActive';
 import { NativeSelect } from '../components/NativeSelect';
+import { CampusStatusToggle } from '../components/CampusStatusToggle';
 import { JUBAH_UNIVERSITIES } from '../lib/jubahUniversities';
 import {
   BarChart3, Car, Users, Clock,
@@ -640,6 +641,8 @@ export const AdminHome: React.FC = () => {
             </button>
           </div>
         </div>
+
+        <CampusStatusToggle bare />
 
         {/* Tab bar */}
       <div className="flex bg-white border border-slate-100 rounded-2xl p-1 gap-1 overflow-x-auto no-scrollbar">

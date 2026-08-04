@@ -262,7 +262,7 @@ export const UsersTab = forwardRef<UsersTabHandle, UsersTabProps>(function Users
   // for a stretch (semester break, holiday) — separate from staffFilter,
   // which is about role, not presence.
   const [staffView,   setStaffView]     = useState<'list' | 'campus'>('list');
-  const [campusFilter, setCampusFilter] = useState<'all' | 'in_campus' | 'out_campus'>('all');
+  const [campusFilter, setCampusFilter] = useState<'in_campus' | 'out_campus'>('in_campus');
   const [togglingStatus, setTogglingStatus] = useState<string | null>(null);
   const [terminating, setTerminating]       = useState<string | null>(null);
   const [togglingCap, setTogglingCap]       = useState<string | null>(null);
@@ -444,7 +444,6 @@ export const UsersTab = forwardRef<UsersTabHandle, UsersTabProps>(function Users
   }, [profileUsers, staffFilter, staffSearch]);
 
   const campusFilteredUsers = useMemo(() => {
-    if (campusFilter === 'all') return profileUsers;
     return profileUsers.filter(u => (u.campus_status ?? 'in_campus') === campusFilter);
   }, [profileUsers, campusFilter]);
 
@@ -482,7 +481,6 @@ export const UsersTab = forwardRef<UsersTabHandle, UsersTabProps>(function Users
                   as every other toggle in this app. */}
               <div className="flex bg-slate-50 border border-slate-200 rounded-2xl p-1 gap-1">
                 {([
-                  { id: 'all',        label: 'All' },
                   { id: 'in_campus',  label: 'In Campus' },
                   { id: 'out_campus', label: 'Out Campus' },
                 ] as const).map(f => (
