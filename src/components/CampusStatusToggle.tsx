@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react';
-import { ToggleLeft, ToggleRight } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 
 // Self-service In Campus / Out of Campus presence toggle — shown on every
@@ -49,9 +48,12 @@ export function CampusStatusToggle({ bare, variant = 'row' }: CampusStatusToggle
   };
 
   if (variant === 'icon') {
-    // Single switch-style icon, same idea as the Active/Inactive toggle in
-    // BannersTab.tsx — ToggleRight (switch to the right) = In Campus,
-    // ToggleLeft (switch to the left) = Out of Campus. Tapping flips it.
+    // A real native-style sliding switch (rounded track + circular knob),
+    // not a static icon glyph. Built with the same repaint-safe technique
+    // used everywhere else in this app: the coloured track is two stacked
+    // layers toggled by OPACITY (this WebView unreliably repaints direct
+    // background-colour changes), and the knob moves via TRANSFORM (which,
+    // like opacity, repaints reliably here).
     const isIn = status === 'in_campus';
     return (
       <button
@@ -59,11 +61,11 @@ export function CampusStatusToggle({ bare, variant = 'row' }: CampusStatusToggle
         disabled={saving}
         title={isIn ? 'In Campus — tap to set Out of Campus' : 'Out of Campus — tap to set In Campus'}
         aria-label={isIn ? 'Currently In Campus, tap to switch to Out of Campus' : 'Currently Out of Campus, tap to switch to In Campus'}
-        className="flex items-center justify-center transition-transform transform-gpu active:scale-90 disabled:opacity-50"
+        className="relative w-11 h-6 shrink-0 rounded-full transition-transform transform-gpu active:scale-95 disabled:opacity-50"
       >
-        {isIn
-          ? <ToggleRight className="w-8 h-8 text-emerald-500" />
-          : <ToggleLeft className="w-8 h-8 text-slate-400" />}
+        <span className="absolute inset-0 rounded-full bg-slate-300" />
+        <span className={`absolute inset-0 rounded-full bg-emerald-500 transition-opacity duration-150 ${isIn ? 'opacity-100' : 'opacity-0'}`} />
+        <span className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow-md transition-transform duration-200 transform-gpu ${isIn ? 'translate-x-5' : 'translate-x-0'}`} />
       </button>
     );
   }
