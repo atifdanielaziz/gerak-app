@@ -211,7 +211,7 @@ export const OrdersTab = forwardRef<OrdersTabHandle, OrdersTabProps>(function Or
       {/* ── Stat cards ── */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-2">
         <div className="bg-white border border-slate-100 rounded-2xl p-4">
-          <p className="text-2xl font-black text-slate-800">{orders.length}</p>
+          <p className="text-2xl font-black text-slate-800">{pendingCount + completedCount}</p>
           <p className="text-xs text-slate-400 font-semibold mt-0.5">Total orders</p>
         </div>
         <div className="bg-white border border-slate-100 rounded-2xl p-4">
