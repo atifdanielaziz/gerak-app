@@ -444,8 +444,13 @@ export const UsersTab = forwardRef<UsersTabHandle, UsersTabProps>(function Users
   }, [profileUsers, staffFilter, staffSearch]);
 
   const campusFilteredUsers = useMemo(() => {
-    return profileUsers.filter(u => (u.campus_status ?? 'in_campus') === campusFilter);
-  }, [profileUsers, campusFilter]);
+    return profileUsers.filter(u => {
+      if ((u.campus_status ?? 'in_campus') !== campusFilter) return false;
+      if (!staffSearch.trim()) return true;
+      const q = staffSearch.toLowerCase();
+      return u.name?.toLowerCase().includes(q) || u.gerak_id?.toLowerCase().includes(q);
+    });
+  }, [profileUsers, campusFilter, staffSearch]);
 
   return (
     <>
@@ -489,6 +494,26 @@ export const UsersTab = forwardRef<UsersTabHandle, UsersTabProps>(function Users
 
           {staffView === 'campus' ? (
             <>
+              {/* Search input — same behavior as the Staff List search
+                  (name or Gerak ID), shared staffSearch state. */}
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={staffSearch}
+                  onChange={e => setStaffSearch(e.target.value)}
+                  placeholder="Name or Gerak ID"
+                  style={{ fontSize: '12px' }}
+                  className="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 font-semibold text-slate-700 focus:outline-none focus:border-primary transition placeholder:font-normal placeholder:text-slate-400"
+                />
+                <button
+                  onClick={() => setStaffSearch('')}
+                  disabled={!staffSearch.trim()}
+                  className="px-3.5 bg-primary text-white font-semibold text-xs rounded-xl transition active:scale-95 disabled:opacity-50"
+                >
+                  Clear
+                </button>
+              </div>
+
               {/* In/Out Campus filter — same opacity-overlay pill technique
                   as every other toggle in this app. */}
               <div className="flex bg-slate-50 border border-slate-200 rounded-2xl p-1 gap-1">
