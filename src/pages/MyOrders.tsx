@@ -157,6 +157,26 @@ const InfoRow: React.FC<{
 const canAct = (o: RideOrder) =>
   ['pending', 'accepted'].includes(o.status);
 
+// Before-the-fact heads-up for a still-pending order — reassurance in the
+// first minute, then a concrete auto-cancel deadline for the last 10 of the
+// 30-minute window (mirrors the server's own ride-orders-expire-pending
+// cutoff). Pure client-side read of created_at; no extra network calls.
+const pendingBanner = (o: RideOrder, now: number): { tone: 'accent' | 'warn'; text: string } | null => {
+  if (o.status !== 'pending') return null;
+  const createdMs = new Date(o.created_at).getTime();
+  const elapsedMin = (now - createdMs) / 60000;
+  if (elapsedMin < 1) {
+    return { tone: 'accent', text: 'Just placed — finding you a driver.' };
+  }
+  if (elapsedMin >= 20) {
+    const deadline = new Date(createdMs + 30 * 60000);
+    const hh = deadline.getHours().toString().padStart(2, '0');
+    const mm = deadline.getMinutes().toString().padStart(2, '0');
+    return { tone: 'warn', text: `Still waiting for a driver — may auto-cancel by ${hh}:${mm} if none respond.` };
+  }
+  return null;
+};
+
 // ── Main page ─────────────────────────────────────────────────────────────────
 export const MyOrders: React.FC = () => {
   const { user, addNotification, setCurrentPage, setSheetOpen } = useApp();
@@ -174,6 +194,16 @@ export const MyOrders: React.FC = () => {
   }, [sheetOrderId, setSheetOpen]);
   const [cancellingId, setCancellingId] = useState<string | null>(null);
   const prevStatuses                = useRef<Record<string, string>>({});
+
+  // Ticks every 30s purely to re-evaluate pendingBanner()'s elapsed-time
+  // thresholds — no network call, just a re-render so "just placed"/"may
+  // auto-cancel soon" flip on schedule instead of only when unrelated
+  // realtime activity happens to re-render this page.
+  const [, forceTick] = useState(0);
+  useEffect(() => {
+    const id = setInterval(() => forceTick(t => t + 1), 30_000);
+    return () => clearInterval(id);
+  }, []);
 
   const showToast = (msg: string) => {
     setToast(msg);
@@ -343,6 +373,20 @@ export const MyOrders: React.FC = () => {
                   {o.cancel_reason}
                 </p>
               )}
+
+              {(() => {
+                const banner = pendingBanner(o, Date.now());
+                if (!banner) return null;
+                return (
+                  <p className={`text-xs font-semibold rounded-xl px-3 py-2 -mt-1 ${
+                    banner.tone === 'accent'
+                      ? 'text-blue-700 bg-blue-50 border border-blue-100'
+                      : 'text-amber-700 bg-amber-50 border border-amber-100'
+                  }`}>
+                    {banner.text}
+                  </p>
+                );
+              })()}
 
               {canAct(o) && (
                 <div className="flex flex-col gap-2">
