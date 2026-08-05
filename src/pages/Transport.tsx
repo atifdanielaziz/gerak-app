@@ -7,7 +7,7 @@ const MapboxRideMap = lazy(() => import('../components/MapboxRideMap').then(m =>
 import {
   Map, List, PencilLine, Car, PlaneTakeoff, PlaneLanding,
   Info, CheckCircle2, RotateCcw, Users, Clock, CalendarDays, Phone, ClipboardList, X,
-  History,
+  ArrowLeftRight, History,
 } from 'lucide-react';
 import { submitRideToSheets } from '../lib/sheetsService';
 import { useTapVsScroll } from '../lib/useTapVsScroll';
@@ -110,11 +110,16 @@ const AERBUS_POINTS: Record<'pekan' | 'gambang', AerbusPoint[]> = {
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export const Transport: React.FC = () => {
-  const { user, setCurrentPage, showAuthGate, setLeaveGuard } = useApp();
+  const { user, setCurrentPage, showAuthGate, setLeaveGuard, isPreviewMode, guestCampus } = useApp();
 
-  // Page state — campus is always the logged-in user's own, no in-page
-  // switcher anymore (removed campus toggle, superadmin included).
-  const campus: 'pekan' | 'gambang' = user.campus?.toLowerCase() === 'pekan' ? 'pekan' : 'gambang';
+  // Page state — campus is the logged-in user's own, EXCEPT while a
+  // superadmin is in Customer Preview mode browsing as a chosen campus
+  // (guestCampus, e.g. "UMPSA Pekan") — this previously always fell back
+  // to the admin's own real campus, so previewing as Pekan still showed
+  // Gambang's Quick Routes/AerBus points. No in-page switcher otherwise
+  // (removed campus toggle, superadmin included).
+  const effectiveCampusRaw = isPreviewMode && guestCampus ? guestCampus : user.campus;
+  const campus: 'pekan' | 'gambang' = effectiveCampusRaw?.toLowerCase().includes('pekan') ? 'pekan' : 'gambang';
   const [bookMode, setBookMode] = useState<'quick' | 'custom' | 'map' | 'aerbus'>(user.isLoggedIn ? 'custom' : 'map');
   const [showTerms, setShowTerms] = useState(false);
   // Sub-page Standard (same in-place pattern as Profile.tsx's "My Profile"
@@ -719,9 +724,20 @@ export const Transport: React.FC = () => {
       {bookMode === 'custom' && (
         <div className="px-4 mt-3">
           <div className="bg-white border border-slate-100 rounded-2xl p-3 flex flex-col gap-2.5">
-            <h3 className="text-sm font-semibold text-slate-700 flex items-center gap-1.5">
-              <PencilLine className="w-4 h-4 text-slate-400" /> Custom Route
-            </h3>
+            <div className="flex items-center justify-between">
+              <h3 className="text-sm font-semibold text-slate-700 flex items-center gap-1.5">
+                <PencilLine className="w-4 h-4 text-slate-400" /> Custom Route
+              </h3>
+              <button
+                type="button"
+                onClick={() => { setCustomPickup(customDest); setCustomDest(customPickup); }}
+                title="Swap pickup and destination"
+                aria-label="Swap pickup and destination"
+                className="w-7 h-7 flex items-center justify-center rounded-full bg-slate-50 text-slate-400 active:scale-90 active:bg-slate-100 transition shrink-0"
+              >
+                <ArrowLeftRight className="w-3.5 h-3.5" />
+              </button>
+            </div>
             <div className="flex flex-col gap-2">
               <div className="flex flex-col gap-0.5">
                 <label className="text-xs font-normal text-slate-400 pl-1">Point A — Pickup</label>
@@ -814,18 +830,17 @@ export const Transport: React.FC = () => {
       )}
 
       {/* Recent routes trigger — opens the full route picker sub-page
-          (Recent Routes history + Quick Routes). Sits right above Order
-          Details, after the mode-specific block, so it doesn't compete
-          with Custom/Search Routes/AerBus for attention up top. No chip
-          preview underneath anymore — just the label itself, styled to
-          blink red so it draws the eye as a real shortcut worth tapping,
-          not read as a plain section heading. */}
-      {user.isLoggedIn && (
+          (Recent Routes history + Quick Routes). Custom mode only — Recent
+          Routes/Quick Routes are the fast-track alternative to typing in
+          Custom, so they don't apply once you're already in Search Routes
+          or AerBus. Attention Blink Standard (green + animate-blink) so it
+          reads as a real shortcut worth tapping, not a plain heading. */}
+      {user.isLoggedIn && bookMode === 'custom' && (
         <div className="px-4 mt-3">
           <button
             type="button"
             onClick={() => setShowRoutePicker(true)}
-            className="flex items-center gap-1.5 text-xs font-semibold text-primary animate-pulse"
+            className="flex items-center gap-1.5 text-xs font-semibold text-emerald-600 animate-blink"
           >
             <History className="w-3.5 h-3.5" /> Recent Routes
           </button>

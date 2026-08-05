@@ -20,6 +20,12 @@
   --animate-pulse-glow: pulse-glow 2s infinite ease-in-out;
   --animate-float: float 3s infinite ease-in-out;
   --animate-shimmer: shimmer 2s infinite linear;
+  /* Attention Blink Standard — a real on/off blink (not the gentler default
+     animate-pulse dim), for a tappable shortcut that should catch the eye
+     immediately (e.g. Transport.tsx's "Recent Routes" trigger). Color is
+     applied separately via a text/bg utility (green — emerald-600 — is the
+     standard pairing); this animation is color-agnostic. */
+  --animate-blink: blink 1.1s infinite ease-in-out;
 
   @keyframes fade-in {
     from { opacity: 0; }
@@ -48,6 +54,10 @@
   @keyframes shimmer {
     0% { background-position: -200% 0; }
     100% { background-position: 200% 0; }
+  }
+  @keyframes blink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.25; }
   }
   @keyframes keep-compositor-awake {
     0%, 100% { opacity: 0.001; }
