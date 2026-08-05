@@ -592,30 +592,24 @@ export const Transport: React.FC = () => {
   // Small helper — an accordion section header. Not a component (avoids the
   // "no components during render" rule) — a plain function returning JSX,
   // called directly, same pattern as OrdersTab.tsx's sortArrow/resizeHandle.
-  const accHeader = (section: Section, icon: React.ReactNode, label: string, summary: string, badge?: React.ReactNode) => {
-    const isOpen = openSection === section;
-    return (
-      <button
-        type="button"
-        onPointerDown={e => { e.preventDefault(); setOpenSection(section); }}
-        className={`w-full flex items-center gap-3 px-3.5 py-3 transition ${isOpen ? 'bg-primary/5' : ''}`}
-      >
-        <span className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 transition-colors ${
-          isOpen ? 'bg-primary text-white' : 'bg-slate-50 text-slate-400'
-        }`}>
-          {icon}
-        </span>
-        <span className="flex-1 min-w-0 flex items-center justify-between gap-2">
-          <span className="text-sm font-bold text-slate-800 shrink-0">{label}</span>
-          <span className="flex items-center gap-2 min-w-0">
-            {badge}
-            <span className={`text-xs font-semibold truncate ${isOpen ? 'text-primary' : 'text-slate-500'}`}>{summary}</span>
-            <ChevronDown className={`w-3.5 h-3.5 shrink-0 transition-transform ${isOpen ? 'rotate-180 text-primary' : 'text-slate-400'}`} />
-          </span>
-        </span>
-      </button>
-    );
-  };
+  const accHeader = (section: Section, icon: React.ReactNode, label: string, summary: string, badge?: React.ReactNode) => (
+    <button
+      type="button"
+      onPointerDown={e => { e.preventDefault(); setOpenSection(section); }}
+      className={`w-full flex items-center justify-between gap-2 px-4 py-3.5 transition ${
+        openSection === section ? 'bg-slate-50' : ''
+      }`}
+    >
+      <span className="flex items-center gap-2 text-sm font-semibold text-slate-800 shrink-0">
+        {icon} {label}
+      </span>
+      <span className="flex items-center gap-2 min-w-0">
+        {badge}
+        <span className="text-xs font-semibold text-slate-500 truncate">{summary}</span>
+        <ChevronDown className={`w-3.5 h-3.5 text-slate-400 shrink-0 transition-transform ${openSection === section ? 'rotate-180' : ''}`} />
+      </span>
+    </button>
+  );
 
   return (
     <form onSubmit={handleBook} className="flex-grow bg-white flex flex-col min-h-0 animate-fade-in">
@@ -635,16 +629,18 @@ export const Transport: React.FC = () => {
             <button
               type="button"
               onClick={() => setShowTerms(true)}
-              className="flex items-center gap-1 pl-2 pr-2.5 py-1.5 rounded-lg bg-slate-50 text-slate-500 text-[10px] font-bold active:scale-95 transition"
+              title="Booking Terms"
+              className="w-8 h-8 flex items-center justify-center rounded-xl bg-slate-50 text-slate-400 active:scale-90 transition"
             >
-              <Info className="w-3 h-3" /> Terms
+              <Info className="w-3.5 h-3.5" />
             </button>
             <button
               type="button"
               onClick={() => setCurrentPage('my-orders')}
-              className="flex items-center gap-1 pl-2 pr-2.5 py-1.5 rounded-lg bg-slate-50 text-slate-500 text-[10px] font-bold active:scale-95 transition"
+              title="My Orders"
+              className="w-8 h-8 flex items-center justify-center rounded-xl bg-slate-50 text-slate-400 active:scale-90 transition"
             >
-              <ClipboardList className="w-3 h-3" /> Orders
+              <ClipboardList className="w-3.5 h-3.5" />
             </button>
           </div>
         </div>
@@ -670,10 +666,8 @@ export const Transport: React.FC = () => {
                     onPointerDown={e => { e.preventDefault(); bookRecentRoute(pickup, destination); }}
                     className="flex items-center gap-1.5 text-xs font-semibold text-slate-700 active:opacity-60 transition"
                   >
-                    <span className="w-1.5 h-1.5 rounded-full bg-blue-500 shrink-0" />
                     <span className="max-w-[90px] truncate">{pickup}</span>
                     <span className="text-slate-300">→</span>
-                    <span className="w-1.5 h-1.5 rounded-full bg-primary shrink-0" />
                     <span className="max-w-[90px] truncate">{destination}</span>
                   </button>
                   <button
@@ -705,7 +699,7 @@ export const Transport: React.FC = () => {
                   type="button"
                   onPointerDown={(e) => { e.preventDefault(); switchMode(key); }}
                   className={`flex-1 py-2 rounded-xl text-[11px] font-semibold transition ${
-                    bookMode === key ? 'bg-white text-primary shadow-sm' : 'text-slate-500'
+                    bookMode === key ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500'
                   }`}
                 >
                   {label}
@@ -716,11 +710,12 @@ export const Transport: React.FC = () => {
         )}
 
         {/* ── Accordion: Trip / When / You ── */}
-        <div className="px-4 mt-3 flex flex-col gap-2.5">
+        <div className="px-4 mt-3">
+          <div className="bg-white border border-slate-100 rounded-2xl overflow-hidden divide-y divide-slate-100">
 
             {/* TRIP */}
-            <div className={`bg-white border rounded-2xl overflow-hidden transition-colors ${openSection === 'trip' ? 'border-primary/30 shadow-sm' : 'border-slate-100'}`}>
-              {accHeader('trip', <MapPin className="w-4 h-4" />, 'Trip', tripSummary)}
+            <div>
+              {accHeader('trip', <MapPin className="w-4 h-4 text-slate-400" />, 'Trip', tripSummary)}
               {openSection === 'trip' && (
                 <div className="px-4 pb-4 flex flex-col gap-3">
 
@@ -776,7 +771,7 @@ export const Transport: React.FC = () => {
                       ) : selectedRoute && !showRouteList ? (
                         <div
                           onClick={() => setShowRouteList(true)}
-                          className="w-full flex items-center justify-between py-2.5 px-3 rounded-2xl border border-primary bg-primary/5 transition active:bg-primary/10 active:scale-[0.99] cursor-pointer"
+                          className="w-full flex items-center justify-between py-2.5 px-3 rounded-2xl border border-slate-900 bg-white transition active:bg-slate-50 active:scale-[0.99] cursor-pointer"
                         >
                           <div className="flex items-center gap-3">
                             <div>
@@ -790,7 +785,7 @@ export const Transport: React.FC = () => {
                           </div>
                           <div className="flex items-center gap-2 shrink-0 ml-2">
                             <div className="text-right">
-                              <span className="text-xs font-black text-primary">RM{selectedRoute.fare}</span>
+                              <span className="text-xs font-black text-slate-800">RM{selectedRoute.fare}</span>
                               <span className="block text-[9px] font-normal text-slate-400 mt-0.5">Tap to change</span>
                             </div>
                             <button
@@ -816,10 +811,10 @@ export const Transport: React.FC = () => {
                                   setSelectedRoute(isSelected ? null : route);
                                   if (!isSelected) setShowRouteList(false);
                                 })}
-                                className={`w-full flex items-center justify-between py-2.5 px-3 rounded-2xl border transition-transform active:scale-[0.99] text-left ${
+                                className={`w-full flex items-center justify-between py-2.5 px-3 rounded-2xl border bg-white transition-transform active:scale-[0.99] active:bg-slate-50 text-left ${
                                   isSelected
-                                    ? 'border-primary bg-primary/5 active:bg-primary/10'
-                                    : 'border-slate-100 bg-white hover:border-slate-200 active:bg-slate-50'
+                                    ? 'border-slate-900'
+                                    : 'border-slate-100 hover:border-slate-200'
                                 }`}
                               >
                                 <div className="flex items-center gap-3">
@@ -833,7 +828,7 @@ export const Transport: React.FC = () => {
                                   </div>
                                 </div>
                                 <div className="text-right shrink-0 ml-2">
-                                  <span className={`text-xs font-black ${isSelected ? 'text-primary' : 'text-slate-800'}`}>RM{route.fare}</span>
+                                  <span className="text-xs font-black text-slate-800">RM{route.fare}</span>
                                 </div>
                               </button>
                             );
@@ -893,20 +888,20 @@ export const Transport: React.FC = () => {
                     <>
                       <div className="flex gap-2">
                         <button type="button" onPointerDown={e => { e.preventDefault(); setAerbusDirection('to'); }}
-                          className={`flex-1 flex flex-col items-center gap-1.5 p-3 rounded-2xl border transition-transform active:scale-[0.99] ${
-                            aerbusDirection === 'to' ? 'border-primary bg-primary/5 active:bg-primary/10' : 'border-slate-100 bg-white active:bg-slate-50'
+                          className={`flex-1 flex flex-col items-center gap-1.5 p-3 rounded-2xl border bg-white transition-transform active:scale-[0.99] active:bg-slate-50 ${
+                            aerbusDirection === 'to' ? 'border-slate-900' : 'border-slate-100'
                           }`}
                         >
-                          <PlaneTakeoff className={`w-4 h-4 ${aerbusDirection === 'to' ? 'text-primary' : 'text-slate-400'}`} />
-                          <span className={`text-xs font-semibold ${aerbusDirection === 'to' ? 'text-primary' : 'text-slate-600'}`}>To Airport/Bus</span>
+                          <PlaneTakeoff className={`w-4 h-4 ${aerbusDirection === 'to' ? 'text-slate-900' : 'text-slate-400'}`} />
+                          <span className={`text-xs font-semibold ${aerbusDirection === 'to' ? 'text-slate-900' : 'text-slate-600'}`}>To Airport/Bus</span>
                         </button>
                         <button type="button" onPointerDown={e => { e.preventDefault(); setAerbusDirection('from'); }}
-                          className={`flex-1 flex flex-col items-center gap-1.5 p-3 rounded-2xl border transition-transform active:scale-[0.99] ${
-                            aerbusDirection === 'from' ? 'border-primary bg-primary/5 active:bg-primary/10' : 'border-slate-100 bg-white active:bg-slate-50'
+                          className={`flex-1 flex flex-col items-center gap-1.5 p-3 rounded-2xl border bg-white transition-transform active:scale-[0.99] active:bg-slate-50 ${
+                            aerbusDirection === 'from' ? 'border-slate-900' : 'border-slate-100'
                           }`}
                         >
-                          <PlaneLanding className={`w-4 h-4 ${aerbusDirection === 'from' ? 'text-primary' : 'text-slate-400'}`} />
-                          <span className={`text-xs font-semibold ${aerbusDirection === 'from' ? 'text-primary' : 'text-slate-600'}`}>From Airport/Bus</span>
+                          <PlaneLanding className={`w-4 h-4 ${aerbusDirection === 'from' ? 'text-slate-900' : 'text-slate-400'}`} />
+                          <span className={`text-xs font-semibold ${aerbusDirection === 'from' ? 'text-slate-900' : 'text-slate-600'}`}>From Airport/Bus</span>
                         </button>
                       </div>
 
@@ -930,10 +925,10 @@ export const Transport: React.FC = () => {
             </div>
 
             {/* WHEN */}
-            <div className={`bg-white border rounded-2xl overflow-hidden transition-colors ${openSection === 'when' ? 'border-primary/30 shadow-sm' : 'border-slate-100'}`}>
+            <div>
               {accHeader(
                 'when',
-                <Clock className="w-4 h-4" />,
+                <Clock className="w-4 h-4 text-slate-400" />,
                 'When',
                 whenSummary,
                 bookMode === 'aerbus' && aerbusPointData ? (
@@ -950,20 +945,20 @@ export const Transport: React.FC = () => {
                   {bookMode !== 'aerbus' && (
                     <div className="flex gap-2">
                       <button type="button" onPointerDown={(e) => { e.preventDefault(); setBookWhen('now'); }}
-                        className={`flex-1 flex items-center gap-2 p-3 rounded-2xl border transition-transform active:scale-[0.99] ${
-                          bookWhen === 'now' ? 'border-primary bg-primary/5 active:bg-primary/10' : 'border-slate-100 bg-white active:bg-slate-50'
+                        className={`flex-1 flex items-center gap-2 p-3 rounded-2xl border bg-white transition-transform active:scale-[0.99] active:bg-slate-50 ${
+                          bookWhen === 'now' ? 'border-slate-900' : 'border-slate-100'
                         }`}
                       >
-                        <Clock className={`w-4 h-4 shrink-0 ${bookWhen === 'now' ? 'text-primary' : 'text-slate-400'}`} />
-                        <span className={`text-xs font-semibold ${bookWhen === 'now' ? 'text-primary' : 'text-slate-600'}`}>Now</span>
+                        <Clock className={`w-4 h-4 shrink-0 ${bookWhen === 'now' ? 'text-slate-900' : 'text-slate-400'}`} />
+                        <span className={`text-xs font-semibold ${bookWhen === 'now' ? 'text-slate-900' : 'text-slate-600'}`}>Now</span>
                       </button>
                       <button type="button" onPointerDown={(e) => { e.preventDefault(); setBookWhen('later'); }}
-                        className={`flex-1 flex items-center gap-2 p-3 rounded-2xl border transition-transform active:scale-[0.99] ${
-                          bookWhen === 'later' ? 'border-primary bg-primary/5 active:bg-primary/10' : 'border-slate-100 bg-white active:bg-slate-50'
+                        className={`flex-1 flex items-center gap-2 p-3 rounded-2xl border bg-white transition-transform active:scale-[0.99] active:bg-slate-50 ${
+                          bookWhen === 'later' ? 'border-slate-900' : 'border-slate-100'
                         }`}
                       >
-                        <CalendarDays className={`w-4 h-4 shrink-0 ${bookWhen === 'later' ? 'text-primary' : 'text-slate-400'}`} />
-                        <span className={`text-xs font-semibold ${bookWhen === 'later' ? 'text-primary' : 'text-slate-600'}`}>Later</span>
+                        <CalendarDays className={`w-4 h-4 shrink-0 ${bookWhen === 'later' ? 'text-slate-900' : 'text-slate-400'}`} />
+                        <span className={`text-xs font-semibold ${bookWhen === 'later' ? 'text-slate-900' : 'text-slate-600'}`}>Later</span>
                       </button>
                     </div>
                   )}
@@ -1038,8 +1033,8 @@ export const Transport: React.FC = () => {
             </div>
 
             {/* YOU */}
-            <div className={`bg-white border rounded-2xl overflow-hidden transition-colors ${openSection === 'you' ? 'border-primary/30 shadow-sm' : 'border-slate-100'}`}>
-              {accHeader('you', <Users className="w-4 h-4" />, 'You', youSummary)}
+            <div>
+              {accHeader('you', <Users className="w-4 h-4 text-slate-400" />, 'You', youSummary)}
               {openSection === 'you' && (
                 <div className="px-4 pb-4 flex flex-col gap-3">
                   <div className="flex flex-col gap-0.5">
@@ -1094,6 +1089,7 @@ export const Transport: React.FC = () => {
               )}
             </div>
 
+          </div>
         </div>
 
         {bookingError && (
@@ -1135,7 +1131,7 @@ export const Transport: React.FC = () => {
           disabled={!canBook || booking}
           className={`flex-1 flex items-center justify-center gap-2 text-white text-sm font-semibold py-3 rounded-2xl transition-all duration-300 active:scale-[0.99] ${
             canBook && !booking
-              ? 'bg-gradient-to-br from-primary to-primary-hover shadow-lg shadow-primary/40 cursor-pointer'
+              ? 'bg-primary hover:bg-primary-hover shadow-lg shadow-primary/30 cursor-pointer'
               : 'bg-slate-200 text-slate-400 cursor-not-allowed shadow-none'
           }`}
         >
