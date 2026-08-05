@@ -5,9 +5,9 @@ interface PinLocation { address: string; coords: [number, number]; }
 
 const MapboxRideMap = lazy(() => import('../components/MapboxRideMap').then(m => ({ default: m.MapboxRideMap })));
 import {
-  Map, ChevronDown, Car, PlaneTakeoff, PlaneLanding,
+  Map, List, ChevronDown, PencilLine, Car, PlaneTakeoff, PlaneLanding,
   Info, CheckCircle2, RotateCcw, Users, Clock, CalendarDays, Phone, ClipboardList, X,
-  ArrowLeftRight, History, MapPin,
+  ArrowLeftRight, History,
 } from 'lucide-react';
 import { submitRideToSheets } from '../lib/sheetsService';
 import { useTapVsScroll } from '../lib/useTapVsScroll';
@@ -107,8 +107,6 @@ const AERBUS_POINTS: Record<'pekan' | 'gambang', AerbusPoint[]> = {
   ],
 };
 
-type Section = 'trip' | 'when' | 'you';
-
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export const Transport: React.FC = () => {
@@ -119,11 +117,6 @@ export const Transport: React.FC = () => {
   const campus: 'pekan' | 'gambang' = user.campus?.toLowerCase() === 'pekan' ? 'pekan' : 'gambang';
   const [bookMode, setBookMode] = useState<'quick' | 'custom' | 'map' | 'aerbus'>(user.isLoggedIn ? 'quick' : 'map');
   const [showTerms, setShowTerms] = useState(false);
-
-  // Accordion — which of Trip/When/You is expanded. Starts on Trip since
-  // that's always the first thing to fill in; switching modes jumps back to
-  // it too, since a mode swap usually means starting the route pick over.
-  const [openSection, setOpenSection] = useState<Section>('trip');
 
   // Recent routes — the student's own past pickup/destination pairs,
   // deduplicated (most-recent occurrence wins) so a route booked 5 times
@@ -173,13 +166,11 @@ export const Transport: React.FC = () => {
       setSelectedRoute(match);
       setShowRouteList(false);
       setShowFromDropdown(false);
-      setOpenSection('trip');
       return;
     }
     setBookMode('custom');
     setCustomPickup(pickup);
     setCustomDest(destination);
-    setOpenSection('trip');
   };
 
   // AerBus state
@@ -345,27 +336,7 @@ export const Transport: React.FC = () => {
      bookMode === 'custom' ? !!(customPickup.trim() && customDest.trim()) :
      !!(pickupPin && destPin));
 
-  // Accordion row summaries — what a collapsed row shows so you don't have
-  // to reopen it to see what's already filled in.
-  const tripSummary =
-    bookMode === 'quick'  ? (selectedRoute ? `${selectedRoute.from} → ${selectedRoute.to}` : 'Choose a route') :
-    bookMode === 'custom' ? (customPickup && customDest ? `${customPickup} → ${customDest}` : 'Enter pickup & destination') :
-    bookMode === 'aerbus' ? (aerbusPointData ? `${aerbusDirection === 'to' ? 'To' : 'From'} ${aerbusPointData.label}` : 'Select a point') :
-    (pickupPin && destPin ? `${pickupPin.address} → ${destPin.address}` : 'Drop pins on the map');
-
-  const whenSummary =
-    bookMode === 'aerbus' ? (time ? `Ticket ${time}` : 'Enter ticket time') :
-    effectiveBookWhen === 'now' ? 'Now' :
-    (date && time ? `${new Date(date + 'T00:00:00').toLocaleDateString('en-MY', { day: 'numeric', month: 'short' })}, ${time}` : 'Select date & time');
-
-  const youSummary = `${passengers} pax · ${contact || 'no contact'}`;
-
   // ── Handlers ────────────────────────────────────────────────────────────────
-
-  const switchMode = (m: 'quick' | 'custom' | 'map' | 'aerbus') => {
-    setBookMode(m);
-    setOpenSection('trip');
-  };
 
   const handleBook = async (e: React.SyntheticEvent) => {
     e.preventDefault();
@@ -489,7 +460,6 @@ export const Transport: React.FC = () => {
     setTime(`${String(rounded.getHours()).padStart(2, '0')}:${String(rounded.getMinutes()).padStart(2, '0')}`);
     setPassengers(1);
     setNotes('');
-    setOpenSection('trip');
   };
 
   // Auto-advance to My Orders a few seconds after a successful booking, so
@@ -589,34 +559,12 @@ export const Transport: React.FC = () => {
     );
   }
 
-  // Small helper — an accordion section header. Not a component (avoids the
-  // "no components during render" rule) — a plain function returning JSX,
-  // called directly, same pattern as OrdersTab.tsx's sortArrow/resizeHandle.
-  const accHeader = (section: Section, icon: React.ReactNode, label: string, summary: string, badge?: React.ReactNode) => (
-    <button
-      type="button"
-      onPointerDown={e => { e.preventDefault(); setOpenSection(section); }}
-      className={`w-full flex items-center justify-between gap-2 px-4 py-3.5 transition ${
-        openSection === section ? 'bg-slate-50' : ''
-      }`}
-    >
-      <span className="flex items-center gap-2 text-sm font-semibold text-slate-800 shrink-0">
-        {icon} {label}
-      </span>
-      <span className="flex items-center gap-2 min-w-0">
-        {badge}
-        <span className="text-xs font-semibold text-slate-500 truncate">{summary}</span>
-        <ChevronDown className={`w-3.5 h-3.5 text-slate-400 shrink-0 transition-transform ${openSection === section ? 'rotate-180' : ''}`} />
-      </span>
-    </button>
-  );
-
   return (
-    <form onSubmit={handleBook} className="flex-grow bg-white flex flex-col min-h-0 animate-fade-in">
-      <div className="flex-1 min-h-0 overflow-y-auto no-scrollbar">
+    <div className="flex-grow bg-white overflow-y-auto no-scrollbar pb-4 animate-fade-in">
 
-        {/* Header */}
-        <div className="px-4 pt-5 pb-1 flex items-center justify-between">
+      {/* Header */}
+      <div className="px-4 pt-5 pb-1 flex items-center justify-between">
+        <div className="flex items-center gap-2">
           <div>
             <h2 className="text-xl font-semibold text-slate-800 m-0 flex items-center gap-2">
               <Car className="w-5 h-5 text-slate-400" /> Gerak Car
@@ -625,511 +573,499 @@ export const Transport: React.FC = () => {
               Point-to-point campus travel
             </p>
           </div>
-          <div className="flex items-center gap-1.5">
+        </div>
+      </div>
+
+      <div className="px-4 pt-4 flex flex-col gap-2">
+        <div className="flex items-center justify-between">
+          <button
+            type="button"
+            onClick={() => setShowTerms(true)}
+            className="flex items-center gap-1.5 text-xs font-normal text-slate-400 hover:text-primary transition"
+          >
+            <Info className="w-3.5 h-3.5" />
+            Booking Terms
+          </button>
+          <button
+            onClick={() => setCurrentPage('my-orders')}
+            className="flex items-center gap-1.5 text-xs font-normal text-slate-400 hover:text-primary transition"
+          >
+            <ClipboardList className="w-3.5 h-3.5" />
+            My Orders
+          </button>
+        </div>
+      </div>
+
+      {/* Mode selector — 4 modes */}
+      {user.isLoggedIn && (
+        <div className="px-4 mt-3 flex gap-2">
+          {([
+            { key: 'quick',  icon: List,         label: 'Quick Routes'  },
+            { key: 'custom', icon: PencilLine,   label: 'Custom'        },
+            { key: 'map',    icon: Map,          label: 'Search Routes' },
+            { key: 'aerbus', icon: PlaneTakeoff, label: 'AerBus'        },
+          ] as const).map(({ key, icon: Icon, label }) => (
+            <button key={key} type="button" onPointerDown={(e) => { e.preventDefault(); setBookMode(key); }}
+              className={`flex-1 flex flex-col items-center gap-1.5 p-2.5 rounded-2xl border bg-white transition-transform active:scale-[0.99] active:bg-slate-50 ${
+                bookMode === key ? 'border-slate-900' : 'border-slate-100'
+              }`}
+            >
+              <Icon className={`w-4 h-4 ${bookMode === key ? 'text-slate-900' : 'text-slate-400'}`} />
+              <span className={`text-[10px] font-semibold leading-tight text-center ${bookMode === key ? 'text-slate-900' : 'text-slate-500'}`}>
+                {label}
+              </span>
+            </button>
+          ))}
+        </div>
+      )}
+
+      {/* ── Quick Routes ── */}
+      {bookMode === 'quick' && (
+        <div className="px-4 mt-3 flex flex-col gap-4">
+          {/* FROM dropdown */}
+          <div ref={fromDropdownRef} className="relative">
             <button
               type="button"
-              onClick={() => setShowTerms(true)}
-              title="Booking Terms"
-              className="w-8 h-8 flex items-center justify-center rounded-xl bg-slate-50 text-slate-400 active:scale-90 transition"
+              onPointerDown={e => { e.preventDefault(); setShowFromDropdown(v => !v); }}
+              className="w-full flex items-center justify-between bg-white border border-slate-100 rounded-xl py-2.5 px-3 transition-transform active:bg-slate-50 active:scale-[0.99]"
             >
-              <Info className="w-3.5 h-3.5" />
+              <span className={`text-xs font-semibold ${selectedFrom ? 'text-slate-800' : 'text-slate-400 font-normal'}`}>
+                {selectedFrom || 'Select pickup location…'}
+              </span>
+              <ChevronDown className={`w-3.5 h-3.5 text-slate-400 shrink-0 transition-transform ${showFromDropdown ? 'rotate-180' : ''}`} />
             </button>
-            <button
-              type="button"
-              onClick={() => setCurrentPage('my-orders')}
-              title="My Orders"
-              className="w-8 h-8 flex items-center justify-center rounded-xl bg-slate-50 text-slate-400 active:scale-90 transition"
+
+            {showFromDropdown && (
+              <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-slate-100 rounded-2xl shadow-xl z-30 overflow-hidden">
+                <div className="max-h-48 overflow-y-auto no-scrollbar">
+                  {fromOptions.map((from, i) => (
+                    <button
+                      key={from}
+                      type="button"
+                      onPointerDown={e => {
+                        e.preventDefault();
+                        setSelectedFrom(from);
+                        setSelectedRoute(null);
+                        setShowRouteList(true);
+                        setShowFromDropdown(false);
+                      }}
+                      className={`w-full text-left px-4 py-3 text-sm font-normal transition ${
+                        i < fromOptions.length - 1 ? 'border-b border-slate-50' : ''
+                      } ${
+                        selectedFrom === from
+                          ? 'bg-slate-100 text-slate-900 font-semibold'
+                          : 'text-slate-700 hover:bg-slate-50'
+                      }`}
+                    >
+                      {from}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Route cards / selected summary */}
+          {!selectedFrom ? (
+            <p className="text-xs text-slate-400 font-normal text-center py-4 italic">
+              Select a pickup location above to see routes
+            </p>
+          ) : selectedRoute && !showRouteList ? (
+            /* Collapsed: show selected route + change button */
+            <div
+              onClick={() => setShowRouteList(true)}
+              className="w-full flex items-center justify-between py-2.5 px-3 rounded-2xl border border-slate-900 bg-white transition active:bg-slate-50 active:scale-[0.99] cursor-pointer"
             >
-              <ClipboardList className="w-3.5 h-3.5" />
+              <div className="flex items-center gap-3">
+                <div>
+                  <p className="text-xs font-semibold text-slate-800 leading-tight">
+                    {selectedRoute.from} → {selectedRoute.to}
+                  </p>
+                  {selectedRoute.maxPax && (
+                    <p className="text-xs text-amber-600 font-normal mt-0.5">Max {selectedRoute.maxPax} pax</p>
+                  )}
+                </div>
+              </div>
+              <div className="flex items-center gap-2 shrink-0 ml-2">
+                <div className="text-right">
+                  <span className="text-xs font-black text-slate-800">RM{selectedRoute.fare}</span>
+                  <span className="block text-[9px] font-normal text-slate-400 mt-0.5">Tap to change</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={e => { e.stopPropagation(); setSelectedRoute(null); }}
+                  className="w-6 h-6 flex items-center justify-center rounded-full bg-slate-100 text-slate-400 active:scale-90 transition shrink-0"
+                  aria-label="Cancel selection"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            </div>
+          ) : (
+            /* Expanded: full scrollable list */
+            <div ref={routeListRef} className="flex flex-col gap-2 max-h-[272px] overflow-y-auto no-scrollbar pr-0.5">
+              {filteredRoutes.map((route, i) => {
+                const isSelected = selectedRoute === route;
+                return (
+                  <button
+                    key={i}
+                    type="button"
+                    onPointerDown={onRowPointerDown}
+                    onPointerUp={e => onRowPointerUp(e, () => {
+                      setSelectedRoute(isSelected ? null : route);
+                      if (!isSelected) setShowRouteList(false);
+                    })}
+                    className={`w-full flex items-center justify-between py-2.5 px-3 rounded-2xl border bg-white transition-transform active:scale-[0.99] active:bg-slate-50 text-left ${
+                      isSelected
+                        ? 'border-slate-900'
+                        : 'border-slate-100 hover:border-slate-200'
+                    }`}
+                  >
+                    <div className="flex items-center gap-3">
+                      <div>
+                        <p className="text-xs font-semibold text-slate-800 leading-tight">
+                          {route.from} → {route.to}
+                        </p>
+                        {route.maxPax && (
+                          <p className="text-xs text-amber-600 font-normal mt-0.5">Max {route.maxPax} pax</p>
+                        )}
+                      </div>
+                    </div>
+                    <div className="text-right shrink-0 ml-2">
+                      <span className="text-xs font-black text-slate-800">RM{route.fare}</span>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ── Custom Mode ── */}
+      {bookMode === 'custom' && (
+        <div className="px-4 mt-3">
+          <div className="bg-white border border-slate-100 rounded-2xl p-3 flex flex-col gap-2.5">
+            <h3 className="text-sm font-semibold text-slate-700 flex items-center gap-1.5">
+              <PencilLine className="w-4 h-4 text-slate-400" /> Custom Route
+            </h3>
+            <div className="flex flex-col gap-2">
+              <div className="flex flex-col gap-0.5">
+                <label className="text-xs font-normal text-slate-400 pl-1">Point A — Pickup</label>
+                <input
+                  type="text"
+                  value={customPickup}
+                  onChange={e => setCustomPickup(e.target.value)}
+                  placeholder="e.g. Kolej Kediaman 3, Block B"
+                  className="bg-white border border-slate-100 rounded-xl px-3 py-2.5 text-xs text-slate-700 focus:outline-none focus:border-slate-900 transition"
+                />
+              </div>
+              <div className="flex flex-col gap-0.5">
+                <label className="text-xs font-normal text-slate-400 pl-1">Point B — Destination</label>
+                <input
+                  type="text"
+                  value={customDest}
+                  onChange={e => setCustomDest(e.target.value)}
+                  placeholder="e.g. FTKMA, Dewan Sri Damai"
+                  className="bg-white border border-slate-100 rounded-xl px-3 py-2.5 text-xs text-slate-700 focus:outline-none focus:border-slate-900 transition"
+                />
+              </div>
+            </div>
+            <p className="text-xs text-slate-400 font-normal text-center italic">
+              Fare for custom routes will be confirmed by your driver
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* ── Search Map ── */}
+      {bookMode === 'map' && (
+        <div className="px-4 mt-3 flex flex-col gap-4">
+          <Suspense fallback={<div className="flex justify-center py-12"><span className="w-6 h-6 rounded-full border-2 border-primary border-t-transparent animate-spin" /></div>}>
+            <MapboxRideMap
+              campusCenter={CAMPUS_CENTERS[campus]}
+              onPickupChange={(name, coords) => setPickupPin(name ? { address: name, coords: coords ?? [0, 0] } : null)}
+              onDestinationChange={(name, coords) => setDestPin(name ? { address: name, coords: coords ?? [0, 0] } : null)}
+            />
+          </Suspense>
+          <p className="text-xs text-slate-400 font-normal text-center italic">
+            Fare for map bookings will be confirmed by your driver
+          </p>
+        </div>
+      )}
+
+      {/* ── AerBus ── */}
+      {bookMode === 'aerbus' && (
+        <div className="px-4 mt-3 flex flex-col gap-3">
+          {/* Direction — Mode Selector Standard */}
+          <div className="flex gap-2">
+            <button type="button" onPointerDown={e => { e.preventDefault(); setAerbusDirection('to'); }}
+              className={`flex-1 flex flex-col items-center gap-1.5 p-3 rounded-2xl border bg-white transition-transform active:scale-[0.99] active:bg-slate-50 ${
+                aerbusDirection === 'to' ? 'border-slate-900' : 'border-slate-100'
+              }`}
+            >
+              <PlaneTakeoff className={`w-4 h-4 ${aerbusDirection === 'to' ? 'text-slate-900' : 'text-slate-400'}`} />
+              <span className={`text-xs font-semibold ${aerbusDirection === 'to' ? 'text-slate-900' : 'text-slate-600'}`}>To Airport/Bus</span>
             </button>
+            <button type="button" onPointerDown={e => { e.preventDefault(); setAerbusDirection('from'); }}
+              className={`flex-1 flex flex-col items-center gap-1.5 p-3 rounded-2xl border bg-white transition-transform active:scale-[0.99] active:bg-slate-50 ${
+                aerbusDirection === 'from' ? 'border-slate-900' : 'border-slate-100'
+              }`}
+            >
+              <PlaneLanding className={`w-4 h-4 ${aerbusDirection === 'from' ? 'text-slate-900' : 'text-slate-400'}`} />
+              <span className={`text-xs font-semibold ${aerbusDirection === 'from' ? 'text-slate-900' : 'text-slate-600'}`}>From Airport/Bus</span>
+            </button>
+          </div>
+
+          {/* Point selection — Dropdown Standard (NativeSelect), same row
+              layout as Quick Routes (plain label left, bold price right).
+              Options/pricing are per-campus (see AERBUS_POINTS) since travel
+              time to each point genuinely differs between Pekan and Gambang.
+              The buffer duration itself isn't shown per-option here anymore
+              — it's surfaced as a badge on the Order Details header below,
+              since it applies to whichever point is currently selected. */}
+          <div className="flex flex-col gap-0.5">
+            <label className="text-xs font-normal text-slate-400 pl-1">Pickup / Drop Point</label>
+            <NativeSelect<AerbusPointId | ''>
+              value={aerbusPoint}
+              onChange={setAerbusPoint}
+              placeholder="Select a point"
+              options={aerbusPoints.map(p => ({
+                value: p.id,
+                label: p.label,
+                right: `RM${p.fare}`,
+              }))}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* Recent routes — the student's own past pickups/destinations, one
+          tap to rebook, one more tap (swap icon) to book the return trip.
+          Sits right above Order Details, after the mode-specific block,
+          so it doesn't compete with Quick/Custom/Map/AerBus for attention
+          up top. Label styled to match Booking Terms (text-xs font-normal
+          text-slate-400), not its old uppercase/tracked treatment. */}
+      {user.isLoggedIn && recentRoutes.length > 0 && (
+        <div className="px-4 mt-3 flex flex-col gap-1.5">
+          <p className="flex items-center gap-1.5 text-xs font-normal text-slate-400">
+            <History className="w-3.5 h-3.5" /> Recent Routes
+          </p>
+          <div className="flex gap-2 overflow-x-auto no-scrollbar">
+            {recentRoutes.map(({ pickup, destination }) => (
+              <div
+                key={`${pickup}→${destination}`}
+                className="shrink-0 flex items-center gap-1.5 bg-white border border-slate-100 rounded-2xl pl-3 pr-1.5 py-2"
+              >
+                <button
+                  type="button"
+                  onPointerDown={e => { e.preventDefault(); bookRecentRoute(pickup, destination); }}
+                  className="flex items-center gap-1.5 text-xs font-semibold text-slate-700 active:opacity-60 transition"
+                >
+                  <span className="max-w-[90px] truncate">{pickup}</span>
+                  <span className="text-slate-300">→</span>
+                  <span className="max-w-[90px] truncate">{destination}</span>
+                </button>
+                <button
+                  type="button"
+                  onPointerDown={e => { e.preventDefault(); bookRecentRoute(destination, pickup); }}
+                  title="Book the return trip"
+                  className="w-6 h-6 flex items-center justify-center rounded-full bg-slate-50 text-slate-400 active:scale-90 active:bg-slate-100 transition shrink-0"
+                >
+                  <ArrowLeftRight className="w-3 h-3" />
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* ── Order form ── */}
+      <form onSubmit={handleBook} className="px-4 mt-2 flex flex-col gap-2">
+        <div className="bg-white border border-slate-100 rounded-2xl p-3 flex flex-col gap-2.5">
+          <div className="flex items-center justify-between">
+            <h3 className="text-sm font-semibold text-slate-700 flex items-center gap-1.5">
+              <CalendarDays className="w-4 h-4 text-slate-400" /> Order Details
+            </h3>
+            {/* Buffer-time flag — reflects whichever AerBus point is
+                currently selected, so it updates the moment the dropdown
+                selection changes. */}
+            {bookMode === 'aerbus' && aerbusPointData && (
+              <span className="inline-flex items-center gap-1 bg-emerald-50 border border-emerald-100 text-emerald-600 rounded-md px-1.5 py-0.5 text-[10px] font-semibold">
+                <PlaneTakeoff className="w-3 h-3" />
+                +{aerbusPointData.bufferMin >= 60 ? `${aerbusPointData.bufferMin / 60}h` : `${aerbusPointData.bufferMin}min`} buffer
+              </span>
+            )}
+          </div>
+
+          {/* Now / Later toggle — Mode Selector Standard. AerBus always
+              books a specific ticket time, so it skips this entirely. */}
+          {bookMode !== 'aerbus' && (
+            <div className="flex gap-2">
+              <button type="button" onPointerDown={(e) => { e.preventDefault(); setBookWhen('now'); }}
+                className={`flex-1 flex items-center gap-2 p-3 rounded-2xl border bg-white transition-transform active:scale-[0.99] active:bg-slate-50 ${
+                  bookWhen === 'now' ? 'border-slate-900' : 'border-slate-100'
+                }`}
+              >
+                <Clock className={`w-4 h-4 shrink-0 ${bookWhen === 'now' ? 'text-slate-900' : 'text-slate-400'}`} />
+                <span className={`text-xs font-semibold ${bookWhen === 'now' ? 'text-slate-900' : 'text-slate-600'}`}>Now</span>
+              </button>
+              <button type="button" onPointerDown={(e) => { e.preventDefault(); setBookWhen('later'); }}
+                className={`flex-1 flex items-center gap-2 p-3 rounded-2xl border bg-white transition-transform active:scale-[0.99] active:bg-slate-50 ${
+                  bookWhen === 'later' ? 'border-slate-900' : 'border-slate-100'
+                }`}
+              >
+                <CalendarDays className={`w-4 h-4 shrink-0 ${bookWhen === 'later' ? 'text-slate-900' : 'text-slate-400'}`} />
+                <span className={`text-xs font-semibold ${bookWhen === 'later' ? 'text-slate-900' : 'text-slate-600'}`}>Later</span>
+              </button>
+            </div>
+          )}
+
+          {/* Date + Time — overlay trick: display div at 12px, real input invisible on top */}
+          <div className="grid grid-cols-2 gap-2">
+            <div className="flex flex-col gap-0.5">
+              <label className="text-xs font-normal text-slate-400 pl-1">Date</label>
+              <div className="relative h-9 group">
+                <div className="absolute inset-0 bg-white border border-slate-100 rounded-xl px-2.5 flex items-center justify-between pointer-events-none group-focus-within:border-slate-900 transition">
+                  <span className={`text-xs font-semibold ${effectiveBookWhen === 'now' ? 'text-slate-300' : date ? 'text-slate-700' : 'text-slate-400'}`}>
+                    {date ? new Date(date + 'T00:00:00').toLocaleDateString('en-MY', { day: 'numeric', month: 'short', year: 'numeric' }) : 'Select date'}
+                  </span>
+                  <CalendarDays className={`w-3 h-3 shrink-0 ${effectiveBookWhen === 'now' ? 'text-slate-200' : 'text-slate-400'}`} />
+                </div>
+                {effectiveBookWhen === 'later' && (
+                  <input type="date" required value={date}
+                    min={new Date().toISOString().split('T')[0]}
+                    onChange={e => setDate(e.target.value)}
+                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                    style={{ fontSize: '16px' }} />
+                )}
+              </div>
+            </div>
+            <div className="flex flex-col gap-0.5">
+              <label className="text-xs font-normal text-slate-400 pl-1 flex items-center gap-1">
+                <Clock className="w-3 h-3" />
+                {bookMode === 'aerbus'
+                  ? (aerbusDirection === 'to' ? 'Boarding Time' : 'Landing Time')
+                  : 'Time'}
+                {isNight && <span className="text-amber-500 font-semibold ml-1">+RM5</span>}
+              </label>
+              <div className="relative h-9 group">
+                <div className={`absolute inset-0 border rounded-xl px-2.5 flex items-center justify-between pointer-events-none group-focus-within:border-slate-900 transition ${
+                  isNight ? 'border-amber-200 bg-amber-50/50' : 'bg-white border-slate-100'
+                }`}>
+                  <span className={`text-xs font-semibold ${effectiveBookWhen === 'now' ? 'text-slate-300' : !time ? 'text-slate-400' : isNight ? 'text-amber-700' : 'text-slate-700'}`}>
+                    {time || 'Select time'}
+                  </span>
+                  <Clock className={`w-3 h-3 shrink-0 ${effectiveBookWhen === 'now' ? 'text-slate-200' : 'text-slate-400'}`} />
+                </div>
+                {effectiveBookWhen === 'later' && (
+                  <input type="time" required value={time}
+                    onChange={e => setTime(e.target.value)}
+                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                    style={{ fontSize: '16px' }} />
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* AerBus buffer note — tells the customer to enter their actual
+              ticket time as-is, since the buffer is already handled for them */}
+          {bookMode === 'aerbus' && aerbusPointData && (
+            <div className="bg-emerald-50 border border-emerald-100 rounded-2xl px-3.5 py-2.5 flex items-start gap-2">
+              <PlaneTakeoff className="w-3.5 h-3.5 text-emerald-600 shrink-0 mt-0.5" />
+              <p className="text-xs text-emerald-700 font-normal leading-relaxed">
+                Enter your actual {aerbusDirection === 'to' ? 'boarding/departure' : 'landing/arrival'} time —
+                no need to add your own buffer. Your driver is automatically scheduled{' '}
+                <strong>{aerbusPointData.bufferMin >= 60 ? `${aerbusPointData.bufferMin / 60} hour` : `${aerbusPointData.bufferMin} minutes`} earlier</strong>
+                {aerbusDispatch && (
+                  <> — {aerbusDirection === 'to' ? 'pickup' : 'driver departs'} at{' '}
+                    <strong>{aerbusDispatch.time}</strong>
+                    {aerbusDispatch.date !== date ? ` (${new Date(aerbusDispatch.date + 'T00:00:00').toLocaleDateString('en-MY', { day: 'numeric', month: 'short' })})` : ''}
+                  </>
+                )}.
+              </p>
+            </div>
+          )}
+
+          {/* Passengers stepper */}
+          <div className="flex flex-col gap-0.5">
+            <label className="text-xs font-normal text-slate-400 pl-1 flex items-center gap-1">
+              <Users className="w-3 h-3" /> Number of Passengers
+            </label>
+            <div className="flex items-center gap-2">
+              <button type="button" onPointerDown={e => { e.preventDefault(); setPassengers(p => Math.max(1, p - 1)); }}
+                className="w-10 h-10 rounded-xl border border-slate-100 bg-white text-slate-700 font-semibold text-sm active:bg-slate-50 active:scale-95 transition-transform flex items-center justify-center shrink-0">−</button>
+              <span className="flex-1 text-center font-black text-xs text-slate-800">{passengers}</span>
+              <button type="button" onPointerDown={e => { e.preventDefault(); setPassengers(p => Math.min(8, p + 1)); }}
+                className="w-10 h-10 rounded-xl border border-slate-100 bg-white text-slate-700 font-semibold text-sm active:bg-slate-50 active:scale-95 transition-transform flex items-center justify-center shrink-0">+</button>
+            </div>
+            {passengers > 4 && (
+              <p className="text-xs text-amber-600 font-normal pl-1">Over 4 pax — extra charge may apply</p>
+            )}
+          </div>
+
+          {/* Contact */}
+          <div className="flex flex-col gap-0.5">
+            <label className="text-xs font-normal text-slate-400 pl-1 flex items-center gap-1">
+              <Phone className="w-3 h-3" /> Contact Number
+            </label>
+            <input
+              type="tel"
+              required
+              value={contact}
+              onChange={e => setContact(e.target.value)}
+              placeholder="e.g. 0123456789"
+              className="w-full h-9 bg-white border border-slate-100 rounded-xl px-3 font-semibold text-slate-700 placeholder:font-normal placeholder:text-slate-400 focus:outline-none focus:border-slate-900 transition"
+              style={{ fontSize: '16px' }}
+              autoComplete="tel"
+            />
+          </div>
+
+          {/* Remark */}
+          <div className="flex flex-col gap-0.5">
+            <label className="text-xs font-normal text-slate-400 pl-1">
+              Remark for Driver (optional)
+            </label>
+            <input
+              type="text"
+              value={notes}
+              onChange={e => setNotes(e.target.value.slice(0, 500))}
+              maxLength={500}
+              placeholder="e.g. luggage, wheelchair, main gate..."
+              className="w-full h-9 bg-white border border-slate-100 rounded-xl px-3 font-semibold text-slate-700 placeholder:font-normal placeholder:text-slate-400 focus:outline-none focus:border-slate-900 transition"
+              style={{ fontSize: '16px' }}
+              autoComplete="off"
+              autoCorrect="off"
+            />
           </div>
         </div>
 
-        {/* Recent routes — the student's own past pickups/destinations, one
-            tap to rebook, one more tap (swap icon) to book the return trip.
-            Sits above everything else since a returning student doesn't
-            need to go through modes or the Trip accordion at all if their
-            route is already here. */}
-        {user.isLoggedIn && recentRoutes.length > 0 && (
-          <div className="px-4 mt-3 flex flex-col gap-1.5">
-            <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider flex items-center gap-1 pl-1">
-              <History className="w-3 h-3" /> Recent Routes
-            </p>
-            <div className="flex gap-2 overflow-x-auto no-scrollbar">
-              {recentRoutes.map(({ pickup, destination }) => (
-                <div
-                  key={`${pickup}→${destination}`}
-                  className="shrink-0 flex items-center gap-1.5 bg-white border border-slate-100 rounded-2xl pl-3 pr-1.5 py-2"
-                >
-                  <button
-                    type="button"
-                    onPointerDown={e => { e.preventDefault(); bookRecentRoute(pickup, destination); }}
-                    className="flex items-center gap-1.5 text-xs font-semibold text-slate-700 active:opacity-60 transition"
-                  >
-                    <span className="max-w-[90px] truncate">{pickup}</span>
-                    <span className="text-slate-300">→</span>
-                    <span className="max-w-[90px] truncate">{destination}</span>
-                  </button>
-                  <button
-                    type="button"
-                    onPointerDown={e => { e.preventDefault(); bookRecentRoute(destination, pickup); }}
-                    title="Book the return trip"
-                    className="w-6 h-6 flex items-center justify-center rounded-full bg-slate-50 text-slate-400 active:scale-90 active:bg-slate-100 transition shrink-0"
-                  >
-                    <ArrowLeftRight className="w-3 h-3" />
-                  </button>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Mode selector — lightweight segmented control, 4 modes */}
-        {user.isLoggedIn && (
-          <div className="px-4 mt-3">
-            <div className="flex bg-slate-100 rounded-2xl p-1 gap-1">
-              {([
-                { key: 'quick',  label: 'Quick'  },
-                { key: 'custom', label: 'Custom' },
-                { key: 'map',    label: 'Search' },
-                { key: 'aerbus', label: 'AerBus' },
-              ] as const).map(({ key, label }) => (
-                <button
-                  key={key}
-                  type="button"
-                  onPointerDown={(e) => { e.preventDefault(); switchMode(key); }}
-                  className={`flex-1 py-2 rounded-xl text-[11px] font-semibold transition ${
-                    bookMode === key ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500'
-                  }`}
-                >
-                  {label}
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* ── Accordion: Trip / When / You ── */}
-        <div className="px-4 mt-3">
-          <div className="bg-white border border-slate-100 rounded-2xl overflow-hidden divide-y divide-slate-100">
-
-            {/* TRIP */}
-            <div>
-              {accHeader('trip', <MapPin className="w-4 h-4 text-slate-400" />, 'Trip', tripSummary)}
-              {openSection === 'trip' && (
-                <div className="px-4 pb-4 flex flex-col gap-3">
-
-                  {/* Quick Routes */}
-                  {bookMode === 'quick' && (
-                    <>
-                      <div ref={fromDropdownRef} className="relative">
-                        <button
-                          type="button"
-                          onPointerDown={e => { e.preventDefault(); setShowFromDropdown(v => !v); }}
-                          className="w-full flex items-center justify-between bg-white border border-slate-100 rounded-xl py-2.5 px-3 transition-transform active:bg-slate-50 active:scale-[0.99]"
-                        >
-                          <span className={`text-xs font-semibold ${selectedFrom ? 'text-slate-800' : 'text-slate-400 font-normal'}`}>
-                            {selectedFrom || 'Select pickup location…'}
-                          </span>
-                          <ChevronDown className={`w-3.5 h-3.5 text-slate-400 shrink-0 transition-transform ${showFromDropdown ? 'rotate-180' : ''}`} />
-                        </button>
-
-                        {showFromDropdown && (
-                          <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-slate-100 rounded-2xl shadow-xl z-30 overflow-hidden">
-                            <div className="max-h-48 overflow-y-auto no-scrollbar">
-                              {fromOptions.map((from, i) => (
-                                <button
-                                  key={from}
-                                  type="button"
-                                  onPointerDown={e => {
-                                    e.preventDefault();
-                                    setSelectedFrom(from);
-                                    setSelectedRoute(null);
-                                    setShowRouteList(true);
-                                    setShowFromDropdown(false);
-                                  }}
-                                  className={`w-full text-left px-4 py-3 text-sm font-normal transition ${
-                                    i < fromOptions.length - 1 ? 'border-b border-slate-50' : ''
-                                  } ${
-                                    selectedFrom === from
-                                      ? 'bg-slate-100 text-slate-900 font-semibold'
-                                      : 'text-slate-700 hover:bg-slate-50'
-                                  }`}
-                                >
-                                  {from}
-                                </button>
-                              ))}
-                            </div>
-                          </div>
-                        )}
-                      </div>
-
-                      {!selectedFrom ? (
-                        <p className="text-xs text-slate-400 font-normal text-center py-4 italic">
-                          Select a pickup location above to see routes
-                        </p>
-                      ) : selectedRoute && !showRouteList ? (
-                        <div
-                          onClick={() => setShowRouteList(true)}
-                          className="w-full flex items-center justify-between py-2.5 px-3 rounded-2xl border border-slate-900 bg-white transition active:bg-slate-50 active:scale-[0.99] cursor-pointer"
-                        >
-                          <div className="flex items-center gap-3">
-                            <div>
-                              <p className="text-xs font-semibold text-slate-800 leading-tight">
-                                {selectedRoute.from} → {selectedRoute.to}
-                              </p>
-                              {selectedRoute.maxPax && (
-                                <p className="text-xs text-amber-600 font-normal mt-0.5">Max {selectedRoute.maxPax} pax</p>
-                              )}
-                            </div>
-                          </div>
-                          <div className="flex items-center gap-2 shrink-0 ml-2">
-                            <div className="text-right">
-                              <span className="text-xs font-black text-slate-800">RM{selectedRoute.fare}</span>
-                              <span className="block text-[9px] font-normal text-slate-400 mt-0.5">Tap to change</span>
-                            </div>
-                            <button
-                              type="button"
-                              onClick={e => { e.stopPropagation(); setSelectedRoute(null); }}
-                              className="w-6 h-6 flex items-center justify-center rounded-full bg-slate-100 text-slate-400 active:scale-90 transition shrink-0"
-                              aria-label="Cancel selection"
-                            >
-                              <X className="w-3.5 h-3.5" />
-                            </button>
-                          </div>
-                        </div>
-                      ) : (
-                        <div ref={routeListRef} className="flex flex-col gap-2 max-h-[272px] overflow-y-auto no-scrollbar pr-0.5">
-                          {filteredRoutes.map((route, i) => {
-                            const isSelected = selectedRoute === route;
-                            return (
-                              <button
-                                key={i}
-                                type="button"
-                                onPointerDown={onRowPointerDown}
-                                onPointerUp={e => onRowPointerUp(e, () => {
-                                  setSelectedRoute(isSelected ? null : route);
-                                  if (!isSelected) setShowRouteList(false);
-                                })}
-                                className={`w-full flex items-center justify-between py-2.5 px-3 rounded-2xl border bg-white transition-transform active:scale-[0.99] active:bg-slate-50 text-left ${
-                                  isSelected
-                                    ? 'border-slate-900'
-                                    : 'border-slate-100 hover:border-slate-200'
-                                }`}
-                              >
-                                <div className="flex items-center gap-3">
-                                  <div>
-                                    <p className="text-xs font-semibold text-slate-800 leading-tight">
-                                      {route.from} → {route.to}
-                                    </p>
-                                    {route.maxPax && (
-                                      <p className="text-xs text-amber-600 font-normal mt-0.5">Max {route.maxPax} pax</p>
-                                    )}
-                                  </div>
-                                </div>
-                                <div className="text-right shrink-0 ml-2">
-                                  <span className="text-xs font-black text-slate-800">RM{route.fare}</span>
-                                </div>
-                              </button>
-                            );
-                          })}
-                        </div>
-                      )}
-                    </>
-                  )}
-
-                  {/* Custom */}
-                  {bookMode === 'custom' && (
-                    <>
-                      <div className="flex flex-col gap-0.5">
-                        <label className="text-xs font-normal text-slate-400 pl-1">Point A — Pickup</label>
-                        <input
-                          type="text"
-                          value={customPickup}
-                          onChange={e => setCustomPickup(e.target.value)}
-                          placeholder="e.g. Kolej Kediaman 3, Block B"
-                          className="bg-white border border-slate-100 rounded-xl px-3 py-2.5 text-xs text-slate-700 focus:outline-none focus:border-slate-900 transition"
-                        />
-                      </div>
-                      <div className="flex flex-col gap-0.5">
-                        <label className="text-xs font-normal text-slate-400 pl-1">Point B — Destination</label>
-                        <input
-                          type="text"
-                          value={customDest}
-                          onChange={e => setCustomDest(e.target.value)}
-                          placeholder="e.g. FTKMA, Dewan Sri Damai"
-                          className="bg-white border border-slate-100 rounded-xl px-3 py-2.5 text-xs text-slate-700 focus:outline-none focus:border-slate-900 transition"
-                        />
-                      </div>
-                      <p className="text-xs text-slate-400 font-normal text-center italic">
-                        Fare for custom routes will be confirmed by your driver
-                      </p>
-                    </>
-                  )}
-
-                  {/* Search Map */}
-                  {bookMode === 'map' && (
-                    <>
-                      <Suspense fallback={<div className="flex justify-center py-12"><span className="w-6 h-6 rounded-full border-2 border-primary border-t-transparent animate-spin" /></div>}>
-                        <MapboxRideMap
-                          campusCenter={CAMPUS_CENTERS[campus]}
-                          onPickupChange={(name, coords) => setPickupPin(name ? { address: name, coords: coords ?? [0, 0] } : null)}
-                          onDestinationChange={(name, coords) => setDestPin(name ? { address: name, coords: coords ?? [0, 0] } : null)}
-                        />
-                      </Suspense>
-                      <p className="text-xs text-slate-400 font-normal text-center italic">
-                        Fare for map bookings will be confirmed by your driver
-                      </p>
-                    </>
-                  )}
-
-                  {/* AerBus */}
-                  {bookMode === 'aerbus' && (
-                    <>
-                      <div className="flex gap-2">
-                        <button type="button" onPointerDown={e => { e.preventDefault(); setAerbusDirection('to'); }}
-                          className={`flex-1 flex flex-col items-center gap-1.5 p-3 rounded-2xl border bg-white transition-transform active:scale-[0.99] active:bg-slate-50 ${
-                            aerbusDirection === 'to' ? 'border-slate-900' : 'border-slate-100'
-                          }`}
-                        >
-                          <PlaneTakeoff className={`w-4 h-4 ${aerbusDirection === 'to' ? 'text-slate-900' : 'text-slate-400'}`} />
-                          <span className={`text-xs font-semibold ${aerbusDirection === 'to' ? 'text-slate-900' : 'text-slate-600'}`}>To Airport/Bus</span>
-                        </button>
-                        <button type="button" onPointerDown={e => { e.preventDefault(); setAerbusDirection('from'); }}
-                          className={`flex-1 flex flex-col items-center gap-1.5 p-3 rounded-2xl border bg-white transition-transform active:scale-[0.99] active:bg-slate-50 ${
-                            aerbusDirection === 'from' ? 'border-slate-900' : 'border-slate-100'
-                          }`}
-                        >
-                          <PlaneLanding className={`w-4 h-4 ${aerbusDirection === 'from' ? 'text-slate-900' : 'text-slate-400'}`} />
-                          <span className={`text-xs font-semibold ${aerbusDirection === 'from' ? 'text-slate-900' : 'text-slate-600'}`}>From Airport/Bus</span>
-                        </button>
-                      </div>
-
-                      <div className="flex flex-col gap-0.5">
-                        <label className="text-xs font-normal text-slate-400 pl-1">Pickup / Drop Point</label>
-                        <NativeSelect<AerbusPointId | ''>
-                          value={aerbusPoint}
-                          onChange={setAerbusPoint}
-                          placeholder="Select a point"
-                          options={aerbusPoints.map(p => ({
-                            value: p.id,
-                            label: p.label,
-                            right: `RM${p.fare}`,
-                          }))}
-                        />
-                      </div>
-                    </>
-                  )}
-                </div>
+        {/* Fare summary */}
+        <div className="bg-white border border-slate-100 rounded-2xl px-3.5 py-2.5 flex items-center justify-between">
+          <div>
+            <span className="text-xs text-slate-400 font-normal block">Estimated Fare</span>
+            <div className="flex items-baseline gap-1.5 mt-0.5">
+              <span className="text-base font-black text-slate-800">
+                {totalFare === 'TBC' ? 'TBC' : `RM${totalFare.toFixed(2)}`}
+              </span>
+              {isNight && baseFare !== 'TBC' && (
+                <span className="text-xs font-normal text-amber-500">including midnight surcharge +RM5</span>
               )}
             </div>
-
-            {/* WHEN */}
-            <div>
-              {accHeader(
-                'when',
-                <Clock className="w-4 h-4 text-slate-400" />,
-                'When',
-                whenSummary,
-                bookMode === 'aerbus' && aerbusPointData ? (
-                  <span className="inline-flex items-center gap-1 bg-emerald-50 border border-emerald-100 text-emerald-600 rounded-md px-1.5 py-0.5 text-[10px] font-semibold shrink-0">
-                    <PlaneTakeoff className="w-3 h-3" />
-                    +{aerbusPointData.bufferMin >= 60 ? `${aerbusPointData.bufferMin / 60}h` : `${aerbusPointData.bufferMin}min`}
-                  </span>
-                ) : undefined,
-              )}
-              {openSection === 'when' && (
-                <div className="px-4 pb-4 flex flex-col gap-3">
-                  {/* Now / Later toggle — AerBus always books a specific
-                      ticket time, so it skips this entirely. */}
-                  {bookMode !== 'aerbus' && (
-                    <div className="flex gap-2">
-                      <button type="button" onPointerDown={(e) => { e.preventDefault(); setBookWhen('now'); }}
-                        className={`flex-1 flex items-center gap-2 p-3 rounded-2xl border bg-white transition-transform active:scale-[0.99] active:bg-slate-50 ${
-                          bookWhen === 'now' ? 'border-slate-900' : 'border-slate-100'
-                        }`}
-                      >
-                        <Clock className={`w-4 h-4 shrink-0 ${bookWhen === 'now' ? 'text-slate-900' : 'text-slate-400'}`} />
-                        <span className={`text-xs font-semibold ${bookWhen === 'now' ? 'text-slate-900' : 'text-slate-600'}`}>Now</span>
-                      </button>
-                      <button type="button" onPointerDown={(e) => { e.preventDefault(); setBookWhen('later'); }}
-                        className={`flex-1 flex items-center gap-2 p-3 rounded-2xl border bg-white transition-transform active:scale-[0.99] active:bg-slate-50 ${
-                          bookWhen === 'later' ? 'border-slate-900' : 'border-slate-100'
-                        }`}
-                      >
-                        <CalendarDays className={`w-4 h-4 shrink-0 ${bookWhen === 'later' ? 'text-slate-900' : 'text-slate-400'}`} />
-                        <span className={`text-xs font-semibold ${bookWhen === 'later' ? 'text-slate-900' : 'text-slate-600'}`}>Later</span>
-                      </button>
-                    </div>
-                  )}
-
-                  {/* Date + Time — only shown when there's actually a
-                      choice to make (Later, or AerBus which always needs a
-                      ticket time). "Now" needs nothing here at all. */}
-                  {effectiveBookWhen === 'later' && (
-                    <div className="grid grid-cols-2 gap-2">
-                      <div className="flex flex-col gap-0.5">
-                        <label className="text-xs font-normal text-slate-400 pl-1">Date</label>
-                        <div className="relative h-9 group">
-                          <div className="absolute inset-0 bg-white border border-slate-100 rounded-xl px-2.5 flex items-center justify-between pointer-events-none group-focus-within:border-slate-900 transition">
-                            <span className={`text-xs font-semibold ${date ? 'text-slate-700' : 'text-slate-400'}`}>
-                              {date ? new Date(date + 'T00:00:00').toLocaleDateString('en-MY', { day: 'numeric', month: 'short', year: 'numeric' }) : 'Select date'}
-                            </span>
-                            <CalendarDays className="w-3 h-3 shrink-0 text-slate-400" />
-                          </div>
-                          <input type="date" required value={date}
-                            min={new Date().toISOString().split('T')[0]}
-                            onChange={e => setDate(e.target.value)}
-                            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                            style={{ fontSize: '16px' }} />
-                        </div>
-                      </div>
-                      <div className="flex flex-col gap-0.5">
-                        <label className="text-xs font-normal text-slate-400 pl-1 flex items-center gap-1">
-                          <Clock className="w-3 h-3" />
-                          {bookMode === 'aerbus'
-                            ? (aerbusDirection === 'to' ? 'Boarding Time' : 'Landing Time')
-                            : 'Time'}
-                          {isNight && <span className="text-amber-500 font-semibold ml-1">+RM5</span>}
-                        </label>
-                        <div className="relative h-9 group">
-                          <div className={`absolute inset-0 border rounded-xl px-2.5 flex items-center justify-between pointer-events-none group-focus-within:border-slate-900 transition ${
-                            isNight ? 'border-amber-200 bg-amber-50/50' : 'bg-white border-slate-100'
-                          }`}>
-                            <span className={`text-xs font-semibold ${!time ? 'text-slate-400' : isNight ? 'text-amber-700' : 'text-slate-700'}`}>
-                              {time || 'Select time'}
-                            </span>
-                            <Clock className="w-3 h-3 shrink-0 text-slate-400" />
-                          </div>
-                          <input type="time" required value={time}
-                            onChange={e => setTime(e.target.value)}
-                            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                            style={{ fontSize: '16px' }} />
-                        </div>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* AerBus buffer note — tells the customer to enter their actual
-                      ticket time as-is, since the buffer is already handled for them */}
-                  {bookMode === 'aerbus' && aerbusPointData && (
-                    <div className="bg-emerald-50 border border-emerald-100 rounded-2xl px-3.5 py-2.5 flex items-start gap-2">
-                      <PlaneTakeoff className="w-3.5 h-3.5 text-emerald-600 shrink-0 mt-0.5" />
-                      <p className="text-xs text-emerald-700 font-normal leading-relaxed">
-                        Enter your actual {aerbusDirection === 'to' ? 'boarding/departure' : 'landing/arrival'} time —
-                        no need to add your own buffer. Your driver is automatically scheduled{' '}
-                        <strong>{aerbusPointData.bufferMin >= 60 ? `${aerbusPointData.bufferMin / 60} hour` : `${aerbusPointData.bufferMin} minutes`} earlier</strong>
-                        {aerbusDispatch && (
-                          <> — {aerbusDirection === 'to' ? 'pickup' : 'driver departs'} at{' '}
-                            <strong>{aerbusDispatch.time}</strong>
-                            {aerbusDispatch.date !== date ? ` (${new Date(aerbusDispatch.date + 'T00:00:00').toLocaleDateString('en-MY', { day: 'numeric', month: 'short' })})` : ''}
-                          </>
-                        )}.
-                      </p>
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
-
-            {/* YOU */}
-            <div>
-              {accHeader('you', <Users className="w-4 h-4 text-slate-400" />, 'You', youSummary)}
-              {openSection === 'you' && (
-                <div className="px-4 pb-4 flex flex-col gap-3">
-                  <div className="flex flex-col gap-0.5">
-                    <label className="text-xs font-normal text-slate-400 pl-1 flex items-center gap-1">
-                      <Users className="w-3 h-3" /> Number of Passengers
-                    </label>
-                    <div className="flex items-center gap-2">
-                      <button type="button" onPointerDown={e => { e.preventDefault(); setPassengers(p => Math.max(1, p - 1)); }}
-                        className="w-10 h-10 rounded-xl border border-slate-100 bg-white text-slate-700 font-semibold text-sm active:bg-slate-50 active:scale-95 transition-transform flex items-center justify-center shrink-0">−</button>
-                      <span className="flex-1 text-center font-black text-xs text-slate-800">{passengers}</span>
-                      <button type="button" onPointerDown={e => { e.preventDefault(); setPassengers(p => Math.min(8, p + 1)); }}
-                        className="w-10 h-10 rounded-xl border border-slate-100 bg-white text-slate-700 font-semibold text-sm active:bg-slate-50 active:scale-95 transition-transform flex items-center justify-center shrink-0">+</button>
-                    </div>
-                    {passengers > 4 && (
-                      <p className="text-xs text-amber-600 font-normal pl-1">Over 4 pax — extra charge may apply</p>
-                    )}
-                  </div>
-
-                  <div className="flex flex-col gap-0.5">
-                    <label className="text-xs font-normal text-slate-400 pl-1 flex items-center gap-1">
-                      <Phone className="w-3 h-3" /> Contact Number
-                    </label>
-                    <input
-                      type="tel"
-                      required
-                      value={contact}
-                      onChange={e => setContact(e.target.value)}
-                      placeholder="e.g. 0123456789"
-                      className="w-full h-9 bg-white border border-slate-100 rounded-xl px-3 font-semibold text-slate-700 placeholder:font-normal placeholder:text-slate-400 focus:outline-none focus:border-slate-900 transition"
-                      style={{ fontSize: '16px' }}
-                      autoComplete="tel"
-                    />
-                  </div>
-
-                  <div className="flex flex-col gap-0.5">
-                    <label className="text-xs font-normal text-slate-400 pl-1">
-                      Remark for Driver (optional)
-                    </label>
-                    <input
-                      type="text"
-                      value={notes}
-                      onChange={e => setNotes(e.target.value.slice(0, 500))}
-                      maxLength={500}
-                      placeholder="e.g. luggage, wheelchair, main gate..."
-                      className="w-full h-9 bg-white border border-slate-100 rounded-xl px-3 font-semibold text-slate-700 placeholder:font-normal placeholder:text-slate-400 focus:outline-none focus:border-slate-900 transition"
-                      style={{ fontSize: '16px' }}
-                      autoComplete="off"
-                      autoCorrect="off"
-                    />
-                  </div>
-                </div>
-              )}
-            </div>
-
           </div>
         </div>
 
         {bookingError && (
-          <div className="px-4 mt-3">
-            <div className="bg-danger/10 border border-danger/20 rounded-xl px-4 py-3 text-xs text-danger font-semibold text-center">
-              {bookingError}
-            </div>
+          <div className="bg-danger/10 border border-danger/20 rounded-xl px-4 py-3 text-xs text-danger font-semibold text-center">
+            {bookingError}
           </div>
         )}
 
-        {!canBook && (
-          <p className="px-4 mt-3 text-xs text-slate-400 font-normal text-center">
-            {bookMode === 'quick' && !selectedRoute ? 'Select a route above to continue' : ''}
-            {bookMode === 'aerbus' && !aerbusPointData ? 'Select a pickup/drop point above to continue' : ''}
-            {bookMode === 'map' && !(pickupPin && destPin) ? 'Drop both pins on the map to continue' : ''}
-            {!contact ? 'Fill in your contact number to continue' : ''}
-          </p>
-        )}
-      </div>
-
-      {/* Fare + Book — pinned to the bottom, always visible */}
-      <div
-        className="shrink-0 border-t border-slate-100 bg-white px-4 pt-3 flex items-center gap-3"
-        style={{ paddingBottom: 'calc(0.75rem + env(safe-area-inset-bottom))' }}
-      >
-        <div className="shrink-0">
-          <span className="text-[10px] text-slate-400 font-normal block">Fare</span>
-          <div className="flex items-baseline gap-1">
-            <span className="text-base font-black text-slate-800">
-              {totalFare === 'TBC' ? 'TBC' : `RM${totalFare.toFixed(2)}`}
-            </span>
-          </div>
-          {isNight && baseFare !== 'TBC' && (
-            <span className="text-[9px] font-normal text-amber-500">+RM5 night</span>
-          )}
-        </div>
+        {/* Book button */}
         <button
           type="submit"
           disabled={!canBook || booking}
-          className={`flex-1 flex items-center justify-center gap-2 text-white text-sm font-semibold py-3 rounded-2xl transition-all duration-300 active:scale-[0.99] ${
+          className={`w-full flex items-center justify-center gap-2 text-white text-sm font-semibold py-3 rounded-2xl transition-all duration-300 active:scale-[0.99] ${
             canBook && !booking
               ? 'bg-primary hover:bg-primary-hover shadow-lg shadow-primary/30 cursor-pointer'
               : 'bg-slate-200 text-slate-400 cursor-not-allowed shadow-none'
@@ -1144,7 +1080,16 @@ export const Transport: React.FC = () => {
             </>
           )}
         </button>
-      </div>
+
+        {!canBook && (
+          <p className="text-xs text-slate-400 font-normal text-center -mt-1">
+            {bookMode === 'quick' && !selectedRoute ? 'Select a route above to continue' : ''}
+            {bookMode === 'aerbus' && !aerbusPointData ? 'Select a pickup/drop point above to continue' : ''}
+            {bookMode === 'map' && !(pickupPin && destPin) ? 'Drop both pins on the map to continue' : ''}
+            {!(date && time) ? 'Fill in date and time to continue' : ''}
+          </p>
+        )}
+      </form>
 
       {/* Booking Terms — Drawer Standard */}
       {showTerms && (
@@ -1187,6 +1132,6 @@ export const Transport: React.FC = () => {
           </div>
         </div>
       )}
-    </form>
+    </div>
   );
 };
