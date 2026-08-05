@@ -330,7 +330,23 @@ export const MyOrders: React.FC = () => {
       .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'ride_orders' }, () => load())
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'ride_orders' }, () => load())
       .subscribe();
-    return () => { supabase.removeChannel(channel); };
+
+    // Safety net — the realtime WebSocket can silently drop (app
+    // backgrounded, screen locked, network switch) and does NOT replay
+    // missed events on reconnect, it only resumes listening forward. A
+    // status change that happened while disconnected (e.g. a driver
+    // accepting or completing the ride) would otherwise stay stale
+    // indefinitely. A 20s poll plus an immediate refresh when the app
+    // comes back to the foreground bounds how long that staleness can last.
+    const pollId = setInterval(() => load(), 20_000);
+    const onVisible = () => { if (document.visibilityState === 'visible') load(); };
+    document.addEventListener('visibilitychange', onVisible);
+
+    return () => {
+      supabase.removeChannel(channel);
+      clearInterval(pollId);
+      document.removeEventListener('visibilitychange', onVisible);
+    };
   }, []);
 
 

@@ -574,7 +574,23 @@ export const DriverHome: React.FC = () => {
         }
       })
       .subscribe();
-    return () => { supabase.removeChannel(channel); };
+
+    // Safety net — the realtime WebSocket can silently drop (app
+    // backgrounded, screen locked, network switch) and does NOT replay
+    // missed events on reconnect, it only resumes listening forward. A
+    // change that happened while disconnected (e.g. a customer cancelling
+    // this driver's accepted job) would otherwise stay stale indefinitely.
+    // A 20s poll plus an immediate refresh when the app comes back to the
+    // foreground bounds how long that staleness can last.
+    const pollId = setInterval(() => loadOrders(), 20_000);
+    const onVisible = () => { if (document.visibilityState === 'visible') loadOrders(); };
+    document.addEventListener('visibilitychange', onVisible);
+
+    return () => {
+      supabase.removeChannel(channel);
+      clearInterval(pollId);
+      document.removeEventListener('visibilitychange', onVisible);
+    };
   }, [loadOrders, effectiveCanDrive, fireNotification]);
 
   useEffect(() => {

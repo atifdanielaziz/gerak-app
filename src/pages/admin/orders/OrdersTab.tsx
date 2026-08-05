@@ -204,7 +204,21 @@ export const OrdersTab = forwardRef<OrdersTabHandle, OrdersTabProps>(function Or
       .channel('ride_orders_admin')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'ride_orders', filter: `campus=eq.${campusView}` }, () => loadOrders({ silent: true }))
       .subscribe();
-    return () => { supabase.removeChannel(channel); };
+
+    // Safety net — the realtime WebSocket can silently drop (tab
+    // backgrounded, network switch) and does NOT replay missed events on
+    // reconnect. A 20s poll plus an immediate refresh on returning to the
+    // tab bounds how long the list can sit stale, same fix as the driver
+    // and customer sides.
+    const pollId = setInterval(() => loadOrders({ silent: true }), 20_000);
+    const onVisible = () => { if (document.visibilityState === 'visible') loadOrders({ silent: true }); };
+    document.addEventListener('visibilitychange', onVisible);
+
+    return () => {
+      supabase.removeChannel(channel);
+      clearInterval(pollId);
+      document.removeEventListener('visibilitychange', onVisible);
+    };
   }, [loadOrders, campusView]);
 
   useImperativeHandle(ref, () => ({ reload: loadOrders }), [loadOrders]);
