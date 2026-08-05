@@ -22,6 +22,7 @@ const GerakRental      = lazy(() => import('./pages/GerakRental').then(m => ({ d
 const AcademicCalendar = lazy(() => import('./pages/AcademicCalendar').then(m => ({ default: m.AcademicCalendar })));
 const ForgotPassword   = lazy(() => import('./pages/ForgotPassword').then(m => ({ default: m.ForgotPassword })));
 const ResetPassword    = lazy(() => import('./pages/ResetPassword').then(m => ({ default: m.ResetPassword })));
+const CompleteProfile  = lazy(() => import('./pages/CompleteProfile').then(m => ({ default: m.CompleteProfile })));
 const TrackJubah          = lazy(() => import('./pages/TrackJubah').then(m => ({ default: m.TrackJubah })));
 const GerakTransporter    = lazy(() => import('./pages/GerakTransporter').then(m => ({ default: m.GerakTransporter })));
 const PrivacyPolicy       = lazy(() => import('./pages/PrivacyPolicy').then(m => ({ default: m.PrivacyPolicy })));
@@ -347,6 +348,8 @@ const AppContent: React.FC = () => {
         return <ForgotPassword />;
       case 'reset-password':
         return <ResetPassword />;
+      case 'complete-profile':
+        return <CompleteProfile />;
       case 'track-jubah':
         return <TrackJubah />;
       case 'gerak-transporter':

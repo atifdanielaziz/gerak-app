@@ -31,6 +31,7 @@ export type ActivePage =
   | 'academic-calendar'
   | 'forgot-password'
   | 'reset-password'
+  | 'complete-profile'
   | 'track-jubah'
   | 'gerak-transporter'
   | 'privacy-policy'
@@ -148,6 +149,9 @@ interface AppContextType {
   user: UserSession;
   login: (email: string, password: string) => Promise<{ error: string | null }>;
   register: (name: string, matricNo: string, email: string, password: string, phone: string, university: string, campus: string, agreedToTerms: boolean) => Promise<{ error: string | null; needsConfirmation?: boolean }>;
+  loginWithOAuth: (provider: 'google' | 'apple') => Promise<void>;
+  checkEmailRegistered: (email: string) => Promise<boolean>;
+  completeOAuthProfile: (updates: { name: string; phone: string; university: string; campus: string; agreedToTerms: boolean; agreedToPrivacy: boolean }) => Promise<{ error: string | null }>;
   logout: () => void;
   updateProfile: (updates: { name?: string; matricNo?: string; email?: string; phone?: string; vehicle?: string; plateNumber?: string; icNumber?: string; feeReceiptUrl?: string; avatarUrl?: string; campus?: string }) => Promise<{ error: string | null }>;
   refreshUserData: () => Promise<void>;
@@ -555,6 +559,19 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         isLoggedIn:             true,
       });
       setPageHistory([]);
+      // A brand-new Google/Apple sign-up never supplies phone/university/
+      // campus (handle_new_user() leaves them blank) — gate ahead of
+      // everything else, including deep links, until completeOAuthProfile()
+      // fills them in. driver_invites has no phone column at all, so an
+      // invited driver/rider/admin who signs up fresh via OAuth instead of
+      // Register.tsx's form is caught by the phone check too, even though
+      // their university/campus already arrived correctly from the invite.
+      const missingPhone = !data.phone;
+      const missingCustomerFields = role === 'customer' && (!data.university || !data.campus);
+      if (missingPhone || missingCustomerFields) {
+        _setCurrentPage('complete-profile');
+        return;
+      }
       // 'register' is deliberately excluded here — unlike /jubah/track,
       // /privacy, /terms (genuinely "take me back to this page after
       // auth"), deepLinkPage never gets cleared once set, so reaching
@@ -645,6 +662,44 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       await supabase.from('profiles').update({ phone, university, campus, terms_accepted_at: new Date().toISOString() }).eq('id', authUser.id);
       await loadProfile(authUser.id);
     }
+    return { error: null };
+  };
+
+  const loginWithOAuth = async (provider: 'google' | 'apple') => {
+    await supabase.auth.signInWithOAuth({ provider, options: { redirectTo: authRedirectUrl() } });
+  };
+
+  const checkEmailRegistered = async (email: string): Promise<boolean> => {
+    const { data, error } = await supabase.rpc('email_is_registered', { p_email: email });
+    if (error) return false; // fail open — never block a sign-in attempt on a check failure
+    return data === true;
+  };
+
+  // Google/Apple never supply phone/university/campus, which Gerak
+  // requires — handle_new_user() still creates the profiles row on OAuth
+  // sign-up (with those fields blank), and loadProfile()'s completeness
+  // gate routes here instead of the user's normal home until this runs.
+  // Mirrors register()'s own post-signup profiles update just above.
+  const completeOAuthProfile = async (updates: {
+    name: string; phone: string; university: string; campus: string;
+    agreedToTerms: boolean; agreedToPrivacy: boolean;
+  }): Promise<{ error: string | null }> => {
+    if (!updates.agreedToTerms || !updates.agreedToPrivacy) {
+      return { error: 'Please agree to the Terms & Conditions and Privacy Policy.' };
+    }
+    const { data: { user: authUser } } = await supabase.auth.getUser();
+    if (!authUser) return { error: 'Session expired. Please sign in again.' };
+    const { error } = await supabase.from('profiles').update({
+      name: updates.name.trim(),
+      phone: updates.phone,
+      // Only set university/campus if actually collected here (i.e. were
+      // blank) — never clobber an invite-assigned value for staff roles.
+      ...(updates.university ? { university: updates.university } : {}),
+      ...(updates.campus ? { campus: updates.campus } : {}),
+      terms_accepted_at: new Date().toISOString(),
+    }).eq('id', authUser.id);
+    if (error) return { error: error.message };
+    await loadProfile(authUser.id);
     return { error: null };
   };
 
@@ -924,6 +979,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         user,
         login,
         register,
+        loginWithOAuth,
+        checkEmailRegistered,
+        completeOAuthProfile,
         logout,
         updateProfile,
         refreshUserData,

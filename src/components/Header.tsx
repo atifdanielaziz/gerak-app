@@ -48,7 +48,7 @@ export const Header: React.FC = () => {
   const [showMyCampusSheet, setShowMyCampusSheet] = useState(false);
   const unreadCount = notifications.filter(n => !n.isRead).length;
 
-  if (currentPage === 'splash' || currentPage === 'login' || currentPage === 'register' || currentPage === 'forgot-password' || currentPage === 'reset-password' || currentPage === 'profile') {
+  if (currentPage === 'splash' || currentPage === 'login' || currentPage === 'register' || currentPage === 'forgot-password' || currentPage === 'reset-password' || currentPage === 'profile' || currentPage === 'complete-profile') {
     return null;
   }
 
