@@ -4,7 +4,7 @@ import { supabase } from '../lib/supabase';
 import { stampWatermark } from '../lib/watermark';
 import {
   Car, MapPin, Navigation, Users, Clock,
-  CheckCircle2, RefreshCw, Briefcase,
+  CheckCircle2, Briefcase,
   ListOrdered, ShieldOff, KeyRound,
   ChevronLeft, ChevronRight, CalendarDays,
   Package, Ban, Unlock, Hash, X, TrendingUp,
@@ -846,15 +846,8 @@ export const DriverHome: React.FC = () => {
             {user.name} · {user.gerakId} · UMPSA {user.campus}
           </p>
         </div>
-        <button
-          onClick={() => (activeTab === 'rental' && effectiveCanRent) ? loadRentalData() : loadOrders()}
-          className="w-8 h-8 flex items-center justify-center rounded-xl bg-white border border-slate-100 text-slate-400 hover:text-primary transition active:scale-90"
-        >
-          <RefreshCw className="w-4 h-4" />
-        </button>
+        <CampusStatusToggle variant="icon" />
       </div>
-
-      <CampusStatusToggle />
 
       {/* Toast */}
       {toast && (

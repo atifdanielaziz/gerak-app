@@ -10,7 +10,7 @@ import {
   JUBAH_NEXT_LABEL as NEXT_LABEL, getJubahProgress, jubahWaMsg,
 } from '../lib/jubahStatus';
 import {
-  RefreshCw, ShoppingBasket, GraduationCap, TrendingUp,
+  ShoppingBasket, GraduationCap, TrendingUp,
   Upload, FileImage, ShieldCheck, ShieldAlert,
   ChevronLeft, Download, ExternalLink, CheckCircle2, XCircle, Eye, X, Clock,
   Copy,
@@ -395,14 +395,9 @@ export const RiderHome: React.FC = () => {
             </div>
           </div>
           {(activeTab !== 'jubah' || jubahView === 'list') && (
-            <button onClick={activeTab === 'jubah' ? loadJubahJobs : () => {}}
-              className="w-8 h-8 flex items-center justify-center rounded-xl bg-white border border-slate-100 text-slate-400 hover:text-primary transition active:scale-90">
-              <RefreshCw className="w-4 h-4" />
-            </button>
+            <CampusStatusToggle variant="icon" />
           )}
         </div>
-
-        {(activeTab !== 'jubah' || jubahView === 'list') && <CampusStatusToggle />}
 
         {/* Tab Switcher — hide when in jubah sub-pages */}
         {(activeTab !== 'jubah' || jubahView === 'list') && (
