@@ -1,11 +1,11 @@
-import React, { useState, useMemo, useRef, useEffect, lazy, Suspense } from 'react';
+import React, { useState, useMemo, useEffect, lazy, Suspense } from 'react';
 import { useApp } from '../context/AppContext';
 import { supabase } from '../lib/supabase';
 interface PinLocation { address: string; coords: [number, number]; }
 
 const MapboxRideMap = lazy(() => import('../components/MapboxRideMap').then(m => ({ default: m.MapboxRideMap })));
 import {
-  Map, List, ChevronDown, PencilLine, Car, PlaneTakeoff, PlaneLanding,
+  Map, List, ChevronLeft, PencilLine, Car, PlaneTakeoff, PlaneLanding,
   Info, CheckCircle2, RotateCcw, Users, Clock, CalendarDays, Phone, ClipboardList, X,
   ArrowLeftRight, History,
 } from 'lucide-react';
@@ -115,8 +115,14 @@ export const Transport: React.FC = () => {
   // Page state — campus is always the logged-in user's own, no in-page
   // switcher anymore (removed campus toggle, superadmin included).
   const campus: 'pekan' | 'gambang' = user.campus?.toLowerCase() === 'pekan' ? 'pekan' : 'gambang';
-  const [bookMode, setBookMode] = useState<'quick' | 'custom' | 'map' | 'aerbus'>(user.isLoggedIn ? 'quick' : 'map');
+  const [bookMode, setBookMode] = useState<'quick' | 'custom' | 'map' | 'aerbus'>(user.isLoggedIn ? 'custom' : 'map');
   const [showTerms, setShowTerms] = useState(false);
+  // Sub-page Standard (same in-place pattern as Profile.tsx's "My Profile"
+  // sub-page) — Quick Routes no longer has its own tab; browsing every
+  // preset route (grouped by pickup point) plus the full Recent Routes
+  // list now lives here instead, reached by tapping the "Recent Routes"
+  // label above Order Details.
+  const [showRoutePicker, setShowRoutePicker] = useState(false);
 
   // Recent routes — the student's own past pickup/destination pairs,
   // deduplicated (most-recent occurrence wins) so a route booked 5 times
@@ -151,7 +157,11 @@ export const Transport: React.FC = () => {
       });
   }, [user.isLoggedIn]);
 
-  const bookRecentRoute = (pickup: string, destination: string) => {
+  // Shared by the Recent Routes chip strip, the route picker sub-page
+  // (both its Recent and Quick Routes sections), and the swap/return-trip
+  // button — one place decides what picking any (pickup, destination)
+  // pair actually does.
+  const pickRoute = (pickup: string, destination: string) => {
     // A recent route may happen to match a fixed-fare Quick Route exactly
     // (e.g. its own reverse direction) — route into Quick mode with that
     // fare pre-selected instead of Custom mode, which always shows "TBC"
@@ -162,51 +172,26 @@ export const Transport: React.FC = () => {
     );
     if (match) {
       setBookMode('quick');
-      setSelectedFrom(match.from);
       setSelectedRoute(match);
-      setShowRouteList(false);
-      setShowFromDropdown(false);
-      return;
+    } else {
+      setBookMode('custom');
+      setCustomPickup(pickup);
+      setCustomDest(destination);
     }
-    setBookMode('custom');
-    setCustomPickup(pickup);
-    setCustomDest(destination);
+    setShowRoutePicker(false);
   };
 
   // AerBus state
   const [aerbusDirection, setAerbusDirection] = useState<'to' | 'from'>('to');
   const [aerbusPoint,     setAerbusPoint]     = useState<AerbusPointId | ''>('');
 
-  // Quick-route state
-  const [selectedFrom,  setSelectedFrom]  = useState('');
+  // Quick-route state — selectedRoute is still set (by pickRoute, via the
+  // route picker sub-page) even though the old inline FROM-dropdown +
+  // expandable list UI that used to set it directly is gone;
+  // onRowPointerDown/onRowPointerUp is reused by the sub-page's route
+  // rows, same tap-vs-scroll behavior as before.
   const [selectedRoute, setSelectedRoute] = useState<Route | null>(null);
-  const [showRouteList, setShowRouteList] = useState(false);
-  const [showFromDropdown, setShowFromDropdown] = useState(false);
-  const fromDropdownRef = useRef<HTMLDivElement>(null);
-  const routeListRef    = useRef<HTMLDivElement>(null);
   const { onPointerDown: onRowPointerDown, onPointerUp: onRowPointerUp } = useTapVsScroll();
-
-  useEffect(() => {
-    const handler = (e: MouseEvent) => {
-      if (fromDropdownRef.current && !fromDropdownRef.current.contains(e.target as Node))
-        setShowFromDropdown(false);
-      // Only react while the route list is actually open — this used to run
-      // unconditionally on every click anywhere on the page, so clicking the
-      // Contact/Notes fields further down the same form (or anything else
-      // outside routeListRef) silently wiped an already-made route
-      // selection, long after the dropdown itself had already closed.
-      if (showRouteList && routeListRef.current && !routeListRef.current.contains(e.target as Node)) {
-        setShowRouteList(false);
-        // Only clear the in-progress pickup pick if no route was ever
-        // confirmed — dismissing a re-opened "change route" list without
-        // picking a new one should just close it, not discard the route
-        // the user already had selected.
-        if (!selectedRoute) setSelectedFrom('');
-      }
-    };
-    document.addEventListener('mousedown', handler);
-    return () => document.removeEventListener('mousedown', handler);
-  }, [showRouteList, selectedRoute]);
 
   // Map-pin state
   const [pickupPin,    setPickupPin]    = useState<PinLocation | null>(null);
@@ -264,11 +249,6 @@ export const Transport: React.FC = () => {
 
   const routes = campus === 'pekan' ? PEKAN_ROUTES : GAMBANG_ROUTES;
   const fromOptions = CAMPUS_FROM[campus];
-
-  const filteredRoutes = useMemo(
-    () => routes.filter(r => r.from === selectedFrom),
-    [routes, selectedFrom]
-  );
 
   const aerbusPoints = AERBUS_POINTS[campus];
   const aerbusPointData = bookMode === 'aerbus'
@@ -448,8 +428,6 @@ export const Transport: React.FC = () => {
     setSubmittedOrderId(null);
     setEditBlocked(false);
     setSelectedRoute(null);
-    setShowRouteList(false);
-    setSelectedFrom('');
     setPickupPin(null);
     setDestPin(null);
     setCustomPickup('');
@@ -559,6 +537,80 @@ export const Transport: React.FC = () => {
     );
   }
 
+  // ── Route picker sub-page — Sub-page Standard (same in-place pattern as
+  // Profile.tsx's "My Profile" sub-page): permanent header replaced by a
+  // back button + title, not an overlay, not a page navigation. Lists the
+  // full Recent Routes history plus every preset Quick Route grouped by
+  // pickup point, merged into one screen since Quick Routes no longer has
+  // its own tab. Picking any row calls the same pickRoute() used by the
+  // Recent Routes chip strip, which also closes this sub-page.
+  if (showRoutePicker) {
+    return (
+      <div className="flex-grow bg-white overflow-y-auto no-scrollbar animate-fade-in">
+        <div className="px-5 pt-5 pb-2 flex items-center gap-3">
+          <button
+            onClick={() => setShowRoutePicker(false)}
+            className="w-9 h-9 flex items-center justify-center rounded-xl bg-slate-100 text-slate-700 active:scale-90 transition shrink-0"
+          >
+            <ChevronLeft className="w-5 h-5" />
+          </button>
+          <h1 className="text-xl font-bold text-slate-900 m-0 flex-1">Select a Route</h1>
+        </div>
+
+        <div className="px-5 pt-2 flex flex-col gap-5" style={{ paddingBottom: 'calc(6.5rem + env(safe-area-inset-bottom))' }}>
+          {recentRoutes.length > 0 && (
+            <div className="flex flex-col gap-2">
+              <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider pl-1 flex items-center gap-1.5">
+                <History className="w-3.5 h-3.5" /> Recent Routes
+              </p>
+              {recentRoutes.map(({ pickup, destination }) => (
+                <button
+                  key={`${pickup}→${destination}`}
+                  type="button"
+                  onPointerDown={onRowPointerDown}
+                  onPointerUp={e => onRowPointerUp(e, () => pickRoute(pickup, destination))}
+                  className="w-full flex items-center justify-between py-2.5 px-3 rounded-2xl border border-slate-100 bg-white transition-transform active:scale-[0.99] active:bg-slate-50 text-left"
+                >
+                  <p className="text-xs font-semibold text-slate-800 leading-tight">
+                    {pickup} <span className="text-slate-300">→</span> {destination}
+                  </p>
+                </button>
+              ))}
+            </div>
+          )}
+
+          <div className="flex flex-col gap-4">
+            <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider pl-1 flex items-center gap-1.5">
+              <List className="w-3.5 h-3.5" /> Quick Routes
+            </p>
+            {fromOptions.map(from => (
+              <div key={from} className="flex flex-col gap-2">
+                <p className="text-xs font-semibold text-slate-500 pl-1">{from}</p>
+                {routes.filter(r => r.from === from).map((route, i) => (
+                  <button
+                    key={i}
+                    type="button"
+                    onPointerDown={onRowPointerDown}
+                    onPointerUp={e => onRowPointerUp(e, () => pickRoute(route.from, route.to))}
+                    className="w-full flex items-center justify-between py-2.5 px-3 rounded-2xl border border-slate-100 bg-white transition-transform active:scale-[0.99] active:bg-slate-50 text-left"
+                  >
+                    <div>
+                      <p className="text-xs font-semibold text-slate-800 leading-tight">{route.emoji} {route.to}</p>
+                      {route.maxPax && (
+                        <p className="text-xs text-amber-600 font-normal mt-0.5">Max {route.maxPax} pax</p>
+                      )}
+                    </div>
+                    <span className="text-xs font-black text-slate-800 shrink-0 ml-2">RM{route.fare}</span>
+                  </button>
+                ))}
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="flex-grow bg-white overflow-y-auto no-scrollbar pb-4 animate-fade-in">
 
@@ -596,11 +648,11 @@ export const Transport: React.FC = () => {
         </div>
       </div>
 
-      {/* Mode selector — 4 modes */}
+      {/* Mode selector — 3 modes (Quick Routes folded into the route picker
+          sub-page, reached via the "Recent Routes" label below) */}
       {user.isLoggedIn && (
         <div className="px-4 mt-3 flex gap-2">
           {([
-            { key: 'quick',  icon: List,         label: 'Quick Routes'  },
             { key: 'custom', icon: PencilLine,   label: 'Custom'        },
             { key: 'map',    icon: Map,          label: 'Search Routes' },
             { key: 'aerbus', icon: PlaneTakeoff, label: 'AerBus'        },
@@ -619,126 +671,31 @@ export const Transport: React.FC = () => {
         </div>
       )}
 
-      {/* ── Quick Routes ── */}
-      {bookMode === 'quick' && (
-        <div className="px-4 mt-3 flex flex-col gap-4">
-          {/* FROM dropdown */}
-          <div ref={fromDropdownRef} className="relative">
-            <button
-              type="button"
-              onPointerDown={e => { e.preventDefault(); setShowFromDropdown(v => !v); }}
-              className="w-full flex items-center justify-between bg-white border border-slate-100 rounded-xl py-2.5 px-3 transition-transform active:bg-slate-50 active:scale-[0.99]"
-            >
-              <span className={`text-xs font-semibold ${selectedFrom ? 'text-slate-800' : 'text-slate-400 font-normal'}`}>
-                {selectedFrom || 'Select pickup location…'}
-              </span>
-              <ChevronDown className={`w-3.5 h-3.5 text-slate-400 shrink-0 transition-transform ${showFromDropdown ? 'rotate-180' : ''}`} />
-            </button>
-
-            {showFromDropdown && (
-              <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-slate-100 rounded-2xl shadow-xl z-30 overflow-hidden">
-                <div className="max-h-48 overflow-y-auto no-scrollbar">
-                  {fromOptions.map((from, i) => (
-                    <button
-                      key={from}
-                      type="button"
-                      onPointerDown={e => {
-                        e.preventDefault();
-                        setSelectedFrom(from);
-                        setSelectedRoute(null);
-                        setShowRouteList(true);
-                        setShowFromDropdown(false);
-                      }}
-                      className={`w-full text-left px-4 py-3 text-sm font-normal transition ${
-                        i < fromOptions.length - 1 ? 'border-b border-slate-50' : ''
-                      } ${
-                        selectedFrom === from
-                          ? 'bg-slate-100 text-slate-900 font-semibold'
-                          : 'text-slate-700 hover:bg-slate-50'
-                      }`}
-                    >
-                      {from}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
+      {/* Selected route summary — shown when a route was picked via the
+          route picker sub-page (tap "Recent Routes" below) and it matched
+          a known fixed-fare Quick Route. No tab in the mode selector above
+          highlights for this, since it isn't one of the 3 remaining modes
+          — this card is the only on-screen confirmation of what's booked,
+          replacing the old inline Quick Routes picker's own summary. */}
+      {bookMode === 'quick' && selectedRoute && (
+        <div className="px-4 mt-3">
+          <div
+            onClick={() => setShowRoutePicker(true)}
+            className="w-full flex items-center justify-between py-2.5 px-3 rounded-2xl border border-slate-900 bg-white transition active:bg-slate-50 active:scale-[0.99] cursor-pointer"
+          >
+            <div>
+              <p className="text-xs font-semibold text-slate-800 leading-tight">
+                {selectedRoute.from} → {selectedRoute.to}
+              </p>
+              {selectedRoute.maxPax && (
+                <p className="text-xs text-amber-600 font-normal mt-0.5">Max {selectedRoute.maxPax} pax</p>
+              )}
+            </div>
+            <div className="text-right shrink-0 ml-2">
+              <span className="text-xs font-black text-slate-800">RM{selectedRoute.fare}</span>
+              <span className="block text-[9px] font-normal text-slate-400 mt-0.5">Tap to change</span>
+            </div>
           </div>
-
-          {/* Route cards / selected summary */}
-          {!selectedFrom ? (
-            <p className="text-xs text-slate-400 font-normal text-center py-4 italic">
-              Select a pickup location above to see routes
-            </p>
-          ) : selectedRoute && !showRouteList ? (
-            /* Collapsed: show selected route + change button */
-            <div
-              onClick={() => setShowRouteList(true)}
-              className="w-full flex items-center justify-between py-2.5 px-3 rounded-2xl border border-slate-900 bg-white transition active:bg-slate-50 active:scale-[0.99] cursor-pointer"
-            >
-              <div className="flex items-center gap-3">
-                <div>
-                  <p className="text-xs font-semibold text-slate-800 leading-tight">
-                    {selectedRoute.from} → {selectedRoute.to}
-                  </p>
-                  {selectedRoute.maxPax && (
-                    <p className="text-xs text-amber-600 font-normal mt-0.5">Max {selectedRoute.maxPax} pax</p>
-                  )}
-                </div>
-              </div>
-              <div className="flex items-center gap-2 shrink-0 ml-2">
-                <div className="text-right">
-                  <span className="text-xs font-black text-slate-800">RM{selectedRoute.fare}</span>
-                  <span className="block text-[9px] font-normal text-slate-400 mt-0.5">Tap to change</span>
-                </div>
-                <button
-                  type="button"
-                  onClick={e => { e.stopPropagation(); setSelectedRoute(null); }}
-                  className="w-6 h-6 flex items-center justify-center rounded-full bg-slate-100 text-slate-400 active:scale-90 transition shrink-0"
-                  aria-label="Cancel selection"
-                >
-                  <X className="w-3.5 h-3.5" />
-                </button>
-              </div>
-            </div>
-          ) : (
-            /* Expanded: full scrollable list */
-            <div ref={routeListRef} className="flex flex-col gap-2 max-h-[272px] overflow-y-auto no-scrollbar pr-0.5">
-              {filteredRoutes.map((route, i) => {
-                const isSelected = selectedRoute === route;
-                return (
-                  <button
-                    key={i}
-                    type="button"
-                    onPointerDown={onRowPointerDown}
-                    onPointerUp={e => onRowPointerUp(e, () => {
-                      setSelectedRoute(isSelected ? null : route);
-                      if (!isSelected) setShowRouteList(false);
-                    })}
-                    className={`w-full flex items-center justify-between py-2.5 px-3 rounded-2xl border bg-white transition-transform active:scale-[0.99] active:bg-slate-50 text-left ${
-                      isSelected
-                        ? 'border-slate-900'
-                        : 'border-slate-100 hover:border-slate-200'
-                    }`}
-                  >
-                    <div className="flex items-center gap-3">
-                      <div>
-                        <p className="text-xs font-semibold text-slate-800 leading-tight">
-                          {route.from} → {route.to}
-                        </p>
-                        {route.maxPax && (
-                          <p className="text-xs text-amber-600 font-normal mt-0.5">Max {route.maxPax} pax</p>
-                        )}
-                      </div>
-                    </div>
-                    <div className="text-right shrink-0 ml-2">
-                      <span className="text-xs font-black text-slate-800">RM{route.fare}</span>
-                    </div>
-                  </button>
-                );
-              })}
-            </div>
-          )}
         </div>
       )}
 
@@ -844,13 +801,22 @@ export const Transport: React.FC = () => {
           tap to rebook, one more tap (swap icon) to book the return trip.
           Sits right above Order Details, after the mode-specific block,
           so it doesn't compete with Quick/Custom/Map/AerBus for attention
-          up top. Label styled to match Booking Terms (text-xs font-normal
-          text-slate-400), not its old uppercase/tracked treatment. */}
-      {user.isLoggedIn && recentRoutes.length > 0 && (
+          up top. Label is itself a button now — tapping the words (not
+          just a chip) opens the full route picker sub-page, which lists
+          this same Recent Routes history plus every preset Quick Route,
+          grouped by pickup point. Kept visible even with zero history yet
+          (a brand-new user still needs a way to reach Quick Routes) — only
+          the chip strip itself is gated on actually having any. */}
+      {user.isLoggedIn && (
         <div className="px-4 mt-3 flex flex-col gap-1.5">
-          <p className="flex items-center gap-1.5 text-xs font-normal text-slate-400">
+          <button
+            type="button"
+            onClick={() => setShowRoutePicker(true)}
+            className="flex items-center gap-1.5 text-xs font-normal text-slate-400 hover:text-primary transition self-start"
+          >
             <History className="w-3.5 h-3.5" /> Recent Routes
-          </p>
+          </button>
+          {recentRoutes.length > 0 && (
           <div className="flex gap-2 overflow-x-auto no-scrollbar">
             {recentRoutes.map(({ pickup, destination }) => (
               <div
@@ -859,7 +825,7 @@ export const Transport: React.FC = () => {
               >
                 <button
                   type="button"
-                  onPointerDown={e => { e.preventDefault(); bookRecentRoute(pickup, destination); }}
+                  onPointerDown={e => { e.preventDefault(); pickRoute(pickup, destination); }}
                   className="flex items-center gap-1.5 text-xs font-semibold text-slate-700 active:opacity-60 transition"
                 >
                   <span className="max-w-[90px] truncate">{pickup}</span>
@@ -868,7 +834,7 @@ export const Transport: React.FC = () => {
                 </button>
                 <button
                   type="button"
-                  onPointerDown={e => { e.preventDefault(); bookRecentRoute(destination, pickup); }}
+                  onPointerDown={e => { e.preventDefault(); pickRoute(destination, pickup); }}
                   title="Book the return trip"
                   className="w-6 h-6 flex items-center justify-center rounded-full bg-slate-50 text-slate-400 active:scale-90 active:bg-slate-100 transition shrink-0"
                 >
@@ -877,6 +843,7 @@ export const Transport: React.FC = () => {
               </div>
             ))}
           </div>
+          )}
         </div>
       )}
 
