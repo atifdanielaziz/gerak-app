@@ -5,9 +5,9 @@ interface PinLocation { address: string; coords: [number, number]; }
 
 const MapboxRideMap = lazy(() => import('../components/MapboxRideMap').then(m => ({ default: m.MapboxRideMap })));
 import {
-  Map, List, ChevronLeft, PencilLine, Car, PlaneTakeoff, PlaneLanding,
+  Map, List, PencilLine, Car, PlaneTakeoff, PlaneLanding,
   Info, CheckCircle2, RotateCcw, Users, Clock, CalendarDays, Phone, ClipboardList, X,
-  ArrowLeftRight, History,
+  History,
 } from 'lucide-react';
 import { submitRideToSheets } from '../lib/sheetsService';
 import { useTapVsScroll } from '../lib/useTapVsScroll';
@@ -110,7 +110,7 @@ const AERBUS_POINTS: Record<'pekan' | 'gambang', AerbusPoint[]> = {
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export const Transport: React.FC = () => {
-  const { user, setCurrentPage, showAuthGate } = useApp();
+  const { user, setCurrentPage, showAuthGate, setLeaveGuard } = useApp();
 
   // Page state — campus is always the logged-in user's own, no in-page
   // switcher anymore (removed campus toggle, superadmin included).
@@ -123,6 +123,20 @@ export const Transport: React.FC = () => {
   // list now lives here instead, reached by tapping the "Recent Routes"
   // label above Order Details.
   const [showRoutePicker, setShowRoutePicker] = useState(false);
+  // Which pickup-point category is expanded in the sub-page's Quick Routes
+  // dropdown — same FROM-dropdown-then-list interaction the old inline
+  // Quick Routes mode used, just relocated here.
+  const [pickerFrom, setPickerFrom] = useState('');
+
+  // Global back button (Header's own "<", plus hardware/gesture back) closes
+  // this sub-page instead of leaving Transport entirely while it's open —
+  // same leaveGuard mechanism Register.tsx uses for its Terms/Privacy
+  // overlay. The sub-page's own back button is removed in favor of this.
+  useEffect(() => {
+    if (!showRoutePicker) { setLeaveGuard(null); return; }
+    setLeaveGuard(() => () => setShowRoutePicker(false));
+    return () => setLeaveGuard(null);
+  }, [showRoutePicker, setLeaveGuard]);
 
   // Recent routes — the student's own past pickup/destination pairs,
   // deduplicated (most-recent occurrence wins) so a route booked 5 times
@@ -539,22 +553,19 @@ export const Transport: React.FC = () => {
 
   // ── Route picker sub-page — Sub-page Standard (same in-place pattern as
   // Profile.tsx's "My Profile" sub-page): permanent header replaced by a
-  // back button + title, not an overlay, not a page navigation. Lists the
-  // full Recent Routes history plus every preset Quick Route grouped by
-  // pickup point, merged into one screen since Quick Routes no longer has
-  // its own tab. Picking any row calls the same pickRoute() used by the
-  // Recent Routes chip strip, which also closes this sub-page.
+  // title, not an overlay, not a page navigation. No local back button
+  // here — the global Header's own "<" (and hardware/gesture back) is
+  // redirected to close this sub-page instead, via the leaveGuard effect
+  // above. Lists the full Recent Routes history plus every preset Quick
+  // Route (picked via a FROM dropdown, same interaction the old inline
+  // Quick Routes mode used), merged into one screen since Quick Routes no
+  // longer has its own tab. Picking any row calls the same pickRoute()
+  // used by the Recent Routes chip strip, which also closes this sub-page.
   if (showRoutePicker) {
     return (
       <div className="flex-grow bg-white overflow-y-auto no-scrollbar animate-fade-in">
-        <div className="px-5 pt-5 pb-2 flex items-center gap-3">
-          <button
-            onClick={() => setShowRoutePicker(false)}
-            className="w-9 h-9 flex items-center justify-center rounded-xl bg-slate-100 text-slate-700 active:scale-90 transition shrink-0"
-          >
-            <ChevronLeft className="w-5 h-5" />
-          </button>
-          <h1 className="text-xl font-bold text-slate-900 m-0 flex-1">Select a Route</h1>
+        <div className="px-5 pt-5 pb-2">
+          <h1 className="text-xl font-bold text-slate-900 m-0">Select a Route</h1>
         </div>
 
         <div className="px-5 pt-2 flex flex-col gap-5" style={{ paddingBottom: 'calc(6.5rem + env(safe-area-inset-bottom))' }}>
@@ -579,14 +590,19 @@ export const Transport: React.FC = () => {
             </div>
           )}
 
-          <div className="flex flex-col gap-4">
+          <div className="flex flex-col gap-2">
             <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider pl-1 flex items-center gap-1.5">
               <List className="w-3.5 h-3.5" /> Quick Routes
             </p>
-            {fromOptions.map(from => (
-              <div key={from} className="flex flex-col gap-2">
-                <p className="text-xs font-semibold text-slate-500 pl-1">{from}</p>
-                {routes.filter(r => r.from === from).map((route, i) => (
+            <NativeSelect
+              value={pickerFrom}
+              onChange={setPickerFrom}
+              options={fromOptions.map(from => ({ value: from, label: from }))}
+              placeholder="Select pickup location…"
+            />
+            {pickerFrom && (
+              <div className="flex flex-col gap-2 mt-1">
+                {routes.filter(r => r.from === pickerFrom).map((route, i) => (
                   <button
                     key={i}
                     type="button"
@@ -604,7 +620,7 @@ export const Transport: React.FC = () => {
                   </button>
                 ))}
               </div>
-            ))}
+            )}
           </div>
         </div>
       </div>
@@ -797,53 +813,22 @@ export const Transport: React.FC = () => {
         </div>
       )}
 
-      {/* Recent routes — the student's own past pickups/destinations, one
-          tap to rebook, one more tap (swap icon) to book the return trip.
-          Sits right above Order Details, after the mode-specific block,
-          so it doesn't compete with Quick/Custom/Map/AerBus for attention
-          up top. Label is itself a button now — tapping the words (not
-          just a chip) opens the full route picker sub-page, which lists
-          this same Recent Routes history plus every preset Quick Route,
-          grouped by pickup point. Kept visible even with zero history yet
-          (a brand-new user still needs a way to reach Quick Routes) — only
-          the chip strip itself is gated on actually having any. */}
+      {/* Recent routes trigger — opens the full route picker sub-page
+          (Recent Routes history + Quick Routes). Sits right above Order
+          Details, after the mode-specific block, so it doesn't compete
+          with Custom/Search Routes/AerBus for attention up top. No chip
+          preview underneath anymore — just the label itself, styled to
+          blink red so it draws the eye as a real shortcut worth tapping,
+          not read as a plain section heading. */}
       {user.isLoggedIn && (
-        <div className="px-4 mt-3 flex flex-col gap-1.5">
+        <div className="px-4 mt-3">
           <button
             type="button"
             onClick={() => setShowRoutePicker(true)}
-            className="flex items-center gap-1.5 text-xs font-normal text-slate-400 hover:text-primary transition self-start"
+            className="flex items-center gap-1.5 text-xs font-semibold text-primary animate-pulse"
           >
             <History className="w-3.5 h-3.5" /> Recent Routes
           </button>
-          {recentRoutes.length > 0 && (
-          <div className="flex gap-2 overflow-x-auto no-scrollbar">
-            {recentRoutes.map(({ pickup, destination }) => (
-              <div
-                key={`${pickup}→${destination}`}
-                className="shrink-0 flex items-center gap-1.5 bg-white border border-slate-100 rounded-2xl pl-3 pr-1.5 py-2"
-              >
-                <button
-                  type="button"
-                  onPointerDown={e => { e.preventDefault(); pickRoute(pickup, destination); }}
-                  className="flex items-center gap-1.5 text-xs font-semibold text-slate-700 active:opacity-60 transition"
-                >
-                  <span className="max-w-[90px] truncate">{pickup}</span>
-                  <span className="text-slate-300">→</span>
-                  <span className="max-w-[90px] truncate">{destination}</span>
-                </button>
-                <button
-                  type="button"
-                  onPointerDown={e => { e.preventDefault(); pickRoute(destination, pickup); }}
-                  title="Book the return trip"
-                  className="w-6 h-6 flex items-center justify-center rounded-full bg-slate-50 text-slate-400 active:scale-90 active:bg-slate-100 transition shrink-0"
-                >
-                  <ArrowLeftRight className="w-3 h-3" />
-                </button>
-              </div>
-            ))}
-          </div>
-          )}
         </div>
       )}
 
