@@ -6,6 +6,7 @@ import {
 import { useLoadOnActive } from '../../../hooks/useLoadOnActive';
 import { useApp } from '../../../context/AppContext';
 import { NativeSelect } from '../../../components/NativeSelect';
+import { MultiSelect } from '../../../components/MultiSelect';
 import { UNIVERSITIES, UNIVERSITY_MAP, jubahLocationLabel, universityKeyFromCampus } from '../../../lib/universities';
 
 interface DriverInvite {
@@ -137,37 +138,24 @@ export const DriversTab = forwardRef<DriversTabHandle, DriversTabProps>(function
           {/* Role selector */}
           <div>
             <p className="text-sm font-semibold text-slate-700 mb-2">Role</p>
-            <div className="flex bg-slate-50 border border-slate-200 rounded-2xl p-1 gap-1">
-              {([
-                { id: 'driver', label: 'Driver', color: 'bg-primary text-white' },
-                { id: 'rider',  label: 'Rider',  color: 'bg-emerald-600 text-white' },
-                { id: 'admin',  label: 'Admin',  color: 'bg-violet-600 text-white' },
-              ] as const).map(r => (
-                // Two stacked layers instead of toggling colour classes
-                // directly — this WebView unreliably repaints colour
-                // changes; opacity changes repaint reliably.
-                <button key={r.id} type="button"
-                  onPointerDown={e => {
-                    e.preventDefault();
-                    setInviteRole(r.id);
-                    setInviteCanDrive(r.id === 'driver');
-                    setInviteCanRent(false);
-                    setInviteCanTransport(false);
-                    setInviteCanDaily(false);
-                    setInviteCanRobe(false);
-                  }}
-                  className="relative flex-1 rounded-xl transition-transform">
-                  <span className="block py-2 text-xs font-semibold text-slate-400">{r.label}</span>
-                  <span
-                    className={`absolute inset-0 flex items-center justify-center py-2 rounded-xl text-xs font-semibold transition-opacity duration-150 ${r.color} ${
-                      inviteRole === r.id ? 'opacity-100' : 'opacity-0 pointer-events-none'
-                    }`}
-                  >
-                    {r.label}
-                  </span>
-                </button>
-              ))}
-            </div>
+            <NativeSelect
+              value={inviteRole}
+              onChange={r => {
+                setInviteRole(r);
+                setInviteCanDrive(r === 'driver');
+                setInviteCanRent(false);
+                setInviteCanTransport(false);
+                setInviteCanDaily(false);
+                setInviteCanRobe(false);
+              }}
+              options={[
+                { value: 'driver', label: 'Driver' },
+                { value: 'rider',  label: 'Rider' },
+                { value: 'admin',  label: 'Admin' },
+              ]}
+              placeholder="Select role..."
+              label="Select Role"
+            />
             {inviteRole === 'admin' && (
               <p className="text-xs text-violet-500 font-semibold mt-1.5 pl-1">
                 Admin includes full driving capabilities automatically.
@@ -229,51 +217,50 @@ export const DriversTab = forwardRef<DriversTabHandle, DriversTabProps>(function
             />
           </div>
 
-          {/* Capability toggles — driver */}
+          {/* Capabilities — driver */}
           {inviteRole === 'driver' && (
             <div>
               <p className="text-sm font-semibold text-slate-700 mb-2">Capabilities</p>
-              <div className="flex gap-2">
-                <button type="button" onPointerDown={(e) => { e.preventDefault(); setInviteCanDrive(v => !v); }}
-                  className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl text-xs font-semibold border transition-transform active:scale-95 ${
-                    inviteCanDrive ? 'bg-white border-slate-900 text-slate-900' : 'bg-slate-50 border-slate-200 text-slate-400'
-                  }`}>
-                  <Car className="w-3 h-3" /> Gerak Car {inviteCanDrive ? '✓' : '✗'}
-                </button>
-                <button type="button" onPointerDown={(e) => { e.preventDefault(); setInviteCanRent(v => !v); }}
-                  className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl text-xs font-semibold border transition-transform active:scale-95 ${
-                    inviteCanRent ? 'bg-white border-slate-900 text-slate-900' : 'bg-slate-50 border-slate-200 text-slate-400'
-                  }`}>
-                  <KeyRound className="w-3 h-3" /> Rental {inviteCanRent ? '✓' : '✗'}
-                </button>
-                <button type="button" onPointerDown={(e) => { e.preventDefault(); setInviteCanTransport(v => !v); }}
-                  className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl text-xs font-semibold border transition-transform active:scale-95 ${
-                    inviteCanTransport ? 'bg-white border-slate-900 text-slate-900' : 'bg-slate-50 border-slate-200 text-slate-400'
-                  }`}>
-                  <Truck className="w-3 h-3" /> Transporter {inviteCanTransport ? '✓' : '✗'}
-                </button>
-              </div>
+              <MultiSelect
+                values={[
+                  ...(inviteCanDrive ? ['drive'] : []),
+                  ...(inviteCanRent ? ['rent'] : []),
+                  ...(inviteCanTransport ? ['transport'] : []),
+                ]}
+                onChange={vals => {
+                  setInviteCanDrive(vals.includes('drive'));
+                  setInviteCanRent(vals.includes('rent'));
+                  setInviteCanTransport(vals.includes('transport'));
+                }}
+                options={[
+                  { value: 'drive', label: 'Gerak Car' },
+                  { value: 'rent', label: 'Rental' },
+                  { value: 'transport', label: 'Transporter' },
+                ]}
+                placeholder="Select capabilities..."
+              />
             </div>
           )}
 
-          {/* Capability toggles — rider */}
+          {/* Capabilities — rider */}
           {inviteRole === 'rider' && (
             <div>
               <p className="text-sm font-semibold text-slate-700 mb-2">Capabilities</p>
-              <div className="flex gap-2">
-                <button type="button" onPointerDown={(e) => { e.preventDefault(); setInviteCanDaily(v => !v); }}
-                  className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl text-xs font-semibold border transition-transform active:scale-95 ${
-                    inviteCanDaily ? 'bg-white border-slate-900 text-slate-900' : 'bg-slate-50 border-slate-200 text-slate-400'
-                  }`}>
-                  <Bike className="w-3.5 h-3.5" /> Daily {inviteCanDaily ? '✓' : '✗'}
-                </button>
-                <button type="button" onPointerDown={(e) => { e.preventDefault(); setInviteCanRobe(v => !v); }}
-                  className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl text-xs font-semibold border transition-transform active:scale-95 ${
-                    inviteCanRobe ? 'bg-white border-slate-900 text-slate-900' : 'bg-slate-50 border-slate-200 text-slate-400'
-                  }`}>
-                  <GraduationCap className="w-3.5 h-3.5" /> Robe {inviteCanRobe ? '✓' : '✗'}
-                </button>
-              </div>
+              <MultiSelect
+                values={[
+                  ...(inviteCanDaily ? ['daily'] : []),
+                  ...(inviteCanRobe ? ['robe'] : []),
+                ]}
+                onChange={vals => {
+                  setInviteCanDaily(vals.includes('daily'));
+                  setInviteCanRobe(vals.includes('robe'));
+                }}
+                options={[
+                  { value: 'daily', label: 'Daily' },
+                  { value: 'robe', label: 'Robe' },
+                ]}
+                placeholder="Select capabilities..."
+              />
             </div>
           )}
 

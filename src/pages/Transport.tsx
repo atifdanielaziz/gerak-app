@@ -114,10 +114,9 @@ type Section = 'trip' | 'when' | 'you';
 export const Transport: React.FC = () => {
   const { user, setCurrentPage, showAuthGate } = useApp();
 
-  // Page state
-  const [campus,   setCampus]   = useState<'pekan' | 'gambang'>(
-    user.campus?.toLowerCase() === 'pekan' ? 'pekan' : 'gambang'
-  );
+  // Page state — campus is always the logged-in user's own, no in-page
+  // switcher anymore (removed campus toggle, superadmin included).
+  const campus: 'pekan' | 'gambang' = user.campus?.toLowerCase() === 'pekan' ? 'pekan' : 'gambang';
   const [bookMode, setBookMode] = useState<'quick' | 'custom' | 'map' | 'aerbus'>(user.isLoggedIn ? 'quick' : 'map');
   const [showTerms, setShowTerms] = useState(false);
 
@@ -362,20 +361,6 @@ export const Transport: React.FC = () => {
   const youSummary = `${passengers} pax · ${contact || 'no contact'}`;
 
   // ── Handlers ────────────────────────────────────────────────────────────────
-
-  const switchCampus = (c: 'pekan' | 'gambang') => {
-    setCampus(c);
-    setSelectedFrom('');
-    setSelectedRoute(null);
-    setShowRouteList(false);
-    setShowFromDropdown(false);
-    setPickupPin(null);
-    setDestPin(null);
-    // Each campus has its own AerBus point list/pricing (see AERBUS_POINTS)
-    // — a selection made under the old campus may not exist under the new
-    // one (e.g. Pekan Bus Terminal has no Gambang equivalent).
-    setAerbusPoint('');
-  };
 
   const switchMode = (m: 'quick' | 'custom' | 'map' | 'aerbus') => {
     setBookMode(m);
@@ -658,45 +643,6 @@ export const Transport: React.FC = () => {
               <ClipboardList className="w-3.5 h-3.5" />
             </button>
           </div>
-        </div>
-
-        {/* Campus toggle — logged-in only */}
-        <div className="px-4 pt-4 flex flex-col gap-2">
-          {user.isLoggedIn && (
-            user.role === 'superadmin' ? (
-              <div className="flex bg-slate-100 rounded-2xl p-1 gap-1">
-                {(['gambang', 'pekan'] as const).map(c => {
-                  const label = c === 'gambang' ? 'UMPSA Gambang' : 'UMPSA Pekan';
-                  // Two stacked layers instead of toggling colour classes
-                  // directly — this WebView unreliably repaints colour
-                  // changes; opacity changes repaint reliably.
-                  return (
-                    <button
-                      key={c}
-                      type="button"
-                      onPointerDown={(e) => { e.preventDefault(); switchCampus(c); }}
-                      className="relative flex-1 rounded-xl transition-transform"
-                    >
-                      <span className="block py-2 text-xs font-semibold text-slate-500">{label}</span>
-                      <span
-                        className={`absolute inset-0 flex items-center justify-center py-2 rounded-xl bg-white text-primary text-xs font-semibold transition-opacity duration-150 ${
-                          campus === c ? 'opacity-100' : 'opacity-0 pointer-events-none'
-                        }`}
-                      >
-                        {label}
-                      </span>
-                    </button>
-                  );
-                })}
-              </div>
-            ) : (
-              <div className="bg-primary/10 rounded-2xl px-4 py-2.5 text-center">
-                <span className="text-xs font-semibold text-primary">
-                  UMPSA {user.campus}
-                </span>
-              </div>
-            )
-          )}
         </div>
 
         {/* Recent routes — the student's own past pickups/destinations, one

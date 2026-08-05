@@ -356,8 +356,6 @@ export const OrdersTab = forwardRef<OrdersTabHandle, OrdersTabProps>(function Or
             options={[
               { value: 'all', label: 'All Statuses' },
               { value: 'pending', label: 'Pending' },
-              { value: 'accepted', label: 'Accepted' },
-              { value: 'in_progress', label: 'In Progress' },
               { value: 'completed', label: 'Completed' },
               { value: 'cancelled', label: 'Cancelled' },
             ]}

@@ -65,7 +65,6 @@ export const Profile: React.FC = () => {
     return `${d.slice(0, 3)}-${d.slice(3)}`;
   };
   const [uploading, setUploading]       = useState(false);
-  const [verifying, setVerifying]       = useState(false);
   const [verifyMsg, setVerifyMsg]       = useState('');
   const [uploadingDoc, setUploadingDoc] = useState<'license' | null>(null);
   const [docMsg, setDocMsg]             = useState('');
@@ -203,36 +202,11 @@ export const Profile: React.FC = () => {
     await updateProfile({ feeReceiptUrl: url });
     setUploading(false);
 
-    const uploadDay = new Date().getDate();
-    if (uploadDay >= 4) {
-      if (fileInputRef.current) fileInputRef.current.value = '';
-      await refreshUserData();
-      setVerifyMsg('Receipt submitted. Awaiting manual admin approval.');
-      return;
-    }
-
-    setVerifying(true);
-    const { data: session } = await supabase.auth.getSession();
-    const result = await supabase.functions.invoke('verify-receipt', {
-      body: { imagePath: path },
-      headers: { Authorization: `Bearer ${session.session?.access_token}` },
-    });
-
-    setVerifying(false);
+    // Every receipt now goes to manual admin review — no AI/auto-verify
+    // step (see ReceiptsTab.tsx for the admin Approve/Reject actions).
     if (fileInputRef.current) fileInputRef.current.value = '';
-    if (result.error) { setVerifyMsg('Verification service error. Please try again.'); return; }
-
-    const data = result.data as { success?: boolean; pending?: boolean; reason?: string } | null;
     await refreshUserData();
-    if (!data?.success) {
-      setVerifyMsg(
-        data?.pending
-          ? `Could not auto-verify: ${data.reason}. Submitted for manual admin review instead.`
-          : (data?.reason || 'Verification failed. Please try again.')
-      );
-      return;
-    }
-    setVerifyMsg('');
+    setVerifyMsg('Receipt submitted. Awaiting manual admin approval.');
   };
 
   const handleDeleteAccount = async () => {
@@ -569,22 +543,20 @@ export const Profile: React.FC = () => {
                       <FileImage className="w-3 h-3" /> Monthly Fee Receipt
                     </span>
 
-                    {(uploading || verifying) && (
+                    {uploading && (
                       <div className="mt-2 flex items-center gap-3 bg-amber-50 border border-amber-100 rounded-xl px-4 py-3">
                         <span className="w-5 h-5 rounded-full border-2 border-amber-300 border-t-amber-600 animate-spin shrink-0" />
                         <div>
-                          <p className="text-xs font-semibold text-amber-700">
-                            {uploading ? 'Uploading receipt…' : 'AI is verifying your receipt…'}
-                          </p>
+                          <p className="text-xs font-semibold text-amber-700">Uploading receipt…</p>
                           <p className="text-xs text-amber-500 mt-0.5">This takes a few seconds</p>
                         </div>
                       </div>
                     )}
 
-                    {!uploading && !verifying && isActive && (
+                    {!uploading && isActive && (
                       <div className="mt-2">
                         <span className="inline-flex items-center gap-1 bg-emerald-50 border border-emerald-100 text-emerald-600 text-xs font-semibold px-2.5 py-1 rounded-full">
-                          <ShieldCheck className="w-3 h-3" /> AI Verified
+                          <ShieldCheck className="w-3 h-3" /> Verified
                         </span>
                         <div className="mt-1.5 space-y-0.5">
                           <p className="text-xs text-slate-500 font-normal">Amount: <span className="font-bold text-slate-700">{user.feeReceiptAmount}</span></p>
@@ -602,7 +574,7 @@ export const Profile: React.FC = () => {
                       </div>
                     )}
 
-                    {!uploading && !verifying && !isActive && isExpired && user.feeReceiptVerified && (
+                    {!uploading && !isActive && isExpired && user.feeReceiptVerified && (
                       <div className="mt-2">
                         <div className="bg-red-50 border border-red-100 rounded-xl px-4 py-3 mb-2">
                           <p className="text-xs font-semibold text-red-600 flex items-center gap-1.5">
@@ -620,7 +592,7 @@ export const Profile: React.FC = () => {
                       </div>
                     )}
 
-                    {!uploading && !verifying && isRejected && (
+                    {!uploading && isRejected && (
                       <div className="mt-2">
                         <div className="bg-red-50 border border-red-100 rounded-xl px-4 py-3 mb-2">
                           <p className="text-xs font-semibold text-red-600 flex items-center gap-1.5 mb-1">
@@ -635,7 +607,7 @@ export const Profile: React.FC = () => {
                       </div>
                     )}
 
-                    {!uploading && !verifying && hasReceipt && !user.feeReceiptVerified && !user.feeReceiptRejectReason && !isActive && (
+                    {!uploading && hasReceipt && !user.feeReceiptVerified && !user.feeReceiptRejectReason && !isActive && (
                       <div className="mt-2">
                         <div className="bg-amber-50 border border-amber-100 rounded-xl px-4 py-3 mb-2 flex items-start gap-2">
                           <Clock className="w-3.5 h-3.5 text-amber-500 shrink-0 mt-0.5" />
@@ -653,7 +625,7 @@ export const Profile: React.FC = () => {
                       </div>
                     )}
 
-                    {!uploading && !verifying && !hasReceipt && !isRejected && (
+                    {!uploading && !hasReceipt && !isRejected && (
                       <div>
                         <button onClick={() => fileInputRef.current?.click()}
                           className="mt-2 flex items-center gap-2 bg-red-50 border border-dashed border-red-200 rounded-xl px-4 py-3 text-xs font-bold text-red-400 hover:border-red-400 transition active:scale-95 cursor-pointer w-full">
@@ -666,7 +638,7 @@ export const Profile: React.FC = () => {
                       </div>
                     )}
 
-                    {verifyMsg && !uploading && !verifying && (
+                    {verifyMsg && !uploading && (
                       <p className="mt-2 text-xs font-bold text-red-500 bg-red-50 px-3 py-2 rounded-xl">{verifyMsg}</p>
                     )}
 

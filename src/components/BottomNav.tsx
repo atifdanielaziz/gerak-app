@@ -18,7 +18,7 @@ export const BottomNav: React.FC = () => {
     setTimeout(() => setBubbles(prev => prev.filter(b => b.id !== id)), 700);
   };
 
-  if (currentPage === 'splash' || currentPage === 'login' || currentPage === 'register' || currentPage === 'forgot-password' || currentPage === 'reset-password') {
+  if (currentPage === 'splash' || currentPage === 'login' || currentPage === 'register' || currentPage === 'forgot-password' || currentPage === 'reset-password' || currentPage === 'complete-profile') {
     return null;
   }
 

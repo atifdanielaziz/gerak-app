@@ -4,13 +4,14 @@ import { consumeSessionExpiredMessage } from '../lib/idleSession';
 import { Mail, Lock, Eye, EyeOff, ArrowRight, X } from 'lucide-react';
 
 export const Login: React.FC = () => {
-  const { login, setCurrentPage } = useApp();
+  const { login, loginWithOAuth, checkEmailRegistered, setCurrentPage } = useApp();
   const [email, setEmail]               = useState('');
   const [password, setPassword]         = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe]     = useState(false);
   const [loading, setLoading]           = useState(false);
   const [error, setError]               = useState('');
+  const [emailCheck, setEmailCheck]     = useState<null | 'checking' | { exists: boolean }>(null);
 
   useEffect(() => {
     if (consumeSessionExpiredMessage()) {
@@ -18,10 +19,32 @@ export const Login: React.FC = () => {
     }
   }, []);
 
+  // Live "is this email registered?" check — debounced 600ms, same pattern
+  // as Register.tsx's invite check, so a mistyped email is flagged before
+  // the user even gets to Sign In, instead of only via the generic
+  // "Invalid login credentials" message (which still covers wrong
+  // password unchanged, once an email is confirmed to exist).
+  useEffect(() => {
+    if (!email || !email.includes('@')) {
+      queueMicrotask(() => setEmailCheck(null));
+      return;
+    }
+    queueMicrotask(() => setEmailCheck('checking'));
+    const timer = setTimeout(async () => {
+      const exists = await checkEmailRegistered(email);
+      setEmailCheck({ exists });
+    }, 600);
+    return () => clearTimeout(timer);
+  }, [email, checkEmailRegistered]);
+
   const handleSubmit = async (e: React.SyntheticEvent) => {
     e.preventDefault();
     if (!email.trim() || !password.trim()) {
       setError('Please enter your email and password.');
+      return;
+    }
+    if (emailCheck && emailCheck !== 'checking' && !emailCheck.exists) {
+      setError('This email is not registered.');
       return;
     }
     setLoading(true);
@@ -78,6 +101,9 @@ export const Login: React.FC = () => {
                 required
               />
             </div>
+            {emailCheck && emailCheck !== 'checking' && !emailCheck.exists && (
+              <p className="text-xs font-semibold text-danger pl-1">This email is not registered.</p>
+            )}
           </div>
 
           {/* Password */}
@@ -157,12 +183,12 @@ export const Login: React.FC = () => {
           <div className="flex-1 h-px bg-slate-100" />
         </div>
 
-        {/* Social buttons — visual only, not yet wired */}
+        {/* Social sign-in */}
         <div className="flex gap-3">
           <button
             type="button"
-            disabled
-            className="flex-1 flex items-center justify-center gap-2 py-3 rounded-2xl border border-slate-100 bg-slate-50 text-slate-400 cursor-not-allowed"
+            onClick={() => loginWithOAuth('apple')}
+            className="flex-1 flex items-center justify-center gap-2 py-3 rounded-2xl border border-slate-100 bg-slate-50 text-slate-700 active:scale-[0.98] transition"
           >
             {/* Apple icon */}
             <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
@@ -172,8 +198,8 @@ export const Login: React.FC = () => {
           </button>
           <button
             type="button"
-            disabled
-            className="flex-1 flex items-center justify-center gap-2 py-3 rounded-2xl border border-slate-100 bg-slate-50 text-slate-400 cursor-not-allowed"
+            onClick={() => loginWithOAuth('google')}
+            className="flex-1 flex items-center justify-center gap-2 py-3 rounded-2xl border border-slate-100 bg-slate-50 text-slate-700 active:scale-[0.98] transition"
           >
             {/* Google icon */}
             <svg className="w-5 h-5" viewBox="0 0 24 24">
