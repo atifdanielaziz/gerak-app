@@ -112,10 +112,9 @@ const AERBUS_POINTS: Record<'pekan' | 'gambang', AerbusPoint[]> = {
 export const Transport: React.FC = () => {
   const { user, setCurrentPage, showAuthGate } = useApp();
 
-  // Page state
-  const [campus,   setCampus]   = useState<'pekan' | 'gambang'>(
-    user.campus?.toLowerCase() === 'pekan' ? 'pekan' : 'gambang'
-  );
+  // Page state — campus is always the logged-in user's own, no in-page
+  // switcher anymore (removed campus toggle, superadmin included).
+  const campus: 'pekan' | 'gambang' = user.campus?.toLowerCase() === 'pekan' ? 'pekan' : 'gambang';
   const [bookMode, setBookMode] = useState<'quick' | 'custom' | 'map' | 'aerbus'>(user.isLoggedIn ? 'quick' : 'map');
   const [showTerms, setShowTerms] = useState(false);
 
@@ -338,20 +337,6 @@ export const Transport: React.FC = () => {
      !!(pickupPin && destPin));
 
   // ── Handlers ────────────────────────────────────────────────────────────────
-
-  const switchCampus = (c: 'pekan' | 'gambang') => {
-    setCampus(c);
-    setSelectedFrom('');
-    setSelectedRoute(null);
-    setShowRouteList(false);
-    setShowFromDropdown(false);
-    setPickupPin(null);
-    setDestPin(null);
-    // Each campus has its own AerBus point list/pricing (see AERBUS_POINTS)
-    // — a selection made under the old campus may not exist under the new
-    // one (e.g. Pekan Bus Terminal has no Gambang equivalent).
-    setAerbusPoint('');
-  };
 
   const handleBook = async (e: React.SyntheticEvent) => {
     e.preventDefault();
@@ -591,44 +576,7 @@ export const Transport: React.FC = () => {
         </div>
       </div>
 
-      {/* Campus toggle — logged-in only */}
       <div className="px-4 pt-4 flex flex-col gap-2">
-        {user.isLoggedIn && (
-          user.role === 'superadmin' ? (
-            <div className="flex bg-slate-100 rounded-2xl p-1 gap-1">
-              {(['gambang', 'pekan'] as const).map(c => {
-                const label = c === 'gambang' ? 'UMPSA Gambang' : 'UMPSA Pekan';
-                // Two stacked layers instead of toggling colour classes
-                // directly — this WebView unreliably repaints colour
-                // changes; opacity changes repaint reliably.
-                return (
-                  <button
-                    key={c}
-                    type="button"
-                    onPointerDown={(e) => { e.preventDefault(); switchCampus(c); }}
-                    className="relative flex-1 rounded-xl transition-transform"
-                  >
-                    <span className="block py-2 text-xs font-semibold text-slate-500">{label}</span>
-                    <span
-                      className={`absolute inset-0 flex items-center justify-center py-2 rounded-xl bg-white text-primary text-xs font-semibold transition-opacity duration-150 ${
-                        campus === c ? 'opacity-100' : 'opacity-0 pointer-events-none'
-                      }`}
-                    >
-                      {label}
-                    </span>
-                  </button>
-                );
-              })}
-            </div>
-          ) : (
-            <div className="bg-primary/10 rounded-2xl px-4 py-2.5 text-center">
-              <span className="text-xs font-semibold text-primary">
-                UMPSA {user.campus}
-              </span>
-            </div>
-          )
-        )}
-
         <div className="flex items-center justify-between">
           <button
             type="button"
@@ -647,45 +595,6 @@ export const Transport: React.FC = () => {
           </button>
         </div>
       </div>
-
-      {/* Recent routes — the student's own past pickups/destinations, one
-          tap to rebook, one more tap (swap icon) to book the return trip.
-          Sits above the mode selector since a returning student doesn't
-          need to go through Quick/Custom/Map/AerBus at all if their route
-          is already here. */}
-      {user.isLoggedIn && recentRoutes.length > 0 && (
-        <div className="px-4 mt-3 flex flex-col gap-1.5">
-          <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider flex items-center gap-1 pl-1">
-            <History className="w-3 h-3" /> Recent Routes
-          </p>
-          <div className="flex gap-2 overflow-x-auto no-scrollbar">
-            {recentRoutes.map(({ pickup, destination }) => (
-              <div
-                key={`${pickup}→${destination}`}
-                className="shrink-0 flex items-center gap-1.5 bg-white border border-slate-100 rounded-2xl pl-3 pr-1.5 py-2"
-              >
-                <button
-                  type="button"
-                  onPointerDown={e => { e.preventDefault(); bookRecentRoute(pickup, destination); }}
-                  className="flex items-center gap-1.5 text-xs font-semibold text-slate-700 active:opacity-60 transition"
-                >
-                  <span className="max-w-[90px] truncate">{pickup}</span>
-                  <span className="text-slate-300">→</span>
-                  <span className="max-w-[90px] truncate">{destination}</span>
-                </button>
-                <button
-                  type="button"
-                  onPointerDown={e => { e.preventDefault(); bookRecentRoute(destination, pickup); }}
-                  title="Book the return trip"
-                  className="w-6 h-6 flex items-center justify-center rounded-full bg-slate-50 text-slate-400 active:scale-90 active:bg-slate-100 transition shrink-0"
-                >
-                  <ArrowLeftRight className="w-3 h-3" />
-                </button>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
 
       {/* Mode selector — 4 modes */}
       {user.isLoggedIn && (
@@ -927,6 +836,46 @@ export const Transport: React.FC = () => {
                 right: `RM${p.fare}`,
               }))}
             />
+          </div>
+        </div>
+      )}
+
+      {/* Recent routes — the student's own past pickups/destinations, one
+          tap to rebook, one more tap (swap icon) to book the return trip.
+          Sits right above Order Details, after the mode-specific block,
+          so it doesn't compete with Quick/Custom/Map/AerBus for attention
+          up top. Label styled to match Booking Terms (text-xs font-normal
+          text-slate-400), not its old uppercase/tracked treatment. */}
+      {user.isLoggedIn && recentRoutes.length > 0 && (
+        <div className="px-4 mt-3 flex flex-col gap-1.5">
+          <p className="flex items-center gap-1.5 text-xs font-normal text-slate-400">
+            <History className="w-3.5 h-3.5" /> Recent Routes
+          </p>
+          <div className="flex gap-2 overflow-x-auto no-scrollbar">
+            {recentRoutes.map(({ pickup, destination }) => (
+              <div
+                key={`${pickup}→${destination}`}
+                className="shrink-0 flex items-center gap-1.5 bg-white border border-slate-100 rounded-2xl pl-3 pr-1.5 py-2"
+              >
+                <button
+                  type="button"
+                  onPointerDown={e => { e.preventDefault(); bookRecentRoute(pickup, destination); }}
+                  className="flex items-center gap-1.5 text-xs font-semibold text-slate-700 active:opacity-60 transition"
+                >
+                  <span className="max-w-[90px] truncate">{pickup}</span>
+                  <span className="text-slate-300">→</span>
+                  <span className="max-w-[90px] truncate">{destination}</span>
+                </button>
+                <button
+                  type="button"
+                  onPointerDown={e => { e.preventDefault(); bookRecentRoute(destination, pickup); }}
+                  title="Book the return trip"
+                  className="w-6 h-6 flex items-center justify-center rounded-full bg-slate-50 text-slate-400 active:scale-90 active:bg-slate-100 transition shrink-0"
+                >
+                  <ArrowLeftRight className="w-3 h-3" />
+                </button>
+              </div>
+            ))}
           </div>
         </div>
       )}
