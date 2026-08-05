@@ -7,7 +7,7 @@ const MapboxRideMap = lazy(() => import('../components/MapboxRideMap').then(m =>
 import {
   Map, List, PencilLine, Car, PlaneTakeoff, PlaneLanding,
   Info, CheckCircle2, RotateCcw, Users, Clock, CalendarDays, Phone, ClipboardList, X,
-  ArrowLeftRight, History,
+  ArrowUpDown, History,
 } from 'lucide-react';
 import { submitRideToSheets } from '../lib/sheetsService';
 import { useTapVsScroll } from '../lib/useTapVsScroll';
@@ -576,7 +576,7 @@ export const Transport: React.FC = () => {
         <div className="px-5 pt-2 flex flex-col gap-5" style={{ paddingBottom: 'calc(6.5rem + env(safe-area-inset-bottom))' }}>
           {recentRoutes.length > 0 && (
             <div className="flex flex-col gap-2">
-              <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider pl-1 flex items-center gap-1.5">
+              <p className="text-xs font-semibold text-emerald-600 animate-blink pl-1 flex items-center gap-1.5">
                 <History className="w-3.5 h-3.5" /> Recent Routes
               </p>
               {recentRoutes.map(({ pickup, destination }) => (
@@ -596,7 +596,7 @@ export const Transport: React.FC = () => {
           )}
 
           <div className="flex flex-col gap-2">
-            <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider pl-1 flex items-center gap-1.5">
+            <p className="text-xs font-semibold text-slate-400 pl-1 flex items-center gap-1.5">
               <List className="w-3.5 h-3.5" /> Quick Routes
             </p>
             <NativeSelect
@@ -654,7 +654,7 @@ export const Transport: React.FC = () => {
           <button
             type="button"
             onClick={() => setShowTerms(true)}
-            className="flex items-center gap-1.5 text-xs font-normal text-slate-400 hover:text-primary transition"
+            className="flex items-center gap-1.5 text-xs font-semibold text-emerald-600 animate-blink"
           >
             <Info className="w-3.5 h-3.5" />
             Booking Terms
@@ -692,14 +692,34 @@ export const Transport: React.FC = () => {
         </div>
       )}
 
+      {/* Recent routes trigger — opens the full route picker sub-page
+          (Recent Routes history + Quick Routes). Custom mode only — Recent
+          Routes/Quick Routes are the fast-track alternative to typing in
+          Custom, so they don't apply once you're already in Search Routes
+          or AerBus. Sits right above the Custom Route card it's a
+          shortcut for — Comfortable Card Gap Standard (mt-4, the "roomy"
+          gap between major stacked sections) above it, a tight mt-2
+          (label-to-its-content) below, before the Custom Route card. */}
+      {user.isLoggedIn && bookMode === 'custom' && (
+        <div className="px-4 mt-4">
+          <button
+            type="button"
+            onClick={() => setShowRoutePicker(true)}
+            className="flex items-center gap-1.5 text-xs font-semibold text-emerald-600 animate-blink"
+          >
+            <History className="w-3.5 h-3.5" /> Recent Routes
+          </button>
+        </div>
+      )}
+
       {/* Selected route summary — shown when a route was picked via the
-          route picker sub-page (tap "Recent Routes" below) and it matched
+          route picker sub-page (tap "Recent Routes" above) and it matched
           a known fixed-fare Quick Route. No tab in the mode selector above
           highlights for this, since it isn't one of the 3 remaining modes
           — this card is the only on-screen confirmation of what's booked,
           replacing the old inline Quick Routes picker's own summary. */}
       {bookMode === 'quick' && selectedRoute && (
-        <div className="px-4 mt-3">
+        <div className="px-4 mt-4">
           <div
             onClick={() => setShowRoutePicker(true)}
             className="w-full flex items-center justify-between py-2.5 px-3 rounded-2xl border border-slate-900 bg-white transition active:bg-slate-50 active:scale-[0.99] cursor-pointer"
@@ -722,7 +742,7 @@ export const Transport: React.FC = () => {
 
       {/* ── Custom Mode ── */}
       {bookMode === 'custom' && (
-        <div className="px-4 mt-3">
+        <div className="px-4 mt-2">
           <div className="bg-white border border-slate-100 rounded-2xl p-3 flex flex-col gap-2.5">
             <div className="flex items-center justify-between">
               <h3 className="text-sm font-semibold text-slate-700 flex items-center gap-1.5">
@@ -735,7 +755,7 @@ export const Transport: React.FC = () => {
                 aria-label="Swap pickup and destination"
                 className="w-7 h-7 flex items-center justify-center rounded-full bg-slate-50 text-slate-400 active:scale-90 active:bg-slate-100 transition shrink-0"
               >
-                <ArrowLeftRight className="w-3.5 h-3.5" />
+                <ArrowUpDown className="w-3.5 h-3.5" />
               </button>
             </div>
             <div className="flex flex-col gap-2">
@@ -769,7 +789,7 @@ export const Transport: React.FC = () => {
 
       {/* ── Search Map ── */}
       {bookMode === 'map' && (
-        <div className="px-4 mt-3 flex flex-col gap-4">
+        <div className="px-4 mt-4 flex flex-col gap-4">
           <Suspense fallback={<div className="flex justify-center py-12"><span className="w-6 h-6 rounded-full border-2 border-primary border-t-transparent animate-spin" /></div>}>
             <MapboxRideMap
               campusCenter={CAMPUS_CENTERS[campus]}
@@ -785,7 +805,7 @@ export const Transport: React.FC = () => {
 
       {/* ── AerBus ── */}
       {bookMode === 'aerbus' && (
-        <div className="px-4 mt-3 flex flex-col gap-3">
+        <div className="px-4 mt-4 flex flex-col gap-3">
           {/* Direction — Mode Selector Standard */}
           <div className="flex gap-2">
             <button type="button" onPointerDown={e => { e.preventDefault(); setAerbusDirection('to'); }}
@@ -829,26 +849,8 @@ export const Transport: React.FC = () => {
         </div>
       )}
 
-      {/* Recent routes trigger — opens the full route picker sub-page
-          (Recent Routes history + Quick Routes). Custom mode only — Recent
-          Routes/Quick Routes are the fast-track alternative to typing in
-          Custom, so they don't apply once you're already in Search Routes
-          or AerBus. Attention Blink Standard (green + animate-blink) so it
-          reads as a real shortcut worth tapping, not a plain heading. */}
-      {user.isLoggedIn && bookMode === 'custom' && (
-        <div className="px-4 mt-3">
-          <button
-            type="button"
-            onClick={() => setShowRoutePicker(true)}
-            className="flex items-center gap-1.5 text-xs font-semibold text-emerald-600 animate-blink"
-          >
-            <History className="w-3.5 h-3.5" /> Recent Routes
-          </button>
-        </div>
-      )}
-
       {/* ── Order form ── */}
-      <form onSubmit={handleBook} className="px-4 mt-2 flex flex-col gap-2">
+      <form onSubmit={handleBook} className="px-4 mt-4 flex flex-col gap-2">
         <div className="bg-white border border-slate-100 rounded-2xl p-3 flex flex-col gap-2.5">
           <div className="flex items-center justify-between">
             <h3 className="text-sm font-semibold text-slate-700 flex items-center gap-1.5">
