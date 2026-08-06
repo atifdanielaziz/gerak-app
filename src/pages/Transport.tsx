@@ -338,7 +338,7 @@ export const Transport: React.FC = () => {
       type="text"
       value={aerbusCampusLabel}
       onChange={e => setAerbusCampusOverride(e.target.value)}
-      className="bg-white border border-slate-100 rounded-xl px-3 py-2.5 text-xs text-slate-700 focus:outline-none focus:border-slate-900 transition"
+      className="bg-white border border-slate-100 rounded-xl px-3 py-2.5 text-xs font-semibold text-slate-700 focus:outline-none focus:border-slate-900 transition"
     />
   );
 
@@ -883,11 +883,16 @@ export const Transport: React.FC = () => {
                 {aerbusDirection === 'to' ? aerbusPointField : aerbusCampusField}
               </div>
             </div>
-            {aerbusCampusOverride !== null && (
-              <p className="text-xs text-slate-400 font-normal text-center italic">
-                Fare will be confirmed by your driver
-              </p>
-            )}
+            {/* Always rendered (never conditional) so this card is the same
+                height as Custom Route's, which always shows its own footer
+                note too. */}
+            <p className="text-xs text-slate-400 font-normal text-center italic">
+              {aerbusCampusOverride !== null
+                ? 'Fare will be confirmed by your driver'
+                : aerbusPointData
+                ? `Fixed fare — RM${aerbusPointData.fare}`
+                : 'Select a point to see the fare'}
+            </p>
           </div>
         </div>
       )}
