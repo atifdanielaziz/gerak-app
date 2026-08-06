@@ -5,7 +5,7 @@ interface PinLocation { address: string; coords: [number, number]; }
 
 const MapboxRideMap = lazy(() => import('../components/MapboxRideMap').then(m => ({ default: m.MapboxRideMap })));
 import {
-  Map, List, PencilLine, Car, PlaneTakeoff, PlaneLanding,
+  Map, List, PencilLine, Car, PlaneTakeoff,
   Info, CheckCircle2, RotateCcw, Users, Clock, CalendarDays, Phone, ClipboardList, X,
   ArrowUpDown, History,
 } from 'lucide-react';
@@ -200,9 +200,15 @@ export const Transport: React.FC = () => {
     setShowRoutePicker(false);
   };
 
-  // AerBus state
+  // AerBus state. aerbusDirection now drives which side of the Custom-Route-
+  // style card the airport point occupies (Point A vs Point B) instead of a
+  // separate To/From toggle — the flip button just swaps this. The campus
+  // side is free-text, defaulting to the customer's own campus; null means
+  // "untouched" (fixed fare applies), any typed value means "edited"
+  // (fare becomes TBC, same as Custom mode).
   const [aerbusDirection, setAerbusDirection] = useState<'to' | 'from'>('to');
   const [aerbusPoint,     setAerbusPoint]     = useState<AerbusPointId | ''>('');
+  const [aerbusCampusOverride, setAerbusCampusOverride] = useState<string | null>(null);
 
   // Quick-route state — selectedRoute is still set (by pickRoute, via the
   // route picker sub-page) even though the old inline FROM-dropdown +
@@ -298,10 +304,13 @@ export const Transport: React.FC = () => {
     return h >= 0 && h < 7;
   }, [time, aerbusDispatch]);
 
+  // Editing the campus-side field away from the default drops the fare to
+  // TBC, same rule as Custom mode — an edited value means it may no longer
+  // actually be a straight campus↔point trip.
   const baseFare: number | 'TBC' = bookMode === 'quick'
     ? (selectedRoute?.fare ?? 0)
     : bookMode === 'aerbus'
-    ? (aerbusPointData?.fare ?? 'TBC')
+    ? (aerbusCampusOverride !== null ? 'TBC' : (aerbusPointData?.fare ?? 'TBC'))
     : 'TBC';
 
   const nightCharge = isNight ? 5 : 0;
@@ -311,13 +320,34 @@ export const Transport: React.FC = () => {
     : baseFare + nightCharge;
 
   const campusLabelFull = campus === 'pekan' ? 'UMPSA Pekan Campus' : 'UMPSA Gambang Campus';
+  const aerbusCampusLabel = aerbusCampusOverride ?? campusLabelFull;
+
+  // The two AerBus card fields — same one regardless of which side
+  // (pickup/destination) it currently occupies, since the flip button just
+  // swaps aerbusDirection rather than the fields' own contents.
+  const aerbusPointField = (
+    <NativeSelect<AerbusPointId | ''>
+      value={aerbusPoint}
+      onChange={setAerbusPoint}
+      placeholder="Select a point"
+      options={aerbusPoints.map(p => ({ value: p.id, label: p.label, right: `RM${p.fare}` }))}
+    />
+  );
+  const aerbusCampusField = (
+    <input
+      type="text"
+      value={aerbusCampusLabel}
+      onChange={e => setAerbusCampusOverride(e.target.value)}
+      className="bg-white border border-slate-100 rounded-xl px-3 py-2.5 text-xs text-slate-700 focus:outline-none focus:border-slate-900 transition"
+    />
+  );
 
   const pickupLabel = bookMode === 'quick'
     ? (selectedRoute ? selectedRoute.from : '')
     : bookMode === 'custom'
     ? customPickup
     : bookMode === 'aerbus'
-    ? (aerbusPointData ? (aerbusDirection === 'to' ? campusLabelFull : aerbusPointData.label) : '')
+    ? (aerbusPointData ? (aerbusDirection === 'to' ? aerbusCampusLabel : aerbusPointData.label) : '')
     : (pickupPin?.address ?? '');
 
   const destLabel = bookMode === 'quick'
@@ -325,7 +355,7 @@ export const Transport: React.FC = () => {
     : bookMode === 'custom'
     ? customDest
     : bookMode === 'aerbus'
-    ? (aerbusPointData ? (aerbusDirection === 'to' ? aerbusPointData.label : campusLabelFull) : '')
+    ? (aerbusPointData ? (aerbusDirection === 'to' ? aerbusPointData.label : aerbusCampusLabel) : '')
     : (destPin?.address ?? '');
 
   const canBook =
@@ -720,22 +750,42 @@ export const Transport: React.FC = () => {
           replacing the old inline Quick Routes picker's own summary. */}
       {bookMode === 'quick' && selectedRoute && (
         <div className="px-4 mt-4">
-          <div
-            onClick={() => setShowRoutePicker(true)}
-            className="w-full flex items-center justify-between py-2.5 px-3 rounded-2xl border border-slate-900 bg-white transition active:bg-slate-50 active:scale-[0.99] cursor-pointer"
-          >
-            <div>
-              <p className="text-xs font-semibold text-slate-800 leading-tight">
-                {selectedRoute.from} → {selectedRoute.to}
-              </p>
-              {selectedRoute.maxPax && (
-                <p className="text-xs text-amber-600 font-normal mt-0.5">Max {selectedRoute.maxPax} pax</p>
-              )}
+          <div className="bg-white border border-slate-100 rounded-2xl p-3 flex flex-col gap-2.5">
+            <div className="flex items-center justify-between">
+              <h3 className="text-sm font-semibold text-slate-700 flex items-center gap-1.5">
+                <List className="w-4 h-4 text-slate-400" /> Quick Route
+              </h3>
+              {/* Swaps by re-running the same route lookup Recent Routes/the
+                  picker sub-page already use — a known fixed-fare reverse
+                  route shows its own fare, otherwise falls back to Custom
+                  with fare TBC, same as picking any unmatched pair does. */}
+              <button
+                type="button"
+                onClick={() => pickRoute(selectedRoute.to, selectedRoute.from)}
+                title="Swap pickup and destination"
+                aria-label="Swap pickup and destination"
+                className="w-7 h-7 flex items-center justify-center rounded-full bg-slate-50 text-slate-400 active:scale-90 active:bg-slate-100 transition shrink-0"
+              >
+                <ArrowUpDown className="w-3.5 h-3.5" />
+              </button>
             </div>
-            <div className="text-right shrink-0 ml-2">
-              <span className="text-xs font-black text-slate-800">RM{selectedRoute.fare}</span>
-              <span className="block text-[9px] font-normal text-slate-400 mt-0.5">Tap to change</span>
+            <div onClick={() => setShowRoutePicker(true)} className="flex flex-col gap-2 cursor-pointer">
+              <div className="flex flex-col gap-0.5">
+                <label className="text-xs font-normal text-slate-400 pl-1">Point A — Pickup</label>
+                <div className="bg-white border border-slate-100 rounded-xl px-3 py-2.5 text-xs font-semibold text-slate-700">
+                  {selectedRoute.from}
+                </div>
+              </div>
+              <div className="flex flex-col gap-0.5">
+                <label className="text-xs font-normal text-slate-400 pl-1">Point B — Destination</label>
+                <div className="bg-white border border-slate-100 rounded-xl px-3 py-2.5 text-xs font-semibold text-slate-700">
+                  {selectedRoute.to}
+                </div>
+              </div>
             </div>
+            <p className="text-xs text-slate-400 font-normal text-center italic">
+              RM{selectedRoute.fare}{selectedRoute.maxPax ? ` · Max ${selectedRoute.maxPax} pax` : ''} · Tap route to change
+            </p>
           </div>
         </div>
       )}
@@ -805,46 +855,39 @@ export const Transport: React.FC = () => {
 
       {/* ── AerBus ── */}
       {bookMode === 'aerbus' && (
-        <div className="px-4 mt-4 flex flex-col gap-3">
-          {/* Direction — Mode Selector Standard */}
-          <div className="flex gap-2">
-            <button type="button" onPointerDown={e => { e.preventDefault(); setAerbusDirection('to'); }}
-              className={`flex-1 flex flex-col items-center gap-1.5 p-3 rounded-2xl border bg-white transition-transform active:scale-[0.99] active:bg-slate-50 ${
-                aerbusDirection === 'to' ? 'border-slate-900' : 'border-slate-100'
-              }`}
-            >
-              <PlaneTakeoff className={`w-4 h-4 ${aerbusDirection === 'to' ? 'text-slate-900' : 'text-slate-400'}`} />
-              <span className={`text-xs font-semibold ${aerbusDirection === 'to' ? 'text-slate-900' : 'text-slate-600'}`}>To Airport/Bus</span>
-            </button>
-            <button type="button" onPointerDown={e => { e.preventDefault(); setAerbusDirection('from'); }}
-              className={`flex-1 flex flex-col items-center gap-1.5 p-3 rounded-2xl border bg-white transition-transform active:scale-[0.99] active:bg-slate-50 ${
-                aerbusDirection === 'from' ? 'border-slate-900' : 'border-slate-100'
-              }`}
-            >
-              <PlaneLanding className={`w-4 h-4 ${aerbusDirection === 'from' ? 'text-slate-900' : 'text-slate-400'}`} />
-              <span className={`text-xs font-semibold ${aerbusDirection === 'from' ? 'text-slate-900' : 'text-slate-600'}`}>From Airport/Bus</span>
-            </button>
-          </div>
-
-          {/* Point selection — Dropdown Standard (NativeSelect), same row
-              layout as Quick Routes (plain label left, bold price right).
-              Options/pricing are per-campus (see AERBUS_POINTS) since travel
-              time to each point genuinely differs between Pekan and Gambang.
-              The buffer duration itself isn't shown per-option here anymore
-              — it's surfaced as a badge on the Order Details header below,
-              since it applies to whichever point is currently selected. */}
-          <div className="flex flex-col gap-0.5">
-            <label className="text-xs font-normal text-slate-400 pl-1">Pickup / Drop Point</label>
-            <NativeSelect<AerbusPointId | ''>
-              value={aerbusPoint}
-              onChange={setAerbusPoint}
-              placeholder="Select a point"
-              options={aerbusPoints.map(p => ({
-                value: p.id,
-                label: p.label,
-                right: `RM${p.fare}`,
-              }))}
-            />
+        <div className="px-4 mt-4">
+          <div className="bg-white border border-slate-100 rounded-2xl p-3 flex flex-col gap-2.5">
+            <div className="flex items-center justify-between">
+              <h3 className="text-sm font-semibold text-slate-700 flex items-center gap-1.5">
+                <PlaneTakeoff className="w-4 h-4 text-slate-400" /> AerBus Route
+              </h3>
+              {/* Flip swaps which side (Point A/B) holds the airport point
+                  — this IS the To/From direction now, no separate toggle. */}
+              <button
+                type="button"
+                onClick={() => setAerbusDirection(d => d === 'to' ? 'from' : 'to')}
+                title="Swap pickup and destination"
+                aria-label="Swap pickup and destination"
+                className="w-7 h-7 flex items-center justify-center rounded-full bg-slate-50 text-slate-400 active:scale-90 active:bg-slate-100 transition shrink-0"
+              >
+                <ArrowUpDown className="w-3.5 h-3.5" />
+              </button>
+            </div>
+            <div className="flex flex-col gap-2">
+              <div className="flex flex-col gap-0.5">
+                <label className="text-xs font-normal text-slate-400 pl-1">Point A — Pickup</label>
+                {aerbusDirection === 'to' ? aerbusCampusField : aerbusPointField}
+              </div>
+              <div className="flex flex-col gap-0.5">
+                <label className="text-xs font-normal text-slate-400 pl-1">Point B — Destination</label>
+                {aerbusDirection === 'to' ? aerbusPointField : aerbusCampusField}
+              </div>
+            </div>
+            {aerbusCampusOverride !== null && (
+              <p className="text-xs text-slate-400 font-normal text-center italic">
+                Fare will be confirmed by your driver
+              </p>
+            )}
           </div>
         </div>
       )}
