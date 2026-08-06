@@ -20,17 +20,10 @@ interface Props {
   campusCenter:        [number, number]; // [lng, lat]
   onPickupChange:      (name: string, coords: [number, number] | null) => void;
   onDestinationChange: (name: string, coords: [number, number] | null) => void;
+  onRouteInfoChange?:  (info: { distanceKm: string; durationMin: number } | null) => void;
 }
 
-// Format raw minutes → "45 min" or "1 hr 2 min"
-const formatDuration = (minutes: number): string => {
-  if (minutes < 60) return `${minutes} min`;
-  const h = Math.floor(minutes / 60);
-  const m = minutes % 60;
-  return m === 0 ? `${h} hr` : `${h} hr ${m} min`;
-};
-
-export const MapboxRideMap: React.FC<Props> = ({ campusCenter, onPickupChange, onDestinationChange }) => {
+export const MapboxRideMap: React.FC<Props> = ({ campusCenter, onPickupChange, onDestinationChange, onRouteInfoChange }) => {
   const mapContainer = useRef<HTMLDivElement>(null);
   const map          = useRef<maplibregl.Map | null>(null);
   const pickupMarker = useRef<maplibregl.Marker | null>(null);
@@ -38,9 +31,7 @@ export const MapboxRideMap: React.FC<Props> = ({ campusCenter, onPickupChange, o
   const searchRef    = useRef<HTMLDivElement>(null);
 
   const [pickupCoords, setPickupCoords] = useState<[number, number] | null>(null);
-  const [pickupName,   setPickupName]   = useState('');
   const [destCoords,   setDestCoords]   = useState<[number, number] | null>(null);
-  const [destName,     setDestName]     = useState('');
 
   const [query,           setQuery]           = useState('');
   const [suggestions,     setSuggestions]     = useState<GoogleSuggestion[]>([]);
@@ -48,7 +39,6 @@ export const MapboxRideMap: React.FC<Props> = ({ campusCenter, onPickupChange, o
   const [locating,        setLocating]        = useState(false);
   const [searching,       setSearching]       = useState(false);
   const [searchError,     setSearchError]     = useState<string | null>(null);
-  const [routeInfo, setRouteInfo] = useState<{ distanceKm: string; durationMin: number } | null>(null);
 
   // ── Init map ────────────────────────────────────────────────────────────────
   useEffect(() => {
@@ -100,12 +90,13 @@ export const MapboxRideMap: React.FC<Props> = ({ campusCenter, onPickupChange, o
         const route = json.routes?.[0];
         if (route?.geometry?.coordinates?.length) {
           routeCoords = route.geometry.coordinates;
-          setRouteInfo({
+          const info = {
             distanceKm: (route.distance / 1000).toFixed(1),
             durationMin: Math.ceil(route.duration / 60),
-          });
+          };
+          onRouteInfoChange?.(info);
         }
-      } catch { setRouteInfo(null); }
+      } catch { onRouteInfoChange?.(null); }
 
       const draw = () => {
         if (m.getLayer('route-line'))        m.removeLayer('route-line');
@@ -153,17 +144,14 @@ export const MapboxRideMap: React.FC<Props> = ({ campusCenter, onPickupChange, o
           );
           const json = await res.json();
           const name = (json.display_name as string | undefined) ?? 'Current Location';
-          setPickupName(name);
           onPickupChange(name, coords);
         } catch {
-          setPickupName('Current Location');
           onPickupChange('Current Location', coords);
         }
         setLocating(false);
       },
       () => {
         placePickupMarker(campusCenter);
-        setPickupName('UMPSA Campus');
         onPickupChange('UMPSA Campus', campusCenter);
         setLocating(false);
       },
@@ -242,7 +230,6 @@ export const MapboxRideMap: React.FC<Props> = ({ campusCenter, onPickupChange, o
 
       const coords: [number, number] = [lng, lat];
       setDestCoords(coords);
-      setDestName(label);
       onDestinationChange(label, coords);
 
       if (destMarker.current) destMarker.current.remove();
@@ -258,9 +245,8 @@ export const MapboxRideMap: React.FC<Props> = ({ campusCenter, onPickupChange, o
 
   const clearDestination = () => {
     setQuery('');
-    setDestName('');
     setDestCoords(null);
-    setRouteInfo(null);
+    onRouteInfoChange?.(null);
     onDestinationChange('', null);
     setSuggestions([]);
     setShowSuggestions(false);
@@ -335,43 +321,6 @@ export const MapboxRideMap: React.FC<Props> = ({ campusCenter, onPickupChange, o
             : <LocateFixed className="w-4 h-4" />}
         </button>
       </div>
-
-      {/* Pin status row */}
-      <div className="flex gap-2">
-        <div className="flex-1 flex items-center gap-2 p-3 rounded-2xl bg-white border border-slate-100 min-w-0">
-          <div className="w-2.5 h-2.5 rounded-full bg-blue-500 shrink-0" />
-          <div className="min-w-0">
-            <p className="text-xs font-normal text-slate-400">Pickup</p>
-            <p className="text-xs font-semibold text-slate-700 truncate mt-0.5">
-              {locating ? 'Detecting location…' : pickupName || 'Allow location access'}
-            </p>
-          </div>
-        </div>
-        <div className="flex-1 flex items-center gap-2 p-3 rounded-2xl bg-white border border-slate-100 min-w-0">
-          <div className="w-2.5 h-2.5 rounded-full bg-red-500 shrink-0" />
-          <div className="min-w-0">
-            <p className="text-xs font-normal text-slate-400">Destination</p>
-            <p className="text-xs font-semibold text-slate-700 truncate mt-0.5">
-              {destName || 'Search above'}
-            </p>
-          </div>
-        </div>
-      </div>
-
-      {/* Route info strip */}
-      {routeInfo && (
-        <div className="flex items-center justify-center gap-4 py-2 px-4 bg-white border border-slate-100 rounded-2xl">
-          <div className="flex flex-col items-center">
-            <span className="text-base font-black text-slate-800">{routeInfo.distanceKm} km</span>
-            <span className="text-xs font-normal text-slate-400">Distance</span>
-          </div>
-          <div className="w-px h-8 bg-slate-100" />
-          <div className="flex flex-col items-center">
-            <span className="text-base font-black text-slate-800">{formatDuration(routeInfo.durationMin)}</span>
-            <span className="text-xs font-normal text-slate-400">Est. drive time</span>
-          </div>
-        </div>
-      )}
     </div>
   );
 };

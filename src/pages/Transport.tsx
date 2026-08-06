@@ -9,6 +9,16 @@ import {
   Info, CheckCircle2, RotateCcw, Users, Clock, CalendarDays, Phone, ClipboardList, X,
   ArrowUpDown, History,
 } from 'lucide-react';
+
+// Mirrors MapboxRideMap.tsx's own formatDuration — duplicated rather than
+// imported so this static import doesn't defeat that component's lazy-load
+// code-splitting (maplibre-gl is heavy and only needed in Search Routes mode).
+const formatDriveDuration = (minutes: number): string => {
+  if (minutes < 60) return `${minutes} min`;
+  const h = Math.floor(minutes / 60);
+  const m = minutes % 60;
+  return m === 0 ? `${h} hr` : `${h} hr ${m} min`;
+};
 import { submitRideToSheets } from '../lib/sheetsService';
 import { useTapVsScroll } from '../lib/useTapVsScroll';
 import { NativeSelect } from '../components/NativeSelect';
@@ -221,6 +231,7 @@ export const Transport: React.FC = () => {
   // Map-pin state
   const [pickupPin,    setPickupPin]    = useState<PinLocation | null>(null);
   const [destPin,      setDestPin]      = useState<PinLocation | null>(null);
+  const [routeInfo,    setRouteInfo]    = useState<{ distanceKm: string; durationMin: number } | null>(null);
 
   // Custom mode state
   const [customPickup, setCustomPickup] = useState('');
@@ -845,11 +856,46 @@ export const Transport: React.FC = () => {
               campusCenter={CAMPUS_CENTERS[campus]}
               onPickupChange={(name, coords) => setPickupPin(name ? { address: name, coords: coords ?? [0, 0] } : null)}
               onDestinationChange={(name, coords) => setDestPin(name ? { address: name, coords: coords ?? [0, 0] } : null)}
+              onRouteInfoChange={setRouteInfo}
             />
           </Suspense>
-          <p className="text-xs text-slate-400 font-normal text-center italic">
-            Fare for map bookings will be confirmed by your driver
-          </p>
+          <div className="bg-white border border-slate-100 rounded-2xl p-3 flex flex-col gap-2.5">
+            <h3 className="text-sm font-semibold text-slate-700 flex items-center gap-1.5">
+              <Map className="w-4 h-4 text-slate-400" /> Search Route
+            </h3>
+            <div className="flex flex-col gap-2">
+              <div className="flex flex-col gap-0.5">
+                <label className="text-xs font-normal text-slate-400 pl-1">Point A — Pickup</label>
+                <div className="bg-white border border-slate-100 rounded-xl px-3 py-2.5 text-xs font-semibold text-slate-700 truncate">
+                  {pickupPin?.address || 'Detecting location…'}
+                </div>
+              </div>
+              <div className="flex flex-col gap-0.5">
+                <label className="text-xs font-normal text-slate-400 pl-1">Point B — Destination</label>
+                <div className="bg-white border border-slate-100 rounded-xl px-3 py-2.5 text-xs font-semibold text-slate-700 truncate">
+                  {destPin?.address || 'Search above'}
+                </div>
+              </div>
+            </div>
+            <div className="flex items-center justify-center gap-4 py-1">
+              <div className="flex flex-col items-center">
+                <span className="text-base font-black text-slate-800">
+                  {routeInfo ? `${routeInfo.distanceKm} km` : '—'}
+                </span>
+                <span className="text-xs font-normal text-slate-400">Distance</span>
+              </div>
+              <div className="w-px h-8 bg-slate-100" />
+              <div className="flex flex-col items-center">
+                <span className="text-base font-black text-slate-800">
+                  {routeInfo ? formatDriveDuration(routeInfo.durationMin) : '—'}
+                </span>
+                <span className="text-xs font-normal text-slate-400">Est. drive time</span>
+              </div>
+            </div>
+            <p className="text-xs text-slate-400 font-normal text-center italic">
+              Fare for map bookings will be confirmed by your driver
+            </p>
+          </div>
         </div>
       )}
 
