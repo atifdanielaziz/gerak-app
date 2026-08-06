@@ -315,13 +315,26 @@ export const Transport: React.FC = () => {
     return h >= 0 && h < 7;
   }, [time, aerbusDispatch]);
 
+  const campusLabelFull = campus === 'pekan' ? 'UMPSA Pekan Campus' : 'UMPSA Gambang Campus';
+  const aerbusCampusLabel = aerbusCampusOverride ?? campusLabelFull;
+
+  // "Edited" means the field's current (trimmed) content genuinely differs
+  // from today's default campus label — not merely "onChange has ever
+  // fired." aerbusCampusOverride !== null alone is wrong: it stays true
+  // forever once the field is touched at all (there's no code path that
+  // resets it to null), including after clearing it to "" or retyping the
+  // exact original text, permanently locking the fare to TBC with no way
+  // back except a full page reload.
+  const aerbusCampusEdited = aerbusCampusOverride !== null
+    && aerbusCampusOverride.trim() !== campusLabelFull.trim();
+
   // Editing the campus-side field away from the default drops the fare to
   // TBC, same rule as Custom mode — an edited value means it may no longer
   // actually be a straight campus↔point trip.
   const baseFare: number | 'TBC' = bookMode === 'quick'
     ? (selectedRoute?.fare ?? 0)
     : bookMode === 'aerbus'
-    ? (aerbusCampusOverride !== null ? 'TBC' : (aerbusPointData?.fare ?? 'TBC'))
+    ? (aerbusCampusEdited ? 'TBC' : (aerbusPointData?.fare ?? 'TBC'))
     : 'TBC';
 
   const nightCharge = isNight ? 5 : 0;
@@ -329,9 +342,6 @@ export const Transport: React.FC = () => {
   const totalFare = baseFare === 'TBC'
     ? 'TBC'
     : baseFare + nightCharge;
-
-  const campusLabelFull = campus === 'pekan' ? 'UMPSA Pekan Campus' : 'UMPSA Gambang Campus';
-  const aerbusCampusLabel = aerbusCampusOverride ?? campusLabelFull;
 
   // The two AerBus card fields — same one regardless of which side
   // (pickup/destination) it currently occupies, since the flip button just
@@ -372,7 +382,12 @@ export const Transport: React.FC = () => {
   const canBook =
     !!date && !!time && !!contact &&
     (bookMode === 'quick'  ? !!selectedRoute :
-     bookMode === 'aerbus' ? !!aerbusPointData :
+     // aerbusCampusLabel is free-text once edited (see aerbusCampusEdited
+     // above) — without this check, clearing it to blank still passed
+     // (aerbusPointData alone was truthy), submitting an order with an
+     // empty pickup or destination. ride_orders.pickup/destination are
+     // NOT NULL but not non-empty-checked, so '' passes the DB too.
+     bookMode === 'aerbus' ? !!(aerbusPointData && aerbusCampusLabel.trim()) :
      bookMode === 'custom' ? !!(customPickup.trim() && customDest.trim()) :
      !!(pickupPin && destPin));
 
@@ -933,7 +948,7 @@ export const Transport: React.FC = () => {
                 height as Custom Route's, which always shows its own footer
                 note too. */}
             <p className="text-xs text-slate-400 font-normal text-center italic">
-              {aerbusCampusOverride !== null
+              {aerbusCampusEdited
                 ? 'Fare will be confirmed by your driver'
                 : aerbusPointData
                 ? `Fixed fare — RM${aerbusPointData.fare}`
@@ -1148,6 +1163,7 @@ export const Transport: React.FC = () => {
           <p className="text-xs text-slate-400 font-normal text-center -mt-1">
             {bookMode === 'quick' && !selectedRoute ? 'Select a route above to continue' : ''}
             {bookMode === 'aerbus' && !aerbusPointData ? 'Select a pickup/drop point above to continue' : ''}
+            {bookMode === 'aerbus' && !!aerbusPointData && !aerbusCampusLabel.trim() ? 'Fill in the campus field above to continue' : ''}
             {bookMode === 'map' && !(pickupPin && destPin) ? 'Drop both pins on the map to continue' : ''}
             {!(date && time) ? 'Fill in date and time to continue' : ''}
           </p>
