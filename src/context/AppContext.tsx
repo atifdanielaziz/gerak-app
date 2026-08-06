@@ -819,7 +819,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   // 2. Notification Operations
   const addNotification = (title: string, description: string, type: NotificationItem['type']) => {
     const newNotif: NotificationItem = {
-      id: Date.now().toString(),
+      // Date.now() alone collides when two notifications fire in the same
+      // millisecond — a realistic case, since a single MyOrders.tsx load()
+      // can synchronously call addNotification() more than once in the
+      // same forEach pass (e.g. two different orders both transitioning
+      // status in the same polling/realtime cycle). NotificationsPage.tsx
+      // keys its list by this id, so a collision meant React could render
+      // the wrong entry's content for one of the two, or drop a re-render.
+      id: crypto.randomUUID(),
       title,
       description,
       time: 'Just now',

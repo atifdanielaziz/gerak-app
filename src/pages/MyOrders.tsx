@@ -203,7 +203,18 @@ export const MyOrders: React.FC = () => {
   const { user, addNotification, setCurrentPage, setSheetOpen } = useApp();
   const [orders, setOrders]         = useState<RideOrder[]>([]);
   const [loading, setLoading]       = useState(true);
-  const [toast, setToast]           = useState('');
+  // Queue, not just a single `toast` string — a single load() pass can
+  // synchronously call showToast() more than once (e.g. two different
+  // orders both transitioning status in the same polling/realtime cycle),
+  // and a single-string setToast() call was silently overwriting the first
+  // before React ever rendered it, losing that pop-up entirely. The
+  // persistent Campus Inbox notification for the same event is unaffected
+  // (separate, array-based state) — this only fixes the transient toast.
+  // The currently-displayed message is just the queue's head (derived
+  // during render, not its own state) — the timer below pops it off when
+  // its 4s is up, which naturally reveals the next queued message, if any.
+  const [toastQueue, setToastQueue] = useState<string[]>([]);
+  const toast = toastQueue[0] ?? '';
   const [sheetOrderId, setSheetOrderId] = useState<string | null>(null);
   const sheetOrder = orders.find(o => o.id === sheetOrderId) ?? null;
 
@@ -234,9 +245,17 @@ export const MyOrders: React.FC = () => {
   }, []);
 
   const showToast = (msg: string) => {
-    setToast(msg);
-    setTimeout(() => setToast(''), 4000);
+    setToastQueue(q => [...q, msg]);
   };
+
+  // Sole timer, keyed on the displayed message itself (not the queue array),
+  // so it only restarts when what's on screen actually changes — queuing a
+  // 3rd toast behind an already-showing one can't disturb this timer.
+  useEffect(() => {
+    if (!toast) return;
+    const id = setTimeout(() => setToastQueue(q => q.slice(1)), 4000);
+    return () => clearTimeout(id);
+  }, [toast]);
 
   const load = async () => {
     const { data: { user: authUser } } = await supabase.auth.getUser();
