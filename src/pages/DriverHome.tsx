@@ -1153,9 +1153,9 @@ export const DriverHome: React.FC = () => {
                 {/* Accept */}
                 <div className="px-4 pb-4" onClick={e => e.stopPropagation()}>
                   <button
-                    onClick={() => isDriverActive && handleAccept(order.id)}
+                    onPointerDown={(e) => { e.preventDefault(); if (isDriverActive) handleAccept(order.id); }}
                     disabled={!isDriverActive || !!accepting || !!myJob}
-                    className="w-full bg-primary hover:bg-primary-hover text-white font-semibold text-xs py-3 rounded-2xl transition active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed shadow-md shadow-primary/20 flex items-center justify-center gap-2"
+                    className="w-full bg-primary hover:bg-primary-hover text-white font-semibold text-xs py-3 rounded-2xl transition-transform transform-gpu active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed shadow-md shadow-primary/20 flex items-center justify-center gap-2"
                   >
                     {accepting === order.id
                       ? <span className="w-4 h-4 rounded-full border-2 border-white border-t-transparent animate-spin" />
@@ -1303,9 +1303,9 @@ export const DriverHome: React.FC = () => {
                   {/* Primary — Start Trip or Complete Trip */}
                   {myJob.status === 'accepted' && (
                     <button
-                      onClick={() => handleStatusUpdate(myJob.id, 'in_progress')}
+                      onPointerDown={(e) => { e.preventDefault(); handleStatusUpdate(myJob.id, 'in_progress'); }}
                       disabled={updating}
-                      className="flex-1 bg-primary hover:bg-primary-hover text-white font-semibold text-xs py-3 rounded-2xl transition active:scale-95 disabled:opacity-50 shadow-lg shadow-primary/30 flex items-center justify-center gap-1.5"
+                      className="flex-1 bg-primary hover:bg-primary-hover text-white font-semibold text-xs py-3 rounded-2xl transition-transform transform-gpu active:scale-95 disabled:opacity-50 shadow-lg shadow-primary/30 flex items-center justify-center gap-1.5"
                     >
                       {updating
                         ? <span className="w-4 h-4 rounded-full border-2 border-white border-t-transparent animate-spin" />
@@ -1314,17 +1314,17 @@ export const DriverHome: React.FC = () => {
                   )}
                   {myJob.status === 'in_progress' && myJob.fare === 'TBC' && (
                     <button
-                      onClick={() => openFareEdit(myJob)}
-                      className="flex-1 bg-slate-800 text-white font-semibold text-xs py-3 rounded-2xl transition active:scale-95 flex items-center justify-center gap-1.5"
+                      onPointerDown={(e) => { e.preventDefault(); openFareEdit(myJob); }}
+                      className="flex-1 bg-slate-800 text-white font-semibold text-xs py-3 rounded-2xl transition-transform transform-gpu active:scale-95 flex items-center justify-center gap-1.5"
                     >
                       <DollarSign className="w-3.5 h-3.5" /> Set Fare to Complete
                     </button>
                   )}
                   {myJob.status === 'in_progress' && myJob.fare !== 'TBC' && (
                     <button
-                      onClick={() => handleStatusUpdate(myJob.id, 'completed')}
+                      onPointerDown={(e) => { e.preventDefault(); handleStatusUpdate(myJob.id, 'completed'); }}
                       disabled={updating}
-                      className="flex-1 bg-primary hover:bg-primary-hover text-white font-semibold text-xs py-3 rounded-2xl transition active:scale-95 disabled:opacity-50 shadow-lg shadow-primary/30 flex items-center justify-center gap-1.5"
+                      className="flex-1 bg-primary hover:bg-primary-hover text-white font-semibold text-xs py-3 rounded-2xl transition-transform transform-gpu active:scale-95 disabled:opacity-50 shadow-lg shadow-primary/30 flex items-center justify-center gap-1.5"
                     >
                       {updating
                         ? <span className="w-4 h-4 rounded-full border-2 border-white border-t-transparent animate-spin" />
