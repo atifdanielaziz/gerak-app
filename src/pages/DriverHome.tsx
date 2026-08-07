@@ -1050,14 +1050,12 @@ export const DriverHome: React.FC = () => {
             pendingOrders.map((order, idx) => (
               <div key={order.id} className="bg-white border border-slate-100 rounded-3xl overflow-hidden cursor-pointer" onClick={() => setSheetOrder(order)}>
 
-                {/* Queue position strip */}
+                {/* Queue position strip — order (top to bottom) already IS the
+                    queue position, so no number badge is needed on top of it. */}
                 <div className="bg-white border-b border-slate-100 px-4 py-2 flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <span className="w-6 h-6 rounded-full bg-primary text-white text-xs font-semibold flex items-center justify-center">
-                      {idx + 1}
-                    </span>
                     <span className="text-xs font-semibold text-slate-400">
-                      {idx === 0 ? 'Next in queue' : `Queue position ${idx + 1}`}
+                      {idx === 0 ? 'Next in queue' : 'In queue'}
                     </span>
                     {/* Booking-method badge — quick catch-up on order type
                         for all 4 modes, not just AerBus. */}
