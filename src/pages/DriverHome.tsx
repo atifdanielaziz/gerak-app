@@ -900,9 +900,9 @@ export const DriverHome: React.FC = () => {
                 Job Pool
               </span>
               {pendingOrders.length > 0 && (
-                <span className={`absolute top-1 right-1.5 z-10 text-[10px] font-bold leading-none px-1.5 py-0.5 rounded-full min-w-[16px] text-center ${
+                <span className={`absolute -top-1.5 -right-1 z-10 text-[10px] font-bold leading-none px-1.5 py-0.5 rounded-full min-w-[16px] text-center shadow-sm ${
                   activeTab === 'pool'
-                    ? 'bg-white text-primary'
+                    ? 'bg-white text-primary border border-slate-100'
                     : `bg-primary text-white ${newPing ? 'animate-bounce' : ''}`
                 }`}>
                   {pendingOrders.length}
@@ -958,8 +958,8 @@ export const DriverHome: React.FC = () => {
                 Rental
               </span>
               {pendingRentals > 0 && (
-                <span className={`absolute top-1 right-1.5 z-10 text-[10px] font-bold leading-none px-1.5 py-0.5 rounded-full min-w-[16px] text-center ${
-                  activeTab === 'rental' ? 'bg-white text-primary' : 'bg-primary text-white'
+                <span className={`absolute -top-1.5 -right-1 z-10 text-[10px] font-bold leading-none px-1.5 py-0.5 rounded-full min-w-[16px] text-center shadow-sm ${
+                  activeTab === 'rental' ? 'bg-white text-primary border border-slate-100' : 'bg-primary text-white'
                 }`}>
                   {pendingRentals}
                 </span>
