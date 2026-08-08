@@ -342,6 +342,12 @@ export const JubahRiderSubTab = forwardRef<JubahRiderSubTabHandle, JubahRiderSub
   const [jubahDropPointDraft, setJubahDropPointDraft] = useState('');
   const [savingJubahAssignment, setSavingJubahAssignment] = useState(false);
 
+  // Same university this admin's rider/representative data is scoped to
+  // (see loadJubahRiders below) — shown next to card headers.
+  const universityLabel = UNIVERSITY_MAP[
+    isSuperAdmin ? jubahUniversityView : (universityKeyFromCampus(adminCampus) ?? 'umpsa')
+  ]?.shortLabel ?? 'UMPSA';
+
   useEffect(() => { onModalOpenChange(!!jubahSheetRider); }, [jubahSheetRider, onModalOpenChange]);
 
   const loadJubahRiders = useCallback(async () => {
@@ -403,7 +409,7 @@ export const JubahRiderSubTab = forwardRef<JubahRiderSubTabHandle, JubahRiderSub
         {/* Rider cards — click to open assignment sheet */}
         <div className="bg-white border border-slate-100 rounded-3xl p-5 flex flex-col gap-4">
           <h3 className="text-sm font-semibold text-slate-700 flex items-center gap-1.5">
-            <GraduationCap className="w-4 h-4" /> Jubah Riders
+            <GraduationCap className="w-4 h-4" /> Jubah Riders ({universityLabel})
           </h3>
           <div className="overflow-y-auto no-scrollbar max-h-[320px] flex flex-col gap-2">
             {jubahRidersLoading ? (
@@ -451,7 +457,7 @@ export const JubahRiderSubTab = forwardRef<JubahRiderSubTabHandle, JubahRiderSub
         {jubahAssignments.length > 0 && (
           <div className="bg-white border border-slate-100 rounded-3xl p-5 flex flex-col gap-4">
             <h3 className="text-sm font-semibold text-slate-700 flex items-center gap-1.5">
-              <Users className="w-4 h-4" /> Representative Directory
+              <Users className="w-4 h-4" /> Representative Directory ({universityLabel})
             </h3>
             {/* Split horizontal/vertical scroll across two nested containers
                 — see JubahCustomerSubTab's identical table for why a single

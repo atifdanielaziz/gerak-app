@@ -4,7 +4,7 @@ import { TrendingUp, GraduationCap, Landmark } from 'lucide-react';
 import { NativeSelect } from '../../../components/NativeSelect';
 import { useLoadOnActive } from '../../../hooks/useLoadOnActive';
 import { JubahQrButton } from '../../../components/JubahQrButton';
-import { UNIVERSITIES } from '../../../lib/universities';
+import { UNIVERSITIES, UNIVERSITY_MAP } from '../../../lib/universities';
 
 // Abbreviated labels here (not the full names JubahLanding shows) since this
 // sits compactly in a card header — keeps the Jubah Pricing Matrix's
@@ -234,7 +234,7 @@ export function JubahPriceSubTab({ active, isSuperAdmin, showToast }: JubahPrice
       <div className="bg-white border border-slate-100 rounded-3xl p-5 flex flex-col gap-3">
         <div className="flex items-center justify-between gap-2">
           <h3 className="text-sm font-semibold text-slate-700 flex items-center gap-1.5">
-            <TrendingUp className="w-4 h-4" /> Rider Commission
+            <TrendingUp className="w-4 h-4" /> Rider Commission ({UNIVERSITY_MAP[jubahUniversity]?.shortLabel ?? 'UMPSA'})
           </h3>
           <div className="w-28 shrink-0">
             <NativeSelect
@@ -293,7 +293,7 @@ export function JubahPriceSubTab({ active, isSuperAdmin, showToast }: JubahPrice
       <div className="bg-white border border-slate-100 rounded-3xl p-5 flex flex-col gap-4">
       <div className="flex items-center justify-between gap-2">
         <h3 className="text-sm font-semibold text-slate-700 flex items-center gap-1.5">
-          <GraduationCap className="w-4 h-4" /> Jubah Pricing Matrix
+          <GraduationCap className="w-4 h-4" /> Jubah Pricing Matrix ({UNIVERSITY_MAP[jubahUniversity]?.shortLabel ?? 'UMPSA'})
         </h3>
         <div className="w-28 shrink-0">
           <NativeSelect

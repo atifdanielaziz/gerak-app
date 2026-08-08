@@ -109,6 +109,10 @@ interface JubahCustomerSubTabProps {
   onGoToList: () => void;
   showToast: (msg: string) => void;
   onModalOpenChange: (open: boolean) => void;
+  // Short label ("UMPSA", "UKM") of the university bookings is already
+  // scoped to (see AdminHome.tsx's loadJubahData) — shown next to the
+  // Customer Directory header, same convention as the Rider/Pricing cards.
+  universityLabel: string;
 }
 
 // Jubah customer booking directory — list, per-booking status card, and
@@ -120,7 +124,7 @@ interface JubahCustomerSubTabProps {
 export function JubahCustomerSubTab({
   isSuperAdmin, bookings, bookingsTotalCount, bookingsLoading, setBookings, reload,
   adminView, selected, setSelected, onGoToCard, onGoBack, onGoToList,
-  showToast, onModalOpenChange,
+  showToast, onModalOpenChange, universityLabel,
 }: JubahCustomerSubTabProps) {
   const { showConfirmModal } = useApp();
   const [jubahSearch, setJubahSearch] = useState('');
@@ -416,7 +420,7 @@ export function JubahCustomerSubTab({
         {/* Customer bookings table */}
         <div className="bg-white border border-slate-100 rounded-3xl p-5 flex flex-col gap-4">
           <h3 className="text-sm font-semibold text-slate-700 flex items-center justify-between">
-            <span className="flex items-center gap-1.5"><Users className="w-4 h-4" /> Customer Directory</span>
+            <span className="flex items-center gap-1.5"><Users className="w-4 h-4" /> Customer Directory ({universityLabel})</span>
             <span className="font-normal text-slate-300 normal-case tracking-normal">
               {filteredBookings.length} bookings
             </span>

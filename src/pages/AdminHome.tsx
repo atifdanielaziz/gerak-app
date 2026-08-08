@@ -4,7 +4,7 @@ import { supabase } from '../lib/supabase';
 import { useLoadOnActive } from '../hooks/useLoadOnActive';
 import { NativeSelect } from '../components/NativeSelect';
 import { CampusStatusToggle } from '../components/CampusStatusToggle';
-import { UNIVERSITIES } from '../lib/universities';
+import { UNIVERSITIES, UNIVERSITY_MAP, universityKeyFromCampus } from '../lib/universities';
 import {
   BarChart3, Car, Users, Clock,
   AlertCircle, RefreshCw, Trash2,
@@ -12,7 +12,7 @@ import {
   FileImage, ShieldCheck,
   CalendarDays, Upload, Eye, ArrowLeftRight, GraduationCap,
   ChevronLeft, Check, TrendingUp, Bike,
-  Bell, User, Ban, History,
+  Bell, User, Ban, History, Minus, Plus,
 } from 'lucide-react';
 import { JubahBannerSubTab } from './admin/jubah/JubahBannerSubTab';
 import { JubahPriceSubTab } from './admin/jubah/JubahPriceSubTab';
@@ -120,6 +120,13 @@ export const AdminHome: React.FC = () => {
   // loadJubahData, which uses their existing campus lock instead once this
   // isn't superadmin).
   const [jubahUniversityView, setJubahUniversityView] = useState('umpsa');
+  // Same university this admin's Jubah data is actually scoped to (see
+  // loadJubahData) — shown next to card headers so it's clear at a glance
+  // whose data is on screen, same idea as Pricing Matrix's own dropdown.
+  const jubahUniversityLabel = UNIVERSITY_MAP[
+    isSuperAdmin ? jubahUniversityView : (universityKeyFromCampus(adminCampus) ?? 'umpsa')
+  ]?.shortLabel ?? 'UMPSA';
+  const [jubahOverviewCollapsed, setJubahOverviewCollapsed] = useState(false);
 
   const jubahStats = useMemo(() => {
     // jubahBookings is already scoped to one university/campus by
@@ -816,8 +823,22 @@ export const AdminHome: React.FC = () => {
             {/* Overview stats — computed client-side from jubahBookings, already
                 loaded for the Customer Directory below; no extra query. */}
             <div className="bg-white border border-slate-100 rounded-3xl p-5 flex flex-col gap-4">
-              <p className="text-xs font-black text-slate-800">Overview</p>
+              <div className="flex items-center justify-between">
+                <h3 className="text-sm font-semibold text-slate-700 flex items-center gap-1.5">
+                  <BarChart3 className="w-4 h-4 text-slate-400" /> Overview ({jubahUniversityLabel})
+                </h3>
+                <button
+                  type="button"
+                  onPointerDown={e => { e.preventDefault(); setJubahOverviewCollapsed(v => !v); }}
+                  aria-label={jubahOverviewCollapsed ? 'Expand overview' : 'Minimize overview'}
+                  title={jubahOverviewCollapsed ? 'Expand overview' : 'Minimize overview'}
+                  className="w-7 h-7 flex items-center justify-center rounded-full bg-slate-100 text-slate-500 active:scale-90 transition-transform shrink-0"
+                >
+                  {jubahOverviewCollapsed ? <Plus className="w-3.5 h-3.5" /> : <Minus className="w-3.5 h-3.5" />}
+                </button>
+              </div>
 
+              {!jubahOverviewCollapsed && (<>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                 <div className="border border-slate-100 rounded-2xl p-3.5 flex flex-col gap-1.5">
                   <div className="w-7 h-7 rounded-lg bg-blue-50 flex items-center justify-center">
@@ -852,7 +873,7 @@ export const AdminHome: React.FC = () => {
               <div className="grid sm:grid-cols-[1.4fr_1fr] gap-3">
                 {/* Status breakdown */}
                 <div className="border border-slate-100 rounded-2xl p-4 flex flex-col gap-1">
-                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">Status Breakdown</p>
+                  <p className="text-xs font-semibold text-slate-400 mb-1.5">Status Breakdown</p>
                   {([
                     { label: 'Pending',    statuses: ['ordered'],       color: 'bg-slate-400' },
                     { label: 'Paid',       statuses: ['paid'],          color: 'bg-blue-500' },
@@ -880,7 +901,7 @@ export const AdminHome: React.FC = () => {
 
                 {/* Payment mode split */}
                 <div className="border border-slate-100 rounded-2xl p-4 flex flex-col gap-2">
-                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">Payment Mode</p>
+                  <p className="text-xs font-semibold text-slate-400 mb-0.5">Payment Mode</p>
                   {([
                     { label: 'Deposit', key: 'deposit' as const, color: 'bg-amber-500' },
                     { label: 'Pickup',  key: 'pickup'  as const, color: 'bg-slate-400' },
@@ -896,6 +917,7 @@ export const AdminHome: React.FC = () => {
                   ))}
                 </div>
               </div>
+              </>)}
             </div>
 
             {/* Customer | Rider | Price sub-tabs */}
@@ -956,6 +978,7 @@ export const AdminHome: React.FC = () => {
               onGoToList={goToJubahList}
               showToast={showToast}
               onModalOpenChange={setJubahCustomerModalOpen}
+              universityLabel={jubahUniversityLabel}
             />
           )}
 
