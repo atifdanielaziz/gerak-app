@@ -1,15 +1,9 @@
 import { useCallback, useState } from 'react';
 import { supabase } from '../../../lib/supabase';
 import { TrendingUp, GraduationCap, Landmark } from 'lucide-react';
-import { NativeSelect } from '../../../components/NativeSelect';
 import { useLoadOnActive } from '../../../hooks/useLoadOnActive';
 import { JubahQrButton } from '../../../components/JubahQrButton';
-import { UNIVERSITIES, UNIVERSITY_MAP } from '../../../lib/universities';
-
-// Abbreviated labels here (not the full names JubahLanding shows) since this
-// sits compactly in a card header — keeps the Jubah Pricing Matrix's
-// university switcher wired to the exact same list customers pick from.
-const JUBAH_PRICING_UNIVERSITIES = UNIVERSITIES.map(u => ({ key: u.key, label: u.shortLabel }));
+import { UNIVERSITY_MAP } from '../../../lib/universities';
 
 type JubahPrice = { remark: string; payment_mode: string; price: number; university: string };
 
@@ -17,6 +11,10 @@ interface JubahPriceSubTabProps {
   active: boolean;
   isSuperAdmin: boolean;
   showToast: (msg: string) => void;
+  // Which university's pricing/commission to show — driven by the single
+  // shared university switcher above the Jubah tab (AdminHome.tsx's
+  // jubahUniversityView), not a per-card dropdown anymore.
+  jubahUniversity: string;
 }
 
 // Jubah pricing matrix + rider commission rates — split out of AdminHome.tsx.
@@ -25,7 +23,7 @@ interface JubahPriceSubTabProps {
 // Jubah tab became active at all). Here they load independently, on-demand,
 // only when this sub-tab is actually viewed — same data, same RPCs, just no
 // longer tangled with riders/bookings loading that this sub-tab never uses.
-export function JubahPriceSubTab({ active, isSuperAdmin, showToast }: JubahPriceSubTabProps) {
+export function JubahPriceSubTab({ active, isSuperAdmin, showToast, jubahUniversity }: JubahPriceSubTabProps) {
   const [priceDrafts,       setPriceDrafts]       = useState<Record<string, string>>({});
   // Last-saved values — compared against priceDrafts to know which fields
   // are actually dirty, so the one global Save button below the matrix
@@ -35,7 +33,6 @@ export function JubahPriceSubTab({ active, isSuperAdmin, showToast }: JubahPrice
   // Commission fields below (gray + readOnly once saved, tap to unlock),
   // just keyed per pricing-matrix cell instead of one flag per field.
   const [priceLocked,       setPriceLocked]       = useState<Record<string, boolean>>({});
-  const [jubahUniversity, setJubahUniversity] = useState('umpsa');
   const [savingAllPrices,   setSavingAllPrices]   = useState(false);
 
   // Two separate rates — pickup vs postage — since a postage order's price
@@ -232,19 +229,9 @@ export function JubahPriceSubTab({ active, isSuperAdmin, showToast }: JubahPrice
           changing it never rewrites past earnings (see migration_jubah_
           commission_by_delivery_type.sql). */}
       <div className="bg-white border border-slate-100 rounded-3xl p-5 flex flex-col gap-3">
-        <div className="flex items-center justify-between gap-2">
-          <h3 className="text-sm font-semibold text-slate-700 flex items-center gap-1.5">
-            <TrendingUp className="w-4 h-4" /> Rider Commission ({UNIVERSITY_MAP[jubahUniversity]?.shortLabel ?? 'UMPSA'})
-          </h3>
-          <div className="w-28 shrink-0">
-            <NativeSelect
-              value={jubahUniversity}
-              onChange={setJubahUniversity}
-              options={JUBAH_PRICING_UNIVERSITIES.map(u => ({ value: u.key, label: u.label }))}
-              label="Select University"
-            />
-          </div>
-        </div>
+        <h3 className="text-sm font-semibold text-slate-700 flex items-center gap-1.5">
+          <TrendingUp className="w-4 h-4" /> Rider Commission ({UNIVERSITY_MAP[jubahUniversity]?.shortLabel ?? 'UMPSA'})
+        </h3>
         <p className="text-xs text-slate-400 font-semibold -mt-1.5">
           Flat RM amount a rider earns once an order is delivered — set separately per university, and separately for pickup vs postage since postage price includes real shipping cost. Only applies going forward — changing it never rewrites past earnings.
         </p>
@@ -291,19 +278,9 @@ export function JubahPriceSubTab({ active, isSuperAdmin, showToast }: JubahPrice
       </div>
 
       <div className="bg-white border border-slate-100 rounded-3xl p-5 flex flex-col gap-4">
-      <div className="flex items-center justify-between gap-2">
-        <h3 className="text-sm font-semibold text-slate-700 flex items-center gap-1.5">
-          <GraduationCap className="w-4 h-4" /> Jubah Pricing Matrix ({UNIVERSITY_MAP[jubahUniversity]?.shortLabel ?? 'UMPSA'})
-        </h3>
-        <div className="w-28 shrink-0">
-          <NativeSelect
-            value={jubahUniversity}
-            onChange={setJubahUniversity}
-            options={JUBAH_PRICING_UNIVERSITIES.map(u => ({ value: u.key, label: u.label }))}
-            label="Select University"
-          />
-        </div>
-      </div>
+      <h3 className="text-sm font-semibold text-slate-700 flex items-center gap-1.5">
+        <GraduationCap className="w-4 h-4" /> Jubah Pricing Matrix ({UNIVERSITY_MAP[jubahUniversity]?.shortLabel ?? 'UMPSA'})
+      </h3>
       <p className="text-xs text-slate-400 font-semibold -mt-2">Set price per study level × service option, then tap Save Changes below.</p>
 
       {(['Master', 'PHD', 'Degree', 'Diploma'] as const).map(remark => (

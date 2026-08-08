@@ -761,19 +761,21 @@ export const AdminHome: React.FC = () => {
                 their own university (today, that's always UMPSA — see
                 loadJubahData's campus-based branch), matching how the existing
                 campus lock already works for other tabs. Changing this re-scopes
-                the entire Jubah panel below: stats, riders, customers, pricing. */}
-            {/* University selector (icon-only, opens the same dropdown list as
-                before) + Jubah delivery period ON/OFF, one compact row instead
-                of a full-width dropdown and a whole descriptive card each. */}
+                the ENTIRE Jubah panel below: Overview, Riders, Representative/
+                Customer Directory, AND Pricing Matrix/Rider Commission (which
+                used to each have their own separate dropdown — now just this
+                one, same labeled-pill style Pricing Matrix's used to have,
+                not the old icon-only trigger). */}
             <div className="flex items-center gap-2">
               {isSuperAdmin && (
-                <NativeSelect
-                  value={jubahUniversityView}
-                  onChange={v => { setJubahUniversityView(v); setJubahAdminView('list'); setJubahAdminSelected(null); }}
-                  options={UNIVERSITIES.map(u => ({ value: u.key, label: u.label }))}
-                  placeholder="Select university"
-                  icon={GraduationCap}
-                />
+                <div className="w-28 shrink-0">
+                  <NativeSelect
+                    value={jubahUniversityView}
+                    onChange={v => { setJubahUniversityView(v); setJubahAdminView('list'); setJubahAdminSelected(null); }}
+                    options={UNIVERSITIES.map(u => ({ value: u.key, label: u.shortLabel }))}
+                    placeholder="Select university"
+                  />
+                </div>
               )}
               <button
                 onPointerDown={e => { e.preventDefault(); handleToggleJubah(); }}
@@ -989,6 +991,7 @@ export const AdminHome: React.FC = () => {
               active={activeTab === 'jubah' && effectiveJubahSubTab === 'price'}
               isSuperAdmin={isSuperAdmin}
               showToast={showToast}
+              jubahUniversity={jubahUniversityView}
             />
           )}
 
