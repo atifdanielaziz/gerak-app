@@ -32,19 +32,27 @@ ALTER TABLE public.jubah_rider_commission ENABLE ROW LEVEL SECURITY;
 
 -- Staff-only read (unlike jubah_pricing, customers never need this) —
 -- update_jubah_booking_status itself is SECURITY DEFINER so it isn't
--- gated by this policy either way.
-CREATE POLICY "jubah_rider_commission_read"
-  ON public.jubah_rider_commission FOR SELECT
-  TO authenticated
-  USING (true);
+-- gated by this policy either way. CREATE POLICY has no IF NOT EXISTS, so
+-- guard with DO/EXCEPTION (same pattern as 20260802040000's constraint
+-- guard) — safe to re-run if an earlier attempt got this far already.
+DO $$ BEGIN
+  CREATE POLICY "jubah_rider_commission_read"
+    ON public.jubah_rider_commission FOR SELECT
+    TO authenticated
+    USING (true);
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
 
 -- Defense-in-depth only — real writes go through
 -- set_jubah_rider_commission_amount (SECURITY DEFINER, its own
 -- superadmin check), same relationship jubah_pricing has with set_jubah_price.
-CREATE POLICY "jubah_rider_commission_update"
-  ON public.jubah_rider_commission FOR UPDATE
-  TO authenticated
-  USING (public.get_my_role() = 'superadmin');
+DO $$ BEGIN
+  CREATE POLICY "jubah_rider_commission_update"
+    ON public.jubah_rider_commission FOR UPDATE
+    TO authenticated
+    USING (public.get_my_role() = 'superadmin');
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
 
 -- Seed every currently-known university with today's flat rate (falls back
 -- to 25 if the old app_settings rows are somehow already gone) so nothing
