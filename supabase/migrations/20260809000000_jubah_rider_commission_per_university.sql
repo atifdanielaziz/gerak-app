@@ -71,11 +71,14 @@ DELETE FROM public.app_settings
   WHERE key IN ('jubah_rider_commission_amount_pickup', 'jubah_rider_commission_amount_postage');
 
 -- 2) set_jubah_rider_commission_amount: add p_university (default keeps old
--- callers working). Signature changed — drop first, same trap as previous
--- Jubah RPC renames (CREATE OR REPLACE would leave a stale overload live).
+-- callers working). Signature changed from the OLD 2-arg version — drop
+-- that specific overload first, same trap as previous Jubah RPC renames
+-- (CREATE OR REPLACE would leave a stale 2-arg overload live). The 3-arg
+-- version itself uses CREATE OR REPLACE (not bare CREATE) so re-running
+-- this migration after it already succeeded once doesn't collide with itself.
 DROP FUNCTION IF EXISTS public.set_jubah_rider_commission_amount(numeric, text);
 
-CREATE FUNCTION public.set_jubah_rider_commission_amount(
+CREATE OR REPLACE FUNCTION public.set_jubah_rider_commission_amount(
   p_amount numeric, p_delivery_type text, p_university text DEFAULT 'umpsa'
 ) RETURNS jsonb LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
 BEGIN
