@@ -403,7 +403,7 @@ export const OrdersTab = forwardRef<OrdersTabHandle, OrdersTabProps>(function Or
         ) : (
           <div className="overflow-x-auto no-scrollbar">
             <div className="overflow-y-auto no-scrollbar max-h-[560px]">
-              <table className="border-collapse text-left" style={{ tableLayout: 'fixed', width: COL_KEYS.reduce((sum, k) => sum + colWidths[k], 0) }}>
+              <table className="border-collapse text-left" style={{ tableLayout: 'fixed', width: '100%', minWidth: COL_KEYS.reduce((sum, k) => sum + colWidths[k], 0) }}>
                 <colgroup>
                   {COL_KEYS.map(k => <col key={k} style={{ width: colWidths[k] }} />)}
                 </colgroup>
