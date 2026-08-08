@@ -35,16 +35,17 @@ export function JubahPriceSubTab({ active, isSuperAdmin, showToast }: JubahPrice
   // Commission fields below (gray + readOnly once saved, tap to unlock),
   // just keyed per pricing-matrix cell instead of one flag per field.
   const [priceLocked,       setPriceLocked]       = useState<Record<string, boolean>>({});
-  const [pricingUniversity, setPricingUniversity] = useState('umpsa');
+  const [jubahUniversity, setJubahUniversity] = useState('umpsa');
   const [savingAllPrices,   setSavingAllPrices]   = useState(false);
 
   // Two separate rates — pickup vs postage — since a postage order's price
   // includes real shipping cost paid out to Pos Malaysia, not money the
-  // rider earned handling it. One flat rate across both doesn't reflect that.
-  const [commissionRates,  setCommissionRates]  = useState<{ pickup: string; postage: string } | null>(null);
-  const [commissionDrafts, setCommissionDrafts] = useState({ pickup: '', postage: '' });
-  const [savingCommission, setSavingCommission] = useState<'pickup' | 'postage' | null>(null);
-  const [commissionSaved,  setCommissionSaved]  = useState({ pickup: false, postage: false });
+  // rider earned handling it. One flat rate across both doesn't reflect
+  // that. Also per-university now (same shape as priceDrafts above), keyed
+  // by `${type}_${university}`.
+  const [commissionDrafts, setCommissionDrafts] = useState<Record<string, string>>({});
+  const [commissionLocked, setCommissionLocked] = useState<Record<string, boolean>>({});
+  const [savingCommission, setSavingCommission] = useState<string | null>(null);
 
   const loadJubahPrices = useCallback(async () => {
     const { data: pricesData } = await supabase.rpc('get_jubah_pricing');
@@ -102,31 +103,34 @@ export function JubahPriceSubTab({ active, isSuperAdmin, showToast }: JubahPrice
   // more predictable than a percentage of a value that varies for reasons
   // unrelated to the rider's own work.
   const loadCommissionRates = useCallback(async () => {
-    const { data } = await supabase
-      .from('app_settings')
-      .select('key, value')
-      .in('key', ['jubah_rider_commission_amount_pickup', 'jubah_rider_commission_amount_postage']);
-    const pickup  = data?.find(r => r.key === 'jubah_rider_commission_amount_pickup')?.value  ?? '0';
-    const postage = data?.find(r => r.key === 'jubah_rider_commission_amount_postage')?.value ?? '0';
-    setCommissionRates({ pickup, postage });
-    setCommissionDrafts({ pickup, postage });
-    // Freshly loaded from the DB — these ARE the current saved values, so
-    // they start locked/gray, same as right after an explicit Save.
-    setCommissionSaved({ pickup: true, postage: true });
+    const { data } = await supabase.rpc('get_jubah_rider_commission');
+    if (data) {
+      const drafts: Record<string, string> = {};
+      const locked: Record<string, boolean> = {};
+      (data as { delivery_type: string; university: string; amount: number }[]).forEach(r => {
+        const key = `${r.delivery_type}_${r.university}`;
+        drafts[key] = String(r.amount);
+        locked[key] = true;
+      });
+      setCommissionDrafts(drafts);
+      setCommissionLocked(locked);
+    }
   }, []);
 
   useLoadOnActive(active, loadCommissionRates);
 
   const handleSaveCommission = async (deliveryType: 'pickup' | 'postage') => {
-    const amount = parseFloat(commissionDrafts[deliveryType]);
+    const key = `${deliveryType}_${jubahUniversity}`;
+    const amount = parseFloat(commissionDrafts[key] ?? '');
     if (isNaN(amount) || amount < 0) { showToast('Enter a valid RM amount.'); return; }
-    setSavingCommission(deliveryType);
-    const { data, error } = await supabase.rpc('set_jubah_rider_commission_amount', { p_amount: amount, p_delivery_type: deliveryType });
+    setSavingCommission(key);
+    const { data, error } = await supabase.rpc('set_jubah_rider_commission_amount', {
+      p_amount: amount, p_delivery_type: deliveryType, p_university: jubahUniversity,
+    });
     setSavingCommission(null);
     if (error || !data?.success) { showToast(data?.error ?? 'Failed to save commission amount.'); return; }
     showToast(`${deliveryType === 'pickup' ? 'Pickup Only' : 'Postage'} commission updated.`);
-    setCommissionRates(prev => prev ? { ...prev, [deliveryType]: commissionDrafts[deliveryType] } : prev);
-    setCommissionSaved(prev => ({ ...prev, [deliveryType]: true }));
+    setCommissionLocked(prev => ({ ...prev, [key]: true }));
   };
 
   // Payment Bank Details — one shared account every customer pays into,
@@ -175,7 +179,7 @@ export function JubahPriceSubTab({ active, isSuperAdmin, showToast }: JubahPrice
       {/* Payment Bank Details — the one shared account every customer pays
           into. Regular admin sees it read-only for transparency, same
           pattern as Rider Commission below. */}
-      <div className="bg-white border border-slate-100 rounded-3xl p-5 flex flex-col gap-3">
+      <div className="bg-amber-50 border border-amber-100 rounded-3xl p-5 flex flex-col gap-3">
         <div className="flex items-center justify-between gap-2">
           <h3 className="text-sm font-semibold text-slate-700 flex items-center gap-1.5">
             <Landmark className="w-4 h-4" /> Payment Bank Details
@@ -228,13 +232,25 @@ export function JubahPriceSubTab({ active, isSuperAdmin, showToast }: JubahPrice
           changing it never rewrites past earnings (see migration_jubah_
           commission_by_delivery_type.sql). */}
       <div className="bg-white border border-slate-100 rounded-3xl p-5 flex flex-col gap-3">
-        <h3 className="text-sm font-semibold text-slate-700 flex items-center gap-1.5">
-          <TrendingUp className="w-4 h-4" /> Rider Commission
-        </h3>
+        <div className="flex items-center justify-between gap-2">
+          <h3 className="text-sm font-semibold text-slate-700 flex items-center gap-1.5">
+            <TrendingUp className="w-4 h-4" /> Rider Commission
+          </h3>
+          <div className="w-28 shrink-0">
+            <NativeSelect
+              value={jubahUniversity}
+              onChange={setJubahUniversity}
+              options={JUBAH_PRICING_UNIVERSITIES.map(u => ({ value: u.key, label: u.label }))}
+              label="Select University"
+            />
+          </div>
+        </div>
         <p className="text-xs text-slate-400 font-semibold -mt-1.5">
-          Flat RM amount a rider earns once an order is delivered — set separately for pickup vs postage, since postage price includes real shipping cost. Only applies going forward — changing it never rewrites past earnings.
+          Flat RM amount a rider earns once an order is delivered — set separately per university, and separately for pickup vs postage since postage price includes real shipping cost. Only applies going forward — changing it never rewrites past earnings.
         </p>
-        {(['pickup', 'postage'] as const).map(type => (
+        {(['pickup', 'postage'] as const).map(type => {
+          const key = `${type}_${jubahUniversity}`;
+          return (
           <div key={type} className="flex flex-col gap-1.5">
             <label className="text-xs font-normal text-slate-400">{type === 'pickup' ? 'Pickup Only' : 'Postage'}</label>
             {isSuperAdmin ? (
@@ -245,32 +261,33 @@ export function JubahPriceSubTab({ active, isSuperAdmin, showToast }: JubahPrice
                     type="number"
                     min="0"
                     step="0.01"
-                    value={commissionDrafts[type]}
-                    onChange={e => setCommissionDrafts(prev => ({ ...prev, [type]: e.target.value }))}
-                    readOnly={commissionSaved[type]}
-                    onClick={() => { if (commissionSaved[type]) setCommissionSaved(prev => ({ ...prev, [type]: false })); }}
+                    value={commissionDrafts[key] ?? ''}
+                    onChange={e => setCommissionDrafts(prev => ({ ...prev, [key]: e.target.value }))}
+                    readOnly={commissionLocked[key] ?? false}
+                    onClick={() => { if (commissionLocked[key]) setCommissionLocked(prev => ({ ...prev, [key]: false })); }}
                     style={{ fontSize: '13px' }}
-                    className={`flex-1 bg-transparent font-semibold focus:outline-none w-0 ${commissionSaved[type] ? 'text-slate-400 cursor-pointer' : 'text-slate-700'}`}
+                    className={`flex-1 bg-transparent font-semibold focus:outline-none w-0 ${commissionLocked[key] ? 'text-slate-400 cursor-pointer' : 'text-slate-700'}`}
                   />
                 </div>
                 <button
                   onClick={() => handleSaveCommission(type)}
-                  disabled={savingCommission === type || commissionSaved[type]}
+                  disabled={savingCommission === key || (commissionLocked[key] ?? false)}
                   className="shrink-0 bg-primary text-white font-semibold text-xs px-4 py-2.5 rounded-xl transition active:scale-95 disabled:opacity-50"
                 >
-                  {savingCommission === type ? '…' : 'Save'}
+                  {savingCommission === key ? '…' : 'Save'}
                 </button>
               </div>
             ) : (
               <div className="bg-slate-50 border border-slate-100 rounded-xl px-3 py-2.5">
                 <span className="text-xs font-semibold text-slate-600">
-                  {commissionRates === null ? 'Loading…' : `RM${commissionRates[type]} per completed order`}
+                  {commissionDrafts[key] === undefined ? 'Loading…' : `RM${commissionDrafts[key]} per completed order`}
                 </span>
                 <span className="text-xs font-normal text-slate-400 ml-2">superadmin only to change</span>
               </div>
             )}
           </div>
-        ))}
+          );
+        })}
       </div>
 
       <div className="bg-white border border-slate-100 rounded-3xl p-5 flex flex-col gap-4">
@@ -280,8 +297,8 @@ export function JubahPriceSubTab({ active, isSuperAdmin, showToast }: JubahPrice
         </h3>
         <div className="w-28 shrink-0">
           <NativeSelect
-            value={pricingUniversity}
-            onChange={setPricingUniversity}
+            value={jubahUniversity}
+            onChange={setJubahUniversity}
             options={JUBAH_PRICING_UNIVERSITIES.map(u => ({ value: u.key, label: u.label }))}
             label="Select University"
           />
@@ -294,7 +311,7 @@ export function JubahPriceSubTab({ active, isSuperAdmin, showToast }: JubahPrice
           <p className="text-xs font-black text-slate-700">{remark}</p>
           <div className="grid grid-cols-2 gap-2">
             {(['pickup', 'postage'] as const).map(mode => {
-              const key = `${remark}_${mode}_${pricingUniversity}`;
+              const key = `${remark}_${mode}_${jubahUniversity}`;
               return (
                 <div key={mode} className="flex flex-col gap-1.5">
                   <label className="text-xs font-normal text-slate-400">
