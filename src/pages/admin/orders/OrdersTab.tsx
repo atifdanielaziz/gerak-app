@@ -463,7 +463,7 @@ export const OrdersTab = forwardRef<OrdersTabHandle, OrdersTabProps>(function Or
                           {order.status.replace('_', ' ')}
                         </span>
                         {order.status === 'cancelled' && order.cancel_reason && (
-                          <span className="block text-[10px] text-amber-600 font-semibold mt-0.5 max-w-[160px]">{order.cancel_reason}</span>
+                          <span className="block text-[10px] text-amber-600 font-semibold mt-0.5 max-w-[160px] whitespace-normal break-words">{order.cancel_reason}</span>
                         )}
                       </td>
                       <td className="py-2.5 whitespace-nowrap">
