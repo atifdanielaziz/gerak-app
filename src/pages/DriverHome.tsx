@@ -1127,33 +1127,19 @@ export const DriverHome: React.FC = () => {
                   </div>
                 </div>
 
-                {/* Contact — hidden when driver is inactive */}
-                {isDriverActive && (
-                  <div className="mx-4 mb-3 flex items-center gap-2 text-xs text-slate-500 font-normal">
-                    <a
-                      href={`https://wa.me/${order.contact.replace(/\D/g,'').replace(/^0/,'60')}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex items-center gap-1.5 bg-[#25D366]/10 text-[#25D366] font-semibold px-3 py-1.5 rounded-full text-xs active:scale-95 transition"
-                      onClick={e => e.stopPropagation()}
-                    >
-                      <WaIcon className="w-3 h-3" /> {order.contact}
-                    </a>
-                  </div>
-                )}
-
                 {order.notes && (
                   <p className="mx-4 mb-3 text-xs text-slate-500 italic bg-amber-50 border border-amber-100 rounded-xl px-3 py-2">
                     Remark: "{order.notes}"
                   </p>
                 )}
 
-                {/* Accept */}
-                <div className="px-4 pb-4" onClick={e => e.stopPropagation()}>
+                {/* Accept + WhatsApp — phone number itself only shows in the
+                    receipt sheet now, not this preview card. */}
+                <div className="px-4 pb-4 flex items-center gap-2" onClick={e => e.stopPropagation()}>
                   <button
                     onPointerDown={(e) => { e.preventDefault(); if (isDriverActive) handleAccept(order.id); }}
                     disabled={!isDriverActive || !!accepting || !!myJob}
-                    className="w-full bg-primary hover:bg-primary-hover text-white font-semibold text-xs py-3 rounded-2xl transition-transform transform-gpu active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed shadow-md shadow-primary/20 flex items-center justify-center gap-2"
+                    className="flex-1 bg-primary hover:bg-primary-hover text-white font-semibold text-xs py-3 rounded-2xl transition-transform transform-gpu active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed shadow-md shadow-primary/20 flex items-center justify-center gap-2"
                   >
                     {accepting === order.id
                       ? <span className="w-4 h-4 rounded-full border-2 border-white border-t-transparent animate-spin" />
@@ -1163,6 +1149,17 @@ export const DriverHome: React.FC = () => {
                           ? 'Finish current trip first'
                           : <><Briefcase className="w-3.5 h-3.5" /> Accept Job</>}
                   </button>
+                  {isDriverActive && (
+                    <a
+                      href={`https://wa.me/${order.contact.replace(/\D/g,'').replace(/^0/,'60')}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-[#25D366] active:scale-90 transition shrink-0"
+                      aria-label="WhatsApp customer"
+                    >
+                      <WaIcon className="w-5 h-5" />
+                    </a>
+                  )}
                 </div>
               </div>
             ))

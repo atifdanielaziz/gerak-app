@@ -31,6 +31,10 @@ export function JubahPriceSubTab({ active, isSuperAdmin, showToast }: JubahPrice
   // are actually dirty, so the one global Save button below the matrix
   // only sends what changed and can disable itself when nothing has.
   const [priceOriginal,     setPriceOriginal]     = useState<Record<string, string>>({});
+  // Per-field lock — mirrors the Saved Field Standard used for Bank/
+  // Commission fields below (gray + readOnly once saved, tap to unlock),
+  // just keyed per pricing-matrix cell instead of one flag per field.
+  const [priceLocked,       setPriceLocked]       = useState<Record<string, boolean>>({});
   const [pricingUniversity, setPricingUniversity] = useState('umpsa');
   const [savingAllPrices,   setSavingAllPrices]   = useState(false);
 
@@ -46,12 +50,15 @@ export function JubahPriceSubTab({ active, isSuperAdmin, showToast }: JubahPrice
     const { data: pricesData } = await supabase.rpc('get_jubah_pricing');
     if (pricesData) {
       const drafts: Record<string, string> = {};
+      const locked: Record<string, boolean> = {};
       (pricesData as JubahPrice[]).forEach(p => {
         const key = `${p.remark}_${p.payment_mode}_${p.university}`;
         drafts[key] = String(p.price);
+        locked[key] = true;
       });
       setPriceDrafts(drafts);
       setPriceOriginal(drafts);
+      setPriceLocked(locked);
     }
   }, []);
 
@@ -301,8 +308,12 @@ export function JubahPriceSubTab({ active, isSuperAdmin, showToast }: JubahPrice
                       step="0.01"
                       value={priceDrafts[key] ?? ''}
                       onChange={e => setPriceDrafts(prev => ({ ...prev, [key]: e.target.value }))}
+                      readOnly={priceLocked[key] ?? false}
+                      onClick={() => { if (priceLocked[key]) setPriceLocked(prev => ({ ...prev, [key]: false })); }}
                       style={{ fontSize: '12px' }}
-                      className="flex-1 bg-transparent font-semibold text-slate-700 focus:outline-none w-0"
+                      className={`flex-1 bg-transparent font-semibold focus:outline-none w-0 ${
+                        priceLocked[key] ? 'text-slate-400 cursor-pointer' : 'text-slate-700'
+                      }`}
                     />
                   </div>
                 </div>
