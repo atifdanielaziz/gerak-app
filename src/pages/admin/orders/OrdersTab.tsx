@@ -1,13 +1,15 @@
 import { forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useState } from 'react';
 import { supabase } from '../../../lib/supabase';
 import {
-  BarChart3, Car, Users, MapPin, Navigation, Clock, Trash2,
-  Search, RefreshCw, X, TrendingUp, Phone, Copy, Check,
+  BarChart3, Car, Clock, Trash2,
+  Search, RefreshCw, X, TrendingUp, Copy, Check,
 } from 'lucide-react';
 import { useApp } from '../../../context/AppContext';
 import { NativeSelect } from '../../../components/NativeSelect';
-import { BOOKING_METHOD_LABEL } from '../../../lib/receiptRows';
+import { BOOKING_METHOD_LABEL, buildTransportReceiptRows } from '../../../lib/receiptRows';
 import { copyToClipboard } from '../../../lib/clipboard';
+import { ReceiptSheet } from '../../../components/Receipt';
+import { generateReceiptPdf } from '../../../lib/receiptPdf';
 
 interface RideOrder {
   id: string;
@@ -563,113 +565,48 @@ export const OrdersTab = forwardRef<OrdersTabHandle, OrdersTabProps>(function Or
         )}
       </div>
 
-      {/* ── Mobile order detail sheet — driver/contact/notes/cancel/delete,
-          everything the compact card above doesn't show inline. ── */}
-      {mobileDetailOrder && (() => {
-        const order = mobileDetailOrder;
-        return (
-          <div className="fixed inset-0 z-50 bg-black/40 flex items-end justify-center"
-            onPointerDown={(e) => { e.preventDefault(); setMobileDetailOrder(null); }}>
-            <div className="w-full max-w-sm max-h-[calc(100dvh-5rem)] overflow-y-auto no-scrollbar bg-white rounded-t-3xl p-6 shadow-2xl animate-slide-up"
-              style={{ paddingBottom: 'calc(2.5rem + env(safe-area-inset-bottom))' }}
-              onPointerDown={e => e.stopPropagation()}>
-              <div className="w-10 h-1 bg-slate-200 rounded-full mx-auto mb-5" />
-              <div className="flex items-start justify-between gap-2 mb-4">
-                <div className="min-w-0">
-                  <h3 className="text-sm font-black text-slate-800 truncate">{order.customer_name}</h3>
-                  <p className="text-xs text-slate-400 mt-0.5">{fmtCreated(order.created_at).date} · {fmtCreated(order.created_at).time}</p>
-                </div>
-                <button onClick={() => setMobileDetailOrder(null)}
-                  className="w-7 h-7 flex items-center justify-center rounded-lg bg-slate-100 text-slate-500 hover:bg-slate-200 transition active:scale-95 shrink-0">
-                  <X className="w-4 h-4" />
-                </button>
-              </div>
-
-              <div className="flex items-center justify-between gap-2 mb-4">
-                <span className={`text-xs font-semibold px-2 py-0.5 rounded-full border uppercase ${STATUS_COLORS[order.status]}`}>
-                  {order.status.replace('_', ' ')}
-                </span>
-                <span className="text-sm font-black text-slate-800">{fmtPrice(order)}</span>
-              </div>
-
-              <div className="bg-slate-50 rounded-xl px-3 py-2 flex items-center gap-2 text-xs mb-4">
-                <div className="flex-1 min-w-0 flex flex-col gap-1">
-                  <div className="flex items-center gap-1.5 text-slate-600">
-                    <MapPin className="w-3 h-3 text-blue-500 shrink-0" />
-                    <span className="font-semibold truncate">{order.pickup}</span>
-                  </div>
-                  <div className="flex items-center gap-1.5 text-slate-600">
-                    <Navigation className="w-3 h-3 text-red-500 shrink-0" />
-                    <span className="font-semibold truncate">{order.destination}</span>
-                  </div>
-                </div>
-                <button
-                  onClick={() => copyRoute(order)}
-                  title="Copy route"
-                  className="shrink-0 text-slate-300 hover:text-primary transition active:scale-90"
-                >
-                  {copiedRouteId === order.id ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5" />}
-                </button>
-              </div>
-
-              <div className="flex items-center flex-wrap gap-3 text-xs text-slate-400 mb-4">
-                <span className="flex items-center gap-1">
-                  <Users className="w-3 h-3" /> {order.passengers} pax
-                </span>
-                <span className="flex items-center gap-1">
-                  <Phone className="w-3 h-3" /> {order.contact}
-                </span>
-                <span className="flex items-center gap-1">
-                  <Clock className="w-3 h-3" /> {fmtAccept(acceptMinutes(order, now))}
-                </span>
-                {order.night_charge > 0 && (
-                  <span className="text-amber-500 font-semibold">Night +RM{order.night_charge}</span>
-                )}
-                {order.driver_name && (
-                  <span className="flex items-center gap-1 text-blue-500 font-semibold">
-                    <Car className="w-3 h-3" /> {order.driver_name}
-                  </span>
-                )}
-              </div>
-
-              {order.notes && (
-                <p className="text-xs text-slate-400 italic mb-4">"{order.notes}"</p>
-              )}
-
-              {order.status === 'cancelled' && order.cancel_reason && (
-                <p className="text-xs text-amber-700 font-semibold bg-amber-50 border border-amber-100 rounded-xl px-3 py-2 mb-4">
-                  {order.cancel_reason}
-                </p>
-              )}
-
-              <div className="flex gap-2">
-                {order.status === 'pending' && (
-                  <button
-                    onClick={() => { handleForceStatus(order.id, 'cancelled'); setMobileDetailOrder(null); }}
-                    className="flex-1 bg-red-50 border border-red-100 text-red-500 font-semibold text-xs py-2.5 rounded-xl transition active:scale-95 flex items-center justify-center gap-1"
-                  >
-                    <Clock className="w-3 h-3" /> Cancel
-                  </button>
-                )}
-                <button
-                  onClick={() => showConfirmModal({
-                    title: 'Delete Order?',
-                    message: 'This permanently removes this order. This can\'t be undone.',
-                    confirmLabel: 'DELETE',
-                    onConfirm: () => { handleDelete(order.id); setMobileDetailOrder(null); },
-                  })}
-                  disabled={deleting === order.id}
-                  className="px-3 bg-slate-50 border border-slate-200 text-slate-400 hover:text-red-500 font-semibold text-xs py-2.5 rounded-xl transition active:scale-95 flex items-center justify-center gap-1 disabled:opacity-50"
-                >
-                  {deleting === order.id
-                    ? <span className="w-3 h-3 rounded-full border border-slate-400 border-t-transparent animate-spin" />
-                    : <Trash2 className="w-3 h-3" />}
-                </button>
-              </div>
+      {/* ── Mobile order detail sheet — Receipt Standard ── */}
+      {mobileDetailOrder && (
+        <ReceiptSheet
+          doc={buildTransportReceiptRows(mobileDetailOrder, {
+            showContactWhatsApp: true,
+            showCreatedTime: true,
+          })}
+          onClose={() => setMobileDetailOrder(null)}
+          onSavePdf={() => generateReceiptPdf(buildTransportReceiptRows(mobileDetailOrder, { showCreatedTime: true }))}
+        >
+          {mobileDetailOrder.status === 'cancelled' && mobileDetailOrder.cancel_reason && (
+            <div className="bg-amber-50 border border-amber-100 rounded-xl px-3 py-2 text-xs text-amber-700 font-semibold font-sans mt-2">
+              {mobileDetailOrder.cancel_reason}
             </div>
+          )}
+
+          <div className="flex gap-2 mt-3 font-sans">
+            {mobileDetailOrder.status === 'pending' && (
+              <button
+                onClick={() => { handleForceStatus(mobileDetailOrder.id, 'cancelled'); setMobileDetailOrder(null); }}
+                className="flex-1 bg-red-50 border border-red-100 text-red-500 font-semibold text-xs py-2.5 rounded-xl transition active:scale-95 flex items-center justify-center gap-1"
+              >
+                <Clock className="w-3.5 h-3.5" /> Cancel
+              </button>
+            )}
+            <button
+              onClick={() => showConfirmModal({
+                title: 'Delete Order?',
+                message: 'This permanently removes this order. This can\'t be undone.',
+                confirmLabel: 'DELETE',
+                onConfirm: () => { handleDelete(mobileDetailOrder.id); setMobileDetailOrder(null); },
+              })}
+              disabled={deleting === mobileDetailOrder.id}
+              className="px-3 bg-slate-50 border border-slate-200 text-slate-400 hover:text-red-500 font-semibold text-xs py-2.5 rounded-xl transition active:scale-95 flex items-center justify-center gap-1 disabled:opacity-50"
+            >
+              {deleting === mobileDetailOrder.id
+                ? <span className="w-3 h-3 rounded-full border border-slate-400 border-t-transparent animate-spin" />
+                : <Trash2 className="w-3 h-3" />}
+            </button>
           </div>
-        );
-      })()}
+        </ReceiptSheet>
+      )}
 
       {/* ── Driver earnings modal (superadmin only) ── */}
       {showEarnings && (
