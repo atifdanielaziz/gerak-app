@@ -1,6 +1,5 @@
-// Tracks a Jubah booking that was saved to the DB but whose ToyyibPay
-// payment was never confirmed as completed in this browser (back button,
-// closed tab, abandoned checkout). Deliberately stores only the reference +
+// Tracks a Jubah booking whose confirmation was not completed in this
+// browser (back button, closed tab, or interrupted flow). Stores only the reference +
 // hp_number needed to look the booking up again — never the full booking —
 // so a stale marker can't make an unpaid order look "confirmed" anywhere.
 const KEY = 'gerak_jubah_pending_ref';

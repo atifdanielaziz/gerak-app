@@ -42,7 +42,7 @@ export const JubahLanding: React.FC<Props> = ({ onProceed }) => {
   const [selectedRider, setSelectedRider] = useState<RiderDir | null>(null);
   const [pendingBooking, setPendingBooking] = useState<PendingJubahBooking | null>(null);
 
-  // Booking that was saved but whose ToyyibPay checkout was never confirmed
+  // Booking that was saved but whose confirmation flow was never completed
   // in this browser (back button, closed tab) — a quiet nudge back to it,
   // not the full receipt, so an unpaid order never looks "confirmed" here.
   useEffect(() => {
@@ -113,8 +113,8 @@ export const JubahLanding: React.FC<Props> = ({ onProceed }) => {
         </p>
       </div>
 
-      {/* Unfinished booking nudge — shown when a booking was saved but its
-          ToyyibPay checkout was never confirmed complete in this browser */}
+      {/* Unfinished booking nudge — shown when a saved booking was not
+          confirmed complete in this browser. */}
       {pendingBooking && (
         <div className="bg-amber-50 border border-amber-100 rounded-2xl px-4 py-3 flex items-center gap-3">
           <div className="w-9 h-9 bg-amber-100 rounded-xl flex items-center justify-center shrink-0">

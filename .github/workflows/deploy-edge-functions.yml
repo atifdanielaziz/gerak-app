@@ -1,7 +1,7 @@
 name: Deploy Edge Functions
 
-# Auto-deploys only the edge functions whose folder actually changed in
-# this push, instead of redeploying all 8 on every unrelated commit.
+# Auto-deploys changed edge functions and removes functions whose folders
+# were deleted, instead of redeploying every function.
 # Needs SUPABASE_ACCESS_TOKEN as a repo secret (Supabase dashboard ->
 # Account -> Access Tokens -> generate one, then add it under this repo's
 # Settings -> Secrets and variables -> Actions). Until that secret exists
@@ -31,15 +31,45 @@ jobs:
       - name: Detect changed functions
         id: changed
         run: |
-          FUNCS=$(git diff --name-only HEAD^ HEAD -- supabase/functions | cut -d/ -f3 | sort -u | tr '\n' ' ')
-          echo "list=$FUNCS" >> "$GITHUB_OUTPUT"
-          echo "Changed functions: $FUNCS"
+          CHANGED=""
+          DELETED=""
+          for fn in $(git diff --name-only HEAD^ HEAD -- supabase/functions | cut -d/ -f3 | sort -u); do
+            if [ -d "supabase/functions/$fn" ]; then
+              CHANGED="$CHANGED $fn"
+            else
+              DELETED="$DELETED $fn"
+            fi
+          done
+          echo "changed=$CHANGED" >> "$GITHUB_OUTPUT"
+          echo "deleted=$DELETED" >> "$GITHUB_OUTPUT"
+          echo "Changed functions:$CHANGED"
+          echo "Deleted functions:$DELETED"
 
       - name: Deploy changed functions
-        if: steps.changed.outputs.list != ''
+        if: steps.changed.outputs.changed != ''
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
         run: |
-          for fn in ${{ steps.changed.outputs.list }}; do
+          for fn in ${{ steps.changed.outputs.changed }}; do
             supabase functions deploy "$fn" --project-ref "$SUPABASE_PROJECT_ID"
           done
+
+      - name: Remove deleted functions
+        if: steps.changed.outputs.deleted != ''
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+        run: |
+          for fn in ${{ steps.changed.outputs.deleted }}; do
+            supabase functions delete "$fn" --project-ref "$SUPABASE_PROJECT_ID"
+          done
+
+      - name: Remove retired payment gateway secrets
+        if: contains(steps.changed.outputs.deleted, 'toyyibpay-')
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+        run: |
+          supabase secrets unset \
+            TOYYIBPAY_BASE_URL \
+            TOYYIBPAY_SECRET_KEY \
+            TOYYIBPAY_CATEGORY_CODE \
+            --project-ref "$SUPABASE_PROJECT_ID"

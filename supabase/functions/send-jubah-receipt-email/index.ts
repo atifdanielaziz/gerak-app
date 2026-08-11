@@ -32,12 +32,8 @@ type Booking = {
   rider_name: string | null
 }
 
-// Same receipt email toyyibpay-callback used to send automatically on a
-// webhook-confirmed payment — that path went dormant when Jubah payments
-// reverted to manual proof-upload (nothing ever creates a ToyyibPay bill
-// anymore, so the webhook never fires). This is the same email, same
-// template, just triggered by admin's Confirm Payment/Confirm Balance
-// button instead of a payment gateway callback.
+// Sends the receipt after an admin or rider confirms an uploaded payment
+// proof, using the same template for initial and balance payments.
 serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders(req) })
 
@@ -134,7 +130,7 @@ async function sendReceiptEmail(admin: ReturnType<typeof createClient>, booking:
   const apiKey = Deno.env.get('RESEND_API_KEY')
   const from   = Deno.env.get('RESEND_FROM_EMAIL')
   // Email clients need a real fetchable URL, not a bundled asset path — reuse
-  // the same APP_BASE_URL secret toyyibpay-create-bill already relies on.
+  // APP_BASE_URL keeps the customer tracking link environment-specific.
   const appBaseUrl = Deno.env.get('APP_BASE_URL') ?? ''
   if (!apiKey || !from || !booking.email) return
 

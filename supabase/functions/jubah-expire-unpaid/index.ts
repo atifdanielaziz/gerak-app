@@ -51,14 +51,16 @@ serve(async (req) => {
 
     const cutoff = new Date(Date.now() - GRACE_DAYS * 24 * 60 * 60 * 1000).toISOString()
 
-    // Only 'ordered' — nothing paid yet — qualifies as abandoned. A
-    // deposit-paid booking with an outstanding balance still has real money
-    // attached to it, so that's left alone for a human to decide, same as
-    // cancel_jubah_booking_admin's reasoning.
+    // In the manual-transfer flow, an ordered booking can already have a
+    // receipt awaiting review. Only rows with no proof, no recorded payment,
+    // and no reconciliation flag are genuinely abandoned.
     const { data: expired, error: fetchErr } = await admin
       .from('jubah_bookings')
-      .select('id, reference, toyyibpay_bill_code')
+      .select('id, reference')
       .eq('status', 'ordered')
+      .is('payment_path', null)
+      .eq('initial_paid', false)
+      .eq('needs_reconciliation', false)
       .lt('created_at', cutoff)
 
     if (fetchErr) {
@@ -70,55 +72,31 @@ serve(async (req) => {
       return json({ success: true, cancelled: 0 })
     }
 
-    const baseUrl = Deno.env.get('TOYYIBPAY_BASE_URL')!
     let cancelledCount = 0
-    let skippedPaidCount = 0
 
     for (const booking of expired) {
-      // A bill code means a payment attempt actually happened at some point.
-      // The row still reads 'ordered' here only if our callback never
-      // applied — normally because the customer genuinely never paid, but
-      // occasionally because ToyyibPay's webhook delivery failed even
-      // though the payment succeeded on their end (the same gap admin's
-      // manual "Confirm Payment" fallback exists for). Re-check with
-      // ToyyibPay directly before cancelling, so a booking nobody ever
-      // caught as actually-paid doesn't get auto-cancelled and cleaned up
-      // out from under a paying customer.
-      if (booking.toyyibpay_bill_code) {
-        // If this check can't get a clear answer (network error, bad
-        // response, anything) — skip cancelling this one rather than
-        // assume unpaid. It'll be re-checked on tomorrow's run; the
-        // alternative (defaulting to "unpaid" on an inconclusive check)
-        // would risk auto-cancelling and deleting the documents for a
-        // booking that was actually paid, right when we couldn't confirm
-        // either way.
-        let paid: boolean | null = null
-        try {
-          const verifyForm = new URLSearchParams({ billCode: booking.toyyibpay_bill_code })
-          const verifyRes = await fetch(`${baseUrl}/index.php/api/getBillTransactions`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-            body: verifyForm,
-          })
-          const transactions = await verifyRes.json()
-          paid = Array.isArray(transactions) &&
-            transactions.some((t: any) => String(t.billpaymentStatus) === '1')
-        } catch (verifyErr) {
-          console.error(`jubah-expire-unpaid: could not verify bill status for booking ${booking.id} (${booking.reference}) — skipping this run:`, verifyErr)
-          continue
-        }
-        if (paid) {
-          const note = `Booking ${booking.reference} is PAID at ToyyibPay but still 'ordered' — callback likely missed it. Auto-cancel skipped; needs manual reconciliation.`
-          console.error(`jubah-expire-unpaid: ${note}`)
-          await admin.from('jubah_bookings').update({
-            needs_reconciliation: true,
-            reconciliation_note: note,
-            reconciliation_flagged_at: new Date().toISOString(),
-          }).eq('id', booking.id)
-          skippedPaidCount++
-          continue
-        }
+      // Claim the row first with the same eligibility guards used by the
+      // fetch. If a proof or payment landed in the meantime, no row is
+      // returned and its uploaded files remain untouched.
+      const { data: cancelled, error: cancelErr } = await admin
+        .from('jubah_bookings')
+        .update({
+          status:       'cancelled',
+          cancelled_at: new Date().toISOString(),
+          cancelled_by: 'system',
+        })
+        .eq('id', booking.id)
+        .eq('status', 'ordered')
+        .is('payment_path', null)
+        .eq('initial_paid', false)
+        .eq('needs_reconciliation', false)
+        .select('id')
+
+      if (cancelErr) {
+        console.error(`jubah-expire-unpaid: cancel error for ${booking.reference}:`, cancelErr)
+        continue
       }
+      if (!cancelled || cancelled.length === 0) continue
 
       // Uploads are foldered by reference (see Jubah.tsx's uploadFile), so
       // listing and removing that whole folder catches every document —
@@ -133,18 +111,10 @@ serve(async (req) => {
         await admin.storage.from('jubah-docs').remove(paths)
       }
 
-      // status='ordered' guard: narrow protection against a customer paying
-      // in the exact window between the fetch above and this update.
-      await admin.from('jubah_bookings').update({
-        status:       'cancelled',
-        cancelled_at: new Date().toISOString(),
-        cancelled_by: 'system',
-      }).eq('id', booking.id).eq('status', 'ordered')
-
       cancelledCount++
     }
 
-    return json({ success: true, cancelled: cancelledCount, skippedPaid: skippedPaidCount })
+    return json({ success: true, cancelled: cancelledCount })
 
   } catch (err) {
     console.error('jubah-expire-unpaid unhandled error:', err)
