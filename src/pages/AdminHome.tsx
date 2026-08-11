@@ -789,18 +789,14 @@ export const AdminHome: React.FC = () => {
               </button>
             </div>
 
-            {/* Needs Reconciliation — a payment was confirmed by ToyyibPay but
-                couldn't be cleanly applied (booking already moved on, or
-                cancelled, by the time the callback landed). Previously only
-                visible via Supabase Edge Function logs; now surfaced here so
-                it's actually seen and actionable. */}
+            {/* Payment records that need manual financial reconciliation. */}
             {jubahNeedsReconciliation.length > 0 && (
               <div className="bg-red-50 border border-red-100 rounded-3xl p-5 flex flex-col gap-3">
                 <p className="text-xs font-black text-red-700 flex items-center gap-1.5">
                   <AlertCircle className="w-4 h-4" /> Needs Reconciliation ({jubahNeedsReconciliation.length})
                 </p>
                 <p className="text-[11px] text-red-600/80 font-semibold -mt-1.5">
-                  Payment was confirmed at ToyyibPay for these bookings, but couldn't be applied automatically. Verify manually, then mark reviewed.
+                  These bookings have payment records that need manual verification. Review the evidence, then mark each one resolved.
                 </p>
                 <div className="flex flex-col gap-2">
                   {jubahNeedsReconciliation.map(b => (

@@ -179,7 +179,7 @@ export function JubahCustomerSubTab({
     setCancelModalBooking(null);
   };
 
-  // Best-effort, same as the ToyyibPay-callback path this replaces — a
+  // Best-effort, same as the automated receipt path this replaces — a
   // failed email should never undo or block a payment confirmation that's
   // already committed to the database by the time this runs.
   const sendReceiptEmail = async (bookingId: string, stage: 'full' | 'deposit' | 'balance') => {

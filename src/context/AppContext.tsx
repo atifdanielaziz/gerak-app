@@ -188,12 +188,8 @@ const AppContext = createContext<AppContextType | undefined>(undefined);
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   // Navigation & Session
   const [currentPage, _setCurrentPage] = useState<ActivePage>('splash');
-  // ToyyibPay's billReturnUrl points at /jubah/track — this is a client-routed
-  // SPA (vercel.json rewrites every path to index.html, and nothing else ever
-  // reads location.pathname), so without this, a customer redirected back
-  // after paying would boot straight past that URL into the normal splash →
-  // dashboard flow and never see their booking status. Captured once, before
-  // Splash's own timer can navigate away from it.
+  // /jubah/track is a client-routed SPA path. Capture it before Splash's
+  // timer can navigate away so direct tracking links open correctly.
   const [deepLinkPage] = useState<ActivePage | null>(() => {
     const path = window.location.pathname.replace(/\/+$/, '');
     if (path.endsWith('/jubah/track')) return 'track-jubah';
@@ -932,9 +928,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     };
 
     // Deliberately does NOT call setJubahBooking here — the caller (Jubah.tsx)
-    // only commits this to the Reservation Active view after attempting the
-    // ToyyibPay redirect, so a customer who's about to be sent straight to
-    // FPX never sees a "confirmed"-looking receipt screen flash by first.
+    // only commits this to the Reservation Active view after the booking
+    // workflow completes, so an unfinished booking never looks confirmed.
     addNotification('Robe Booking Confirmed', `Booking for ${fullName} (${remark}) confirmed. Service fee: RM${cost.toFixed(2)}.`, 'jubah');
     return { success: true, booking: newBooking };
   };
@@ -963,8 +958,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   // matric / IC), this just clears the way to start a second one.
   const startNewJubahBooking = () => setJubahBooking(null);
 
-  // Reveals the Reservation Active / receipt view — called only after the
-  // ToyyibPay redirect attempt, never right after the booking is saved.
+  // Reveals the Reservation Active / receipt view only after the booking
+  // workflow completes, never immediately after the row is saved.
   const commitJubahBooking = (booking: JubahBooking) => setJubahBooking(booking);
 
   return (
