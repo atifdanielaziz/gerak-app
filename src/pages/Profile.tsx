@@ -265,10 +265,8 @@ export const Profile: React.FC = () => {
         </div>
 
         <div className="flex flex-col items-center text-center px-6 pt-3 pb-6">
-          <h1 className="m-0 leading-none" style={{ fontFamily: 'Inter, sans-serif', fontSize: '2.8rem', fontWeight: 300, color: '#0F172A' }}>
-            ger<span style={{ color: '#EF4444' }}>a</span>k
-          </h1>
-          <p className="text-slate-400 text-xs mt-2 font-normal">Smart In-Campus Service Platform</p>
+          <img src="/gerak-symbol.png" alt="Gerak" className="w-40 h-auto" />
+          <p className="text-slate-400 text-xs mt-2 font-normal">Smart Campus Platform</p>
         </div>
 
         <div className="px-5 flex flex-col items-center gap-2 mb-8">

@@ -1,8 +1,9 @@
-const CACHE_NAME = 'gerak-cache-v443';
+const CACHE_NAME = 'gerak-cache-v444';
 const ASSETS_TO_CACHE = [
   '/',
   '/index.html',
   '/manifest.json',
+  '/gerak-symbol.png',
   '/icon-192.png',
   '/icon-512.png'
 ];

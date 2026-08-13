@@ -131,10 +131,8 @@ export const Dashboard: React.FC = () => {
           </>
         ) : (
           <>
-            <p style={{ fontFamily: 'Inter, sans-serif', fontWeight: 300, fontSize: '1.5rem', color: '#0F172A', lineHeight: 1 }}>
-              ger<span style={{ color: '#EF4444' }}>a</span>k
-            </p>
-            <p className="text-xs text-slate-400 font-normal mt-2">Smart In-Campus Service Platform</p>
+            <img src="/gerak-symbol.png" alt="Gerak" className="w-24 h-auto" />
+            <p className="text-xs text-slate-400 font-normal mt-2">Smart Campus Platform</p>
           </>
         )}
       </div>

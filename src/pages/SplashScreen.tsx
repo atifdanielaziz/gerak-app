@@ -24,10 +24,7 @@ export const SplashScreen: React.FC = () => {
         }}
         className="flex flex-col items-center gap-3"
       >
-        {/* Wordmark */}
-        <h1 className="text-4xl tracking-tight m-0" style={{ fontFamily: 'Inter, sans-serif', fontWeight: 300, color: '#0f172a' }}>
-          ger<span style={{ color: '#EF4444' }}>a</span>k
-        </h1>
+        <img src="/gerak-symbol.png" alt="Gerak" className="w-48 h-auto" />
 
         <p className="text-slate-400 font-normal text-xs m-0">
           Smart Campus Platform

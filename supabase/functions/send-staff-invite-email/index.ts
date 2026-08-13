@@ -134,8 +134,8 @@ async function sendInviteEmail(invite: Invite, inviterName: string) {
 
   const html = `
   <div style="font-family: -apple-system, Helvetica, Arial, sans-serif; max-width: 480px; margin: 0 auto; color: #1e293b;">
-    <div style="background: #dc2626; padding: 22px 26px; border-radius: 14px 14px 0 0;">
-      <span style="color: #ffffff; font-size: 22px; font-weight: 300; letter-spacing: -0.3px;">ger<span style="font-weight:800;">a</span>k</span>
+    <div style="background:#fff;padding:18px 26px;border:1px solid #f1f5f9;border-radius:14px 14px 0 0;text-align:center;">
+      <img src="https://www.gerakmy.com/gerak-symbol.png" alt="Gerak" width="92" style="display:block;width:92px;height:auto;margin:0 auto;"><p style="font-size:11px;color:#94a3b8;margin:6px 0 0;">Smart Campus Platform</p>
     </div>
     <div style="background: #ffffff; border: 1px solid #f1f5f9; border-top: none; border-radius: 0 0 14px 14px; padding: 28px 26px 24px;">
       <span style="display:inline-block;font-size:10.5px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:#dc2626;background:rgba(220,38,38,0.08);padding:4px 10px;border-radius:999px;margin-bottom:14px;">Staff Invite</span>
