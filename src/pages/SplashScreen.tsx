@@ -22,11 +22,11 @@ export const SplashScreen: React.FC = () => {
           transform:  phase === 'enter' ? 'scale(0.88) translateY(12px)' : 'scale(1) translateY(0)',
           transition: 'opacity 0.5s ease-out, transform 0.5s cubic-bezier(0.34,1.56,0.64,1)',
         }}
-        className="flex flex-col items-center gap-3"
+        className="flex flex-col items-center gap-1"
       >
         <img src="/gerak-brand.png" alt="Gerak" className="w-52 h-auto" />
 
-        <p className="text-slate-400 font-normal text-xs m-0">
+        <p className="text-slate-400 font-normal text-xs mt-1 mb-0">
           Smart Campus Platform
         </p>
 
