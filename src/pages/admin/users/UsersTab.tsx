@@ -1,13 +1,14 @@
 import { forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useState } from 'react';
 import { supabase } from '../../../lib/supabase';
 import {
-  Users, MoreVertical, Car, KeyRound, Bike, GraduationCap, MapPin, ShieldCheck, ShieldOff, Trash2, Truck,
+  Users, MoreVertical, Car, KeyRound, Bike, GraduationCap, MapPin, ShieldCheck, ShieldOff, Trash2, Truck, FileCheck2,
 } from 'lucide-react';
 import { WaIcon, toWa } from '../../../lib/whatsapp';
 import { useLoadOnActive } from '../../../hooks/useLoadOnActive';
 import { type ProfileUser } from './ProfileSheet';
 import { NativeSelect } from '../../../components/NativeSelect';
 import { UNIVERSITIES, UNIVERSITY_MAP, jubahLocationLabel, universityKeyFromCampus } from '../../../lib/universities';
+import { DocumentVerificationSheet } from '../verify/DocumentVerificationSheet';
 
 type PendingAction =
   | { type: 'toggle-status'; u: ProfileUser }
@@ -34,7 +35,8 @@ const UserCard: React.FC<{
   onGateToggle?: (u: ProfileUser) => void;
   onRoleToggle?: (u: ProfileUser, newRole: 'driver' | 'admin') => void;
   onViewProfile?: (u: ProfileUser) => void;
-}> = ({ u, canManage, togglingStatus, terminating, togglingCap, togglingCampus, onToggle, onTerminate, onCapToggle, onRiderCapToggle, onCampusChange, onGateToggle, onRoleToggle, onViewProfile }) => {
+  onVerifyDocuments?: (u: ProfileUser) => void;
+}> = ({ u, canManage, togglingStatus, terminating, togglingCap, togglingCampus, onToggle, onTerminate, onCapToggle, onRiderCapToggle, onCampusChange, onGateToggle, onRoleToggle, onViewProfile, onVerifyDocuments }) => {
   const [showMenu, setShowMenu] = useState(false);
   const isDriverOrRider = u.role === 'driver' || u.role === 'rider';
   // University/campus reassignment is now open to admin cards too (not
@@ -138,6 +140,15 @@ const UserCard: React.FC<{
                     <MapPin className="w-4 h-4 shrink-0" />
                     Change Campus
                     {togglingCampus === u.id && <span className="ml-auto w-3 h-3 rounded-full border border-current border-t-transparent animate-spin" />}
+                  </button>
+                )}
+
+                {isDriverOrRider && onVerifyDocuments && (
+                  <button type="button"
+                    onPointerDown={e => { e.preventDefault(); onVerifyDocuments(u); setShowMenu(false); }}
+                    className="w-full flex items-center gap-3 px-4 py-3 text-left text-xs font-semibold text-slate-600 active:bg-slate-50 active:scale-[0.99] transition-transform transform-gpu">
+                    <FileCheck2 className="w-4 h-4 shrink-0 text-slate-400" />
+                    Verify Documents
                   </button>
                 )}
 
@@ -275,6 +286,7 @@ export const UsersTab = forwardRef<UsersTabHandle, UsersTabProps>(function Users
   const [togglingCap, setTogglingCap]       = useState<string | null>(null);
   const [togglingCampus, setTogglingCampus] = useState<string | null>(null);
   const [pendingAction, setPendingAction]   = useState<PendingAction | null>(null);
+  const [reviewingUserId, setReviewingUserId] = useState<string | null>(null);
   // Picker state for the 'campus' pendingAction — pre-filled to the
   // target user's current university/campus when the sheet opens, chosen
   // live in the sheet rather than fixed at the moment the ⋮ menu item
@@ -282,7 +294,7 @@ export const UsersTab = forwardRef<UsersTabHandle, UsersTabProps>(function Users
   const [campusPickerUniversity, setCampusPickerUniversity] = useState('');
   const [campusPickerCampus, setCampusPickerCampus]         = useState('');
 
-  useEffect(() => { onModalOpenChange(!!pendingAction); }, [pendingAction, onModalOpenChange]);
+  useEffect(() => { onModalOpenChange(!!pendingAction || !!reviewingUserId); }, [pendingAction, reviewingUserId, onModalOpenChange]);
 
   const loadUsers = useCallback(async () => {
     setUsersLoading(true);
@@ -630,6 +642,7 @@ export const UsersTab = forwardRef<UsersTabHandle, UsersTabProps>(function Users
                         }) : undefined}
                         onGateToggle={isSuperAdmin ? (u => setPendingAction({ type: 'toggle-gate-exempt', u })) : undefined}
                         onRoleToggle={isSuperAdmin ? (u, newRole) => setPendingAction({ type: 'toggle-role', u, newRole }) : undefined}
+                        onVerifyDocuments={u => setReviewingUserId(u.id)}
                         onViewProfile={onViewProfile} />
                     ))}
                   </div>
@@ -639,6 +652,15 @@ export const UsersTab = forwardRef<UsersTabHandle, UsersTabProps>(function Users
           </>)}
         </div>
       </div>
+
+      {reviewingUserId && (
+        <DocumentVerificationSheet
+          userId={reviewingUserId}
+          onClose={() => setReviewingUserId(null)}
+          onUpdated={loadUsers}
+          showToast={showToast}
+        />
+      )}
 
       {pendingAction && (() => {
         // Campus/university reassignment needs live pickers, not a static
