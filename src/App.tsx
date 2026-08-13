@@ -91,14 +91,9 @@ const InstallPrompt: React.FC = () => {
         {/* App card */}
         <div className="flex items-center gap-4 px-6 py-4 border-b border-slate-100">
           <div className="w-14 h-14 rounded-2xl overflow-hidden shadow-md shrink-0">
-            <img src="/gerak-icon.svg" alt="gerak" className="w-full h-full" />
+            <img src="/gerak-symbol.png" alt="Gerak" className="w-full h-full object-cover" />
           </div>
-          <div>
-            <p className="text-sm text-slate-900 m-0" style={{ fontFamily: 'Inter, sans-serif', fontWeight: 300 }}>
-              ger<span style={{ color: '#EF4444' }}>a</span>k
-            </p>
-            <p className="text-xs text-slate-400 font-semibold mt-0.5">Smart Campus Platform · UMPSA</p>
-          </div>
+          <p className="text-xs text-slate-400 font-semibold">Smart Campus Platform · UMPSA</p>
         </div>
 
         {step === 'ios' ? (

@@ -15,6 +15,10 @@ export const ReceiptHeader: React.FC<{ meta: ReceiptMeta }> = ({ meta }) => {
 
   return (
     <div className="flex flex-col gap-1.5">
+      <div className="flex items-center gap-2 mb-1">
+        <img src="/gerak-symbol.png" alt="Gerak" className="w-14 h-auto" />
+        <span className="text-[10px] font-normal text-slate-400">Smart Campus Platform</span>
+      </div>
       {meta.bookingMethod && MethodIcon && (
         <span className={`inline-flex items-center gap-1 self-start rounded-md px-1.5 py-0.5 text-[10px] font-semibold border ${bookingMethodBadgeClass(meta.bookingMethod.mode)}`}>
           <MethodIcon className="w-3 h-3" />

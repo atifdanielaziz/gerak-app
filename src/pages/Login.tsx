@@ -70,10 +70,8 @@ export const Login: React.FC = () => {
 
       {/* Branding */}
       <div className="flex flex-col items-center text-center mt-6 mb-8 px-6">
-        <p style={{ fontFamily: 'Inter, sans-serif', fontWeight: 300, fontSize: '2.5rem', color: '#0F172A', lineHeight: 1 }}>
-          ger<span style={{ color: '#EF4444' }}>a</span>k
-        </p>
-        <p className="text-slate-400 text-xs mt-2 font-normal">Smart In-Campus Service Platform</p>
+        <img src="/gerak-symbol.png" alt="Gerak" className="w-40 h-auto" />
+        <p className="text-slate-400 text-xs mt-2 font-normal">Smart Campus Platform</p>
       </div>
 
       {/* Form */}
