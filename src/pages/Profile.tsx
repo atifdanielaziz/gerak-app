@@ -265,7 +265,7 @@ export const Profile: React.FC = () => {
         </div>
 
         <div className="flex flex-col items-center text-center px-6 pt-3 pb-6">
-          <img src="/gerak-symbol.png" alt="Gerak" className="w-40 h-auto" />
+          <img src="/gerak-brand.png" alt="Gerak" className="w-44 h-auto" />
           <p className="text-slate-400 text-xs mt-2 font-normal">Smart Campus Platform</p>
         </div>
 
