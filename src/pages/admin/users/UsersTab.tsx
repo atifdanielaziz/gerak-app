@@ -87,7 +87,7 @@ const UserCard: React.FC<{
           {showMenu && (
             <>
               <div className="fixed inset-0 z-40" onPointerDown={(e) => { e.preventDefault(); setShowMenu(false); }} />
-              <div className="absolute right-0 top-full mt-1 z-50 bg-white border border-slate-100 rounded-2xl shadow-xl overflow-hidden min-w-[170px]">
+              <div className="absolute right-0 top-full mt-1 z-50 min-w-[170px] max-h-[12.5rem] overflow-y-auto overscroll-contain bg-white border border-slate-100 rounded-2xl shadow-xl">
 
                 {/* Driver capabilities */}
                 {u.role === 'driver' && onCapToggle && (
