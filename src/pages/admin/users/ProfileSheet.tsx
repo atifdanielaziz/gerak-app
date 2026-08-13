@@ -26,6 +26,7 @@ export interface ProfileUser {
   vehicle?: string;
   plate_number?: string;
   docs_status?: string;
+  docs_reject_reason?: string | null;
   fee_receipt_verified?: boolean;
   fee_receipt_url?: string;
   fee_receipt_expiry?: string | null;

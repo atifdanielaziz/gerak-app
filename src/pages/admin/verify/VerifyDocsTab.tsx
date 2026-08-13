@@ -2,6 +2,7 @@ import { forwardRef, useCallback, useImperativeHandle, useMemo, useState } from 
 import { supabase } from '../../../lib/supabase';
 import { AlertCircle, ShieldCheck, ShieldOff, ExternalLink } from 'lucide-react';
 import { useLoadOnActive } from '../../../hooks/useLoadOnActive';
+import { decideDocuments } from '../../../lib/documentVerification';
 
 type VerifyDoc = {
   id: string; name: string; gerak_id: string; campus: string; role: string;
@@ -58,15 +59,17 @@ export const VerifyDocsTab = forwardRef<VerifyDocsTabHandle, VerifyDocsTabProps>
   useImperativeHandle(ref, () => ({ reload: loadVerifyDocs }), [loadVerifyDocs]);
 
   const handleApproveDoc = async (userId: string) => {
-    await supabase.rpc('approve_driver_docs', { p_user_id: userId });
-    showToast('Documents approved.');
+    const result = await decideDocuments(userId, 'approved');
+    if (!result.success) { showToast(result.error ?? 'Could not approve documents.'); return; }
+    showToast(result.emailSent === false ? 'Documents approved. Email could not be sent.' : 'Documents approved. Email sent.');
     loadVerifyDocs();
   };
 
   const handleRejectDoc = async (userId: string) => {
     if (!rejectReason.trim()) { showToast('Please enter a rejection reason.'); return; }
-    await supabase.rpc('reject_driver_docs', { p_user_id: userId, p_reason: rejectReason.trim() });
-    showToast('Documents rejected.');
+    const result = await decideDocuments(userId, 'rejected', rejectReason);
+    if (!result.success) { showToast(result.error ?? 'Could not reject documents.'); return; }
+    showToast(result.emailSent === false ? 'Documents rejected. Email could not be sent.' : 'Documents rejected. Email sent.');
     setRejectingDoc(null);
     setRejectReason('');
     loadVerifyDocs();
