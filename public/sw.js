@@ -1,11 +1,12 @@
-const CACHE_NAME = 'gerak-cache-v446';
+const CACHE_NAME = 'gerak-cache-v447';
 const ASSETS_TO_CACHE = [
   '/',
   '/index.html',
   '/manifest.json',
   '/gerak-brand.png',
-  '/icon-192.png',
-  '/icon-512.png'
+  '/gerak-full-icon-192.png',
+  '/gerak-full-icon-512.png',
+  '/gerak-full-apple-touch-icon.png'
 ];
 
 // Install Event - cache core static resources
