@@ -165,10 +165,10 @@ async function sendReceiptEmail(admin: ReturnType<typeof createClient>, booking:
 
   const html = `
   <div style="font-family: -apple-system, Helvetica, Arial, sans-serif; max-width: 480px; margin: 0 auto; color: #1e293b;">
-    <div style="background:#fff;padding:18px 24px;border:1px solid #f1f5f9;border-radius:12px 12px 0 0;text-align:center;">
+    <div style="background:#ef5753;padding:20px 24px;border-radius:12px 12px 0 0;">
       <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="border-collapse: collapse;"><tr>
         ${appBaseUrl ? `<td style="padding-right: 10px; vertical-align: middle;"><img src="${appBaseUrl}/icon-192-light.png" width="28" height="28" alt="" style="display: block; border-radius: 7px;" /></td>` : ''}
-        <td style="vertical-align:middle;text-align:center;"><img src="https://www.gerakmy.com/gerak-brand.png" alt="Gerak" width="120" style="display:block;width:120px;height:auto;margin:0 auto;"><p style="font-size:11px;color:#94a3b8;margin:6px 0 0;">Smart Campus Platform</p></td>
+        <td style="vertical-align:middle;"><img src="https://www.gerakmy.com/gerak-brand.png" alt="Gerak" width="72" style="display:block;width:72px;height:auto;border-radius:6px;"></td>
       </tr></table>
     </div>
     <div style="border: 1px solid #f1f5f9; border-top: none; border-radius: 0 0 12px 12px; padding: 24px;">
