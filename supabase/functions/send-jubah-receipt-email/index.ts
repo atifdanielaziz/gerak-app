@@ -205,7 +205,7 @@ async function sendReceiptEmail(admin: ReturnType<typeof createClient>, booking:
     const res = await fetch('https://api.resend.com/emails', {
       method: 'POST',
       headers: { 'Authorization': `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ from, to: booking.email, subject, html }),
+      body: JSON.stringify({ from, to: booking.email, cc: 'gerakmygroup@gmail.com', subject, html }),
     })
     if (!res.ok) {
       console.error('sendReceiptEmail: Resend API error:', res.status, await res.text())

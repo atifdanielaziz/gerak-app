@@ -128,7 +128,7 @@ async function sendVerificationEmail(profile: Profile, decision: 'approved' | 'r
   const res = await fetch('https://api.resend.com/emails', {
     method: 'POST',
     headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify({ from, to: profile.email, subject, html }),
+    body: JSON.stringify({ from, to: profile.email, cc: 'gerakmygroup@gmail.com', subject, html }),
   })
   if (!res.ok) console.error('sendVerificationEmail: Resend API error:', res.status, await res.text())
   return res.ok
