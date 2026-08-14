@@ -748,6 +748,7 @@ export const AdminHome: React.FC = () => {
           isSuperAdmin={isSuperAdmin}
           adminCampus={adminCampus}
           showToast={showToast}
+          onViewProfile={setSheetUser}
         />
       )}
 
