@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
-import { CheckCircle2, X, Upload, FileText, ShieldAlert, Download, User, Pencil, MapPin, Copy, Check, Info, GraduationCap, FileUser } from 'lucide-react';
+import { CheckCircle2, X, Upload, FileText, ShieldAlert, Download, User, Pencil, MapPin, Copy, Check, Info, GraduationCap, FileUser, ClipboardList } from 'lucide-react';
 import { submitJubahToSheets } from '../lib/sheetsService';
 import { JubahLanding } from '../components/JubahLanding';
 import { supabase } from '../lib/supabase';
@@ -791,7 +791,9 @@ export const Jubah: React.FC = () => {
 
           {/* ── PERSONAL INFORMATION ── */}
           <div className="bg-white border border-slate-100 rounded-3xl p-5 flex flex-col gap-4">
-            <h3 className="text-sm font-semibold text-slate-700">Personal Information</h3>
+            <h3 className="text-sm font-semibold text-slate-700 flex items-center gap-1.5">
+              <User className="w-4 h-4 text-slate-400" /> Personal Information
+            </h3>
 
             {/* Full Name */}
             <div className="flex flex-col gap-1">
@@ -879,7 +881,9 @@ export const Jubah: React.FC = () => {
 
           {/* ── ACADEMIC INFORMATION ── */}
           <div className="bg-white border border-slate-100 rounded-3xl p-5 flex flex-col gap-4">
-            <h3 className="text-sm font-semibold text-slate-700">Academic Information</h3>
+            <h3 className="text-sm font-semibold text-slate-700 flex items-center gap-1.5">
+              <GraduationCap className="w-4 h-4 text-slate-400" /> Academic Information
+            </h3>
 
             {/* Campus — only shown for a university with a real multi-campus
                 split (UMPSA, and now UMK/UiTM/UIA); a single-campus
@@ -944,7 +948,9 @@ export const Jubah: React.FC = () => {
 
           {/* ── SERVICE OPTION ── */}
           <div className="bg-white border border-slate-100 rounded-3xl p-5 flex flex-col gap-4">
-            <h3 className="text-sm font-semibold text-slate-700">Service Option</h3>
+            <h3 className="text-sm font-semibold text-slate-700 flex items-center gap-1.5">
+              <ClipboardList className="w-4 h-4 text-slate-400" /> Service Option
+            </h3>
 
             {/* Deposit */}
             <label className={`flex items-start gap-3 p-3.5 rounded-2xl border cursor-pointer transition ${paymentMode === 'deposit' ? 'border-slate-900' : 'border-slate-200 hover:bg-slate-50'}`}>
@@ -1160,7 +1166,9 @@ export const Jubah: React.FC = () => {
 
           {/* ── DOCUMENT UPLOAD — dynamic from jubah_doc_fields ── */}
           <div className="bg-white border border-slate-100 rounded-3xl p-5 flex flex-col gap-4">
-            <h3 className="text-sm font-semibold text-slate-700">Upload Documents</h3>
+            <h3 className="text-sm font-semibold text-slate-700 flex items-center gap-1.5">
+              <Upload className="w-4 h-4 text-slate-400" /> Upload Documents
+            </h3>
 
             {docFields.map(field => {
               const file = docFiles[field.id] ?? null;

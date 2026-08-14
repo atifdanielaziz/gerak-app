@@ -6,8 +6,8 @@ interface PinLocation { address: string; coords: [number, number]; }
 const MapboxRideMap = lazy(() => import('../components/MapboxRideMap').then(m => ({ default: m.MapboxRideMap })));
 import {
   Map, List, PencilLine, Car, PlaneTakeoff,
-  Info, CheckCircle2, RotateCcw, Users, Clock, CalendarDays, Phone, ClipboardList, X,
-  ArrowUpDown, History,
+  Info, CheckCircle2, RotateCcw, Clock, CalendarDays, ClipboardList, X,
+  ArrowUpDown, History, MoreVertical,
 } from 'lucide-react';
 
 // Mirrors MapboxRideMap.tsx's own formatDuration — duplicated rather than
@@ -239,6 +239,7 @@ export const Transport: React.FC = () => {
 
   // Order form
   const [bookWhen,   setBookWhen]   = useState<'now' | 'later'>('now');
+  const [showTimingMenu, setShowTimingMenu] = useState(false);
   const [date,       setDate]       = useState(() => {
     const now = new Date();
     return now.toISOString().slice(0, 10); // yyyy-MM-dd
@@ -974,30 +975,46 @@ export const Transport: React.FC = () => {
                 +{aerbusPointData.bufferMin >= 60 ? `${aerbusPointData.bufferMin / 60}h` : `${aerbusPointData.bufferMin}min`} buffer
               </span>
             )}
+            {bookMode !== 'aerbus' && (
+              <div className="relative">
+                <button
+                  type="button"
+                  onPointerDown={(e) => { e.preventDefault(); setShowTimingMenu(open => !open); }}
+                  aria-label="Choose booking time"
+                  aria-expanded={showTimingMenu}
+                  className="w-7 h-7 flex items-center justify-center rounded-full bg-slate-50 text-slate-400 transition-transform transform-gpu active:scale-90 active:bg-slate-100"
+                >
+                  <MoreVertical className="w-4 h-4" />
+                </button>
+                {showTimingMenu && (
+                  <>
+                    <button
+                      type="button"
+                      aria-label="Close booking time menu"
+                      className="fixed inset-0 z-20 cursor-default"
+                      onPointerDown={(e) => { e.preventDefault(); setShowTimingMenu(false); }}
+                    />
+                    <div className="absolute right-0 top-9 z-30 w-40 overflow-hidden rounded-2xl border border-slate-100 bg-white py-1">
+                      {(['now', 'later'] as const).map(option => (
+                        <button
+                          key={option}
+                          type="button"
+                          onPointerDown={(e) => {
+                            e.preventDefault();
+                            setBookWhen(option);
+                            setShowTimingMenu(false);
+                          }}
+                          className={`w-full px-4 py-3 text-left text-xs font-semibold transition-transform transform-gpu active:scale-[0.99] active:bg-slate-50 ${bookWhen === option ? 'text-primary' : 'text-slate-700'}`}
+                        >
+                          {option === 'now' ? 'Now' : 'Later'}
+                        </button>
+                      ))}
+                    </div>
+                  </>
+                )}
+              </div>
+            )}
           </div>
-
-          {/* Now / Later toggle — Mode Selector Standard. AerBus always
-              books a specific ticket time, so it skips this entirely. */}
-          {bookMode !== 'aerbus' && (
-            <div className="flex gap-2">
-              <button type="button" onPointerDown={(e) => { e.preventDefault(); setBookWhen('now'); }}
-                className={`flex-1 flex items-center gap-2 p-3 rounded-2xl border bg-white transition-transform active:scale-[0.99] active:bg-slate-50 ${
-                  bookWhen === 'now' ? 'border-slate-900' : 'border-slate-100'
-                }`}
-              >
-                <Clock className={`w-4 h-4 shrink-0 ${bookWhen === 'now' ? 'text-slate-900' : 'text-slate-400'}`} />
-                <span className={`text-xs font-semibold ${bookWhen === 'now' ? 'text-slate-900' : 'text-slate-600'}`}>Now</span>
-              </button>
-              <button type="button" onPointerDown={(e) => { e.preventDefault(); setBookWhen('later'); }}
-                className={`flex-1 flex items-center gap-2 p-3 rounded-2xl border bg-white transition-transform active:scale-[0.99] active:bg-slate-50 ${
-                  bookWhen === 'later' ? 'border-slate-900' : 'border-slate-100'
-                }`}
-              >
-                <CalendarDays className={`w-4 h-4 shrink-0 ${bookWhen === 'later' ? 'text-slate-900' : 'text-slate-400'}`} />
-                <span className={`text-xs font-semibold ${bookWhen === 'later' ? 'text-slate-900' : 'text-slate-600'}`}>Later</span>
-              </button>
-            </div>
-          )}
 
           {/* Date + Time — overlay trick: display div at 12px, real input invisible on top */}
           <div className="grid grid-cols-2 gap-2">
@@ -1020,8 +1037,7 @@ export const Transport: React.FC = () => {
               </div>
             </div>
             <div className="flex flex-col gap-0.5">
-              <label className="text-xs font-normal text-slate-400 pl-1 flex items-center gap-1">
-                <Clock className="w-3 h-3" />
+              <label className="text-xs font-normal text-slate-400 pl-1">
                 {bookMode === 'aerbus'
                   ? (aerbusDirection === 'to' ? 'Boarding Time' : 'Landing Time')
                   : 'Time'}
@@ -1067,8 +1083,8 @@ export const Transport: React.FC = () => {
 
           {/* Passengers stepper */}
           <div className="flex flex-col gap-0.5">
-            <label className="text-xs font-normal text-slate-400 pl-1 flex items-center gap-1">
-              <Users className="w-3 h-3" /> Number of Passengers
+            <label className="text-xs font-normal text-slate-400 pl-1">
+              Number of Passengers
             </label>
             <div className="flex items-center gap-2">
               <button type="button" onPointerDown={e => { e.preventDefault(); setPassengers(p => Math.max(1, p - 1)); }}
@@ -1084,8 +1100,8 @@ export const Transport: React.FC = () => {
 
           {/* Contact */}
           <div className="flex flex-col gap-0.5">
-            <label className="text-xs font-normal text-slate-400 pl-1 flex items-center gap-1">
-              <Phone className="w-3 h-3" /> Contact Number
+            <label className="text-xs font-normal text-slate-400 pl-1">
+              Contact Number
             </label>
             <input
               type="tel"
