@@ -135,32 +135,58 @@ export const DriversTab = forwardRef<DriversTabHandle, DriversTabProps>(function
             <UserPlus className="w-4 h-4 text-primary" /> Invite Staff
           </h3>
 
-          {/* Role selector */}
-          <div>
-            <p className="text-sm font-semibold text-slate-700 mb-2">Role</p>
-            <NativeSelect
-              value={inviteRole}
-              onChange={r => {
-                setInviteRole(r);
-                setInviteCanDrive(r === 'driver');
-                setInviteCanRent(false);
-                setInviteCanTransport(false);
-                setInviteCanDaily(false);
-                setInviteCanRobe(false);
-              }}
-              options={[
-                { value: 'driver', label: 'Driver' },
-                { value: 'rider',  label: 'Rider' },
-                { value: 'admin',  label: 'Admin' },
-              ]}
-              placeholder="Select role..."
-              label="Select Role"
-            />
-            {inviteRole === 'admin' && (
-              <p className="text-xs text-violet-500 font-semibold mt-1.5 pl-1">
-                Admin includes full driving capabilities automatically.
-              </p>
-            )}
+          {/* Role and capabilities — equal-width controls on one row */}
+          <div className="grid grid-cols-2 gap-3 items-start">
+            <div className="min-w-0">
+              <p className="text-sm font-semibold text-slate-700 mb-2">Role</p>
+              <NativeSelect
+                value={inviteRole}
+                onChange={r => {
+                  setInviteRole(r);
+                  setInviteCanDrive(r === 'driver');
+                  setInviteCanRent(false);
+                  setInviteCanTransport(false);
+                  setInviteCanDaily(false);
+                  setInviteCanRobe(false);
+                }}
+                options={[
+                  { value: 'driver', label: 'Driver' },
+                  { value: 'rider',  label: 'Rider' },
+                  { value: 'admin',  label: 'Admin' },
+                ]}
+                placeholder="Select role..."
+                label="Select Role"
+              />
+            </div>
+            <div className="min-w-0">
+              <p className="text-sm font-semibold text-slate-700 mb-2">Capabilities</p>
+              {inviteRole === 'driver' && (
+                <MultiSelect
+                  values={[...(inviteCanDrive ? ['drive'] : []), ...(inviteCanRent ? ['rent'] : []), ...(inviteCanTransport ? ['transport'] : [])]}
+                  onChange={vals => {
+                    setInviteCanDrive(vals.includes('drive'));
+                    setInviteCanRent(vals.includes('rent'));
+                    setInviteCanTransport(vals.includes('transport'));
+                  }}
+                  options={[{ value: 'drive', label: 'Gerak Car' }, { value: 'rent', label: 'Rental' }, { value: 'transport', label: 'Transporter' }]}
+                  placeholder="Select capabilities..."
+                />
+              )}
+              {inviteRole === 'rider' && (
+                <MultiSelect
+                  values={[...(inviteCanDaily ? ['daily'] : []), ...(inviteCanRobe ? ['robe'] : [])]}
+                  onChange={vals => {
+                    setInviteCanDaily(vals.includes('daily'));
+                    setInviteCanRobe(vals.includes('robe'));
+                  }}
+                  options={[{ value: 'daily', label: 'Daily' }, { value: 'robe', label: 'Robe' }]}
+                  placeholder="Select capabilities..."
+                />
+              )}
+              {inviteRole === 'admin' && (
+                <div className="h-[42px] flex items-center rounded-xl border border-slate-100 bg-white px-3 text-xs font-semibold text-slate-700">Full access</div>
+              )}
+            </div>
           </div>
 
           {/* University + Campus picker — superadmin only; regular admin
@@ -216,53 +242,6 @@ export const DriversTab = forwardRef<DriversTabHandle, DriversTabProps>(function
               className="w-full bg-slate-50 border border-slate-200 rounded-xl py-2.5 pl-9 pr-3 text-xs text-slate-700 focus:outline-none focus:border-primary transition"
             />
           </div>
-
-          {/* Capabilities — driver */}
-          {inviteRole === 'driver' && (
-            <div>
-              <p className="text-sm font-semibold text-slate-700 mb-2">Capabilities</p>
-              <MultiSelect
-                values={[
-                  ...(inviteCanDrive ? ['drive'] : []),
-                  ...(inviteCanRent ? ['rent'] : []),
-                  ...(inviteCanTransport ? ['transport'] : []),
-                ]}
-                onChange={vals => {
-                  setInviteCanDrive(vals.includes('drive'));
-                  setInviteCanRent(vals.includes('rent'));
-                  setInviteCanTransport(vals.includes('transport'));
-                }}
-                options={[
-                  { value: 'drive', label: 'Gerak Car' },
-                  { value: 'rent', label: 'Rental' },
-                  { value: 'transport', label: 'Transporter' },
-                ]}
-                placeholder="Select capabilities..."
-              />
-            </div>
-          )}
-
-          {/* Capabilities — rider */}
-          {inviteRole === 'rider' && (
-            <div>
-              <p className="text-sm font-semibold text-slate-700 mb-2">Capabilities</p>
-              <MultiSelect
-                values={[
-                  ...(inviteCanDaily ? ['daily'] : []),
-                  ...(inviteCanRobe ? ['robe'] : []),
-                ]}
-                onChange={vals => {
-                  setInviteCanDaily(vals.includes('daily'));
-                  setInviteCanRobe(vals.includes('robe'));
-                }}
-                options={[
-                  { value: 'daily', label: 'Daily' },
-                  { value: 'robe', label: 'Robe' },
-                ]}
-                placeholder="Select capabilities..."
-              />
-            </div>
-          )}
 
           <button
             onClick={() => {
