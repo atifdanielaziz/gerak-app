@@ -54,7 +54,7 @@ export const DriversTab = forwardRef<DriversTabHandle, DriversTabProps>(function
   const [inviteEmail, setInviteEmail]        = useState('');
   const [inviteUniversityKey, setInviteUniversityKey] = useState(isSuperAdmin ? 'umpsa' : (universityKeyFromCampus(adminCampus) ?? 'umpsa'));
   const [inviteCampus, setInviteCampus]      = useState(isSuperAdmin ? 'Gambang' : adminCampus);
-  const [inviteRole, setInviteRole]          = useState<'driver' | 'rider' | 'admin'>('driver');
+  const [inviteRoles, setInviteRoles]        = useState<Array<'driver' | 'rider' | 'admin'>>(['driver']);
   const [inviteCanDrive, setInviteCanDrive]  = useState(true);
   const [inviteCanRent,  setInviteCanRent]   = useState(false);
   const [inviteCanTransport, setInviteCanTransport] = useState(false);
@@ -62,6 +62,10 @@ export const DriversTab = forwardRef<DriversTabHandle, DriversTabProps>(function
   const [inviteCanRobe,  setInviteCanRobe]   = useState(false);
   const [inviteSending, setInviteSending]    = useState(false);
   const [showInviteConfirm, setShowInviteConfirm] = useState(false);
+  const inviteRole: 'driver' | 'rider' | 'admin' = inviteRoles.includes('admin')
+    ? 'admin'
+    : inviteRoles.includes('driver') ? 'driver' : 'rider';
+  const inviteRoleLabel = inviteRoles.map(role => role === 'admin' ? 'Admin' : role === 'rider' ? 'Rider' : 'Driver').join(', ');
 
   useEffect(() => { onModalOpenChange(showInviteConfirm); }, [showInviteConfirm, onModalOpenChange]);
 
@@ -82,8 +86,9 @@ export const DriversTab = forwardRef<DriversTabHandle, DriversTabProps>(function
 
   const handleSendInvite = async () => {
     if (!inviteEmail.trim()) return;
-    if (inviteRole === 'driver' && !inviteCanDrive && !inviteCanRent && !inviteCanTransport) { showToast('Select at least one capability.'); return; }
-    if (inviteRole === 'rider'  && !inviteCanDaily && !inviteCanRobe)  { showToast('Select at least one capability.'); return; }
+    if (inviteRoles.length === 0) { showToast('Select at least one role.'); return; }
+    if (inviteRoles.includes('driver') && !inviteCanDrive && !inviteCanRent && !inviteCanTransport) { showToast('Select at least one driver capability.'); return; }
+    if (inviteRoles.includes('rider') && !inviteCanDaily && !inviteCanRobe) { showToast('Select at least one rider capability.'); return; }
     setInviteSending(true);
     const { data: { user: authUser } } = await supabase.auth.getUser();
     const { data: inserted, error } = await supabase.from('driver_invites').insert({
@@ -91,11 +96,11 @@ export const DriversTab = forwardRef<DriversTabHandle, DriversTabProps>(function
       campus:     inviteCampus,
       university: UNIVERSITY_MAP[inviteUniversityKey]?.fullName ?? '',
       role:       inviteRole,
-      can_drive:     inviteRole === 'driver' ? inviteCanDrive     : false,
-      can_rent:      inviteRole === 'driver' ? inviteCanRent      : false,
-      can_transport: inviteRole === 'driver' ? inviteCanTransport : false,
-      can_daily:  inviteRole === 'rider'  ? inviteCanDaily : false,
-      can_robe:   inviteRole === 'rider'  ? inviteCanRobe  : false,
+      can_drive:     inviteRoles.includes('driver') ? inviteCanDrive     : false,
+      can_rent:      inviteRoles.includes('driver') ? inviteCanRent      : false,
+      can_transport: inviteRoles.includes('driver') ? inviteCanTransport : false,
+      can_daily:     inviteRoles.includes('rider') ? inviteCanDaily : false,
+      can_robe:      inviteRoles.includes('rider') ? inviteCanRobe  : false,
       created_by: authUser?.id,
     }).select('id').single();
     setInviteSending(false);
@@ -103,7 +108,7 @@ export const DriversTab = forwardRef<DriversTabHandle, DriversTabProps>(function
     else {
       showToast('Invite added!');
       setInviteEmail('');
-      setInviteRole('driver');
+      setInviteRoles(['driver']);
       setInviteCanDrive(true); setInviteCanRent(false); setInviteCanTransport(false);
       setInviteCanDaily(false); setInviteCanRobe(false);
       loadInvites();
@@ -138,15 +143,12 @@ export const DriversTab = forwardRef<DriversTabHandle, DriversTabProps>(function
           {/* Role selector */}
           <div>
             <p className="text-sm font-semibold text-slate-700 mb-2">Role</p>
-            <NativeSelect
-              value={inviteRole}
-              onChange={r => {
-                setInviteRole(r);
-                setInviteCanDrive(r === 'driver');
-                setInviteCanRent(false);
-                setInviteCanTransport(false);
-                setInviteCanDaily(false);
-                setInviteCanRobe(false);
+            <MultiSelect
+              values={inviteRoles}
+              onChange={roles => {
+                const next = roles as Array<'driver' | 'rider' | 'admin'>;
+                setInviteRoles(next);
+                if (next.includes('driver') && !inviteRoles.includes('driver')) setInviteCanDrive(true);
               }}
               options={[
                 { value: 'driver', label: 'Driver' },
@@ -154,11 +156,10 @@ export const DriversTab = forwardRef<DriversTabHandle, DriversTabProps>(function
                 { value: 'admin',  label: 'Admin' },
               ]}
               placeholder="Select role..."
-              label="Select Role"
             />
-            {inviteRole === 'admin' && (
+            {inviteRoles.includes('admin') && (
               <p className="text-xs text-violet-500 font-semibold mt-1.5 pl-1">
-                Admin includes full driving capabilities automatically.
+                Admin access can be combined with Driver and Rider access.
               </p>
             )}
           </div>
@@ -218,7 +219,7 @@ export const DriversTab = forwardRef<DriversTabHandle, DriversTabProps>(function
           </div>
 
           {/* Capabilities — driver */}
-          {inviteRole === 'driver' && (
+          {inviteRoles.includes('driver') && (
             <div>
               <p className="text-sm font-semibold text-slate-700 mb-2">Capabilities</p>
               <MultiSelect
@@ -243,7 +244,7 @@ export const DriversTab = forwardRef<DriversTabHandle, DriversTabProps>(function
           )}
 
           {/* Capabilities — rider */}
-          {inviteRole === 'rider' && (
+          {inviteRoles.includes('rider') && (
             <div>
               <p className="text-sm font-semibold text-slate-700 mb-2">Capabilities</p>
               <MultiSelect
@@ -267,7 +268,9 @@ export const DriversTab = forwardRef<DriversTabHandle, DriversTabProps>(function
           <button
             onClick={() => {
               if (!inviteEmail.trim()) return;
-              if (inviteRole === 'driver' && !inviteCanDrive && !inviteCanRent && !inviteCanTransport) { showToast('Select at least one capability.'); return; }
+              if (inviteRoles.length === 0) { showToast('Select at least one role.'); return; }
+              if (inviteRoles.includes('driver') && !inviteCanDrive && !inviteCanRent && !inviteCanTransport) { showToast('Select at least one driver capability.'); return; }
+              if (inviteRoles.includes('rider') && !inviteCanDaily && !inviteCanRobe) { showToast('Select at least one rider capability.'); return; }
               setShowInviteConfirm(true);
             }}
             disabled={!inviteEmail.trim()}
@@ -378,7 +381,7 @@ export const DriversTab = forwardRef<DriversTabHandle, DriversTabProps>(function
             <div className="w-10 h-1 bg-slate-200 rounded-full mx-auto mb-5" />
 
             {/* Title */}
-            <h3 className="text-sm font-black text-slate-800 text-center mb-1">Confirm {inviteRole === 'admin' ? 'Admin' : inviteRole === 'rider' ? 'Rider' : 'Driver'} Invite</h3>
+            <h3 className="text-sm font-black text-slate-800 text-center mb-1">Confirm Staff Invite</h3>
             <p className="text-xs text-slate-400 font-semibold text-center mb-5">
               Please review before sending.
             </p>
@@ -389,7 +392,7 @@ export const DriversTab = forwardRef<DriversTabHandle, DriversTabProps>(function
               {/* Header stripe */}
               <div className={`px-4 py-3 flex items-center gap-2 ${inviteRole === 'admin' ? 'bg-violet-600' : inviteRole === 'rider' ? 'bg-emerald-600' : 'bg-primary'}`}>
                 <Send className="w-3.5 h-3.5 text-white" />
-                <span className="text-white font-semibold text-xs uppercase tracking-widest">{inviteRole === 'admin' ? 'Admin' : inviteRole === 'rider' ? 'Rider' : 'Driver'} Invite</span>
+                <span className="text-white font-semibold text-xs uppercase tracking-widest">{inviteRoleLabel} Invite</span>
               </div>
 
               {/* Details */}
@@ -411,7 +414,7 @@ export const DriversTab = forwardRef<DriversTabHandle, DriversTabProps>(function
                 <div className="flex items-start justify-between gap-2">
                   <p className="text-xs font-normal text-slate-400">Capabilities</p>
                   <div className="flex flex-col items-end gap-1.5">
-                    {inviteRole === 'driver' && (<>
+                    {inviteRoles.includes('driver') && (<>
                       <span className={`flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full ${inviteCanDrive ? 'bg-primary/10 text-primary' : 'bg-slate-100 text-slate-400 line-through'}`}>
                         <Car className="w-3 h-3" /> Gerak Car {inviteCanDrive ? '✓' : '✗'}
                       </span>
@@ -422,7 +425,7 @@ export const DriversTab = forwardRef<DriversTabHandle, DriversTabProps>(function
                         <Truck className="w-3 h-3" /> Gerak Transporter {inviteCanTransport ? '✓' : '✗'}
                       </span>
                     </>)}
-                    {inviteRole === 'rider' && (<>
+                    {inviteRoles.includes('rider') && (<>
                       <span className={`flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full ${inviteCanDaily ? 'bg-emerald-50 text-emerald-700' : 'bg-slate-100 text-slate-400 line-through'}`}>
                         <Bike className="w-3 h-3" /> Gerak Daily {inviteCanDaily ? '✓' : '✗'}
                       </span>
@@ -430,7 +433,7 @@ export const DriversTab = forwardRef<DriversTabHandle, DriversTabProps>(function
                         <GraduationCap className="w-3 h-3" /> Robe Convocation {inviteCanRobe ? '✓' : '✗'}
                       </span>
                     </>)}
-                    {inviteRole === 'admin' && (
+                    {inviteRoles.includes('admin') && (
                       <span className="flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full bg-violet-50 text-violet-700">
                         <Settings className="w-3 h-3" /> Full Access
                       </span>

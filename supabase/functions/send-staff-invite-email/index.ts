@@ -81,13 +81,7 @@ serve(async (req) => {
 
     if (fetchErr || !invite) return json({ success: false, reason: 'Invite not found.' }, 404)
 
-    let inviterName = 'A Gerak admin'
-    if (invite.created_by) {
-      const { data: inviter } = await admin.from('profiles').select('name').eq('id', invite.created_by).maybeSingle<{ name: string | null }>()
-      if (inviter?.name) inviterName = inviter.name
-    }
-
-    await sendInviteEmail(invite, inviterName)
+    await sendInviteEmail(invite)
     return json({ success: true })
 
   } catch (err) {
@@ -106,7 +100,7 @@ const escapeHtml = (s: string) =>
 const ROLE_LABEL: Record<string, string> = { driver: 'Driver', rider: 'Rider', admin: 'Admin' };
 const ROLE_EMOJI: Record<string, string> = { driver: '🚗', rider: '🏍️', admin: '🛠️' };
 
-async function sendInviteEmail(invite: Invite, inviterName: string) {
+async function sendInviteEmail(invite: Invite) {
   const apiKey = Deno.env.get('RESEND_API_KEY')
   const from   = Deno.env.get('RESEND_FROM_EMAIL')
   const appBaseUrl = Deno.env.get('APP_BASE_URL') ?? ''
@@ -120,9 +114,15 @@ async function sendInviteEmail(invite: Invite, inviterName: string) {
   if (invite.can_robe)      tags.push('Jubah Delivery')
   if (invite.role === 'admin') tags.push('Admin Panel')
 
-  const roleLabel = ROLE_LABEL[invite.role] ?? invite.role
-  const roleEmoji = ROLE_EMOJI[invite.role] ?? ''
-  const subject = `You're invited to join Gerak as a ${roleLabel} ${roleEmoji}`.trim()
+  const roles = [
+    ...(invite.role === 'admin' ? ['admin'] : []),
+    ...(invite.can_drive || invite.can_rent || invite.can_transport ? ['driver'] : []),
+    ...(invite.can_daily || invite.can_robe ? ['rider'] : []),
+  ]
+  if (roles.length === 0) roles.push(invite.role)
+  const roleLabel = roles.map(role => ROLE_LABEL[role] ?? role).join(', ')
+  const roleEmoji = roles.map(role => ROLE_EMOJI[role] ?? '').filter(Boolean).join(' ')
+  const subject = `You're invited to join the Gerak team as ${roleLabel} ${roleEmoji}`.trim()
   // Straight to the register form (AppContext's /register deep link), not
   // just the app root — with the invited email prefilled so it always
   // matches exactly what the invite was actually issued to.
@@ -141,7 +141,7 @@ async function sendInviteEmail(invite: Invite, inviterName: string) {
       <span style="display:inline-block;font-size:10.5px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:#dc2626;background:rgba(220,38,38,0.08);padding:4px 10px;border-radius:999px;margin-bottom:14px;">Staff Invite</span>
       <h1 style="font-size: 20px; margin: 6px 0 6px;">You've been invited to Gerak</h1>
       <p style="font-size: 13.5px; color: #64748b; line-height: 1.6; margin: 0 0 22px;">
-        ${escapeHtml(inviterName)} has invited you to join the Gerak team at UMPSA ${escapeHtml(invite.campus)}. Create your account below using this exact email address to activate your access automatically.
+        You have been invited to join the Gerak team at UMPSA ${escapeHtml(invite.campus)}. Create your account below using this exact email address, and Gerak will activate your assigned access automatically.
       </p>
       <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;"><tr>
         <td style="width: 50%; padding: 10px 12px; background: #f8fafc; border: 1px solid #f1f5f9; border-radius: 10px 0 0 10px; border-right: none;">
@@ -162,7 +162,7 @@ async function sendInviteEmail(invite: Invite, inviterName: string) {
       <p style="font-size: 12px; color: #64748b; line-height: 1.65; border-top: 1px dashed #f1f5f9; padding-top: 16px; margin: 0;">
         Sign up at <code style="background:#f8fafc;border:1px solid #f1f5f9;border-radius:5px;padding:1px 6px;font-size:11.5px;color:#1e293b;">gerakmy.com</code> using
         <code style="background:#f8fafc;border:1px solid #f1f5f9;border-radius:5px;padding:1px 6px;font-size:11.5px;color:#1e293b;">${escapeHtml(invite.email)}</code> —
-        your ${escapeHtml(roleLabel)} access ${tags.length ? `for ${escapeHtml(tags.join(', '))}` : ''} will be applied the moment you register with this address. No separate invite code needed.
+        your ${escapeHtml(roleLabel)} access ${tags.length ? `for ${escapeHtml(tags.join(', '))}` : ''} will be applied when you register with this address. No separate invite code is required.
       </p>
     </div>
     <p style="font-size: 11px; color: #cbd5e1; text-align: center; margin: 18px 0 0;">This invite was sent by a Gerak admin. If you weren't expecting this, you can safely ignore it.</p>
