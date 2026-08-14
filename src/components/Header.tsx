@@ -47,6 +47,10 @@ export const Header: React.FC = () => {
   const [showProfilePreview, setShowProfilePreview] = useState(false);
   const [showMyCampusSheet, setShowMyCampusSheet] = useState(false);
   const unreadCount = notifications.filter(n => !n.isRead).length;
+  const hasAdminAccess = user.role === 'admin' || user.role === 'superadmin';
+  const hasDriverAccess = user.role === 'driver' || user.canDrive || user.canRent || user.canTransport;
+  const hasRiderAccess = user.role === 'rider' || user.canDaily || user.canRobe;
+  const accessCount = Number(hasAdminAccess) + Number(hasDriverAccess) + Number(hasRiderAccess);
 
   if (currentPage === 'splash' || currentPage === 'login' || currentPage === 'register' || currentPage === 'forgot-password' || currentPage === 'reset-password' || currentPage === 'profile' || currentPage === 'complete-profile') {
     return null;
@@ -302,7 +306,7 @@ export const Header: React.FC = () => {
           )}
 
           {/* Superadmin — 3-dot dropdown, red when not in admin role */}
-          {user.role === 'superadmin' && (
+          {(user.role === 'superadmin' || accessCount > 1) && !(user.role === 'admin' && hasDriverAccess && !hasRiderAccess) && (
             <div className="relative">
               <button
                 onClick={() => setShowRoleMenu(p => !p)}
@@ -319,7 +323,7 @@ export const Header: React.FC = () => {
                 <>
                   <div className="fixed inset-0 z-40" onPointerDown={(e) => { e.preventDefault(); setShowRoleMenu(false); }} />
                   <div className="absolute right-0 top-full mt-2 z-50 bg-white border border-slate-100 rounded-2xl shadow-xl overflow-hidden min-w-[180px]">
-                    <button
+                    {hasAdminAccess && <button
                       onPointerDown={(e) => { e.preventDefault(); switchToAdminMode(); setShowRoleMenu(false); }}
                       className={`w-full flex items-center gap-3 px-4 py-3 text-left text-xs font-extrabold transition-transform active:scale-95 ${
                         !isNotAdmin ? 'bg-slate-100 text-slate-900' : 'text-slate-600 hover:bg-slate-50'
@@ -328,9 +332,9 @@ export const Header: React.FC = () => {
                       <ShieldCheck className="w-4 h-4 shrink-0" />
                       Admin
                       {!isNotAdmin && <span className="ml-auto text-[8px] bg-slate-200 text-slate-700 px-1.5 py-0.5 rounded-full">Active</span>}
-                    </button>
+                    </button>}
 
-                    <button
+                    {hasDriverAccess && <button
                       onPointerDown={(e) => { e.preventDefault(); switchToDriverMode(); setShowRoleMenu(false); }}
                       className={`w-full flex items-center gap-3 px-4 py-3 text-left text-xs font-extrabold transition-transform active:scale-95 ${
                         activeRole === 'driver' ? 'bg-slate-100 text-slate-900' : 'text-slate-600 hover:bg-slate-50'
@@ -339,9 +343,9 @@ export const Header: React.FC = () => {
                       <Car className="w-4 h-4 shrink-0" />
                       Driver
                       {activeRole === 'driver' && <span className="ml-auto text-[8px] bg-slate-200 text-slate-700 px-1.5 py-0.5 rounded-full">Active</span>}
-                    </button>
+                    </button>}
 
-                    <button
+                    {hasRiderAccess && <button
                       onPointerDown={(e) => { e.preventDefault(); switchToRiderMode(); setShowRoleMenu(false); }}
                       className={`w-full flex items-center gap-3 px-4 py-3 text-left text-xs font-extrabold transition active:scale-95 ${
                         activeRole === 'rider' ? 'bg-amber-50 text-amber-600' : 'text-slate-600 hover:bg-slate-50'
@@ -350,17 +354,17 @@ export const Header: React.FC = () => {
                       <Bike className="w-4 h-4 shrink-0" />
                       Rider
                       {activeRole === 'rider' && <span className="ml-auto text-[8px] bg-amber-100 text-amber-600 px-1.5 py-0.5 rounded-full">Active</span>}
-                    </button>
+                    </button>}
 
-                    <div className="border-t border-slate-100" />
+                    {hasAdminAccess && <div className="border-t border-slate-100" />}
 
-                    <button
+                    {hasAdminAccess && <button
                       onClick={() => { enterPreviewMode(); setShowRoleMenu(false); }}
                       className="w-full flex items-center gap-3 px-4 py-3 text-left text-xs font-extrabold text-violet-600 hover:bg-violet-50 transition active:scale-95"
                     >
                       <Eye className="w-4 h-4 shrink-0" />
                       Customer Preview
-                    </button>
+                    </button>}
                   </div>
                 </>
               )}
