@@ -24,7 +24,7 @@ export const SplashScreen: React.FC = () => {
         }}
         className="flex flex-col items-center gap-0"
       >
-        <img src="/gerak-brand.png" alt="Gerak" className="w-44 h-auto" />
+        <img src="/gerak-brand.png" alt="Gerak" className="w-32 h-auto" />
 
         <p className="text-slate-400 font-normal text-xs m-0">
           Smart Campus Platform

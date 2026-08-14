@@ -131,7 +131,7 @@ export const Dashboard: React.FC = () => {
           </>
         ) : (
           <>
-            <img src="/gerak-brand.png" alt="Gerak" className="w-20 h-auto" />
+            <img src="/gerak-brand.png" alt="Gerak" className="w-16 h-auto" />
             <p className="text-xs text-slate-400 font-normal mt-0.5">Smart Campus Platform</p>
           </>
         )}

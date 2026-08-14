@@ -70,7 +70,7 @@ export const Login: React.FC = () => {
 
       {/* Branding */}
       <div className="flex flex-col items-center text-center mt-6 mb-8 px-6">
-        <img src="/gerak-brand.png" alt="Gerak" className="w-36 h-auto" />
+        <img src="/gerak-brand.png" alt="Gerak" className="w-28 h-auto" />
         <p className="text-slate-400 text-xs mt-0 font-normal">Smart Campus Platform</p>
       </div>
 
