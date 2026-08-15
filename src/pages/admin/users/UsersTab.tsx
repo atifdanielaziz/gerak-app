@@ -2,7 +2,7 @@ import { forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useSt
 import { supabase } from '../../../lib/supabase';
 import {
   Users, MoreVertical, Car, KeyRound, Bike, GraduationCap, MapPin, ShieldCheck, ShieldOff, Trash2, Truck, FileCheck2,
-  BarChart3, CalendarCheck2, CalendarX2, UserCheck, LogIn, LogOut, Wifi, BriefcaseBusiness, PauseCircle, PlayCircle,
+  BarChart3, CalendarCheck2, CalendarX2, UserCheck, LogIn, LogOut, Wifi, BriefcaseBusiness, PauseCircle, PlayCircle, Minus, Plus,
 } from 'lucide-react';
 import { WaIcon, toWa } from '../../../lib/whatsapp';
 import { useLoadOnActive } from '../../../hooks/useLoadOnActive';
@@ -49,7 +49,7 @@ const UserCard: React.FC<{
   const canChangeCampus = isDriverOrRider || u.role === 'admin';
 
   return (
-    <div className={`grid grid-cols-[minmax(12rem,1.5fr)_6rem_7rem_8rem_minmax(14rem,1.5fr)_7rem_5.5rem_7rem_2.5rem] items-center min-w-[76rem] border-b border-slate-100 last:border-b-0 ${
+    <div onClick={() => onViewProfile?.(u)} className={`grid grid-cols-[minmax(12rem,1.5fr)_6rem_7rem_8rem_minmax(14rem,1.5fr)_7rem_5.5rem_7rem_2.5rem] items-center min-w-[76rem] cursor-pointer border-b border-slate-100 last:border-b-0 ${
       u.status === 'inactive' ? 'bg-red-50/50' : 'bg-white'
     }`}>
 
@@ -57,7 +57,6 @@ const UserCard: React.FC<{
       <div className="contents">
         <button
           type="button"
-          onClick={() => onViewProfile?.(u)}
           className="min-w-0 text-left px-3 py-3 active:bg-slate-50 transition"
         >
           <div className="flex items-center gap-2 flex-wrap">
@@ -79,7 +78,7 @@ const UserCard: React.FC<{
         <div className="px-3 py-3 text-xs font-normal text-slate-600">{isDriverOrRider ? (u.has_active_job ? 'Taking Job' : 'Available') : '—'}</div>
 
         {/* ⋮ vertical dots */}
-        <div className="relative shrink-0 px-1">
+        <div className="relative shrink-0 px-1" onClick={e => e.stopPropagation()}>
           <button
             onPointerDown={e => {
               e.preventDefault();
@@ -96,7 +95,7 @@ const UserCard: React.FC<{
           {showMenu && (
             <>
               <div className="fixed inset-0 z-40" onPointerDown={(e) => { e.preventDefault(); setShowMenu(false); }} />
-              <div className="fixed z-50 min-w-[190px] max-h-[12.5rem] overflow-y-auto overscroll-contain bg-white border border-slate-100 rounded-2xl shadow-xl"
+              <div onClick={e => e.stopPropagation()} className="fixed z-50 min-w-[190px] max-h-[12.5rem] overflow-y-auto overscroll-contain bg-white border border-slate-100 rounded-2xl shadow-xl"
                 style={{ top: menuPosition.top, right: menuPosition.right }}>
 
                 {/* Driver capabilities */}
@@ -190,6 +189,21 @@ const UserCard: React.FC<{
 
                 <div className="border-t border-slate-100" />
 
+                {canManage && (
+                  <>
+                    <button type="button" onClick={() => { onToggle(u); setShowMenu(false); }} disabled={togglingStatus === u.id}
+                      className="w-full flex items-center gap-3 px-4 py-3 text-left text-xs font-semibold text-slate-600 active:bg-slate-50 disabled:opacity-40">
+                      {u.status === 'active' ? <PauseCircle className="w-4 h-4" /> : <PlayCircle className="w-4 h-4" />}
+                      {u.status === 'active' ? 'Stop' : 'Reactivate'}
+                    </button>
+                    <button type="button" onClick={() => { onTerminate(u); setShowMenu(false); }} disabled={terminating === u.id}
+                      className="w-full flex items-center gap-3 px-4 py-3 text-left text-xs font-semibold text-red-600 active:bg-slate-50 disabled:opacity-40">
+                      <Trash2 className="w-4 h-4" /> Terminate
+                    </button>
+                    <div className="border-t border-slate-100" />
+                  </>
+                )}
+
                 {/* WhatsApp smart message */}
                 {u.phone && (
                   <a
@@ -217,20 +231,6 @@ const UserCard: React.FC<{
                   </a>
                 )}
 
-                {canManage && (
-                  <>
-                    <div className="border-t border-slate-100" />
-                    <button type="button" onClick={() => { onToggle(u); setShowMenu(false); }} disabled={togglingStatus === u.id}
-                      className="w-full flex items-center gap-3 px-4 py-3 text-left text-xs font-semibold text-slate-600 active:bg-slate-50 disabled:opacity-40">
-                      {u.status === 'active' ? <PauseCircle className="w-4 h-4" /> : <PlayCircle className="w-4 h-4" />}
-                      {u.status === 'active' ? 'Stop' : 'Reactivate'}
-                    </button>
-                    <button type="button" onClick={() => { onTerminate(u); setShowMenu(false); }} disabled={terminating === u.id}
-                      className="w-full flex items-center gap-3 px-4 py-3 text-left text-xs font-semibold text-red-600 active:bg-slate-50 disabled:opacity-40">
-                      <Trash2 className="w-4 h-4" /> Terminate
-                    </button>
-                  </>
-                )}
               </div>
             </>
           )}
@@ -274,6 +274,7 @@ export const UsersTab = forwardRef<UsersTabHandle, UsersTabProps>(function Users
   const [staffSearch, setStaffSearch]   = useState('');
   const [staffFilter, setStaffFilter]   = useState<'all' | 'drivers' | 'riders' | 'admins'>('all');
   const [overviewFilter, setOverviewFilter] = useState<'all' | 'payment_valid' | 'expired' | 'active_drivers' | 'in_campus' | 'out_campus' | 'online' | 'taking_job'>('all');
+  const [overviewCollapsed, setOverviewCollapsed] = useState(false);
   const [staffUniversity, setStaffUniversity] = useState(() => universityKeyFromCampus(adminCampus) ?? 'umpsa');
   // Sub-tab within Staff: the normal manage-everything list, or a lighter
   // read-focused view for spotting who's physically around campus vs away
@@ -547,27 +548,36 @@ export const UsersTab = forwardRef<UsersTabHandle, UsersTabProps>(function Users
         </div>
 
         <section className="bg-white border border-slate-100 rounded-3xl p-5">
-          <h3 className="text-sm font-semibold text-slate-700 flex items-center gap-2 mb-4">
-            <BarChart3 className="w-4 h-4 text-slate-400" /> Staff Overview ({UNIVERSITY_MAP[staffUniversity]?.shortLabel})
-          </h3>
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+          <div className={`flex items-center justify-between gap-3 ${overviewCollapsed ? '' : 'mb-4'}`}>
+            <h3 className="text-sm font-semibold text-slate-700 flex items-center gap-2">
+              <BarChart3 className="w-4 h-4 text-slate-400" /> Staff Overview ({UNIVERSITY_MAP[staffUniversity]?.shortLabel})
+            </h3>
+            <button type="button" onPointerDown={e => { e.preventDefault(); setOverviewCollapsed(value => !value); }}
+              className="w-9 h-9 rounded-2xl bg-slate-50 text-slate-500 flex items-center justify-center active:scale-[0.99] transition-transform transform-gpu"
+              aria-label={overviewCollapsed ? 'Expand staff overview' : 'Minimize staff overview'}>
+              {overviewCollapsed ? <Plus className="w-4 h-4" /> : <Minus className="w-4 h-4" />}
+            </button>
+          </div>
+          {!overviewCollapsed && <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
             {([
-              ['Payment Valid', overview.paymentValid, CalendarCheck2],
-              ['Expired', overview.expired, CalendarX2],
-              ['Active Drivers', overview.activeDrivers, UserCheck],
-              ['In Campus', overview.inCampus, LogIn],
-              ['Out Campus', overview.outCampus, LogOut],
-              ['Online', overview.online, Wifi],
-              ['Taking Job', overview.takingJob, BriefcaseBusiness],
-              ['Total Staff', universityUsers.length, Users],
-            ] as const).map(([label, value, Icon]) => (
+              ['Payment Valid', overview.paymentValid, CalendarCheck2, 'bg-emerald-50', 'text-emerald-600'],
+              ['Expired', overview.expired, CalendarX2, 'bg-red-50', 'text-red-500'],
+              ['Active Drivers', overview.activeDrivers, UserCheck, 'bg-blue-50', 'text-blue-600'],
+              ['In Campus', overview.inCampus, LogIn, 'bg-violet-50', 'text-violet-600'],
+              ['Out Campus', overview.outCampus, LogOut, 'bg-amber-50', 'text-amber-600'],
+              ['Online', overview.online, Wifi, 'bg-cyan-50', 'text-cyan-600'],
+              ['Taking Job', overview.takingJob, BriefcaseBusiness, 'bg-indigo-50', 'text-indigo-600'],
+              ['Total Staff', universityUsers.length, Users, 'bg-slate-100', 'text-slate-600'],
+            ] as const).map(([label, value, Icon, iconBg, iconColor]) => (
               <div key={label} className="bg-white border border-slate-100 rounded-2xl p-4">
-                <Icon className="w-4 h-4 text-slate-400 mb-3" />
+                <div className={`w-8 h-8 rounded-xl flex items-center justify-center mb-3 ${iconBg}`}>
+                  <Icon className={`w-4 h-4 ${iconColor}`} />
+                </div>
                 <p className="text-xs font-normal text-slate-400">{label}</p>
                 <p className="text-xl font-semibold text-slate-800 mt-1">{value}</p>
               </div>
             ))}
-          </div>
+          </div>}
         </section>
 
         {/* Admins & Drivers list */}
@@ -593,9 +603,9 @@ export const UsersTab = forwardRef<UsersTabHandle, UsersTabProps>(function Users
                   setStaffView('list');
                   setStaffFilter(f.id);
                 }}
-                  className="relative shrink-0 rounded-xl transition-transform transform-gpu active:scale-95">
-                  <span className="block px-4 py-1.5 text-xs font-semibold text-slate-400 whitespace-nowrap">{f.label}</span>
-                  <span className={`absolute inset-0 flex items-center justify-center px-4 py-1.5 rounded-xl bg-white text-slate-800 text-xs font-semibold whitespace-nowrap transition-opacity duration-150 ${
+                  className="relative flex-1 min-w-0 rounded-xl transition-transform transform-gpu active:scale-95">
+                  <span className="block px-2 py-1.5 text-center text-xs font-semibold text-slate-400 whitespace-nowrap">{f.label}</span>
+                  <span className={`absolute inset-0 flex items-center justify-center px-2 py-1.5 rounded-xl bg-white text-slate-800 text-xs font-semibold whitespace-nowrap transition-opacity duration-150 ${
                     isActive ? 'opacity-100' : 'opacity-0 pointer-events-none'
                   }`}>
                     {f.label}
@@ -727,8 +737,8 @@ export const UsersTab = forwardRef<UsersTabHandle, UsersTabProps>(function Users
             </p>
           )}
 
-          <div className="overflow-auto max-h-[420px] border border-slate-100 rounded-2xl">
-            <div className="grid grid-cols-[minmax(12rem,1.5fr)_6rem_7rem_8rem_minmax(14rem,1.5fr)_7rem_5.5rem_7rem_2.5rem] min-w-[76rem] border-b border-slate-100 bg-slate-50">
+          <div className="overflow-auto max-h-[420px]">
+            <div className="grid grid-cols-[minmax(12rem,1.5fr)_6rem_7rem_8rem_minmax(14rem,1.5fr)_7rem_5.5rem_7rem_2.5rem] min-w-[76rem] border-b border-slate-100 bg-white">
               {['Name', 'Role', 'Gerak ID', 'Campus', 'Email', 'Presence', 'Online', 'Work Status', ''].map(label => (
                 <div key={label || 'menu'} className="px-3 py-2.5 text-xs font-semibold text-slate-400">{label}</div>
               ))}
