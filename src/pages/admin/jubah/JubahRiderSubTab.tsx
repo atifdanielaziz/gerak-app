@@ -8,6 +8,7 @@ import { NativeSelect } from '../../../components/NativeSelect';
 import { useLoadOnActive } from '../../../hooks/useLoadOnActive';
 import { UNIVERSITY_MAP, jubahLocationLabel, universityKeyFromCampus } from '../../../lib/universities';
 import { useApp } from '../../../context/AppContext';
+import { useAxisLockedScroll } from '../../../hooks/useAxisLockedScroll';
 
 type JubahRider = {
   id: string; name: string; gerak_id: string; campus: string; status: string; can_robe: boolean;
@@ -333,6 +334,7 @@ export const JubahRiderSubTab = forwardRef<JubahRiderSubTabHandle, JubahRiderSub
   { active, isSuperAdmin, adminCampus, jubahUniversityView, showToast, onModalOpenChange },
   ref
 ) {
+  const representativeDirectoryScrollRef = useAxisLockedScroll<HTMLDivElement>();
   const [jubahRiders, setJubahRiders] = useState<JubahRider[]>([]);
   const [jubahRidersLoading, setJubahRidersLoading] = useState(false);
   const [jubahAssignments, setJubahAssignments] = useState<JubahAssignment[]>([]);
@@ -463,9 +465,9 @@ export const JubahRiderSubTab = forwardRef<JubahRiderSubTabHandle, JubahRiderSub
                 — see JubahCustomerSubTab's identical table for why a single
                 dual-axis scroll element causes erratic diagonal scrolling
                 and an unreliable sticky header on mobile. */}
-            <div className="relative w-full max-w-full overflow-x-auto overscroll-none no-scrollbar"
+            <div ref={representativeDirectoryScrollRef} className="relative w-full max-w-full overflow-x-auto overscroll-none no-scrollbar"
               style={{ contain: 'layout paint' }}>
-              <div className="max-h-[320px] overflow-y-auto overscroll-none no-scrollbar"
+              <div data-axis-y className="max-h-[320px] overflow-y-auto overscroll-none no-scrollbar"
                 style={{ WebkitOverflowScrolling: 'touch' }}>
               <table className="min-w-full text-left border-collapse">
                 {/* sticky+bg-white on each <th> individually, not on <thead> —

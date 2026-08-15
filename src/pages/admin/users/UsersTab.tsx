@@ -10,6 +10,7 @@ import { type ProfileUser } from './ProfileSheet';
 import { NativeSelect } from '../../../components/NativeSelect';
 import { UNIVERSITIES, UNIVERSITY_MAP, jubahLocationLabel, universityKeyFromCampus } from '../../../lib/universities';
 import { DocumentVerificationSheet } from '../verify/DocumentVerificationSheet';
+import { useAxisLockedScroll } from '../../../hooks/useAxisLockedScroll';
 
 type PendingAction =
   | { type: 'toggle-status'; u: ProfileUser }
@@ -262,6 +263,7 @@ export const UsersTab = forwardRef<UsersTabHandle, UsersTabProps>(function Users
   { active, isSuperAdmin, adminCampus, showToast, onViewProfile, onModalOpenChange },
   ref
 ) {
+  const staffDirectoryScrollRef = useAxisLockedScroll<HTMLDivElement>();
   const [myUserId, setMyUserId] = useState<string | null>(null);
   useEffect(() => { supabase.auth.getUser().then(({ data }) => setMyUserId(data.user?.id ?? null)); }, []);
 
@@ -738,6 +740,7 @@ export const UsersTab = forwardRef<UsersTabHandle, UsersTabProps>(function Users
           )}
 
           <div
+            ref={staffDirectoryScrollRef}
             className="relative w-full max-w-full max-h-[420px] overflow-auto overscroll-none"
             style={{ WebkitOverflowScrolling: 'touch', contain: 'layout paint' }}
           >
