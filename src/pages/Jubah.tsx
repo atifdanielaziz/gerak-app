@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
-import { CheckCircle2, X, Upload, FileText, ShieldAlert, Download, User, Pencil, MapPin, Copy, Check, Info, GraduationCap, FileUser, ClipboardList } from 'lucide-react';
+import { CheckCircle2, X, Upload, FileText, ShieldAlert, Download, User, Pencil, MapPin, Copy, Check, Info, GraduationCap, FileUser, ClipboardList, Landmark, ReceiptText } from 'lucide-react';
 import { submitJubahToSheets } from '../lib/sheetsService';
 import { JubahLanding } from '../components/JubahLanding';
 import { supabase } from '../lib/supabase';
@@ -1224,7 +1224,9 @@ export const Jubah: React.FC = () => {
 
           {/* ── COMBINED DOCUMENT ── */}
           <div className="bg-white border border-slate-100 rounded-3xl p-5 flex flex-col gap-4">
-            <h3 className="text-sm font-semibold text-slate-700">Combined Document</h3>
+            <h3 className="text-sm font-semibold text-slate-700 flex items-center gap-1.5">
+              <FileText className="w-4 h-4 text-slate-400" /> Combined Document
+            </h3>
             <p className="text-xs text-slate-500 leading-relaxed">
               Once all documents are uploaded, generate a single combined PDF to download and review.
             </p>
@@ -1256,7 +1258,9 @@ export const Jubah: React.FC = () => {
           {/* ── HOW TO PAY ── */}
           <div className="bg-blue-50 border border-blue-100 rounded-3xl p-5 flex flex-col gap-3">
             <div className="flex items-center justify-between gap-2">
-              <h3 className="text-sm font-semibold text-blue-800">How to Pay</h3>
+              <h3 className="text-sm font-semibold text-blue-800 flex items-center gap-1.5">
+                <Landmark className="w-4 h-4 text-slate-400" /> How to Pay
+              </h3>
               <JubahQrButton />
             </div>
             {bankDetails ? (
@@ -1284,7 +1288,8 @@ export const Jubah: React.FC = () => {
 
           {/* ── PROOF OF PAYMENT ── */}
           <div className="bg-white border border-slate-100 rounded-3xl p-5 flex flex-col gap-4">
-            <h3 className="text-sm font-semibold text-slate-700">
+            <h3 className="text-sm font-semibold text-slate-700 flex items-center gap-1.5">
+              <ReceiptText className="w-4 h-4 text-slate-400" />
               {paymentMode === 'deposit' ? `Proof of Deposit (RM${DEPOSIT_AMOUNT})` : 'Proof of Payment'}
             </h3>
             <p className="text-xs text-slate-500 leading-relaxed">
