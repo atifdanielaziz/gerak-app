@@ -181,11 +181,12 @@ function initializeSheets() {
 // missing status columns, converts stored paths to Yes/No, and flattens addresses.
 function migrateExistingSheets() {
   var ss = SpreadsheetApp.getActiveSpreadsheet();
-  var sheets = ss.getSheets();
+  var sheetNames = ['UMPSA', 'UIA', 'UITM', 'Others'];
   var documentHeaders = ['Combined PDF', 'Payment Proof', 'OSCAR', 'SKPG', 'Konvo Slip', 'IC', 'Balance Proof'];
 
-  for (var s = 0; s < sheets.length; s++) {
-    var sheet = sheets[s];
+  for (var s = 0; s < sheetNames.length; s++) {
+    var sheet = ss.getSheetByName(sheetNames[s]);
+    if (!sheet) continue;
     ensureSheetLayout(sheet, sheet.getName());
     if (sheet.getLastRow() < 2) continue;
 
