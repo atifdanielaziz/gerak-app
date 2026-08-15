@@ -8,6 +8,7 @@ import { useApp } from '../../../context/AppContext';
 import { NativeSelect } from '../../../components/NativeSelect';
 import { MultiSelect } from '../../../components/MultiSelect';
 import { UNIVERSITIES, UNIVERSITY_MAP, jubahLocationLabel, universityKeyFromCampus } from '../../../lib/universities';
+import { useAxisLockedScroll } from '../../../hooks/useAxisLockedScroll';
 
 interface DriverInvite {
   id: string;
@@ -18,6 +19,8 @@ interface DriverInvite {
   can_drive: boolean;
   can_rent: boolean;
   can_transport: boolean;
+  can_daily: boolean;
+  can_robe: boolean;
   used: boolean;
   used_at: string | null;
   created_at: string;
@@ -48,6 +51,7 @@ export const DriversTab = forwardRef<DriversTabHandle, DriversTabProps>(function
   ref
 ) {
   const { showConfirmModal } = useApp();
+  const inviteDirectoryScrollRef = useAxisLockedScroll<HTMLDivElement>();
   const [invites, setInvites]               = useState<DriverInvite[]>([]);
   const [invitesLoading, setInvitesLoading]  = useState(false);
   const [inviteSearch, setInviteSearch]      = useState('');
@@ -69,7 +73,7 @@ export const DriversTab = forwardRef<DriversTabHandle, DriversTabProps>(function
     setInvitesLoading(true);
     let query = supabase
       .from('driver_invites')
-      .select('id,email,campus,university,role,can_drive,can_rent,can_transport,used,used_at,created_at')
+      .select('id,email,campus,university,role,can_drive,can_rent,can_transport,can_daily,can_robe,used,used_at,created_at')
       .order('created_at', { ascending: false });
     if (!isSuperAdmin) query = query.eq('campus', adminCampus);
     const { data } = await query;
@@ -295,50 +299,55 @@ export const DriversTab = forwardRef<DriversTabHandle, DriversTabProps>(function
               {inviteSearch.trim() ? 'No matching invites found' : 'No invites yet'}
             </p>
           ) : (
-            <div className="overflow-y-auto no-scrollbar max-h-[360px] flex flex-col gap-2">
-              {invites.filter(inv => !inviteSearch.trim() || inv.email.toLowerCase().includes(inviteSearch.toLowerCase())).map(inv => (
-                <div key={inv.id} className={`flex items-center justify-between gap-3 px-3 py-2.5 rounded-2xl border ${
-                  inv.used ? 'bg-emerald-50 border-emerald-100' : 'bg-white border-slate-100'
-                }`}>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-xs font-semibold text-slate-700 truncate">{inv.email}</p>
-                    <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
-                      <span className="text-xs font-normal text-slate-400 uppercase">{inv.campus}</span>
-                      {inv.used
-                        ? <span className="text-xs font-semibold text-emerald-600 bg-emerald-100 px-1.5 py-0.5 rounded-full">Registered</span>
-                        : <span className="text-xs font-semibold text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded-full">Pending</span>}
-                      {inv.can_drive && (
-                        <span className="text-xs font-semibold text-primary bg-primary/10 px-1.5 py-0.5 rounded-full flex items-center gap-0.5">
-                          <Car className="w-2.5 h-2.5" /> Car
-                        </span>
-                      )}
-                      {inv.can_rent && (
-                        <span className="text-xs font-semibold text-amber-700 bg-amber-50 px-1.5 py-0.5 rounded-full flex items-center gap-0.5">
-                          <KeyRound className="w-2.5 h-2.5" /> Rental
-                        </span>
-                      )}
-                      {inv.can_transport && (
-                        <span className="text-xs font-semibold text-blue-700 bg-blue-50 px-1.5 py-0.5 rounded-full flex items-center gap-0.5">
-                          <Truck className="w-2.5 h-2.5" /> Transporter
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                  {!inv.used && (
-                    <button
-                      onClick={() => showConfirmModal({
-                        title: 'Revoke Invite?',
-                        message: `This cancels the pending invite for ${inv.email}. This can't be undone.`,
-                        confirmLabel: 'REVOKE',
-                        onConfirm: () => handleRevokeInvite(inv.id),
-                      })}
-                      className="w-7 h-7 flex items-center justify-center rounded-xl bg-red-50 border border-red-100 text-red-400 hover:text-red-600 transition active:scale-90 shrink-0"
-                    >
-                      <X className="w-3.5 h-3.5" />
-                    </button>
-                  )}
-                </div>
-              ))}
+            <div ref={inviteDirectoryScrollRef}
+              className="relative w-full max-w-full max-h-[360px] overflow-auto overscroll-none no-scrollbar"
+              style={{ WebkitOverflowScrolling: 'touch' }}>
+              <table className="min-w-[60rem] w-full border-collapse text-left">
+                <thead>
+                  <tr className="border-b border-slate-100 text-xs font-normal text-slate-400">
+                    {['Email', 'Role', 'Campus', 'Status', 'Capabilities', 'Invited', ''].map(label => (
+                      <th key={label || 'action'} className="sticky top-0 bg-white py-2 pr-4 whitespace-nowrap font-semibold">{label}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {invites.filter(inv => !inviteSearch.trim() || inv.email.toLowerCase().includes(inviteSearch.toLowerCase())).map(inv => {
+                    const capabilities = [
+                      inv.can_drive && 'Car', inv.can_rent && 'Rental', inv.can_transport && 'Transporter',
+                      inv.can_daily && 'Daily', inv.can_robe && 'Robe',
+                    ].filter(Boolean).join(', ') || (inv.role === 'admin' ? 'Full access' : '—');
+                    return (
+                      <tr key={inv.id} className="border-b border-slate-100 text-xs">
+                        <td className="py-2.5 pr-4 font-semibold text-slate-800 whitespace-nowrap">{inv.email}</td>
+                        <td className="py-2.5 pr-4 text-slate-600 capitalize whitespace-nowrap">{inv.role}</td>
+                        <td className="py-2.5 pr-4 text-slate-600 whitespace-nowrap">{jubahLocationLabel(universityKeyFromCampus(inv.campus) ?? '', inv.campus)}</td>
+                        <td className={`py-2.5 pr-4 font-semibold whitespace-nowrap ${inv.used ? 'text-emerald-600' : 'text-amber-600'}`}>
+                          {inv.used ? 'Registered' : 'Pending'}
+                        </td>
+                        <td className="py-2.5 pr-4 text-slate-600 whitespace-nowrap">{capabilities}</td>
+                        <td className="py-2.5 pr-4 text-slate-400 whitespace-nowrap">{new Date(inv.created_at).toLocaleDateString('en-MY')}</td>
+                        <td className="py-2.5 text-right">
+                          {!inv.used ? (
+                            <button type="button" aria-label={`Revoke invite for ${inv.email}`}
+                              onPointerDown={e => {
+                                e.preventDefault();
+                                showConfirmModal({
+                                  title: 'Revoke Invite?',
+                                  message: `This cancels the pending invite for ${inv.email}. This can't be undone.`,
+                                  confirmLabel: 'REVOKE',
+                                  onConfirm: () => handleRevokeInvite(inv.id),
+                                });
+                              }}
+                              className="w-7 h-7 inline-flex items-center justify-center rounded-xl text-red-500 active:bg-slate-50 active:scale-[0.99] transition-transform transform-gpu">
+                              <X className="w-3.5 h-3.5" />
+                            </button>
+                          ) : <span className="text-slate-300">—</span>}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
             </div>
           )}
         </div>
