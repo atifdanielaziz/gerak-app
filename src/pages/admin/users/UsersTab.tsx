@@ -42,7 +42,8 @@ const UserCard: React.FC<{
 }> = ({ u, canManage, togglingStatus, terminating, togglingCap, togglingCampus, onToggle, onTerminate, onCapToggle, onRiderCapToggle, onCampusChange, onGateToggle, onRoleToggle, onViewProfile, onVerifyDocuments, isOnline }) => {
   const [showMenu, setShowMenu] = useState(false);
   const [menuPosition, setMenuPosition] = useState({ top: 0, right: 0 });
-  const isDriverOrRider = u.role === 'driver' || u.role === 'rider';
+  const isDriverLike = u.role === 'driver' || u.role === 'admin';
+  const isDriverOrRider = isDriverLike || u.role === 'rider';
   // University/campus reassignment is now open to admin cards too (not
   // just driver/rider) — separate from isDriverOrRider since that gate is
   // still used below for capability/gate/role-toggle menu items, which
@@ -96,11 +97,11 @@ const UserCard: React.FC<{
           {showMenu && (
             <>
               <div className="fixed inset-0 z-40" onPointerDown={(e) => { e.preventDefault(); setShowMenu(false); }} />
-              <div onClick={e => e.stopPropagation()} className="fixed z-50 min-w-[190px] max-h-[12.5rem] overflow-y-auto overscroll-contain bg-white border border-slate-100 rounded-2xl shadow-xl"
+              <div onClick={e => e.stopPropagation()} className="fixed z-50 min-w-[190px] max-h-[15rem] overflow-y-scroll overscroll-contain bg-white border border-slate-100 rounded-2xl shadow-xl [scrollbar-gutter:stable]"
                 style={{ top: menuPosition.top, right: menuPosition.right }}>
 
                 {/* Driver capabilities */}
-                {u.role === 'driver' && onCapToggle && (
+                {isDriverLike && onCapToggle && (
                   <>
                     <button onClick={() => { onCapToggle(u, !u.can_drive, u.can_rent ?? false, u.can_transport ?? false); setShowMenu(false); }}
                       className={`w-full flex items-center gap-3 px-4 py-3 text-left text-xs font-semibold transition active:scale-95 ${u.can_drive ? 'bg-slate-100 text-slate-900' : 'text-slate-500 hover:bg-slate-50'}`}>
@@ -173,7 +174,7 @@ const UserCard: React.FC<{
                 )}
 
                 {/* Role toggle — superadmin only */}
-                {onRoleToggle && isDriverOrRider && (
+                {onRoleToggle && (u.role === 'driver' || u.role === 'rider') && (
                   <button onClick={() => { onRoleToggle(u, 'admin'); setShowMenu(false); }}
                     className="w-full flex items-center gap-3 px-4 py-3 text-left text-xs font-semibold text-indigo-600 hover:bg-indigo-50 transition active:scale-95">
                     <ShieldCheck className="w-4 h-4 shrink-0" />
@@ -211,7 +212,7 @@ const UserCard: React.FC<{
                     href={(() => {
                       const missing: string[] = [];
                       // Neither drivers nor riders need an IC — only a licence.
-                      const isDriverOrRider = u.role === 'driver' || u.role === 'rider';
+                      const isDriverOrRider = u.role === 'driver' || u.role === 'rider' || u.role === 'admin';
                       if (!isDriverOrRider && !u.ic_number) missing.push('nombor IC');
                       if (!isDriverOrRider && !u.ic_url)    missing.push('gambar IC');
                       if (isDriverOrRider && !u.license_url) missing.push('gambar lesen memandu');
