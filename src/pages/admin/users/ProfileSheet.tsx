@@ -32,6 +32,8 @@ export interface ProfileUser {
   fee_receipt_expiry?: string | null;
   fee_receipt_reject_reason?: string;
   campus_status?: 'in_campus' | 'out_campus';
+  last_seen_at?: string | null;
+  has_active_job?: boolean;
 }
 
 // Same logic as ReceiptsTab.tsx's receiptStatus — kept in sync manually
