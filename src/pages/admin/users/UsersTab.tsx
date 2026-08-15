@@ -2,6 +2,7 @@ import { forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useSt
 import { supabase } from '../../../lib/supabase';
 import {
   Users, MoreVertical, Car, KeyRound, Bike, GraduationCap, MapPin, ShieldCheck, ShieldOff, Trash2, Truck, FileCheck2,
+  BarChart3, CalendarCheck2, CalendarX2, UserCheck, LogIn, LogOut, Wifi, BriefcaseBusiness, PauseCircle, PlayCircle,
 } from 'lucide-react';
 import { WaIcon, toWa } from '../../../lib/whatsapp';
 import { useLoadOnActive } from '../../../hooks/useLoadOnActive';
@@ -36,7 +37,8 @@ const UserCard: React.FC<{
   onRoleToggle?: (u: ProfileUser, newRole: 'driver' | 'admin') => void;
   onViewProfile?: (u: ProfileUser) => void;
   onVerifyDocuments?: (u: ProfileUser) => void;
-}> = ({ u, canManage, togglingStatus, terminating, togglingCap, togglingCampus, onToggle, onTerminate, onCapToggle, onRiderCapToggle, onCampusChange, onGateToggle, onRoleToggle, onViewProfile, onVerifyDocuments }) => {
+  isOnline: boolean;
+}> = ({ u, canManage, togglingStatus, terminating, togglingCap, togglingCampus, onToggle, onTerminate, onCapToggle, onRiderCapToggle, onCampusChange, onGateToggle, onRoleToggle, onViewProfile, onVerifyDocuments, isOnline }) => {
   const [showMenu, setShowMenu] = useState(false);
   const isDriverOrRider = u.role === 'driver' || u.role === 'rider';
   // University/campus reassignment is now open to admin cards too (not
@@ -46,19 +48,19 @@ const UserCard: React.FC<{
   const canChangeCampus = isDriverOrRider || u.role === 'admin';
 
   return (
-    <div className={`rounded-2xl border p-5 flex flex-col gap-2.5 ${
-      u.status === 'inactive' ? 'bg-red-50/50 border-red-100' : 'bg-white border-slate-100'
+    <div className={`grid grid-cols-[minmax(12rem,2fr)_7rem_7rem_5.5rem_7rem_2.5rem] items-center min-w-[46rem] border-b border-slate-100 last:border-b-0 ${
+      u.status === 'inactive' ? 'bg-red-50/50' : 'bg-white'
     }`}>
 
       {/* Header row: info + ⋮ menu */}
-      <div className="flex items-start gap-2">
+      <div className="contents">
         <button
           type="button"
           onClick={() => onViewProfile?.(u)}
-          className="flex-1 min-w-0 text-left active:opacity-70 transition"
+          className="min-w-0 text-left px-3 py-3 active:bg-slate-50 transition"
         >
           <div className="flex items-center gap-2 flex-wrap">
-            <p className="text-xs font-black text-slate-800 truncate">{u.name}</p>
+            <p className="text-xs font-semibold text-slate-800 truncate">{u.name}</p>
             <span className={`text-xs font-semibold uppercase shrink-0 ${
               u.role === 'driver'   ? 'text-emerald-600' :
               u.role === 'rider'   ? 'text-amber-600' :
@@ -75,8 +77,13 @@ const UserCard: React.FC<{
           <p className="text-xs text-slate-400 truncate">{u.email}</p>
         </button>
 
+        <div className="px-3 py-3 text-xs font-normal text-slate-600 capitalize">{u.role}</div>
+        <div className="px-3 py-3 text-xs font-normal text-slate-600">{(u.campus_status ?? 'in_campus') === 'in_campus' ? 'In Campus' : 'Out Campus'}</div>
+        <div className={`px-3 py-3 text-xs font-semibold ${isOnline ? 'text-emerald-600' : 'text-slate-400'}`}>{isOnline ? 'Online' : 'Offline'}</div>
+        <div className="px-3 py-3 text-xs font-normal text-slate-600">{isDriverOrRider ? (u.has_active_job ? 'Taking Job' : 'Available') : '—'}</div>
+
         {/* ⋮ vertical dots */}
-        <div className="relative shrink-0">
+        <div className="relative shrink-0 px-1">
           <button
             onClick={() => setShowMenu(p => !p)}
             className="w-7 h-7 flex items-center justify-center rounded-lg text-slate-400 hover:bg-slate-100 active:scale-90 transition"
@@ -206,39 +213,27 @@ const UserCard: React.FC<{
                     <WaIcon className="w-4 h-4 shrink-0" />
                   </a>
                 )}
+
+                {canManage && (
+                  <>
+                    <div className="border-t border-slate-100" />
+                    <button type="button" onClick={() => { onToggle(u); setShowMenu(false); }} disabled={togglingStatus === u.id}
+                      className="w-full flex items-center gap-3 px-4 py-3 text-left text-xs font-semibold text-slate-600 active:bg-slate-50 disabled:opacity-40">
+                      {u.status === 'active' ? <PauseCircle className="w-4 h-4" /> : <PlayCircle className="w-4 h-4" />}
+                      {u.status === 'active' ? 'Stop' : 'Reactivate'}
+                    </button>
+                    <button type="button" onClick={() => { onTerminate(u); setShowMenu(false); }} disabled={terminating === u.id}
+                      className="w-full flex items-center gap-3 px-4 py-3 text-left text-xs font-semibold text-red-600 active:bg-slate-50 disabled:opacity-40">
+                      <Trash2 className="w-4 h-4" /> Terminate
+                    </button>
+                  </>
+                )}
               </div>
             </>
           )}
         </div>
       </div>
 
-      {/* Stop + Terminate */}
-      {canManage && (
-        <div className="flex gap-1.5">
-          <button
-            onClick={() => onToggle(u)}
-            disabled={togglingStatus === u.id}
-            className={`flex-1 min-w-0 font-semibold text-xs py-1.5 px-1 rounded-xl transition active:scale-95 disabled:opacity-50 flex items-center justify-center ${
-              u.status === 'active'
-                ? 'bg-amber-50 border border-amber-200 text-amber-700'
-                : 'bg-emerald-50 border border-emerald-200 text-emerald-700'
-            }`}
-          >
-            {togglingStatus === u.id
-              ? <span className="w-3 h-3 rounded-full border border-current border-t-transparent animate-spin" />
-              : u.status === 'active' ? 'Stop' : 'Reactivate'}
-          </button>
-          <button
-            onClick={() => onTerminate(u)}
-            disabled={terminating === u.id}
-            className="flex-1 min-w-0 bg-red-50 border border-red-200 text-red-600 font-semibold text-xs py-1.5 px-1 rounded-xl transition active:scale-95 disabled:opacity-50 flex items-center justify-center gap-0.5"
-          >
-            {terminating === u.id
-              ? <span className="w-3 h-3 rounded-full border border-red-400 border-t-transparent animate-spin" />
-              : <><Trash2 className="w-3 h-3 shrink-0" /> Terminate</>}
-          </button>
-        </div>
-      )}
     </div>
   );
 };
@@ -275,6 +270,7 @@ export const UsersTab = forwardRef<UsersTabHandle, UsersTabProps>(function Users
   const [usersLoading, setUsersLoading] = useState(false);
   const [staffSearch, setStaffSearch]   = useState('');
   const [staffFilter, setStaffFilter]   = useState<'all' | 'drivers' | 'riders' | 'admins'>('all');
+  const [staffUniversity, setStaffUniversity] = useState(() => universityKeyFromCampus(adminCampus) ?? 'umpsa');
   // Sub-tab within Staff: the normal manage-everything list, or a lighter
   // read-focused view for spotting who's physically around campus vs away
   // for a stretch (semester break, holiday) — separate from staffFilter,
@@ -317,7 +313,7 @@ export const UsersTab = forwardRef<UsersTabHandle, UsersTabProps>(function Users
     const driverRiderIds = [...driverIds, ...riderIds];
 
     // Three independent lookups — fire together instead of awaiting one at a time.
-    const [{ data: driverCaps }, { data: riderCaps }, { data: exempts }] = await Promise.all([
+    const [{ data: driverCaps }, { data: riderCaps }, { data: exempts }, { data: presence }, { data: rideJobs }, { data: jubahJobs }] = await Promise.all([
       driverIds.length > 0
         ? supabase.from('profiles').select('id, can_drive, can_rent, can_transport').in('id', driverIds)
         : Promise.resolve({ data: null }),
@@ -326,6 +322,15 @@ export const UsersTab = forwardRef<UsersTabHandle, UsersTabProps>(function Users
         : Promise.resolve({ data: null }),
       driverRiderIds.length > 0
         ? supabase.from('profiles').select('id, receipt_gate_exempt').in('id', driverRiderIds)
+        : Promise.resolve({ data: null }),
+      users.length > 0
+        ? supabase.from('profiles').select('id, last_seen_at').in('id', users.map(u => u.id))
+        : Promise.resolve({ data: null }),
+      driverIds.length > 0
+        ? supabase.from('ride_orders').select('driver_id').in('driver_id', driverIds).in('status', ['accepted', 'in_progress'])
+        : Promise.resolve({ data: null }),
+      riderIds.length > 0
+        ? supabase.from('jubah_bookings').select('rider_id,status,payment_mode').in('rider_id', riderIds).not('status', 'in', '(ordered,cancelled,delivered,at_hub)')
         : Promise.resolve({ data: null }),
     ]);
 
@@ -342,6 +347,12 @@ export const UsersTab = forwardRef<UsersTabHandle, UsersTabProps>(function Users
       const u = usersById.get(c.id);
       if (u) { u.receipt_gate_exempt = c.receipt_gate_exempt; }
     });
+    presence?.forEach(p => { const u = usersById.get(p.id); if (u) u.last_seen_at = p.last_seen_at; });
+    const busyIds = new Set<string>([
+      ...(rideJobs ?? []).map(j => j.driver_id).filter(Boolean),
+      ...(jubahJobs ?? []).map(j => j.rider_id).filter(Boolean),
+    ] as string[]);
+    users.forEach(u => { u.has_active_job = busyIds.has(u.id); });
     setProfileUsers(users);
     setUsersLoading(false);
   }, [isSuperAdmin, adminCampus]);
@@ -455,8 +466,12 @@ export const UsersTab = forwardRef<UsersTabHandle, UsersTabProps>(function Users
 
   // Was recomputed raw in the render body on every render, so every
   // keystroke into the search box re-filtered the full list synchronously.
+  const universityUsers = useMemo(() => profileUsers.filter(u =>
+    (universityKeyFromCampus(u.campus) ?? 'umpsa') === staffUniversity
+  ), [profileUsers, staffUniversity]);
+
   const filteredUsers = useMemo(() => {
-    return profileUsers.filter(u => {
+    return universityUsers.filter(u => {
       const roleMatch =
         staffFilter === 'all'     ? true :
         staffFilter === 'drivers' ? u.role === 'driver' :
@@ -467,7 +482,23 @@ export const UsersTab = forwardRef<UsersTabHandle, UsersTabProps>(function Users
       const q = staffSearch.toLowerCase();
       return u.name?.toLowerCase().includes(q) || u.gerak_id?.toLowerCase().includes(q);
     });
-  }, [profileUsers, staffFilter, staffSearch]);
+  }, [universityUsers, staffFilter, staffSearch]);
+
+  const overview = useMemo(() => {
+    const now = Date.now();
+    const paymentStaff = universityUsers.filter(u => u.role === 'driver' || u.role === 'rider');
+    const paymentValid = paymentStaff.filter(u => u.receipt_gate_exempt || (u.fee_receipt_verified && u.fee_receipt_expiry && new Date(u.fee_receipt_expiry).getTime() >= now)).length;
+    const expired = paymentStaff.filter(u => !u.receipt_gate_exempt && !!u.fee_receipt_expiry && new Date(u.fee_receipt_expiry).getTime() < now).length;
+    return {
+      paymentValid,
+      expired,
+      activeDrivers: universityUsers.filter(u => u.role === 'driver' && u.status === 'active' && u.docs_status === 'approved' && !!u.can_drive && (u.receipt_gate_exempt || (u.fee_receipt_verified && !!u.fee_receipt_expiry && new Date(u.fee_receipt_expiry).getTime() >= now))).length,
+      inCampus: universityUsers.filter(u => (u.campus_status ?? 'in_campus') === 'in_campus').length,
+      outCampus: universityUsers.filter(u => u.campus_status === 'out_campus').length,
+      online: universityUsers.filter(u => !!u.last_seen_at && now - new Date(u.last_seen_at).getTime() <= 300_000).length,
+      takingJob: universityUsers.filter(u => u.has_active_job).length,
+    };
+  }, [universityUsers]);
 
   const campusFilteredUsers = useMemo(() => {
     return profileUsers.filter(u => {
@@ -481,6 +512,48 @@ export const UsersTab = forwardRef<UsersTabHandle, UsersTabProps>(function Users
   return (
     <>
       <div className="flex flex-col gap-4 w-full">
+
+        <div className="flex items-center gap-2">
+          {isSuperAdmin ? (
+            <div className="w-44">
+              <NativeSelect
+                value={staffUniversity}
+                onChange={setStaffUniversity}
+                options={UNIVERSITIES.map(uni => ({ value: uni.key, label: uni.shortLabel }))}
+                placeholder="University"
+                label="University"
+              />
+            </div>
+          ) : (
+            <div className="px-4 py-3 bg-white border border-slate-100 rounded-2xl text-xs font-semibold text-slate-700">
+              {UNIVERSITY_MAP[staffUniversity]?.shortLabel ?? 'University'}
+            </div>
+          )}
+        </div>
+
+        <section className="bg-white border border-slate-100 rounded-3xl p-5">
+          <h3 className="text-sm font-semibold text-slate-700 flex items-center gap-2 mb-4">
+            <BarChart3 className="w-4 h-4 text-slate-400" /> Staff Overview ({UNIVERSITY_MAP[staffUniversity]?.shortLabel})
+          </h3>
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+            {([
+              ['Payment Valid', overview.paymentValid, CalendarCheck2],
+              ['Expired', overview.expired, CalendarX2],
+              ['Active Drivers', overview.activeDrivers, UserCheck],
+              ['In Campus', overview.inCampus, LogIn],
+              ['Out Campus', overview.outCampus, LogOut],
+              ['Online', overview.online, Wifi],
+              ['Taking Job', overview.takingJob, BriefcaseBusiness],
+              ['Total Staff', universityUsers.length, Users],
+            ] as const).map(([label, value, Icon]) => (
+              <div key={label} className="bg-white border border-slate-100 rounded-2xl p-4">
+                <Icon className="w-4 h-4 text-slate-400 mb-3" />
+                <p className="text-xs font-normal text-slate-400">{label}</p>
+                <p className="text-xl font-semibold text-slate-800 mt-1">{value}</p>
+              </div>
+            ))}
+          </div>
+        </section>
 
         {/* Admins & Drivers list */}
         <div className="bg-white border border-slate-100 rounded-3xl p-5 flex flex-col gap-4 w-full">
@@ -497,14 +570,13 @@ export const UsersTab = forwardRef<UsersTabHandle, UsersTabProps>(function Users
               { id: 'drivers', label: 'Drivers' },
               { id: 'riders',  label: 'Riders' },
               { id: 'admins',  label: 'Admins' },
-              { id: 'campus',  label: 'In/Out' },
             ] as const).map(f => {
-              const isActive = f.id === 'campus' ? staffView === 'campus' : (staffView === 'list' && staffFilter === f.id);
+              const isActive = staffView === 'list' && staffFilter === f.id;
               return (
                 <button key={f.id} onPointerDown={e => {
                   e.preventDefault();
-                  if (f.id === 'campus') setStaffView('campus');
-                  else { setStaffView('list'); setStaffFilter(f.id); }
+                  setStaffView('list');
+                  setStaffFilter(f.id);
                 }}
                   className="relative shrink-0 rounded-xl transition-transform transform-gpu active:scale-95">
                   <span className="block px-4 py-1.5 text-xs font-semibold text-slate-400 whitespace-nowrap">{f.label}</span>
@@ -616,7 +688,12 @@ export const UsersTab = forwardRef<UsersTabHandle, UsersTabProps>(function Users
             </p>
           )}
 
-          <div className="overflow-y-auto no-scrollbar max-h-[420px] flex flex-col gap-2">
+          <div className="overflow-auto max-h-[420px] border border-slate-100 rounded-2xl">
+            <div className="grid grid-cols-[minmax(12rem,2fr)_7rem_7rem_5.5rem_7rem_2.5rem] min-w-[46rem] border-b border-slate-100 bg-slate-50">
+              {['Staff', 'Role', 'Presence', 'Online', 'Work Status', ''].map(label => (
+                <div key={label || 'menu'} className="px-3 py-2.5 text-xs font-semibold text-slate-400">{label}</div>
+              ))}
+            </div>
             {usersLoading ? (
               <div className="flex justify-center py-8">
                 <span className="w-5 h-5 rounded-full border-2 border-slate-200 border-t-primary animate-spin" />
@@ -626,9 +703,10 @@ export const UsersTab = forwardRef<UsersTabHandle, UsersTabProps>(function Users
               return filtered.length === 0
                 ? <p className="text-xs text-slate-400 text-center py-4">No {staffFilter === 'all' ? 'staff' : staffFilter} found</p>
                 : (
-                  <div className="flex flex-col gap-2">
+                  <div>
                     {filtered.map(u => (
                       <UserCard key={u.id} u={u} canManage={canManage(u.role, u.id)}
+                        isOnline={!!u.last_seen_at && Date.now() - new Date(u.last_seen_at).getTime() <= 300_000}
                         togglingStatus={togglingStatus} terminating={terminating}
                         togglingCap={togglingCap} togglingCampus={togglingCampus}
                         onToggle={u => setPendingAction({ type: 'toggle-status', u })}

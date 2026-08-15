@@ -441,6 +441,17 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const userLoggedInRef = useRef(false);
   useEffect(() => { userLoggedInRef.current = user.isLoggedIn; }, [user.isLoggedIn]);
 
+  // Staff presence is deliberately coarse: one write at most every 45 seconds,
+  // and the admin directory considers a staff member online for five minutes.
+  useEffect(() => {
+    if (!user.isLoggedIn || !['admin', 'superadmin', 'driver', 'rider'].includes(user.role)) return;
+    const touch = () => { if (document.visibilityState === 'visible') void supabase.rpc('touch_staff_presence'); };
+    touch();
+    const timer = window.setInterval(touch, 60_000);
+    document.addEventListener('visibilitychange', touch);
+    return () => { window.clearInterval(timer); document.removeEventListener('visibilitychange', touch); };
+  }, [user.isLoggedIn, user.role]);
+
   // Track activity while logged in so isSessionExpired() has a fresh timestamp.
   useEffect(() => {
     if (!user.isLoggedIn) return;
