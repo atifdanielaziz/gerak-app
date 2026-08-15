@@ -40,6 +40,7 @@ const UserCard: React.FC<{
   isOnline: boolean;
 }> = ({ u, canManage, togglingStatus, terminating, togglingCap, togglingCampus, onToggle, onTerminate, onCapToggle, onRiderCapToggle, onCampusChange, onGateToggle, onRoleToggle, onViewProfile, onVerifyDocuments, isOnline }) => {
   const [showMenu, setShowMenu] = useState(false);
+  const [menuPosition, setMenuPosition] = useState({ top: 0, right: 0 });
   const isDriverOrRider = u.role === 'driver' || u.role === 'rider';
   // University/campus reassignment is now open to admin cards too (not
   // just driver/rider) — separate from isDriverOrRider since that gate is
@@ -48,7 +49,7 @@ const UserCard: React.FC<{
   const canChangeCampus = isDriverOrRider || u.role === 'admin';
 
   return (
-    <div className={`grid grid-cols-[minmax(12rem,2fr)_7rem_7rem_5.5rem_7rem_2.5rem] items-center min-w-[46rem] border-b border-slate-100 last:border-b-0 ${
+    <div className={`grid grid-cols-[minmax(12rem,1.5fr)_6rem_7rem_8rem_minmax(14rem,1.5fr)_7rem_5.5rem_7rem_2.5rem] items-center min-w-[76rem] border-b border-slate-100 last:border-b-0 ${
       u.status === 'inactive' ? 'bg-red-50/50' : 'bg-white'
     }`}>
 
@@ -61,23 +62,18 @@ const UserCard: React.FC<{
         >
           <div className="flex items-center gap-2 flex-wrap">
             <p className="text-xs font-semibold text-slate-800 truncate">{u.name}</p>
-            <span className={`text-xs font-semibold uppercase shrink-0 ${
-              u.role === 'driver'   ? 'text-emerald-600' :
-              u.role === 'rider'   ? 'text-amber-600' :
-              u.role === 'admin' || u.role === 'superadmin' ? 'text-blue-600' :
-              'text-slate-400'
-            }`}>{u.role}</span>
             {u.status === 'inactive' && (
               <span className="text-xs font-semibold px-1.5 py-0.5 rounded-full bg-red-100 text-red-600 border border-red-200 uppercase shrink-0">
                 Suspended
               </span>
             )}
           </div>
-          <p className="text-xs text-slate-400 font-semibold mt-0.5">{u.gerak_id} · {jubahLocationLabel(universityKeyFromCampus(u.campus) ?? '', u.campus)}</p>
-          <p className="text-xs text-slate-400 truncate">{u.email}</p>
         </button>
 
         <div className="px-3 py-3 text-xs font-normal text-slate-600 capitalize">{u.role}</div>
+        <div className="px-3 py-3 text-xs font-normal text-slate-600">{u.gerak_id}</div>
+        <div className="px-3 py-3 text-xs font-normal text-slate-600">{jubahLocationLabel(universityKeyFromCampus(u.campus) ?? '', u.campus)}</div>
+        <div className="px-3 py-3 text-xs font-normal text-slate-600 truncate" title={u.email}>{u.email}</div>
         <div className="px-3 py-3 text-xs font-normal text-slate-600">{(u.campus_status ?? 'in_campus') === 'in_campus' ? 'In Campus' : 'Out Campus'}</div>
         <div className={`px-3 py-3 text-xs font-semibold ${isOnline ? 'text-emerald-600' : 'text-slate-400'}`}>{isOnline ? 'Online' : 'Offline'}</div>
         <div className="px-3 py-3 text-xs font-normal text-slate-600">{isDriverOrRider ? (u.has_active_job ? 'Taking Job' : 'Available') : '—'}</div>
@@ -85,8 +81,14 @@ const UserCard: React.FC<{
         {/* ⋮ vertical dots */}
         <div className="relative shrink-0 px-1">
           <button
-            onClick={() => setShowMenu(p => !p)}
+            onPointerDown={e => {
+              e.preventDefault();
+              const rect = e.currentTarget.getBoundingClientRect();
+              setMenuPosition({ top: Math.min(rect.bottom + 4, window.innerHeight - 210), right: window.innerWidth - rect.right });
+              setShowMenu(p => !p);
+            }}
             className="w-7 h-7 flex items-center justify-center rounded-lg text-slate-400 hover:bg-slate-100 active:scale-90 transition"
+            aria-label={`Actions for ${u.name}`}
           >
             <MoreVertical className="w-4 h-4" />
           </button>
@@ -94,7 +96,8 @@ const UserCard: React.FC<{
           {showMenu && (
             <>
               <div className="fixed inset-0 z-40" onPointerDown={(e) => { e.preventDefault(); setShowMenu(false); }} />
-              <div className="absolute right-0 top-full mt-1 z-50 min-w-[170px] max-h-[12.5rem] overflow-y-auto overscroll-contain bg-white border border-slate-100 rounded-2xl shadow-xl">
+              <div className="fixed z-50 min-w-[190px] max-h-[12.5rem] overflow-y-auto overscroll-contain bg-white border border-slate-100 rounded-2xl shadow-xl"
+                style={{ top: menuPosition.top, right: menuPosition.right }}>
 
                 {/* Driver capabilities */}
                 {u.role === 'driver' && onCapToggle && (
@@ -270,6 +273,7 @@ export const UsersTab = forwardRef<UsersTabHandle, UsersTabProps>(function Users
   const [usersLoading, setUsersLoading] = useState(false);
   const [staffSearch, setStaffSearch]   = useState('');
   const [staffFilter, setStaffFilter]   = useState<'all' | 'drivers' | 'riders' | 'admins'>('all');
+  const [overviewFilter, setOverviewFilter] = useState<'all' | 'payment_valid' | 'expired' | 'active_drivers' | 'in_campus' | 'out_campus' | 'online' | 'taking_job'>('all');
   const [staffUniversity, setStaffUniversity] = useState(() => universityKeyFromCampus(adminCampus) ?? 'umpsa');
   // Sub-tab within Staff: the normal manage-everything list, or a lighter
   // read-focused view for spotting who's physically around campus vs away
@@ -471,6 +475,7 @@ export const UsersTab = forwardRef<UsersTabHandle, UsersTabProps>(function Users
   ), [profileUsers, staffUniversity]);
 
   const filteredUsers = useMemo(() => {
+    const now = Date.now();
     return universityUsers.filter(u => {
       const roleMatch =
         staffFilter === 'all'     ? true :
@@ -478,11 +483,21 @@ export const UsersTab = forwardRef<UsersTabHandle, UsersTabProps>(function Users
         staffFilter === 'riders'  ? u.role === 'rider' :
         ['admin', 'superadmin'].includes(u.role);
       if (!roleMatch) return false;
+      const overviewMatch =
+        overviewFilter === 'all' ? true :
+        overviewFilter === 'payment_valid' ? !!(u.receipt_gate_exempt || (u.fee_receipt_verified && u.fee_receipt_expiry && new Date(u.fee_receipt_expiry).getTime() >= now)) :
+        overviewFilter === 'expired' ? !!(!u.receipt_gate_exempt && u.fee_receipt_expiry && new Date(u.fee_receipt_expiry).getTime() < now) :
+        overviewFilter === 'active_drivers' ? u.role === 'driver' && u.status === 'active' && u.docs_status === 'approved' && !!u.can_drive && !!(u.receipt_gate_exempt || (u.fee_receipt_verified && u.fee_receipt_expiry && new Date(u.fee_receipt_expiry).getTime() >= now)) :
+        overviewFilter === 'in_campus' ? (u.campus_status ?? 'in_campus') === 'in_campus' :
+        overviewFilter === 'out_campus' ? u.campus_status === 'out_campus' :
+        overviewFilter === 'online' ? !!u.last_seen_at && now - new Date(u.last_seen_at).getTime() <= 300_000 :
+        !!u.has_active_job;
+      if (!overviewMatch) return false;
       if (!staffSearch.trim()) return true;
       const q = staffSearch.toLowerCase();
       return u.name?.toLowerCase().includes(q) || u.gerak_id?.toLowerCase().includes(q);
     });
-  }, [universityUsers, staffFilter, staffSearch]);
+  }, [universityUsers, staffFilter, overviewFilter, staffSearch]);
 
   const overview = useMemo(() => {
     const now = Date.now();
@@ -682,6 +697,30 @@ export const UsersTab = forwardRef<UsersTabHandle, UsersTabProps>(function Users
             </button>
           </div>
 
+          <NativeSelect
+            value={overviewFilter}
+            onChange={value => setOverviewFilter(value as typeof overviewFilter)}
+            options={[
+              { value: 'all', label: 'All Overview Statuses' },
+              { value: 'payment_valid', label: 'Payment Valid' },
+              { value: 'expired', label: 'Expired' },
+              { value: 'active_drivers', label: 'Active Drivers' },
+              { value: 'in_campus', label: 'In Campus' },
+              { value: 'out_campus', label: 'Out Campus' },
+              { value: 'online', label: 'Online' },
+              { value: 'taking_job', label: 'Taking Job' },
+            ]}
+            placeholder="All Overview Statuses"
+            label="Overview Status"
+          />
+          </>)}
+        </div>
+
+          <div className="bg-white border border-slate-100 rounded-3xl p-5 flex flex-col gap-4 w-full">
+          <h3 className="text-sm font-semibold text-slate-700 flex items-center gap-1.5">
+            <Users className="w-4 h-4 text-slate-400" /> Staff Directory ({UNIVERSITY_MAP[staffUniversity]?.shortLabel})
+          </h3>
+
           {profileUsersTotalCount !== null && profileUsersTotalCount > profileUsers.length && (
             <p className="text-xs text-amber-600 font-semibold bg-amber-50 border border-amber-100 rounded-xl px-3 py-2">
               Showing {profileUsers.length} of {profileUsersTotalCount} staff — use search to find someone else.
@@ -689,8 +728,8 @@ export const UsersTab = forwardRef<UsersTabHandle, UsersTabProps>(function Users
           )}
 
           <div className="overflow-auto max-h-[420px] border border-slate-100 rounded-2xl">
-            <div className="grid grid-cols-[minmax(12rem,2fr)_7rem_7rem_5.5rem_7rem_2.5rem] min-w-[46rem] border-b border-slate-100 bg-slate-50">
-              {['Staff', 'Role', 'Presence', 'Online', 'Work Status', ''].map(label => (
+            <div className="grid grid-cols-[minmax(12rem,1.5fr)_6rem_7rem_8rem_minmax(14rem,1.5fr)_7rem_5.5rem_7rem_2.5rem] min-w-[76rem] border-b border-slate-100 bg-slate-50">
+              {['Name', 'Role', 'Gerak ID', 'Campus', 'Email', 'Presence', 'Online', 'Work Status', ''].map(label => (
                 <div key={label || 'menu'} className="px-3 py-2.5 text-xs font-semibold text-slate-400">{label}</div>
               ))}
             </div>
@@ -727,7 +766,6 @@ export const UsersTab = forwardRef<UsersTabHandle, UsersTabProps>(function Users
                 );
             })()}
           </div>
-          </>)}
         </div>
       </div>
 
