@@ -16,7 +16,7 @@ export const ReceiptHeader: React.FC<{ meta: ReceiptMeta }> = ({ meta }) => {
   return (
     <div className="flex flex-col gap-1.5">
       <div className="flex items-center gap-2 mb-1">
-        <img src="/gerak-brand.png" alt="Gerak" className="w-20 h-auto" />
+        <img src="/gerak-brand.png" alt="Gerak" className="w-10 h-auto" />
         <span className="text-[10px] font-normal text-slate-400">Smart Campus Platform</span>
       </div>
       {meta.bookingMethod && MethodIcon && (

@@ -28,7 +28,7 @@ const row = (label: string, value: string, cls = '') =>
 // itself has parsed; an external image load isn't guaranteed to finish
 // first; and would leave a blank square in the printed receipt. Inline SVG
 // has no separate request to race against.
-const LOGO_SVG = `<img src="/gerak-brand.png" alt="Gerak" style="width:86px;height:auto;display:block"/>`;
+const LOGO_SVG = `<img src="/gerak-brand.png" alt="Gerak" style="width:43px;height:auto;display:block"/>`;
 
 function buildReceiptHtml(doc: ReceiptDoc, extraRows: ReceiptRow[] = []): string {
   const allRows = [...doc.rows, ...extraRows];
