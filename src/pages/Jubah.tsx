@@ -1482,7 +1482,7 @@ export const Jubah: React.FC = () => {
                   paid:       { label: 'Payment Confirmed', desc: 'Payment received — your order is in the queue.' },
                   processing: { label: 'Processing',        desc: isPostageDelivery ? 'Robe being prepared for delivery.' : 'Robe being prepared for collection.' },
                   collected:  { label: isPostageDelivery ? 'Collected' : 'Ready for Pickup', desc: isPostageDelivery ? 'Robe collected from university.' : 'Available at collection counter.' },
-                  at_hub:     { label: 'Out for Delivery',  desc: 'Arrived at postage hub.' },
+                  at_hub:     { label: 'Delivered',         desc: 'Safe in your hands!' },
                   delivered:  { label: 'Collected',         desc: 'Safe in your hands!' },
                 };
                 const { steps, curStep } = getJubahProgress(liveStatus ?? jubahBooking.status, jubahBooking.paymentMode);

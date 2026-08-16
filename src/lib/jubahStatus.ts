@@ -17,7 +17,9 @@ export const JUBAH_STEP_LABEL: Record<string, string> = {
   paid:       'Paid',
   processing: 'Processing',
   collected:  'Collected',
-  at_hub:     'At Hub',
+  // `at_hub` is retained as the legacy postage terminal value in the
+  // database, but stage 4 is presented consistently as Delivered.
+  at_hub:     'Delivered',
   delivered:  'Delivered',
   cancelled:  'Cancelled',
 };
@@ -35,7 +37,7 @@ export const JUBAH_STATUS_STYLE: Record<string, string> = {
 export const JUBAH_NEXT_LABEL: Record<string, string> = {
   processing: 'Start Processing',
   collected:  'Mark Collected',
-  at_hub:     'Mark Delivered to Hub',
+  at_hub:     'Mark Delivered',
   delivered:  'Mark Delivered',
 };
 
@@ -90,7 +92,7 @@ export const jubahWaMsg = (
     paid:       `Assalamualaikum ${name} 🎓\n\nPembayaran anda telah berjaya diterima oleh Gerak Jubah! ✅\n\nKami akan maklumkan perkembangan seterusnya tidak lama lagi.\n\nRujukan: ${ref}\n\nTerima kasih 🙏`,
     processing: `Assalamualaikum ${name} 🎓\n\nJubah anda sedang dalam proses pembersihan dan pengemasan. 🔄\n\nKami akan maklumkan apabila ia siap untuk diambil.\n\nRujukan: ${ref}\n\nTerima kasih 🙏`,
     collected:  `Assalamualaikum ${name} 🎓\n\nJubah anda telah berjaya diambil! ✅\n\nSila hubungi kami sekiranya ada sebarang pertanyaan.\n\nRujukan: ${ref}\n\nTerima kasih 🙏`,
-    at_hub:     `Assalamualaikum ${name} 🎓\n\nJubah anda telah sampai di hab pos. 📦\n\nIa akan dihantar ke alamat anda tidak lama lagi.\n\nRujukan: ${ref}\n\nTerima kasih 🙏`,
+    at_hub:     `Assalamualaikum ${name} 🎓\n\nJubah anda telah berjaya dihantar! 🎉\n\nTerima kasih kerana menggunakan Gerak Jubah. Semoga majlis konvokesyen anda berjalan lancar! 🎓\n\nRujukan: ${ref}`,
     on_the_way: `Assalamualaikum ${name} 🎓\n\nJubah anda sedang dalam perjalanan ke alamat anda! 🚚\n\nSila pastikan anda berada di rumah untuk menerima penghantaran.\n\nRujukan: ${ref}\n\nTerima kasih 🙏`,
     delivered:  `Assalamualaikum ${name} 🎓\n\nJubah anda telah berjaya dihantar! 🎉\n\nTerima kasih kerana menggunakan Gerak Jubah. Semoga majlis konvokesyen anda berjalan lancar! 🎓\n\nRujukan: ${ref}`,
   };
