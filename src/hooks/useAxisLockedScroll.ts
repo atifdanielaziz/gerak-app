@@ -1,8 +1,11 @@
 import { useEffect, useRef } from 'react';
 
-// Locks a touch gesture to its first dominant axis, like a spreadsheet.
-// The root is the horizontal scroller; an optional descendant marked
-// data-axis-y is the vertical scroller. When absent, the root handles both.
+// Table Standard scroll engine. The card itself never moves: the root is
+// the horizontal scroller and the optional data-axis-y child is vertical.
+// We manually apply each touch/wheel gesture to one dominant axis. Merely
+// resetting the cross-axis after native scrolling is not enough on iOS:
+// WebKit can keep an unwanted diagonal momentum animation alive after the
+// finger lifts, producing the "wide drift" this hook exists to prevent.
 export const useAxisLockedScroll = <T extends HTMLElement>() => {
   const ref = useRef<T>(null);
 
@@ -15,14 +18,10 @@ export const useAxisLockedScroll = <T extends HTMLElement>() => {
     let startLeft = 0;
     let startTop = 0;
     let axis: 'x' | 'y' | null = null;
-    let releaseTimer: number | undefined;
+    const previousTouchAction = horizontal.style.touchAction;
+    horizontal.style.touchAction = 'none';
 
-    const clampCrossAxis = () => {
-      if (axis === 'y' && horizontal.scrollLeft !== startLeft) horizontal.scrollLeft = startLeft;
-      if (axis === 'x' && vertical.scrollTop !== startTop) vertical.scrollTop = startTop;
-    };
     const onStart = (event: TouchEvent) => {
-      window.clearTimeout(releaseTimer);
       const touch = event.touches[0];
       if (!touch) return;
       startX = touch.clientX;
@@ -34,30 +33,43 @@ export const useAxisLockedScroll = <T extends HTMLElement>() => {
     const onMove = (event: TouchEvent) => {
       const touch = event.touches[0];
       if (!touch) return;
-      const dx = Math.abs(touch.clientX - startX);
-      const dy = Math.abs(touch.clientY - startY);
+      const moveX = touch.clientX - startX;
+      const moveY = touch.clientY - startY;
+      const dx = Math.abs(moveX);
+      const dy = Math.abs(moveY);
       if (!axis && Math.max(dx, dy) >= 6) axis = dx > dy ? 'x' : 'y';
-      clampCrossAxis();
+      if (!axis) return;
+
+      // Cancels WebKit's native two-axis pan and its post-release momentum.
+      event.preventDefault();
+      if (axis === 'x') {
+        horizontal.scrollLeft = startLeft - moveX;
+        vertical.scrollTop = startTop;
+      } else {
+        vertical.scrollTop = startTop - moveY;
+        horizontal.scrollLeft = startLeft;
+      }
     };
-    const onEnd = () => {
-      clampCrossAxis();
-      releaseTimer = window.setTimeout(() => { axis = null; }, 450);
+    const onEnd = () => { axis = null; };
+    const onWheel = (event: WheelEvent) => {
+      if (!event.deltaX && !event.deltaY) return;
+      event.preventDefault();
+      if (Math.abs(event.deltaX) > Math.abs(event.deltaY)) horizontal.scrollLeft += event.deltaX;
+      else vertical.scrollTop += event.deltaY;
     };
 
     horizontal.addEventListener('touchstart', onStart, { passive: true });
-    horizontal.addEventListener('touchmove', onMove, { passive: true });
+    horizontal.addEventListener('touchmove', onMove, { passive: false });
     horizontal.addEventListener('touchend', onEnd, { passive: true });
     horizontal.addEventListener('touchcancel', onEnd, { passive: true });
-    horizontal.addEventListener('scroll', clampCrossAxis, { passive: true });
-    if (vertical !== horizontal) vertical.addEventListener('scroll', clampCrossAxis, { passive: true });
+    horizontal.addEventListener('wheel', onWheel, { passive: false });
     return () => {
-      window.clearTimeout(releaseTimer);
+      horizontal.style.touchAction = previousTouchAction;
       horizontal.removeEventListener('touchstart', onStart);
       horizontal.removeEventListener('touchmove', onMove);
       horizontal.removeEventListener('touchend', onEnd);
       horizontal.removeEventListener('touchcancel', onEnd);
-      horizontal.removeEventListener('scroll', clampCrossAxis);
-      if (vertical !== horizontal) vertical.removeEventListener('scroll', clampCrossAxis);
+      horizontal.removeEventListener('wheel', onWheel);
     };
   }, []);
 
