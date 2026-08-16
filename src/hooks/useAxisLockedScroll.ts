@@ -25,10 +25,18 @@ export const useAxisLockedScroll = <T extends HTMLElement>() => {
     const previousTouchAction = horizontal.style.touchAction;
     const previousHorizontalOverflowY = horizontal.style.overflowY;
     const previousVerticalOverflowX = vertical.style.overflowX;
+    const previousVerticalWidth = vertical.style.width;
+    const previousVerticalMinWidth = vertical.style.minWidth;
     horizontal.style.touchAction = 'none';
     if (vertical !== horizontal) {
       horizontal.style.overflowY = 'hidden';
       vertical.style.overflowX = 'hidden';
+      // The vertical wrapper used to collapse to the card width and clip its
+      // wide table. That left the outer horizontal scroller with no overflow
+      // to move, even when the table itself had a large min-width. Size this
+      // wrapper from its table content while retaining a full-width minimum.
+      vertical.style.width = 'max-content';
+      vertical.style.minWidth = '100%';
     }
 
     const onStart = (event: TouchEvent) => {
@@ -80,6 +88,8 @@ export const useAxisLockedScroll = <T extends HTMLElement>() => {
       if (vertical !== horizontal) {
         horizontal.style.overflowY = previousHorizontalOverflowY;
         vertical.style.overflowX = previousVerticalOverflowX;
+        vertical.style.width = previousVerticalWidth;
+        vertical.style.minWidth = previousVerticalMinWidth;
       }
       horizontal.removeEventListener('touchstart', onStart);
       horizontal.removeEventListener('touchmove', onMove);

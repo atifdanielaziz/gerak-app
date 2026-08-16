@@ -27,6 +27,9 @@ export interface ReceiptMeta {
 
 export interface ReceiptDoc extends ReceiptMeta {
   rows: ReceiptRow[];
+  // When present, the booking details may still be viewed, but the UI and
+  // PDF layer must not offer or generate an official receipt.
+  generationBlockedReason?: string;
 }
 
 // ── Transport (Gerak Car / ride_orders) ──────────────────────────────────────
@@ -76,8 +79,16 @@ const TRANSPORT_STATUS_LABEL: Record<string, string> = {
   cancelled:   'Cancelled',
 };
 
+export const hasConfirmedTransportFare = (fare: string | number | null | undefined) => {
+  if (fare === null || fare === undefined || String(fare).trim().toUpperCase() === 'TBC') return false;
+  const amount = Number(fare);
+  return Number.isFinite(amount) && amount > 0;
+};
+
 const fareLabel = (o: TransportReceiptSource) =>
-  o.fare === 'TBC' ? 'TBC' : `RM${(Number(o.fare) + (o.night_charge ?? 0)).toFixed(2)}`;
+  hasConfirmedTransportFare(o.fare)
+    ? `RM${(Number(o.fare) + (o.night_charge ?? 0)).toFixed(2)}`
+    : 'TBC';
 
 export function buildTransportReceiptRows(
   o: TransportReceiptSource,
@@ -134,6 +145,9 @@ export function buildTransportReceiptRows(
 
   return {
     rows,
+    generationBlockedReason: hasConfirmedTransportFare(o.fare)
+      ? undefined
+      : 'Waiting for the driver to confirm the agreed numeric fare. The receipt will be available after the fare is updated.',
     statusLabel:     TRANSPORT_STATUS_LABEL[o.status] ?? o.status,
     statusClassName: TRANSPORT_STATUS_STYLE[o.status] ?? TRANSPORT_STATUS_STYLE.cancelled,
     createdAt:        o.created_at,

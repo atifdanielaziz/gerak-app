@@ -79,6 +79,13 @@ ${rowsHtml}
 }
 
 export function generateReceiptPdf(doc: ReceiptDoc, extraRows: ReceiptRow[] = []) {
+  // Defense in depth: callers and older cached UI builds cannot print a
+  // Gerak Car receipt before its negotiated TBC fare becomes numeric.
+  if (doc.generationBlockedReason) {
+    console.warn('[GERAK] Receipt generation blocked:', doc.generationBlockedReason);
+    return;
+  }
+
   const html = buildReceiptHtml(doc, extraRows);
 
   // Android's WebView doesn't implement window.print() at all (silent
