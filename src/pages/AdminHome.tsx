@@ -28,6 +28,7 @@ import { EarningsTab, type EarningsTabHandle } from './admin/earnings/EarningsTa
 import { OrdersTab, type OrdersTabHandle } from './admin/orders/OrdersTab';
 import { JubahRiderSubTab, type JubahRiderSubTabHandle } from './admin/jubah/JubahRiderSubTab';
 import { JubahCustomerSubTab, type JubahBookingRow } from './admin/jubah/JubahCustomerSubTab';
+import { JubahCustomerDetailsSubTab } from './admin/jubah/JubahCustomerDetailsSubTab';
 import { ActivityLogTab, type ActivityLogTabHandle } from './admin/activity/ActivityLogTab';
 
 type AdminTab = 'orders' | 'drivers' | 'users' | 'banners' | 'receipts' | 'calendar' | 'routes' | 'verify' | 'jubah' | 'earnings' | 'activity';
@@ -104,7 +105,7 @@ export const AdminHome: React.FC = () => {
   const [jubahBookingsTotalCount, setJubahBookingsTotalCount] = useState<number | null>(null);
   const [jubahAdminView,     setJubahAdminView]     = useState<'list' | 'card'>('list');
   const [jubahAdminSelected, setJubahAdminSelected] = useState<JubahBookingRow | null>(null);
-  const [jubahSubTab,        setJubahSubTab]        = useState<'customer' | 'rider' | 'price' | 'banner'>('rider');
+  const [jubahSubTab,        setJubahSubTab]        = useState<'customer' | 'customer_details' | 'rider' | 'price' | 'banner'>('rider');
   // Defence in depth — the sub-tab button itself is already hidden for
   // non-superadmin, but if a regular admin somehow lands on 'price' (e.g.
   // a stale tab from before a role downgrade), render as if 'rider' were
@@ -920,10 +921,11 @@ export const AdminHome: React.FC = () => {
             </div>
 
             {/* Customer | Rider | Price sub-tabs */}
-            <div className="flex bg-white border border-slate-100 rounded-2xl p-1 gap-1">
+            <div className="flex bg-white border border-slate-100 rounded-2xl p-1 gap-1 overflow-x-auto no-scrollbar">
               {([
                 { id: 'rider',    label: 'Rider',    superadminOnly: false },
-                { id: 'customer', label: 'Customer', superadminOnly: false },
+                { id: 'customer', label: 'Customer Directory', superadminOnly: false },
+                { id: 'customer_details', label: 'Customer Details', superadminOnly: false },
                 { id: 'price',    label: 'Price',    superadminOnly: true },
                 { id: 'banner',   label: 'Banner',   superadminOnly: false },
               ] as const)
@@ -932,7 +934,7 @@ export const AdminHome: React.FC = () => {
                 // Same opacity-overlay technique as the mobile admin tab
                 // bar above — see its comment for why (WebView repaint bug).
                 <button key={t.id} onClick={() => { setJubahSubTab(t.id); setJubahAdminView('list'); setJubahAdminSelected(null); }}
-                  className="relative flex-1 rounded-xl transition-transform transform-gpu">
+                  className="relative flex-1 min-w-[7.5rem] rounded-xl transition-transform transform-gpu">
                   <span className="block py-2 text-xs font-semibold text-slate-400">{t.label}</span>
                   <span
                     className={`absolute inset-0 flex items-center justify-center py-2 rounded-xl bg-primary text-white text-xs font-semibold transition-opacity duration-150 ${
@@ -977,6 +979,20 @@ export const AdminHome: React.FC = () => {
               onGoToList={goToJubahList}
               showToast={showToast}
               onModalOpenChange={setJubahCustomerModalOpen}
+              universityLabel={jubahUniversityLabel}
+            />
+          )}
+
+          {/* -- CUSTOMER DETAILS sub-tab -- */}
+          {effectiveJubahSubTab === 'customer_details' && (
+            <JubahCustomerDetailsSubTab
+              active={activeTab === 'jubah' && effectiveJubahSubTab === 'customer_details'}
+              bookings={jubahBookings}
+              bookingsTotalCount={jubahBookingsTotalCount}
+              bookingsLoading={jubahBookingsLoading}
+              reload={loadJubahData}
+              showToast={showToast}
+              universityKey={isSuperAdmin ? jubahUniversityView : (universityKeyFromCampus(adminCampus) ?? 'umpsa')}
               universityLabel={jubahUniversityLabel}
             />
           )}
