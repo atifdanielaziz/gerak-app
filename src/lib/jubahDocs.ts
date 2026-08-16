@@ -63,11 +63,13 @@ export async function getJubahDocSignedUrl(stored: string | null | undefined, do
 // this works even after the async signing call has already finished,
 // with no blank placeholder tab needed at all.
 export function openInNewTab(url: string) {
-  const a = document.createElement('a');
-  a.href = url;
-  a.target = '_blank';
-  a.rel = 'noopener noreferrer';
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
+  // This runs after the async signed-URL request. iOS Safari/PWA commonly
+  // rejects a synthetic target=_blank click once the original user gesture
+  // has crossed that async boundary, making View/Download appear to do
+  // nothing. Try a real new browsing context first; when the browser blocks
+  // it, navigate the current view instead. The latter is not popup-gated and
+  // the user can return to Gerak with Back after viewing/saving the file.
+  const opened = window.open(url, '_blank');
+  if (opened) opened.opener = null;
+  else window.location.assign(url);
 }
