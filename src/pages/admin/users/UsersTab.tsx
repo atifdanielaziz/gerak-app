@@ -1,4 +1,5 @@
 import { forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { supabase } from '../../../lib/supabase';
 import {
   Users, MoreVertical, Car, KeyRound, Bike, GraduationCap, MapPin, ShieldCheck, ShieldOff, Trash2, Truck, FileCheck2,
@@ -86,7 +87,10 @@ const UserCard: React.FC<{
             onClick={e => {
               e.stopPropagation();
               const rect = e.currentTarget.getBoundingClientRect();
-              setMenuPosition({ top: Math.min(rect.bottom + 4, window.innerHeight - 210), right: window.innerWidth - rect.right });
+              // Keep the five-row viewport fully on-screen. The menu itself is
+              // portalled below so the table's axis-lock gesture cannot trap
+              // the remaining actions below the visible rows.
+              setMenuPosition({ top: Math.max(8, Math.min(rect.bottom + 4, window.innerHeight - 256)), right: Math.max(8, window.innerWidth - rect.right) });
               setShowMenu(p => !p);
             }}
             className="w-7 h-7 flex items-center justify-center rounded-lg text-slate-400 hover:bg-slate-100 active:scale-90 transition"
@@ -95,10 +99,13 @@ const UserCard: React.FC<{
             <MoreVertical className="w-4 h-4" />
           </button>
 
-          {showMenu && (
+          {showMenu && createPortal(
             <>
               <div className="fixed inset-0 z-40" onPointerDown={(e) => { e.preventDefault(); setShowMenu(false); }} />
-              <div onClick={e => e.stopPropagation()} className="fixed z-50 min-w-[190px] max-h-[15rem] overflow-y-scroll overscroll-contain bg-white border border-slate-100 rounded-2xl shadow-xl [scrollbar-gutter:stable]"
+              <div
+                data-axis-lock-ignore
+                onClick={e => e.stopPropagation()}
+                className="fixed z-50 min-w-[190px] max-h-[15rem] overflow-y-auto overscroll-contain touch-pan-y bg-white border border-slate-100 rounded-2xl shadow-xl [scrollbar-gutter:stable] [-webkit-overflow-scrolling:touch]"
                 style={{ top: menuPosition.top, right: menuPosition.right }}>
 
                 {/* Driver capabilities */}
@@ -235,7 +242,8 @@ const UserCard: React.FC<{
                 )}
 
               </div>
-            </>
+            </>,
+            document.body
           )}
         </div>
       </div>
