@@ -141,6 +141,7 @@ export const Jubah: React.FC = () => {
     id: string; name: string; jubah_drop_point: string | null; ic_number: string | null; phone: string | null;
   }[]>([]);
   const [bankDetails,       setBankDetails]       = useState<{ name: string; account: string; holder: string } | null>(null);
+  const [depositAmount,     setDepositAmount]     = useState(25);
   const [ridersLoading,     setRidersLoading]     = useState(false);
   const [riderProfileOpen,  setRiderProfileOpen]  = useState(false);
 
@@ -358,7 +359,6 @@ export const Jubah: React.FC = () => {
     return () => { supabase.removeChannel(channel); };
   }, [landingUniversity]);
 
-  const DEPOSIT_AMOUNT    = 25;
   const pickupPrice       = pricing[remark]?.['pickup']  ?? 70;
   const postagePrice      = pricing[remark]?.['postage'] ?? 90;
   const isPostageDelivery = paymentMode === 'postage' || (paymentMode === 'deposit' && depositMethod === 'postage');
@@ -368,8 +368,8 @@ export const Jubah: React.FC = () => {
   // isPostageDelivery above, which are gated to the selected mode).
   const depositBalancePreview = (depositMethod === 'postage'
     ? postagePrice + (postageZone === 'SS' ? 10 : 0)
-    : pickupPrice) - DEPOSIT_AMOUNT;
-  const cost = paymentMode === 'deposit' ? DEPOSIT_AMOUNT : paymentMode === 'postage' ? postagePrice + ssCharge : pickupPrice;
+    : pickupPrice) - depositAmount;
+  const cost = paymentMode === 'deposit' ? depositAmount : paymentMode === 'postage' ? postagePrice + ssCharge : pickupPrice;
 
   // Fetch active riders whenever campus or service option (Pickup/Postage) changes
   useEffect(() => {
@@ -393,16 +393,24 @@ export const Jubah: React.FC = () => {
   // Shared Jubah bank account — one account for every rider/customer, set by
   // superadmin (JubahPriceSubTab.tsx). Public read, same as jubah_active.
   useEffect(() => {
-    supabase
+    const fetchPaymentSettings = () => supabase
       .from('app_settings')
       .select('key, value')
-      .in('key', ['jubah_bank_name', 'jubah_bank_account_number', 'jubah_bank_account_holder'])
+      .in('key', ['jubah_bank_name', 'jubah_bank_account_number', 'jubah_bank_account_holder', 'jubah_deposit_amount'])
       .then(({ data }) => {
         const name   = data?.find(r => r.key === 'jubah_bank_name')?.value;
         const account = data?.find(r => r.key === 'jubah_bank_account_number')?.value;
         const holder  = data?.find(r => r.key === 'jubah_bank_account_holder')?.value;
+        const configuredDeposit = Number(data?.find(r => r.key === 'jubah_deposit_amount')?.value);
         if (name && account && holder) setBankDetails({ name, account, holder });
+        if (Number.isFinite(configuredDeposit) && configuredDeposit > 0) setDepositAmount(configuredDeposit);
       });
+    fetchPaymentSettings();
+    const channel = supabase
+      .channel('jubah_payment_settings_live')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'app_settings' }, fetchPaymentSettings)
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
   }, []);
 
   // Load doc fields for the selected university; fall back to UMPSA then hardcoded defaults
@@ -971,10 +979,10 @@ export const Jubah: React.FC = () => {
               <input type="radio" name="paymentMode" value="deposit" checked={paymentMode === 'deposit'} onChange={() => setPaymentMode('deposit')} className="mt-0.5 accent-slate-900 shrink-0" />
               <div className="flex-1">
                 <span className={`text-xs font-semibold block ${paymentMode === 'deposit' ? 'text-slate-900' : 'text-slate-700'}`}>
-                  Deposit (RM{DEPOSIT_AMOUNT}) — Pay RM{depositBalancePreview} before robe Collection date
+                  Deposit (RM{depositAmount}) — Pay RM{depositBalancePreview} before robe Collection date
                 </span>
                 <span className="text-xs text-slate-400 leading-relaxed block mt-0.5">
-                  Pay RM{DEPOSIT_AMOUNT} now to secure your booking. Pay the remaining RM{depositBalancePreview} <span className="font-bold text-slate-500">1 day before collection day</span> via Track My Order. <span className="bg-yellow-200 text-slate-800 font-semibold px-1 rounded">The RM{DEPOSIT_AMOUNT} deposit is non-refundable once paid — you can cancel for free before paying it, but not after.</span>
+                  Pay RM{depositAmount} now to secure your booking. Pay the remaining RM{depositBalancePreview} <span className="font-bold text-slate-500">1 day before collection day</span> via Track My Order. <span className="bg-yellow-200 text-slate-800 font-semibold px-1 rounded">The RM{depositAmount} deposit is non-refundable once paid — you can cancel for free before paying it, but not after.</span>
                 </span>
 
                 {/* Sub-choices: Pickup Only or Pickup & Postage */}
@@ -992,7 +1000,7 @@ export const Jubah: React.FC = () => {
                     >
                       <span className="flex-1 text-left">Pickup Only</span>
                       <span className={`shrink-0 ml-2 font-normal text-xs ${depositMethod === 'pickup' ? 'text-slate-500' : 'text-slate-400'}`}>
-                        Balance RM{pickupPrice - DEPOSIT_AMOUNT}
+                        Balance RM{pickupPrice - depositAmount}
                       </span>
                     </button>
 
@@ -1025,7 +1033,7 @@ export const Jubah: React.FC = () => {
                           >
                             <span className="flex-1 text-left">{zone === 'SM' ? 'SM — Semenanjung Malaysia' : 'SS — Sabah & Sarawak'}</span>
                             <span className={`shrink-0 ml-2 font-normal text-xs ${postageZone === zone ? 'text-slate-500' : 'text-slate-400'}`}>
-                              Balance RM{postagePrice + (zone === 'SS' ? 10 : 0) - DEPOSIT_AMOUNT}
+                              Balance RM{postagePrice + (zone === 'SS' ? 10 : 0) - depositAmount}
                             </span>
                           </button>
                         ))}
@@ -1296,7 +1304,7 @@ export const Jubah: React.FC = () => {
               <p className="text-xs text-blue-600">Payment details not set yet — contact admin.</p>
             )}
             <p className="text-xs text-blue-700 leading-relaxed">
-              Transfer <span className="font-bold">RM{cost.toFixed(2)}</span>{paymentMode === 'deposit' && <> (RM{DEPOSIT_AMOUNT} deposit)</>} using the details above — put your <span className="font-bold">full name</span> as the transfer reference so it's easy to match. Then upload your receipt below and tap Book.
+              Transfer <span className="font-bold">RM{cost.toFixed(2)}</span>{paymentMode === 'deposit' && <> (RM{depositAmount} deposit)</>} using the details above — put your <span className="font-bold">full name</span> as the transfer reference so it's easy to match. Then upload your receipt below and tap Book.
             </p>
           </div>
 
@@ -1304,10 +1312,10 @@ export const Jubah: React.FC = () => {
           <div className="bg-white border border-slate-100 rounded-3xl p-5 flex flex-col gap-4">
             <h3 className="text-sm font-semibold text-slate-700 flex items-center gap-1.5">
               <ReceiptText className="w-4 h-4 text-slate-400" />
-              {paymentMode === 'deposit' ? `Proof of Deposit (RM${DEPOSIT_AMOUNT})` : 'Proof of Payment'}
+              {paymentMode === 'deposit' ? `Proof of Deposit (RM${depositAmount})` : 'Proof of Payment'}
             </h3>
             <p className="text-xs text-slate-500 leading-relaxed">
-              Upload your <span className="font-bold text-slate-700">{paymentMode === 'deposit' ? `RM${DEPOSIT_AMOUNT} deposit receipt` : 'payment receipt'}</span> (screenshot or PDF). The Book button will activate once uploaded.
+              Upload your <span className="font-bold text-slate-700">{paymentMode === 'deposit' ? `RM${depositAmount} deposit receipt` : 'payment receipt'}</span> (screenshot or PDF). The Book button will activate once uploaded.
             </p>
             <input
               type="file"

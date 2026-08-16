@@ -837,7 +837,7 @@ export function JubahCustomerSubTab({
               {/* Balance status (deposit) — hidden once cancelled (nothing left to
                   collect) or before the deposit itself is even paid (notStarted):
                   showing "Balance Due RM45" implies that's all that's left, when
-                  really the RM25 deposit hasn't been paid either yet. */}
+                  really the configured deposit hasn't been paid either yet. */}
               {b.payment_mode === 'deposit' && b.status !== 'cancelled' && !notStarted && (
                 <div className="flex flex-col gap-2">
                   <div className={`rounded-xl p-3 border flex items-center justify-between gap-2 ${
@@ -1189,7 +1189,7 @@ export function JubahCustomerSubTab({
                   ? 'Nothing has been paid yet, so there\'s nothing to refund.'
                   : fullyPaid
                     ? `This booking was paid in full (RM${total.toFixed(2)}). Cancelling does NOT refund the customer automatically — you'll need to do that yourself.`
-                    : 'The RM25 deposit has already been paid. Cancelling forfeits it — no refund is processed automatically.'}
+                    : 'The deposit has already been paid. Cancelling forfeits it — no refund is processed automatically.'}
               </p>
               <div className="flex gap-3">
                 <button onClick={() => setCancelModalBooking(null)} disabled={cancellingBooking}

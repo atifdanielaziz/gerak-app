@@ -97,3 +97,10 @@ The following design standards must be adhered to when modifying or creating UI 
 ## 19. Header Standard
 - Page-title block format: A neutral Lucide icon (`w-5 h-5 text-slate-400`) to the left of a `font-semibold` title, with a `font-normal text-slate-400` subtitle positioned directly below.
 - The service-specific icon should match the icon used on the Dashboard service selection tiles.
+
+## 20. Save Button Standard
+- Dirty forms use a primary-red Save button with white text.
+- While saving, retain that red treatment and show `Saving…`; never flash black text or an unstyled button.
+- After success, show a disabled `Saved` button with a white background, neutral border, and muted text, similar to a "Following" button.
+- Unlocking or focusing a field without changing its value does not make it dirty.
+- Derive state by comparing the current draft with the last successfully saved value, never from timing or focus alone.

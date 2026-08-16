@@ -438,7 +438,7 @@ export const TrackJubah: React.FC = () => {
                      before the deposit itself is confirmed (status='ordered', covered
                      by the "Awaiting confirmation" banner above instead): showing
                      "Balance Due on Collection RM45" here implied that was all that
-                     was left, when the RM25 deposit hadn't been confirmed either yet. ── */}
+                     was left, when the configured deposit hadn't been confirmed either yet. ── */}
                 {b.payment_mode === 'deposit' && b.status !== 'cancelled' && b.status !== 'ordered' && (
                   <JubahBalancePayment
                     reference={b.reference}
