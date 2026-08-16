@@ -126,7 +126,7 @@ export const AdminHome: React.FC = () => {
   const jubahUniversityLabel = UNIVERSITY_MAP[
     isSuperAdmin ? jubahUniversityView : (universityKeyFromCampus(adminCampus) ?? 'umpsa')
   ]?.shortLabel ?? 'UMPSA';
-  const [jubahOverviewCollapsed, setJubahOverviewCollapsed] = useState(false);
+  const [jubahOverviewCollapsed, setJubahOverviewCollapsed] = useState(true);
 
   const jubahStats = useMemo(() => {
     // jubahBookings is already scoped to one university/campus by
