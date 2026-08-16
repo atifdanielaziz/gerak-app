@@ -62,7 +62,7 @@ const STATUS_LABEL: Record<string, string> = {
   paid:       'Paid',
   processing: 'Processing Documents',
   collected:  'Robe Collected',
-  at_hub:     'Delivered to Postage Hub',
+  at_hub:     'Delivered',
   picked_up:  'Picked Up',
   on_the_way: 'On The Way',
   delivered:  'Delivered',
