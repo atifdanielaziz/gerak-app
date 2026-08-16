@@ -592,7 +592,7 @@ export const UsersTab = forwardRef<UsersTabHandle, UsersTabProps>(function Users
           {/* Role filter + In/Out — one combined row. In/Out switches the
               whole view (staffView), the other four stay within the normal
               staff list (staffView='list' + staffFilter). */}
-          <div className="flex bg-slate-50 border border-slate-200 rounded-2xl p-1 gap-1 overflow-x-auto no-scrollbar">
+          <div className="hidden">
             {([
               { id: 'all',     label: 'All' },
               { id: 'drivers', label: 'Drivers' },
@@ -710,22 +710,18 @@ export const UsersTab = forwardRef<UsersTabHandle, UsersTabProps>(function Users
             </button>
           </div>
 
-          <NativeSelect
-            value={overviewFilter}
-            onChange={value => setOverviewFilter(value as typeof overviewFilter)}
-            options={[
-              { value: 'all', label: 'All Overview Statuses' },
-              { value: 'payment_valid', label: 'Payment Valid' },
-              { value: 'expired', label: 'Expired' },
-              { value: 'active_drivers', label: 'Active Drivers' },
-              { value: 'in_campus', label: 'In Campus' },
-              { value: 'out_campus', label: 'Out Campus' },
-              { value: 'online', label: 'Online' },
-              { value: 'taking_job', label: 'Taking Job' },
-            ]}
-            placeholder="All Overview Statuses"
-            label="Overview Status"
-          />
+          <div className="grid grid-cols-2 gap-2">
+            <NativeSelect value={overviewFilter} onChange={value => setOverviewFilter(value as typeof overviewFilter)} options={[
+              { value: 'all', label: 'All Statuses' }, { value: 'payment_valid', label: 'Payment Valid' },
+              { value: 'expired', label: 'Expired' }, { value: 'active_drivers', label: 'Active Drivers' },
+              { value: 'in_campus', label: 'In Campus' }, { value: 'out_campus', label: 'Out Campus' },
+              { value: 'online', label: 'Online' }, { value: 'taking_job', label: 'Taking Job' },
+            ]} placeholder="Status" label="Status" />
+            <NativeSelect value={staffFilter} onChange={value => { setStaffView('list'); setStaffFilter(value as typeof staffFilter); }} options={[
+              { value: 'all', label: 'All Roles' }, { value: 'drivers', label: 'Drivers' },
+              { value: 'riders', label: 'Riders' }, { value: 'admins', label: 'Admins' },
+            ]} placeholder="Role" label="Role" />
+          </div>
           </>)}
         </div>
 
