@@ -326,6 +326,19 @@ export function JubahCustomerSubTab({
     });
   }, [bookings, jubahModeFilter, jubahTypeFilter, jubahRobeStatusFilter, jubahRiderFilter, jubahSearch]);
 
+  // Stable university-wide chronological sequence. The directory remains
+  // newest-first, so its first row carries the largest number. Filters and
+  // search do not renumber bookings. If only the latest capped slice is
+  // loaded, offset it by the real remote count.
+  const bookingSequenceById = useMemo(() => {
+    const offset = Math.max(0, (bookingsTotalCount ?? bookings.length) - bookings.length);
+    const chronological = [...bookings].sort((a, b) => {
+      const byCreated = new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+      return byCreated || a.id.localeCompare(b.id);
+    });
+    return new Map(chronological.map((booking, index) => [booking.id, offset + index + 1]));
+  }, [bookings, bookingsTotalCount]);
+
   const exportRows = () => filteredBookings.map(b => {
     const isPaid = b.payment_mode === 'deposit' ? b.balance_paid : b.initial_paid;
     const awaitingBalanceProof = b.payment_mode === 'deposit' && b.initial_paid && !b.balance_paid && !b.balance_proof_url;
@@ -337,6 +350,7 @@ export function JubahCustomerSubTab({
           ? 'Pending confirmation'
           : 'Confirmed';
     return [
+      String(bookingSequenceById.get(b.id) ?? ''),
       b.reference,
       b.full_name,
       b.remark,
@@ -350,7 +364,7 @@ export function JubahCustomerSubTab({
     ];
   });
 
-  const exportHeaders = ['Reference', 'Name', 'Remark', 'Mode', 'Type', 'Status', 'Robe Status', 'Rider', 'Confirm', 'Receipt'];
+  const exportHeaders = ['No', 'Reference', 'Name', 'Remark', 'Mode', 'Type', 'Status', 'Robe Status', 'Rider', 'Confirm', 'Receipt'];
   const exportFileBase = `jubah-customers-${universityLabel.toLowerCase().replace(/[^a-z0-9]+/g, '-')}-${new Date().toISOString().slice(0, 10)}`;
 
   const downloadExport = async (format: 'csv' | 'xlsx') => {
@@ -380,7 +394,7 @@ export function JubahCustomerSubTab({
         const dataRows = rows.map(row => row.map(value => ({ value, type: String })));
         const sheetData: SheetData = [headerRow, ...dataRows];
         const workbook = writeXlsxFile(sheetData, {
-          columns: exportHeaders.map((header, index) => ({ width: index === 1 || index === 7 ? 30 : Math.max(14, header.length + 3) })),
+          columns: exportHeaders.map((header, index) => ({ width: index === 2 || index === 8 ? 30 : Math.max(10, header.length + 3) })),
         });
         await workbook.toFile(`${exportFileBase}.xlsx`);
       }
@@ -534,6 +548,7 @@ export function JubahCustomerSubTab({
                     floated with a gap instead of staying pinned on scroll. */}
                 <thead>
                   <tr className="text-xs font-normal text-slate-400 border-b border-slate-100">
+                    <th className="sticky top-0 bg-white py-2 pr-4 whitespace-nowrap">No</th>
                     <th className="sticky top-0 bg-white py-2 pr-4 whitespace-nowrap">Reference</th>
                     <th className="sticky top-0 bg-white py-2 pr-4 whitespace-nowrap">Name</th>
                     <th className="sticky top-0 bg-white py-2 pr-4 whitespace-nowrap">Remark</th>
@@ -553,6 +568,9 @@ export function JubahCustomerSubTab({
                       <tr key={b.id}
                         onClick={() => onGoToCard(b)}
                         className="border-b border-slate-100 text-xs hover:bg-slate-50 active:bg-slate-100 transition cursor-pointer">
+                        <td className="py-2.5 pr-4 font-semibold text-slate-500 whitespace-nowrap">
+                          {bookingSequenceById.get(b.id)}
+                        </td>
                         <td className="py-2.5 pr-4 font-mono font-semibold text-primary whitespace-nowrap">
                           <span className="flex items-center gap-1.5">
                             {b.needs_reconciliation && (

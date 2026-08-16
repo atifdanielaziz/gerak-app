@@ -78,14 +78,24 @@ export function JubahCustomerDetailsSubTab({
     ].some(value => value.toLowerCase().includes(query)));
   }, [bookings, search]);
 
+  const bookingSequenceById = useMemo(() => {
+    const offset = Math.max(0, (bookingsTotalCount ?? bookings.length) - bookings.length);
+    const chronological = [...bookings].sort((a, b) => {
+      const byCreated = new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+      return byCreated || a.id.localeCompare(b.id);
+    });
+    return new Map(chronological.map((booking, index) => [booking.id, offset + index + 1]));
+  }, [bookings, bookingsTotalCount]);
+
   const headers = useMemo(() => [
-    'Reference', 'Full Name', 'IC Number', 'Phone', 'Email', 'Matric ID',
+    'No', 'Reference', 'Full Name', 'IC Number', 'Phone', 'Email', 'Matric ID',
     'University', 'Campus', 'Faculty', 'Remark', 'Payment Mode', 'Amount (RM)',
     'Balance Due (RM)', 'Delivery Address', 'Rider', 'Status', 'Created At',
     ...docFields.map(field => field.label), 'Combined PDF', 'Payment Proof', 'Balance Proof',
   ], [docFields]);
 
   const detailRows = useMemo(() => filtered.map(booking => [
+    String(bookingSequenceById.get(booking.id) ?? ''),
     booking.reference,
     booking.full_name,
     booking.ic_number,
@@ -107,7 +117,7 @@ export function JubahCustomerDetailsSubTab({
     booking.docs_path ? '✓' : '✕',
     booking.payment_path ? '✓' : '✕',
     booking.balance_proof_url ? '✓' : '✕',
-  ]), [filtered, docFields]);
+  ]), [filtered, docFields, bookingSequenceById]);
 
   const download = async (format: 'csv' | 'xlsx') => {
     if (!filtered.length || exporting) return;
@@ -138,7 +148,7 @@ export function JubahCustomerDetailsSubTab({
         ];
         const workbook = writeXlsxFile(sheet, {
           columns: headers.map((header, index) => ({
-            width: [1, 7, 13].includes(index) ? 30 : Math.max(14, Math.min(24, header.length + 3)),
+            width: [2, 8, 14].includes(index) ? 30 : Math.max(10, Math.min(24, header.length + 3)),
           })),
         });
         await workbook.toFile(`${fileBase}.xlsx`);
@@ -226,7 +236,7 @@ export function JubahCustomerDetailsSubTab({
                       return <td key={`${booking.id}-${headers[index]}`} className="py-2.5 pr-5 whitespace-nowrap font-normal text-slate-600">
                         {isDocument
                           ? value === '✓' ? <CheckCircle2 className="w-4 h-4 text-emerald-500" /> : <XCircle className="w-4 h-4 text-red-500" />
-                          : <span className={index === 0 ? 'font-mono font-semibold text-primary' : index === 1 ? 'font-semibold text-slate-800' : ''}>{value || '—'}</span>}
+                          : <span className={index === 1 ? 'font-mono font-semibold text-primary' : index === 2 ? 'font-semibold text-slate-800' : ''}>{value || '—'}</span>}
                       </td>;
                     })}
                   </tr>;

@@ -865,7 +865,7 @@ export const RiderHome: React.FC = () => {
                   ))}
                 </div>
 
-                {/* Documents download card */}
+                {/* Documents view/download card */}
                 <div className="bg-white border border-slate-100 rounded-3xl p-5 flex flex-col gap-4">
                   <h3 className="text-sm font-semibold text-slate-700">Documents</h3>
 
@@ -879,22 +879,26 @@ export const RiderHome: React.FC = () => {
                   ] as { label: string; url: string | null }[]).map(({ label, url }) => (
                     <div key={label} className="flex items-center justify-between gap-3 border-b border-slate-100 pb-3 last:border-0 last:pb-0">
                       <span className="text-sm font-semibold text-slate-700">{label}</span>
-                      <button
-                        type="button"
-                        disabled={!url}
-                        onClick={async () => {
-                          const { url: signed, error } = await getJubahDocSignedUrl(url, true);
-                          if (signed) openInNewTab(signed);
-                          else showToast(error ? `Couldn't download ${label}: ${error}` : `Couldn't download ${label}.`);
-                        }}
-                        className={`w-9 h-9 flex items-center justify-center rounded-xl border transition shrink-0 ${
-                          url
-                            ? 'bg-slate-800 border-slate-700 text-white hover:bg-slate-700 active:scale-95'
-                            : 'bg-slate-50 border-slate-100 text-slate-300 cursor-not-allowed'
-                        }`}
-                      >
-                        <Download className="w-4 h-4" />
-                      </button>
+                      <div className="flex items-center gap-2 shrink-0">
+                        <button type="button" disabled={!url} aria-label={`View ${label}`}
+                          onClick={async () => {
+                            const { url: signed, error } = await getJubahDocSignedUrl(url);
+                            if (signed) openInNewTab(signed);
+                            else showToast(error ? `Couldn't open ${label}: ${error}` : `Couldn't open ${label}.`);
+                          }}
+                          className={`w-9 h-9 flex items-center justify-center rounded-xl border transition shrink-0 ${url ? 'bg-blue-50 border-blue-100 text-blue-600 hover:bg-blue-100 active:scale-95' : 'bg-slate-50 border-slate-100 text-slate-300 cursor-not-allowed'}`}>
+                          <Eye className="w-4 h-4" />
+                        </button>
+                        <button type="button" disabled={!url} aria-label={`Download ${label}`}
+                          onClick={async () => {
+                            const { url: signed, error } = await getJubahDocSignedUrl(url, true);
+                            if (signed) openInNewTab(signed);
+                            else showToast(error ? `Couldn't download ${label}: ${error}` : `Couldn't download ${label}.`);
+                          }}
+                          className={`w-9 h-9 flex items-center justify-center rounded-xl border transition shrink-0 ${url ? 'bg-slate-800 border-slate-700 text-white hover:bg-slate-700 active:scale-95' : 'bg-slate-50 border-slate-100 text-slate-300 cursor-not-allowed'}`}>
+                          <Download className="w-4 h-4" />
+                        </button>
+                      </div>
                     </div>
                   ))}
                 </div>

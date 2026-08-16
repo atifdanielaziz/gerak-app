@@ -1,7 +1,7 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
-  Banknote, Building2, Car, Check, GraduationCap, QrCode,
-  Save, Truck, Upload, WalletCards,
+  Banknote, Car, GraduationCap, Landmark, QrCode,
+  Truck, Upload, WalletCards,
 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { supabase } from '../lib/supabase';
@@ -17,12 +17,12 @@ const emptyDetails: PaymentDetails = { bank_name: '', account_number: '', accoun
 
 export const ProviderFinance: React.FC = () => {
   const { user, activeRole } = useApp();
-  const fileRef = useRef<HTMLInputElement>(null);
   const [saved, setSaved] = useState<PaymentDetails>(emptyDetails);
   const [draft, setDraft] = useState<PaymentDetails>(emptyDetails);
   const [qrUrl, setQrUrl] = useState('');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [bankLocked, setBankLocked] = useState(true);
   const [uploading, setUploading] = useState(false);
   const [notice, setNotice] = useState('');
   const [earnings, setEarnings] = useState({ car: 0, jubah: 0, rental: 0 });
@@ -53,6 +53,7 @@ export const ProviderFinance: React.FC = () => {
       };
       setSaved(next);
       setDraft(next);
+      setBankLocked(true);
       if (next.qr_path) {
         const { data: signed } = await supabase.storage.from('provider-payment-qr').createSignedUrl(next.qr_path, 3600);
         setQrUrl(signed?.signedUrl || '');
@@ -119,6 +120,7 @@ export const ProviderFinance: React.FC = () => {
     if (error || !data?.success) showNotice(error?.message || data?.error || 'Bank details could not be saved.');
     else {
       setSaved({ ...draft });
+      setBankLocked(true);
       showNotice('Bank details saved.');
     }
     setSaving(false);
@@ -143,23 +145,23 @@ export const ProviderFinance: React.FC = () => {
         <div className="aspect-square w-full max-w-sm mx-auto rounded-2xl border border-slate-100 bg-white flex items-center justify-center overflow-hidden">
           {loading ? <span className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" /> : qrUrl ? <img src={qrUrl} alt="Provider payment QR" className="w-full h-full object-contain p-4" /> : <div className="text-center px-6"><QrCode className="w-16 h-16 text-slate-200 mx-auto mb-3" /><p className="text-sm text-slate-400">Upload your DuitNow or bank payment QR.</p></div>}
         </div>
-        <input ref={fileRef} type="file" accept="image/jpeg,image/png,image/webp" className="hidden" onChange={uploadQr} />
-        <button type="button" onPointerDown={(event) => { event.preventDefault(); fileRef.current?.click(); }} disabled={uploading} className="mt-4 w-full flex items-center justify-center gap-2 bg-white border border-slate-100 rounded-2xl py-3.5 font-semibold text-slate-800 active:bg-slate-50 active:scale-[0.99] transition-transform transform-gpu disabled:opacity-50">
+        <input id="provider-payment-qr-upload" type="file" accept="image/jpeg,image/png,image/webp" className="sr-only" onChange={uploadQr} disabled={uploading} />
+        <label htmlFor="provider-payment-qr-upload" aria-disabled={uploading} className="mt-4 w-full flex items-center justify-center gap-2 bg-white border border-slate-100 rounded-2xl py-3.5 font-semibold text-slate-800 active:bg-slate-50 active:scale-[0.99] transition-transform transform-gpu cursor-pointer aria-disabled:opacity-50">
           <Upload className="w-4 h-4" />{uploading ? 'Uploading…' : qrUrl ? 'Replace QR' : 'Upload QR'}
-        </button>
+        </label>
       </section>
 
       <section className="rounded-3xl border border-amber-100 bg-amber-50/70 p-5 mb-5">
-        <div className="flex items-center gap-2 mb-1"><Building2 className="w-5 h-5 text-slate-500" /><h2 className="font-semibold text-slate-900">Payment Bank Details</h2></div>
+        <div className="flex items-center gap-2 mb-1"><Landmark className="w-5 h-5 text-slate-500" /><h2 className="font-semibold text-slate-900">Payment Bank Details</h2></div>
         <p className="text-sm text-slate-400 mb-5">Customers can use these details to pay you.</p>
         <div className="space-y-4">
           {([
             ['Bank Name', 'bank_name'], ['Account Number', 'account_number'], ['Account Holder', 'account_holder'],
-          ] as const).map(([label, key]) => <label key={key} className="block"><span className="block text-sm font-normal text-slate-400 mb-1.5">{label}</span><input value={draft[key]} onChange={(event) => setDraft(prev => ({ ...prev, [key]: event.target.value }))} className="w-full bg-white border border-slate-100 focus:border-slate-900 outline-none rounded-xl px-4 py-3 text-sm font-semibold text-slate-800" /></label>)}
+          ] as const).map(([label, key]) => <label key={key} className="block"><span className="block text-sm font-normal text-slate-400 mb-1.5">{label}</span><input value={draft[key]} readOnly={bankLocked} onClick={() => { if (bankLocked) setBankLocked(false); }} onChange={(event) => setDraft(prev => ({ ...prev, [key]: event.target.value }))} className={`w-full bg-slate-50 border border-slate-200 focus:border-primary outline-none rounded-xl px-4 py-3 text-sm font-semibold transition ${bankLocked ? 'text-slate-400 cursor-pointer' : 'text-slate-700'}`} /></label>)}
         </div>
         <div className="flex justify-end mt-5">
-          <button type="button" onPointerDown={(event) => { event.preventDefault(); void saveBank(); }} disabled={!dirty || saving} className={dirty ? 'rounded-xl bg-primary text-white px-5 py-2.5 font-semibold active:scale-[0.99] transition-transform transform-gpu' : 'rounded-xl border border-slate-200 bg-white text-slate-400 px-5 py-2.5 font-semibold'}>
-            {saving ? 'Saving…' : dirty ? <span className="flex items-center gap-2"><Save className="w-4 h-4" />Save</span> : <span className="flex items-center gap-2"><Check className="w-4 h-4" />Saved</span>}
+          <button type="button" onPointerDown={(event) => { event.preventDefault(); if (dirty && !saving) void saveBank(); }} disabled={!dirty || saving} className={`shrink-0 px-4 py-2.5 rounded-xl text-xs border font-semibold transition-transform transform-gpu active:scale-[0.99] ${dirty || saving ? 'bg-primary border-primary text-white shadow-lg shadow-primary/30' : 'bg-white border-slate-300 text-slate-400 shadow-none'}`}>
+            {saving ? 'Saving…' : dirty ? 'Save' : 'Saved'}
           </button>
         </div>
       </section>

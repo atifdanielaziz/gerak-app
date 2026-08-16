@@ -22,6 +22,7 @@ export type ActivePage =
   | 'jubah'
   | 'profile'
   | 'provider-finance'
+  | 'provider-qr'
   | 'provider-feedback'
   | 'notifications'
   | 'driver-home'
@@ -221,7 +222,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [activeRole, setActiveRole] = useState<'admin' | 'driver' | 'rider' | null>(null);
 
   const HISTORY_EXCLUDED: ActivePage[] = ['splash'];
-  const HOME_PAGES: ActivePage[] = ['dashboard', 'driver-home', 'rider-home', 'admin-home', 'login', 'profile', 'provider-finance', 'academic-calendar', 'activity'];
+  const HOME_PAGES: ActivePage[] = ['dashboard', 'driver-home', 'rider-home', 'admin-home', 'login', 'profile', 'provider-finance', 'provider-qr', 'academic-calendar', 'activity'];
 
   const setCurrentPage = (page: ActivePage) => {
     if (HOME_PAGES.includes(page)) {

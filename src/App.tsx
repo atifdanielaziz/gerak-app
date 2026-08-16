@@ -13,6 +13,7 @@ const Transport        = lazy(() => import('./pages/Transport').then(m => ({ def
 const Jubah            = lazy(() => import('./pages/Jubah').then(m => ({ default: m.Jubah })));
 const Profile          = lazy(() => import('./pages/Profile').then(m => ({ default: m.Profile })));
 const ProviderFinance  = lazy(() => import('./pages/ProviderFinance').then(m => ({ default: m.ProviderFinance })));
+const ProviderQr       = lazy(() => import('./pages/ProviderQr').then(m => ({ default: m.ProviderQr })));
 const ProviderFeedback = lazy(() => import('./pages/ProviderFeedback').then(m => ({ default: m.ProviderFeedback })));
 const NotificationsPage = lazy(() => import('./pages/NotificationsPage').then(m => ({ default: m.NotificationsPage })));
 const DriverHome       = lazy(() => import('./pages/DriverHome').then(m => ({ default: m.DriverHome })));
@@ -327,6 +328,8 @@ const AppContent: React.FC = () => {
         return <Profile />;
       case 'provider-finance':
         return <ProviderFinance />;
+      case 'provider-qr':
+        return <ProviderQr />;
       case 'provider-feedback':
         return <ProviderFeedback />;
       case 'notifications':

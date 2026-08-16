@@ -34,7 +34,7 @@ export const BottomNav: React.FC = () => {
     { id: providerHub         as ActivePage, label: 'Hub',       icon: LayoutDashboard, badge: false },
     { id: 'academic-calendar' as ActivePage, label: 'Calendar',  icon: CalendarDays,    badge: false },
     { id: 'activity'          as ActivePage, label: 'Activity',  icon: Activity,        badge: false },
-    { id: 'provider-finance'  as ActivePage, label: 'QR',        icon: QrCode,           badge: false },
+    { id: 'provider-qr'       as ActivePage, label: 'QR',        icon: QrCode,           badge: false },
     { id: 'profile'           as ActivePage, label: 'Profile',   icon: UserCircle,      badge: false },
   ];
 
