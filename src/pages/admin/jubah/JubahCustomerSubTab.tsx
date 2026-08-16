@@ -130,7 +130,6 @@ export function JubahCustomerSubTab({
   const customerDirectoryScrollRef = useAxisLockedScroll<HTMLDivElement>();
   const { showConfirmModal } = useApp();
   const [jubahSearch, setJubahSearch] = useState('');
-  const [jubahPayFilter, setJubahPayFilter] = useState<'all' | 'booked' | 'paid' | 'cancelled'>('all');
   const [jubahModeFilter, setJubahModeFilter] = useState('all');
   const [jubahTypeFilter, setJubahTypeFilter] = useState('all');
   const [jubahRobeStatusFilter, setJubahRobeStatusFilter] = useState('all');
@@ -315,21 +314,14 @@ export function JubahCustomerSubTab({
       // never been paid at all (still status='ordered'). initial_paid is
       // the actual fact to check for non-deposit modes, same formula
       // RiderHome already uses correctly.
-      const isPaid = b.payment_mode === 'deposit' ? b.balance_paid : b.initial_paid;
-      const isCancelled = b.status === 'cancelled';
-      const matchFilter =
-        jubahPayFilter === 'all'       ? true :
-        jubahPayFilter === 'cancelled' ? isCancelled :
-        jubahPayFilter === 'paid'       ? (isPaid && !isCancelled) :
-                                           (!isPaid && !isCancelled);
       const matchMode        = jubahModeFilter === 'all' || modeLabel(b) === jubahModeFilter;
       const matchType        = jubahTypeFilter === 'all' || typeLabel(b) === jubahTypeFilter;
       const matchRobeStatus  = jubahRobeStatusFilter === 'all' || b.status === jubahRobeStatusFilter;
       const matchRider       = jubahRiderFilter === 'all' || b.rider_name === jubahRiderFilter;
       const matchSearch = !q || b.full_name.toLowerCase().includes(q) || b.hp_number.includes(q) || b.reference.toLowerCase().includes(q);
-      return matchFilter && matchMode && matchType && matchRobeStatus && matchRider && matchSearch;
+      return matchMode && matchType && matchRobeStatus && matchRider && matchSearch;
     });
-  }, [bookings, jubahPayFilter, jubahModeFilter, jubahTypeFilter, jubahRobeStatusFilter, jubahRiderFilter, jubahSearch]);
+  }, [bookings, jubahModeFilter, jubahTypeFilter, jubahRobeStatusFilter, jubahRiderFilter, jubahSearch]);
 
   return (
     <>
@@ -344,11 +336,11 @@ export function JubahCustomerSubTab({
               className="flex-1 bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 font-semibold text-slate-700 focus:outline-none focus:border-primary transition placeholder:font-normal placeholder:text-slate-300"
             />
             <button onClick={() => {
-                setJubahSearch(''); setJubahPayFilter('all');
+                setJubahSearch('');
                 setJubahModeFilter('all'); setJubahTypeFilter('all');
                 setJubahRobeStatusFilter('all'); setJubahRiderFilter('all');
               }}
-              disabled={!jubahSearch.trim() && jubahPayFilter === 'all' && jubahModeFilter === 'all' &&
+              disabled={!jubahSearch.trim() && jubahModeFilter === 'all' &&
                 jubahTypeFilter === 'all' && jubahRobeStatusFilter === 'all' && jubahRiderFilter === 'all'}
               className="px-3.5 bg-primary text-white font-semibold text-xs rounded-lg transition active:scale-95 disabled:opacity-40 flex items-center gap-1.5">
               Clear
@@ -357,26 +349,6 @@ export function JubahCustomerSubTab({
               className="w-9 h-9 flex items-center justify-center rounded-lg bg-slate-50 border border-slate-200 text-slate-400 hover:text-primary transition active:scale-90 shrink-0">
               <RefreshCw className="w-4 h-4" />
             </button>
-          </div>
-
-          {/* Payment status filter */}
-          <div className="flex bg-slate-100 rounded-xl p-0.5 gap-0.5">
-            {([
-              { id: 'all',       label: 'All' },
-              { id: 'booked',    label: 'Booked' },
-              { id: 'paid',      label: 'Paid' },
-              { id: 'cancelled', label: 'Cancelled' },
-            ] as const).map(f => (
-              <button key={f.id} onPointerDown={e => { e.preventDefault(); setJubahPayFilter(f.id); }}
-                className="relative flex-1 rounded-[10px] transition-transform transform-gpu active:scale-95">
-                <span className="block py-1.5 text-xs font-semibold text-slate-400 text-center">{f.label}</span>
-                <span className={`absolute inset-0 flex items-center justify-center py-1.5 rounded-[10px] bg-white text-slate-800 text-xs font-semibold transition-opacity duration-150 ${
-                  jubahPayFilter === f.id ? 'opacity-100' : 'opacity-0 pointer-events-none'
-                }`}>
-                  {f.label}
-                </span>
-              </button>
-            ))}
           </div>
 
           {/* Per-column filters — Reference/Name/Remark are free text,

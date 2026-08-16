@@ -2,7 +2,8 @@ import { forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useSt
 import { supabase } from '../../../lib/supabase';
 import {
   BarChart3, Car, Clock, Trash2,
-  Search, RefreshCw, X, TrendingUp, Copy, Check,
+  Search, RefreshCw, X, TrendingUp, Copy, Check, Plus, Minus,
+  ClipboardList, CircleDashed, CircleCheck, CircleX,
 } from 'lucide-react';
 import { useApp } from '../../../context/AppContext';
 import { NativeSelect } from '../../../components/NativeSelect';
@@ -139,6 +140,7 @@ export const OrdersTab = forwardRef<OrdersTabHandle, OrdersTabProps>(function Or
   const [sortKey, setSortKey] = useState<SortKey | null>(null);
   const [sortDir, setSortDir] = useState<1 | -1>(1);
   const [showEarnings, setShowEarnings] = useState(false);
+  const [overviewExpanded, setOverviewExpanded] = useState(false);
   const [colWidths, setColWidths] = useState<Record<ColKey, number>>(DEFAULT_COL_WIDTHS);
   const [copiedRouteId, setCopiedRouteId] = useState<string | null>(null);
   // Mobile-only — tapping a compact card (Activity-page style) opens this
@@ -310,23 +312,23 @@ export const OrdersTab = forwardRef<OrdersTabHandle, OrdersTabProps>(function Or
     <div className="flex flex-col gap-4">
 
       {/* ── Stat cards ── */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2">
-        <div className="bg-white border border-slate-100 rounded-2xl p-4">
-          <p className="text-2xl font-black text-slate-800">{pendingCount + completedCount}</p>
-          <p className="text-xs text-slate-400 font-semibold mt-0.5">Total orders</p>
+      <section className="bg-white border border-slate-100 rounded-3xl p-5">
+        <div className="flex items-center justify-between gap-3">
+          <h3 className="flex items-center gap-2 text-sm font-semibold text-slate-700"><BarChart3 className="w-4 h-4 text-slate-400" /> Orders Overview</h3>
+          <button type="button" aria-label={overviewExpanded ? 'Minimize overview' : 'Expand overview'} onPointerDown={e => { e.preventDefault(); setOverviewExpanded(v => !v); }} className="w-9 h-9 rounded-full bg-slate-50 flex items-center justify-center text-slate-500 active:scale-90 transition-transform transform-gpu">
+            {overviewExpanded ? <Minus className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
+          </button>
         </div>
-        <div className="bg-white border border-slate-100 rounded-2xl p-4">
-          <p className="text-2xl font-black text-amber-600">{pendingCount}</p>
-          <p className="text-xs text-slate-400 font-semibold mt-0.5">Pending</p>
-        </div>
-        <div className="bg-white border border-slate-100 rounded-2xl p-4">
-          <p className="text-2xl font-black text-emerald-600">{completedCount}</p>
-          <p className="text-xs text-slate-400 font-semibold mt-0.5">Completed</p>
-        </div>
-        <div className="bg-white border border-slate-100 rounded-2xl p-4">
-          <p className="text-2xl font-black text-red-500">{cancelledCount}</p>
-          <p className="text-xs text-slate-400 font-semibold mt-0.5">Cancelled</p>
-        </div>
+        {overviewExpanded && <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 mt-4">
+        {([
+          ['Total orders', pendingCount + completedCount, ClipboardList, 'bg-blue-50', 'text-blue-600'],
+          ['Pending', pendingCount, CircleDashed, 'bg-amber-50', 'text-amber-600'],
+          ['Completed', completedCount, CircleCheck, 'bg-emerald-50', 'text-emerald-600'],
+          ['Cancelled', cancelledCount, CircleX, 'bg-red-50', 'text-red-500'],
+        ] as const).map(([label, value, Icon, bg, color]) => <div key={label} className="bg-white border border-slate-100 rounded-2xl p-4">
+          <span className={`w-8 h-8 rounded-xl flex items-center justify-center ${bg} ${color}`}><Icon className="w-4 h-4" /></span>
+          <p className="text-2xl font-black text-slate-800 mt-3">{value}</p><p className="text-xs text-slate-400 font-normal mt-0.5">{label}</p>
+        </div>)}
         {/* Revenue is superadmin-only — the card doesn't exist at all for
             regular admin, not locked/greyed out, just absent. */}
         {isSuperAdmin && (
@@ -343,7 +345,8 @@ export const OrdersTab = forwardRef<OrdersTabHandle, OrdersTabProps>(function Or
             </div>
           </button>
         )}
-      </div>
+        </div>}
+      </section>
 
       {/* ── Search + filters ── */}
       <div className="bg-white border border-slate-100 rounded-2xl p-3.5 flex flex-col gap-2">
