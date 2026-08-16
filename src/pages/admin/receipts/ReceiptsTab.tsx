@@ -1,8 +1,10 @@
 import { forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useState } from 'react';
 import { supabase } from '../../../lib/supabase';
-import { ShieldCheck, ShieldOff, AlertCircle, FileImage, RefreshCw, ExternalLink } from 'lucide-react';
+import { ShieldCheck, ShieldOff, AlertCircle, FileImage, RefreshCw, ExternalLink, BarChart3, Plus, Minus, Clock3, CalendarX2 } from 'lucide-react';
 import { useLoadOnActive } from '../../../hooks/useLoadOnActive';
 import { type ProfileUser } from '../users/ProfileSheet';
+import { NativeSelect } from '../../../components/NativeSelect';
+import { useAxisLockedScroll } from '../../../hooks/useAxisLockedScroll';
 
 interface DriverReceipt {
   id: string;
@@ -47,6 +49,7 @@ export const ReceiptsTab = forwardRef<ReceiptsTabHandle, ReceiptsTabProps>(funct
   { active, showToast, onViewProfile, onModalOpenChange },
   ref
 ) {
+  const receiptDirectoryScrollRef = useAxisLockedScroll<HTMLDivElement>();
   const [driverReceipts, setDriverReceipts] = useState<DriverReceipt[]>([]);
   // Real total vs driverReceipts.length, which is capped below — only used
   // to show "showing X of Y" if that cap is ever actually hit.
@@ -60,6 +63,7 @@ export const ReceiptsTab = forwardRef<ReceiptsTabHandle, ReceiptsTabProps>(funct
   const [showGateMasterConfirm, setShowGateMasterConfirm] = useState(false);
   const [approvingReceipt, setApprovingReceipt] = useState<string | null>(null);
   const [rejectingReceipt, setRejectingReceipt] = useState<string | null>(null);
+  const [overviewCollapsed, setOverviewCollapsed] = useState(true);
 
   useEffect(() => { onModalOpenChange(showGateMasterConfirm); }, [showGateMasterConfirm, onModalOpenChange]);
 
@@ -163,7 +167,7 @@ export const ReceiptsTab = forwardRef<ReceiptsTabHandle, ReceiptsTabProps>(funct
         </div>
 
         {/* Driver / Rider toggle */}
-        <div className="flex bg-white border border-slate-100 rounded-2xl p-1 gap-1">
+        <div className="hidden">
           {(['driver', 'rider'] as const).map(r => {
             const label = r === 'driver' ? 'Drivers' : 'Riders';
             // Two stacked layers instead of toggling bg-primary directly —
@@ -186,7 +190,7 @@ export const ReceiptsTab = forwardRef<ReceiptsTabHandle, ReceiptsTabProps>(funct
         </div>
 
         {/* Summary cards */}
-        <div className="grid grid-cols-4 gap-2">
+        <div className="hidden">
           {(['all', 'verified', 'expired', 'pending'] as const).map(s => {
             const count = s === 'all'
               ? driverReceipts.length
@@ -210,6 +214,19 @@ export const ReceiptsTab = forwardRef<ReceiptsTabHandle, ReceiptsTabProps>(funct
           })}
         </div>
 
+        <section className="bg-white border border-slate-100 rounded-3xl p-5">
+          <div className={`flex items-center justify-between gap-3 ${overviewCollapsed ? '' : 'mb-4'}`}>
+            <h3 className="flex items-center gap-2 text-sm font-semibold text-slate-700"><BarChart3 className="w-4 h-4 text-slate-400" /> Receipt Overview</h3>
+            <button type="button" onPointerDown={e => { e.preventDefault(); setOverviewCollapsed(v => !v); }} aria-label={overviewCollapsed ? 'Expand receipt overview' : 'Minimize receipt overview'} className="w-9 h-9 rounded-2xl bg-slate-50 text-slate-500 flex items-center justify-center active:scale-[0.99] transition-transform transform-gpu">{overviewCollapsed ? <Plus className="w-4 h-4" /> : <Minus className="w-4 h-4" />}</button>
+          </div>
+          {!overviewCollapsed && <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">{([
+            ['All', driverReceipts.length, FileImage, 'bg-blue-50', 'text-blue-600'],
+            ['Verified', driverReceipts.filter(r => receiptStatus(r) === 'verified').length, ShieldCheck, 'bg-emerald-50', 'text-emerald-600'],
+            ['Expired', driverReceipts.filter(r => receiptStatus(r) === 'expired').length, CalendarX2, 'bg-red-50', 'text-red-500'],
+            ['Pending', driverReceipts.filter(r => receiptStatus(r) === 'pending').length, Clock3, 'bg-amber-50', 'text-amber-600'],
+          ] as const).map(([label, count, Icon, bg, color]) => <div key={label} className="bg-white border border-slate-100 rounded-2xl p-4"><span className={`w-8 h-8 rounded-xl flex items-center justify-center ${bg} ${color}`}><Icon className="w-4 h-4" /></span><p className="text-xs font-normal text-slate-400 mt-3">{label}</p><p className="text-xl font-semibold text-slate-800 mt-1">{count}</p></div>)}</div>}
+        </section>
+
         {/* Search */}
         <div className="bg-white border border-slate-100 rounded-2xl p-3.5 flex flex-col gap-2">
           <h3 className="text-sm font-semibold text-slate-700 flex items-center gap-1.5">
@@ -232,6 +249,10 @@ export const ReceiptsTab = forwardRef<ReceiptsTabHandle, ReceiptsTabProps>(funct
               Clear
             </button>
           </div>
+          <div className="grid grid-cols-2 gap-2">
+            <NativeSelect value={receiptFilter} onChange={value => setReceiptFilter(value as typeof receiptFilter)} options={[{ value: 'all', label: 'All Statuses' }, { value: 'verified', label: 'Verified' }, { value: 'expired', label: 'Expired' }, { value: 'pending', label: 'Pending' }]} placeholder="Status" label="Status" />
+            <NativeSelect value={receiptRoleFilter} onChange={value => setReceiptRoleFilter(value as typeof receiptRoleFilter)} options={[{ value: 'driver', label: 'Driver' }, { value: 'rider', label: 'Rider' }]} placeholder="Role" label="Role" />
+          </div>
         </div>
 
         {driverReceiptsTotalCount !== null && driverReceiptsTotalCount > driverReceipts.length && (
@@ -252,7 +273,19 @@ export const ReceiptsTab = forwardRef<ReceiptsTabHandle, ReceiptsTabProps>(funct
             </button>
           </div>
 
-          <div className="overflow-y-auto no-scrollbar h-[420px] flex flex-col gap-2">
+          {!receiptsLoading && filteredReceipts.length > 0 && <div ref={receiptDirectoryScrollRef} className="relative w-full max-w-full overflow-x-auto overscroll-none no-scrollbar" style={{ contain: 'layout paint' }}>
+            <div data-axis-y className="max-h-[420px] overflow-y-auto overscroll-none no-scrollbar" style={{ WebkitOverflowScrolling: 'touch' }}>
+              <table className="min-w-[68rem] w-full border-collapse text-left text-xs"><thead><tr className="border-b border-slate-100 text-slate-400">{['Name','Role','Gerak ID','Campus','Status','Amount','Paid','Expires','Receipt','Actions'].map(h => <th key={h} className="sticky top-0 z-10 bg-white py-2.5 pr-4 font-semibold whitespace-nowrap">{h}</th>)}</tr></thead><tbody>
+                {filteredReceipts.map(r => { const status = receiptStatus(r); const expires = r.fee_receipt_expiry ? new Date(r.fee_receipt_expiry).toLocaleDateString('en-MY') : '—'; return <tr key={r.id} onClick={() => onViewProfile({ id: r.id, name: r.name, gerak_id: r.gerak_id, role: receiptRoleFilter, campus: r.campus, email: r.email, status: r.status || 'active', phone: r.phone || '' })} className="border-b border-slate-100 last:border-b-0 cursor-pointer active:bg-slate-50">
+                  <td className="py-3 pr-4 font-semibold text-slate-800 max-w-[14rem] truncate">{r.name}</td><td className="py-3 pr-4 text-slate-600 capitalize">{receiptRoleFilter}</td><td className="py-3 pr-4 text-slate-600 whitespace-nowrap">{r.gerak_id}</td><td className="py-3 pr-4 text-slate-600 whitespace-nowrap">{r.campus}</td><td className={`py-3 pr-4 font-semibold capitalize ${status === 'verified' ? 'text-emerald-600' : status === 'expired' ? 'text-red-500' : status === 'rejected' ? 'text-orange-600' : 'text-amber-600'}`}>{status}</td><td className="py-3 pr-4 text-slate-600 whitespace-nowrap">{r.fee_receipt_amount || '—'}</td><td className="py-3 pr-4 text-slate-600 whitespace-nowrap">{r.fee_receipt_date || '—'}</td><td className="py-3 pr-4 text-slate-600 whitespace-nowrap">{expires}</td>
+                  <td className="py-2 pr-4" onClick={e => e.stopPropagation()}>{r.fee_receipt_url ? <a href={r.fee_receipt_url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-primary font-semibold"><ExternalLink className="w-3.5 h-3.5" /> View</a> : <span className="text-slate-300">—</span>}</td>
+                  <td className="py-2" onClick={e => e.stopPropagation()}>{status === 'pending' && r.fee_receipt_url ? <div className="flex gap-1.5"><button type="button" onClick={() => handleApproveReceipt(r)} disabled={approvingReceipt === r.id || rejectingReceipt === r.id} className="px-2.5 py-1.5 rounded-xl bg-emerald-50 text-emerald-600 font-semibold disabled:opacity-50">Approve</button><button type="button" onClick={() => handleRejectReceipt(r)} disabled={approvingReceipt === r.id || rejectingReceipt === r.id} className="px-2.5 py-1.5 rounded-xl bg-red-50 text-red-500 font-semibold disabled:opacity-50">Reject</button></div> : <span className="text-slate-300">—</span>}</td>
+                </tr>; })}
+              </tbody></table>
+            </div>
+          </div>}
+
+          <div className={receiptsLoading || filteredReceipts.length === 0 ? "h-[120px] flex items-center justify-center" : "hidden"}>
           {receiptsLoading ? (
             <div className="flex justify-center py-8">
               <span className="w-5 h-5 rounded-full border-2 border-slate-200 border-t-primary animate-spin" />

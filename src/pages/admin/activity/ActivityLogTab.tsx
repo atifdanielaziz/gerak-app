@@ -2,6 +2,8 @@ import { forwardRef, useCallback, useImperativeHandle, useMemo, useState, type E
 import { supabase } from '../../../lib/supabase';
 import { History, RefreshCw, Search, User, PlusCircle, Pencil, Trash2 } from 'lucide-react';
 import { useLoadOnActive } from '../../../hooks/useLoadOnActive';
+import { NativeSelect } from '../../../components/NativeSelect';
+import { useAxisLockedScroll } from '../../../hooks/useAxisLockedScroll';
 
 interface ActivityLogRow {
   id: string;
@@ -138,6 +140,7 @@ export const ActivityLogTab = forwardRef<ActivityLogTabHandle, ActivityLogTabPro
   { active },
   ref
 ) {
+  const activityDirectoryScrollRef = useAxisLockedScroll<HTMLDivElement>();
   const [rows, setRows]         = useState<ActivityLogRow[]>([]);
   const [loading, setLoading]   = useState(false);
   const [tableFilter, setTableFilter] = useState<string>('all');
@@ -191,7 +194,7 @@ export const ActivityLogTab = forwardRef<ActivityLogTabHandle, ActivityLogTabPro
         {/* Two stacked layers instead of toggling colour classes directly —
             this WebView unreliably repaints colour changes; opacity
             changes repaint reliably, so only opacity is toggled here. */}
-        <div className="flex gap-1.5 overflow-x-auto no-scrollbar">
+        <div className="hidden">
           <button onPointerDown={e => { e.preventDefault(); setTableFilter('all'); }}
             className="relative shrink-0 rounded-full transition">
             <span className="block px-3 py-1.5 rounded-full text-xs font-semibold border bg-white text-slate-500 border-slate-200">All</span>
@@ -220,6 +223,7 @@ export const ActivityLogTab = forwardRef<ActivityLogTabHandle, ActivityLogTabPro
             );
           })}
         </div>
+        <NativeSelect value={tableFilter} onChange={setTableFilter} options={[{ value: 'all', label: 'All Activity' }, ...tablesPresent.map(value => ({ value, label: TABLE_LABEL[value] ?? value }))]} placeholder="Activity" label="Activity" />
       </div>
 
       {/* Log list */}
@@ -234,8 +238,13 @@ export const ActivityLogTab = forwardRef<ActivityLogTabHandle, ActivityLogTabPro
           </div>
         ) : filtered.length === 0 ? (
           <p className="text-xs text-slate-400 font-semibold text-center py-6">No activity recorded yet.</p>
-        ) : (
-          <div className="flex flex-col gap-2">
+        ) : (<>
+          <div ref={activityDirectoryScrollRef} className="relative w-full max-w-full overflow-x-auto overscroll-none no-scrollbar" style={{ contain: 'layout paint' }}>
+            <div data-axis-y className="max-h-[520px] overflow-y-auto overscroll-none no-scrollbar" style={{ WebkitOverflowScrolling: 'touch' }}>
+            <table className="min-w-[52rem] w-full border-collapse text-left text-xs"><thead><tr className="border-b border-slate-100 text-slate-400">{['Action','Details','Admin','Area','Date & Time'].map(h => <th key={h} className="sticky top-0 z-10 bg-white py-2.5 pr-4 font-semibold whitespace-nowrap">{h}</th>)}</tr></thead><tbody>{filtered.map(row => { const Icon = ACTION_ICON[row.action]; return <tr key={row.id} className="border-b border-slate-100 last:border-b-0"><td className="py-3 pr-4"><span className={`w-8 h-8 rounded-xl inline-flex items-center justify-center ${ACTION_STYLE[row.action]}`}><Icon className="w-4 h-4" /></span></td><td className="py-3 pr-4 font-semibold text-slate-700 max-w-[22rem]">{describeChange(row)}</td><td className="py-3 pr-4 text-slate-600 whitespace-nowrap">{row.actor_name}</td><td className="py-3 pr-4 text-slate-600 whitespace-nowrap">{TABLE_LABEL[row.table_name] ?? row.table_name}</td><td className="py-3 text-slate-400 whitespace-nowrap">{new Date(row.created_at).toLocaleString('en-MY', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</td></tr>; })}</tbody></table>
+            </div>
+          </div>
+          <div className="hidden">
             {filtered.map(row => {
               const Icon = ACTION_ICON[row.action];
               return (
@@ -258,7 +267,7 @@ export const ActivityLogTab = forwardRef<ActivityLogTabHandle, ActivityLogTabPro
               );
             })}
           </div>
-        )}
+        </>)}
       </div>
     </div>
   );
