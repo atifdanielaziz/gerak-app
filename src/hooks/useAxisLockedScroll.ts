@@ -28,6 +28,7 @@ export const useAxisLockedScroll = <T extends HTMLElement>() => {
     let startLeft = 0;
     let startTop = 0;
     let axis: 'x' | 'y' | null = null;
+    let ignoreGesture = false;
     const previousTouchAction = horizontal.style.touchAction;
     const previousHorizontalOverflowY = horizontal.style.overflowY;
     const previousVerticalOverflowX = vertical.style.overflowX;
@@ -48,6 +49,12 @@ export const useAxisLockedScroll = <T extends HTMLElement>() => {
     const onStart = (event: TouchEvent) => {
       const touch = event.touches[0];
       if (!touch) return;
+      const target = event.target instanceof Element ? event.target : null;
+      // Buttons, links and form controls belong to the component using them,
+      // not to the table's drag engine. Capturing these touches here can
+      // cancel their click on iOS (most visibly the staff action menu).
+      ignoreGesture = !!target?.closest('[data-axis-lock-ignore], button, a, input, select, textarea, [role="button"]');
+      if (ignoreGesture) return;
       startX = touch.clientX;
       startY = touch.clientY;
       startLeft = horizontal.scrollLeft;
@@ -55,6 +62,7 @@ export const useAxisLockedScroll = <T extends HTMLElement>() => {
       axis = null;
     };
     const onMove = (event: TouchEvent) => {
+      if (ignoreGesture) return;
       const touch = event.touches[0];
       if (!touch) return;
       const moveX = touch.clientX - startX;
@@ -76,8 +84,10 @@ export const useAxisLockedScroll = <T extends HTMLElement>() => {
         horizontal.scrollLeft = startLeft;
       }
     };
-    const onEnd = () => { axis = null; };
+    const onEnd = () => { axis = null; ignoreGesture = false; };
     const onWheel = (event: WheelEvent) => {
+      const target = event.target instanceof Element ? event.target : null;
+      if (target?.closest('[data-axis-lock-ignore], input, select, textarea')) return;
       if (!event.deltaX && !event.deltaY) return;
       event.preventDefault();
       if (Math.abs(event.deltaX) > Math.abs(event.deltaY)) horizontal.scrollLeft += event.deltaX;

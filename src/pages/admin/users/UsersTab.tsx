@@ -81,7 +81,7 @@ const UserCard: React.FC<{
         <div className="px-3 py-3 text-xs font-normal text-slate-600">{isDriverOrRider ? (u.has_active_job ? 'Taking Job' : 'Available') : '—'}</div>
 
         {/* ⋮ vertical dots */}
-        <div className="relative shrink-0 px-1" onClick={e => e.stopPropagation()}>
+        <div data-axis-lock-ignore className="relative shrink-0 px-1" onClick={e => e.stopPropagation()}>
           <button
             type="button"
             onPointerDown={e => {
