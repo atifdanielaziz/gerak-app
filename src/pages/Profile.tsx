@@ -7,7 +7,7 @@ import {
   Camera, Car, Upload, FileImage,
   ShieldCheck, ShieldOff, AlertTriangle, Clock, RefreshCw,
   Headset, Languages, Moon, FileText, Lock, Info, Star, Share2,
-  Wallet, MessageCircle, MapPin, User,
+  Wallet, MessageSquareText, MapPin, User,
 } from 'lucide-react';
 
 /* Derive active status from verified + non-expired receipt, with gate bypass.
@@ -30,9 +30,10 @@ export const driverIsActive = (
   ));
 
 export const Profile: React.FC = () => {
-  const { user, logout, updateProfile, refreshUserData, receiptGateActive, showConfirmModal, setCurrentPage, isPreviewMode, profileEditIntentRef } = useApp();
+  const { user, logout, updateProfile, refreshUserData, receiptGateActive, showConfirmModal, setCurrentPage, isPreviewMode, profileEditIntentRef, activeRole } = useApp();
 
   const isDriver = user.role === 'driver' || user.role === 'rider';
+  const isProvider = isDriver || activeRole === 'driver' || activeRole === 'rider' || user.canDrive || user.canRent || user.canTransport;
   const isActive = driverIsActive(user, receiptGateActive);
   const docsApproved = user.docsStatus === 'approved' || user.role === 'admin' || user.role === 'superadmin';
 
@@ -699,19 +700,25 @@ export const Profile: React.FC = () => {
         <p className="text-sm font-bold text-slate-700 mb-3">Quick Actions</p>
         <div className="flex gap-3 overflow-x-auto no-scrollbar pb-1">
           {([
-            { icon: Wallet, label: 'My Finance' },
-            { icon: MessageCircle, label: 'Chat' },
-            { icon: MapPin, label: 'Addresses' },
-          ] as { icon: React.ElementType; label: string }[]).map(({ icon: Icon, label }) => (
-            <div
+            { icon: Wallet, label: 'My Finance', page: isProvider ? 'provider-finance' : undefined },
+            { icon: MessageSquareText, label: 'Feedback', page: isProvider ? 'provider-feedback' : undefined },
+            { icon: MapPin, label: 'Addresses', page: undefined },
+          ] as { icon: React.ElementType; label: string; page?: 'provider-finance' | 'provider-feedback' }[]).map(({ icon: Icon, label, page }) => (
+            <button
               key={label}
+              type="button"
+              onPointerDown={(event) => {
+                if (!page) return;
+                event.preventDefault();
+                setCurrentPage(page);
+              }}
               className="flex-shrink-0 flex flex-col items-center gap-2 border border-slate-100 rounded-2xl p-4 w-24 active:bg-slate-50 active:scale-[0.98] transition cursor-pointer"
             >
               <div className="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center">
                 <Icon className="w-5 h-5 text-slate-900" />
               </div>
               <span className="text-xs font-semibold text-slate-700 text-center leading-tight">{label}</span>
-            </div>
+            </button>
           ))}
         </div>
       </div>

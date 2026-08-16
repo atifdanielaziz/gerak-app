@@ -12,6 +12,8 @@ const Dashboard        = lazy(() => import('./pages/Dashboard').then(m => ({ def
 const Transport        = lazy(() => import('./pages/Transport').then(m => ({ default: m.Transport })));
 const Jubah            = lazy(() => import('./pages/Jubah').then(m => ({ default: m.Jubah })));
 const Profile          = lazy(() => import('./pages/Profile').then(m => ({ default: m.Profile })));
+const ProviderFinance  = lazy(() => import('./pages/ProviderFinance').then(m => ({ default: m.ProviderFinance })));
+const ProviderFeedback = lazy(() => import('./pages/ProviderFeedback').then(m => ({ default: m.ProviderFeedback })));
 const NotificationsPage = lazy(() => import('./pages/NotificationsPage').then(m => ({ default: m.NotificationsPage })));
 const DriverHome       = lazy(() => import('./pages/DriverHome').then(m => ({ default: m.DriverHome })));
 const RiderHome        = lazy(() => import('./pages/RiderHome').then(m => ({ default: m.RiderHome })));
@@ -323,10 +325,14 @@ const AppContent: React.FC = () => {
         return <Jubah />;
       case 'profile':
         return <Profile />;
+      case 'provider-finance':
+        return <ProviderFinance />;
+      case 'provider-feedback':
+        return <ProviderFeedback />;
       case 'notifications':
         return <NotificationsPage />;
       case 'driver-home':
-        return (user.role === 'driver' || user.canDrive || activeRole === 'driver') ? <DriverHome /> : <Dashboard />;
+        return (user.role === 'driver' || user.canDrive || user.canRent || user.canTransport || activeRole === 'driver') ? <DriverHome /> : <Dashboard />;
       case 'rider-home':
         return <RiderHome />;
       case 'admin-home':

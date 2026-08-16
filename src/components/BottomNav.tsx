@@ -1,7 +1,7 @@
 ﻿import React, { useState } from 'react';
 import { useApp } from '../context/AppContext';
 import type { ActivePage } from '../context/AppContext';
-import { Home, UserCircle, Briefcase, LayoutDashboard, CalendarDays, Activity } from 'lucide-react';
+import { Home, UserCircle, LayoutDashboard, CalendarDays, Activity, QrCode } from 'lucide-react';
 
 type Bubble = { id: number; x: number; y: number; btnId: string };
 
@@ -24,19 +24,17 @@ export const BottomNav: React.FC = () => {
 
   if (isSheetOpen) return null;
 
-  const role = isPreviewMode ? 'customer' : (activeRole === 'driver' ? 'driver' : user.role);
+  const role = isPreviewMode ? 'customer' : (activeRole || user.role);
+  const isProvider = !isPreviewMode && !['admin', 'superadmin'].includes(role) && (
+    role === 'driver' || role === 'rider' || user.canDrive || user.canRent || user.canTransport
+  );
+  const providerHub = role === 'rider' ? 'rider-home' : 'driver-home';
 
-  const driverItems = [
-    { id: 'driver-home'       as ActivePage, label: 'Jobs',      icon: Briefcase,       badge: false },
+  const providerItems = [
+    { id: providerHub         as ActivePage, label: 'Hub',       icon: LayoutDashboard, badge: false },
     { id: 'academic-calendar' as ActivePage, label: 'Calendar',  icon: CalendarDays,    badge: false },
     { id: 'activity'          as ActivePage, label: 'Activity',  icon: Activity,        badge: false },
-    { id: 'profile'           as ActivePage, label: 'Profile',   icon: UserCircle,      badge: false },
-  ];
-
-  const riderItems = [
-    { id: 'rider-home'        as ActivePage, label: 'Jobs',      icon: Briefcase,       badge: false },
-    { id: 'academic-calendar' as ActivePage, label: 'Calendar',  icon: CalendarDays,    badge: false },
-    { id: 'activity'          as ActivePage, label: 'Activity',  icon: Activity,        badge: false },
+    { id: 'provider-finance'  as ActivePage, label: 'QR',        icon: QrCode,           badge: false },
     { id: 'profile'           as ActivePage, label: 'Profile',   icon: UserCircle,      badge: false },
   ];
 
@@ -54,8 +52,7 @@ export const BottomNav: React.FC = () => {
   ];
 
   const items =
-    role === 'driver'                         ? driverItems  :
-    role === 'rider'                          ? riderItems   :
+    isProvider                                ? providerItems :
     role === 'superadmin' || role === 'admin' ? adminItems   :
     customerItems;
 
