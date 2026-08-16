@@ -1,7 +1,7 @@
 ﻿import React, { useState, useEffect, useRef } from 'react';
 import { useApp } from '../context/AppContext';
 import { supabase } from '../lib/supabase';
-import { Car, GraduationCap, ArrowRight, ChevronRight, ShieldCheck, KeyRound, ShoppingBasket, Truck } from 'lucide-react';
+import { Car, GraduationCap, ArrowRight, ChevronRight, ShieldCheck, KeyRound, ShoppingBasket, Truck, Circle, Minus } from 'lucide-react';
 
 const toTitleCase = (str: string) =>
   str.toLowerCase().replace(/\b\w/g, c => c.toUpperCase());
@@ -14,6 +14,7 @@ interface Banner {
   page: 'transport' | 'jubah' | 'profile' | 'dashboard';
   emoji: string;
   gradient: string;
+  imageUrl?: string;
 }
 
 const FALLBACK_BANNERS: Banner[] = [
@@ -82,6 +83,9 @@ export const Dashboard: React.FC = () => {
             page:     a.cta_page as Banner['page'],
             emoji:    a.emoji,
             gradient: a.gradient,
+            imageUrl: typeof a.gradient === 'string' && a.gradient.startsWith('image:')
+              ? a.gradient.slice(6)
+              : undefined,
           })));
         }
       });
@@ -162,57 +166,40 @@ export const Dashboard: React.FC = () => {
       )}
 
       {/* 3. Promo Banner Carousel */}
-      <div
-        className="mb-6 relative overflow-hidden rounded-3xl border border-slate-100"
-        style={{ height: 148 }}
-        onTouchStart={onTouchStart}
-        onTouchEnd={onTouchEnd}
-      >
-        {banners.map((ban, idx) => (
-          <div
-            key={idx}
-            className={`absolute inset-0 bg-white p-4 flex flex-col justify-between transition-all duration-500 ${
-              idx === activeBanner ? 'opacity-100 translate-x-0' : 'opacity-0 translate-x-full pointer-events-none'
-            }`}
-          >
-            {/* Decorative emoji blob */}
-            <div className="absolute -right-4 -top-4 text-7xl opacity-[0.06] select-none pointer-events-none text-slate-900">
-              {ban.emoji}
-            </div>
-
-            {/* Tag */}
-            <span className="self-start bg-slate-100 text-slate-500 rounded-xl px-2.5 py-0.5 text-xs font-semibold">
-              {ban.tag}
-            </span>
-
-            {/* Content + CTA */}
-            <div className="flex items-end justify-between gap-3">
-              <div className="flex-1 min-w-0">
-                <h4 className="text-sm font-semibold text-slate-800 leading-tight m-0">{ban.title}</h4>
-                <p className="text-xs text-slate-400 font-normal leading-snug mt-1 line-clamp-2">
-                  {ban.subtitle}
-                </p>
-              </div>
-              <button
-                onClick={() => setCurrentPage(ban.page)}
-                className="shrink-0 bg-primary text-white rounded-xl px-3 py-2 text-xs font-semibold whitespace-nowrap active:scale-95 transition flex items-center gap-1"
-              >
-                {ban.cta} <ArrowRight className="w-3 h-3" />
-              </button>
-            </div>
-          </div>
-        ))}
-
-        {/* Dot indicators */}
-        <div className="absolute bottom-3 left-4 flex gap-1.5 z-10">
-          {banners.map((_, idx) => (
+      <div className="mb-6">
+        <div
+          className="relative overflow-hidden rounded-3xl border border-slate-100 bg-white aspect-[2.15/1]"
+          onTouchStart={onTouchStart}
+          onTouchEnd={onTouchEnd}
+        >
+          {banners.map((ban, idx) => (
             <button
+              type="button"
               key={idx}
-              onPointerDown={e => { e.preventDefault(); setActiveBanner(idx); }}
-              className={`h-1.5 rounded-full transition-all duration-300 ${
-                idx === activeBanner ? 'w-5 bg-primary' : 'w-1.5 bg-slate-200'
+              onClick={() => setCurrentPage(ban.page)}
+              className={`absolute inset-0 w-full h-full overflow-hidden text-left transition-all duration-500 transform-gpu ${
+                idx === activeBanner ? 'opacity-100 translate-x-0' : 'opacity-0 translate-x-full pointer-events-none'
               }`}
-            />
+            >
+              {ban.imageUrl ? (
+                <img src={ban.imageUrl} alt={ban.title || 'Gerak announcement'} className="w-full h-full object-cover" />
+              ) : (
+                <div className={`relative w-full h-full bg-gradient-to-br ${ban.gradient} p-5 text-white flex flex-col items-center justify-center text-center`}>
+                  <div className="absolute -right-4 -top-5 text-8xl opacity-10 select-none pointer-events-none">{ban.emoji}</div>
+                  <span className="bg-white/15 border border-white/20 rounded-xl px-2.5 py-1 text-xs font-semibold">{ban.tag}</span>
+                  <h4 className="text-lg font-semibold leading-tight mt-2 m-0 max-w-[90%]">{ban.title}</h4>
+                  {ban.subtitle && <p className="text-xs text-white/80 font-normal leading-snug mt-1 line-clamp-2 max-w-[90%]">{ban.subtitle}</p>}
+                  {ban.cta && <span className="mt-3 bg-white/15 border border-white/20 rounded-xl px-3 py-1.5 text-xs font-semibold flex items-center gap-1">{ban.cta}<ArrowRight className="w-3 h-3" /></span>}
+                </div>
+              )}
+            </button>
+          ))}
+        </div>
+        <div className="mt-2 flex items-center justify-center gap-1 text-slate-300" aria-label="Advertisement selector">
+          {banners.map((_, idx) => (
+            <button key={idx} type="button" aria-label={`Show advertisement ${idx + 1}`} onPointerDown={e => { e.preventDefault(); setActiveBanner(idx); }} className={`flex items-center justify-center transition-colors ${idx === activeBanner ? 'text-primary' : 'text-slate-200'}`}>
+              {idx === activeBanner ? <Minus className="w-5 h-3 stroke-[4]" /> : <Circle className="w-2.5 h-2.5 fill-current stroke-0" />}
+            </button>
           ))}
         </div>
       </div>

@@ -300,10 +300,12 @@ export const Jubah: React.FC = () => {
       setLeaveGuard(peekLanding ? null : () => () => setPeekLanding(true));
       return () => setLeaveGuard(null);
     }
-    if (!landingUniversity) { setLeaveGuard(null); return; }
+    // A disabled university is an informational state, not a booking step.
+    // Let the permanent Header back button use normal history and return Home.
+    if (!landingUniversity || !landingUni?.live) { setLeaveGuard(null); return; }
     setLeaveGuard(() => (hasUnsavedInput ? () => setShowLeaveConfirm(true) : () => setLandingUniversity('')));
     return () => setLeaveGuard(null);
-  }, [hasUnsavedInput, jubahBooking, landingUniversity, peekLanding, setLeaveGuard]);
+  }, [hasUnsavedInput, jubahBooking, landingUni?.live, landingUniversity, peekLanding, setLeaveGuard]);
 
   const handleDiscardLeave = () => {
     clearFormDraft();
@@ -912,14 +914,26 @@ export const Jubah: React.FC = () => {
               <label className="text-xs font-semibold text-slate-400">
                 Faculty <span className="text-danger">*</span>
               </label>
-              <NativeSelect
-                value={faculty}
-                onChange={setFaculty}
-                options={(UNIVERSITY_FACULTIES[university] ?? []).map(f => ({ value: f, label: f }))}
-                placeholder={university ? 'Select your faculty...' : 'Select a university first'}
-                label="Select Faculty"
-                disabled={!university}
-              />
+              {(UNIVERSITY_FACULTIES[university] ?? []).length > 0 ? (
+                <NativeSelect
+                  value={faculty}
+                  onChange={setFaculty}
+                  options={(UNIVERSITY_FACULTIES[university] ?? []).map(f => ({ value: f, label: f }))}
+                  placeholder={university ? 'Select your faculty...' : 'Select a university first'}
+                  label="Select Faculty"
+                  disabled={!university}
+                />
+              ) : (
+                <input
+                  type="text"
+                  value={faculty}
+                  onChange={e => setFaculty(e.target.value)}
+                  placeholder={university ? 'Enter your faculty' : 'Select a campus first'}
+                  required
+                  disabled={!university}
+                  className="bg-white border border-slate-100 rounded-xl py-2.5 px-3 text-xs font-semibold text-slate-700 focus:outline-none focus:border-slate-900 transition placeholder:font-normal placeholder:text-slate-300 disabled:bg-slate-50"
+                />
+              )}
             </div>
 
             {/* Remark */}
