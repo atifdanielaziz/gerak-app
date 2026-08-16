@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 
 // Table Standard scroll engine. The card itself never moves: the root is
 // the horizontal scroller and the optional data-axis-y child is vertical.
@@ -11,10 +11,16 @@ import { useEffect, useRef } from 'react';
 // hidden on the horizontal root and overflow-x:hidden on the vertical child;
 // without both, "split" containers can still drift diagonally on iOS.
 export const useAxisLockedScroll = <T extends HTMLElement>() => {
-  const ref = useRef<T>(null);
+  // A callback ref is required here. Most admin tables are absent during
+  // their initial loading render, so an effect tied to a permanent RefObject
+  // ran once with `current === null` and never installed the handlers after
+  // the table appeared. Tracking the mounted node reruns setup at the right
+  // time and also cleans up when filters temporarily remove the table.
+  const [node, setNode] = useState<T | null>(null);
+  const ref = useCallback((element: T | null) => setNode(element), []);
 
   useEffect(() => {
-    const horizontal = ref.current;
+    const horizontal = node;
     if (!horizontal) return;
     const vertical = horizontal.querySelector<HTMLElement>('[data-axis-y]') ?? horizontal;
     let startX = 0;
@@ -97,7 +103,7 @@ export const useAxisLockedScroll = <T extends HTMLElement>() => {
       horizontal.removeEventListener('touchcancel', onEnd);
       horizontal.removeEventListener('wheel', onWheel);
     };
-  }, []);
+  }, [node]);
 
   return ref;
 };
