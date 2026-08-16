@@ -84,7 +84,8 @@ const UserCard: React.FC<{
         <div className="relative shrink-0 px-1" onClick={e => e.stopPropagation()}>
           <button
             type="button"
-            onClick={e => {
+            onPointerDown={e => {
+              e.preventDefault();
               e.stopPropagation();
               const rect = e.currentTarget.getBoundingClientRect();
               // Keep the five-row viewport fully on-screen. The menu itself is
@@ -93,6 +94,7 @@ const UserCard: React.FC<{
               setMenuPosition({ top: Math.max(8, Math.min(rect.bottom + 4, window.innerHeight - 256)), right: Math.max(8, window.innerWidth - rect.right) });
               setShowMenu(p => !p);
             }}
+            onClick={e => e.stopPropagation()}
             className="w-7 h-7 flex items-center justify-center rounded-lg text-slate-400 hover:bg-slate-100 active:scale-90 transition"
             aria-label={`Actions for ${u.name}`}
           >
@@ -101,11 +103,11 @@ const UserCard: React.FC<{
 
           {showMenu && createPortal(
             <>
-              <div className="fixed inset-0 z-40" onPointerDown={(e) => { e.preventDefault(); setShowMenu(false); }} />
+              <div className="fixed inset-0 z-[9998]" onPointerDown={(e) => { e.preventDefault(); e.stopPropagation(); setShowMenu(false); }} />
               <div
                 data-axis-lock-ignore
                 onClick={e => e.stopPropagation()}
-                className="fixed z-50 min-w-[190px] max-h-[15rem] overflow-y-auto overscroll-contain touch-pan-y bg-white border border-slate-100 rounded-2xl shadow-xl [scrollbar-gutter:stable] [-webkit-overflow-scrolling:touch]"
+                className="fixed z-[9999] min-w-[190px] max-h-[15rem] overflow-y-auto overscroll-contain touch-pan-y bg-white border border-slate-100 rounded-2xl shadow-xl pointer-events-auto [scrollbar-gutter:stable] [-webkit-overflow-scrolling:touch]"
                 style={{ top: menuPosition.top, right: menuPosition.right }}>
 
                 {/* Driver capabilities */}
