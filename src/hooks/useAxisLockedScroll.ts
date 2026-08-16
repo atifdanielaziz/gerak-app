@@ -6,6 +6,10 @@ import { useEffect, useRef } from 'react';
 // resetting the cross-axis after native scrolling is not enough on iOS:
 // WebKit can keep an unwanted diagonal momentum animation alive after the
 // finger lifts, producing the "wide drift" this hook exists to prevent.
+// Important: CSS computes the unmentioned overflow axis as `auto` when the
+// other axis is scrollable. The standard therefore enforces overflow-y:
+// hidden on the horizontal root and overflow-x:hidden on the vertical child;
+// without both, "split" containers can still drift diagonally on iOS.
 export const useAxisLockedScroll = <T extends HTMLElement>() => {
   const ref = useRef<T>(null);
 
@@ -19,7 +23,13 @@ export const useAxisLockedScroll = <T extends HTMLElement>() => {
     let startTop = 0;
     let axis: 'x' | 'y' | null = null;
     const previousTouchAction = horizontal.style.touchAction;
+    const previousHorizontalOverflowY = horizontal.style.overflowY;
+    const previousVerticalOverflowX = vertical.style.overflowX;
     horizontal.style.touchAction = 'none';
+    if (vertical !== horizontal) {
+      horizontal.style.overflowY = 'hidden';
+      vertical.style.overflowX = 'hidden';
+    }
 
     const onStart = (event: TouchEvent) => {
       const touch = event.touches[0];
@@ -37,7 +47,9 @@ export const useAxisLockedScroll = <T extends HTMLElement>() => {
       const moveY = touch.clientY - startY;
       const dx = Math.abs(moveX);
       const dy = Math.abs(moveY);
-      if (!axis && Math.max(dx, dy) >= 6) axis = dx > dy ? 'x' : 'y';
+      // Bias toward vertical because ordinary list scrolling naturally has
+      // a small sideways component. Horizontal requires deliberate intent.
+      if (!axis && Math.max(dx, dy) >= 6) axis = dx > dy * 1.35 ? 'x' : 'y';
       if (!axis) return;
 
       // Cancels WebKit's native two-axis pan and its post-release momentum.
@@ -65,6 +77,10 @@ export const useAxisLockedScroll = <T extends HTMLElement>() => {
     horizontal.addEventListener('wheel', onWheel, { passive: false });
     return () => {
       horizontal.style.touchAction = previousTouchAction;
+      if (vertical !== horizontal) {
+        horizontal.style.overflowY = previousHorizontalOverflowY;
+        vertical.style.overflowX = previousVerticalOverflowX;
+      }
       horizontal.removeEventListener('touchstart', onStart);
       horizontal.removeEventListener('touchmove', onMove);
       horizontal.removeEventListener('touchend', onEnd);
