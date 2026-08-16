@@ -221,7 +221,7 @@ export function JubahCustomerDetailsSubTab({
         ) : filtered.length === 0 ? (
           <p className="text-xs text-slate-400 text-center py-6">No customer details found.</p>
         ) : (
-          <div ref={tableScrollRef} className="relative w-full max-w-full overflow-x-auto overscroll-none no-scrollbar" style={{ contain: 'layout paint' }}>
+          <div ref={tableScrollRef} className="table-scroll-x relative w-full max-w-full overflow-x-auto overscroll-none" style={{ contain: 'layout paint' }}>
             <div data-axis-y className="max-h-[600px] overflow-y-auto overscroll-none no-scrollbar" style={{ WebkitOverflowScrolling: 'touch' }}>
               <table className="min-w-max border-collapse text-left">
                 <thead><tr className="border-b border-slate-100">

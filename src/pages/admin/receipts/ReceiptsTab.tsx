@@ -273,7 +273,7 @@ export const ReceiptsTab = forwardRef<ReceiptsTabHandle, ReceiptsTabProps>(funct
             </button>
           </div>
 
-          {!receiptsLoading && filteredReceipts.length > 0 && <div ref={receiptDirectoryScrollRef} className="relative w-full max-w-full overflow-x-auto overflow-y-hidden overscroll-none no-scrollbar" style={{ contain: 'layout paint' }}>
+          {!receiptsLoading && filteredReceipts.length > 0 && <div ref={receiptDirectoryScrollRef} className="table-scroll-x relative w-full max-w-full overflow-x-auto overflow-y-hidden overscroll-none" style={{ contain: 'layout paint' }}>
             <div data-axis-y className="max-h-[420px] overflow-y-auto overflow-x-hidden overscroll-none no-scrollbar" style={{ WebkitOverflowScrolling: 'touch' }}>
               <table className="min-w-[68rem] w-full border-collapse text-left text-xs"><thead><tr className="border-b border-slate-100 text-slate-400">{['Name','Role','Gerak ID','Campus','Status','Amount','Paid','Expires','Receipt','Actions'].map(h => <th key={h} className="sticky top-0 z-10 bg-white py-2.5 pr-4 font-semibold whitespace-nowrap">{h}</th>)}</tr></thead><tbody>
                 {filteredReceipts.map(r => { const status = receiptStatus(r); const expires = r.fee_receipt_expiry ? new Date(r.fee_receipt_expiry).toLocaleDateString('en-MY') : '—'; return <tr key={r.id} onClick={() => onViewProfile({ id: r.id, name: r.name, gerak_id: r.gerak_id, role: receiptRoleFilter, campus: r.campus, email: r.email, status: r.status || 'active', phone: r.phone || '' })} className="border-b border-slate-100 last:border-b-0 cursor-pointer active:bg-slate-50">

@@ -45,7 +45,7 @@ export function ProviderQr() {
   }, [isProvider]);
 
   return (
-    <main className="flex-1 overflow-y-auto px-5 py-5 pb-[calc(6.5rem+env(safe-area-inset-bottom))] bg-white">
+    <main className="scrollable-page flex-1 px-5 pt-5 bg-white">
       <header className="mb-5">
         <div className="flex items-center gap-2"><QrCode className="w-5 h-5 text-slate-400" /><h1 className="font-semibold text-slate-900">Payment QR</h1></div>
         <p className="text-sm font-normal text-slate-400 mt-1">{roles.join(' · ')}</p>

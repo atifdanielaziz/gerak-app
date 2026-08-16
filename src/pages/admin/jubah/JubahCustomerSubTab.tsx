@@ -535,7 +535,7 @@ export function JubahCustomerSubTab({
                (no vertical clipping, so it sizes to the table's real
                width); inner handles vertical only, so sticky top-0
                on thead has a single, predictable scrolling ancestor. */
-            <div ref={customerDirectoryScrollRef} className="relative w-full max-w-full overflow-x-auto overscroll-none no-scrollbar"
+            <div ref={customerDirectoryScrollRef} className="table-scroll-x relative w-full max-w-full overflow-x-auto overscroll-none"
               style={{ contain: 'layout paint' }}>
               <div data-axis-y className="max-h-[600px] overflow-y-auto overscroll-none no-scrollbar"
                 style={{ WebkitOverflowScrolling: 'touch' }}>

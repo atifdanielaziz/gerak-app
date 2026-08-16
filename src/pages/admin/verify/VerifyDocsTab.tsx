@@ -100,7 +100,7 @@ export const VerifyDocsTab = forwardRef<VerifyDocsTabHandle, VerifyDocsTabProps>
 
     <section className="bg-white border border-slate-100 rounded-3xl p-5">
       <h3 className="flex items-center gap-2 text-sm font-semibold text-slate-700 mb-3"><Users className="w-4 h-4 text-slate-400" /> Document Directory</h3>
-      <div ref={tableScrollRef} className="relative w-full max-w-full overflow-x-auto overscroll-none no-scrollbar" style={{ contain: 'layout paint' }}>
+      <div ref={tableScrollRef} className="table-scroll-x relative w-full max-w-full overflow-x-auto overscroll-none" style={{ contain: 'layout paint' }}>
       <div data-axis-y className="max-h-[560px] overflow-y-auto overscroll-none no-scrollbar" style={{ WebkitOverflowScrolling: 'touch' }}>
       {loading ? <div className="flex justify-center py-8"><span className="w-5 h-5 rounded-full border-2 border-slate-200 border-t-primary animate-spin" /></div>
       : filtered.length === 0 ? <p className="text-xs text-slate-400 text-center py-6">No {roleFilter}s found.</p>

@@ -417,7 +417,7 @@ export const OrdersTab = forwardRef<OrdersTabHandle, OrdersTabProps>(function Or
             <p className="text-xs font-semibold">No orders yet</p>
           </div>
         ) : (
-          <div ref={ordersDirectoryScrollRef} className="relative w-full max-w-full overflow-x-auto overscroll-none no-scrollbar" style={{ contain: 'layout paint' }}>
+          <div ref={ordersDirectoryScrollRef} className="table-scroll-x relative w-full max-w-full overflow-x-auto overscroll-none" style={{ contain: 'layout paint' }}>
             <div data-axis-y className="overflow-y-auto overscroll-none no-scrollbar max-h-[560px]" style={{ WebkitOverflowScrolling: 'touch' }}>
               <table className="border-collapse text-left" style={{ tableLayout: 'fixed', width: '100%', minWidth: COL_KEYS.reduce((sum, k) => sum + colWidths[k], 0) }}>
                 <colgroup>

@@ -127,14 +127,14 @@ export const ProviderFinance: React.FC = () => {
   };
 
   if (!isProvider) return (
-    <main className="flex-1 overflow-y-auto px-5 py-6 pb-[calc(6.5rem+env(safe-area-inset-bottom))]">
+    <main className="scrollable-page flex-1 px-5 pt-6">
       <div className="border border-slate-100 rounded-3xl p-6 text-center"><QrCode className="w-8 h-8 mx-auto text-slate-300 mb-3" /><p className="font-semibold text-slate-800">Provider finance is available to service providers.</p></div>
     </main>
   );
 
   const total = earnings.car + earnings.jubah + earnings.rental;
   return (
-    <main className="flex-1 overflow-y-auto px-5 py-5 pb-[calc(6.5rem+env(safe-area-inset-bottom))] bg-white">
+    <main className="scrollable-page flex-1 px-5 pt-5 bg-white">
       {notice && <div className="fixed z-[90] top-20 left-1/2 -translate-x-1/2 rounded-2xl bg-slate-900 text-white px-5 py-3 text-sm font-semibold shadow-lg whitespace-nowrap">{notice}</div>}
       <section className="mb-5">
         <div className="flex items-center gap-2"><QrCode className="w-5 h-5 text-slate-400" /><h1 className="font-semibold text-slate-900">Payment QR</h1></div>

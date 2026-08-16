@@ -17,7 +17,7 @@ export const ProviderFeedback: React.FC = () => {
   }, []);
 
   return (
-    <main className="flex-1 overflow-y-auto px-5 py-5 pb-[calc(6.5rem+env(safe-area-inset-bottom))] bg-white">
+    <main className="scrollable-page flex-1 px-5 pt-5 bg-white">
       <div className="flex items-center gap-2"><MessageSquareText className="w-5 h-5 text-slate-400" /><h1 className="font-semibold text-slate-900">Feedback</h1></div>
       <p className="text-sm font-normal text-slate-400 mt-1 mb-5">Feedback received from your customers.</p>
       {loading ? <div className="py-16 flex justify-center"><span className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" /></div> : items.length === 0 ? (
