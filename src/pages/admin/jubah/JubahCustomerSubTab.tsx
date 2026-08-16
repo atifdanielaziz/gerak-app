@@ -19,6 +19,7 @@ import { jubahLocationLabel } from '../../../lib/universities';
 import { useAxisLockedScroll } from '../../../hooks/useAxisLockedScroll';
 import { useApp } from '../../../context/AppContext';
 import { NativeSelect } from '../../../components/NativeSelect';
+import type { SheetData } from 'write-excel-file/browser';
 
 // Shared by the "Upload Documents & Combined Document" and "Proof of
 // Payment" sections below — same view/download-via-signed-URL row, reused
@@ -146,6 +147,8 @@ export function JubahCustomerSubTab({
   // button and the card/details Confirm button can target different
   // bookings, and only the one actually in flight should show a spinner.
   const [confirmingId, setConfirmingId] = useState<string | null>(null);
+  const [exportMenuOpen, setExportMenuOpen] = useState(false);
+  const [exportingFormat, setExportingFormat] = useState<'csv' | 'xlsx' | null>(null);
 
   // Only receiptModal is tracked here — cancelModalBooking was never part of
   // the "any sheet open" check in the original code (a pre-existing gap,
@@ -323,6 +326,73 @@ export function JubahCustomerSubTab({
     });
   }, [bookings, jubahModeFilter, jubahTypeFilter, jubahRobeStatusFilter, jubahRiderFilter, jubahSearch]);
 
+  const exportRows = () => filteredBookings.map(b => {
+    const isPaid = b.payment_mode === 'deposit' ? b.balance_paid : b.initial_paid;
+    const awaitingBalanceProof = b.payment_mode === 'deposit' && b.initial_paid && !b.balance_paid && !b.balance_proof_url;
+    const confirmState = b.status === 'cancelled'
+      ? 'Cancelled'
+      : awaitingBalanceProof
+        ? 'Awaiting balance proof'
+        : getConfirmState(b).confirmActive
+          ? 'Pending confirmation'
+          : 'Confirmed';
+    return [
+      b.reference,
+      b.full_name,
+      b.remark,
+      modeLabel(b),
+      typeLabel(b),
+      b.status === 'cancelled' ? 'Cancelled' : !isPaid ? 'Booked' : 'Full Paid',
+      b.status === 'cancelled' ? '—' : (JUBAH_STATUS_LABEL[b.status] ?? b.status),
+      b.rider_name ?? '—',
+      confirmState,
+      'Available',
+    ];
+  });
+
+  const exportHeaders = ['Reference', 'Name', 'Remark', 'Mode', 'Type', 'Status', 'Robe Status', 'Rider', 'Confirm', 'Receipt'];
+  const exportFileBase = `jubah-customers-${universityLabel.toLowerCase().replace(/[^a-z0-9]+/g, '-')}-${new Date().toISOString().slice(0, 10)}`;
+
+  const downloadExport = async (format: 'csv' | 'xlsx') => {
+    if (filteredBookings.length === 0 || exportingFormat) return;
+    setExportMenuOpen(false);
+    setExportingFormat(format);
+    try {
+      const rows = exportRows();
+      if (format === 'csv') {
+        const safeCell = (value: string) => {
+          // Prevent spreadsheet formula injection from customer-entered text.
+          const guarded = /^[=+\-@\t\r]/.test(value) ? `'${value}` : value;
+          return `"${guarded.replace(/"/g, '""')}"`;
+        };
+        const csv = [exportHeaders, ...rows].map(row => row.map(safeCell).join(',')).join('\r\n');
+        const url = URL.createObjectURL(new Blob([`\uFEFF${csv}`], { type: 'text/csv;charset=utf-8' }));
+        const anchor = document.createElement('a');
+        anchor.href = url;
+        anchor.download = `${exportFileBase}.csv`;
+        document.body.appendChild(anchor);
+        anchor.click();
+        anchor.remove();
+        URL.revokeObjectURL(url);
+      } else {
+        const { default: writeXlsxFile } = await import('write-excel-file/browser');
+        const headerRow = exportHeaders.map(value => ({ value, type: String, fontWeight: 'bold' as const, backgroundColor: '#F8FAFC' }));
+        const dataRows = rows.map(row => row.map(value => ({ value, type: String })));
+        const sheetData: SheetData = [headerRow, ...dataRows];
+        const workbook = writeXlsxFile(sheetData, {
+          columns: exportHeaders.map((header, index) => ({ width: index === 1 || index === 7 ? 30 : Math.max(14, header.length + 3) })),
+        });
+        await workbook.toFile(`${exportFileBase}.xlsx`);
+      }
+      showToast(`${format.toUpperCase()} downloaded.`);
+    } catch (error) {
+      console.error('Customer directory export failed:', error);
+      showToast(`Couldn't create the ${format.toUpperCase()} file.`);
+    } finally {
+      setExportingFormat(null);
+    }
+  };
+
   return (
     <>
       {adminView === 'list' && (<>
@@ -393,12 +463,39 @@ export function JubahCustomerSubTab({
 
         {/* Customer bookings table */}
         <div className="bg-white border border-slate-100 rounded-3xl p-5 flex flex-col gap-4">
-          <h3 className="text-sm font-semibold text-slate-700 flex items-center justify-between">
+          <div className="relative text-sm font-semibold text-slate-700 flex items-center justify-between gap-3">
             <span className="flex items-center gap-1.5"><Users className="w-4 h-4" /> Customer Directory ({universityLabel})</span>
-            <span className="font-normal text-slate-300 normal-case tracking-normal">
-              {filteredBookings.length} bookings
+            <span className="flex items-center gap-2 shrink-0">
+              <span className="font-normal text-slate-300 normal-case tracking-normal">
+                {filteredBookings.length} bookings
+              </span>
+              <button
+                type="button"
+                data-axis-lock-ignore
+                disabled={filteredBookings.length === 0 || exportingFormat !== null}
+                onPointerDown={e => { e.preventDefault(); e.stopPropagation(); setExportMenuOpen(open => !open); }}
+                aria-label="Download customer directory"
+                className="w-8 h-8 flex items-center justify-center rounded-xl bg-white border border-slate-100 text-slate-500 active:bg-slate-50 active:scale-95 transition-transform transform-gpu disabled:opacity-40"
+              >
+                {exportingFormat
+                  ? <span className="w-3.5 h-3.5 rounded-full border-2 border-slate-300 border-t-slate-600 animate-spin" />
+                  : <Download className="w-4 h-4" />}
+              </button>
             </span>
-          </h3>
+            {exportMenuOpen && <>
+              <div className="fixed inset-0 z-40" onPointerDown={e => { e.preventDefault(); setExportMenuOpen(false); }} />
+              <div className="absolute right-0 top-10 z-50 min-w-[170px] overflow-hidden bg-white border border-slate-100 rounded-2xl shadow-xl">
+                <button type="button" onPointerDown={e => { e.preventDefault(); void downloadExport('csv'); }}
+                  className="w-full px-4 py-3 text-left text-xs font-semibold text-slate-700 active:bg-slate-50 transition-transform transform-gpu">
+                  Download CSV
+                </button>
+                <button type="button" onPointerDown={e => { e.preventDefault(); void downloadExport('xlsx'); }}
+                  className="w-full px-4 py-3 text-left text-xs font-semibold text-slate-700 border-t border-slate-100 active:bg-slate-50 transition-transform transform-gpu">
+                  Download Excel (.xlsx)
+                </button>
+              </div>
+            </>}
+          </div>
 
           {/* Only ever shows once there are genuinely more rows than the
               1000-row cap fetches — not real pagination, just visibility
