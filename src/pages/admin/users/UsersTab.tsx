@@ -82,8 +82,9 @@ const UserCard: React.FC<{
         {/* ⋮ vertical dots */}
         <div className="relative shrink-0 px-1" onClick={e => e.stopPropagation()}>
           <button
-            onPointerDown={e => {
-              e.preventDefault();
+            type="button"
+            onClick={e => {
+              e.stopPropagation();
               const rect = e.currentTarget.getBoundingClientRect();
               setMenuPosition({ top: Math.min(rect.bottom + 4, window.innerHeight - 210), right: window.innerWidth - rect.right });
               setShowMenu(p => !p);
@@ -505,19 +506,26 @@ export const UsersTab = forwardRef<UsersTabHandle, UsersTabProps>(function Users
 
   const overview = useMemo(() => {
     const now = Date.now();
-    const paymentStaff = universityUsers.filter(u => u.role === 'driver' || u.role === 'rider');
+    const roleUsers = universityUsers.filter(u =>
+      staffFilter === 'all' ? true :
+      staffFilter === 'drivers' ? u.role === 'driver' :
+      staffFilter === 'riders' ? u.role === 'rider' :
+      ['admin', 'superadmin'].includes(u.role)
+    );
+    const paymentStaff = roleUsers.filter(u => u.role === 'driver' || u.role === 'rider');
     const paymentValid = paymentStaff.filter(u => u.receipt_gate_exempt || (u.fee_receipt_verified && u.fee_receipt_expiry && new Date(u.fee_receipt_expiry).getTime() >= now)).length;
     const expired = paymentStaff.filter(u => !u.receipt_gate_exempt && !!u.fee_receipt_expiry && new Date(u.fee_receipt_expiry).getTime() < now).length;
     return {
       paymentValid,
       expired,
-      activeDrivers: universityUsers.filter(u => u.role === 'driver' && u.status === 'active' && u.docs_status === 'approved' && !!u.can_drive && (u.receipt_gate_exempt || (u.fee_receipt_verified && !!u.fee_receipt_expiry && new Date(u.fee_receipt_expiry).getTime() >= now))).length,
-      inCampus: universityUsers.filter(u => (u.campus_status ?? 'in_campus') === 'in_campus').length,
-      outCampus: universityUsers.filter(u => u.campus_status === 'out_campus').length,
-      online: universityUsers.filter(u => !!u.last_seen_at && now - new Date(u.last_seen_at).getTime() <= 300_000).length,
-      takingJob: universityUsers.filter(u => u.has_active_job).length,
+      activeDrivers: roleUsers.filter(u => u.role === 'driver' && u.status === 'active' && u.docs_status === 'approved' && !!u.can_drive && (u.receipt_gate_exempt || (u.fee_receipt_verified && !!u.fee_receipt_expiry && new Date(u.fee_receipt_expiry).getTime() >= now))).length,
+      inCampus: roleUsers.filter(u => (u.campus_status ?? 'in_campus') === 'in_campus').length,
+      outCampus: roleUsers.filter(u => u.campus_status === 'out_campus').length,
+      online: roleUsers.filter(u => !!u.last_seen_at && now - new Date(u.last_seen_at).getTime() <= 300_000).length,
+      takingJob: roleUsers.filter(u => u.has_active_job).length,
+      total: roleUsers.length,
     };
-  }, [universityUsers]);
+  }, [universityUsers, staffFilter]);
 
   const campusFilteredUsers = useMemo(() => {
     return profileUsers.filter(u => {
@@ -570,7 +578,7 @@ export const UsersTab = forwardRef<UsersTabHandle, UsersTabProps>(function Users
               ['Out Campus', overview.outCampus, LogOut, 'bg-amber-50', 'text-amber-600'],
               ['Online', overview.online, Wifi, 'bg-cyan-50', 'text-cyan-600'],
               ['Taking Job', overview.takingJob, BriefcaseBusiness, 'bg-indigo-50', 'text-indigo-600'],
-              ['Total Staff', universityUsers.length, Users, 'bg-slate-100', 'text-slate-600'],
+              ['Total Staff', overview.total, Users, 'bg-slate-100', 'text-slate-600'],
             ] as const).map(([label, value, Icon, iconBg, iconColor]) => (
               <div key={label} className="bg-white border border-slate-100 rounded-2xl p-4">
                 <div className={`w-8 h-8 rounded-xl flex items-center justify-center mb-3 ${iconBg}`}>
@@ -739,7 +747,6 @@ export const UsersTab = forwardRef<UsersTabHandle, UsersTabProps>(function Users
           <div
             ref={staffDirectoryScrollRef}
             className="relative w-full max-w-full overflow-x-auto overscroll-none no-scrollbar"
-            style={{ contain: 'layout paint' }}
           >
             <div data-axis-y className="max-h-[420px] overflow-y-auto overscroll-none no-scrollbar" style={{ WebkitOverflowScrolling: 'touch' }}>
             <div className="grid grid-cols-[minmax(12rem,1.5fr)_6rem_7rem_8rem_minmax(14rem,1.5fr)_7rem_5.5rem_7rem_2.5rem] min-w-[76rem] border-b border-slate-100 bg-white">
