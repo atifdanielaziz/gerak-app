@@ -31,12 +31,12 @@ export const UNIVERSITIES: University[] = [
   {
     key: 'uitm', label: 'Universiti Teknologi MARA (UiTM)',
     shortLabel: 'UiTM', fullName: 'Universiti Teknologi MARA',
-    campuses: ['Shah Alam', 'Puncak Alam', 'Machang'], live: false,
+    campuses: ['Shah Alam', 'Puncak Alam', 'Machang'], live: true,
   },
   {
     key: 'umk', label: 'Universiti Malaysia Kelantan (UMK)',
     shortLabel: 'UMK', fullName: 'Universiti Malaysia Kelantan',
-    campuses: ['Jeli', 'Bachok', 'Kota Bharu'], live: false,
+    campuses: ['Jeli', 'Bachok', 'Kota Bharu'], live: true,
   },
   {
     key: 'ukm', label: 'Universiti Kebangsaan Malaysia (UKM)',
@@ -48,12 +48,12 @@ export const UNIVERSITIES: University[] = [
     // create_jubah_booking()'s validation both hardcode this literal string.
     key: 'uiam', label: 'Universiti Islam Antarabangsa Malaysia (UIA)',
     shortLabel: 'UIAM', fullName: 'Universiti Islam Antarabangsa Malaysia',
-    campuses: ['Gombak', 'Kuantan'], live: false,
+    campuses: ['Gombak', 'Kuantan'], live: true,
   },
   {
     key: 'uum', label: 'Universiti Utara Malaysia (UUM)',
     shortLabel: 'UUM', fullName: 'Universiti Utara Malaysia',
-    campuses: ['Sintok'], live: false,
+    campuses: ['Sintok'], live: true,
   },
 ];
 
