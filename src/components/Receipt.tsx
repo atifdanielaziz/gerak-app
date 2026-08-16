@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { FileDown, Copy, Check, X } from 'lucide-react';
+import { FileDown, Copy, Check, X, CircleAlert } from 'lucide-react';
 import { WaBtn } from '../lib/whatsapp';
 import type { ReceiptDoc, ReceiptMeta, ReceiptRow } from '../lib/receiptRows';
 import { copyToClipboard } from '../lib/clipboard';
@@ -86,7 +86,13 @@ export const ReceiptCard: React.FC<{
       </React.Fragment>
     ))}
     {children}
-    {onSavePdf && (
+    {doc.generationBlockedReason && (
+      <div className="mt-2 flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2.5 font-sans text-xs font-normal leading-relaxed text-amber-700">
+        <CircleAlert className="mt-0.5 h-4 w-4 shrink-0" />
+        <span>{doc.generationBlockedReason}</span>
+      </div>
+    )}
+    {onSavePdf && !doc.generationBlockedReason && (
       <button
         type="button"
         onClick={onSavePdf}
