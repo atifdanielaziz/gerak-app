@@ -196,7 +196,7 @@ export const DriversTab = forwardRef<DriversTabHandle, DriversTabProps>(function
           {/* University + Campus picker — superadmin only; regular admin
               locked to their own university/campus */}
           {isSuperAdmin ? (
-            <div className="flex flex-col gap-3">
+            <div className="grid grid-cols-2 gap-3 items-start">
               <div>
                 <p className="text-sm font-semibold text-slate-700 mb-2">University</p>
                 <NativeSelect
@@ -205,7 +205,7 @@ export const DriversTab = forwardRef<DriversTabHandle, DriversTabProps>(function
                     setInviteUniversityKey(key);
                     setInviteCampus(UNIVERSITY_MAP[key]?.campuses[0] ?? '');
                   }}
-                  options={UNIVERSITIES.map(u => ({ value: u.key, label: u.label }))}
+                  options={UNIVERSITIES.map(u => ({ value: u.key, label: u.shortLabel }))}
                   placeholder="Select university..."
                   label="Select University"
                 />
@@ -213,8 +213,7 @@ export const DriversTab = forwardRef<DriversTabHandle, DriversTabProps>(function
               {/* Campus only shown when the chosen university has a real
                   multi-campus split — a single-campus university is
                   auto-filled above, nothing left to ask. */}
-              {(UNIVERSITY_MAP[inviteUniversityKey]?.campuses.length ?? 0) > 1 && (
-                <div>
+              <div>
                   <p className="text-sm font-semibold text-slate-700 mb-2">Campus</p>
                   <NativeSelect
                     value={inviteCampus}
@@ -223,8 +222,7 @@ export const DriversTab = forwardRef<DriversTabHandle, DriversTabProps>(function
                     placeholder="Select campus..."
                     label="Select Campus"
                   />
-                </div>
-              )}
+              </div>
             </div>
           ) : (
             <div className="flex items-center gap-2 bg-slate-50 border border-slate-200 rounded-2xl px-4 py-2.5">
