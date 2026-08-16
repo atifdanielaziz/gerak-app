@@ -11,6 +11,7 @@ import { BOOKING_METHOD_LABEL, buildTransportReceiptRows } from '../../../lib/re
 import { copyToClipboard } from '../../../lib/clipboard';
 import { ReceiptSheet } from '../../../components/Receipt';
 import { generateReceiptPdf } from '../../../lib/receiptPdf';
+import { useAxisLockedScroll } from '../../../hooks/useAxisLockedScroll';
 
 interface RideOrder {
   id: string;
@@ -130,6 +131,7 @@ export const OrdersTab = forwardRef<OrdersTabHandle, OrdersTabProps>(function Or
   { isSuperAdmin, campusView, onCampusViewChange, showToast },
   ref
 ) {
+  const ordersDirectoryScrollRef = useAxisLockedScroll<HTMLDivElement>();
   const { showConfirmModal, setSheetOpen } = useApp();
   const [orders, setOrders] = useState<RideOrder[]>([]);
   const [statusFilter, setStatusFilter] = useState<FilterStatus>('all');
@@ -415,8 +417,8 @@ export const OrdersTab = forwardRef<OrdersTabHandle, OrdersTabProps>(function Or
             <p className="text-xs font-semibold">No orders yet</p>
           </div>
         ) : (
-          <div className="overflow-x-auto no-scrollbar">
-            <div className="overflow-y-auto no-scrollbar max-h-[560px]">
+          <div ref={ordersDirectoryScrollRef} className="relative w-full max-w-full overflow-x-auto overscroll-none no-scrollbar" style={{ contain: 'layout paint' }}>
+            <div data-axis-y className="overflow-y-auto overscroll-none no-scrollbar max-h-[560px]" style={{ WebkitOverflowScrolling: 'touch' }}>
               <table className="border-collapse text-left" style={{ tableLayout: 'fixed', width: '100%', minWidth: COL_KEYS.reduce((sum, k) => sum + colWidths[k], 0) }}>
                 <colgroup>
                   {COL_KEYS.map(k => <col key={k} style={{ width: colWidths[k] }} />)}

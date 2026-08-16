@@ -298,8 +298,10 @@ export const DriversTab = forwardRef<DriversTabHandle, DriversTabProps>(function
             </p>
           ) : (
             <div ref={inviteDirectoryScrollRef}
-              className="relative w-full max-w-full max-h-[360px] overflow-auto overscroll-none no-scrollbar"
-              style={{ WebkitOverflowScrolling: 'touch' }}>
+              className="relative w-full max-w-full overflow-x-auto overscroll-none no-scrollbar"
+              style={{ contain: 'layout paint' }}>
+              <div data-axis-y className="max-h-[360px] overflow-y-auto overscroll-none no-scrollbar"
+                style={{ WebkitOverflowScrolling: 'touch' }}>
               <table className="min-w-[60rem] w-full border-collapse text-left">
                 <thead>
                   <tr className="border-b border-slate-100 text-xs font-normal text-slate-400">
@@ -345,7 +347,7 @@ export const DriversTab = forwardRef<DriversTabHandle, DriversTabProps>(function
                     );
                   })}
                 </tbody>
-              </table>
+              </table></div>
             </div>
           )}
         </div>
