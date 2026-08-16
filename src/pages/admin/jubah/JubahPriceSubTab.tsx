@@ -1,11 +1,30 @@
 import { useCallback, useState } from 'react';
 import { supabase } from '../../../lib/supabase';
-import { TrendingUp, GraduationCap, Landmark } from 'lucide-react';
+import { TrendingUp, GraduationCap, Landmark, CircleDollarSign } from 'lucide-react';
 import { useLoadOnActive } from '../../../hooks/useLoadOnActive';
 import { JubahQrButton } from '../../../components/JubahQrButton';
 import { UNIVERSITY_MAP } from '../../../lib/universities';
 
 type JubahPrice = { remark: string; payment_mode: string; price: number; university: string };
+
+function SaveStateButton({ dirty, saving, onSave, wide = false, dirtyLabel = 'Save' }: {
+  dirty: boolean; saving: boolean; onSave: () => void; wide?: boolean; dirtyLabel?: string;
+}) {
+  return (
+    <button
+      type="button"
+      onPointerDown={e => { e.preventDefault(); if (dirty && !saving) onSave(); }}
+      disabled={!dirty || saving}
+      className={`${wide ? 'w-full py-3 rounded-2xl text-sm' : 'shrink-0 px-4 py-2.5 rounded-xl text-xs'} border font-semibold transition-transform transform-gpu active:scale-[0.99] ${
+        dirty || saving
+          ? 'bg-primary border-primary text-white shadow-lg shadow-primary/30'
+          : 'bg-white border-slate-300 text-slate-400 shadow-none'
+      }`}
+    >
+      {saving ? 'Saving…' : dirty ? dirtyLabel : 'Saved'}
+    </button>
+  );
+}
 
 interface JubahPriceSubTabProps {
   active: boolean;
@@ -41,6 +60,7 @@ export function JubahPriceSubTab({ active, isSuperAdmin, showToast, jubahUnivers
   // that. Also per-university now (same shape as priceDrafts above), keyed
   // by `${type}_${university}`.
   const [commissionDrafts, setCommissionDrafts] = useState<Record<string, string>>({});
+  const [commissionOriginal, setCommissionOriginal] = useState<Record<string, string>>({});
   const [commissionLocked, setCommissionLocked] = useState<Record<string, boolean>>({});
   const [savingCommission, setSavingCommission] = useState<string | null>(null);
 
@@ -82,14 +102,17 @@ export function JubahPriceSubTab({ active, isSuperAdmin, showToast, jubahUnivers
       });
       return { key, ok: !error };
     }));
-    setSavingAllPrices(false);
     const failedCount = results.filter(r => !r.ok).length;
     if (failedCount > 0) {
       showToast(`${failedCount} price${failedCount > 1 ? 's' : ''} failed to save — please try again.`);
     } else {
       showToast('Pricing matrix saved ✓');
     }
-    loadJubahPrices();
+    if (failedCount === 0) {
+      setPriceOriginal({ ...priceDrafts });
+      setPriceLocked(prev => ({ ...prev, ...Object.fromEntries(dirtyKeys.map(key => [key, true])) }));
+    }
+    setSavingAllPrices(false);
   };
 
   // Rider commission — superadmin-only to change (enforced server-side in
@@ -110,6 +133,7 @@ export function JubahPriceSubTab({ active, isSuperAdmin, showToast, jubahUnivers
         locked[key] = true;
       });
       setCommissionDrafts(drafts);
+      setCommissionOriginal(drafts);
       setCommissionLocked(locked);
     }
   }, []);
@@ -124,10 +148,17 @@ export function JubahPriceSubTab({ active, isSuperAdmin, showToast, jubahUnivers
     const { data, error } = await supabase.rpc('set_jubah_rider_commission_amount', {
       p_amount: amount, p_delivery_type: deliveryType, p_university: jubahUniversity,
     });
-    setSavingCommission(null);
-    if (error || !data?.success) { showToast(data?.error ?? 'Failed to save commission amount.'); return; }
+    if (error || !data?.success) {
+      setSavingCommission(null);
+      showToast(data?.error ?? 'Failed to save commission amount.');
+      return;
+    }
+    const saved = String(amount);
+    setCommissionDrafts(prev => ({ ...prev, [key]: saved }));
+    setCommissionOriginal(prev => ({ ...prev, [key]: saved }));
     showToast(`${deliveryType === 'pickup' ? 'Pickup Only' : 'Postage'} commission updated.`);
     setCommissionLocked(prev => ({ ...prev, [key]: true }));
+    setSavingCommission(null);
   };
 
   // Payment Bank Details — one shared account every customer pays into,
@@ -136,7 +167,8 @@ export function JubahPriceSubTab({ active, isSuperAdmin, showToast, jubahUnivers
   // redirects real customer payments, so this is deliberately stricter than
   // the admin-or-superadmin default most app_settings rows allow.
   const [bankDraft, setBankDraft] = useState({ name: '', account: '', holder: '' });
-  const [bankSaved, setBankSaved] = useState(false);
+  const [bankOriginal, setBankOriginal] = useState({ name: '', account: '', holder: '' });
+  const [bankLocked, setBankLocked] = useState(true);
   const [savingBank, setSavingBank] = useState(false);
 
   const loadBankDetails = useCallback(async () => {
@@ -148,7 +180,8 @@ export function JubahPriceSubTab({ active, isSuperAdmin, showToast, jubahUnivers
     const account = data?.find(r => r.key === 'jubah_bank_account_number')?.value ?? '';
     const holder  = data?.find(r => r.key === 'jubah_bank_account_holder')?.value ?? '';
     setBankDraft({ name, account, holder });
-    setBankSaved(true);
+    setBankOriginal({ name, account, holder });
+    setBankLocked(true);
   }, []);
 
   useLoadOnActive(active, loadBankDetails);
@@ -164,10 +197,53 @@ export function JubahPriceSubTab({ active, isSuperAdmin, showToast, jubahUnivers
       p_account_number: bankDraft.account.trim(),
       p_account_holder: bankDraft.holder.trim(),
     });
-    setSavingBank(false);
-    if (error || !data?.success) { showToast(data?.error ?? 'Failed to save bank details.'); return; }
+    if (error || !data?.success) {
+      setSavingBank(false);
+      showToast(data?.error ?? 'Failed to save bank details.');
+      return;
+    }
+    const saved = { name: bankDraft.name.trim(), account: bankDraft.account.trim(), holder: bankDraft.holder.trim() };
+    setBankDraft(saved);
+    setBankOriginal(saved);
     showToast('Payment bank details updated ✓');
-    setBankSaved(true);
+    setBankLocked(true);
+    setSavingBank(false);
+  };
+
+  const bankDirty = Object.keys(bankDraft).some(key => bankDraft[key as keyof typeof bankDraft] !== bankOriginal[key as keyof typeof bankOriginal]);
+
+  const [depositDraft, setDepositDraft] = useState('25');
+  const [depositOriginal, setDepositOriginal] = useState('25');
+  const [depositLocked, setDepositLocked] = useState(true);
+  const [savingDeposit, setSavingDeposit] = useState(false);
+
+  const loadDeposit = useCallback(async () => {
+    const { data } = await supabase.from('app_settings').select('value').eq('key', 'jubah_deposit_amount').maybeSingle();
+    const value = data?.value ?? '25';
+    setDepositDraft(value);
+    setDepositOriginal(value);
+    setDepositLocked(true);
+  }, []);
+
+  useLoadOnActive(active, loadDeposit);
+
+  const depositDirty = depositDraft !== depositOriginal;
+  const handleSaveDeposit = async () => {
+    const amount = Number(depositDraft);
+    if (!Number.isFinite(amount) || amount <= 0) { showToast('Enter a valid deposit amount above RM0.'); return; }
+    setSavingDeposit(true);
+    const { data, error } = await supabase.rpc('set_jubah_deposit_amount', { p_amount: amount });
+    if (error || !data?.success) {
+      setSavingDeposit(false);
+      showToast(data?.error ?? 'Failed to save deposit amount.');
+      return;
+    }
+    const saved = Number(data.amount ?? amount).toFixed(2).replace(/\.00$/, '');
+    setDepositDraft(saved);
+    setDepositOriginal(saved);
+    setDepositLocked(true);
+    setSavingDeposit(false);
+    showToast('Global Jubah deposit updated.');
   };
 
   return (
@@ -199,20 +275,14 @@ export function JubahPriceSubTab({ active, isSuperAdmin, showToast, jubahUnivers
                   type="text"
                   value={bankDraft[key]}
                   onChange={e => setBankDraft(prev => ({ ...prev, [key]: e.target.value }))}
-                  readOnly={bankSaved}
-                  onClick={() => { if (bankSaved) setBankSaved(false); }}
+                  readOnly={bankLocked}
+                  onClick={() => { if (bankLocked) setBankLocked(false); }}
                   style={{ fontSize: '13px' }}
-                  className={`bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 font-semibold focus:outline-none focus:border-primary transition ${bankSaved ? 'text-slate-400 cursor-pointer' : 'text-slate-700'}`}
+                  className={`bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 font-semibold focus:outline-none focus:border-primary transition ${bankLocked ? 'text-slate-400 cursor-pointer' : 'text-slate-700'}`}
                 />
               </div>
             ))}
-            <button
-              onClick={handleSaveBank}
-              disabled={savingBank || bankSaved}
-              className="self-end bg-primary text-white font-semibold text-xs px-4 py-2.5 rounded-xl transition active:scale-95 disabled:opacity-50"
-            >
-              {savingBank ? '…' : 'Save'}
-            </button>
+            <div className="self-end"><SaveStateButton dirty={bankDirty} saving={savingBank} onSave={handleSaveBank} /></div>
           </div>
         ) : (
           <div className="bg-slate-50 border border-slate-100 rounded-xl px-3 py-2.5 flex flex-col gap-1">
@@ -220,6 +290,44 @@ export function JubahPriceSubTab({ active, isSuperAdmin, showToast, jubahUnivers
             <span className="text-xs font-semibold text-slate-600 font-mono">{bankDraft.account}</span>
             <span className="text-xs font-semibold text-slate-600">{bankDraft.holder}</span>
             <span className="text-xs font-normal text-slate-400 mt-1">superadmin only to change</span>
+          </div>
+        )}
+      </div>
+
+      {/* One global deposit shared by every university and service. The RPC
+          and booking function enforce the same value server-side. */}
+      <div className="bg-amber-50 border border-amber-100 rounded-3xl p-5 flex flex-col gap-3">
+        <h3 className="text-sm font-semibold text-slate-700 flex items-center gap-1.5">
+          <CircleDollarSign className="w-4 h-4" /> Deposit Matrix
+        </h3>
+        <p className="text-xs text-slate-400 font-semibold -mt-1.5">
+          One deposit amount shared across every university and Jubah service.
+        </p>
+        {isSuperAdmin ? (
+          <div className="flex gap-2 items-end">
+            <div className="flex-1 flex flex-col gap-1.5">
+              <label className="text-xs font-normal text-slate-400">Deposit Amount</label>
+              <div className="flex items-center bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 gap-1 focus-within:border-primary transition">
+                <span className="text-xs font-normal text-slate-400">RM</span>
+                <input
+                  type="number"
+                  min="0.01"
+                  step="0.01"
+                  value={depositDraft}
+                  onChange={e => setDepositDraft(e.target.value)}
+                  readOnly={depositLocked}
+                  onClick={() => { if (depositLocked) setDepositLocked(false); }}
+                  style={{ fontSize: '13px' }}
+                  className={`flex-1 min-w-0 bg-transparent font-semibold focus:outline-none ${depositLocked ? 'text-slate-400 cursor-pointer' : 'text-slate-700'}`}
+                />
+              </div>
+            </div>
+            <SaveStateButton dirty={depositDirty} saving={savingDeposit} onSave={handleSaveDeposit} />
+          </div>
+        ) : (
+          <div className="bg-slate-50 border border-slate-100 rounded-xl px-3 py-2.5">
+            <span className="text-xs font-semibold text-slate-600">RM{depositDraft}</span>
+            <span className="text-xs font-normal text-slate-400 ml-2">superadmin only to change</span>
           </div>
         )}
       </div>
@@ -256,13 +364,11 @@ export function JubahPriceSubTab({ active, isSuperAdmin, showToast, jubahUnivers
                     className={`flex-1 bg-transparent font-semibold focus:outline-none w-0 ${commissionLocked[key] ? 'text-slate-400 cursor-pointer' : 'text-slate-700'}`}
                   />
                 </div>
-                <button
-                  onClick={() => handleSaveCommission(type)}
-                  disabled={savingCommission === key || (commissionLocked[key] ?? false)}
-                  className="shrink-0 bg-primary text-white font-semibold text-xs px-4 py-2.5 rounded-xl transition active:scale-95 disabled:opacity-50"
-                >
-                  {savingCommission === key ? '…' : 'Save'}
-                </button>
+                <SaveStateButton
+                  dirty={(commissionDrafts[key] ?? '') !== (commissionOriginal[key] ?? '')}
+                  saving={savingCommission === key}
+                  onSave={() => handleSaveCommission(type)}
+                />
               </div>
             ) : (
               <div className="bg-slate-50 border border-slate-100 rounded-xl px-3 py-2.5">
@@ -317,13 +423,7 @@ export function JubahPriceSubTab({ active, isSuperAdmin, showToast, jubahUnivers
         </div>
       ))}
 
-      <button
-        onClick={handleSaveAllPrices}
-        disabled={savingAllPrices || !pricesDirty}
-        className="w-full bg-primary text-white font-semibold text-sm py-3 rounded-2xl transition active:scale-95 shadow-lg shadow-primary/30 disabled:opacity-40 disabled:shadow-none"
-      >
-        {savingAllPrices ? 'Saving…' : pricesDirty ? 'Save Changes' : 'Saved'}
-      </button>
+      <SaveStateButton dirty={pricesDirty} saving={savingAllPrices} onSave={handleSaveAllPrices} wide dirtyLabel="Save Changes" />
       </div>
     </div>
   );
