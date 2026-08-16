@@ -277,7 +277,7 @@ export const UsersTab = forwardRef<UsersTabHandle, UsersTabProps>(function Users
   const [staffSearch, setStaffSearch]   = useState('');
   const [staffFilter, setStaffFilter]   = useState<'all' | 'drivers' | 'riders' | 'admins'>('all');
   const [overviewFilter, setOverviewFilter] = useState<'all' | 'payment_valid' | 'expired' | 'active_drivers' | 'in_campus' | 'out_campus' | 'online' | 'taking_job'>('all');
-  const [overviewCollapsed, setOverviewCollapsed] = useState(false);
+  const [overviewCollapsed, setOverviewCollapsed] = useState(true);
   const [staffUniversity, setStaffUniversity] = useState(() => universityKeyFromCampus(adminCampus) ?? 'umpsa');
   // Sub-tab within Staff: the normal manage-everything list, or a lighter
   // read-focused view for spotting who's physically around campus vs away
