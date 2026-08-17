@@ -66,7 +66,7 @@ async function loadTransportItems(customerId: string): Promise<ActivityItem[]> {
   });
 }
 
-async function loadRentalItems(customerId: string, renterName: string, renterPhone: string): Promise<ActivityItem[]> {
+export async function loadRentalItems(customerId: string, renterName: string, renterPhone: string): Promise<ActivityItem[]> {
   const { data: rows } = await supabase
     .from('rental_bookings')
     .select('*')
@@ -121,7 +121,7 @@ async function loadRentalItems(customerId: string, renterName: string, renterPho
   });
 }
 
-async function loadJubahItems(customerId: string): Promise<ActivityItem[]> {
+export async function loadJubahItems(customerId: string): Promise<ActivityItem[]> {
   const { data } = await supabase
     .from('jubah_bookings')
     .select('*')
@@ -167,7 +167,7 @@ async function loadJubahItems(customerId: string): Promise<ActivityItem[]> {
   });
 }
 
-async function loadTransporterItems(customerId: string): Promise<ActivityItem[]> {
+export async function loadTransporterItems(customerId: string): Promise<ActivityItem[]> {
   const { data } = await supabase
     .from('transporter_bookings')
     .select('*')
@@ -284,16 +284,10 @@ export const Activity: React.FC = () => {
       if (effectiveRole === 'driver') { setItems(await loadDriverJobItems(authUser.id)); return; }
       if (effectiveRole === 'rider')  { setItems(await loadRiderJobItems(authUser.id));  return; }
 
-      const [transport, rental, jubah, transporter] = await Promise.all([
-        loadTransportItems(authUser.id),
-        loadRentalItems(authUser.id, user.name, user.phone),
-        loadJubahItems(authUser.id),
-        loadTransporterItems(authUser.id),
-      ]);
-      const merged = [...transport, ...rental, ...jubah, ...transporter].sort(
-        (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
-      );
-      setItems(merged);
+      // The customer Activity/My Orders view is specifically the Gerak Car
+      // order history. Rental, Jubah and Transporter retain their own service
+      // history screens and must not leak into this list.
+      setItems(await loadTransportItems(authUser.id));
     })();
   }, [user.name, user.phone, effectiveRole]);
 
@@ -304,15 +298,16 @@ export const Activity: React.FC = () => {
     return () => setSheetOpen(false);
   }, [activeItem, setSheetOpen]);
 
+  const pageTitle = effectiveRole === 'driver' || effectiveRole === 'rider' ? 'Activity' : 'My Orders';
   const pageSubtitle =
     effectiveRole === 'driver' ? 'Your driving trips, all in one place' :
     effectiveRole === 'rider'  ? 'Your delivery jobs, all in one place' :
-                                 'Your orders across all Gerak services';
+                                 'Your Gerak Car orders, all in one place';
 
   return (
     <div className="flex-grow bg-white overflow-y-auto no-scrollbar pb-4 animate-fade-in">
       <div className="px-4 pt-5 pb-3">
-        <h2 className="text-xl font-semibold text-slate-800">Activity</h2>
+        <h2 className="text-xl font-semibold text-slate-800">{pageTitle}</h2>
         <p className="text-xs text-slate-400 font-normal mt-0.5">{pageSubtitle}</p>
       </div>
 
@@ -331,7 +326,7 @@ export const Activity: React.FC = () => {
           <p className="text-xs text-slate-400 font-normal text-center">
             {effectiveRole === 'driver' ? 'Your accepted and completed trips will appear here.' :
              effectiveRole === 'rider'  ? 'Your Jubah delivery jobs will appear here.' :
-                                          'Your bookings across Transport, Rental, and Jubah will appear here.'}
+                                          'Your Gerak Car bookings will appear here.'}
           </p>
         </div>
       )}

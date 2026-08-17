@@ -54,18 +54,14 @@ export const DigitalProfileCard: React.FC<{ profile: DigitalProfileData; onClose
 
   return (
     <div
-      className="fixed inset-0 z-[100] flex items-end justify-center bg-black/50 backdrop-blur-[2px]"
+      className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/50 backdrop-blur-[2px]"
       onPointerDown={(event) => { event.preventDefault(); onClose(); }}
     >
       <section
-        className="w-full max-w-[480px] max-h-[calc(100dvh-5rem)] bg-white rounded-t-3xl shadow-2xl animate-slide-up flex flex-col"
+        className="w-full max-w-[420px] max-h-[calc(100dvh-2rem)] bg-white rounded-3xl shadow-2xl animate-slide-up flex flex-col overflow-hidden"
         onPointerDown={event => event.stopPropagation()}
       >
-        <div className="flex justify-center pt-3 pb-1 shrink-0">
-          <div className="w-10 h-1 bg-slate-200 rounded-full" />
-        </div>
-
-        <header className="flex items-center justify-between px-5 pt-2 pb-4 shrink-0">
+        <header className="flex items-center justify-between px-5 py-4 border-b border-slate-100 shrink-0">
           <h2 className="text-sm font-semibold text-slate-800">Profile Card</h2>
           <button
             type="button"
