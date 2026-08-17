@@ -2,11 +2,16 @@
 import { useApp } from '../context/AppContext';
 import { Bell, ChevronLeft, ShieldCheck, Car, Bike, MoreHorizontal, Eye, ChevronDown, X, MapPin, User, Pencil } from 'lucide-react';
 import { WaBtn } from '../lib/whatsapp';
+import { UNIVERSITIES as UNIVERSITY_OPTIONS } from '../lib/universities';
 
-const UNI_CAMPUSES: Record<string, string[]> = {
-  'UMPSA': ['Pekan', 'Gambang'],
-};
-const UNIVERSITIES = Object.keys(UNI_CAMPUSES);
+const UNI_CAMPUSES: Record<string, string[]> = Object.fromEntries(
+  UNIVERSITY_OPTIONS.flatMap(university => [
+    [university.shortLabel, university.campuses],
+    [university.fullName, university.campuses],
+    [university.label, university.campuses],
+  ]),
+);
+const UNIVERSITIES = UNIVERSITY_OPTIONS.map(university => university.shortLabel);
 
 const toTitleCase = (str: string) =>
   str.toLowerCase().replace(/\b\w/g, c => c.toUpperCase());

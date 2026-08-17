@@ -16,6 +16,7 @@ function corsHeaders(req: Request) {
 type Invite = {
   id: string
   email: string
+  university: string
   campus: string
   role: string
   can_drive: boolean
@@ -75,7 +76,7 @@ serve(async (req) => {
 
     const { data: invite, error: fetchErr } = await admin
       .from('driver_invites')
-      .select('id, email, campus, role, can_drive, can_rent, can_transport, can_daily, can_robe, created_by')
+      .select('id, email, university, campus, role, can_drive, can_rent, can_transport, can_daily, can_robe, created_by')
       .eq('id', inviteId)
       .maybeSingle<Invite>()
 
@@ -123,6 +124,7 @@ async function sendInviteEmail(invite: Invite) {
   const roleLabel = roles.map(role => ROLE_LABEL[role] ?? role).join(', ')
   const roleEmoji = roles.map(role => ROLE_EMOJI[role] ?? '').filter(Boolean).join(' ')
   const subject = `You're invited to join the Gerak team as ${roleLabel} ${roleEmoji}`.trim()
+  const locationLabel = `${invite.university || 'Gerak'} ${invite.campus}`.trim()
   // Straight to the register form (AppContext's /register deep link), not
   // just the app root — with the invited email prefilled so it always
   // matches exactly what the invite was actually issued to.
@@ -141,7 +143,7 @@ async function sendInviteEmail(invite: Invite) {
       <span style="display:inline-block;font-size:10.5px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:#dc2626;background:rgba(220,38,38,0.08);padding:4px 10px;border-radius:999px;margin-bottom:14px;">Staff Invite</span>
       <h1 style="font-size: 20px; margin: 6px 0 6px;">You've been invited to Gerak</h1>
       <p style="font-size: 13.5px; color: #64748b; line-height: 1.6; margin: 0 0 22px;">
-        You have been invited to join the Gerak team at UMPSA ${escapeHtml(invite.campus)}. Create your account below using this exact email address, and Gerak will activate your assigned access automatically.
+        You have been invited to join the Gerak team at ${escapeHtml(locationLabel)}. Create your account below using this exact email address, and Gerak will activate your assigned access automatically.
       </p>
       <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;"><tr>
         <td style="width: 50%; padding: 10px 12px; background: #f8fafc; border: 1px solid #f1f5f9; border-radius: 10px 0 0 10px; border-right: none;">
@@ -150,7 +152,7 @@ async function sendInviteEmail(invite: Invite) {
         </td>
         <td style="width: 50%; padding: 10px 12px; background: #f8fafc; border: 1px solid #f1f5f9; border-radius: 0 10px 10px 0;">
           <p style="font-size: 9.5px; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; color: #94a3b8; margin: 0 0 3px;">Campus</p>
-          <p style="font-size: 13px; font-weight: 600; color: #1e293b; margin: 0;">UMPSA ${escapeHtml(invite.campus)}</p>
+          <p style="font-size: 13px; font-weight: 600; color: #1e293b; margin: 0;">${escapeHtml(locationLabel)}</p>
         </td>
       </tr></table>
       ${tags.length ? `

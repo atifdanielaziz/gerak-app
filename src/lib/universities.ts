@@ -55,6 +55,11 @@ export const UNIVERSITIES: University[] = [
     shortLabel: 'UUM', fullName: 'Universiti Utara Malaysia',
     campuses: ['Sintok'], live: true,
   },
+  {
+    key: 'unisza', label: 'Universiti Sultan Zainal Abidin (UniSZA)',
+    shortLabel: 'UniSZA', fullName: 'Universiti Sultan Zainal Abidin',
+    campuses: ['Gong Badak', 'Medical', 'Besut'], live: true,
+  },
 ];
 
 export const UNIVERSITY_MAP: Record<string, University> =
