@@ -54,27 +54,30 @@ export const DigitalProfileCard: React.FC<{ profile: DigitalProfileData; onClose
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/50 backdrop-blur-[2px]" onPointerDown={onClose}>
-      <section className="w-full max-w-[420px] max-h-[calc(100dvh-2rem)] overflow-y-auto no-scrollbar bg-white rounded-3xl shadow-2xl animate-slide-up" onPointerDown={event => event.stopPropagation()}>
+      <section className="w-full max-w-[540px] max-h-[calc(100dvh-2rem)] overflow-y-auto no-scrollbar bg-white rounded-3xl shadow-2xl animate-slide-up" onPointerDown={event => event.stopPropagation()}>
         <header className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
           <div className="flex items-center gap-2 min-w-0"><img src="/gerak-symbol.png" alt="Gerak" className="w-7 h-7 object-contain shrink-0" /><h2 className="font-semibold text-slate-900 truncate">Digital Profile Card</h2></div>
           <button type="button" onPointerDown={event => { event.preventDefault(); onClose(); }} className="w-9 h-9 rounded-xl bg-slate-100 flex items-center justify-center text-slate-500 active:scale-90 transition-transform"><X className="w-5 h-5" /></button>
         </header>
 
-        <div className="px-5 py-5" style={{ paddingBottom: 'calc(1.25rem + env(safe-area-inset-bottom))' }}>
-          <div className="border border-slate-100 rounded-3xl p-5">
-            <div className="flex items-center gap-3 pb-5 border-b border-slate-100">
-              {profile.avatarUrl ? <img src={profile.avatarUrl} alt={profile.name} className="w-20 h-20 rounded-full object-cover border border-slate-100 shrink-0" /> : <div className="w-20 h-20 rounded-full bg-slate-900 flex items-center justify-center shrink-0"><span className="text-2xl font-black text-white">{initial}</span></div>}
-              <div className="min-w-0 flex-1"><p className="text-lg font-semibold text-slate-900 leading-tight break-words">{profile.name || 'Gerak User'}</p><p className="text-sm text-primary font-semibold mt-1">{roleLabel}</p>{profile.gerakId && <p className="text-xs text-slate-400 mt-1">{profile.gerakId}</p>}</div>
-              <div className="shrink-0 text-center">
-                {qrUrl ? <img src={qrUrl} alt={`${profile.name} contact QR`} className="w-20 h-20 object-contain" /> : <div className="w-20 h-20 bg-slate-50 rounded-xl animate-pulse" />}
-                <span className="flex items-center justify-center gap-1 text-[10px] font-normal text-slate-400 mt-1"><QrCode className="w-3 h-3" /> Scan</span>
+        <div className="px-6 py-6" style={{ paddingBottom: 'calc(1.25rem + env(safe-area-inset-bottom))' }}>
+          <div className="flex gap-4 pb-5 border-b border-slate-100">
+            {profile.avatarUrl ? <img src={profile.avatarUrl} alt={profile.name} className="w-24 h-24 rounded-full object-cover border border-slate-100 shrink-0" /> : <div className="w-24 h-24 rounded-full bg-slate-900 flex items-center justify-center shrink-0"><span className="text-3xl font-black text-white">{initial}</span></div>}
+            <div className="min-w-0 flex-1">
+              <p className="text-xl font-semibold text-slate-900 leading-tight break-words">{profile.name || 'Gerak User'}</p>
+              <div className="mt-3 flex items-end justify-between gap-3">
+                <div className="min-w-0"><p className="text-sm text-primary font-semibold">{roleLabel}</p>{profile.gerakId && <p className="text-xs text-slate-400 mt-1">{profile.gerakId}</p>}</div>
+                <div className="shrink-0 text-center">
+                  {qrUrl ? <img src={qrUrl} alt={`${profile.name} contact QR`} className="w-20 h-20 object-contain" /> : <div className="w-20 h-20 bg-slate-50 rounded-xl animate-pulse" />}
+                  <span className="flex items-center justify-center gap-1 text-[10px] font-normal text-slate-400 mt-1"><QrCode className="w-3 h-3" /> Scan</span>
+                </div>
               </div>
             </div>
-            <div className="divide-y divide-slate-100">
-              <div className="py-3 flex items-center justify-between gap-3"><span className="flex items-center gap-2 text-sm text-slate-400"><Phone className="w-4 h-4" /> H/P Number</span><span className="flex items-center gap-2 text-sm font-semibold text-slate-800 text-right">{profile.phone || '—'}{profile.phone && <WaBtn phone={profile.phone} />}</span></div>
-              {isProvider && <div className="py-3 flex items-center justify-between gap-3"><span className="flex items-center gap-2 text-sm text-slate-400"><CarFront className="w-4 h-4" /> Car Type</span><span className="text-sm font-semibold text-slate-800 text-right">{profile.vehicle || '—'}</span></div>}
-              {isProvider && <div className="py-3 flex items-center justify-between gap-3"><span className="text-sm text-slate-400">Status</span><span className={`text-sm font-semibold capitalize ${profile.status === 'active' ? 'text-emerald-600' : 'text-red-500'}`}>{profile.status || 'active'}</span></div>}
-            </div>
+          </div>
+          <div className="divide-y divide-slate-100">
+            <div className="py-4 flex items-center justify-between gap-3"><span className="flex items-center gap-2 text-sm text-slate-400"><Phone className="w-4 h-4" /> H/P Number</span><span className="flex items-center gap-2 text-sm font-semibold text-slate-800 text-right">{profile.phone || '—'}{profile.phone && <WaBtn phone={profile.phone} />}</span></div>
+            {isProvider && <div className="py-4 flex items-center justify-between gap-3"><span className="flex items-center gap-2 text-sm text-slate-400"><CarFront className="w-4 h-4" /> Car Type</span><span className="text-sm font-semibold text-slate-800 text-right">{profile.vehicle || '—'}</span></div>}
+            {isProvider && <div className="py-4 flex items-center justify-between gap-3"><span className="text-sm text-slate-400">Status</span><span className={`text-sm font-semibold capitalize ${profile.status === 'active' ? 'text-emerald-600' : 'text-red-500'}`}>{profile.status || 'active'}</span></div>}
           </div>
         </div>
       </section>
