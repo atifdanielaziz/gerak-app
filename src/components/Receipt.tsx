@@ -75,7 +75,7 @@ export const ReceiptCard: React.FC<{
               <button
                 type="button"
                 onClick={onDriverClick}
-                className="whitespace-nowrap font-bold text-blue-600 active:opacity-60 transition-opacity"
+                className="whitespace-nowrap font-bold text-emerald-600 active:opacity-60 transition-opacity"
               >
                 {r.value}
               </button>

@@ -6,12 +6,10 @@ import {
   User, Hash, ShieldCheck, XCircle, RotateCcw,
 } from 'lucide-react';
 import { WaBtn } from '../lib/whatsapp';
-import { ReceiptHeader, ReceiptCard } from '../components/Receipt';
+import { ReceiptSheet } from '../components/Receipt';
 import { buildTransportReceiptRows } from '../lib/receiptRows';
 import { generateReceiptPdf } from '../lib/receiptPdf';
-import { DigitalProfileCard } from '../components/DigitalProfileCard';
-import type { DigitalProfileData } from '../components/DigitalProfileCard';
-import { getAssignedDriverProfile } from '../lib/assignedDriverProfile';
+import { BOOKING_METHOD_ICON, bookingMethodBadgeClass } from '../lib/bookingMethodIcon';
 
 interface RideOrder {
   id: string;
@@ -220,15 +218,16 @@ export const MyOrders: React.FC = () => {
   const [toastQueue, setToastQueue] = useState<string[]>([]);
   const toast = toastQueue[0] ?? '';
   const [sheetOrderId, setSheetOrderId] = useState<string | null>(null);
-  const [driverProfile, setDriverProfile] = useState<DigitalProfileData | null>(null);
+  const [receiptOrderId, setReceiptOrderId] = useState<string | null>(null);
   const sheetOrder = orders.find(o => o.id === sheetOrderId) ?? null;
+  const receiptOrder = orders.find(o => o.id === receiptOrderId) ?? null;
 
-  // Report to AppContext whenever this sheet is open, so BottomNav hides itself.
+  // Report to AppContext whenever either sheet is open, so BottomNav hides itself.
   useEffect(() => {
-    if (!sheetOrderId) return;
+    if (!sheetOrderId && !receiptOrderId) return;
     setSheetOpen(true);
     return () => setSheetOpen(false);
-  }, [sheetOrderId, setSheetOpen]);
+  }, [sheetOrderId, receiptOrderId, setSheetOpen]);
   const [cancellingId, setCancellingId] = useState<string | null>(null);
   const prevStatuses                = useRef<Record<string, string>>({});
   const prevFares                   = useRef<Record<string, string>>({});
@@ -251,15 +250,6 @@ export const MyOrders: React.FC = () => {
 
   const showToast = (msg: string) => {
     setToastQueue(q => [...q, msg]);
-  };
-
-  const openDriverProfile = async (order: RideOrder) => {
-    const profile = await getAssignedDriverProfile(order.id);
-    if (!profile) {
-      showToast('The driver profile is not available right now.');
-      return;
-    }
-    setDriverProfile(profile);
   };
 
   // Sole timer, keyed on the displayed message itself (not the queue array),
@@ -425,9 +415,20 @@ export const MyOrders: React.FC = () => {
       {sheetOrder && (
         <DriverSheet order={sheetOrder} onClose={() => setSheetOrderId(null)} />
       )}
-      {driverProfile && (
-        <DigitalProfileCard profile={driverProfile} onClose={() => setDriverProfile(null)} />
-      )}
+      {receiptOrder && (() => {
+        const doc = buildTransportReceiptRows(receiptOrder, { showCreatedTime: true });
+        return (
+          <ReceiptSheet
+            doc={doc}
+            onClose={() => setReceiptOrderId(null)}
+            onSavePdf={() => generateReceiptPdf(doc)}
+            onDriverClick={hasDriver(receiptOrder) ? () => {
+              setReceiptOrderId(null);
+              setSheetOrderId(receiptOrder.id);
+            } : undefined}
+          />
+        );
+      })()}
 
       <div className="px-4 pt-5 pb-3">
         <h2 className="text-xl font-bold text-slate-800">My Orders</h2>
@@ -456,36 +457,39 @@ export const MyOrders: React.FC = () => {
         <div className="px-4 flex flex-col gap-4">
           {orders.map(o => {
             const doc = buildTransportReceiptRows(o, { showCreatedTime: true });
+            const method = doc.bookingMethod;
+            const MethodIcon = method ? BOOKING_METHOD_ICON[method.mode] : null;
+            const total = o.fare === 'TBC' ? 'TBC' : `RM${(Number(o.fare) + (o.night_charge ?? 0)).toFixed(2)}`;
             return (
-            <div key={o.id} className="bg-white border border-slate-100 rounded-3xl p-5 flex flex-col gap-4">
-
-              <ReceiptHeader meta={doc} />
-
-              <ReceiptCard
-                doc={doc}
-                onSavePdf={o.status === 'completed' ? () => generateReceiptPdf(doc) : undefined}
-                onDriverClick={hasDriver(o) && o.driver_id ? () => { void openDriverProfile(o); } : undefined}
-              >
+            <div key={o.id} className="bg-white border border-slate-100 rounded-2xl p-4 flex flex-col gap-3">
+              <button type="button" onClick={() => setReceiptOrderId(o.id)} className="flex flex-col gap-2 text-left active:scale-[0.99] transition-transform">
                 {/* Driver row — tappable, single line */}
-                {hasDriver(o) && (
-                  <>
-                    <div className="border-t border-dashed border-slate-200 my-1" />
-                    <button
-                      type="button"
-                      onClick={() => setSheetOrderId(o.id)}
-                      className="w-full flex items-center gap-1 text-left active:opacity-60 transition"
-                    >
-                      <span className="text-slate-400 shrink-0">Accepted by:</span>
-                      <span className="text-emerald-600 font-bold truncate flex-1 min-w-0">
-                        {o.driver_gerak_id ?? o.driver_name}
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-1.5 min-w-0">
+                    <span className="inline-flex items-center gap-1 bg-slate-50 border border-slate-100 rounded-md px-1.5 py-0.5 text-[10px] font-semibold text-slate-500">
+                      <Car className="w-3 h-3" /> Gerak
+                    </span>
+                    {method && MethodIcon && (
+                      <span className={`inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[10px] font-semibold border ${bookingMethodBadgeClass(method.mode)}`}>
+                        <MethodIcon className="w-3 h-3" /> {method.label}
                       </span>
-                      <span className="shrink-0 ml-1 text-xs bg-emerald-100 text-emerald-600 px-1.5 py-0.5 rounded-full font-semibold">
-                        View
-                      </span>
-                    </button>
-                  </>
-                )}
-              </ReceiptCard>
+                    )}
+                  </div>
+                  <span className={`text-[10px] font-semibold uppercase tracking-wide px-2 py-0.5 rounded-full border ${doc.statusClassName}`}>
+                    {doc.statusLabel}
+                  </span>
+                </div>
+                <div>
+                  <p className="text-sm font-semibold text-slate-800 truncate">{o.destination}</p>
+                  <p className="text-xs text-slate-400 font-normal truncate mt-0.5">from {o.pickup}</p>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-black text-slate-800">{total}</span>
+                  <span className="text-xs text-slate-300 font-normal">
+                    {new Date(o.created_at).toLocaleDateString('en-MY', { day: '2-digit', month: 'short', year: 'numeric' })}
+                  </span>
+                </div>
+              </button>
 
               {o.status === 'cancelled' && o.cancel_reason && (
                 <p className="text-xs text-amber-700 font-semibold bg-amber-50 border border-amber-100 rounded-xl px-3 py-2 -mt-1">
