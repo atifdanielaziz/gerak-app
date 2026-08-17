@@ -10,6 +10,9 @@ import {
 import type { ReceiptDoc } from '../lib/receiptRows';
 import { generateReceiptPdf } from '../lib/receiptPdf';
 import { BOOKING_METHOD_ICON, bookingMethodBadgeClass } from '../lib/bookingMethodIcon';
+import { DigitalProfileCard } from '../components/DigitalProfileCard';
+import type { DigitalProfileData } from '../components/DigitalProfileCard';
+import { getAssignedDriverProfile } from '../lib/assignedDriverProfile';
 
 type ServiceKind = 'transport' | 'rental' | 'jubah' | 'transporter' | 'daily';
 
@@ -23,6 +26,7 @@ interface ActivityItem {
   statusClassName: string;
   amount?: string;
   doc: ReceiptDoc;
+  driverOrderId?: string;
 }
 
 // Daily is wired into the type system for a later fast-follow — it has no
@@ -57,6 +61,7 @@ async function loadTransportItems(customerId: string): Promise<ActivityItem[]> {
       statusClassName: doc.statusClassName,
       amount:          o.fare === 'TBC' ? 'TBC' : `RM${(Number(o.fare) + (o.night_charge ?? 0)).toFixed(2)}`,
       doc,
+      driverOrderId: o.driver_id ? o.id : undefined,
     };
   });
 }
@@ -260,6 +265,12 @@ export const Activity: React.FC = () => {
   const { user, activeRole, setSheetOpen } = useApp();
   const [items, setItems]           = useState<ActivityItem[] | null>(null);
   const [activeItem, setActiveItem] = useState<ActivityItem | null>(null);
+  const [driverProfile, setDriverProfile] = useState<DigitalProfileData | null>(null);
+
+  const openDriverProfile = async (orderId: string) => {
+    const profile = await getAssignedDriverProfile(orderId);
+    if (profile) setDriverProfile(profile);
+  };
 
   // Driver/rider see their own job history (single service each); everyone
   // else sees the merged customer feed across all four services.
@@ -376,7 +387,11 @@ export const Activity: React.FC = () => {
           doc={activeItem.doc}
           onClose={() => setActiveItem(null)}
           onSavePdf={() => generateReceiptPdf(activeItem.doc)}
+          onDriverClick={activeItem.driverOrderId ? () => { void openDriverProfile(activeItem.driverOrderId!); } : undefined}
         />
+      )}
+      {driverProfile && (
+        <DigitalProfileCard profile={driverProfile} onClose={() => setDriverProfile(null)} />
       )}
     </div>
   );

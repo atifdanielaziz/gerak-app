@@ -9,9 +9,13 @@ import { WaBtn } from '../lib/whatsapp';
 import { ReceiptHeader, ReceiptCard } from '../components/Receipt';
 import { buildTransportReceiptRows } from '../lib/receiptRows';
 import { generateReceiptPdf } from '../lib/receiptPdf';
+import { DigitalProfileCard } from '../components/DigitalProfileCard';
+import type { DigitalProfileData } from '../components/DigitalProfileCard';
+import { getAssignedDriverProfile } from '../lib/assignedDriverProfile';
 
 interface RideOrder {
   id: string;
+  driver_id: string | null;
   date: string;
   time: string;
   campus: string;
@@ -216,6 +220,7 @@ export const MyOrders: React.FC = () => {
   const [toastQueue, setToastQueue] = useState<string[]>([]);
   const toast = toastQueue[0] ?? '';
   const [sheetOrderId, setSheetOrderId] = useState<string | null>(null);
+  const [driverProfile, setDriverProfile] = useState<DigitalProfileData | null>(null);
   const sheetOrder = orders.find(o => o.id === sheetOrderId) ?? null;
 
   // Report to AppContext whenever this sheet is open, so BottomNav hides itself.
@@ -246,6 +251,15 @@ export const MyOrders: React.FC = () => {
 
   const showToast = (msg: string) => {
     setToastQueue(q => [...q, msg]);
+  };
+
+  const openDriverProfile = async (order: RideOrder) => {
+    const profile = await getAssignedDriverProfile(order.id);
+    if (!profile) {
+      showToast('The driver profile is not available right now.');
+      return;
+    }
+    setDriverProfile(profile);
   };
 
   // Sole timer, keyed on the displayed message itself (not the queue array),
@@ -411,6 +425,9 @@ export const MyOrders: React.FC = () => {
       {sheetOrder && (
         <DriverSheet order={sheetOrder} onClose={() => setSheetOrderId(null)} />
       )}
+      {driverProfile && (
+        <DigitalProfileCard profile={driverProfile} onClose={() => setDriverProfile(null)} />
+      )}
 
       <div className="px-4 pt-5 pb-3">
         <h2 className="text-xl font-bold text-slate-800">My Orders</h2>
@@ -447,6 +464,7 @@ export const MyOrders: React.FC = () => {
               <ReceiptCard
                 doc={doc}
                 onSavePdf={o.status === 'completed' ? () => generateReceiptPdf(doc) : undefined}
+                onDriverClick={hasDriver(o) && o.driver_id ? () => { void openDriverProfile(o); } : undefined}
               >
                 {/* Driver row — tappable, single line */}
                 {hasDriver(o) && (

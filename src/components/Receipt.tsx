@@ -45,8 +45,9 @@ export const ReceiptHeader: React.FC<{ meta: ReceiptMeta }> = ({ meta }) => {
 export const ReceiptCard: React.FC<{
   doc: ReceiptDoc;
   onSavePdf?: () => void;
+  onDriverClick?: () => void;
   children?: React.ReactNode;
-}> = ({ doc, onSavePdf, children }) => {
+}> = ({ doc, onSavePdf, onDriverClick, children }) => {
   // Colons line up in one column, based on the longest label in this receipt.
   const maxLabelLen = Math.max(...doc.rows.map(r => r.label.length));
   const [copiedIdx, setCopiedIdx] = useState<number | null>(null);
@@ -70,7 +71,17 @@ export const ReceiptCard: React.FC<{
               scrollable strip instead of spilling past the card — normal
               multi-word text still wraps as before and never needs to scroll. */}
           <div className="min-w-0 overflow-x-auto no-scrollbar">
-            <span className={`${valueClass(r)} whitespace-nowrap`}>{r.value}</span>
+            {r.label === 'Driver' && onDriverClick ? (
+              <button
+                type="button"
+                onClick={onDriverClick}
+                className="whitespace-nowrap font-bold text-blue-600 active:opacity-60 transition-opacity"
+              >
+                {r.value}
+              </button>
+            ) : (
+              <span className={`${valueClass(r)} whitespace-nowrap`}>{r.value}</span>
+            )}
           </div>
           {r.whatsapp && <WaBtn phone={r.whatsapp.phone} message={r.whatsapp.message} />}
           {r.copyable && (
@@ -102,6 +113,11 @@ export const ReceiptCard: React.FC<{
         Save as PDF
       </button>
     )}
+    {onDriverClick && (
+      <p className="pt-1 text-center font-sans text-[10px] font-normal text-slate-400">
+        Tap the driver&rsquo;s name to view their profile.
+      </p>
+    )}
   </div>
   );
 };
@@ -110,8 +126,9 @@ export const ReceiptSheet: React.FC<{
   doc: ReceiptDoc;
   onClose: () => void;
   onSavePdf?: () => void;
+  onDriverClick?: () => void;
   children?: React.ReactNode;
-}> = ({ doc, onClose, onSavePdf, children }) => (
+}> = ({ doc, onClose, onSavePdf, onDriverClick, children }) => (
   <div
     className="fixed inset-0 z-50 flex items-end justify-center"
     style={{ background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(2px)' }}
@@ -140,7 +157,7 @@ export const ReceiptSheet: React.FC<{
         style={{ paddingBottom: 'calc(6.5rem + env(safe-area-inset-bottom))' }}
       >
         <ReceiptHeader meta={doc} />
-        <ReceiptCard doc={doc} onSavePdf={onSavePdf}>{children}</ReceiptCard>
+        <ReceiptCard doc={doc} onSavePdf={onSavePdf} onDriverClick={onDriverClick}>{children}</ReceiptCard>
       </div>
     </div>
   </div>
