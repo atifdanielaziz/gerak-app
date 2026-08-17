@@ -673,7 +673,7 @@ export const Profile: React.FC = () => {
     <div className="flex-grow bg-white overflow-y-auto no-scrollbar animate-fade-in pb-8">
 
       {showDigitalCard && <DigitalProfileCard profile={{
-        name: user.name, role: user.role, phone: user.phone, vehicle: user.vehicle,
+        name: user.name, role: user.role, phone: user.phone, vehicle: user.vehicle, plateNumber: user.plateNumber,
         status: user.status, avatarUrl: user.avatarUrl, gerakId: user.gerakId,
         canDrive: user.canDrive, canRent: user.canRent, canTransport: user.canTransport,
       }} onClose={() => setShowDigitalCard(false)} />}

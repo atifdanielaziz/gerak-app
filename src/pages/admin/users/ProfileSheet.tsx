@@ -111,7 +111,7 @@ export const ProfileSheet: React.FC<{ u: ProfileUser; onClose: () => void; showT
       onPointerDown={(e) => { e.preventDefault(); onClose(); }}
     >
       {showDigitalCard && <DigitalProfileCard profile={{
-        name: u.name, role: u.role, phone: u.phone, vehicle: merged.vehicle,
+        name: u.name, role: u.role, phone: u.phone, vehicle: merged.vehicle, plateNumber: merged.plate_number,
         status: u.status, avatarUrl: merged.avatar_url, gerakId: u.gerak_id,
         canDrive: u.can_drive, canRent: u.can_rent, canTransport: u.can_transport,
       }} onClose={() => setShowDigitalCard(false)} />}
