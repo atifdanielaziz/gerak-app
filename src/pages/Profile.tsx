@@ -7,8 +7,9 @@ import {
   Camera, Car, Upload, FileImage,
   ShieldCheck, ShieldOff, AlertTriangle, Clock, RefreshCw,
   Headset, Languages, Moon, FileText, Lock, Info, Star, Share2,
-  Wallet, MessageSquareText, MapPin, User,
+  Wallet, MessageSquareText, User, ContactRound,
 } from 'lucide-react';
+import { DigitalProfileCard } from '../components/DigitalProfileCard';
 
 /* Derive active status from verified + non-expired receipt, with gate bypass.
    Covers both driver and rider — both are subject to the same monthly
@@ -48,6 +49,7 @@ export const Profile: React.FC = () => {
 
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const [showDigitalCard, setShowDigitalCard] = useState(false);
 
   // Neither drivers nor riders need an IC for their own verification anymore
   // (licence only) — this only governs the plain IC-number text field below
@@ -670,6 +672,12 @@ export const Profile: React.FC = () => {
   return (
     <div className="flex-grow bg-white overflow-y-auto no-scrollbar animate-fade-in pb-8">
 
+      {showDigitalCard && <DigitalProfileCard profile={{
+        name: user.name, role: user.role, phone: user.phone, vehicle: user.vehicle,
+        status: user.status, avatarUrl: user.avatarUrl, gerakId: user.gerakId,
+        canDrive: user.canDrive, canRent: user.canRent, canTransport: user.canTransport,
+      }} onClose={() => setShowDigitalCard(false)} />}
+
       {/* Logout icon */}
       <div className="flex justify-end px-5 pt-4">
         <button
@@ -702,12 +710,13 @@ export const Profile: React.FC = () => {
           {([
             { icon: Wallet, label: 'My Finance', page: isProvider ? 'provider-finance' : undefined },
             { icon: MessageSquareText, label: 'Feedback', page: isProvider ? 'provider-feedback' : undefined },
-            { icon: MapPin, label: 'Addresses', page: undefined },
-          ] as { icon: React.ElementType; label: string; page?: 'provider-finance' | 'provider-feedback' }[]).map(({ icon: Icon, label, page }) => (
+            { icon: ContactRound, label: 'Profile Card', action: () => setShowDigitalCard(true) },
+          ] as { icon: React.ElementType; label: string; page?: 'provider-finance' | 'provider-feedback'; action?: () => void }[]).map(({ icon: Icon, label, page, action }) => (
             <button
               key={label}
               type="button"
               onPointerDown={(event) => {
+                if (action) { event.preventDefault(); action(); return; }
                 if (!page) return;
                 event.preventDefault();
                 setCurrentPage(page);

@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '../../../lib/supabase';
-import { X, Car, Bike, ShieldCheck, ExternalLink, Phone } from 'lucide-react';
+import { X, Car, Bike, ShieldCheck, ExternalLink, Phone, ContactRound } from 'lucide-react';
 import { WaBtn } from '../../../lib/whatsapp';
 import { jubahLocationLabel, universityKeyFromCampus } from '../../../lib/universities';
+import { DigitalProfileCard } from '../../../components/DigitalProfileCard';
 
 export interface ProfileUser {
   id: string;
@@ -13,6 +14,7 @@ export interface ProfileUser {
   email: string;
   status: string;
   phone: string;
+  avatar_url?: string;
   can_drive?: boolean;
   can_rent?: boolean;
   can_transport?: boolean;
@@ -60,10 +62,11 @@ export const ProfileSheet: React.FC<{ u: ProfileUser; onClose: () => void; showT
   const [extra, setExtra] = useState<Partial<ProfileUser>>({});
   const [loading, setLoading] = useState(true);
   const [savingCampusStatus, setSavingCampusStatus] = useState(false);
+  const [showDigitalCard, setShowDigitalCard] = useState(false);
 
   useEffect(() => {
     supabase.from('profiles')
-      .select('matric_no, ic_number, ic_url, license_url, vehicle, plate_number, docs_status, fee_receipt_verified, fee_receipt_url, fee_receipt_expiry, fee_receipt_reject_reason, campus_status')
+      .select('matric_no, ic_number, ic_url, license_url, vehicle, plate_number, docs_status, fee_receipt_verified, fee_receipt_url, fee_receipt_expiry, fee_receipt_reject_reason, campus_status, avatar_url')
       .eq('id', u.id)
       .single()
       .then(({ data }) => { if (data) setExtra(data); setLoading(false); });
@@ -107,6 +110,11 @@ export const ProfileSheet: React.FC<{ u: ProfileUser; onClose: () => void; showT
       style={{ background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(2px)' }}
       onPointerDown={(e) => { e.preventDefault(); onClose(); }}
     >
+      {showDigitalCard && <DigitalProfileCard profile={{
+        name: u.name, role: u.role, phone: u.phone, vehicle: merged.vehicle,
+        status: u.status, avatarUrl: merged.avatar_url, gerakId: u.gerak_id,
+        canDrive: u.can_drive, canRent: u.can_rent, canTransport: u.can_transport,
+      }} onClose={() => setShowDigitalCard(false)} />}
       <div
         className="w-full max-w-[480px] max-h-[calc(100dvh-5rem)] bg-white rounded-t-3xl shadow-2xl animate-slide-up flex flex-col"
         onPointerDown={e => e.stopPropagation()}
@@ -232,16 +240,19 @@ export const ProfileSheet: React.FC<{ u: ProfileUser; onClose: () => void; showT
           )}
         </div>
 
-        {/* Footer: Call + WhatsApp */}
-        {u.phone && (
-          <div className="px-4 pt-3 pb-6 flex items-center gap-3 shrink-0 border-t border-slate-100">
+        {/* Footer: digital card + contact actions */}
+        <div className="px-4 pt-3 pb-6 flex items-center gap-3 shrink-0 border-t border-slate-100">
+          <button type="button" onPointerDown={event => { event.preventDefault(); setShowDigitalCard(true); }} className="w-12 flex items-center justify-center bg-white border border-slate-100 text-slate-700 py-3.5 rounded-2xl active:scale-[0.98] transition">
+            <ContactRound className="w-4 h-4" />
+          </button>
+          {u.phone && <>
             <a href={`tel:${u.phone}`}
               className="flex-1 flex items-center justify-center gap-2 bg-slate-800 text-white font-semibold text-xs py-3.5 rounded-2xl active:scale-[0.98] transition">
               <Phone className="w-4 h-4" /> Call
             </a>
             <WaBtn phone={u.phone} />
-          </div>
-        )}
+          </>}
+        </div>
       </div>
     </div>
   );
