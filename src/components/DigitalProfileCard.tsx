@@ -33,7 +33,7 @@ const InfoRow = ({ icon: Icon, label, value, accent = false }: {
   value?: string | null;
   accent?: boolean;
 }) => (
-  <div className="flex items-center gap-3 px-4 py-2.5 border-b border-slate-100 last:border-b-0">
+  <div className="flex items-center gap-3 px-4 py-2 border-b border-slate-100 last:border-b-0">
     <span className="w-8 h-8 rounded-xl border border-slate-100 flex items-center justify-center shrink-0">
       <Icon className="w-4 h-4 text-slate-400" />
     </span>
@@ -54,7 +54,7 @@ export const DigitalProfileCard: React.FC<{ profile: DigitalProfileData; onClose
 
   return (
     <div
-      className="fixed inset-x-0 top-0 bottom-[calc(5rem+env(safe-area-inset-bottom))] z-[100] flex items-center justify-center px-4 py-5 bg-black/50 backdrop-blur-[2px]"
+      className="fixed inset-x-0 top-[calc(5rem+env(safe-area-inset-top))] bottom-[calc(5rem+env(safe-area-inset-bottom))] z-[100] flex items-center justify-center px-4 py-4 bg-black/50 backdrop-blur-[2px]"
       onPointerDown={(event) => { event.preventDefault(); onClose(); }}
     >
       <section
@@ -75,10 +75,10 @@ export const DigitalProfileCard: React.FC<{ profile: DigitalProfileData; onClose
         <div className="flex-1 min-h-0 overflow-y-auto no-scrollbar">
           <div className="flex flex-col items-center px-5 pb-3 gap-1.5">
             {profile.avatarUrl ? (
-              <img src={profile.avatarUrl} alt={profile.name} className="w-20 h-20 rounded-full object-cover border border-slate-100" />
+              <img src={profile.avatarUrl} alt={profile.name} className="w-[4.5rem] h-[4.5rem] rounded-full object-cover border border-slate-100" />
             ) : (
-              <div className="w-20 h-20 rounded-full bg-emerald-600 flex items-center justify-center">
-                {isProvider ? <CarFront className="w-9 h-9 text-white" /> : <span className="text-2xl font-black text-white">{initial}</span>}
+              <div className="w-[4.5rem] h-[4.5rem] rounded-full bg-emerald-600 flex items-center justify-center">
+                {isProvider ? <CarFront className="w-8 h-8 text-white" /> : <span className="text-2xl font-black text-white">{initial}</span>}
               </div>
             )}
             <p className="mt-1 text-lg font-semibold text-slate-900 text-center leading-tight">{profile.name || 'Gerak User'}</p>
