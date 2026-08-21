@@ -33,8 +33,8 @@ const InfoRow = ({ icon: Icon, label, value, accent = false }: {
   value?: string | null;
   accent?: boolean;
 }) => (
-  <div className="flex items-center gap-3 px-4 py-3.5 border-b border-slate-100 last:border-b-0">
-    <span className="w-9 h-9 rounded-xl border border-slate-100 flex items-center justify-center shrink-0">
+  <div className="flex items-center gap-3 px-4 py-2.5 border-b border-slate-100 last:border-b-0">
+    <span className="w-8 h-8 rounded-xl border border-slate-100 flex items-center justify-center shrink-0">
       <Icon className="w-4 h-4 text-slate-400" />
     </span>
     <div className="min-w-0 flex-1">
@@ -54,14 +54,14 @@ export const DigitalProfileCard: React.FC<{ profile: DigitalProfileData; onClose
 
   return (
     <div
-      className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/50 backdrop-blur-[2px]"
+      className="fixed inset-x-0 top-0 bottom-[calc(5rem+env(safe-area-inset-bottom))] z-[100] flex items-center justify-center px-4 py-5 bg-black/50 backdrop-blur-[2px]"
       onPointerDown={(event) => { event.preventDefault(); onClose(); }}
     >
       <section
-        className="w-full max-w-[420px] max-h-[calc(100dvh-2rem)] bg-white rounded-3xl shadow-2xl animate-slide-up flex flex-col overflow-hidden"
+        className="w-full max-w-[420px] max-h-full bg-white rounded-3xl shadow-2xl animate-slide-up flex flex-col overflow-hidden"
         onPointerDown={event => event.stopPropagation()}
       >
-        <header className="flex items-center justify-between px-5 py-4 border-b border-slate-100 shrink-0">
+        <header className="flex items-center justify-between px-5 py-3 border-b border-slate-100 shrink-0">
           <h2 className="text-sm font-semibold text-slate-800">Profile Card</h2>
           <button
             type="button"
@@ -73,21 +73,21 @@ export const DigitalProfileCard: React.FC<{ profile: DigitalProfileData; onClose
         </header>
 
         <div className="flex-1 min-h-0 overflow-y-auto no-scrollbar">
-          <div className="flex flex-col items-center px-5 pb-5 gap-2">
+          <div className="flex flex-col items-center px-5 pb-3 gap-1.5">
             {profile.avatarUrl ? (
-              <img src={profile.avatarUrl} alt={profile.name} className="w-24 h-24 rounded-full object-cover border border-slate-100" />
+              <img src={profile.avatarUrl} alt={profile.name} className="w-20 h-20 rounded-full object-cover border border-slate-100" />
             ) : (
-              <div className="w-24 h-24 rounded-full bg-emerald-600 flex items-center justify-center">
-                {isProvider ? <CarFront className="w-11 h-11 text-white" /> : <span className="text-3xl font-black text-white">{initial}</span>}
+              <div className="w-20 h-20 rounded-full bg-emerald-600 flex items-center justify-center">
+                {isProvider ? <CarFront className="w-9 h-9 text-white" /> : <span className="text-2xl font-black text-white">{initial}</span>}
               </div>
             )}
-            <p className="mt-2 text-xl font-semibold text-slate-900 text-center leading-tight">{profile.name || 'Gerak User'}</p>
+            <p className="mt-1 text-lg font-semibold text-slate-900 text-center leading-tight">{profile.name || 'Gerak User'}</p>
             <span className="inline-flex items-center gap-1 rounded-full border border-emerald-100 bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-600">
               <ShieldCheck className="w-3.5 h-3.5" /> Gerak {roleLabel}
             </span>
           </div>
 
-          <div className="mx-5 mb-5 rounded-2xl border border-slate-100 overflow-hidden">
+          <div className="mx-5 mb-3 rounded-2xl border border-slate-100 overflow-hidden">
             <InfoRow icon={User} label="Name" value={profile.name} />
             <InfoRow icon={IdCard} label="Gerak ID" value={profile.gerakId} accent />
             <InfoRow icon={Phone} label="Phone" value={profile.phone} />
@@ -98,8 +98,8 @@ export const DigitalProfileCard: React.FC<{ profile: DigitalProfileData; onClose
         </div>
 
         {profile.phone && (
-          <footer className="shrink-0 border-t border-slate-100 bg-white px-5 pt-3 flex items-center gap-3" style={{ paddingBottom: 'calc(1rem + env(safe-area-inset-bottom))' }}>
-            <a href={`tel:${profile.phone}`} className="flex-1 h-12 rounded-2xl bg-slate-800 text-white flex items-center justify-center gap-2 text-sm font-semibold active:scale-[0.99] transition-transform">
+          <footer className="shrink-0 border-t border-slate-100 bg-white px-5 py-3 flex items-center gap-3">
+            <a href={`tel:${profile.phone}`} className="flex-1 h-11 rounded-2xl bg-slate-800 text-white flex items-center justify-center gap-2 text-sm font-semibold active:scale-[0.99] transition-transform">
               <Phone className="w-4 h-4" /> Call
             </a>
             <WaBtn phone={profile.phone} />
