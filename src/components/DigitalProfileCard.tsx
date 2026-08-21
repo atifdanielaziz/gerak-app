@@ -1,5 +1,5 @@
-import { CarFront, Hash, IdCard, Phone, ShieldCheck, User, X } from 'lucide-react';
-import { WaBtn } from '../lib/whatsapp';
+import { CarFront, Hash, IdCard, ShieldCheck, User, X } from 'lucide-react';
+import { WaIcon, toWa } from '../lib/whatsapp';
 
 export interface DigitalProfileData {
   name: string;
@@ -27,16 +27,24 @@ export const digitalRoleLabel = (profile: DigitalProfileData) => {
   return 'Customer';
 };
 
-const InfoRow = ({ icon: Icon, label, value, accent = false }: {
-  icon: typeof User;
+const InfoRow = ({ icon: Icon, label, value, accent = false, iconClassName, iconHref }: {
+  icon: React.ElementType;
   label: string;
   value?: string | null;
   accent?: boolean;
+  iconClassName?: string;
+  iconHref?: string;
 }) => (
   <div className="flex items-center gap-3 px-4 py-2 border-b border-slate-100 last:border-b-0">
-    <span className="w-8 h-8 rounded-xl border border-slate-100 flex items-center justify-center shrink-0">
-      <Icon className="w-4 h-4 text-slate-400" />
-    </span>
+    {iconHref ? (
+      <a href={iconHref} target="_blank" rel="noopener noreferrer" className="w-8 h-8 rounded-xl border border-slate-100 flex items-center justify-center shrink-0 active:scale-90 transition-transform">
+        <Icon className={iconClassName || 'w-4 h-4 text-slate-400'} />
+      </a>
+    ) : (
+      <span className="w-8 h-8 rounded-xl border border-slate-100 flex items-center justify-center shrink-0">
+        <Icon className={iconClassName || 'w-4 h-4 text-slate-400'} />
+      </span>
+    )}
     <div className="min-w-0 flex-1">
       <p className="text-xs font-normal text-slate-400">{label}</p>
       <p className={`mt-0.5 truncate text-sm font-semibold ${accent ? 'text-emerald-600' : 'text-slate-800'}`}>
@@ -90,21 +98,19 @@ export const DigitalProfileCard: React.FC<{ profile: DigitalProfileData; onClose
           <div className="mx-5 mb-3 rounded-2xl border border-slate-100 overflow-hidden">
             <InfoRow icon={User} label="Name" value={profile.name} />
             <InfoRow icon={IdCard} label="Gerak ID" value={profile.gerakId} accent />
-            <InfoRow icon={Phone} label="Phone" value={profile.phone} />
+            <InfoRow
+              icon={WaIcon}
+              iconClassName="w-4 h-4 text-[#25D366]"
+              iconHref={profile.phone ? `https://wa.me/${toWa(profile.phone)}` : undefined}
+              label="Phone"
+              value={profile.phone}
+            />
             {isProvider && <InfoRow icon={CarFront} label="Car Type" value={profile.vehicle} />}
             {isProvider && <InfoRow icon={Hash} label="Plate Number" value={profile.plateNumber} />}
             {isProvider && <InfoRow icon={ShieldCheck} label="Status" value={isActive ? 'Active' : profile.status} accent={isActive} />}
           </div>
         </div>
 
-        {profile.phone && (
-          <footer className="shrink-0 border-t border-slate-100 bg-white px-5 py-3 flex items-center gap-3">
-            <a href={`tel:${profile.phone}`} className="flex-1 h-11 rounded-2xl bg-slate-800 text-white flex items-center justify-center gap-2 text-sm font-semibold active:scale-[0.99] transition-transform">
-              <Phone className="w-4 h-4" /> Call
-            </a>
-            <WaBtn phone={profile.phone} />
-          </footer>
-        )}
       </section>
     </div>
   );
