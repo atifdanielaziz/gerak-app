@@ -15,7 +15,7 @@ export const Login: React.FC = () => {
 
   useEffect(() => {
     if (consumeDeviceSessionReplacedMessage()) {
-      setError('Your account was signed in on another device. Please log in again to use this device.');
+      setError('Your account is active on another device. Log in here to continue; the other device will be signed out automatically.');
     } else if (consumeSessionExpiredMessage()) {
       setError('Your session expired due to inactivity. Please log in again.');
     }
