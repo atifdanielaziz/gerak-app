@@ -228,7 +228,7 @@ export const Jubah: React.FC = () => {
     if (!d) return;
     draftRestoredRef.current = true;
     queueMicrotask(() => {
-      setFullName(d.fullName ?? '');
+      setFullName((d.fullName ?? '').toUpperCase());
       setIcNumber(d.icNumber ?? '');
       setHpNumber(d.hpNumber ?? '');
       setEmail(d.email ?? '');
@@ -297,7 +297,7 @@ export const Jubah: React.FC = () => {
   useEffect(() => {
     if (draftRestoredRef.current || !user.isLoggedIn) return;
     queueMicrotask(() => {
-      if (user.name)     setFullName(prev => prev || user.name);
+      if (user.name)     setFullName(prev => prev || user.name.toUpperCase());
       if (user.icNumber) setIcNumber(prev => prev || formatIc(user.icNumber));
       if (user.phone)    setHpNumber(prev => prev || formatPhone(user.phone));
       if (user.matricNo) setMatricId(prev => prev || user.matricNo);
@@ -847,6 +847,8 @@ export const Jubah: React.FC = () => {
                 type="text"
                 value={fullName}
                 onChange={e => setFullName(e.target.value.toUpperCase())}
+                autoCapitalize="characters"
+                spellCheck={false}
                 placeholder="FULL NAME AS PER IC"
                 required
                 className="bg-white border border-slate-100 rounded-xl py-2.5 px-3 text-xs font-semibold text-slate-700 focus:outline-none focus:border-slate-900 transition placeholder:font-normal placeholder:text-slate-300"
