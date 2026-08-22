@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import { JubahBannerSubTab } from './admin/jubah/JubahBannerSubTab';
 import { JubahPriceSubTab } from './admin/jubah/JubahPriceSubTab';
+import { JubahFacultySubTab } from './admin/jubah/JubahFacultySubTab';
 import { DriversTab, type DriversTabHandle } from './admin/drivers/DriversTab';
 import { UsersTab, type UsersTabHandle } from './admin/users/UsersTab';
 import { ProfileSheet, type ProfileUser } from './admin/users/ProfileSheet';
@@ -105,7 +106,7 @@ export const AdminHome: React.FC = () => {
   const [jubahBookingsTotalCount, setJubahBookingsTotalCount] = useState<number | null>(null);
   const [jubahAdminView,     setJubahAdminView]     = useState<'list' | 'card'>('list');
   const [jubahAdminSelected, setJubahAdminSelected] = useState<JubahBookingRow | null>(null);
-  const [jubahSubTab,        setJubahSubTab]        = useState<'customer' | 'customer_details' | 'rider' | 'price' | 'banner'>('rider');
+  const [jubahSubTab,        setJubahSubTab]        = useState<'customer' | 'customer_details' | 'rider' | 'price' | 'faculty' | 'banner'>('rider');
   // Defence in depth — the sub-tab button itself is already hidden for
   // non-superadmin, but if a regular admin somehow lands on 'price' (e.g.
   // a stale tab from before a role downgrade), render as if 'rider' were
@@ -927,6 +928,7 @@ export const AdminHome: React.FC = () => {
                 { id: 'customer', label: 'Customer Directory', superadminOnly: false },
                 { id: 'customer_details', label: 'Customer Details', superadminOnly: false },
                 { id: 'price',    label: 'Price',    superadminOnly: true },
+                { id: 'faculty',  label: 'Faculty',  superadminOnly: false },
                 { id: 'banner',   label: 'Banner',   superadminOnly: false },
               ] as const)
                 .filter(t => !t.superadminOnly || isSuperAdmin)
@@ -1005,6 +1007,15 @@ export const AdminHome: React.FC = () => {
               isSuperAdmin={isSuperAdmin}
               showToast={showToast}
               jubahUniversity={jubahUniversityView}
+            />
+          )}
+
+          {effectiveJubahSubTab === 'faculty' && (
+            <JubahFacultySubTab
+              active={activeTab === 'jubah' && effectiveJubahSubTab === 'faculty'}
+              universityKey={isSuperAdmin ? jubahUniversityView : (universityKeyFromCampus(adminCampus) ?? 'umpsa')}
+              universityLabel={jubahUniversityLabel}
+              showToast={showToast}
             />
           )}
 

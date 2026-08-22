@@ -21,7 +21,7 @@ import { savePendingJubahBooking, clearPendingJubahBooking } from '../lib/pendin
 import { formatPhone } from '../lib/format';
 import { UNIVERSITY_MAP, deriveJubahCampus, jubahLocationLabel } from '../lib/universities';
 
-const UNIVERSITY_FACULTIES: Record<string, string[]> = {
+const FALLBACK_UNIVERSITY_FACULTIES: Record<string, string[]> = {
   'Universiti Malaysia Pahang Al-Sultan Abdullah (Pekan)': [
     'FKOM', 'FIST', 'FTKKP', 'FTKMA', 'FTKEE', 'FTKA', 'FTKPM', 'FIM', 'PSM', 'PSK',
   ],
@@ -113,6 +113,8 @@ export const Jubah: React.FC = () => {
   // which one an admin/rider actually opens.
   const jubahWatermarkText = `UNTUK KEGUNAAN MAJLIS KONVOKESYEN ${uniAbbrev} SAHAJA`;
   const [faculty, setFaculty]         = useState('');
+  const [facultyOptions, setFacultyOptions] = useState<string[]>([]);
+  const [facultyDirectoryConfigured, setFacultyDirectoryConfigured] = useState(false);
   const [matricId, setMatricId]       = useState('');
   const [paymentMode, setPaymentMode]   = useState<'pickup' | 'postage' | 'deposit'>('pickup');
   const [postageZone, setPostageZone]   = useState<'SM' | 'SS'>('SM');
@@ -158,6 +160,36 @@ export const Jubah: React.FC = () => {
   const [draftPostal,       setDraftPostal]       = useState('');
   const [draftCity,         setDraftCity]         = useState('');
   const [draftState,        setDraftState]        = useState('');
+
+  // Faculty choices are managed from Admin > Jubah > Faculty. Universities
+  // that have not been configured yet retain the legacy free-text field so
+  // launching this directory cannot block their existing booking flow.
+  useEffect(() => {
+    if (!landingUniversity) {
+      setFacultyOptions([]);
+      setFacultyDirectoryConfigured(false);
+      return;
+    }
+    let cancelled = false;
+    const loadFaculties = async () => {
+      const { data, error } = await supabase.from('jubah_faculties')
+        .select('name').eq('university_key', landingUniversity).eq('is_active', true)
+        .order('sort_order').order('name');
+      if (cancelled) return;
+      if (error) {
+        const fallback = FALLBACK_UNIVERSITY_FACULTIES[university] ?? [];
+        setFacultyOptions(fallback);
+        setFacultyDirectoryConfigured(fallback.length > 0);
+        return;
+      }
+      const options = (data ?? []).map(row => row.name);
+      setFacultyOptions(options);
+      setFacultyDirectoryConfigured(options.length > 0);
+      if (faculty && options.length > 0 && !options.includes(faculty)) setFaculty('');
+    };
+    void loadFaculties();
+    return () => { cancelled = true; };
+  }, [landingUniversity, university]);
 
   const fullAddress = [
     addressLine1,
@@ -922,11 +954,11 @@ export const Jubah: React.FC = () => {
               <label className="text-xs font-semibold text-slate-400">
                 Faculty <span className="text-danger">*</span>
               </label>
-              {(UNIVERSITY_FACULTIES[university] ?? []).length > 0 ? (
+              {facultyDirectoryConfigured ? (
                 <NativeSelect
                   value={faculty}
                   onChange={setFaculty}
-                  options={(UNIVERSITY_FACULTIES[university] ?? []).map(f => ({ value: f, label: f }))}
+                  options={facultyOptions.map(f => ({ value: f, label: f }))}
                   placeholder={university ? 'Select your faculty...' : 'Select a university first'}
                   label="Select Faculty"
                   disabled={!university}
