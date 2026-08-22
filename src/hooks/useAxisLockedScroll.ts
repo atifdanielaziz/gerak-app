@@ -29,6 +29,12 @@ export const useAxisLockedScroll = <T extends HTMLElement>() => {
     let startTop = 0;
     let axis: 'x' | 'y' | null = null;
     let ignoreGesture = false;
+    let lastX = 0;
+    let lastY = 0;
+    let lastTime = 0;
+    let velocityX = 0;
+    let velocityY = 0;
+    let momentumFrame: number | null = null;
     const previousTouchAction = horizontal.style.touchAction;
     const previousHorizontalOverflowY = horizontal.style.overflowY;
     const previousVerticalOverflowX = vertical.style.overflowX;
@@ -46,7 +52,45 @@ export const useAxisLockedScroll = <T extends HTMLElement>() => {
       vertical.style.minWidth = '100%';
     }
 
+    const stopMomentum = () => {
+      if (momentumFrame !== null) cancelAnimationFrame(momentumFrame);
+      momentumFrame = null;
+    };
+
+    const startMomentum = (lockedAxis: 'x' | 'y', initialVelocity: number) => {
+      stopMomentum();
+      if (Math.abs(initialVelocity) < 0.05) return;
+      let velocity = Math.max(-2.5, Math.min(2.5, initialVelocity));
+      let previousTime = performance.now();
+
+      const glide = (now: number) => {
+        const elapsed = Math.min(32, now - previousTime);
+        previousTime = now;
+        const target = lockedAxis === 'x' ? horizontal : vertical;
+        const before = lockedAxis === 'x' ? horizontal.scrollLeft : vertical.scrollTop;
+        target.scrollBy({
+          left: lockedAxis === 'x' ? velocity * elapsed : 0,
+          top: lockedAxis === 'y' ? velocity * elapsed : 0,
+          behavior: 'auto',
+        });
+        const after = lockedAxis === 'x' ? horizontal.scrollLeft : vertical.scrollTop;
+
+        // A fresh frame retains the locked axis and gradually loses speed.
+        // Stop immediately at either scroll boundary instead of "pushing"
+        // against it and producing an iOS rubber-band effect.
+        velocity *= Math.pow(0.94, elapsed / 16.67);
+        if (Math.abs(velocity) < 0.02 || Math.abs(after - before) < 0.1) {
+          momentumFrame = null;
+          return;
+        }
+        momentumFrame = requestAnimationFrame(glide);
+      };
+
+      momentumFrame = requestAnimationFrame(glide);
+    };
+
     const onStart = (event: TouchEvent) => {
+      stopMomentum();
       const touch = event.touches[0];
       if (!touch) return;
       const target = event.target instanceof Element ? event.target : null;
@@ -59,6 +103,11 @@ export const useAxisLockedScroll = <T extends HTMLElement>() => {
       startY = touch.clientY;
       startLeft = horizontal.scrollLeft;
       startTop = vertical.scrollTop;
+      lastX = touch.clientX;
+      lastY = touch.clientY;
+      lastTime = performance.now();
+      velocityX = 0;
+      velocityY = 0;
       axis = null;
     };
     const onMove = (event: TouchEvent) => {
@@ -76,6 +125,16 @@ export const useAxisLockedScroll = <T extends HTMLElement>() => {
 
       // Cancels WebKit's native two-axis pan and its post-release momentum.
       event.preventDefault();
+      const now = performance.now();
+      const elapsed = Math.max(1, now - lastTime);
+      const nextVelocityX = (lastX - touch.clientX) / elapsed;
+      const nextVelocityY = (lastY - touch.clientY) / elapsed;
+      // Smooth noisy touch samples without making a quick flick feel heavy.
+      velocityX = velocityX * 0.35 + nextVelocityX * 0.65;
+      velocityY = velocityY * 0.35 + nextVelocityY * 0.65;
+      lastX = touch.clientX;
+      lastY = touch.clientY;
+      lastTime = now;
       if (axis === 'x') {
         horizontal.scrollLeft = startLeft - moveX;
         vertical.scrollTop = startTop;
@@ -84,7 +143,16 @@ export const useAxisLockedScroll = <T extends HTMLElement>() => {
         horizontal.scrollLeft = startLeft;
       }
     };
-    const onEnd = () => { axis = null; ignoreGesture = false; };
+    const onEnd = () => {
+      if (!ignoreGesture && axis) startMomentum(axis, axis === 'x' ? velocityX : velocityY);
+      axis = null;
+      ignoreGesture = false;
+    };
+    const onCancel = () => {
+      axis = null;
+      ignoreGesture = false;
+      stopMomentum();
+    };
     const onWheel = (event: WheelEvent) => {
       const target = event.target instanceof Element ? event.target : null;
       if (target?.closest('[data-axis-lock-ignore], input, select, textarea')) return;
@@ -97,9 +165,10 @@ export const useAxisLockedScroll = <T extends HTMLElement>() => {
     horizontal.addEventListener('touchstart', onStart, { passive: true });
     horizontal.addEventListener('touchmove', onMove, { passive: false });
     horizontal.addEventListener('touchend', onEnd, { passive: true });
-    horizontal.addEventListener('touchcancel', onEnd, { passive: true });
+    horizontal.addEventListener('touchcancel', onCancel, { passive: true });
     horizontal.addEventListener('wheel', onWheel, { passive: false });
     return () => {
+      stopMomentum();
       horizontal.style.touchAction = previousTouchAction;
       if (vertical !== horizontal) {
         horizontal.style.overflowY = previousHorizontalOverflowY;
@@ -110,7 +179,7 @@ export const useAxisLockedScroll = <T extends HTMLElement>() => {
       horizontal.removeEventListener('touchstart', onStart);
       horizontal.removeEventListener('touchmove', onMove);
       horizontal.removeEventListener('touchend', onEnd);
-      horizontal.removeEventListener('touchcancel', onEnd);
+      horizontal.removeEventListener('touchcancel', onCancel);
       horizontal.removeEventListener('wheel', onWheel);
     };
   }, [node]);
