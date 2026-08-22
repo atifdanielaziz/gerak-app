@@ -40,7 +40,7 @@ function FacultyActions({ row, busy, onEdit, onToggle, onRemove }: {
         setPosition({ top: Math.max(8, Math.min(rect.bottom + 4, window.innerHeight - 132)), right: Math.max(8, window.innerWidth - rect.right) });
         setOpen(value => !value);
       }}
-      className="w-8 h-8 flex items-center justify-center rounded-lg text-slate-400 active:scale-90 transition-transform transform-gpu disabled:opacity-40">
+      className="w-7 h-7 flex items-center justify-center rounded-lg text-slate-400 active:scale-90 transition-transform transform-gpu disabled:opacity-40">
       <MoreVertical className="w-4 h-4" />
     </button>
     {open && createPortal(<>
@@ -183,7 +183,7 @@ export function JubahFacultySubTab({ active, universityKey, universityLabel, sho
       </button>
     </div>
     <div ref={tableScrollRef} className="table-scroll-x relative w-full max-w-full overflow-x-auto overscroll-none" style={{ contain: 'layout paint' }}>
-      <div data-axis-y className="max-h-[28rem] overflow-y-auto overscroll-none no-scrollbar" style={{ WebkitOverflowScrolling: 'touch' }}>
+      <div data-axis-y className="max-h-[24.5rem] overflow-y-auto overscroll-none no-scrollbar" style={{ WebkitOverflowScrolling: 'touch' }}>
         <table className="w-full min-w-[22rem] border-collapse text-left">
           <thead><tr className="border-b border-slate-100">
             <th className="sticky top-0 bg-white w-14 py-2 px-3 text-xs font-semibold text-slate-400">No.</th>
@@ -192,8 +192,8 @@ export function JubahFacultySubTab({ active, universityKey, universityLabel, sho
           </tr></thead>
           <tbody>
             {rows.map((row, index) => <tr key={row.id} className="border-b border-slate-100">
-              <td className="py-3 px-3 text-xs font-normal text-slate-500">{index + 1}</td>
-              <td className="py-3 px-3">
+              <td className="py-2.5 px-3 text-xs font-normal text-slate-500">{index + 1}</td>
+              <td className="py-2.5 px-3">
                 {editingId === row.id ? (
                   <input autoFocus value={editName} onChange={e => setEditName(e.target.value)}
                     onBlur={() => void saveEdit(row)}
@@ -207,7 +207,7 @@ export function JubahFacultySubTab({ active, universityKey, universityLabel, sho
                   <span className={`text-xs font-semibold ${row.is_active ? 'text-slate-800' : 'text-slate-400 line-through'}`}>{row.name}</span>
                 )}
               </td>
-              <td className="py-2 px-1 text-right">
+              <td className="py-1 px-1 text-right">
                 <FacultyActions row={row} busy={busy === row.id}
                   onEdit={() => { setEditingId(row.id); setEditName(row.name); }}
                   onToggle={() => void toggle(row)}
@@ -215,8 +215,8 @@ export function JubahFacultySubTab({ active, universityKey, universityLabel, sho
               </td>
             </tr>)}
             <tr>
-              <td className="py-3 px-3 text-xs font-normal text-slate-400">{rows.length + 1}</td>
-              <td className="py-3 px-3" colSpan={2}>
+              <td className="py-2.5 px-3 text-xs font-normal text-slate-400">{rows.length + 1}</td>
+              <td className="py-2.5 px-3" colSpan={2}>
                 <input ref={inputRef} value={newName} onChange={e => setNewName(e.target.value)}
                   onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); void add(); } }}
                   disabled={busy === 'add'} placeholder="Type a new faculty and press Enter"
