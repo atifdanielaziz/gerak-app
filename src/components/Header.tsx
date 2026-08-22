@@ -396,7 +396,7 @@ export const Header: React.FC = () => {
               </button>
               {showAdminUniversityMenu && (<>
                 <div className="fixed inset-0 z-40" onPointerDown={(e) => { e.preventDefault(); setShowAdminUniversityMenu(false); }} />
-                <div className="absolute right-0 top-full mt-2 z-50 bg-white border border-slate-100 rounded-2xl shadow-xl overflow-y-auto min-w-[220px] max-h-[calc(100dvh-6rem)] p-2">
+                <div className="absolute right-0 top-full mt-2 z-50 bg-white border border-slate-100 rounded-2xl shadow-xl overflow-y-auto overscroll-contain min-w-[220px] max-h-[13.5rem] p-2">
                   {UNIVERSITY_OPTIONS.map(option => {
                     const selected = adminUniversityKey === option.key;
                     return <button key={option.key} onPointerDown={(e) => { e.preventDefault(); setAdminUniversityKey(option.key); setShowAdminUniversityMenu(false); }}
