@@ -14,7 +14,6 @@ import {
 import { WaIcon, toWa } from '../lib/whatsapp';
 import { ReceiptSheet } from '../components/Receipt';
 import { NativeSelect } from '../components/NativeSelect';
-import { CampusStatusToggle } from '../components/CampusStatusToggle';
 import { buildTransportReceiptRows, buildRentalReceiptRows, BOOKING_METHOD_LABEL } from '../lib/receiptRows';
 import { generateReceiptPdf } from '../lib/receiptPdf';
 import { BOOKING_METHOD_ICON, bookingMethodBadgeClass } from '../lib/bookingMethodIcon';
@@ -849,22 +848,6 @@ export const DriverHome: React.FC = () => {
     <div className="flex-grow bg-white overflow-y-auto no-scrollbar pb-4 flex flex-col animate-fade-in">
 
       {/* ── Header ── */}
-      <div className="px-4 pt-5 pb-3 flex items-center justify-between">
-        <div>
-          <div className="flex items-center gap-2">
-            <h2 className="text-xl font-semibold text-slate-800 m-0">Driver Hub</h2>
-            <span className="flex items-center gap-1 bg-emerald-50 border border-emerald-100 text-emerald-600 text-xs font-semibold px-2 py-0.5 rounded-full">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-              LIVE
-            </span>
-          </div>
-          <p className="text-xs text-slate-400 font-normal mt-0.5">
-            {user.name} · {user.gerakId} · UMPSA {user.campus}
-          </p>
-        </div>
-        <CampusStatusToggle variant="icon" />
-      </div>
-
       {/* Toast */}
       {toast && (
         <div className="fixed top-16 left-4 right-4 z-50 bg-slate-800 text-white text-xs font-bold px-4 py-2.5 rounded-2xl shadow-lg text-center">
@@ -873,7 +856,7 @@ export const DriverHome: React.FC = () => {
       )}
 
       {/* ── Tab Switcher ── */}
-      <div className="px-4 mb-1">
+      <div className="px-4 pt-1 mb-1">
         <div className="flex bg-white border border-slate-100 rounded-2xl p-1 gap-1">
 
           {/* Pool tab — only if can_drive.

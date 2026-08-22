@@ -3,7 +3,6 @@ import { useApp } from '../context/AppContext';
 import { supabase } from '../lib/supabase';
 import { useLoadOnActive } from '../hooks/useLoadOnActive';
 import { NativeSelect } from '../components/NativeSelect';
-import { CampusStatusToggle } from '../components/CampusStatusToggle';
 import { UNIVERSITIES, UNIVERSITY_MAP, universityKeyFromCampus } from '../lib/universities';
 import {
   BarChart3, Car, Users, Clock,
@@ -440,16 +439,6 @@ export const AdminHome: React.FC = () => {
           header + tab-strip further down still handles navigation */}
       {!sampleDocsPage && (
         <aside className="hidden lg:flex lg:flex-col lg:w-64 lg:shrink-0 lg:h-full lg:border-r lg:border-slate-100 lg:overflow-y-auto lg:no-scrollbar">
-          <div className="px-5 pt-6 pb-4 border-b border-slate-100">
-            <div className="flex items-center gap-2">
-              <h2 className="text-base font-black text-slate-800 m-0">Admin Panel</h2>
-              <span className="bg-primary/10 text-primary text-xs font-semibold px-2 py-0.5 rounded-full uppercase tracking-wider">
-                {user.role}
-              </span>
-            </div>
-            <p className="text-xs text-slate-400 font-semibold mt-0.5">{user.name} · {user.gerakId}</p>
-          </div>
-
           <nav className="flex-1 flex flex-col gap-1 p-3">
             {ADMIN_TABS
               .filter(t => !t.superadminOnly || user.role === 'superadmin')
@@ -633,24 +622,7 @@ export const AdminHome: React.FC = () => {
       ) : (<>
 
       {/* Sticky header + tab switcher — mobile only; desktop uses the sidebar + topbar instead */}
-      <div ref={stickyHeaderRef} className="lg:hidden sticky top-0 z-20 -mx-4 px-4 pt-4 pb-2 bg-slate-50/95 backdrop-blur-sm flex flex-col gap-4">
-
-        {/* Header */}
-        <div className="flex items-center justify-between">
-          <div>
-            <div className="flex items-center gap-2">
-              <h2 className="text-xl font-black text-slate-800 m-0">Admin Panel</h2>
-              <span className="bg-primary/10 text-primary text-xs font-semibold px-2 py-0.5 rounded-full uppercase tracking-wider">
-                {user.role}
-              </span>
-            </div>
-            <p className="text-xs text-slate-400 font-semibold mt-0.5">{user.name} · {user.gerakId}</p>
-          </div>
-
-          <div className="flex items-center gap-2">
-            <CampusStatusToggle variant="icon" />
-          </div>
-        </div>
+      <div ref={stickyHeaderRef} className="lg:hidden sticky top-0 z-20 -mx-4 px-4 pt-1 pb-2 bg-slate-50/95 backdrop-blur-sm flex flex-col">
 
         {/* Tab bar */}
       <div className="flex bg-white border border-slate-100 rounded-2xl p-1 gap-1 overflow-x-auto no-scrollbar">

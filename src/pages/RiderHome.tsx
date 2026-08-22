@@ -16,7 +16,6 @@ import {
   Copy,
 } from 'lucide-react';
 import { driverIsActive } from './Profile';
-import { CampusStatusToggle } from '../components/CampusStatusToggle';
 import { JubahStepper } from '../components/JubahStepper';
 import { ReceiptCard } from '../components/Receipt';
 import { buildJubahReceiptRows, type ReceiptDoc } from '../lib/receiptRows';
@@ -364,46 +363,31 @@ export const RiderHome: React.FC = () => {
 
       <div className="flex-grow bg-white overflow-y-auto no-scrollbar pb-4 flex flex-col animate-fade-in">
 
-        {/* Header */}
-        <div className="px-4 pt-5 pb-3 flex items-center justify-between">
+        {/* Jubah sub-page heading only; hub identity/status lives in Header. */}
+        {activeTab === 'jubah' && jubahView !== 'list' && (
+        <div className="px-4 pt-3 pb-3 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            {activeTab === 'jubah' && jubahView !== 'list' && (
-              <button onClick={goBack}
+            <button onClick={goBack}
                 className="w-8 h-8 flex items-center justify-center rounded-xl bg-white border border-slate-100 text-slate-500 hover:text-primary transition active:scale-90 shrink-0">
                 <ChevronLeft className="w-4 h-4" />
-              </button>
-            )}
+            </button>
             <div>
-              <div className="flex items-center gap-2">
-                <h2 className="text-xl font-semibold text-slate-800 m-0">
-                  {activeTab === 'jubah' && jubahView === 'card'    ? 'Job Details' :
-                   activeTab === 'jubah' && jubahView === 'details' ? 'Customer Info' :
-                   'Rider Hub'}
-                </h2>
-                {activeTab !== 'jubah' || jubahView === 'list' ? (
-                  <span className="flex items-center gap-1 bg-emerald-50 border border-emerald-100 text-emerald-600 text-xs font-semibold px-2 py-0.5 rounded-full">
-                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                    LIVE
-                  </span>
-                ) : null}
-              </div>
+              <h2 className="text-xl font-semibold text-slate-800 m-0">{jubahView === 'card' ? 'Job Details' : 'Customer Info'}</h2>
               <p className="text-xs text-slate-400 font-normal mt-0.5">
                 {activeTab === 'jubah' && jubahView === 'card' && selectedJob
                   ? `${selectedJob.reference} · ${selectedJob.full_name}`
                   : activeTab === 'jubah' && jubahView === 'details' && selectedJob
                   ? `${selectedJob.remark} · ${selectedJob.university}`
-                  : `${user.name} · ${user.gerakId} · UMPSA ${user.campus}`}
+                  : ''}
               </p>
             </div>
           </div>
-          {(activeTab !== 'jubah' || jubahView === 'list') && (
-            <CampusStatusToggle variant="icon" />
-          )}
         </div>
+        )}
 
         {/* Tab Switcher — hide when in jubah sub-pages */}
         {(activeTab !== 'jubah' || jubahView === 'list') && (
-          <div className="px-4 mb-4">
+          <div className="px-4 pt-1 mb-4">
             <div className="flex bg-white border border-slate-100 rounded-2xl p-1 gap-1">
               {([
                 { id: 'daily',    label: 'Daily Job',   icon: ShoppingBasket },

@@ -1,8 +1,9 @@
 ﻿import React, { useState } from 'react';
 import { useApp } from '../context/AppContext';
-import { Bell, ChevronLeft, ShieldCheck, Car, Bike, MoreHorizontal, Eye, ChevronDown, X, MapPin, User, Pencil } from 'lucide-react';
+import { Bell, ChevronLeft, ShieldCheck, Car, Bike, MoreHorizontal, Eye, ChevronDown, X, MapPin, User, Pencil, CalendarCheck2, FileCheck2 } from 'lucide-react';
 import { WaBtn } from '../lib/whatsapp';
 import { UNIVERSITIES as UNIVERSITY_OPTIONS } from '../lib/universities';
+import { CampusStatusToggle } from './CampusStatusToggle';
 
 const UNI_CAMPUSES: Record<string, string[]> = Object.fromEntries(
   UNIVERSITY_OPTIONS.flatMap(university => [
@@ -52,6 +53,12 @@ export const Header: React.FC = () => {
   const [showProfilePreview, setShowProfilePreview] = useState(false);
   const [showMyCampusSheet, setShowMyCampusSheet] = useState(false);
   const unreadCount = notifications.filter(n => !n.isRead).length;
+  const isProviderRole = activeRole === 'driver' || activeRole === 'rider' || user.role === 'driver' || user.role === 'rider';
+  const paymentValid = Boolean(user.receiptGateExempt || (user.feeReceiptExpiry && new Date(user.feeReceiptExpiry).getTime() >= Date.now()));
+  const documentLabel = user.docsStatus === 'none' ? 'Not Uploaded' : toTitleCase(user.docsStatus || 'none');
+  const providerUniversity = UNIVERSITY_OPTIONS.find(option =>
+    option.shortLabel === user.university || option.fullName === user.university || option.label === user.university,
+  )?.shortLabel || user.university || 'UMPSA';
 
   if (currentPage === 'splash' || currentPage === 'login' || currentPage === 'register' || currentPage === 'forgot-password' || currentPage === 'reset-password' || currentPage === 'profile' || currentPage === 'complete-profile') {
     return null;
@@ -323,7 +330,7 @@ export const Header: React.FC = () => {
               {showRoleMenu && (
                 <>
                   <div className="fixed inset-0 z-40" onPointerDown={(e) => { e.preventDefault(); setShowRoleMenu(false); }} />
-                  <div className="absolute right-0 top-full mt-2 z-50 bg-white border border-slate-100 rounded-2xl shadow-xl overflow-hidden min-w-[180px]">
+                  <div className="absolute right-0 top-full mt-2 z-50 bg-white border border-slate-100 rounded-2xl shadow-xl overflow-y-auto min-w-[210px] max-h-[calc(100dvh-6rem)]">
                     <button
                       onPointerDown={(e) => { e.preventDefault(); switchToAdminMode(); setShowRoleMenu(false); }}
                       className={`w-full flex items-center gap-3 px-4 py-3 text-left text-xs font-extrabold transition-transform active:scale-95 ${
@@ -366,9 +373,51 @@ export const Header: React.FC = () => {
                       <Eye className="w-4 h-4 shrink-0" />
                       Customer Preview
                     </button>
+                    <div className="border-t border-slate-100" />
+                    <div className="flex items-center gap-3 px-4 py-3 text-xs text-slate-600">
+                      <MapPin className="w-4 h-4 shrink-0 text-slate-400" />
+                      <span className="font-semibold">Campus Presence</span>
+                      <span className="ml-auto"><CampusStatusToggle variant="icon" /></span>
+                    </div>
                   </div>
                 </>
               )}
+            </div>
+          )}
+
+          {user.role !== 'superadmin' && isProviderRole && (
+            <div className="relative">
+              <button onPointerDown={(e) => { e.preventDefault(); setShowRoleMenu(p => !p); }}
+                className="w-8 h-8 flex items-center justify-center rounded-xl text-slate-500 active:bg-slate-50 active:scale-90 transition-transform"
+                aria-label="Account and campus status">
+                <MoreHorizontal className="w-4 h-4" />
+              </button>
+              {showRoleMenu && (<>
+                <div className="fixed inset-0 z-40" onPointerDown={(e) => { e.preventDefault(); setShowRoleMenu(false); }} />
+                <div className="absolute right-0 top-full mt-2 z-50 bg-white border border-slate-100 rounded-2xl shadow-xl overflow-hidden min-w-[220px]">
+                  <div className="flex items-center gap-3 px-4 py-3 text-xs text-slate-600"><MapPin className="w-4 h-4 shrink-0 text-slate-400" /><span className="font-semibold">{providerUniversity} {user.campus || 'Campus'}</span></div>
+                  <div className="flex items-center gap-3 px-4 py-3 border-t border-slate-100 text-xs text-slate-600"><ShieldCheck className="w-4 h-4 shrink-0 text-slate-400" /><span className="font-semibold">Status</span><span className="ml-auto text-emerald-600 font-semibold">{toTitleCase(user.status || 'active')}</span></div>
+                  <div className="flex items-center gap-3 px-4 py-3 border-t border-slate-100 text-xs text-slate-600"><CalendarCheck2 className="w-4 h-4 shrink-0 text-slate-400" /><span className="font-semibold">Payment</span><span className={`ml-auto font-semibold ${paymentValid ? 'text-emerald-600' : 'text-red-500'}`}>{paymentValid ? 'Valid' : 'Expired'}</span></div>
+                  <div className="flex items-center gap-3 px-4 py-3 border-t border-slate-100 text-xs text-slate-600"><FileCheck2 className="w-4 h-4 shrink-0 text-slate-400" /><span className="font-semibold">Document</span><span className={`ml-auto font-semibold ${user.docsStatus === 'approved' ? 'text-emerald-600' : 'text-slate-500'}`}>{documentLabel}</span></div>
+                  <div className="flex items-center gap-3 px-4 py-3 border-t border-slate-100 text-xs text-slate-600"><MapPin className="w-4 h-4 shrink-0 text-slate-400" /><span className="font-semibold">Campus Presence</span><span className="ml-auto"><CampusStatusToggle variant="icon" /></span></div>
+                </div>
+              </>)}
+            </div>
+          )}
+
+          {user.role === 'admin' && activeRole !== 'driver' && (
+            <div className="relative">
+              <button onPointerDown={(e) => { e.preventDefault(); setShowRoleMenu(p => !p); }}
+                className="w-8 h-8 flex items-center justify-center rounded-xl text-slate-500 active:bg-slate-50 active:scale-90 transition-transform"
+                aria-label="Campus status">
+                <MoreHorizontal className="w-4 h-4" />
+              </button>
+              {showRoleMenu && (<>
+                <div className="fixed inset-0 z-40" onPointerDown={(e) => { e.preventDefault(); setShowRoleMenu(false); }} />
+                <div className="absolute right-0 top-full mt-2 z-50 bg-white border border-slate-100 rounded-2xl shadow-xl overflow-hidden min-w-[210px]">
+                  <div className="flex items-center gap-3 px-4 py-3 text-xs text-slate-600"><MapPin className="w-4 h-4 shrink-0 text-slate-400" /><span className="font-semibold">Campus Presence</span><span className="ml-auto"><CampusStatusToggle variant="icon" /></span></div>
+                </div>
+              </>)}
             </div>
           )}
 
