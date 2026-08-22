@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
-import { consumeSessionExpiredMessage } from '../lib/idleSession';
+import { consumeDeviceSessionReplacedMessage, consumeSessionExpiredMessage } from '../lib/idleSession';
 import { Mail, Lock, Eye, EyeOff, ArrowRight, X } from 'lucide-react';
 
 export const Login: React.FC = () => {
@@ -14,7 +14,9 @@ export const Login: React.FC = () => {
   const [emailCheck, setEmailCheck]     = useState<null | 'checking' | { exists: boolean }>(null);
 
   useEffect(() => {
-    if (consumeSessionExpiredMessage()) {
+    if (consumeDeviceSessionReplacedMessage()) {
+      setError('Your account was signed in on another device. Please log in again to use this device.');
+    } else if (consumeSessionExpiredMessage()) {
       setError('Your session expired due to inactivity. Please log in again.');
     }
   }, []);

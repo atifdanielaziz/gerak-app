@@ -2,7 +2,7 @@ import React, { createContext, useContext, useState, useEffect, useRef, useCallb
 import { Capacitor } from '@capacitor/core';
 import { App as CapacitorApp } from '@capacitor/app';
 import { supabase } from '../lib/supabase';
-import { INACTIVITY_LIMIT_MS, isSessionExpired, touchActivity, setSessionExpiredMessage } from '../lib/idleSession';
+import { INACTIVITY_LIMIT_MS, isSessionExpired, touchActivity, setDeviceSessionReplacedMessage, setSessionExpiredMessage } from '../lib/idleSession';
 
 // window.location.origin on web — always correct wherever the app is
 // actually being served from (gerakmy.com in production, localhost during
@@ -442,7 +442,34 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   // "session expired" message in the latter case.
   const isLoggingOutRef = useRef(false);
   const userLoggedInRef = useRef(false);
+  const deviceSessionCheckRef = useRef(false);
   useEffect(() => { userLoggedInRef.current = user.isLoggedIn; }, [user.isLoggedIn]);
+
+  const claimSingleDeviceSession = async () => {
+    const { data, error } = await supabase.rpc('claim_single_device_session');
+    // Fail open during staged deployment; once the migration is present,
+    // true means this role is single-device and older sessions are revoked.
+    if (!error && data === true) await supabase.auth.signOut({ scope: 'others' });
+  };
+
+  const validateSingleDeviceSession = async () => {
+    const { data, error } = await supabase.rpc('validate_single_device_session');
+    return error ? true : data !== false;
+  };
+
+  const forceDeviceSessionLogout = async () => {
+    if (deviceSessionCheckRef.current) return;
+    deviceSessionCheckRef.current = true;
+    isLoggingOutRef.current = true;
+    setDeviceSessionReplacedMessage();
+    setPageHistory([]);
+    setActiveRole(null);
+    setIsPreviewMode(false);
+    setUser(prev => ({ ...prev, isLoggedIn: false }));
+    _setCurrentPage('login');
+    // Local only: a stale device must never revoke the newer active session.
+    await supabase.auth.signOut({ scope: 'local' });
+  };
 
   // Staff presence is deliberately coarse: one write at most every 45 seconds,
   // and the admin directory considers a staff member online for five minutes.
@@ -479,17 +506,26 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     // fires exactly once, not on every subsequent session restore.
     const isEmailConfirmation = window.location.hash.includes('type=signup');
 
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
       if (!session?.user || isRecovery) return;
       if (isSessionExpired(INACTIVITY_LIMIT_MS)) {
         supabase.auth.signOut();
         setSessionExpiredMessage();
         return;
       }
+      const oauthLogin = sessionStorage.getItem('gerak_claim_device_on_auth') === '1';
+      if (oauthLogin) sessionStorage.removeItem('gerak_claim_device_on_auth');
+      const isFreshLogin = isEmailConfirmation || oauthLogin;
+      if (!isFreshLogin && !(await validateSingleDeviceSession())) {
+        await forceDeviceSessionLogout();
+        return;
+      }
       if (isEmailConfirmation) {
         addNotification('Email confirmed ✓', 'Your Gerak account is now verified — welcome aboard!', 'system');
       }
-      applyPendingInviteIfAny().then(() => loadProfile(session.user.id));
+      await applyPendingInviteIfAny();
+      if (isFreshLogin) await claimSingleDeviceSession();
+      await loadProfile(session.user.id);
     });
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
@@ -513,6 +549,27 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return () => subscription.unsubscribe();
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Remove an older open device promptly after a newer login claims the same
+  // non-exempt account. Reopening a sleeping PWA checks immediately.
+  useEffect(() => {
+    if (!user.isLoggedIn || ['admin', 'superadmin', 'rider'].includes(user.role)) return;
+    deviceSessionCheckRef.current = false;
+    const check = async () => {
+      if (document.visibilityState !== 'visible' || deviceSessionCheckRef.current) return;
+      if (!(await validateSingleDeviceSession())) await forceDeviceSessionLogout();
+    };
+    void check();
+    const timer = window.setInterval(() => { void check(); }, 30_000);
+    document.addEventListener('visibilitychange', check);
+    window.addEventListener('focus', check);
+    return () => {
+      window.clearInterval(timer);
+      document.removeEventListener('visibilitychange', check);
+      window.removeEventListener('focus', check);
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user.isLoggedIn, user.role]);
 
   // Picks up a driver_invites row that was created for this email AFTER
   // the account already existed — handle_new_user() only ever applies an
@@ -638,6 +695,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const { data: { user: authUser } } = await supabase.auth.getUser();
     if (authUser) {
       await applyPendingInviteIfAny();
+      await claimSingleDeviceSession();
       await loadProfile(authUser.id);
     }
     return { error: null };
@@ -670,12 +728,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const { data: { user: authUser } } = await supabase.auth.getUser();
     if (authUser) {
       await supabase.from('profiles').update({ phone, university, campus, terms_accepted_at: new Date().toISOString() }).eq('id', authUser.id);
+      await claimSingleDeviceSession();
       await loadProfile(authUser.id);
     }
     return { error: null };
   };
 
   const loginWithOAuth = async (provider: 'google' | 'apple') => {
+    sessionStorage.setItem('gerak_claim_device_on_auth', '1');
     await supabase.auth.signInWithOAuth({ provider, options: { redirectTo: authRedirectUrl() } });
   };
 

@@ -1,5 +1,6 @@
 const LAST_ACTIVITY_KEY = 'gerak_last_activity';
 const SESSION_MSG_KEY = 'gerak_session_msg';
+const DEVICE_MSG_KEY = 'gerak_device_session_msg';
 const ACTIVITY_WRITE_THROTTLE_MS = 60_000;
 
 export const INACTIVITY_LIMIT_MS = 5 * 24 * 60 * 60 * 1000;
@@ -31,5 +32,15 @@ export function setSessionExpiredMessage() {
 export function consumeSessionExpiredMessage(): boolean {
   const flagged = sessionStorage.getItem(SESSION_MSG_KEY) !== null;
   if (flagged) sessionStorage.removeItem(SESSION_MSG_KEY);
+  return flagged;
+}
+
+export function setDeviceSessionReplacedMessage() {
+  sessionStorage.setItem(DEVICE_MSG_KEY, 'replaced');
+}
+
+export function consumeDeviceSessionReplacedMessage(): boolean {
+  const flagged = sessionStorage.getItem(DEVICE_MSG_KEY) !== null;
+  if (flagged) sessionStorage.removeItem(DEVICE_MSG_KEY);
   return flagged;
 }
