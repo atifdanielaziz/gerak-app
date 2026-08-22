@@ -317,7 +317,7 @@ export const Header: React.FC = () => {
 
           {/* Superadmin — 3-dot dropdown, red when not in admin role */}
           {user.role === 'superadmin' && (
-            <div className="relative order-3">
+            <div className="relative order-1">
               <button
                 onClick={() => setShowRoleMenu(p => !p)}
                 className={`w-8 h-8 flex items-center justify-center rounded-xl transition active:scale-90 ${
@@ -388,7 +388,7 @@ export const Header: React.FC = () => {
           )}
 
           {(user.role === 'admin' || user.role === 'superadmin') && (
-            <div className="relative order-1">
+            <div className="relative order-3">
               <button onPointerDown={(e) => { e.preventDefault(); setShowAdminUniversityMenu(p => !p); }}
                 className="w-8 h-8 flex items-center justify-center rounded-xl text-slate-600 active:bg-slate-50 active:scale-90 transition-transform"
                 aria-label="Select admin university">
@@ -419,7 +419,7 @@ export const Header: React.FC = () => {
           )}
 
           {user.role !== 'superadmin' && isProviderRole && (
-            <div className="relative order-3">
+            <div className="relative order-1">
               <button onPointerDown={(e) => { e.preventDefault(); setShowRoleMenu(p => !p); }}
                 className="w-8 h-8 flex items-center justify-center rounded-xl text-slate-500 active:bg-slate-50 active:scale-90 transition-transform"
                 aria-label="Account and campus status">
@@ -439,7 +439,7 @@ export const Header: React.FC = () => {
           )}
 
           {user.role === 'admin' && activeRole !== 'driver' && (
-            <div className="relative order-3">
+            <div className="relative order-1">
               <button onPointerDown={(e) => { e.preventDefault(); setShowRoleMenu(p => !p); }}
                 className="w-8 h-8 flex items-center justify-center rounded-xl text-slate-500 active:bg-slate-50 active:scale-90 transition-transform"
                 aria-label="Campus status">
