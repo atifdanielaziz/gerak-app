@@ -465,9 +465,9 @@ export const JubahRiderSubTab = forwardRef<JubahRiderSubTabHandle, JubahRiderSub
                 — see JubahCustomerSubTab's identical table for why a single
                 dual-axis scroll element causes erratic diagonal scrolling
                 and an unreliable sticky header on mobile. */}
-            <div ref={representativeDirectoryScrollRef} className="table-scroll-x relative w-full max-w-full overflow-x-auto overscroll-none"
+            <div ref={representativeDirectoryScrollRef} className="table-scroll-x relative w-full max-w-full overflow-x-auto overflow-y-hidden overscroll-none"
               style={{ contain: 'layout paint' }}>
-              <div data-axis-y className="max-h-[320px] overflow-y-auto overscroll-none no-scrollbar"
+              <div data-axis-y className="max-h-[320px] overflow-y-auto overflow-x-hidden overscroll-none no-scrollbar"
                 style={{ WebkitOverflowScrolling: 'touch' }}>
               <table className="min-w-full text-left border-collapse">
                 {/* sticky+bg-white on each <th> individually, not on <thead> —

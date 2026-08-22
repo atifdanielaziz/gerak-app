@@ -756,10 +756,11 @@ export const UsersTab = forwardRef<UsersTabHandle, UsersTabProps>(function Users
 
           <div
             ref={staffDirectoryScrollRef}
-            className="table-scroll-x relative w-full max-w-full overflow-x-auto overscroll-none"
+            className="table-scroll-x relative w-full max-w-full overflow-x-auto overflow-y-hidden overscroll-none"
+            style={{ contain: 'layout paint' }}
           >
-            <div data-axis-y className="max-h-[420px] overflow-y-auto overscroll-none no-scrollbar" style={{ WebkitOverflowScrolling: 'touch' }}>
-            <div className="grid grid-cols-[minmax(12rem,1.5fr)_6rem_7rem_8rem_minmax(14rem,1.5fr)_7rem_5.5rem_7rem_2.5rem] min-w-[76rem] border-b border-slate-100 bg-white">
+            <div data-axis-y className="max-h-[420px] overflow-y-auto overflow-x-hidden overscroll-none no-scrollbar" style={{ WebkitOverflowScrolling: 'touch' }}>
+            <div className="sticky top-0 z-10 grid grid-cols-[minmax(12rem,1.5fr)_6rem_7rem_8rem_minmax(14rem,1.5fr)_7rem_5.5rem_7rem_2.5rem] min-w-[76rem] border-b border-slate-100 bg-white">
               {['Name', 'Role', 'Gerak ID', 'Campus', 'Email', 'Presence', 'Online', 'Work Status', ''].map(label => (
                 <div key={label || 'menu'} className="px-3 py-2.5 text-xs font-semibold text-slate-400">{label}</div>
               ))}

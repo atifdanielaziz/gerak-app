@@ -100,8 +100,8 @@ export const VerifyDocsTab = forwardRef<VerifyDocsTabHandle, VerifyDocsTabProps>
 
     <section className="bg-white border border-slate-100 rounded-3xl p-5">
       <h3 className="flex items-center gap-2 text-sm font-semibold text-slate-700 mb-3"><Users className="w-4 h-4 text-slate-400" /> Document Directory</h3>
-      <div ref={tableScrollRef} className="table-scroll-x relative w-full max-w-full overflow-x-auto overscroll-none" style={{ contain: 'layout paint' }}>
-      <div data-axis-y className="max-h-[560px] overflow-y-auto overscroll-none no-scrollbar" style={{ WebkitOverflowScrolling: 'touch' }}>
+      <div ref={tableScrollRef} className="table-scroll-x relative w-full max-w-full overflow-x-auto overflow-y-hidden overscroll-none" style={{ contain: 'layout paint' }}>
+      <div data-axis-y className="max-h-[560px] overflow-y-auto overflow-x-hidden overscroll-none no-scrollbar" style={{ WebkitOverflowScrolling: 'touch' }}>
       {loading ? <div className="flex justify-center py-8"><span className="w-5 h-5 rounded-full border-2 border-slate-200 border-t-primary animate-spin" /></div>
       : filtered.length === 0 ? <p className="text-xs text-slate-400 text-center py-6">No {roleFilter}s found.</p>
       : <table className="min-w-[760px] w-full border-collapse text-left text-xs"><thead className="sticky top-0 z-10 bg-white"><tr className="text-slate-400">{['Name','Role','Gerak ID','Campus','Email','Status',''].map(h => <th key={h} className="py-2.5 pr-4 font-semibold border-b border-slate-100 whitespace-nowrap">{h}</th>)}</tr></thead><tbody>{filtered.map(d => <tr key={d.id} onClick={() => onViewProfile(profileUser(d))} className="border-b border-slate-100 last:border-b-0 active:bg-slate-50 cursor-pointer">
