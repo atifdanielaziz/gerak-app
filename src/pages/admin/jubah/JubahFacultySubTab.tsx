@@ -183,7 +183,7 @@ export function JubahFacultySubTab({ active, universityKey, universityLabel, sho
       </button>
     </div>
     <div ref={tableScrollRef} className="table-scroll-x relative w-full max-w-full overflow-x-auto overscroll-none" style={{ contain: 'layout paint' }}>
-      <div data-axis-y className="max-h-[600px] overflow-y-auto overscroll-none no-scrollbar" style={{ WebkitOverflowScrolling: 'touch' }}>
+      <div data-axis-y className="max-h-[15rem] overflow-y-auto overscroll-none no-scrollbar" style={{ WebkitOverflowScrolling: 'touch' }}>
         <table className="w-full min-w-[22rem] border-collapse text-left">
           <thead><tr className="border-b border-slate-100">
             <th className="sticky top-0 bg-white w-14 py-2 px-3 text-xs font-semibold text-slate-400">No.</th>
