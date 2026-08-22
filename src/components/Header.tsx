@@ -1,6 +1,6 @@
 ﻿import React, { useState } from 'react';
 import { useApp } from '../context/AppContext';
-import { Bell, ChevronLeft, ShieldCheck, Car, Bike, MoreHorizontal, Eye, ChevronDown, X, MapPin, User, Pencil, CalendarCheck2, FileCheck2, Menu, Check } from 'lucide-react';
+import { Bell, ChevronLeft, ShieldCheck, Car, Bike, MoreHorizontal, MoreVertical, Eye, ChevronDown, X, MapPin, User, Pencil, CalendarCheck2, FileCheck2, Menu, Check } from 'lucide-react';
 import { WaBtn } from '../lib/whatsapp';
 import { UNIVERSITIES as UNIVERSITY_OPTIONS } from '../lib/universities';
 import { CampusStatusToggle } from './CampusStatusToggle';
@@ -326,7 +326,7 @@ export const Header: React.FC = () => {
                     : 'text-slate-500 hover:bg-slate-100'
                 }`}
               >
-                <MoreHorizontal className="w-4 h-4" />
+                <MoreVertical className="w-4 h-4" />
               </button>
 
               {showRoleMenu && (
@@ -423,7 +423,7 @@ export const Header: React.FC = () => {
               <button onPointerDown={(e) => { e.preventDefault(); setShowRoleMenu(p => !p); }}
                 className="w-8 h-8 flex items-center justify-center rounded-xl text-slate-500 active:bg-slate-50 active:scale-90 transition-transform"
                 aria-label="Account and campus status">
-                <MoreHorizontal className="w-4 h-4" />
+                <MoreVertical className="w-4 h-4" />
               </button>
               {showRoleMenu && (<>
                 <div className="fixed inset-0 z-40" onPointerDown={(e) => { e.preventDefault(); setShowRoleMenu(false); }} />
@@ -443,7 +443,7 @@ export const Header: React.FC = () => {
               <button onPointerDown={(e) => { e.preventDefault(); setShowRoleMenu(p => !p); }}
                 className="w-8 h-8 flex items-center justify-center rounded-xl text-slate-500 active:bg-slate-50 active:scale-90 transition-transform"
                 aria-label="Campus status">
-                <MoreHorizontal className="w-4 h-4" />
+                <MoreVertical className="w-4 h-4" />
               </button>
               {showRoleMenu && (<>
                 <div className="fixed inset-0 z-40" onPointerDown={(e) => { e.preventDefault(); setShowRoleMenu(false); }} />
