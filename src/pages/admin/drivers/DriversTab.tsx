@@ -1,13 +1,13 @@
 import { forwardRef, useCallback, useEffect, useImperativeHandle, useState } from 'react';
 import { supabase } from '../../../lib/supabase';
 import {
-  UserPlus, Send, MapPin, Mail, Car, KeyRound, Bike, GraduationCap, X, AlertCircle, Settings, Truck,
+  UserPlus, Send, Mail, Car, KeyRound, Bike, GraduationCap, X, AlertCircle, Settings, Truck,
 } from 'lucide-react';
 import { useLoadOnActive } from '../../../hooks/useLoadOnActive';
 import { useApp } from '../../../context/AppContext';
 import { NativeSelect } from '../../../components/NativeSelect';
 import { MultiSelect } from '../../../components/MultiSelect';
-import { UNIVERSITIES, UNIVERSITY_MAP, jubahLocationLabel, universityKeyFromCampus } from '../../../lib/universities';
+import { UNIVERSITY_MAP, jubahLocationLabel, universityKeyFromCampus } from '../../../lib/universities';
 import { useAxisLockedScroll } from '../../../hooks/useAxisLockedScroll';
 
 interface DriverInvite {
@@ -34,6 +34,7 @@ interface DriversTabProps {
   active: boolean;
   isSuperAdmin: boolean;
   adminCampus: string;
+  universityKey: string;
   userName: string;
   showToast: (msg: string) => void;
   // Bubbles the confirm-modal's open state up so AdminHome's shared
@@ -47,7 +48,7 @@ interface DriversTabProps {
 // AdminHome) can still trigger it without this component's data living in
 // the parent.
 export const DriversTab = forwardRef<DriversTabHandle, DriversTabProps>(function DriversTab(
-  { active, isSuperAdmin, adminCampus, userName, showToast, onModalOpenChange },
+  { active, universityKey, userName, showToast, onModalOpenChange },
   ref
 ) {
   const { showConfirmModal } = useApp();
@@ -56,8 +57,8 @@ export const DriversTab = forwardRef<DriversTabHandle, DriversTabProps>(function
   const [invitesLoading, setInvitesLoading]  = useState(false);
   const [inviteSearch, setInviteSearch]      = useState('');
   const [inviteEmail, setInviteEmail]        = useState('');
-  const [inviteUniversityKey, setInviteUniversityKey] = useState(isSuperAdmin ? 'umpsa' : (universityKeyFromCampus(adminCampus) ?? 'umpsa'));
-  const [inviteCampus, setInviteCampus]      = useState(isSuperAdmin ? 'Gambang' : adminCampus);
+  const inviteUniversityKey = universityKey;
+  const [inviteCampus, setInviteCampus]      = useState(UNIVERSITY_MAP[universityKey]?.campuses[0] ?? '');
   const [inviteRole, setInviteRole]          = useState<'driver' | 'rider' | 'admin'>('driver');
   const [inviteCanDrive, setInviteCanDrive]  = useState(true);
   const [inviteCanRent,  setInviteCanRent]   = useState(false);
@@ -68,6 +69,10 @@ export const DriversTab = forwardRef<DriversTabHandle, DriversTabProps>(function
   const [showInviteConfirm, setShowInviteConfirm] = useState(false);
 
   useEffect(() => { onModalOpenChange(showInviteConfirm); }, [showInviteConfirm, onModalOpenChange]);
+  useEffect(() => {
+    const campuses = UNIVERSITY_MAP[universityKey]?.campuses ?? [];
+    setInviteCampus(current => campuses.includes(current) ? current : (campuses[0] ?? ''));
+  }, [universityKey]);
 
   const loadInvites = useCallback(async () => {
     setInvitesLoading(true);
@@ -75,11 +80,12 @@ export const DriversTab = forwardRef<DriversTabHandle, DriversTabProps>(function
       .from('driver_invites')
       .select('id,email,campus,university,role,can_drive,can_rent,can_transport,can_daily,can_robe,used,used_at,created_at')
       .order('created_at', { ascending: false });
-    if (!isSuperAdmin) query = query.eq('campus', adminCampus);
+    const campuses = UNIVERSITY_MAP[universityKey]?.campuses ?? [];
+    if (campuses.length) query = query.in('campus', campuses);
     const { data } = await query;
     setInvites(data ?? []);
     setInvitesLoading(false);
-  }, [isSuperAdmin, adminCampus]);
+  }, [universityKey]);
 
   useLoadOnActive(active, loadInvites);
   useImperativeHandle(ref, () => ({ reload: loadInvites }), [loadInvites]);
@@ -195,42 +201,19 @@ export const DriversTab = forwardRef<DriversTabHandle, DriversTabProps>(function
 
           {/* University + Campus picker — superadmin only; regular admin
               locked to their own university/campus */}
-          {isSuperAdmin ? (
-            <div className="grid grid-cols-2 gap-3 items-start">
-              <div>
-                <p className="text-sm font-semibold text-slate-700 mb-2">University</p>
-                <NativeSelect
-                  value={inviteUniversityKey}
-                  onChange={key => {
-                    setInviteUniversityKey(key);
-                    setInviteCampus(UNIVERSITY_MAP[key]?.campuses[0] ?? '');
-                  }}
-                  options={UNIVERSITIES.map(u => ({ value: u.key, label: u.shortLabel }))}
-                  placeholder="Select university..."
-                  label="Select University"
-                />
-              </div>
+          <div>
+            <p className="text-sm font-semibold text-slate-700 mb-2">Campus</p>
               {/* Campus only shown when the chosen university has a real
                   multi-campus split — a single-campus university is
                   auto-filled above, nothing left to ask. */}
-              <div>
-                  <p className="text-sm font-semibold text-slate-700 mb-2">Campus</p>
-                  <NativeSelect
+            <NativeSelect
                     value={inviteCampus}
                     onChange={setInviteCampus}
                     options={(UNIVERSITY_MAP[inviteUniversityKey]?.campuses ?? []).map(c => ({ value: c, label: c }))}
                     placeholder="Select campus..."
                     label="Select Campus"
-                  />
-              </div>
-            </div>
-          ) : (
-            <div className="flex items-center gap-2 bg-slate-50 border border-slate-200 rounded-2xl px-4 py-2.5">
-              <MapPin className="w-3.5 h-3.5 text-primary shrink-0" />
-              <p className="text-xs font-semibold text-slate-700">{jubahLocationLabel(inviteUniversityKey, adminCampus)}</p>
-              <span className="text-xs font-normal text-slate-400 ml-auto">campus locked</span>
-            </div>
-          )}
+            />
+          </div>
 
           {/* Email input */}
           <div className="relative">

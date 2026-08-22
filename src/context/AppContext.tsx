@@ -168,6 +168,8 @@ interface AppContextType {
   showAuthGate: () => void;
   guestCampus: string;
   setGuestCampus: (campus: string) => void;
+  adminUniversityKey: string;
+  setAdminUniversityKey: (key: string) => void;
 
   // Notifications
   notifications: NotificationItem[];
@@ -217,6 +219,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     if (path.endsWith('/register')) return 'register';
     return null;
   });
+  const [adminUniversityKey, setAdminUniversityKey] = useState(() => localStorage.getItem('gerak_admin_university') || 'umpsa');
+  useEffect(() => { localStorage.setItem('gerak_admin_university', adminUniversityKey); }, [adminUniversityKey]);
   const [pageHistory, setPageHistory] = useState<ActivePage[]>([]);
   const [isPreviewMode, setIsPreviewMode] = useState(false);
   const [activeRole, setActiveRole] = useState<'admin' | 'driver' | 'rider' | null>(null);
@@ -1071,6 +1075,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         showAuthGate,
         guestCampus,
         setGuestCampus,
+        adminUniversityKey,
+        setAdminUniversityKey,
         notifications,
         addNotification,
         markAllNotificationsRead,

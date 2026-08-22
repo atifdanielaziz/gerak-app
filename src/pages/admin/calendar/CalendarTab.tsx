@@ -2,6 +2,7 @@ import { forwardRef, useCallback, useImperativeHandle, useRef, useState } from '
 import { supabase } from '../../../lib/supabase';
 import { CalendarDays, Upload, Eye, X, CheckCircle2, AlertCircle } from 'lucide-react';
 import { useLoadOnActive } from '../../../hooks/useLoadOnActive';
+import { UNIVERSITY_MAP } from '../../../lib/universities';
 
 export interface CalendarTabHandle {
   reload: () => void;
@@ -10,13 +11,14 @@ export interface CalendarTabHandle {
 interface CalendarTabProps {
   active: boolean;
   showToast: (msg: string) => void;
+  universityKey: string;
 }
 
 // Academic calendar PDF upload + AI-assisted parsing — split out of
 // AdminHome.tsx. No modal-tracking entanglement: the parsed preview renders
 // inline in the tab, not as an overlay sheet.
 export const CalendarTab = forwardRef<CalendarTabHandle, CalendarTabProps>(function CalendarTab(
-  { active, showToast },
+  { active, showToast, universityKey },
   ref
 ) {
   const calUploadRef = useRef<HTMLInputElement>(null);
@@ -31,12 +33,12 @@ export const CalendarTab = forwardRef<CalendarTabHandle, CalendarTabProps>(funct
       .from('academic_calendars')
       .select('academic_year')
       .eq('is_active', true)
-      .eq('university', 'UMPSA')
+      .eq('university', UNIVERSITY_MAP[universityKey]?.shortLabel ?? universityKey.toUpperCase())
       .order('uploaded_at', { ascending: false })
       .limit(1)
       .maybeSingle();
     setCalActiveYear(data?.academic_year ?? null);
-  }, []);
+  }, [universityKey]);
 
   useLoadOnActive(active, loadActiveCalendar);
   useImperativeHandle(ref, () => ({ reload: loadActiveCalendar }), [loadActiveCalendar]);
@@ -68,11 +70,11 @@ export const CalendarTab = forwardRef<CalendarTabHandle, CalendarTabProps>(funct
       const { data: { user: authUser } } = await supabase.auth.getUser();
       await supabase.from('academic_calendars')
         .update({ is_active: false })
-        .eq('university', 'UMPSA')
+        .eq('university', UNIVERSITY_MAP[universityKey]?.shortLabel ?? universityKey.toUpperCase())
         .eq('academic_year', calParsed.academic_year);
       const { error } = await supabase.from('academic_calendars').insert({
         academic_year: calParsed.academic_year,
-        university: 'UMPSA',
+        university: UNIVERSITY_MAP[universityKey]?.shortLabel ?? universityKey.toUpperCase(),
         semesters: calParsed.semesters,
         holidays: calParsed.holidays ?? [],
         uploaded_by: authUser?.id,
@@ -98,7 +100,7 @@ export const CalendarTab = forwardRef<CalendarTabHandle, CalendarTabProps>(funct
         <div>
           <p className="text-xs font-semibold text-slate-700">Active Calendar</p>
           <p className={`text-xs font-semibold ${calActiveYear ? 'text-emerald-600' : 'text-slate-400'}`}>
-            {calActiveYear ? `UMPSA ${calActiveYear}` : 'No calendar uploaded yet'}
+            {calActiveYear ? `${UNIVERSITY_MAP[universityKey]?.shortLabel ?? universityKey.toUpperCase()} ${calActiveYear}` : 'No calendar uploaded yet'}
           </p>
         </div>
       </div>
@@ -209,7 +211,7 @@ export const CalendarTab = forwardRef<CalendarTabHandle, CalendarTabProps>(funct
         <AlertCircle className="w-3.5 h-3.5 text-amber-500 shrink-0 mt-0.5" />
         <div className="text-xs text-amber-700 font-semibold leading-relaxed flex flex-col gap-0.5">
           <p className="font-semibold">How to update the calendar:</p>
-          <p>1. Download the latest UMPSA Academic Calendar PDF from the university website.</p>
+          <p>1. Download the latest {UNIVERSITY_MAP[universityKey]?.shortLabel ?? universityKey.toUpperCase()} Academic Calendar PDF from the university website.</p>
           <p>2. Tap "Choose PDF to Upload".</p>
           <p>3. Wait for AI parsing (~10–15 seconds).</p>
           <p>4. Review the extracted events, then tap "Confirm & Activate".</p>

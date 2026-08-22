@@ -1,6 +1,6 @@
 ﻿import React, { useState } from 'react';
 import { useApp } from '../context/AppContext';
-import { Bell, ChevronLeft, ShieldCheck, Car, Bike, MoreHorizontal, Eye, ChevronDown, X, MapPin, User, Pencil, CalendarCheck2, FileCheck2 } from 'lucide-react';
+import { Bell, ChevronLeft, ShieldCheck, Car, Bike, MoreHorizontal, Eye, ChevronDown, X, MapPin, User, Pencil, CalendarCheck2, FileCheck2, Menu, Check } from 'lucide-react';
 import { WaBtn } from '../lib/whatsapp';
 import { UNIVERSITIES as UNIVERSITY_OPTIONS } from '../lib/universities';
 import { CampusStatusToggle } from './CampusStatusToggle';
@@ -44,6 +44,7 @@ export const Header: React.FC = () => {
     activeRole, isPreviewMode,
     switchToAdminMode, switchToDriverMode, switchToRiderMode, enterPreviewMode,
     showAuthGate, guestCampus, setGuestCampus, updateProfile, profileEditIntentRef,
+    adminUniversityKey, setAdminUniversityKey,
   } = useApp();
 
   const [showRoleMenu, setShowRoleMenu] = useState(false);
@@ -52,6 +53,7 @@ export const Header: React.FC = () => {
   const [tempUni, setTempUni] = useState('');
   const [showProfilePreview, setShowProfilePreview] = useState(false);
   const [showMyCampusSheet, setShowMyCampusSheet] = useState(false);
+  const [showAdminUniversityMenu, setShowAdminUniversityMenu] = useState(false);
   const unreadCount = notifications.filter(n => !n.isRead).length;
   const isProviderRole = activeRole === 'driver' || activeRole === 'rider' || user.role === 'driver' || user.role === 'rider';
   const paymentValid = Boolean(user.receiptGateExempt || (user.feeReceiptExpiry && new Date(user.feeReceiptExpiry).getTime() >= Date.now()));
@@ -315,7 +317,7 @@ export const Header: React.FC = () => {
 
           {/* Superadmin — 3-dot dropdown, red when not in admin role */}
           {user.role === 'superadmin' && (
-            <div className="relative">
+            <div className="relative order-3">
               <button
                 onClick={() => setShowRoleMenu(p => !p)}
                 className={`w-8 h-8 flex items-center justify-center rounded-xl transition active:scale-90 ${
@@ -385,8 +387,39 @@ export const Header: React.FC = () => {
             </div>
           )}
 
+          {(user.role === 'admin' || user.role === 'superadmin') && (
+            <div className="relative order-1">
+              <button onPointerDown={(e) => { e.preventDefault(); setShowAdminUniversityMenu(p => !p); }}
+                className="w-8 h-8 flex items-center justify-center rounded-xl text-slate-600 active:bg-slate-50 active:scale-90 transition-transform"
+                aria-label="Select admin university">
+                <Menu className="w-5 h-5" />
+              </button>
+              {showAdminUniversityMenu && (<>
+                <div className="fixed inset-0 z-40" onPointerDown={(e) => { e.preventDefault(); setShowAdminUniversityMenu(false); }} />
+                <div className="absolute right-0 top-full mt-2 z-50 bg-white border border-slate-100 rounded-2xl shadow-xl overflow-y-auto min-w-[220px] max-h-[calc(100dvh-6rem)] p-2">
+                  {UNIVERSITY_OPTIONS.map(option => {
+                    const selected = adminUniversityKey === option.key;
+                    return <button key={option.key} onPointerDown={(e) => { e.preventDefault(); setAdminUniversityKey(option.key); setShowAdminUniversityMenu(false); }}
+                      className={`w-full flex items-center gap-3 px-3 py-3 rounded-xl text-left transition-transform active:scale-[0.99] ${selected ? 'border border-slate-900 bg-slate-50' : 'border border-transparent'}`}>
+                      <span className="flex-1 text-xs font-semibold text-slate-700">{option.shortLabel}</span>
+                      {selected && <Check className="w-4 h-4 text-slate-800" />}
+                    </button>;
+                  })}
+                </div>
+              </>)}
+            </div>
+          )}
+
+          {(user.role === 'admin' || user.role === 'superadmin') && (
+            <button onPointerDown={(e) => { e.preventDefault(); setCurrentPage('notifications'); }}
+              className="relative order-2 p-2 text-slate-600 active:scale-90 transition-transform" aria-label="Inbox">
+              <Bell className="w-5 h-5" />
+              {unreadCount > 0 && <span className="absolute top-0.5 right-0.5 w-4 h-4 bg-danger text-white text-[9px] font-bold rounded-full flex items-center justify-center border-2 border-white">{unreadCount}</span>}
+            </button>
+          )}
+
           {user.role !== 'superadmin' && isProviderRole && (
-            <div className="relative">
+            <div className="relative order-3">
               <button onPointerDown={(e) => { e.preventDefault(); setShowRoleMenu(p => !p); }}
                 className="w-8 h-8 flex items-center justify-center rounded-xl text-slate-500 active:bg-slate-50 active:scale-90 transition-transform"
                 aria-label="Account and campus status">
@@ -406,7 +439,7 @@ export const Header: React.FC = () => {
           )}
 
           {user.role === 'admin' && activeRole !== 'driver' && (
-            <div className="relative">
+            <div className="relative order-3">
               <button onPointerDown={(e) => { e.preventDefault(); setShowRoleMenu(p => !p); }}
                 className="w-8 h-8 flex items-center justify-center rounded-xl text-slate-500 active:bg-slate-50 active:scale-90 transition-transform"
                 aria-label="Campus status">
@@ -466,7 +499,7 @@ export const Header: React.FC = () => {
           )}
 
           {/* Notification Bell */}
-          <button
+          {user.role !== 'admin' && user.role !== 'superadmin' && <button
             onClick={() => setCurrentPage('notifications')}
             className="relative p-2.5 text-slate-600 hover:text-primary rounded-full hover:bg-slate-50 transition active:scale-90"
             aria-label="Inbox"
@@ -477,7 +510,7 @@ export const Header: React.FC = () => {
                 {unreadCount}
               </span>
             )}
-          </button>
+          </button>}
         </div>
       </header>
 

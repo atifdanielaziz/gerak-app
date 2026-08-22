@@ -262,6 +262,7 @@ interface UsersTabProps {
   active: boolean;
   isSuperAdmin: boolean;
   adminCampus: string;
+  universityKey: string;
   showToast: (msg: string) => void;
   onViewProfile: (u: ProfileUser) => void;
   onModalOpenChange: (open: boolean) => void;
@@ -272,7 +273,7 @@ interface UsersTabProps {
 // Receipts tab also opens it for a driver's receipt row; this component only
 // owns the list, the ⋮ action menu, and their own confirm dialog.
 export const UsersTab = forwardRef<UsersTabHandle, UsersTabProps>(function UsersTab(
-  { active, isSuperAdmin, adminCampus, showToast, onViewProfile, onModalOpenChange },
+  { active, isSuperAdmin, adminCampus, universityKey, showToast, onViewProfile, onModalOpenChange },
   ref
 ) {
   const staffDirectoryScrollRef = useAxisLockedScroll<HTMLDivElement>();
@@ -289,7 +290,6 @@ export const UsersTab = forwardRef<UsersTabHandle, UsersTabProps>(function Users
   const [staffFilter, setStaffFilter]   = useState<'all' | 'drivers' | 'riders' | 'admins'>('all');
   const [overviewFilter, setOverviewFilter] = useState<'all' | 'payment_valid' | 'expired' | 'active_drivers' | 'in_campus' | 'out_campus' | 'online' | 'taking_job'>('all');
   const [overviewCollapsed, setOverviewCollapsed] = useState(true);
-  const [staffUniversity, setStaffUniversity] = useState(() => universityKeyFromCampus(adminCampus) ?? 'umpsa');
   // Sub-tab within Staff: the normal manage-everything list, or a lighter
   // read-focused view for spotting who's physically around campus vs away
   // for a stretch (semester break, holiday) — separate from staffFilter,
@@ -486,8 +486,8 @@ export const UsersTab = forwardRef<UsersTabHandle, UsersTabProps>(function Users
   // Was recomputed raw in the render body on every render, so every
   // keystroke into the search box re-filtered the full list synchronously.
   const universityUsers = useMemo(() => profileUsers.filter(u =>
-    (universityKeyFromCampus(u.campus) ?? 'umpsa') === staffUniversity
-  ), [profileUsers, staffUniversity]);
+    (universityKeyFromCampus(u.campus) ?? 'umpsa') === universityKey
+  ), [profileUsers, universityKey]);
 
   const filteredUsers = useMemo(() => {
     const now = Date.now();
@@ -550,28 +550,10 @@ export const UsersTab = forwardRef<UsersTabHandle, UsersTabProps>(function Users
     <>
       <div className="flex flex-col gap-4 w-full">
 
-        <div className="flex items-center gap-2">
-          {isSuperAdmin ? (
-            <div className="w-44">
-              <NativeSelect
-                value={staffUniversity}
-                onChange={setStaffUniversity}
-                options={UNIVERSITIES.map(uni => ({ value: uni.key, label: uni.shortLabel }))}
-                placeholder="University"
-                label="University"
-              />
-            </div>
-          ) : (
-            <div className="px-4 py-3 bg-white border border-slate-100 rounded-2xl text-xs font-semibold text-slate-700">
-              {UNIVERSITY_MAP[staffUniversity]?.shortLabel ?? 'University'}
-            </div>
-          )}
-        </div>
-
         <section className={`bg-white border border-slate-100 rounded-3xl ${overviewCollapsed ? 'p-3.5' : 'p-4'}`}>
           <div className={`flex items-center justify-between gap-3 ${overviewCollapsed ? '' : 'mb-4'}`}>
             <h3 className="text-sm font-semibold text-slate-700 flex items-center gap-2">
-              <BarChart3 className="w-4 h-4 text-slate-400" /> Staff Overview ({UNIVERSITY_MAP[staffUniversity]?.shortLabel})
+              <BarChart3 className="w-4 h-4 text-slate-400" /> Staff Overview ({UNIVERSITY_MAP[universityKey]?.shortLabel})
             </h3>
             <button type="button" onPointerDown={e => { e.preventDefault(); setOverviewCollapsed(value => !value); }}
               className="w-7 h-7 rounded-full bg-slate-50 text-slate-500 flex items-center justify-center active:scale-[0.99] transition-transform transform-gpu"
@@ -745,7 +727,7 @@ export const UsersTab = forwardRef<UsersTabHandle, UsersTabProps>(function Users
 
           <div className="bg-white border border-slate-100 rounded-3xl p-5 flex flex-col gap-4 w-full">
           <h3 className="text-sm font-semibold text-slate-700 flex items-center gap-1.5">
-            <Users className="w-4 h-4 text-slate-400" /> Staff Directory ({UNIVERSITY_MAP[staffUniversity]?.shortLabel})
+            <Users className="w-4 h-4 text-slate-400" /> Staff Directory ({UNIVERSITY_MAP[universityKey]?.shortLabel})
           </h3>
 
           {profileUsersTotalCount !== null && profileUsersTotalCount > profileUsers.length && (

@@ -4,27 +4,23 @@ import { supabase } from '../../../lib/supabase';
 import { FileImage, Upload, Trash2, Info, X, Check } from 'lucide-react';
 import ReactCrop, { centerCrop, makeAspectCrop, type Crop, type PixelCrop } from 'react-image-crop';
 import 'react-image-crop/dist/ReactCrop.css';
-import { UNIVERSITIES } from '../../../lib/universities';
+import { UNIVERSITY_MAP } from '../../../lib/universities';
 import { useApp } from '../../../context/AppContext';
 
 const BANNER_BUCKET = 'jubah-banners';
-const BANNER_ITEMS = [
-  { key: 'default', label: 'Default Banner (RUNNER GERAK)' },
-  ...UNIVERSITIES.map(u => ({ key: u.key, label: u.label })),
-];
-
 interface JubahBannerSubTabProps {
   // Whether this sub-tab is the one currently visible — banner URLs are
   // (re)loaded whenever it becomes active, same as every other tab's data.
   active: boolean;
   onOpenSampleDocs: (page: { key: string; label: string }) => void;
   showToast: (msg: string) => void;
+  universityKey: string;
 }
 
 // Per-university Jubah promo banner management: upload, crop, and delete the
 // banner image shown to customers for each campus. One fixed-path image per
 // university — a new upload always replaces the previous one in place.
-export function JubahBannerSubTab({ active, onOpenSampleDocs, showToast }: JubahBannerSubTabProps) {
+export function JubahBannerSubTab({ active, onOpenSampleDocs, showToast, universityKey }: JubahBannerSubTabProps) {
   const { showConfirmModal } = useApp();
   const [bannerUrls,       setBannerUrls]       = useState<Record<string, string>>({});
   const [bannerImgError,   setBannerImgError]   = useState<Record<string, boolean>>({});
@@ -32,6 +28,10 @@ export function JubahBannerSubTab({ active, onOpenSampleDocs, showToast }: Jubah
   const [bannerUploading,  setBannerUploading]  = useState<string | null>(null);
   const [bannerUploadKey,  setBannerUploadKey]  = useState<string | null>(null);
   const bannerFileRef = useRef<HTMLInputElement>(null);
+  const bannerItems = [
+    { key: 'default', label: 'Default Banner (RUNNER GERAK)' },
+    { key: universityKey, label: UNIVERSITY_MAP[universityKey]?.label ?? universityKey.toUpperCase() },
+  ];
 
   const [cropSrc,       setCropSrc]       = useState<string>('');
   const [cropObj,       setCropObj]       = useState<Crop | undefined>(undefined);
@@ -41,13 +41,13 @@ export function JubahBannerSubTab({ active, onOpenSampleDocs, showToast }: Jubah
   useEffect(() => {
     if (!active) return;
     const urls: Record<string, string> = {};
-    BANNER_ITEMS.forEach(b => {
+    bannerItems.forEach(b => {
       const { data } = supabase.storage.from(BANNER_BUCKET).getPublicUrl(`${b.key}.jpg`);
       urls[b.key] = `${data.publicUrl}?t=${Date.now()}`;
     });
     setBannerUrls(urls);
     setBannerImgError({});
-  }, [active]);
+  }, [active, universityKey]);
 
   const getCroppedBlob = (image: HTMLImageElement, px: PixelCrop): Promise<Blob> => {
     const canvas = document.createElement('canvas');
@@ -132,7 +132,7 @@ export function JubahBannerSubTab({ active, onOpenSampleDocs, showToast }: Jubah
             if (bannerFileRef.current) bannerFileRef.current.value = '';
           }}
         />
-        {BANNER_ITEMS.map(item => (
+        {bannerItems.map(item => (
           <div key={item.key} className="bg-white border border-slate-100 rounded-3xl p-5 flex flex-col gap-4">
             <div className="flex items-start justify-between gap-2">
               <h3 className="text-sm font-semibold text-slate-700 flex-1 min-w-0">{item.label}</h3>

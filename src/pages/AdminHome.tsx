@@ -2,8 +2,7 @@ import React, { useEffect, useState, useCallback, useRef, useMemo } from 'react'
 import { useApp } from '../context/AppContext';
 import { supabase } from '../lib/supabase';
 import { useLoadOnActive } from '../hooks/useLoadOnActive';
-import { NativeSelect } from '../components/NativeSelect';
-import { UNIVERSITIES, UNIVERSITY_MAP, universityKeyFromCampus } from '../lib/universities';
+import { UNIVERSITY_MAP } from '../lib/universities';
 import {
   BarChart3, Car, Users, Clock,
   AlertCircle, RefreshCw, Trash2,
@@ -54,7 +53,7 @@ export const AdminHome: React.FC = () => {
   const {
     user, setCurrentPage, setSheetOpen, notifications,
     activeRole, isPreviewMode, switchToDriverMode, switchToRiderMode, enterPreviewMode,
-    setLeaveGuard, showConfirmModal,
+    setLeaveGuard, showConfirmModal, adminUniversityKey,
   } = useApp();
 
   const isSuperAdmin = user.role === 'superadmin';
@@ -63,7 +62,11 @@ export const AdminHome: React.FC = () => {
   // src/lib/universities.ts, so it's used as-is — no per-word title-casing
   // here, which used to only ever run on single-word Pekan/Gambang and
   // would otherwise mangle multi-word campuses like "Kota Bharu".
-  const adminCampus = user.campus;
+  const [adminCampus, setAdminCampus] = useState(user.campus);
+  useEffect(() => {
+    const campuses = UNIVERSITY_MAP[adminUniversityKey]?.campuses ?? [];
+    setAdminCampus(current => campuses.includes(current) ? current : (campuses[0] ?? user.campus));
+  }, [adminUniversityKey, user.campus]);
 
   const [activeTab, setActiveTab] = useState<AdminTab>('orders');
   // campusView only ever drives Routes/Orders (Gerak Rides transport,
@@ -120,12 +123,12 @@ export const AdminHome: React.FC = () => {
   // this (locked to 'umpsa', their implicit university today — see
   // loadJubahData, which uses their existing campus lock instead once this
   // isn't superadmin).
-  const [jubahUniversityView, setJubahUniversityView] = useState('umpsa');
+  const jubahUniversityView = adminUniversityKey;
   // Same university this admin's Jubah data is actually scoped to (see
   // loadJubahData) — shown next to card headers so it's clear at a glance
   // whose data is on screen, same idea as Pricing Matrix's own dropdown.
   const jubahUniversityLabel = UNIVERSITY_MAP[
-    isSuperAdmin ? jubahUniversityView : (universityKeyFromCampus(adminCampus) ?? 'umpsa')
+    adminUniversityKey
   ]?.shortLabel ?? 'UMPSA';
   const [jubahOverviewCollapsed, setJubahOverviewCollapsed] = useState(true);
 
@@ -240,9 +243,7 @@ export const AdminHome: React.FC = () => {
     // as before — every campus-scoped admin today is implicitly UMPSA-only,
     // so this isn't a narrowing, and it avoids widening their scope to all
     // of UMPSA (both campuses) the moment university-level filtering exists.
-    bookingsQ = isSuperAdmin
-      ? bookingsQ.eq('university_key', jubahUniversityView)
-      : bookingsQ.eq('campus', adminCampus);
+    bookingsQ = bookingsQ.eq('university_key', adminUniversityKey);
     const { data: bookingsData, count: bookingsCount, error: bookingsError } = await bookingsQ;
     setJubahBookingsTotalCount(bookingsCount ?? null);
     if (bookingsError) {
@@ -251,7 +252,7 @@ export const AdminHome: React.FC = () => {
       let fallbackQ = supabase.from('jubah_bookings')
         .select('id, reference, full_name, hp_number, matric_id, campus, faculty, remark, rider_name, status, payment_mode, created_at')
         .order('created_at', { ascending: false });
-      fallbackQ = isSuperAdmin ? fallbackQ : fallbackQ.eq('campus', adminCampus);
+      fallbackQ = fallbackQ.in('campus', UNIVERSITY_MAP[adminUniversityKey]?.campuses ?? []);
       const { data: fallbackData, error: fallbackError } = await fallbackQ;
       if (fallbackError) console.error('[GERAK] jubah_bookings fallback error:', fallbackError.message);
       setJubahBookings(((fallbackData ?? []) as JubahBookingRow[]).map(r => ({
@@ -266,7 +267,7 @@ export const AdminHome: React.FC = () => {
       setJubahBookings((bookingsData as JubahBookingRow[]) ?? []);
     }
     setJubahBookingsLoading(false);
-  }, [isSuperAdmin, adminCampus, jubahUniversityView]);
+  }, [adminUniversityKey]);
 
   useLoadOnActive(activeTab === 'jubah', loadJubahData);
 
@@ -661,6 +662,7 @@ export const AdminHome: React.FC = () => {
           active={activeTab === 'drivers'}
           isSuperAdmin={isSuperAdmin}
           adminCampus={adminCampus}
+          universityKey={adminUniversityKey}
           userName={user.name}
           showToast={showToast}
           onModalOpenChange={setDriversModalOpen}
@@ -674,6 +676,7 @@ export const AdminHome: React.FC = () => {
           active={activeTab === 'users'}
           isSuperAdmin={isSuperAdmin}
           adminCampus={adminCampus}
+          universityKey={adminUniversityKey}
           showToast={showToast}
           onViewProfile={setSheetUser}
           onModalOpenChange={setUsersModalOpen}
@@ -721,6 +724,7 @@ export const AdminHome: React.FC = () => {
           active={activeTab === 'verify'}
           isSuperAdmin={isSuperAdmin}
           adminCampus={adminCampus}
+          universityKey={adminUniversityKey}
           showToast={showToast}
           onViewProfile={setSheetUser}
         />
@@ -742,16 +746,6 @@ export const AdminHome: React.FC = () => {
                 one, same labeled-pill style Pricing Matrix's used to have,
                 not the old icon-only trigger). */}
             <div className="flex items-center gap-2">
-              {isSuperAdmin && (
-                <div className="w-28 shrink-0">
-                  <NativeSelect
-                    value={jubahUniversityView}
-                    onChange={v => { setJubahUniversityView(v); setJubahAdminView('list'); setJubahAdminSelected(null); }}
-                    options={UNIVERSITIES.map(u => ({ value: u.key, label: u.shortLabel }))}
-                    placeholder="Select university"
-                  />
-                </div>
-              )}
               <button
                 onPointerDown={e => { e.preventDefault(); handleToggleJubah(); }}
                 disabled={togglingJubah}
@@ -966,7 +960,7 @@ export const AdminHome: React.FC = () => {
               bookingsLoading={jubahBookingsLoading}
               reload={loadJubahData}
               showToast={showToast}
-              universityKey={isSuperAdmin ? jubahUniversityView : (universityKeyFromCampus(adminCampus) ?? 'umpsa')}
+              universityKey={adminUniversityKey}
               universityLabel={jubahUniversityLabel}
             />
           )}
@@ -985,7 +979,7 @@ export const AdminHome: React.FC = () => {
           {effectiveJubahSubTab === 'faculty' && (
             <JubahFacultySubTab
               active={activeTab === 'jubah' && effectiveJubahSubTab === 'faculty'}
-              universityKey={isSuperAdmin ? jubahUniversityView : (universityKeyFromCampus(adminCampus) ?? 'umpsa')}
+              universityKey={adminUniversityKey}
               universityLabel={jubahUniversityLabel}
               showToast={showToast}
             />
@@ -995,6 +989,7 @@ export const AdminHome: React.FC = () => {
           {jubahSubTab === 'banner' && (
             <JubahBannerSubTab
               active={activeTab === 'jubah' && jubahSubTab === 'banner'}
+              universityKey={adminUniversityKey}
               onOpenSampleDocs={setSampleDocsPage}
               showToast={showToast}
             />
@@ -1007,6 +1002,7 @@ export const AdminHome: React.FC = () => {
         <ReceiptsTab
           ref={receiptsTabRef}
           active={activeTab === 'receipts'}
+          universityKey={adminUniversityKey}
           showToast={showToast}
           onViewProfile={setSheetUser}
           onModalOpenChange={setReceiptsModalOpen}
@@ -1034,6 +1030,7 @@ export const AdminHome: React.FC = () => {
         <CalendarTab
           ref={calendarTabRef}
           active={activeTab === 'calendar'}
+          universityKey={adminUniversityKey}
           showToast={showToast}
         />
       )}

@@ -7,6 +7,7 @@ import { WaIcon, toWa } from '../../../lib/whatsapp';
 import type { ProfileUser } from '../users/ProfileSheet';
 import { NativeSelect } from '../../../components/NativeSelect';
 import { useAxisLockedScroll } from '../../../hooks/useAxisLockedScroll';
+import { UNIVERSITY_MAP } from '../../../lib/universities';
 
 type VerifyDoc = {
   id: string; name: string; gerak_id: string; campus: string; role: string;
@@ -20,12 +21,13 @@ interface VerifyDocsTabProps {
   active: boolean;
   isSuperAdmin: boolean;
   adminCampus: string;
+  universityKey: string;
   showToast: (msg: string) => void;
   onViewProfile: (u: ProfileUser) => void;
 }
 
 export const VerifyDocsTab = forwardRef<VerifyDocsTabHandle, VerifyDocsTabProps>(function VerifyDocsTab(
-  { active, isSuperAdmin, adminCampus, showToast, onViewProfile }, ref
+  { active, universityKey, showToast, onViewProfile }, ref
 ) {
   const tableScrollRef = useAxisLockedScroll<HTMLDivElement>();
   const [docs, setDocs] = useState<VerifyDoc[]>([]);
@@ -41,12 +43,13 @@ export const VerifyDocsTab = forwardRef<VerifyDocsTabHandle, VerifyDocsTabProps>
     let query = supabase.from('profiles')
       .select('id,name,gerak_id,campus,role,email,phone,status,license_url,docs_status,docs_reject_reason', { count: 'exact' })
       .eq('role', roleFilter).order('name').limit(1000);
-    if (!isSuperAdmin) query = query.eq('campus', adminCampus);
+    const campuses = UNIVERSITY_MAP[universityKey]?.campuses ?? [];
+    if (campuses.length) query = query.in('campus', campuses);
     const { data, count } = await query;
     setDocs((data as VerifyDoc[]) ?? []);
     setTotalCount(count ?? null);
     setLoading(false);
-  }, [roleFilter, isSuperAdmin, adminCampus]);
+  }, [roleFilter, universityKey]);
 
   useLoadOnActive(active, loadDocs);
   useImperativeHandle(ref, () => ({ reload: loadDocs }), [loadDocs]);

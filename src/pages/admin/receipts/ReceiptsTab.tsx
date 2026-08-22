@@ -5,6 +5,7 @@ import { useLoadOnActive } from '../../../hooks/useLoadOnActive';
 import { type ProfileUser } from '../users/ProfileSheet';
 import { NativeSelect } from '../../../components/NativeSelect';
 import { useAxisLockedScroll } from '../../../hooks/useAxisLockedScroll';
+import { UNIVERSITY_MAP } from '../../../lib/universities';
 
 interface DriverReceipt {
   id: string;
@@ -39,6 +40,7 @@ interface ReceiptsTabProps {
   showToast: (msg: string) => void;
   onViewProfile: (u: ProfileUser) => void;
   onModalOpenChange: (open: boolean) => void;
+  universityKey: string;
 }
 
 // Driver/rider monthly fee receipt review + the app-wide receipt gate
@@ -46,7 +48,7 @@ interface ReceiptsTabProps {
 // the Jubah booking payment receipt (receiptModal in AdminHome, opened
 // from the Jubah tab) — same word, different feature, kept separate.
 export const ReceiptsTab = forwardRef<ReceiptsTabHandle, ReceiptsTabProps>(function ReceiptsTab(
-  { active, showToast, onViewProfile, onModalOpenChange },
+  { active, showToast, onViewProfile, onModalOpenChange, universityKey },
   ref
 ) {
   const receiptDirectoryScrollRef = useAxisLockedScroll<HTMLDivElement>();
@@ -74,6 +76,7 @@ export const ReceiptsTab = forwardRef<ReceiptsTabHandle, ReceiptsTabProps>(funct
         .from('profiles')
         .select('id, name, gerak_id, campus, email, phone, status, fee_receipt_url, fee_receipt_verified, fee_receipt_auto_verified, fee_receipt_amount, fee_receipt_date, fee_receipt_expiry, fee_receipt_reject_reason', { count: 'exact' })
         .eq('role', receiptRoleFilter)
+        .in('campus', UNIVERSITY_MAP[universityKey]?.campuses ?? [])
         .order('name')
         .limit(1000),
       supabase.from('app_settings').select('value').eq('key', 'receipt_gate_active').single(),
@@ -82,7 +85,7 @@ export const ReceiptsTab = forwardRef<ReceiptsTabHandle, ReceiptsTabProps>(funct
     setDriverReceipts((data as DriverReceipt[]) ?? []);
     if (setting) setReceiptGateOn(setting.value === 'true');
     setReceiptsLoading(false);
-  }, [receiptRoleFilter]);
+  }, [receiptRoleFilter, universityKey]);
 
   useLoadOnActive(active, loadReceipts);
   useImperativeHandle(ref, () => ({ reload: loadReceipts }), [loadReceipts]);
