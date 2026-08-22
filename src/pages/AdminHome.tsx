@@ -823,7 +823,7 @@ export const AdminHome: React.FC = () => {
 
             {/* Overview stats — computed client-side from jubahBookings, already
                 loaded for the Customer Directory below; no extra query. */}
-            <div className="bg-white border border-slate-100 rounded-3xl p-5 flex flex-col gap-4">
+            <div className={`bg-white border border-slate-100 rounded-3xl flex flex-col ${jubahOverviewCollapsed ? 'p-3.5 gap-0' : 'p-4 gap-4'}`}>
               <div className="flex items-center justify-between">
                 <h3 className="text-sm font-semibold text-slate-700 flex items-center gap-1.5">
                   <BarChart3 className="w-4 h-4 text-slate-400" /> Overview ({jubahUniversityLabel})

@@ -214,10 +214,10 @@ export const ReceiptsTab = forwardRef<ReceiptsTabHandle, ReceiptsTabProps>(funct
           })}
         </div>
 
-        <section className="bg-white border border-slate-100 rounded-3xl p-5">
+        <section className={`bg-white border border-slate-100 rounded-3xl ${overviewCollapsed ? 'p-3.5' : 'p-4'}`}>
           <div className={`flex items-center justify-between gap-3 ${overviewCollapsed ? '' : 'mb-4'}`}>
             <h3 className="flex items-center gap-2 text-sm font-semibold text-slate-700"><BarChart3 className="w-4 h-4 text-slate-400" /> Receipt Overview</h3>
-            <button type="button" onPointerDown={e => { e.preventDefault(); setOverviewCollapsed(v => !v); }} aria-label={overviewCollapsed ? 'Expand receipt overview' : 'Minimize receipt overview'} className="w-9 h-9 rounded-2xl bg-slate-50 text-slate-500 flex items-center justify-center active:scale-[0.99] transition-transform transform-gpu">{overviewCollapsed ? <Plus className="w-4 h-4" /> : <Minus className="w-4 h-4" />}</button>
+            <button type="button" onPointerDown={e => { e.preventDefault(); setOverviewCollapsed(v => !v); }} aria-label={overviewCollapsed ? 'Expand receipt overview' : 'Minimize receipt overview'} className="w-7 h-7 rounded-full bg-slate-50 text-slate-500 flex items-center justify-center active:scale-[0.99] transition-transform transform-gpu">{overviewCollapsed ? <Plus className="w-3.5 h-3.5" /> : <Minus className="w-3.5 h-3.5" />}</button>
           </div>
           {!overviewCollapsed && <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">{([
             ['All', driverReceipts.length, FileImage, 'bg-blue-50', 'text-blue-600'],

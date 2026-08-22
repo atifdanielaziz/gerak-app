@@ -314,10 +314,10 @@ export const OrdersTab = forwardRef<OrdersTabHandle, OrdersTabProps>(function Or
     <div className="flex flex-col gap-4">
 
       {/* ── Stat cards ── */}
-      <section className="bg-white border border-slate-100 rounded-3xl p-5">
+      <section className={`bg-white border border-slate-100 rounded-3xl ${overviewExpanded ? 'p-4' : 'p-3.5'}`}>
         <div className="flex items-center justify-between gap-3">
           <h3 className="flex items-center gap-2 text-sm font-semibold text-slate-700"><BarChart3 className="w-4 h-4 text-slate-400" /> Orders Overview</h3>
-          <button type="button" aria-label={overviewExpanded ? 'Minimize overview' : 'Expand overview'} onPointerDown={e => { e.preventDefault(); setOverviewExpanded(v => !v); }} className="w-9 h-9 rounded-full bg-slate-50 flex items-center justify-center text-slate-500 active:scale-90 transition-transform transform-gpu">
+          <button type="button" aria-label={overviewExpanded ? 'Minimize overview' : 'Expand overview'} onPointerDown={e => { e.preventDefault(); setOverviewExpanded(v => !v); }} className="w-7 h-7 rounded-full bg-slate-50 flex items-center justify-center text-slate-500 active:scale-90 transition-transform transform-gpu">
             {overviewExpanded ? <Minus className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
           </button>
         </div>
