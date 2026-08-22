@@ -60,6 +60,26 @@ export const UNIVERSITIES: University[] = [
     shortLabel: 'UniSZA', fullName: 'Universiti Sultan Zainal Abidin',
     campuses: ['Gong Badak', 'Medical', 'Besut'], live: true,
   },
+  {
+    key: 'utp', label: 'Universiti Teknologi PETRONAS (UTP)',
+    shortLabel: 'UTP', fullName: 'Universiti Teknologi PETRONAS',
+    campuses: ['Seri Iskandar'], live: true,
+  },
+  {
+    key: 'upm', label: 'Universiti Putra Malaysia (UPM)',
+    shortLabel: 'UPM', fullName: 'Universiti Putra Malaysia',
+    campuses: ['Serdang', 'Sarawak'], live: true,
+  },
+  {
+    key: 'um', label: 'Universiti Malaya (UM)',
+    shortLabel: 'UM', fullName: 'Universiti Malaya',
+    campuses: ['Kuala Lumpur'], live: true,
+  },
+  {
+    key: 'upsi', label: 'Universiti Pendidikan Sultan Idris (UPSI)',
+    shortLabel: 'UPSI', fullName: 'Universiti Pendidikan Sultan Idris',
+    campuses: ['KSAJS', 'KSAS'], live: true,
+  },
 ];
 
 export const UNIVERSITY_MAP: Record<string, University> =
