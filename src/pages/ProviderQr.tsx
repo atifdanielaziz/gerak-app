@@ -70,7 +70,7 @@ export function ProviderQr() {
             ['Acc. Holder', details.account_holder],
           ].map(([label, value]) => (
             <div key={label} className="grid grid-cols-[5.5rem_auto_minmax(0,1fr)] gap-x-2 items-start text-sm font-semibold text-slate-900">
-              <span>{label}</span>
+              <span className="text-slate-400">{label}</span>
               <span aria-hidden="true">:</span>
               <span className="min-w-0 break-words">{value || 'Not set'}</span>
             </div>
