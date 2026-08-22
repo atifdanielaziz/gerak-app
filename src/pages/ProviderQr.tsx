@@ -61,14 +61,20 @@ export function ProviderQr() {
         )}
       </section>
 
-      <section className="rounded-3xl border border-blue-100 bg-blue-50 p-5">
+      <section className="rounded-3xl border border-blue-100 bg-blue-50 p-4">
         <div className="flex items-center gap-2 mb-4"><Landmark className="w-5 h-5 text-blue-600" /><h2 className="font-semibold text-blue-800">Bank Details</h2></div>
-        <div className="bg-white border border-slate-100 rounded-2xl px-4 py-4 space-y-3">
+        <div className="bg-white border border-slate-100 rounded-2xl px-5 py-5 space-y-3">
           {[
-            ['Bank', details.bank_name],
-            ['Account No.', details.account_number],
-            ['Account Holder', details.account_holder],
-          ].map(([label, value]) => <div key={label} className="grid grid-cols-[7rem_1fr] gap-3 items-start"><span className="text-sm font-normal text-slate-400">{label}</span><span className={`text-sm font-semibold text-slate-800 text-right break-words ${label === 'Account No.' ? 'font-mono' : ''}`}>{value || 'Not set'}</span></div>)}
+            ['Bank Type', details.bank_name],
+            ['Acc. No', details.account_number],
+            ['Acc. Holder', details.account_holder],
+          ].map(([label, value]) => (
+            <div key={label} className="grid grid-cols-[5.5rem_auto_minmax(0,1fr)] gap-x-2 items-start text-sm font-semibold text-slate-900">
+              <span>{label}</span>
+              <span aria-hidden="true">:</span>
+              <span className="min-w-0 break-words">{value || 'Not set'}</span>
+            </div>
+          ))}
         </div>
       </section>
     </main>
