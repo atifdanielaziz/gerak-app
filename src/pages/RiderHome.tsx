@@ -21,6 +21,7 @@ import { JubahStepper } from '../components/JubahStepper';
 import { ReceiptCard } from '../components/Receipt';
 import { buildJubahReceiptRows, type ReceiptDoc } from '../lib/receiptRows';
 import { generateReceiptPdf } from '../lib/receiptPdf';
+import { useAxisLockedScroll } from '../hooks/useAxisLockedScroll';
 
 type RiderTab    = 'daily' | 'jubah' | 'earnings';
 type JubahView   = 'list' | 'card' | 'details';
@@ -62,6 +63,7 @@ const getNextStatus = (job: JubahJobRow): string | null =>
 
 export const RiderHome: React.FC = () => {
   const { user, refreshUserData, receiptGateActive, setLeaveGuard } = useApp();
+  const jubahJobsScrollRef = useAxisLockedScroll<HTMLDivElement>();
 
   const [activeTab,     setActiveTab]     = useState<RiderTab>('daily');
   const [toast,         setToast]         = useState('');
@@ -475,7 +477,16 @@ export const RiderHome: React.FC = () => {
                     </p>
                   </div>
                 ) : (
-                  <div className="overflow-x-auto overflow-y-auto no-scrollbar max-h-[500px]">
+                  <div
+                    ref={jubahJobsScrollRef}
+                    className="table-scroll-x relative w-full max-w-full overflow-x-auto overscroll-none"
+                    style={{ contain: 'layout paint' }}
+                  >
+                    <div
+                      data-axis-y
+                      className="max-h-[500px] overflow-y-auto overscroll-none no-scrollbar"
+                      style={{ WebkitOverflowScrolling: 'touch' }}
+                    >
                     <table className="min-w-full border-collapse text-left">
                       <thead className="sticky top-0 bg-white">
                         <tr className="text-xs font-semibold text-slate-400 border-b border-slate-100">
@@ -638,6 +649,7 @@ export const RiderHome: React.FC = () => {
                         })}
                       </tbody>
                     </table>
+                    </div>
                   </div>
                 )}
               </div>
@@ -975,7 +987,7 @@ export const RiderHome: React.FC = () => {
       {receiptModal && (
         <div className="fixed inset-0 z-50 bg-black/40 flex items-end justify-center"
           onPointerDown={(e) => { e.preventDefault(); setReceiptModal(null); }}>
-          <div className="w-full max-w-sm max-h-[calc(100dvh-5rem)] overflow-y-auto no-scrollbar bg-white rounded-t-3xl p-6 pb-10 shadow-2xl animate-slide-up"
+          <div className="w-full max-w-sm max-h-[calc(100dvh-5rem)] overflow-y-auto no-scrollbar bg-white rounded-t-3xl p-6 pb-[7rem] shadow-2xl animate-slide-up"
             onPointerDown={e => e.stopPropagation()}>
             <div className="w-10 h-1 bg-slate-200 rounded-full mx-auto mb-5" />
             <div className="flex items-center justify-between mb-4">
