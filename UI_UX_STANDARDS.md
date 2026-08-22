@@ -4,7 +4,7 @@ This file records standards added after the original nineteen Gerak UI/UX standa
 
 ## Table Standard
 
-Tables use the current borderless directory layout, stable headers and Excel-style axis locking. The card remains fixed while table content scrolls. Vertical gestures move only vertically; deliberate horizontal gestures move only horizontally. Overscroll is contained so the table cannot drift outside its card. On desktop, every horizontally scrollable table exposes a visible bottom scrollbar/cursor; on mobile the scrollbar is hidden while touch scrolling remains available.
+Tables use the current borderless directory layout, stable headers and Excel-style axis locking. The card remains fixed while only the table content scrolls. Vertical gestures move only vertically; deliberate horizontal gestures move only horizontally, and a single gesture must never create diagonal movement. On mobile, both axes use controlled momentum/inertia after a flick while continuing to respect the axis selected at the start of that gesture. Momentum stops cleanly at the table boundary, and overscroll is contained so the table cannot drift, rubber-band, or move outside its card. Interactive controls and three-dot menus are excluded from the drag engine so taps remain reliable. On desktop, every horizontally scrollable table exposes a visible bottom scrollbar/cursor and wheel or trackpad movement remains axis locked; on mobile the scrollbar is hidden while touch scrolling remains available.
 
 ## Overview Standard
 
