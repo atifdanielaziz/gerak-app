@@ -92,6 +92,10 @@ export const Jubah: React.FC = () => {
   const { user, jubahBooking, bookJubah, commitJubahBooking, startNewJubahBooking, setCurrentPage, setSheetOpen, goBack, setLeaveGuard, addNotification } = useApp();
 
   const [landingUniversity, setLandingUniversity] = useState('');
+  const [customQuoteToken] = useState(() => new URLSearchParams(window.location.search).get('jubah_quote') ?? '');
+  const [customQuote, setCustomQuote] = useState<null | { agreed_price: number; university_key: string; payment_mode: 'pickup' | 'postage' | 'deposit'; deposit_method: 'pickup' | 'postage' | null; postage_zone: 'SM' | 'SS' | null; expires_at: string }>(null);
+  const [quoteChecking, setQuoteChecking] = useState(false);
+  const [quoteError, setQuoteError] = useState('');
   // Once booked, landingUniversity/form/tracking are all one page instance —
   // invisible to the app's page-history — so a single header back-tap would
   // otherwise skip straight past the Jubah landing to Dashboard. This lets
@@ -398,10 +402,25 @@ export const Jubah: React.FC = () => {
   // Deposit's own balance estimate, shown in its option label regardless of
   // which payment mode is currently selected (independent of ssCharge/
   // isPostageDelivery above, which are gated to the selected mode).
-  const depositBalancePreview = (depositMethod === 'postage'
-    ? postagePrice + (postageZone === 'SS' ? 10 : 0)
-    : pickupPrice) - depositAmount;
-  const cost = paymentMode === 'deposit' ? depositAmount : paymentMode === 'postage' ? postagePrice + ssCharge : pickupPrice;
+  const depositBalancePreview = customQuote
+    ? customQuote.agreed_price - depositAmount
+    : (depositMethod === 'postage' ? postagePrice + (postageZone === 'SS' ? 10 : 0) : pickupPrice) - depositAmount;
+  const cost = paymentMode === 'deposit'
+    ? depositAmount
+    : customQuote?.agreed_price ?? (paymentMode === 'postage' ? postagePrice + ssCharge : pickupPrice);
+
+  const verifyCustomQuote = async () => {
+    if (!customQuoteToken || icNumber.replace(/\D/g, '').length !== 12) { setQuoteError('Enter the 12-digit IC number used for this quote.'); return; }
+    setQuoteChecking(true); setQuoteError('');
+    const { data, error } = await supabase.rpc('resolve_jubah_custom_quote', { p_token: customQuoteToken, p_ic_number: icNumber });
+    setQuoteChecking(false);
+    if (error || !data?.success) { setQuoteError(data?.error ?? 'This quote could not be verified.'); return; }
+    setCustomQuote(data);
+    setLandingUniversity(data.university_key);
+    setPaymentMode(data.payment_mode);
+    if (data.deposit_method) setDepositMethod(data.deposit_method);
+    if (data.postage_zone) setPostageZone(data.postage_zone);
+  };
 
   // Fetch active riders whenever campus or service option (Pickup/Postage) changes
   useEffect(() => {
@@ -715,7 +734,7 @@ export const Jubah: React.FC = () => {
       console.error('[GERAK] Storage upload failed:', err);
     }
 
-    let result = await bookJubah(reference, fullName, icNumber, hpNumber, university, faculty, matricId, paymentMode, remark, combinedFileName, depositMethod, postageZone, selectedRiderId, selectedRider?.name, bookingCampus, addr, docsPath, oscarPath, skpgPath, konvoPath, icPath, landingUniversity, email, paymentPath);
+    let result = await bookJubah(reference, fullName, icNumber, hpNumber, university, faculty, matricId, paymentMode, remark, combinedFileName, depositMethod, postageZone, selectedRiderId, selectedRider?.name, bookingCampus, addr, docsPath, oscarPath, skpgPath, konvoPath, icPath, landingUniversity, email, paymentPath, customQuoteToken || undefined);
 
     // The reference is a short client-generated random string — vanishingly
     // unlikely to collide with another booking, but not impossible at scale.
@@ -726,7 +745,7 @@ export const Jubah: React.FC = () => {
     // that verbatim (see migration_jubah_booking_generic_errors.sql).
     if (!result.success && result.code === 'duplicate_reference') {
       reference = generateReference();
-      result = await bookJubah(reference, fullName, icNumber, hpNumber, university, faculty, matricId, paymentMode, remark, combinedFileName, depositMethod, postageZone, selectedRiderId, selectedRider?.name, bookingCampus, addr, docsPath, oscarPath, skpgPath, konvoPath, icPath, landingUniversity, email, paymentPath);
+      result = await bookJubah(reference, fullName, icNumber, hpNumber, university, faculty, matricId, paymentMode, remark, combinedFileName, depositMethod, postageZone, selectedRiderId, selectedRider?.name, bookingCampus, addr, docsPath, oscarPath, skpgPath, konvoPath, icPath, landingUniversity, email, paymentPath, customQuoteToken || undefined);
     }
 
     if (!result.success) {
@@ -756,7 +775,7 @@ export const Jubah: React.FC = () => {
       paymentMode,
       depositMethod: paymentMode === 'deposit' ? depositMethod : undefined,
       postageZone: isPostageDelivery ? postageZone : undefined,
-      remark, cost,
+      remark, cost: customQuote ? (paymentMode === 'deposit' ? depositAmount : customQuote.agreed_price) : cost,
       deliveryAddress: addr,
       riderName: selectedRider?.name,
       documents,
@@ -769,6 +788,10 @@ export const Jubah: React.FC = () => {
     setBooking(false);
     commitJubahBooking(result.booking!);
   };
+
+  if (customQuoteToken && !customQuote && !jubahBooking) {
+    return <div className="px-5 pt-8 pb-[calc(6.5rem+env(safe-area-inset-bottom))]"><section className="max-w-lg mx-auto border border-slate-100 rounded-3xl p-6 bg-white"><div className="flex items-center gap-3 mb-2"><ClipboardList className="w-5 h-5 text-slate-400"/><h1 className="font-semibold text-slate-900">Verify Custom Quote</h1></div><p className="text-sm font-normal text-slate-400 mb-5">Enter the IC number used during your price agreement. Your IC is verified securely and is not included in the link.</p><label className="block text-sm font-normal text-slate-500 mb-2">IC Number</label><input value={icNumber} onChange={e => setIcNumber(formatIc(e.target.value))} inputMode="numeric" placeholder="000000-00-0000" className="w-full rounded-xl border border-slate-100 px-3 py-3 text-sm focus:outline-none focus:border-slate-900"/>{quoteError && <p className="mt-3 text-xs font-normal text-red-500">{quoteError}</p>}<button type="button" disabled={quoteChecking} onClick={verifyCustomQuote} className="mt-5 w-full rounded-xl bg-primary text-white py-3 text-sm font-semibold active:scale-[0.99] transition-transform disabled:opacity-50">{quoteChecking ? 'Verifying…' : 'Continue'}</button></section></div>;
+  }
 
   if (peekLanding || (!jubahBooking && !landingUniversity)) {
     return <JubahLanding onProceed={u => { setPeekLanding(false); setLandingUniversity(u); }} />;
@@ -1008,6 +1031,30 @@ export const Jubah: React.FC = () => {
               <ClipboardList className="w-4 h-4 text-slate-400" /> Service Option
             </h3>
 
+            {customQuote ? (
+              <div className="border border-slate-900 rounded-2xl p-4 bg-slate-50">
+                <p className="text-sm font-semibold text-slate-900">
+                  {paymentMode === 'deposit'
+                    ? `Deposit — ${depositMethod === 'postage' ? 'Pickup & Postage' : 'Pickup Point'}`
+                    : paymentMode === 'postage'
+                      ? 'Full Payment — Pickup & Postage'
+                      : 'Full Payment — Pickup Point'}
+                </p>
+                {isPostageDelivery && (
+                  <p className="text-xs font-normal text-slate-500 mt-1">
+                    {postageZone === 'SS' ? 'SS — Sabah & Sarawak' : 'SM — Semenanjung Malaysia'}
+                  </p>
+                )}
+                <p className="text-xs font-normal text-slate-400 mt-2">
+                  This service and total were agreed with your runner and are locked for this booking.
+                </p>
+                {paymentMode === 'deposit' && (
+                  <p className="text-xs font-normal text-slate-500 mt-2">
+                    Pay RM{Number(depositAmount).toFixed(2)} now. Remaining balance: RM{Number(depositBalancePreview).toFixed(2)}.
+                  </p>
+                )}
+              </div>
+            ) : <>
             {/* Deposit */}
             <label className={`flex items-start gap-3 p-3.5 rounded-2xl border cursor-pointer transition ${paymentMode === 'deposit' ? 'border-slate-900' : 'border-slate-200 hover:bg-slate-50'}`}>
               <input type="radio" name="paymentMode" value="deposit" checked={paymentMode === 'deposit'} onChange={() => setPaymentMode('deposit')} className="mt-0.5 accent-slate-900 shrink-0" />
@@ -1125,11 +1172,13 @@ export const Jubah: React.FC = () => {
               </div>
             </label>
 
+            </>}
+
             {/* Cost HUD */}
             <div className="border border-slate-100 rounded-2xl p-3.5 mt-1">
               <span className="text-xs text-slate-400 font-semibold block">Service Fee</span>
-              <span className="text-xl font-black text-slate-800">RM{cost}.00</span>
-              {isPostageDelivery && postageZone === 'SS' && (
+              <span className="text-xl font-black text-slate-800">RM{Number(cost).toFixed(2)}</span>
+              {!customQuote && isPostageDelivery && postageZone === 'SS' && (
                 <span className="text-xs text-slate-400 block mt-0.5">Includes +RM10 SS surcharge</span>
               )}
             </div>

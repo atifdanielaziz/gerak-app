@@ -15,6 +15,7 @@ import {
 import { JubahBannerSubTab } from './admin/jubah/JubahBannerSubTab';
 import { JubahPriceSubTab } from './admin/jubah/JubahPriceSubTab';
 import { JubahFacultySubTab } from './admin/jubah/JubahFacultySubTab';
+import { JubahCustomQuoteSubTab } from './admin/jubah/JubahCustomQuoteSubTab';
 import { DriversTab, type DriversTabHandle } from './admin/drivers/DriversTab';
 import { UsersTab, type UsersTabHandle } from './admin/users/UsersTab';
 import { ProfileSheet, type ProfileUser } from './admin/users/ProfileSheet';
@@ -108,7 +109,7 @@ export const AdminHome: React.FC = () => {
   const [jubahBookingsTotalCount, setJubahBookingsTotalCount] = useState<number | null>(null);
   const [jubahAdminView,     setJubahAdminView]     = useState<'list' | 'card'>('list');
   const [jubahAdminSelected, setJubahAdminSelected] = useState<JubahBookingRow | null>(null);
-  const [jubahSubTab,        setJubahSubTab]        = useState<'customer' | 'customer_details' | 'rider' | 'price' | 'faculty' | 'banner'>('rider');
+  const [jubahSubTab,        setJubahSubTab]        = useState<'customer' | 'customer_details' | 'rider' | 'custom' | 'price' | 'faculty' | 'banner'>('rider');
   // Defence in depth — the sub-tab button itself is already hidden for
   // non-superadmin, but if a regular admin somehow lands on 'price' (e.g.
   // a stale tab from before a role downgrade), render as if 'rider' were
@@ -893,6 +894,7 @@ export const AdminHome: React.FC = () => {
                 { id: 'rider',    label: 'Rider',    superadminOnly: false },
                 { id: 'customer', label: 'Customer Directory', superadminOnly: false },
                 { id: 'customer_details', label: 'Customer Details', superadminOnly: false },
+                { id: 'custom',   label: 'Custom',   superadminOnly: false },
                 { id: 'price',    label: 'Price',    superadminOnly: true },
                 { id: 'faculty',  label: 'Faculty',  superadminOnly: false },
                 { id: 'banner',   label: 'Banner',   superadminOnly: false },
@@ -981,6 +983,13 @@ export const AdminHome: React.FC = () => {
               active={activeTab === 'jubah' && effectiveJubahSubTab === 'faculty'}
               universityKey={adminUniversityKey}
               universityLabel={jubahUniversityLabel}
+              showToast={showToast}
+            />
+          )}
+
+          {effectiveJubahSubTab === 'custom' && (
+            <JubahCustomQuoteSubTab
+              active={activeTab === 'jubah' && effectiveJubahSubTab === 'custom'}
               showToast={showToast}
             />
           )}

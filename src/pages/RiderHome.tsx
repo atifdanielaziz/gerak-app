@@ -13,7 +13,7 @@ import {
   ShoppingBasket, GraduationCap, TrendingUp,
   Upload, FileImage, ShieldCheck, ShieldAlert,
   ChevronLeft, Download, ExternalLink, CheckCircle2, XCircle, Eye, X, Clock,
-  Copy,
+  Copy, ClipboardCheck,
 } from 'lucide-react';
 import { driverIsActive } from './Profile';
 import { JubahStepper } from '../components/JubahStepper';
@@ -21,8 +21,9 @@ import { ReceiptCard } from '../components/Receipt';
 import { buildJubahReceiptRows, type ReceiptDoc } from '../lib/receiptRows';
 import { generateReceiptPdf } from '../lib/receiptPdf';
 import { useAxisLockedScroll } from '../hooks/useAxisLockedScroll';
+import { JubahCustomQuoteSubTab } from './admin/jubah/JubahCustomQuoteSubTab';
 
-type RiderTab    = 'daily' | 'jubah' | 'earnings';
+type RiderTab    = 'daily' | 'jubah' | 'quote' | 'earnings';
 type JubahView   = 'list' | 'card' | 'details';
 
 type JubahJobRow = {
@@ -392,6 +393,7 @@ export const RiderHome: React.FC = () => {
               {([
                 { id: 'daily',    label: 'Daily Job',   icon: ShoppingBasket },
                 { id: 'jubah',    label: 'Jubah Job',   icon: GraduationCap },
+                { id: 'quote',    label: 'Custom',      icon: ClipboardCheck },
                 { id: 'earnings', label: 'Earnings',    icon: TrendingUp },
               ] as { id: RiderTab; label: string; icon: React.ElementType }[]).map(tab => {
                 const Icon = tab.icon;
@@ -901,6 +903,13 @@ export const RiderHome: React.FC = () => {
               </div>
             )}
 
+          </div>
+        )}
+
+        {/* ── Earnings Tab ── */}
+        {activeTab === 'quote' && (
+          <div className="px-4 pb-[calc(6.5rem+env(safe-area-inset-bottom))]">
+            <JubahCustomQuoteSubTab active showToast={showToast} />
           </div>
         )}
 

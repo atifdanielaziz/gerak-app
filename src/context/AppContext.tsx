@@ -181,7 +181,7 @@ interface AppContextType {
 
   // Jubah Delivery Module
   jubahBooking: JubahBooking | null;
-  bookJubah: (reference: string, fullName: string, icNumber: string, hpNumber: string, university: string, faculty: string, matricId: string, paymentMode: 'pickup' | 'postage' | 'deposit', remark: 'Master' | 'PHD' | 'Degree' | 'Diploma', combinedFileName: string, depositMethod: 'pickup' | 'postage' | undefined, postageZone: 'SM' | 'SS' | undefined, riderId?: string, riderName?: string, campus?: string, deliveryAddress?: string, docsPath?: string, oscarPath?: string, skpgPath?: string, konvoPath?: string, icPath?: string, universityKey?: string, email?: string, paymentPath?: string) => Promise<{ success: boolean; error?: string; code?: string; booking?: JubahBooking }>;
+  bookJubah: (reference: string, fullName: string, icNumber: string, hpNumber: string, university: string, faculty: string, matricId: string, paymentMode: 'pickup' | 'postage' | 'deposit', remark: 'Master' | 'PHD' | 'Degree' | 'Diploma', combinedFileName: string, depositMethod: 'pickup' | 'postage' | undefined, postageZone: 'SM' | 'SS' | undefined, riderId?: string, riderName?: string, campus?: string, deliveryAddress?: string, docsPath?: string, oscarPath?: string, skpgPath?: string, konvoPath?: string, icPath?: string, universityKey?: string, email?: string, paymentPath?: string, customQuoteToken?: string) => Promise<{ success: boolean; error?: string; code?: string; booking?: JubahBooking }>;
   commitJubahBooking: (booking: JubahBooking) => void;
   scheduleReturn: (method: 'self' | 'locker' | 'courier', date: string, time: string) => void;
   cancelJubahBooking: () => void;
@@ -197,6 +197,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   // timer can navigate away so direct tracking links open correctly.
   const [deepLinkPage] = useState<ActivePage | null>(() => {
     const path = window.location.pathname.replace(/\/+$/, '');
+    // A custom Jubah quote is a public, secure token link. Route it directly
+    // to Jubah; Jubah.tsx then asks for the matching IC before revealing it.
+    if (new URLSearchParams(window.location.search).has('jubah_quote')) return 'jubah';
     if (path.endsWith('/jubah/track')) return 'track-jubah';
     // Standalone marketing link (posters, WhatsApp shares, etc.) — lands
     // guests straight on the Jubah landing/university picker without
@@ -943,6 +946,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     universityKey?: string,
     email?: string,
     paymentPath?: string,
+    customQuoteToken?: string,
   ): Promise<{ success: boolean; error?: string; code?: string; booking?: JubahBooking }> => {
     if (!campus) return { success: false, error: 'Missing campus information.' };
 
@@ -950,7 +954,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     // cost/balance_due aren't sent — create_jubah_booking computes them
     // itself from jubah_pricing so a tampered request can't get an
     // admin-facing price mismatch between what's shown and what's owed.
-    const { data, error } = await supabase.rpc('create_jubah_booking', {
+    const bookingPayload = {
       p_reference:         reference,
       p_full_name:         fullName,
       p_ic_number:         icNumber,
@@ -975,7 +979,21 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       p_customer_id:       authUser?.id    ?? null,
       p_university_key:    universityKey   ?? 'umpsa',
       p_email:             email ?? null,
-    });
+    };
+    const { data, error } = customQuoteToken
+      ? await supabase.rpc('create_custom_jubah_booking', {
+          p_token: customQuoteToken,
+          p_booking: {
+            reference, full_name: fullName, ic_number: icNumber, hp_number: hpNumber,
+            matric_id: matricId, university, university_key: universityKey ?? 'umpsa', campus,
+            faculty, remark, rider_id: riderId ?? null, rider_name: riderName ?? null,
+            delivery_address: deliveryAddress ?? null, docs_path: docsPath ?? null,
+            payment_path: paymentPath ?? null, oscar_path: oscarPath ?? null,
+            skpg_path: skpgPath ?? null, konvo_path: konvoPath ?? null, ic_path: icPath ?? null,
+            customer_id: authUser?.id ?? null, email: email ?? null,
+          },
+        })
+      : await supabase.rpc('create_jubah_booking', bookingPayload);
 
     if (error || !data?.success) {
       console.error('[GERAK] Booking save failed:', error ?? data?.error);
