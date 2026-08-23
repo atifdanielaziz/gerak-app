@@ -673,7 +673,17 @@ export const Jubah: React.FC = () => {
     if (!allFilesReady) { setFileError('Please upload all required documents.'); return; }
     if (!paymentProof) { setFileError('Please upload your proof of payment.'); return; }
 
-    const generateReference = () => `JUB-${new Date().getFullYear().toString().slice(-2)}-${uniAbbrev}-${Math.random().toString(36).slice(2, 6).toUpperCase()}`;
+    // crypto.getRandomValues, not Math.random — the 4-char Math.random suffix
+    // gave ~1.3M combos/university/year with a non-cryptographic RNG, cheap
+    // enough to lower the cost of brute-forcing lookups keyed on this
+    // reference (see track_jubah_booking/get_jubah_receipt). 6 chars from a
+    // 36-char alphabet is ~2.2 billion combos, genuinely unguessable.
+    const generateReference = () => {
+      const CHARS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+      const bytes = crypto.getRandomValues(new Uint8Array(6));
+      const suffix = Array.from(bytes, b => CHARS[b % CHARS.length]).join('');
+      return `JUB-${new Date().getFullYear().toString().slice(-2)}-${uniAbbrev}-${suffix}`;
+    };
     let reference = generateReference();
     const combinedFileName = `${(fullName || 'combined').replace(/\s+/g, '_')}_combined.pdf`;
     const selectedRider = riders.find(r => r.id === selectedRiderId);

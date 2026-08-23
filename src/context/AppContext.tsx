@@ -571,13 +571,64 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const timer = window.setInterval(() => { void check(); }, 30_000);
     document.addEventListener('visibilitychange', check);
     window.addEventListener('focus', check);
+
+    // Realtime push, not just the 30s poll — a newer device claiming the
+    // session revokes this device's refresh token immediately, but its
+    // still-valid access token could otherwise keep working (and this
+    // device could keep writing) for up to 30s until the next poll tick,
+    // or indefinitely while backgrounded (the poll only runs on visible).
+    // Subscribing to this device's own user_active_sessions row means a
+    // supersession is detected the moment it happens, not on the next
+    // tick — re-runs the same check() rather than assuming the update was
+    // necessarily a takeover, since this device's own claim also writes
+    // the same row.
+    let channel: ReturnType<typeof supabase.channel> | null = null;
+    let cancelled = false;
+    (async () => {
+      const { data: { user: authUser } } = await supabase.auth.getUser();
+      if (!authUser || cancelled) return;
+      channel = supabase
+        .channel('user_active_sessions_self')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'user_active_sessions', filter: `user_id=eq.${authUser.id}` }, () => { void check(); })
+        .subscribe();
+    })();
+
     return () => {
+      cancelled = true;
       window.clearInterval(timer);
       document.removeEventListener('visibilitychange', check);
       window.removeEventListener('focus', check);
+      if (channel) supabase.removeChannel(channel);
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user.isLoggedIn, user.role]);
+
+  // An admin toggling someone's role (toggle_user_role) never reached an
+  // already-open session — RLS always re-checks profiles.role fresh
+  // server-side, so authorization was never wrong, but the UI stayed
+  // stale: a demoted admin kept seeing admin tooling and hitting silent
+  // RLS rejections with no explanation, and a promoted user didn't see
+  // their new tab appear until a full reload. Subscribing to this user's
+  // own profiles row and re-running loadProfile() on any change keeps the
+  // displayed role in sync with a live role change.
+  useEffect(() => {
+    if (!user.isLoggedIn) return;
+    let channel: ReturnType<typeof supabase.channel> | null = null;
+    let cancelled = false;
+    (async () => {
+      const { data: { user: authUser } } = await supabase.auth.getUser();
+      if (!authUser || cancelled) return;
+      channel = supabase
+        .channel('profiles_self')
+        .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'profiles', filter: `id=eq.${authUser.id}` }, () => { void loadProfile(authUser.id); })
+        .subscribe();
+    })();
+    return () => {
+      cancelled = true;
+      if (channel) supabase.removeChannel(channel);
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user.isLoggedIn]);
 
   // Picks up a driver_invites row that was created for this email AFTER
   // the account already existed — handle_new_user() only ever applies an
