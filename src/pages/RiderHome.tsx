@@ -102,6 +102,42 @@ export const RiderHome: React.FC = () => {
 
   useLoadOnActive(activeTab === 'jubah', loadJubahJobs);
 
+  // Realtime + polling safety net, same pattern already proven in
+  // DriverHome.tsx for ride_orders. Without this, a status/balance change
+  // made by an admin or via mark_jubah_balance_paid/update_jubah_booking_
+  // status (e.g. a customer cancelling) never reaches a rider sitting on
+  // this tab — including the WebSocket silently dropping (app backgrounded,
+  // screen locked, network switch), which does not replay missed events on
+  // reconnect. Scoped to only run while the Jubah tab is active.
+  useEffect(() => {
+    if (activeTab !== 'jubah') return;
+    let channel: ReturnType<typeof supabase.channel> | null = null;
+    let pollId: ReturnType<typeof setInterval> | null = null;
+    let onVisible: (() => void) | null = null;
+    let cancelled = false;
+
+    (async () => {
+      const { data: { user: authUser } } = await supabase.auth.getUser();
+      if (!authUser || cancelled) return;
+
+      channel = supabase
+        .channel('jubah_bookings_rider')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'jubah_bookings', filter: `rider_id=eq.${authUser.id}` }, () => loadJubahJobs())
+        .subscribe();
+
+      pollId = setInterval(() => loadJubahJobs(), 20_000);
+      onVisible = () => { if (document.visibilityState === 'visible') loadJubahJobs(); };
+      document.addEventListener('visibilitychange', onVisible);
+    })();
+
+    return () => {
+      cancelled = true;
+      if (channel) supabase.removeChannel(channel);
+      if (pollId) clearInterval(pollId);
+      if (onVisible) document.removeEventListener('visibilitychange', onVisible);
+    };
+  }, [activeTab, loadJubahJobs]);
+
   // ── Earnings ───────────────────────────────────────────────────────────────
   type JubahEarningRow = {
     reference: string; remark: string; payment_mode: string; is_postage: boolean;

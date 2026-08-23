@@ -348,27 +348,42 @@ export const MyOrders: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    const channel = supabase
-      .channel('my_orders_realtime')
-      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'ride_orders' }, () => load())
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'ride_orders' }, () => load())
-      .subscribe();
+    let channel: ReturnType<typeof supabase.channel> | null = null;
+    let pollId: ReturnType<typeof setInterval> | null = null;
+    let onVisible: (() => void) | null = null;
+    let cancelled = false;
 
-    // Safety net — the realtime WebSocket can silently drop (app
-    // backgrounded, screen locked, network switch) and does NOT replay
-    // missed events on reconnect, it only resumes listening forward. A
-    // status change that happened while disconnected (e.g. a driver
-    // accepting or completing the ride) would otherwise stay stale
-    // indefinitely. A 20s poll plus an immediate refresh when the app
-    // comes back to the foreground bounds how long that staleness can last.
-    const pollId = setInterval(() => load(), 20_000);
-    const onVisible = () => { if (document.visibilityState === 'visible') load(); };
-    document.addEventListener('visibilitychange', onVisible);
+    (async () => {
+      const { data: { user: authUser } } = await supabase.auth.getUser();
+      if (!authUser || cancelled) return;
+
+      // Server-side filter (not just the .eq('customer_id', ...) on the
+      // read in load()) — without it, this subscription fired a full
+      // reload for every order change from EVERY customer, not just this
+      // one, in every open MyOrders tab across the whole app.
+      channel = supabase
+        .channel('my_orders_realtime')
+        .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'ride_orders', filter: `customer_id=eq.${authUser.id}` }, () => load())
+        .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'ride_orders', filter: `customer_id=eq.${authUser.id}` }, () => load())
+        .subscribe();
+
+      // Safety net — the realtime WebSocket can silently drop (app
+      // backgrounded, screen locked, network switch) and does NOT replay
+      // missed events on reconnect, it only resumes listening forward. A
+      // status change that happened while disconnected (e.g. a driver
+      // accepting or completing the ride) would otherwise stay stale
+      // indefinitely. A 20s poll plus an immediate refresh when the app
+      // comes back to the foreground bounds how long that staleness can last.
+      pollId = setInterval(() => load(), 20_000);
+      onVisible = () => { if (document.visibilityState === 'visible') load(); };
+      document.addEventListener('visibilitychange', onVisible);
+    })();
 
     return () => {
-      supabase.removeChannel(channel);
-      clearInterval(pollId);
-      document.removeEventListener('visibilitychange', onVisible);
+      cancelled = true;
+      if (channel) supabase.removeChannel(channel);
+      if (pollId) clearInterval(pollId);
+      if (onVisible) document.removeEventListener('visibilitychange', onVisible);
     };
   }, []);
 

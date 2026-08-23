@@ -562,9 +562,21 @@ export const DriverHome: React.FC = () => {
       return;
     }
     queueMicrotask(() => loadOrders());
+    // Scoped by campus, not driver_id — a driver needs to see both their
+    // own accepted job AND new unassigned pending jobs in their campus
+    // (which never carry their driver_id), so campus is the only column
+    // that covers both without missing new-job alerts. Matches the same
+    // fix already applied to the admin side (OrdersTab.tsx): without a
+    // filter, this fired a full reload for every order change from every
+    // campus, in every open DriverHome tab. Falls back to unfiltered only
+    // for drivers with no scoped campus, same condition loadOrders' own
+    // pending-orders query already uses.
     const channel = supabase
       .channel('ride_orders_driver')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'ride_orders' }, (payload) => {
+      .on('postgres_changes', {
+        event: '*', schema: 'public', table: 'ride_orders',
+        ...(campusFilter ? { filter: `campus=eq.${campusFilter}` } : {}),
+      }, (payload) => {
         loadOrders();
         if (payload.eventType === 'INSERT') {
           notifCount.current += 1;
@@ -590,7 +602,7 @@ export const DriverHome: React.FC = () => {
       clearInterval(pollId);
       document.removeEventListener('visibilitychange', onVisible);
     };
-  }, [loadOrders, effectiveCanDrive, fireNotification]);
+  }, [loadOrders, effectiveCanDrive, fireNotification, campusFilter]);
 
   useEffect(() => {
     if (!user.canRent && !isAdminForRental) return;
