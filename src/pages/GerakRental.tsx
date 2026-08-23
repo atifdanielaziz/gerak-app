@@ -219,6 +219,41 @@ export const GerakRental: React.FC = () => {
     setMyBookings(enriched);
   }, []);
 
+  // Realtime + polling safety net for My Bookings, same pattern already
+  // proven for ride_orders/jubah_bookings. Without this, an owner
+  // confirming/rejecting a booking (or an admin cancelling one) never
+  // reaches a customer sitting on this view — only the customer's own
+  // book/cancel/upload actions ever refreshed it. Scoped to only run while
+  // My Bookings is the active view.
+  useEffect(() => {
+    if (view !== 'my-bookings') return;
+    let channel: ReturnType<typeof supabase.channel> | null = null;
+    let pollId: ReturnType<typeof setInterval> | null = null;
+    let onVisible: (() => void) | null = null;
+    let cancelled = false;
+
+    (async () => {
+      const { data: { user: authUser } } = await supabase.auth.getUser();
+      if (!authUser || cancelled) return;
+
+      channel = supabase
+        .channel('rental_bookings_customer')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'rental_bookings', filter: `customer_id=eq.${authUser.id}` }, () => loadMyBookings())
+        .subscribe();
+
+      pollId = setInterval(() => loadMyBookings(), 20_000);
+      onVisible = () => { if (document.visibilityState === 'visible') loadMyBookings(); };
+      document.addEventListener('visibilitychange', onVisible);
+    })();
+
+    return () => {
+      cancelled = true;
+      if (channel) supabase.removeChannel(channel);
+      if (pollId) clearInterval(pollId);
+      if (onVisible) document.removeEventListener('visibilitychange', onVisible);
+    };
+  }, [view, loadMyBookings]);
+
   useEffect(() => {
     queueMicrotask(() => loadOwners());
   }, [loadOwners]);

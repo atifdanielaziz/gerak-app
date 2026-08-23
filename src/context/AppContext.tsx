@@ -736,6 +736,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const { data: { user: authUser } } = await supabase.auth.getUser();
     if (authUser) {
       await supabase.from('profiles').update({ phone, university, campus, terms_accepted_at: new Date().toISOString() }).eq('id', authUser.id);
+      // handle_new_user() no longer applies a pending invite at raw signup
+      // time (see 20260823160000_defer_invite_to_confirmed_login.sql) — it
+      // always creates a plain customer profile now. This branch only runs
+      // if signInWithPassword succeeded immediately post-signup (shouldn't
+      // happen given project-wide email confirmation, but if it ever does,
+      // an invited user must still get promoted here rather than staying
+      // 'customer' forever).
+      await applyPendingInviteIfAny();
       await claimSingleDeviceSession();
       await loadProfile(authUser.id);
     }

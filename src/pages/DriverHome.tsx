@@ -607,18 +607,42 @@ export const DriverHome: React.FC = () => {
   useEffect(() => {
     if (!user.canRent && !isAdminForRental) return;
     queueMicrotask(() => loadRentalData());
-    const channel = supabase
-      .channel('rental_bookings_owner')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'rental_bookings' }, (payload) => {
-        loadRentalData();
-        if (payload.eventType === 'INSERT') {
-          notifRentalCount.current += 1;
-          if (notifRentalTimer.current) clearTimeout(notifRentalTimer.current);
-          notifRentalTimer.current = setTimeout(fireRentalNotification, 2000);
-        }
-      })
-      .subscribe();
-    return () => { supabase.removeChannel(channel); };
+
+    let channel: ReturnType<typeof supabase.channel> | null = null;
+    let cancelled = false;
+
+    (async () => {
+      // Scoped by owner_id for regular owners — without it, this fired a
+      // full reload for every rental booking change from every owner, in
+      // every open DriverHome tab, same bug already fixed for ride_orders.
+      // Admins legitimately need to see all bookings, so stay unfiltered
+      // for them.
+      let uid = '';
+      if (!isAdminForRental) {
+        const { data: { user: authUser } } = await supabase.auth.getUser();
+        uid = authUser?.id ?? '';
+        if (cancelled) return;
+      }
+      channel = supabase
+        .channel('rental_bookings_owner')
+        .on('postgres_changes', {
+          event: '*', schema: 'public', table: 'rental_bookings',
+          ...(uid ? { filter: `owner_id=eq.${uid}` } : {}),
+        }, (payload) => {
+          loadRentalData();
+          if (payload.eventType === 'INSERT') {
+            notifRentalCount.current += 1;
+            if (notifRentalTimer.current) clearTimeout(notifRentalTimer.current);
+            notifRentalTimer.current = setTimeout(fireRentalNotification, 2000);
+          }
+        })
+        .subscribe();
+    })();
+
+    return () => {
+      cancelled = true;
+      if (channel) supabase.removeChannel(channel);
+    };
   }, [user.canRent, isAdminForRental, loadRentalData, fireRentalNotification]);
 
   const handleAccept = async (orderId: string) => {
