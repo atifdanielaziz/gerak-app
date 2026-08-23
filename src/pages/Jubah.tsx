@@ -20,6 +20,7 @@ import { copyToClipboard } from '../lib/clipboard';
 import { savePendingJubahBooking, clearPendingJubahBooking } from '../lib/pendingJubahBooking';
 import { formatPhone } from '../lib/format';
 import { UNIVERSITY_MAP, deriveJubahCampus, jubahLocationLabel } from '../lib/universities';
+import type { JubahBookingInput } from '../types/jubahBooking';
 
 const FALLBACK_UNIVERSITY_FACULTIES: Record<string, string[]> = {
   'Universiti Malaysia Pahang Al-Sultan Abdullah (Pekan)': [
@@ -737,7 +738,17 @@ export const Jubah: React.FC = () => {
       console.error('[GERAK] Storage upload failed:', err);
     }
 
-    let result = await bookJubah(reference, fullName, icNumber, hpNumber, university, faculty, matricId, paymentMode, remark, combinedFileName, depositMethod, postageZone, selectedRiderId, selectedRider?.name, bookingCampus, addr, docsPath, oscarPath, skpgPath, konvoPath, icPath, landingUniversity, email, paymentPath, customQuoteToken || undefined);
+    const bookingInput: JubahBookingInput = {
+      reference, fullName, icNumber, hpNumber, university, faculty, matricId,
+      campus: bookingCampus, paymentMode, remark, combinedFileName,
+      depositMethod, postageZone,
+      riderId: selectedRiderId, riderName: selectedRider?.name,
+      deliveryAddress: addr, universityKey: landingUniversity, email,
+      customQuoteToken: customQuoteToken || undefined,
+      documents: { docs: docsPath, payment: paymentPath, oscar: oscarPath, skpg: skpgPath, konvo: konvoPath, ic: icPath },
+    };
+
+    let result = await bookJubah(bookingInput);
 
     // The reference is a short client-generated random string — vanishingly
     // unlikely to collide with another booking, but not impossible at scale.
@@ -748,7 +759,7 @@ export const Jubah: React.FC = () => {
     // that verbatim (see migration_jubah_booking_generic_errors.sql).
     if (!result.success && result.code === 'duplicate_reference') {
       reference = generateReference();
-      result = await bookJubah(reference, fullName, icNumber, hpNumber, university, faculty, matricId, paymentMode, remark, combinedFileName, depositMethod, postageZone, selectedRiderId, selectedRider?.name, bookingCampus, addr, docsPath, oscarPath, skpgPath, konvoPath, icPath, landingUniversity, email, paymentPath, customQuoteToken || undefined);
+      result = await bookJubah({ ...bookingInput, reference });
     }
 
     if (!result.success) {

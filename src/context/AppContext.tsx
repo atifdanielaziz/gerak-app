@@ -3,6 +3,7 @@ import { Capacitor } from '@capacitor/core';
 import { App as CapacitorApp } from '@capacitor/app';
 import { supabase } from '../lib/supabase';
 import { INACTIVITY_LIMIT_MS, isSessionExpired, touchActivity, setDeviceSessionReplacedMessage, setSessionExpiredMessage } from '../lib/idleSession';
+import type { JubahBookingInput } from '../types/jubahBooking';
 
 // window.location.origin on web — always correct wherever the app is
 // actually being served from (gerakmy.com in production, localhost during
@@ -181,7 +182,7 @@ interface AppContextType {
 
   // Jubah Delivery Module
   jubahBooking: JubahBooking | null;
-  bookJubah: (reference: string, fullName: string, icNumber: string, hpNumber: string, university: string, faculty: string, matricId: string, paymentMode: 'pickup' | 'postage' | 'deposit', remark: 'Master' | 'PHD' | 'Degree' | 'Diploma', combinedFileName: string, depositMethod: 'pickup' | 'postage' | undefined, postageZone: 'SM' | 'SS' | undefined, riderId?: string, riderName?: string, campus?: string, deliveryAddress?: string, docsPath?: string, oscarPath?: string, skpgPath?: string, konvoPath?: string, icPath?: string, universityKey?: string, email?: string, paymentPath?: string, customQuoteToken?: string) => Promise<{ success: boolean; error?: string; code?: string; booking?: JubahBooking }>;
+  bookJubah: (input: JubahBookingInput) => Promise<{ success: boolean; error?: string; code?: string; booking?: JubahBooking }>;
   commitJubahBooking: (booking: JubahBooking) => void;
   scheduleReturn: (method: 'self' | 'locker' | 'courier', date: string, time: string) => void;
   cancelJubahBooking: () => void;
@@ -922,32 +923,15 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   // shows the customer a false "Booking Confirmed" screen (previously
   // fire-and-forget — the confirmation showed regardless of RPC outcome).
   const bookJubah = async (
-    reference: string,
-    fullName: string,
-    icNumber: string,
-    hpNumber: string,
-    university: string,
-    faculty: string,
-    matricId: string,
-    paymentMode: 'pickup' | 'postage' | 'deposit',
-    remark: 'Master' | 'PHD' | 'Degree' | 'Diploma',
-    combinedFileName: string,
-    depositMethod: 'pickup' | 'postage' | undefined,
-    postageZone: 'SM' | 'SS' | undefined,
-    riderId?: string,
-    riderName?: string,
-    campus?: string,
-    deliveryAddress?: string,
-    docsPath?: string,
-    oscarPath?: string,
-    skpgPath?: string,
-    konvoPath?: string,
-    icPath?: string,
-    universityKey?: string,
-    email?: string,
-    paymentPath?: string,
-    customQuoteToken?: string,
+    input: JubahBookingInput,
   ): Promise<{ success: boolean; error?: string; code?: string; booking?: JubahBooking }> => {
+    const {
+      reference, fullName, icNumber, hpNumber, university, faculty, matricId,
+      campus, paymentMode, remark, combinedFileName, depositMethod, postageZone,
+      riderId, riderName, deliveryAddress, universityKey, email, customQuoteToken,
+      documents: { docs: docsPath, payment: paymentPath, oscar: oscarPath, skpg: skpgPath, konvo: konvoPath, ic: icPath } = {},
+    } = input;
+
     if (!campus) return { success: false, error: 'Missing campus information.' };
 
     const { data: { user: authUser } } = await supabase.auth.getUser();
