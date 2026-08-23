@@ -120,31 +120,28 @@ export const TrackJubah: React.FC = () => {
       });
   }, []);
 
-  const runSearch = async (refOverride?: string) => {
+  const runSearch = async () => {
     setError('');
     setResults([]);
-    const refValue = (refOverride ?? reference).trim();
+    const refValue = reference.trim();
     const icDigits = icNumber.replace(/\D/g, '');
-    if (!refValue && !icNumber.trim()) {
-      setError('Please enter your reference number or IC number.');
+    // Reference AND IC are both required together — track_jubah_booking no
+    // longer accepts either alone (or matric/phone at all). A reference or
+    // IC by itself is guessable/enumerable/shareable-via-link; requiring
+    // both closes that off, matching get_jubah_receipt's existing pattern.
+    if (!refValue || !icNumber.trim()) {
+      setError('Please enter both your reference number and IC number.');
       return;
     }
-    // IC number is the only accepted lookup key here (besides reference) —
-    // matric numbers are sequential/predictable per intake, so allowing
-    // lookup by matric alone would let anyone enumerate other students'
-    // booking status. A malformed (non-12-digit) IC value is rejected
-    // client-side rather than silently sent through as free text.
-    if (!refValue && icNumber.trim() && icDigits.length !== 12) {
+    if (icDigits.length !== 12) {
       setError('Please enter a valid 12-digit IC number (e.g. 980123-45-6789).');
       return;
     }
     setSearching(true);
     setSearched(false);
     const { data, error: rpcError } = await supabase.rpc('track_jubah_booking', {
-      p_reference:  refValue || null,
-      p_hp_number:  null,
-      p_matric_id:  null,
-      p_ic_number:  icDigits.length === 12 ? icNumber.trim() : null,
+      p_reference:  refValue,
+      p_ic_number:  icNumber.trim(),
     });
     setSearching(false);
     setSearched(true);
@@ -165,21 +162,20 @@ export const TrackJubah: React.FC = () => {
     runSearch();
   };
 
-  // Supports a bookmarked/shared "?reference=..." deep link straight to a
-  // result — auto-search so the customer sees status without retyping.
-  // Internal navigation (e.g. the "Check Status" button on the unfinished-
-  // booking nudge) never populates that query param — this is a real SPA,
-  // not URL-routed — so fall back to the same pending-booking marker that
-  // nudge reads from.
+  // Supports a bookmarked/shared "?reference=..." deep link, or returning
+  // from the unfinished-booking nudge (same pending-booking marker) —
+  // pre-fills the reference so the customer doesn't need to retype it.
+  // Deliberately does NOT auto-search: track_jubah_booking now requires
+  // reference + IC together (see 20260823140000_track_jubah_booking_
+  // require_ic.sql), and a shared/bookmarked link only ever carries the
+  // reference — auto-running with reference alone would just always fail
+  // validation, and a reference-only link is exactly the single-factor
+  // exposure that migration closed, so it must not be reintroduced here.
   useEffect(() => {
     const refParam = new URLSearchParams(window.location.search).get('reference');
     const fallbackRef = refParam ? null : getPendingJubahBooking()?.reference ?? null;
     const target = refParam || fallbackRef;
-    if (target) {
-      const upper = target.toUpperCase();
-      setReference(upper);
-      runSearch(upper);
-    }
+    if (target) setReference(target.toUpperCase());
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -254,12 +250,6 @@ export const TrackJubah: React.FC = () => {
             style={{ fontSize: '16px' }}
             className="bg-white border border-slate-100 rounded-xl py-2.5 px-3 text-sm font-normal text-slate-700 focus:outline-none focus:border-slate-900 transition placeholder:font-normal placeholder:text-slate-300"
           />
-        </div>
-
-        <div className="flex items-center gap-2">
-          <div className="flex-1 h-px bg-slate-100" />
-          <span className="text-xs text-slate-300 font-normal">or</span>
-          <div className="flex-1 h-px bg-slate-100" />
         </div>
 
         <div className="flex flex-col gap-1.5">
