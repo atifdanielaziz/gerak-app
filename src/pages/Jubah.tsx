@@ -93,7 +93,7 @@ export const Jubah: React.FC = () => {
 
   const [landingUniversity, setLandingUniversity] = useState('');
   const [customQuoteToken] = useState(() => new URLSearchParams(window.location.search).get('jubah_quote') ?? '');
-  const [customQuote, setCustomQuote] = useState<null | { agreed_price: number; university_key: string; payment_mode: 'pickup' | 'postage' | 'deposit'; deposit_method: 'pickup' | 'postage' | null; postage_zone: 'SM' | 'SS' | null; expires_at: string }>(null);
+  const [customQuote, setCustomQuote] = useState<null | { agreed_price: number; university_key: string; campus: string; customer_phone: string; payment_mode: 'pickup' | 'postage' | 'deposit'; deposit_method: 'pickup' | 'postage' | null; postage_zone: 'SM' | 'SS' | null; expires_at: string }>(null);
   const [quoteChecking, setQuoteChecking] = useState(false);
   const [quoteError, setQuoteError] = useState('');
   // Once booked, landingUniversity/form/tracking are all one page instance —
@@ -417,6 +417,9 @@ export const Jubah: React.FC = () => {
     if (error || !data?.success) { setQuoteError(data?.error ?? 'This quote could not be verified.'); return; }
     setCustomQuote(data);
     setLandingUniversity(data.university_key);
+    const quotedUniversity = UNIVERSITY_MAP[data.university_key];
+    setUniversity(quotedUniversity?.campuses.length === 1 ? quotedUniversity.label : `${quotedUniversity?.fullName} (${data.campus})`);
+    setHpNumber(data.customer_phone);
     setPaymentMode(data.payment_mode);
     if (data.deposit_method) setDepositMethod(data.deposit_method);
     if (data.postage_zone) setPostageZone(data.postage_zone);
@@ -892,6 +895,7 @@ export const Jubah: React.FC = () => {
                 placeholder="980123-45-6789"
                 maxLength={14}
                 required
+                disabled={Boolean(customQuote)}
                 className="bg-white border border-slate-100 rounded-xl py-2.5 px-3 text-xs font-semibold text-slate-700 focus:outline-none focus:border-slate-900 transition placeholder:font-normal placeholder:text-slate-300"
               />
             </div>
@@ -910,6 +914,7 @@ export const Jubah: React.FC = () => {
                 placeholder="012-34567890"
                 maxLength={12}
                 required
+                disabled={Boolean(customQuote)}
                 className="bg-white border border-slate-100 rounded-xl py-2.5 px-3 text-xs font-semibold text-slate-700 focus:outline-none focus:border-slate-900 transition placeholder:font-normal placeholder:text-slate-300"
               />
             </div>
@@ -970,6 +975,7 @@ export const Jubah: React.FC = () => {
                   }))}
                   placeholder="Select your campus..."
                   label="Select Campus"
+                  disabled={Boolean(customQuote)}
                 />
               </div>
             )}
