@@ -26,3 +26,11 @@ android/.gradle/
 android/captures/
 *.keystore
 *.jks
+
+# graphify output — a generated knowledge-graph snapshot, not source. Goes
+# stale the moment the codebase changes and is large (MBs of JSON/HTML), so
+# treated like /dist rather than committed. Regenerate locally with
+# /graphify (requires graphify itself, a separate global install — see
+# ~/.claude/skills/graphify — not something this repo can provide).
+graphify-out/
+src/graphify-out/
