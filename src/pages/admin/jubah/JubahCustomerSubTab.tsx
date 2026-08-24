@@ -191,9 +191,9 @@ export function JubahCustomerSubTab({
       const { data, error } = await supabase.functions.invoke('send-jubah-receipt-email', {
         body: { bookingId, stage },
       });
-      if (error || !data?.success) console.error('send-jubah-receipt-email failed:', error ?? data?.reason);
+      if (error || !data?.success) console.error('[GERAK] send-jubah-receipt-email failed:', error ?? data?.reason);
     } catch (err) {
-      console.error('send-jubah-receipt-email failed:', err);
+      console.error('[GERAK] send-jubah-receipt-email failed:', err);
     }
   };
 
@@ -400,7 +400,7 @@ export function JubahCustomerSubTab({
       }
       showToast(`${format.toUpperCase()} downloaded.`);
     } catch (error) {
-      console.error('Customer directory export failed:', error);
+      console.error('[GERAK] Customer directory export failed:', error);
       showToast(`Couldn't create the ${format.toUpperCase()} file.`);
     } finally {
       setExportingFormat(null);

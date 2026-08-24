@@ -155,7 +155,7 @@ export function JubahCustomerDetailsSubTab({
       }
       showToast(`${format.toUpperCase()} downloaded.`);
     } catch (error) {
-      console.error('Customer details export failed:', error);
+      console.error('[GERAK] Customer details export failed:', error);
       showToast(`Couldn't create the ${format.toUpperCase()} file.`);
     } finally {
       setExporting(null);

@@ -122,9 +122,9 @@ export const DriversTab = forwardRef<DriversTabHandle, DriversTabProps>(function
       if (inserted?.id) {
         supabase.functions.invoke('send-staff-invite-email', { body: { inviteId: inserted.id } })
           .then(({ data, error: fnError }) => {
-            if (fnError || !data?.success) console.error('send-staff-invite-email failed:', fnError ?? data?.reason);
+            if (fnError || !data?.success) console.error('[GERAK] send-staff-invite-email failed:', fnError ?? data?.reason);
           })
-          .catch(err => console.error('send-staff-invite-email failed:', err));
+          .catch(err => console.error('[GERAK] send-staff-invite-email failed:', err));
       }
     }
   };

@@ -4,7 +4,7 @@ import { supabase } from './supabase';
 export const getAssignedDriverProfile = async (orderId: string): Promise<DigitalProfileData | null> => {
   const { data, error } = await supabase.rpc('get_assigned_driver_profile', { p_order_id: orderId });
   if (error) {
-    console.error('Unable to load assigned driver profile', error);
+    console.error('[GERAK] Unable to load assigned driver profile', error);
     return null;
   }
 

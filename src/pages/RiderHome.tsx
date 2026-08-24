@@ -211,9 +211,9 @@ export const RiderHome: React.FC = () => {
       const { data, error } = await supabase.functions.invoke('send-jubah-receipt-email', {
         body: { bookingId, stage },
       });
-      if (error || !data?.success) console.error('send-jubah-receipt-email failed:', error ?? data?.reason);
+      if (error || !data?.success) console.error('[GERAK] send-jubah-receipt-email failed:', error ?? data?.reason);
     } catch (err) {
-      console.error('send-jubah-receipt-email failed:', err);
+      console.error('[GERAK] send-jubah-receipt-email failed:', err);
     }
   };
 
