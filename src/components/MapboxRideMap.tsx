@@ -14,6 +14,10 @@ interface GoogleSuggestion {
   placeId:       string;
   mainText:      string;
   secondaryText: string;
+  // Only set for a Nominatim-sourced fallback suggestion — coordinates are
+  // already known from the search result itself, so selectPlace() can skip
+  // the Google Place Details round-trip for these.
+  coords?:       [number, number];
 }
 
 interface Props {
@@ -39,17 +43,32 @@ export const MapboxRideMap: React.FC<Props> = ({ campusCenter, onPickupChange, o
   const [locating,        setLocating]        = useState(false);
   const [searching,       setSearching]       = useState(false);
   const [searchError,     setSearchError]     = useState<string | null>(null);
+  const [locationNotice,  setLocationNotice]  = useState<string | null>(null);
+  const [mapError,        setMapError]        = useState(false);
 
   // ── Init map ────────────────────────────────────────────────────────────────
   useEffect(() => {
     if (!mapContainer.current || map.current) return;
-    map.current = new maplibregl.Map({
-      container: mapContainer.current,
-      style:     MAP_STYLE,
-      center:    campusCenter,
-      zoom:      13,
-    });
-    map.current.addControl(new maplibregl.NavigationControl(), 'bottom-right');
+    // WebGL unavailable/disabled (old device, some in-app browsers) can
+    // throw synchronously here, or the map can init but fail asynchronously
+    // (context lost, style load failure) — previously neither was caught,
+    // so "Search Map" mode just got stuck on the Suspense spinner forever
+    // with no indication to the rider to switch to Quick/Custom instead.
+    try {
+      map.current = new maplibregl.Map({
+        container: mapContainer.current,
+        style:     MAP_STYLE,
+        center:    campusCenter,
+        zoom:      13,
+      });
+      map.current.addControl(new maplibregl.NavigationControl(), 'bottom-right');
+      map.current.on('error', () => setMapError(true));
+    } catch {
+      // Deferred, not called directly in the effect body — same pattern
+      // used elsewhere in this codebase to avoid a synchronous
+      // setState-in-effect cascade.
+      setTimeout(() => setMapError(true), 0);
+    }
     return () => { map.current?.remove(); map.current = null; };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -81,6 +100,7 @@ export const MapboxRideMap: React.FC<Props> = ({ campusCenter, onPickupChange, o
 
     const drawRoute = async () => {
       let routeCoords: [number, number][] = [pickupCoords, destCoords];
+      let isRealRoute = false;
       try {
         const res  = await fetch(
           `${OSRM}/${pickupCoords[0]},${pickupCoords[1]};${destCoords[0]},${destCoords[1]}` +
@@ -90,6 +110,7 @@ export const MapboxRideMap: React.FC<Props> = ({ campusCenter, onPickupChange, o
         const route = json.routes?.[0];
         if (route?.geometry?.coordinates?.length) {
           routeCoords = route.geometry.coordinates;
+          isRealRoute = true;
           const info = {
             distanceKm: (route.distance / 1000).toFixed(1),
             durationMin: Math.ceil(route.duration / 60),
@@ -107,6 +128,10 @@ export const MapboxRideMap: React.FC<Props> = ({ campusCenter, onPickupChange, o
           type: 'geojson',
           data: { type: 'Feature', properties: {}, geometry: { type: 'LineString', coordinates: routeCoords } },
         });
+        // A failed/timed-out OSRM call falls back to a straight line —
+        // previously drawn identically to a real route, which could
+        // mislead a rider/driver into thinking it's the actual road path.
+        // Dashed + muted when it isn't real.
         m.addLayer({
           id: 'route-line-border', type: 'line', source: 'route',
           layout: { 'line-join': 'round', 'line-cap': 'round' },
@@ -115,7 +140,9 @@ export const MapboxRideMap: React.FC<Props> = ({ campusCenter, onPickupChange, o
         m.addLayer({
           id: 'route-line', type: 'line', source: 'route',
           layout: { 'line-join': 'round', 'line-cap': 'round' },
-          paint: { 'line-color': '#3b82f6', 'line-width': 4 },
+          paint: isRealRoute
+            ? { 'line-color': '#3b82f6', 'line-width': 4 }
+            : { 'line-color': '#94a3b8', 'line-width': 3, 'line-dasharray': [2, 2] },
         });
 
         const bounds = new maplibregl.LngLatBounds(routeCoords[0], routeCoords[0]);
@@ -133,11 +160,18 @@ export const MapboxRideMap: React.FC<Props> = ({ campusCenter, onPickupChange, o
   const locateUser = () => {
     if (!navigator.geolocation) return;
     setLocating(true);
+    setLocationNotice(null);
     navigator.geolocation.getCurrentPosition(
-      async ({ coords: { longitude, latitude } }) => {
+      async ({ coords: { longitude, latitude, accuracy } }) => {
         const coords: [number, number] = [longitude, latitude];
         placePickupMarker(coords);
         map.current?.flyTo({ center: coords, zoom: 15 });
+        // A cell/wifi-based fix (no clear sky view, indoors) can be 500m+
+        // off — previously used as-is with no indication to the rider that
+        // the pin might be wrong.
+        if (accuracy && accuracy > 100) {
+          setLocationNotice('Your location may be inaccurate — drag the pin to adjust if needed.');
+        }
         try {
           const res  = await fetch(
             `${NOMINATIM}/reverse?lat=${latitude}&lon=${longitude}&format=json&accept-language=en`
@@ -153,6 +187,7 @@ export const MapboxRideMap: React.FC<Props> = ({ campusCenter, onPickupChange, o
       () => {
         placePickupMarker(campusCenter);
         onPickupChange('UMPSA Campus', campusCenter);
+        setLocationNotice("Couldn't get your location — using campus center. Tap the locate button to try again.");
         setLocating(false);
       },
       { timeout: 10000 },
@@ -170,10 +205,36 @@ export const MapboxRideMap: React.FC<Props> = ({ campusCenter, onPickupChange, o
       .addTo(map.current!);
   };
 
+  // Fallback forward-search when Google Places is unavailable (missing key,
+  // quota exceeded, network error) — same Nominatim instance already used
+  // for reverse-geocoding the current-location pin, just the other
+  // direction. Degrades destination search instead of breaking it outright.
+  const searchNominatim = async (q: string) => {
+    try {
+      const res  = await fetch(
+        `${NOMINATIM}/search?q=${encodeURIComponent(q)}&format=json&limit=5&countrycodes=my&accept-language=en`
+      );
+      const json = await res.json();
+      const raw: GoogleSuggestion[] = (Array.isArray(json) ? json : []).map((r: any) => ({
+        placeId:       String(r.place_id ?? r.osm_id ?? r.lon + ',' + r.lat),
+        mainText:      (r.display_name as string ?? '').split(',')[0] ?? r.display_name ?? '',
+        secondaryText: (r.display_name as string ?? '').split(',').slice(1).join(',').trim(),
+        coords:        [Number(r.lon), Number(r.lat)] as [number, number],
+      }));
+      setSuggestions(raw);
+      setShowSuggestions(raw.length > 0);
+      setSearchError(raw.length === 0 ? 'No results' : null);
+    } catch {
+      setSuggestions([]);
+      setSearchError('Search unavailable right now.');
+    }
+    setSearching(false);
+  };
+
   // ── Google Places autocomplete ────────────────────────────────────────────────
   const searchPlaces = async (q: string) => {
     setSearchError(null);
-    if (!GOOGLE_KEY) { setSearchError('API key missing'); return; }
+    if (!GOOGLE_KEY) { await searchNominatim(q); return; }
     setSearching(true);
     try {
       const res  = await fetch(PLACES_AUTO, {
@@ -195,28 +256,44 @@ export const MapboxRideMap: React.FC<Props> = ({ campusCenter, onPickupChange, o
         }),
       });
       const json = await res.json();
-      if (json.error) { setSearchError(`API error: ${json.error.message}`); setSearching(false); return; }
+      if (json.error) { await searchNominatim(q); return; }
       const raw: GoogleSuggestion[] = (json.suggestions ?? []).map((s: any) => ({
         placeId:       s.placePrediction?.placeId ?? '',
         mainText:      s.placePrediction?.structuredFormat?.mainText?.text ?? s.placePrediction?.text?.text ?? '',
         secondaryText: s.placePrediction?.structuredFormat?.secondaryText?.text ?? '',
       })).filter((s: GoogleSuggestion) => s.placeId);
+      if (raw.length === 0) { await searchNominatim(q); return; }
       setSuggestions(raw);
-      setShowSuggestions(raw.length > 0);
-      if (raw.length === 0) setSearchError('No results');
-    } catch (e: any) {
-      setSearchError(e?.message ?? 'Network error');
-      setSuggestions([]);
+      setShowSuggestions(true);
+      setSearching(false);
+    } catch {
+      await searchNominatim(q);
     }
-    setSearching(false);
   };
 
-  // ── Select a Google Place as destination ─────────────────────────────────────
+  // ── Select a place as destination (Google or Nominatim-sourced) ──────────────
   const selectPlace = async (suggestion: GoogleSuggestion) => {
-    if (!GOOGLE_KEY) return;
     const label = suggestion.mainText + (suggestion.secondaryText ? `, ${suggestion.secondaryText}` : '');
     setQuery(label);
     setShowSuggestions(false);
+
+    const placeMarker = (coords: [number, number]) => {
+      setDestCoords(coords);
+      onDestinationChange(label, coords);
+      if (destMarker.current) destMarker.current.remove();
+      const el = Object.assign(document.createElement('div'), {
+        className: 'w-4 h-4 rounded-full bg-red-500 border-2 border-white shadow-md',
+      });
+      destMarker.current = new maplibregl.Marker({ element: el })
+        .setLngLat(coords)
+        .addTo(map.current!);
+    };
+
+    // Nominatim fallback suggestions already carry coordinates — no
+    // separate details lookup needed (and no Google key required either).
+    if (suggestion.coords) { placeMarker(suggestion.coords); return; }
+
+    if (!GOOGLE_KEY) return;
     setSearching(true);
     try {
       const res  = await fetch(
@@ -227,18 +304,7 @@ export const MapboxRideMap: React.FC<Props> = ({ campusCenter, onPickupChange, o
       const lat: number = json.location?.latitude;
       const lng: number = json.location?.longitude;
       if (!lat || !lng) { setSearching(false); return; }
-
-      const coords: [number, number] = [lng, lat];
-      setDestCoords(coords);
-      onDestinationChange(label, coords);
-
-      if (destMarker.current) destMarker.current.remove();
-      const el = Object.assign(document.createElement('div'), {
-        className: 'w-4 h-4 rounded-full bg-red-500 border-2 border-white shadow-md',
-      });
-      destMarker.current = new maplibregl.Marker({ element: el })
-        .setLngLat(coords)
-        .addTo(map.current!);
+      placeMarker([lng, lat]);
     } catch { /* keep existing pins */ }
     setSearching(false);
   };
@@ -288,6 +354,9 @@ export const MapboxRideMap: React.FC<Props> = ({ campusCenter, onPickupChange, o
         {searchError && !showSuggestions && (
           <p className="text-xs text-red-500 font-normal px-1 mt-1">{searchError}</p>
         )}
+        {locationNotice && (
+          <p className="text-xs text-amber-600 font-normal px-1 mt-1">{locationNotice}</p>
+        )}
 
         {/* Suggestions dropdown */}
         {showSuggestions && suggestions.length > 0 && (
@@ -313,6 +382,12 @@ export const MapboxRideMap: React.FC<Props> = ({ campusCenter, onPickupChange, o
       {/* Map */}
       <div className="relative rounded-2xl overflow-hidden border border-slate-100" style={{ height: 260 }}>
         <div ref={mapContainer} className="w-full h-full" />
+        {mapError && (
+          <div className="absolute inset-0 z-10 bg-white flex flex-col items-center justify-center gap-1.5 px-6 text-center">
+            <p className="text-xs font-semibold text-slate-600">Map unavailable on this device</p>
+            <p className="text-xs text-slate-400 font-normal">Try Quick or Custom booking instead.</p>
+          </div>
+        )}
         <button type="button" onClick={locateUser} disabled={locating}
           className="absolute top-3 right-3 z-10 w-9 h-9 bg-white border border-slate-100 rounded-xl flex items-center justify-center text-slate-600 hover:text-primary transition active:scale-90 disabled:opacity-50"
         >
