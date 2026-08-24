@@ -3,7 +3,6 @@ import { AppProvider, useApp } from './context/AppContext';
 import { Header } from './components/Header';
 import { BottomNav } from './components/BottomNav';
 import { ConfirmModal } from './components/ConfirmModal';
-import { UpdatePrompt } from './components/UpdatePrompt';
 // Critical path — loaded immediately
 import { SplashScreen } from './pages/SplashScreen';
 import { Login } from './pages/Login';
@@ -405,7 +404,6 @@ function App() {
   return (
     <AppProvider>
       <InstallPrompt />
-      <UpdatePrompt />
       <SwipeBackGesture>
         <AppContent />
       </SwipeBackGesture>

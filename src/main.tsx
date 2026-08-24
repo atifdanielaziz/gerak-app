@@ -50,6 +50,9 @@ if ('serviceWorker' in navigator) {
       });
   });
 
-  // The controllerchange -> reload prompt lives in <UpdatePrompt /> (App.tsx)
-  // now, as an in-app drawer instead of a blocking window.confirm().
+  // No reload prompt — sw.js's skipWaiting()+clients.claim() already
+  // activates a new version in the background on every deploy. An
+  // already-open tab keeps running its old JS until its next natural
+  // reload/navigation, at which point it picks up the new version
+  // automatically; nothing here needs to interrupt the user for that.
 }
