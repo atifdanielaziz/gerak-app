@@ -10,7 +10,7 @@ import {
   FileImage, ShieldCheck,
   CalendarDays, Upload, Eye, ArrowLeftRight, GraduationCap,
   ChevronLeft, Check, TrendingUp, Bike,
-  Bell, User, Ban, History, Minus, Plus,
+  Bell, User, Ban, History, ChevronDown,
 } from 'lucide-react';
 import { JubahBannerSubTab } from './admin/jubah/JubahBannerSubTab';
 import { JubahPriceSubTab } from './admin/jubah/JubahPriceSubTab';
@@ -791,20 +791,20 @@ export const AdminHome: React.FC = () => {
             {/* Overview stats — computed client-side from jubahBookings, already
                 loaded for the Customer Directory below; no extra query. */}
             <div className={`bg-white border border-slate-100 rounded-3xl flex flex-col ${jubahOverviewCollapsed ? 'p-3.5 gap-0' : 'p-4 gap-4'}`}>
-              <div className="flex items-center justify-between">
+              <button
+                type="button"
+                onPointerDown={e => { e.preventDefault(); setJubahOverviewCollapsed(v => !v); }}
+                aria-label={jubahOverviewCollapsed ? 'Show overview stats' : 'Hide overview stats'}
+                className="w-full flex items-center justify-between gap-3 active:scale-[0.99] transition-transform transform-gpu"
+              >
                 <h3 className="text-sm font-semibold text-slate-700 flex items-center gap-1.5">
                   <BarChart3 className="w-4 h-4 text-slate-400" /> Overview ({jubahUniversityLabel})
                 </h3>
-                <button
-                  type="button"
-                  onPointerDown={e => { e.preventDefault(); setJubahOverviewCollapsed(v => !v); }}
-                  aria-label={jubahOverviewCollapsed ? 'Expand overview' : 'Minimize overview'}
-                  title={jubahOverviewCollapsed ? 'Expand overview' : 'Minimize overview'}
-                  className="w-7 h-7 flex items-center justify-center rounded-full bg-slate-100 text-slate-500 active:scale-90 transition-transform shrink-0"
-                >
-                  {jubahOverviewCollapsed ? <Plus className="w-3.5 h-3.5" /> : <Minus className="w-3.5 h-3.5" />}
-                </button>
-              </div>
+                <span className="flex items-center gap-1.5 bg-red-50 border border-red-100 text-red-600 text-xs font-bold px-3 py-1.5 rounded-full shrink-0">
+                  {jubahOverviewCollapsed ? 'View Stats' : 'Hide Stats'}
+                  <ChevronDown className={`w-3.5 h-3.5 transition-transform ${jubahOverviewCollapsed ? '' : 'rotate-180'}`} />
+                </span>
+              </button>
 
               {!jubahOverviewCollapsed && (<>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
