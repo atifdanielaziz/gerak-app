@@ -3,7 +3,7 @@ import { supabase } from '../../../lib/supabase';
 import {
   BarChart3, Car, Clock, Trash2,
   Search, RefreshCw, X, TrendingUp, Copy, Check, ChevronDown,
-  ClipboardList, CircleDashed, CircleCheck, CircleX,
+  ClipboardList, CircleDashed, CircleCheck, CircleX, Venus,
 } from 'lucide-react';
 import { useApp } from '../../../context/AppContext';
 import { NativeSelect } from '../../../components/NativeSelect';
@@ -28,6 +28,7 @@ interface RideOrder {
   notes: string;
   status: string;
   cancel_reason: string | null;
+  preferred_driver_gender: string | null;
   book_mode: string | null;
   driver_id: string | null;
   driver_name: string | null;
@@ -202,7 +203,7 @@ export const OrdersTab = forwardRef<OrdersTabHandle, OrdersTabProps>(function Or
     if (!opts?.silent) setLoading(true);
     const { data } = await supabase
       .from('ride_orders')
-      .select('id,customer_name,campus,date,time,pickup,destination,passengers,contact,fare,night_charge,notes,status,cancel_reason,book_mode,driver_id,driver_name,driver_contact,created_at,accepted_at')
+      .select('id,customer_name,campus,date,time,pickup,destination,passengers,contact,fare,night_charge,notes,status,cancel_reason,preferred_driver_gender,book_mode,driver_id,driver_name,driver_contact,created_at,accepted_at')
       .eq('campus', campusView)
       .order('created_at', { ascending: false });
 
@@ -458,7 +459,16 @@ export const OrdersTab = forwardRef<OrdersTabHandle, OrdersTabProps>(function Or
                         <span className="font-semibold text-slate-700">{fmtCreated(order.created_at).date}</span>
                         <br /><span className="text-slate-400">{fmtCreated(order.created_at).time}</span>
                       </td>
-                      <td className="py-2.5 pr-4 font-semibold text-slate-800 truncate">{order.customer_name}</td>
+                      <td className="py-2.5 pr-4 font-semibold text-slate-800 truncate">
+                        <span className="flex items-center gap-1.5">
+                          {order.customer_name}
+                          {order.preferred_driver_gender === 'female' && (
+                            <span className="inline-flex items-center gap-0.5 bg-pink-50 border border-pink-100 text-pink-600 text-[9px] font-bold px-1.5 py-0.5 rounded-full shrink-0">
+                              <Venus className="w-2.5 h-2.5" /> Preferred
+                            </span>
+                          )}
+                        </span>
+                      </td>
                       <td className="py-2.5 pr-4 text-slate-500 truncate">{order.contact}</td>
                       <td className="py-2.5 pr-4 text-slate-500">
                         <div className="flex items-center gap-1 min-w-0">
@@ -558,9 +568,16 @@ export const OrdersTab = forwardRef<OrdersTabHandle, OrdersTabProps>(function Or
                   <span className="inline-flex items-center gap-1 bg-slate-50 border border-slate-100 rounded-md px-1.5 py-0.5 text-[10px] font-semibold text-slate-500">
                     <Car className="w-3 h-3" /> Gerak
                   </span>
-                  <span className={`text-[10px] font-semibold uppercase tracking-wide px-2 py-0.5 rounded-full border ${STATUS_COLORS[order.status]}`}>
-                    {order.status.replace('_', ' ')}
-                  </span>
+                  <div className="flex items-center gap-1.5">
+                    {order.preferred_driver_gender === 'female' && (
+                      <span className="inline-flex items-center gap-0.5 bg-pink-50 border border-pink-100 text-pink-600 text-[9px] font-bold px-1.5 py-0.5 rounded-full shrink-0">
+                        <Venus className="w-2.5 h-2.5" /> Preferred
+                      </span>
+                    )}
+                    <span className={`text-[10px] font-semibold uppercase tracking-wide px-2 py-0.5 rounded-full border ${STATUS_COLORS[order.status]}`}>
+                      {order.status.replace('_', ' ')}
+                    </span>
+                  </div>
                 </div>
                 <div>
                   <p className="text-sm font-semibold text-slate-800 truncate">{order.destination}</p>

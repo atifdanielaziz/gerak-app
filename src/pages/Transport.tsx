@@ -7,7 +7,7 @@ const MapboxRideMap = lazy(() => import('../components/MapboxRideMap').then(m =>
 import {
   Map, List, PencilLine, Car, PlaneTakeoff,
   Info, CheckCircle2, RotateCcw, Clock, CalendarDays, ClipboardList, X,
-  ArrowUpDown, History, MoreVertical,
+  ArrowUpDown, History, MoreVertical, Venus,
 } from 'lucide-react';
 
 // Mirrors MapboxRideMap.tsx's own formatDuration — duplicated rather than
@@ -252,6 +252,7 @@ export const Transport: React.FC = () => {
   const [passengers, setPassengers] = useState(1);
   const [contact,    setContact]    = useState(user?.phone ?? '');
   const [notes,      setNotes]      = useState('');
+  const [preferFemaleDriver, setPreferFemaleDriver] = useState(false);
 
   // Pre-fill contact when user logs in mid-session
   useEffect(() => {
@@ -430,6 +431,10 @@ export const Transport: React.FC = () => {
       pickup_lng:      bookMode === 'map' && pickupPin ? pickupPin.coords[0] : null,
       destination_lat: bookMode === 'map' && destPin   ? destPin.coords[1]   : null,
       destination_lng: bookMode === 'map' && destPin   ? destPin.coords[0]   : null,
+      // Only ever set from a female customer's own toggle below — never
+      // trust it if the gate condition somehow doesn't hold (e.g. stale
+      // state after a role/account switch mid-session).
+      preferred_driver_gender: user.gender === 'female' && preferFemaleDriver ? 'female' : null,
     };
 
     const { data: { user: authUser } } = await supabase.auth.getUser();
@@ -1114,6 +1119,28 @@ export const Transport: React.FC = () => {
               autoComplete="tel"
             />
           </div>
+
+          {/* Prefer a female driver — only shown to a customer whose own
+              profile is set to female; matching is enforced server-side
+              (RLS + accept_ride_order), this toggle just sets the flag. */}
+          {user.gender === 'female' && (
+            <button
+              type="button"
+              onPointerDown={e => { e.preventDefault(); setPreferFemaleDriver(v => !v); }}
+              className="w-full flex items-center gap-3 rounded-2xl border border-red-100 bg-red-50 px-4 py-3 text-left transition-transform transform-gpu active:scale-[0.99]"
+            >
+              <div className="w-9 h-9 rounded-xl bg-white border border-red-100 flex items-center justify-center shrink-0">
+                <Venus className="w-4 h-4 text-primary" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-xs font-bold text-red-900 m-0">Prefer a female driver</p>
+                <p className="text-[10.5px] text-red-600 font-normal mt-0.5 leading-snug">Only female drivers on campus can accept. May take longer to match.</p>
+              </div>
+              <div className={`w-10 h-6 rounded-full shrink-0 relative transition-colors ${preferFemaleDriver ? 'bg-primary' : 'bg-slate-200'}`}>
+                <div className={`w-[18px] h-[18px] rounded-full bg-white absolute top-0.5 shadow transition-transform ${preferFemaleDriver ? 'translate-x-[19px]' : 'translate-x-0.5'}`} />
+              </div>
+            </button>
+          )}
 
           {/* Remark */}
           <div className="flex flex-col gap-0.5">

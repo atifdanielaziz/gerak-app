@@ -7,7 +7,7 @@ import {
   Camera, Car, Upload, FileImage,
   ShieldCheck, ShieldOff, AlertTriangle, Clock, RefreshCw,
   Headset, Languages, Moon, FileText, Lock, Info, Star, Share2,
-  Wallet, MessageSquareText, User, ContactRound,
+  Wallet, MessageSquareText, User, ContactRound, Mars, Venus,
 } from 'lucide-react';
 import { DigitalProfileCard } from '../components/DigitalProfileCard';
 
@@ -43,6 +43,7 @@ export const Profile: React.FC = () => {
   const [draftMatric, setDraftMatric]     = useState('');
   const [draftEmail, setDraftEmail]       = useState('');
   const [draftPhone, setDraftPhone]       = useState('');
+  const [draftGender, setDraftGender]     = useState<'male' | 'female' | ''>('');
   const [draftVehicle, setDraftVehicle]   = useState('');
   const [draftPlate, setDraftPlate]       = useState('');
   const [draftIcNumber, setDraftIcNumber] = useState('');
@@ -105,6 +106,7 @@ export const Profile: React.FC = () => {
     setDraftMatric(user.matricNo);
     setDraftEmail(user.email);
     setDraftPhone(user.phone);
+    setDraftGender(user.gender);
     setDraftVehicle(user.vehicle);
     setDraftPlate(user.plateNumber);
     setDraftIcNumber(user.icNumber ?? '');
@@ -150,6 +152,14 @@ export const Profile: React.FC = () => {
     if (err) { setFieldErrors(prev => ({ ...prev, [field]: err })); return; }
     setFieldErrors(prev => ({ ...prev, [field]: '' }));
     if (Object.keys(updates).length) await updateProfile(updates);
+  };
+
+  // Separate from autoSave() — that's built around onBlur of a text input;
+  // this is a two-option selector that should persist the moment it's
+  // tapped, same as Register.tsx's own gender picker.
+  const saveGender = async (value: 'male' | 'female') => {
+    setDraftGender(value);
+    await updateProfile({ gender: value });
   };
 
   const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -435,6 +445,27 @@ export const Profile: React.FC = () => {
               className="mt-1 w-full bg-transparent text-sm font-normal text-slate-700 focus:outline-none"
               placeholder="e.g. 012-34567890" />
             {fieldErrors.phone && <p className="text-xs text-danger font-semibold mt-1">{fieldErrors.phone}</p>}
+          </div>
+
+          {/* Gender — optional, self-serve; blank for any account created
+              before this shipped until the user sets it themselves here. */}
+          <div className="border border-slate-100 rounded-2xl px-4 py-3">
+            <span className="text-xs font-semibold text-slate-400 block">Gender</span>
+            <div className="grid grid-cols-2 gap-2 mt-2">
+              {([['male', 'Male', Mars], ['female', 'Female', Venus]] as const).map(([value, label, Icon]) => (
+                <button
+                  key={value}
+                  type="button"
+                  onPointerDown={e => { e.preventDefault(); saveGender(value); }}
+                  className={`flex items-center justify-center gap-1.5 py-2 rounded-xl border transition-transform transform-gpu active:scale-[0.99] ${
+                    draftGender === value ? 'border-slate-900 bg-white' : 'border-slate-100 bg-white'
+                  }`}
+                >
+                  <Icon className={`w-3.5 h-3.5 ${draftGender === value ? 'text-slate-900' : 'text-slate-400'}`} />
+                  <span className={`text-xs font-bold ${draftGender === value ? 'text-slate-900' : 'text-slate-500'}`}>{label}</span>
+                </button>
+              ))}
+            </div>
           </div>
 
           {/* Email Address */}

@@ -49,6 +49,7 @@ export interface UserSession {
   phone: string;
   university: string;
   campus: string;
+  gender: 'male' | 'female' | '';
   gerakId: string;
   role: string;
   status: string;
@@ -152,12 +153,12 @@ interface AppContextType {
   switchToRiderMode: () => void;
   user: UserSession;
   login: (email: string, password: string) => Promise<{ error: string | null }>;
-  register: (name: string, matricNo: string, email: string, password: string, phone: string, university: string, campus: string, agreedToTerms: boolean) => Promise<{ error: string | null; needsConfirmation?: boolean }>;
+  register: (name: string, matricNo: string, email: string, password: string, phone: string, university: string, campus: string, gender: 'male' | 'female', agreedToTerms: boolean) => Promise<{ error: string | null; needsConfirmation?: boolean }>;
   loginWithOAuth: (provider: 'google' | 'apple') => Promise<void>;
   checkEmailRegistered: (email: string) => Promise<boolean>;
   completeOAuthProfile: (updates: { name: string; phone: string; university: string; campus: string; agreedToTerms: boolean; agreedToPrivacy: boolean }) => Promise<{ error: string | null }>;
   logout: () => void;
-  updateProfile: (updates: { name?: string; matricNo?: string; email?: string; phone?: string; vehicle?: string; plateNumber?: string; icNumber?: string; feeReceiptUrl?: string; avatarUrl?: string; campus?: string }) => Promise<{ error: string | null }>;
+  updateProfile: (updates: { name?: string; matricNo?: string; email?: string; phone?: string; vehicle?: string; plateNumber?: string; icNumber?: string; feeReceiptUrl?: string; avatarUrl?: string; campus?: string; gender?: 'male' | 'female' }) => Promise<{ error: string | null }>;
   refreshUserData: () => Promise<void>;
   receiptGateActive: boolean;
   isSheetOpen: boolean;
@@ -373,6 +374,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     phone: '',
     university: '',
     campus: '',
+    gender: '',
     gerakId: '',
     role: 'customer',
     status: 'active',
@@ -651,7 +653,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const loadProfile = async (userId: string) => {
-    const { data } = await supabase.from('profiles').select('id,name,matric_no,email,phone,university,campus,gerak_id,role,status,vehicle,plate_number,fee_receipt_url,fee_receipt_verified,fee_receipt_amount,fee_receipt_date,fee_receipt_expiry,fee_receipt_reject_reason,can_drive,can_rent,can_transport,ic_number,ic_url,license_url,docs_status,docs_reject_reason,receipt_gate_exempt,avatar_url').eq('id', userId).single();
+    const { data } = await supabase.from('profiles').select('id,name,matric_no,email,phone,university,campus,gender,gerak_id,role,status,vehicle,plate_number,fee_receipt_url,fee_receipt_verified,fee_receipt_amount,fee_receipt_date,fee_receipt_expiry,fee_receipt_reject_reason,can_drive,can_rent,can_transport,ic_number,ic_url,license_url,docs_status,docs_reject_reason,receipt_gate_exempt,avatar_url').eq('id', userId).single();
     if (data) {
       const role = data.role ?? 'customer';
       setUser({
@@ -661,6 +663,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         phone:         data.phone           ?? '',
         university:    data.university      ?? '',
         campus:        data.campus          ?? '',
+        gender:        data.gender          ?? '',
         gerakId:       data.gerak_id        ?? '',
         role,
         status:        data.status          ?? 'active',
@@ -760,13 +763,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return { error: null };
   };
 
-  const register = async (name: string, matricNo: string, email: string, password: string, phone: string, university: string, campus: string, agreedToTerms: boolean): Promise<{ error: string | null; needsConfirmation?: boolean }> => {
+  const register = async (name: string, matricNo: string, email: string, password: string, phone: string, university: string, campus: string, gender: 'male' | 'female', agreedToTerms: boolean): Promise<{ error: string | null; needsConfirmation?: boolean }> => {
     if (!agreedToTerms) return { error: 'Please agree to the Terms & Conditions and Privacy Policy.' };
     const { error } = await supabase.auth.signUp({
       email,
       password,
       options: {
-        data: { name, matric_no: matricNo.toUpperCase(), phone, university, campus },
+        data: { name, matric_no: matricNo.toUpperCase(), phone, university, campus, gender },
         emailRedirectTo: authRedirectUrl(),
       },
     });
@@ -786,7 +789,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
     const { data: { user: authUser } } = await supabase.auth.getUser();
     if (authUser) {
-      await supabase.from('profiles').update({ phone, university, campus, terms_accepted_at: new Date().toISOString() }).eq('id', authUser.id);
+      await supabase.from('profiles').update({ phone, university, campus, gender, terms_accepted_at: new Date().toISOString() }).eq('id', authUser.id);
       // handle_new_user() no longer applies a pending invite at raw signup
       // time (see 20260823160000_defer_invite_to_confirmed_login.sql) — it
       // always creates a plain customer profile now. This branch only runs
@@ -865,7 +868,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   };
 
-  const updateProfile = async (updates: { name?: string; matricNo?: string; email?: string; phone?: string; vehicle?: string; plateNumber?: string; icNumber?: string; feeReceiptUrl?: string; avatarUrl?: string; campus?: string }): Promise<{ error: string | null }> => {
+  const updateProfile = async (updates: { name?: string; matricNo?: string; email?: string; phone?: string; vehicle?: string; plateNumber?: string; icNumber?: string; feeReceiptUrl?: string; avatarUrl?: string; campus?: string; gender?: 'male' | 'female' }): Promise<{ error: string | null }> => {
     let { data: { user: authUser } } = await supabase.auth.getUser();
     if (!authUser) {
       const { data: refreshed } = await supabase.auth.refreshSession();
@@ -883,6 +886,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     if (updates.avatarUrl      !== undefined) row.avatar_url      = updates.avatarUrl;
     if (updates.feeReceiptUrl  !== undefined) row.fee_receipt_url = updates.feeReceiptUrl;
     if (updates.campus         !== undefined) row.campus          = updates.campus;
+    if (updates.gender         !== undefined) row.gender          = updates.gender;
     const { error } = await supabase.from('profiles').update(row).eq('id', authUser.id);
     if (error) return { error: error.message };
     setUser(prev => ({ ...prev, ...updates }));
@@ -930,7 +934,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setPageHistory([]);
     setActiveRole(null);
     setIsPreviewMode(false);
-    setUser({ name: '', matricNo: '', email: '', phone: '', university: '', campus: '', gerakId: '', role: 'customer', status: 'active', vehicle: '', plateNumber: '', feeReceiptUrl: '', feeReceiptVerified: false, feeReceiptAmount: '', feeReceiptDate: '', feeReceiptExpiry: '', feeReceiptRejectReason: '', canDrive: false, canRent: false, canTransport: false, icNumber: '', icUrl: '', licenseUrl: '', docsStatus: 'none', docsRejectReason: '', receiptGateExempt: false, avatarUrl: '', isLoggedIn: false });
+    setUser({ name: '', matricNo: '', email: '', phone: '', university: '', campus: '', gender: '', gerakId: '', role: 'customer', status: 'active', vehicle: '', plateNumber: '', feeReceiptUrl: '', feeReceiptVerified: false, feeReceiptAmount: '', feeReceiptDate: '', feeReceiptExpiry: '', feeReceiptRejectReason: '', canDrive: false, canRent: false, canTransport: false, icNumber: '', icUrl: '', licenseUrl: '', docsStatus: 'none', docsRejectReason: '', receiptGateExempt: false, avatarUrl: '', isLoggedIn: false });
     setActiveRide(null);
     setJubahBooking(null);
     _setCurrentPage('login');

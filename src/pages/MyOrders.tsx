@@ -29,6 +29,7 @@ interface RideOrder {
   aerbus_customer_time: string | null;
   status: string;
   cancel_reason: string | null;
+  preferred_driver_gender: string | null;
   driver_name: string | null;
   driver_contact: string | null;
   driver_vehicle: string | null;
@@ -229,6 +230,7 @@ export const MyOrders: React.FC = () => {
     return () => setSheetOpen(false);
   }, [sheetOrderId, receiptOrderId, setSheetOpen]);
   const [cancellingId, setCancellingId] = useState<string | null>(null);
+  const [expandingId, setExpandingId] = useState<string | null>(null);
   const prevStatuses                = useRef<Record<string, string>>({});
   const prevFares                   = useRef<Record<string, string>>({});
   // Deliberately impure — re-evaluated every render (forceTick below drives
@@ -401,6 +403,26 @@ export const MyOrders: React.FC = () => {
     }
   };
 
+  // Clears the customer's own gender preference so the ride is visible to
+  // every driver on campus again — customer_update_own_pending_ride_order
+  // (still own + still pending) is what actually authorises this write.
+  const handleExpandToAllDrivers = async (o: RideOrder) => {
+    if (expandingId) return;
+    setExpandingId(o.id);
+    const { error } = await supabase
+      .from('ride_orders')
+      .update({ preferred_driver_gender: null })
+      .eq('id', o.id)
+      .eq('status', 'pending');
+    setExpandingId(null);
+    if (error) {
+      showToast('Could not update your ride. Please try again.');
+    } else {
+      showToast('Opened up to all drivers on campus.');
+      load();
+    }
+  };
+
   const handleEdit = async (o: RideOrder) => {
     if (o.status === 'accepted') {
       showToast('A driver has already accepted your ride — it cannot be edited.');
@@ -525,6 +547,28 @@ export const MyOrders: React.FC = () => {
                   </p>
                 );
               })()}
+
+              {/* Female-driver preference, still unmatched after 5 min —
+                  shorter than pendingBanner's generic 20-minute warn (a
+                  gender-restricted pool is smaller, so the customer should
+                  hear about it sooner). Customer decides whether to expand;
+                  nothing auto-relaxes on its own. */}
+              {o.status === 'pending' && o.preferred_driver_gender === 'female' &&
+               (now - new Date(o.created_at).getTime()) / 60000 >= 5 && (
+                <div className="bg-white border border-slate-100 rounded-2xl p-3.5 flex flex-col -mt-1">
+                  <p className="text-xs font-bold text-slate-700 m-0">No female driver has accepted yet</p>
+                  <p className="text-[11px] text-slate-400 font-normal mt-0.5 leading-snug">
+                    Your ride is still waiting. You can open it up to any available driver on campus.
+                  </p>
+                  <button
+                    onClick={() => handleExpandToAllDrivers(o)}
+                    disabled={!!expandingId}
+                    className="w-full text-left text-xs font-bold text-primary py-2.5 border-t border-slate-100 mt-2 active:opacity-60 transition disabled:opacity-40"
+                  >
+                    {expandingId === o.id ? 'Expanding…' : 'Expand to all drivers'}
+                  </button>
+                </div>
+              )}
 
               {canAct(o) && (() => {
                 const cancellable = canCancel(o, now);

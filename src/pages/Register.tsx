@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
 import { supabase } from '../lib/supabase';
-import { ShieldAlert, User, Mail, Lock, Eye, EyeOff, Phone, ArrowRight, MapPin, IdCard, Car, X, Check, ChevronLeft, CheckCircle } from 'lucide-react';
+import { ShieldAlert, User, Mail, Lock, Eye, EyeOff, Phone, ArrowRight, MapPin, IdCard, Car, X, Check, ChevronLeft, CheckCircle, Mars, Venus } from 'lucide-react';
 import { NativeSelect } from '../components/NativeSelect';
 import { TermsOfService } from './TermsOfService';
 import { PrivacyPolicy } from './PrivacyPolicy';
@@ -44,6 +44,7 @@ export const Register: React.FC = () => {
   const [gerakId,    setGerakId]    = useState('');
   const [name,       setName]       = useState('');
   const [phone,      setPhone]      = useState('');
+  const [gender,     setGender]     = useState<'male' | 'female' | ''>('');
   const formatPhone = (val: string) => {
     const d = val.replace(/\D/g, '').slice(0, 11);
     if (d.length <= 3) return d;
@@ -116,7 +117,7 @@ export const Register: React.FC = () => {
   // Any edit anywhere dismisses whatever bubble is currently showing —
   // simplest reasonable "try again" signal, without wiring a clear call
   // into every individual field's onChange.
-  useEffect(() => { setFieldError(null); }, [university, campus, name, phone, email, password, confirmPassword, agreedToTerms, agreedToPrivacy]);
+  useEffect(() => { setFieldError(null); }, [university, campus, name, phone, gender, email, password, confirmPassword, agreedToTerms, agreedToPrivacy]);
 
   // Without this, a bubble for a field above the current scroll position
   // (e.g. University, right at the top) renders completely off-screen —
@@ -139,6 +140,7 @@ export const Register: React.FC = () => {
     if (!/^\d{10,15}$/.test(phone.replace(/[\s\-+]/g, ''))) {
       setFieldError({ field: 'phone', message: 'Please enter a valid phone number.' }); return;
     }
+    if (!gender) { setFieldError({ field: 'gender', message: 'Please select your gender.' }); return; }
     if (!email.trim()) { setFieldError({ field: 'email', message: 'Please fill out this field.' }); return; }
     if (!password) { setFieldError({ field: 'password', message: 'Please fill out this field.' }); return; }
     if (password.length < 6) { setFieldError({ field: 'password', message: 'Password must be at least 6 characters.' }); return; }
@@ -150,7 +152,7 @@ export const Register: React.FC = () => {
     setFieldError(null);
     setLoading(true);
     setError('');
-    const { error: authError, needsConfirmation: pendingConfirmation } = await register(name, '', email, password, phone, effectiveUniversity, effectiveCampus, agreedToTerms && agreedToPrivacy);
+    const { error: authError, needsConfirmation: pendingConfirmation } = await register(name, '', email, password, phone, effectiveUniversity, effectiveCampus, gender as 'male' | 'female', agreedToTerms && agreedToPrivacy);
     setLoading(false);
     if (pendingConfirmation) {
       setNeedsConfirmation(true);
@@ -334,6 +336,29 @@ export const Register: React.FC = () => {
               />
             </div>
             {fieldError?.field === 'phone' && <FieldBubble message={fieldError.message} />}
+          </div>
+
+          {/* Gender */}
+          <div className="flex flex-col gap-1" data-field="gender">
+            <label className="text-xs font-semibold text-slate-400 pl-1">Gender</label>
+            <div className="grid grid-cols-2 gap-2">
+              {([['male', 'Male', Mars], ['female', 'Female', Venus]] as const).map(([value, label, Icon]) => (
+                <button
+                  key={value}
+                  type="button"
+                  onPointerDown={e => { e.preventDefault(); setGender(value); }}
+                  className={`flex flex-col items-center gap-1.5 py-3 rounded-xl border transition-transform transform-gpu active:scale-[0.99] ${
+                    gender === value ? 'border-slate-900 bg-white' : 'border-slate-100 bg-white'
+                  }`}
+                >
+                  <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${gender === value ? 'bg-slate-900' : 'bg-slate-50'}`}>
+                    <Icon className={`w-4 h-4 ${gender === value ? 'text-white' : 'text-slate-400'}`} />
+                  </div>
+                  <span className={`text-xs font-bold ${gender === value ? 'text-slate-900' : 'text-slate-500'}`}>{label}</span>
+                </button>
+              ))}
+            </div>
+            {fieldError?.field === 'gender' && <FieldBubble message={fieldError.message} />}
           </div>
 
           {/* Email */}
