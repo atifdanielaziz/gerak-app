@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <!-- Design 18: Dark Navy Slate + Shield Badge + Red Speed Wings -->
+  <rect width="512" height="512" rx="120" fill="#0F172A"/>
+  <path d="M 256 100 C 340 100 370 130 370 210 C 370 310 290 380 256 412 C 222 380 142 310 142 210 C 142 130 172 100 256 100 Z" fill="none" stroke="#FFFFFF" stroke-width="16"/>
+  <g fill="none" stroke="#EF4444" stroke-width="48" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M 205 200 L 265 256 L 205 312" />
+    <path d="M 265 200 L 325 256 L 265 312" />
+  </g>
+</svg>

@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <!-- Design 16: Interlocking 'g' Monogram + Forward Arrow -->
+  <rect width="512" height="512" rx="120" fill="#EF4444"/>
+  <g fill="none" stroke="#FFFFFF" stroke-width="52" stroke-linecap="round" stroke-linejoin="round">
+    <circle cx="230" cy="220" r="70"/>
+    <path d="M 300 220 L 300 300 C 300 360 250 380 200 380 C 150 380 130 350 130 330" />
+    <path d="M 270 220 L 370 220 L 320 170" stroke-width="46"/>
+    <path d="M 370 220 L 320 270" stroke-width="46"/>
+  </g>
+</svg>

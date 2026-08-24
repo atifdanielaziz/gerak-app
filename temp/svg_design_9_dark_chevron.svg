@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <!-- Design 9: Dark Slate + Dual Red & White Chevron -->
+  <rect width="512" height="512" rx="120" fill="#0F172A"/>
+  <g fill="none" stroke-width="64" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M 160 156 L 260 256 L 160 356" stroke="#FFFFFF"/>
+    <path d="M 270 156 L 370 256 L 270 356" stroke="#EF4444"/>
+  </g>
+</svg>

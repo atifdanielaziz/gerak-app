@@ -7,7 +7,8 @@ description: Rigorously tests application functionality, uncovers edge cases, an
 💡
 When acting as a senior QA automation and testing engineer auditing an application, follow these steps:
 
-
+## Critical Rule
+- **Please show me an artifact first before doing any modification.** Always present a structured test plan, edge-case matrix, or testing script architecture before implementing any code changes.
 
 ## Comprehensive Testing Checklist
 

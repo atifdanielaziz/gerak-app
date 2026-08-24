@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <!-- Design 2: Aerodynamic Speed Chevrons on Gerak Red Squircle -->
+  <rect width="512" height="512" rx="120" fill="#EF4444"/>
+  <g fill="#FFFFFF">
+    <!-- Top Speed Wing -->
+    <path d="M 130 150 C 130 140 140 135 150 140 L 250 200 C 310 236 365 250 410 254 C 418 255 418 261 410 262 C 340 270 280 290 220 340 L 150 400 C 140 408 130 400 130 390 L 130 370 C 180 320 230 280 310 256 C 230 232 180 190 130 170 Z"/>
+    <!-- Parallel Inner Chevron Accent -->
+    <path d="M 230 140 C 255 140 280 150 305 168 C 345 196 380 230 400 250 C 350 240 310 215 270 185 C 255 172 240 156 230 140 Z"/>
+    <path d="M 230 372 C 255 372 280 362 305 344 C 345 316 380 282 400 262 C 350 272 310 297 270 327 C 255 340 240 356 230 372 Z"/>
+  </g>
+</svg>

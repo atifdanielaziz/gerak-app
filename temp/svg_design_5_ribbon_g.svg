@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <!-- Design 5: Continuous Ribbon Lowercase 'g' Monogram -->
+  <rect width="512" height="512" rx="120" fill="#EF4444"/>
+  <g fill="none" stroke="#FFFFFF" stroke-width="50" stroke-linecap="round" stroke-linejoin="round">
+    <circle cx="256" cy="230" r="75"/>
+    <path d="M 331 230 L 331 310 C 331 365 285 390 225 390 C 175 390 145 365 145 340" />
+    <path d="M 331 290 L 395 290 L 425 290" stroke-width="44"/>
+  </g>
+</svg>

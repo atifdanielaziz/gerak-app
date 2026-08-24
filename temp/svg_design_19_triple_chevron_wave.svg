@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <!-- Design 19: Triple Chevron Speed Wave -->
+  <rect width="512" height="512" rx="120" fill="#EF4444"/>
+  <g fill="none" stroke="#FFFFFF" stroke-width="48" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M 130 176 L 200 256 L 130 336" />
+    <path d="M 215 176 L 285 256 L 215 336" />
+    <path d="M 300 176 L 370 256 L 300 336" stroke-width="54"/>
+  </g>
+</svg>

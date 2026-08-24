@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <!-- Design 13: Dark Navy Slate + Dual-Tone (White & Red) Speed Chevrons -->
+  <rect width="512" height="512" rx="120" fill="#0F172A"/>
+  <g fill="none" stroke-width="64" stroke-linecap="round" stroke-linejoin="round">
+    <!-- Outer/Left Chevron in White -->
+    <path d="M 150 156 L 250 256 L 150 356" stroke="#FFFFFF"/>
+    <!-- Inner/Right Chevron in Gerak Red -->
+    <path d="M 270 156 L 370 256 L 270 356" stroke="#EF4444"/>
+  </g>
+</svg>

@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <!-- Design 6: Diamond Speed Crest -->
+  <rect width="512" height="512" rx="120" fill="#EF4444"/>
+  <g transform="translate(256 256) rotate(45)">
+    <rect x="-130" y="-130" width="260" height="260" rx="60" fill="#FFFFFF"/>
+  </g>
+  <g fill="none" stroke="#EF4444" stroke-width="48" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M 215 190 L 280 256 L 215 322" />
+    <path d="M 275 190 L 340 256 L 275 322" stroke-width="40"/>
+  </g>
+</svg>

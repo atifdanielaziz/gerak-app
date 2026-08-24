@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <!-- Design 3: Precision Double Chevron (White Squircle + Red Logo) -->
+  <rect width="512" height="512" rx="120" fill="#FFFFFF"/>
+  <rect x="8" y="8" width="496" height="496" rx="112" fill="none" stroke="#EF4444" stroke-width="12" opacity="0.15"/>
+  <g fill="none" stroke="#EF4444" stroke-width="60" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M 160 156 L 260 256 L 160 356" />
+    <path d="M 260 156 L 360 256 L 260 356" />
+  </g>
+</svg>

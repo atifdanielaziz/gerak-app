@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <!-- Design 24: Glassmorphic Premium Red Squircle + Frosted Arrow -->
+  <defs>
+    <linearGradient id="bgGrad24" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#EF4444"/>
+      <stop offset="100%" stop-color="#991B1B"/>
+    </linearGradient>
+    <linearGradient id="glassGrad24" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FFFFFF" stop-opacity="0.95"/>
+      <stop offset="100%" stop-color="#FFFFFF" stop-opacity="0.80"/>
+    </linearGradient>
+    <filter id="glassShadow" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="8" stdDeviation="12" flood-color="#000000" flood-opacity="0.3"/>
+    </filter>
+  </defs>
+  <rect width="512" height="512" rx="120" fill="url(#bgGrad24)"/>
+  <g filter="url(#glassShadow)">
+    <path d="M 116 146 C 116 138 124 134 132 138 L 212 138 C 265 200 322 236 396 252 C 403 253 403 259 396 260 C 322 276 265 312 212 374 L 132 374 C 124 378 116 374 116 366 L 116 352 C 172 298 208 266 208 256 C 208 246 172 214 116 160 Z" fill="url(#glassGrad24)" stroke="#FFFFFF" stroke-width="4"/>
+    <path d="M 224 138 C 248 138 272 144 294 156 C 342 182 378 216 398 246 C 342 234 294 208 256 172 C 244 161 234 150 224 138 Z M 224 374 C 248 374 272 368 294 356 C 342 330 378 296 398 266 C 342 278 294 304 256 340 C 244 351 234 362 224 374 Z" fill="url(#bgGrad24)"/>
+  </g>
+</svg>
