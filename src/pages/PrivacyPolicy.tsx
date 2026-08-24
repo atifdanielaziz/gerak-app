@@ -21,15 +21,15 @@ export const PrivacyPolicy: React.FC = () => {
         </div>
         <div>
           <h2 className="text-base font-bold text-slate-800 m-0">Privacy Policy</h2>
-          <p className="text-xs text-slate-400 font-normal mt-0.5">Last updated: 30 July 2026</p>
+          <p className="text-xs text-slate-400 font-normal mt-0.5">Last updated: 24 August 2026</p>
         </div>
       </div>
 
       <Section title="1. Who we are">
         <p>
           Gerak ("Gerak", "we", "us", "our") operates a campus platform for students and staff at the universities
-          we serve — currently Universiti Malaysia Pahang Al-Sultan Abdullah (UMPSA), with more campuses planned —
-          covering campus ride-hailing ("Gerak Transport"), graduation robe booking and delivery ("Gerak Jubah"),
+          we serve — currently UMPSA, UiTM, UMK, UKM, UIAM, UUM, UniSZA, UTP, UPM, UM, and UPSI, with more campuses
+          planned — covering campus ride-hailing ("Gerak Transport"), graduation robe booking and delivery ("Gerak Jubah"),
           and peer-to-peer vehicle rental ("Gerak Rental").
         </p>
         <p>
@@ -48,7 +48,7 @@ export const PrivacyPolicy: React.FC = () => {
       </Section>
 
       <Section title="2. What we collect">
-        <p><strong>Account &amp; identity:</strong> full name, matric number, IC/MyKad number (only where you provide one, or as part of a Jubah booking — see below), phone number, email address, university, faculty and campus.</p>
+        <p><strong>Account &amp; identity:</strong> full name, matric number, IC/MyKad number (only where you provide one, or as part of a Jubah booking — see below), phone number, email address, university, faculty, campus, and gender.</p>
         <p><strong>Verification documents:</strong> drivers and Jubah riders — a driving licence image, uploaded for admin review. Neither role is required to provide an IC for this.</p>
         <p><strong>Jubah booking data:</strong> robe type, chosen collection/postage method, delivery address (postage orders only), and uploaded academic documents (OSCAR, SKPG, convocation slip) required by your university.</p>
         <p><strong>Transport &amp; rental data:</strong> pickup/destination locations, ride notes, passenger count, vehicle details, booking dates and times.</p>
@@ -61,6 +61,7 @@ export const PrivacyPolicy: React.FC = () => {
         <p>To create and manage your account, verify your eligibility as a student or staff member of a university we serve, and match you with drivers, riders, or rental owners.</p>
         <p>To process payments and issue receipts for services you book.</p>
         <p>To verify driver and rider driving licences before granting them access to carry passengers or handle deliveries — this protects everyone using the platform.</p>
+        <p>Gender is used only to support an optional "prefer a female driver" matching preference for ride bookings — it is not used for any other purpose, and once set on your account it cannot be changed except by contacting us.</p>
         <p>To communicate booking updates, respond to support requests, and send service-related notifications.</p>
         <p>To detect and prevent fraud, abuse, or violations of our Terms of Service.</p>
       </Section>
@@ -98,8 +99,10 @@ export const PrivacyPolicy: React.FC = () => {
         <p>
           We retain account and booking data for as long as your account is active and as needed to meet legal,
           accounting, and dispute-resolution obligations. Verification documents (licence images) are retained
-          only as long as needed for your active driver/rider status. You can request deletion of your account and
-          associated data at any time from Profile → Delete Account, or by contacting us directly — see Section 9.
+          only as long as needed for your active driver/rider status. Monthly fee receipts for drivers/riders are
+          kept for 3 months after being replaced by a newer one, for accounting and dispute-resolution purposes,
+          then automatically removed. You can request deletion of your account and
+          associated data at any time from Profile → Delete Account, or by contacting us directly — see Section 12.
         </p>
       </Section>
 
