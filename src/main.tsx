@@ -50,16 +50,6 @@ if ('serviceWorker' in navigator) {
       });
   });
 
-  // sw.js calls skipWaiting()+clients.claim() on every install, so a new
-  // version activates almost immediately — but a tab that's already open
-  // keeps running its OLD JS bundle regardless, now against a service
-  // worker built for a possibly different one. controllerchange fires
-  // exactly at that mismatch (never on the page's own first load), so
-  // it's the one reliable point to nudge a reload rather than leaving a
-  // long-lived session silently stale indefinitely.
-  navigator.serviceWorker.addEventListener('controllerchange', () => {
-    if (window.confirm('A new version of Gerak is available. Reload now?')) {
-      window.location.reload();
-    }
-  });
+  // The controllerchange -> reload prompt lives in <UpdatePrompt /> (App.tsx)
+  // now, as an in-app drawer instead of a blocking window.confirm().
 }
