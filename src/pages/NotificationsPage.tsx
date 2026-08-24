@@ -43,7 +43,7 @@ export const NotificationsPage: React.FC = () => {
 
       {/* Page Header */}
       <div className="mt-4 flex items-center justify-between pl-1">
-        <h2 className="text-base font-bold text-slate-800 flex items-center gap-2 m-0">
+        <h2 className="text-base font-semibold text-slate-800 flex items-center gap-2 m-0">
           <BellRing className="w-5 h-5 text-primary" />
           Campus Inbox
         </h2>
@@ -58,22 +58,22 @@ export const NotificationsPage: React.FC = () => {
       </div>
 
       {/* Notifications List */}
-      <div className="bg-white border border-slate-100 rounded-3xl p-5 flex flex-col gap-1">
-        {notifications.length === 0 ? (
-          <div className="text-center py-12 flex flex-col items-center justify-center gap-3">
-            <div className="w-12 h-12 bg-slate-50 border border-slate-100 rounded-full flex items-center justify-center text-slate-300">
-              <BellRing className="w-6 h-6" />
-            </div>
-            <p className="text-xs text-slate-400 italic font-normal">
-              No campus notifications. Your inbox is clean!
-            </p>
+      {notifications.length === 0 ? (
+        <div className="bg-white border border-slate-100 rounded-3xl p-5 text-center py-12 flex flex-col items-center justify-center gap-3">
+          <div className="w-12 h-12 bg-slate-50 border border-slate-100 rounded-full flex items-center justify-center text-slate-300">
+            <BellRing className="w-6 h-6" />
           </div>
-        ) : (
-          notifications.map((notif) => (
+          <p className="text-xs text-slate-400 italic font-normal">
+            No campus notifications. Your inbox is clean!
+          </p>
+        </div>
+      ) : (
+        <div className="flex flex-col gap-3">
+          {notifications.map((notif) => (
             <div
               key={notif.id}
-              className={`flex items-start gap-4 p-3 rounded-2xl transition hover:bg-slate-50 border border-transparent ${
-                !notif.isRead ? 'bg-primary-light/40 border-primary/5' : ''
+              className={`flex items-start gap-4 p-4 rounded-2xl border transition ${
+                !notif.isRead ? 'bg-primary-light/40 border-primary/10' : 'bg-white border-slate-100'
               }`}
             >
               {/* Icon Bubble */}
@@ -101,9 +101,9 @@ export const NotificationsPage: React.FC = () => {
                 <span className="w-2 h-2 rounded-full bg-primary shrink-0 self-center animate-pulse" />
               )}
             </div>
-          ))
-        )}
-      </div>
+          ))}
+        </div>
+      )}
 
       {/* Tip Banner */}
       <div className="bg-emerald-50 border border-emerald-100 rounded-2xl p-5 flex gap-3 text-emerald-800">

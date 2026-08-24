@@ -60,7 +60,7 @@ export function JubahQrButton({ canManage = false, showToast }: JubahQrButtonPro
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="w-7 h-7 flex items-center justify-center rounded-lg bg-slate-50 border border-slate-100 text-slate-500 active:scale-90 transition shrink-0"
+        className="w-11 h-11 flex items-center justify-center rounded-lg bg-slate-50 border border-slate-100 text-slate-500 active:scale-90 transition shrink-0"
       >
         <QrCode className="w-3.5 h-3.5" />
       </button>

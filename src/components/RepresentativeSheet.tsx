@@ -56,7 +56,7 @@ export const RepresentativeSheet: React.FC<Props> = ({
             <h3 className="text-base font-semibold text-slate-800 mt-0.5">{name}</h3>
           </div>
           <button onPointerDown={e => { e.preventDefault(); onClose(); }}
-            className="w-7 h-7 flex items-center justify-center rounded-full bg-slate-100 text-slate-500 active:scale-90 transition-transform">
+            className="w-11 h-11 flex items-center justify-center rounded-full bg-slate-100 text-slate-500 active:scale-90 transition-transform">
             <X className="w-4 h-4" />
           </button>
         </div>
@@ -73,7 +73,7 @@ export const RepresentativeSheet: React.FC<Props> = ({
                 <span className="text-sm font-semibold text-slate-800">{name}</span>
               </div>
               <button onPointerDown={e => { e.preventDefault(); copyValue(name, 'name'); }}
-                className="w-8 h-8 flex items-center justify-center rounded-lg text-slate-400 active:scale-90 transition-transform shrink-0">
+                className="w-11 h-11 flex items-center justify-center rounded-lg text-slate-400 active:scale-90 transition-transform shrink-0">
                 {copiedField === 'name' ? <Check className="w-4 h-4 text-emerald-500" /> : <Copy className="w-4 h-4" />}
               </button>
             </div>
@@ -109,14 +109,14 @@ export const RepresentativeSheet: React.FC<Props> = ({
                     target="_blank"
                     rel="noopener noreferrer"
                     onClick={e => e.stopPropagation()}
-                    className="w-8 h-8 flex items-center justify-center text-[#25D366] active:scale-90 transition-transform"
+                    className="w-11 h-11 flex items-center justify-center text-[#25D366] active:scale-90 transition-transform"
                   >
                     <WaIcon className="w-5 h-5" />
                   </a>
                 )}
                 {phone && (
                   <button onPointerDown={e => { e.preventDefault(); copyValue(phone, 'phone'); }}
-                    className="w-8 h-8 flex items-center justify-center rounded-lg text-slate-400 active:scale-90 transition-transform">
+                    className="w-11 h-11 flex items-center justify-center rounded-lg text-slate-400 active:scale-90 transition-transform">
                     {copiedField === 'phone' ? <Check className="w-4 h-4 text-emerald-500" /> : <Copy className="w-4 h-4" />}
                   </button>
                 )}

@@ -388,16 +388,9 @@ export const AcademicCalendar: React.FC = () => {
 
     return (
       <div className="flex flex-col h-full bg-white overflow-y-auto no-scrollbar">
-        <div className="mt-4 px-4 flex items-start gap-2">
-          <button
-            onClick={() => setSelectedDate(null)}
-            className="mt-0.5 w-7 h-7 flex items-center justify-center rounded-xl bg-slate-100 text-slate-500 active:scale-90 transition shrink-0">
-            <ChevronLeft className="w-4 h-4" />
-          </button>
-          <div>
-            <p className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest">Academic Calendar · Day Detail</p>
-            <h2 className="text-xl font-black text-slate-800">{formatDetailDate(selectedDate)}</h2>
-          </div>
+        <div className="mt-4 px-4">
+          <p className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest">Academic Calendar · Day Detail</p>
+          <h2 className="text-xl font-black text-slate-800">{formatDetailDate(selectedDate)}</h2>
         </div>
 
         <div className="px-4 pt-4 flex flex-col gap-4" style={{ paddingBottom: 'calc(6.5rem + env(safe-area-inset-bottom))' }}>
@@ -445,12 +438,12 @@ export const AcademicCalendar: React.FC = () => {
       {/* Month navigation */}
       <div className="flex items-center justify-between px-4 pb-2 shrink-0">
         <button onClick={prevMonth}
-          className="w-8 h-8 rounded-xl bg-slate-50 flex items-center justify-center text-slate-400 active:scale-90 transition">
+          className="w-11 h-11 rounded-xl bg-slate-50 flex items-center justify-center text-slate-400 active:scale-90 transition">
           <ChevronLeft className="w-4 h-4" />
         </button>
         <p className="text-sm font-semibold text-slate-700">{monthLabel()}</p>
         <button onClick={nextMonth}
-          className="w-8 h-8 rounded-xl bg-slate-50 flex items-center justify-center text-slate-400 active:scale-90 transition">
+          className="w-11 h-11 rounded-xl bg-slate-50 flex items-center justify-center text-slate-400 active:scale-90 transition">
           <ChevronRight className="w-4 h-4" />
         </button>
       </div>

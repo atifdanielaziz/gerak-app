@@ -1035,7 +1035,7 @@ export const Jubah: React.FC = () => {
                     className={`py-2 rounded-xl text-xs font-semibold border bg-white transition-transform active:scale-[0.99] active:bg-slate-50 ${
                       remark === r
                         ? 'border-slate-900 text-slate-900'
-                        : 'border-slate-200 text-slate-600 hover:bg-slate-50'
+                        : 'border-slate-100 text-slate-600 hover:bg-slate-50'
                     }`}
                   >
                     {r}
@@ -1076,7 +1076,7 @@ export const Jubah: React.FC = () => {
               </div>
             ) : <>
             {/* Deposit */}
-            <label className={`flex items-start gap-3 p-3.5 rounded-2xl border cursor-pointer transition ${paymentMode === 'deposit' ? 'border-slate-900' : 'border-slate-200 hover:bg-slate-50'}`}>
+            <label className={`flex items-start gap-3 p-3.5 rounded-2xl border cursor-pointer transition ${paymentMode === 'deposit' ? 'border-slate-900' : 'border-slate-100 hover:bg-slate-50'}`}>
               <input type="radio" name="paymentMode" value="deposit" checked={paymentMode === 'deposit'} onChange={() => setPaymentMode('deposit')} className="mt-0.5 accent-slate-900 shrink-0" />
               <div className="flex-1">
                 <span className={`text-xs font-semibold block ${paymentMode === 'deposit' ? 'text-slate-900' : 'text-slate-700'}`}>
@@ -1146,7 +1146,7 @@ export const Jubah: React.FC = () => {
             </label>
 
             {/* Full Pickup */}
-            <label className={`flex items-start gap-3 p-3.5 rounded-2xl border cursor-pointer transition ${paymentMode === 'pickup' ? 'border-slate-900' : 'border-slate-200 hover:bg-slate-50'}`}>
+            <label className={`flex items-start gap-3 p-3.5 rounded-2xl border cursor-pointer transition ${paymentMode === 'pickup' ? 'border-slate-900' : 'border-slate-100 hover:bg-slate-50'}`}>
               <input type="radio" name="paymentMode" value="pickup" checked={paymentMode === 'pickup'} onChange={() => setPaymentMode('pickup')} className="mt-0.5 accent-slate-900 shrink-0" />
               <div>
                 <span className={`text-xs font-semibold block ${paymentMode === 'pickup' ? 'text-slate-900' : 'text-slate-700'}`}>
@@ -1159,7 +1159,7 @@ export const Jubah: React.FC = () => {
             </label>
 
             {/* Postage with SM/SS zone toggle */}
-            <label className={`flex items-start gap-3 p-3.5 rounded-2xl border cursor-pointer transition ${paymentMode === 'postage' ? 'border-slate-900' : 'border-slate-200 hover:bg-slate-50'}`}>
+            <label className={`flex items-start gap-3 p-3.5 rounded-2xl border cursor-pointer transition ${paymentMode === 'postage' ? 'border-slate-900' : 'border-slate-100 hover:bg-slate-50'}`}>
               <input type="radio" name="paymentMode" value="postage" checked={paymentMode === 'postage'} onChange={() => setPaymentMode('postage')} className="mt-0.5 accent-slate-900 shrink-0" />
               <div className="flex-1">
                 <span className={`text-xs font-semibold block ${paymentMode === 'postage' ? 'text-slate-900' : 'text-slate-700'}`}>
@@ -1231,7 +1231,7 @@ export const Jubah: React.FC = () => {
                 type="button"
                 disabled={!selectedRiderId}
                 onPointerDown={e => { e.preventDefault(); setRiderProfileOpen(true); }}
-                className={`w-10 h-10 flex items-center justify-center rounded-xl border shrink-0 transition-transform active:scale-90 ${
+                className={`w-11 h-11 flex items-center justify-center rounded-xl border shrink-0 transition-transform active:scale-90 ${
                   selectedRiderId
                     ? 'bg-white border-slate-100 text-slate-500'
                     : 'bg-slate-50 border-slate-100 text-slate-300 cursor-not-allowed'
@@ -1305,7 +1305,7 @@ export const Jubah: React.FC = () => {
                     </label>
                     <button type="button"
                       onClick={() => sampleLoaded[field.id] ? setSamplePreview(sampleUrls[field.id]) : setFileError(`No sample uploaded for ${field.label} yet.`)}
-                      className={`w-6 h-6 flex items-center justify-center rounded-lg transition shrink-0 active:scale-90 ${sampleLoaded[field.id] ? 'text-blue-400' : 'text-slate-300'}`}>
+                      className={`w-11 h-11 flex items-center justify-center rounded-lg transition shrink-0 active:scale-90 ${sampleLoaded[field.id] ? 'text-blue-400' : 'text-slate-300'}`}>
                       <FileUser className="w-3.5 h-3.5" />
                     </button>
                   </div>
@@ -1367,13 +1367,13 @@ export const Jubah: React.FC = () => {
               </div>
             ) : combinedBlob ? (
               <button type="button" onClick={handleDownload}
-                className="w-full flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 active:scale-[0.99] text-white text-xs font-semibold py-3 rounded-xl shadow-md shadow-emerald-500/20 transition cursor-pointer">
+                className="w-full flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 active:scale-[0.99] text-white text-xs font-semibold py-3 rounded-xl transition cursor-pointer">
                 <Download className="w-4 h-4" />
                 Download Combined PDF
               </button>
             ) : (
               <button type="button" onClick={handleCombine}
-                className="w-full flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 active:scale-[0.99] text-white text-xs font-semibold py-3 rounded-xl shadow-md shadow-blue-500/20 transition cursor-pointer">
+                className="w-full flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 active:scale-[0.99] text-white text-xs font-semibold py-3 rounded-xl transition cursor-pointer">
                 <FileText className="w-4 h-4" />
                 Generate Combined PDF
               </button>
@@ -1462,7 +1462,7 @@ export const Jubah: React.FC = () => {
           <button
             type="submit"
             disabled={!paymentProof || booking}
-            className={`mx-auto flex items-center gap-2 text-white text-sm font-extrabold px-8 py-2.5 rounded-full transition-all duration-300 active:scale-95 ${
+            className={`mx-auto flex items-center gap-2 text-white text-sm font-semibold px-8 py-2.5 rounded-full transition-all duration-300 active:scale-95 ${
               paymentProof && !booking
                 ? 'bg-blue-600 hover:bg-blue-700 shadow-lg shadow-blue-500/50 ring-2 ring-blue-400/40 animate-pulse-glow cursor-pointer'
                 : 'bg-slate-200 text-slate-400 cursor-not-allowed shadow-none'
@@ -1490,7 +1490,7 @@ export const Jubah: React.FC = () => {
                   setCopied(true);
                   setTimeout(() => setCopied(false), 2000);
                 }}
-                className="w-7 h-7 flex items-center justify-center rounded-lg bg-white/20 hover:bg-white/30 active:scale-90 transition shrink-0"
+                className="w-11 h-11 flex items-center justify-center rounded-lg bg-white/20 hover:bg-white/30 active:scale-90 transition shrink-0"
               >
                 {copied ? <Check className="w-3.5 h-3.5 text-white" /> : <Copy className="w-3.5 h-3.5 text-white" />}
               </button>
@@ -1660,7 +1660,7 @@ export const Jubah: React.FC = () => {
             <div className="flex items-center justify-between px-5 pt-2 pb-4 shrink-0">
               <p className="text-sm font-semibold text-slate-800">Delivery Address</p>
               <button onClick={closeAddressSheet}
-                className="w-7 h-7 flex items-center justify-center rounded-full bg-slate-100 text-slate-500 active:scale-90 transition">
+                className="w-11 h-11 flex items-center justify-center rounded-full bg-slate-100 text-slate-500 active:scale-90 transition">
                 <X className="w-4 h-4" />
               </button>
             </div>
@@ -1739,7 +1739,7 @@ export const Jubah: React.FC = () => {
           <div className="relative w-full max-w-sm" onPointerDown={e => e.stopPropagation()}>
             <img src={samplePreview} alt="Sample document" className="w-full rounded-2xl object-contain max-h-[70dvh]" />
             <button onClick={() => setSamplePreview(null)}
-              className="absolute top-3 right-3 w-8 h-8 flex items-center justify-center rounded-full bg-black/50 text-white active:scale-90 transition">
+              className="absolute top-3 right-3 w-11 h-11 flex items-center justify-center rounded-full bg-black/50 text-white active:scale-90 transition">
               <X className="w-4 h-4" />
             </button>
           </div>

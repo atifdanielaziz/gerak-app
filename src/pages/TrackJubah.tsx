@@ -244,7 +244,7 @@ export const TrackJubah: React.FC = () => {
           <PackageSearch className="w-5 h-5 text-blue-500" />
         </div>
         <div>
-          <h2 className="text-xl font-bold m-0 text-slate-800">Track My Order</h2>
+          <h2 className="text-xl font-semibold m-0 text-slate-800">Track My Order</h2>
           <p className="text-xs text-slate-400 font-normal mt-0.5">
             Jubah Delivery Status
           </p>
@@ -341,7 +341,7 @@ export const TrackJubah: React.FC = () => {
                 <div className="flex items-start justify-between gap-2">
                   <div>
                     <p className="text-xs text-blue-500 font-semibold">{b.reference}</p>
-                    <h3 className="text-base font-bold text-slate-800 mt-0.5">{b.full_name}</h3>
+                    <h3 className="text-base font-semibold text-slate-800 mt-0.5">{b.full_name}</h3>
                     <p className="text-xs text-slate-400 font-normal mt-0.5">{b.remark} · {b.faculty} · UMPSA {b.campus}</p>
                   </div>
                   <span className={`text-xs font-semibold px-2.5 py-1 rounded-full border shrink-0 ${STATUS_STYLE[b.status] ?? 'bg-slate-50 border-slate-200 text-slate-400'}`}>
