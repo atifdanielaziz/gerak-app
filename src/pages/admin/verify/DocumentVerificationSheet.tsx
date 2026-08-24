@@ -10,6 +10,7 @@ type ReviewProfile = {
   role: string;
   campus: string;
   license_url: string | null;
+  license_storage_path: string | null;
   docs_status: string;
   docs_reject_reason: string | null;
 };
@@ -27,11 +28,12 @@ export function DocumentVerificationSheet({ userId, onClose, onUpdated, showToas
   const [submitting, setSubmitting] = useState(false);
   const [showReject, setShowReject] = useState(false);
   const [reason, setReason] = useState('');
+  const [viewingLicense, setViewingLicense] = useState(false);
 
   useEffect(() => {
     let alive = true;
     supabase.from('profiles')
-      .select('id,name,gerak_id,role,campus,license_url,docs_status,docs_reject_reason')
+      .select('id,name,gerak_id,role,campus,license_url,license_storage_path,docs_status,docs_reject_reason')
       .eq('id', userId)
       .single<ReviewProfile>()
       .then(({ data }) => {
@@ -56,6 +58,19 @@ export function DocumentVerificationSheet({ userId, onClose, onUpdated, showToas
       : `Documents ${decision}. Email sent.`);
     onUpdated();
     onClose();
+  };
+
+  // license_url is a Storage signed link generated once at upload time — it
+  // expires (365 days) and, once it does, is a permanently dead link.
+  // Generate a fresh one on demand from the stable storage path instead.
+  const viewLicense = async () => {
+    if (!profile) return;
+    if (!profile.license_storage_path) { window.open(profile.license_url ?? '#', '_blank', 'noopener,noreferrer'); return; }
+    setViewingLicense(true);
+    const { data, error } = await supabase.storage.from('driver-documents').createSignedUrl(profile.license_storage_path, 60 * 10);
+    setViewingLicense(false);
+    if (error || !data?.signedUrl) { showToast('Could not open this document.'); return; }
+    window.open(data.signedUrl, '_blank', 'noopener,noreferrer');
   };
 
   return (
@@ -93,11 +108,11 @@ export function DocumentVerificationSheet({ userId, onClose, onUpdated, showToas
                 <p className="text-xs font-normal text-slate-400 mt-2 capitalize">Status: {profile.docs_status}</p>
               </div>
 
-              <a href={profile.license_url ?? '#'} target="_blank" rel="noopener noreferrer"
-                className={`w-full bg-white border border-slate-100 rounded-2xl px-4 py-3 flex items-center justify-between text-xs font-semibold active:bg-slate-50 active:scale-[0.99] transition-transform transform-gpu ${!profile.license_url ? 'pointer-events-none opacity-40' : 'text-slate-700'}`}>
+              <button type="button" onClick={viewLicense} disabled={!profile.license_url || viewingLicense}
+                className={`w-full bg-white border border-slate-100 rounded-2xl px-4 py-3 flex items-center justify-between text-xs font-semibold active:bg-slate-50 active:scale-[0.99] transition-transform transform-gpu ${!profile.license_url ? 'opacity-40' : 'text-slate-700'}`}>
                 <span className="flex items-center gap-2"><ExternalLink className="w-4 h-4 text-slate-400" /> View Driving Licence</span>
-                <span className="text-slate-400">Open</span>
-              </a>
+                <span className="text-slate-400">{viewingLicense ? 'Opening…' : 'Open'}</span>
+              </button>
 
               {profile.docs_reject_reason && (
                 <div className="bg-white border border-slate-100 rounded-2xl p-4">

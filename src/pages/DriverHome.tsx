@@ -95,6 +95,7 @@ interface RentalBookingOwner {
   status: string;
   notes: string;
   license_url: string;
+  license_storage_path?: string;
   created_at: string;
   // admin-view enrichment
   owner_name?: string;
@@ -237,6 +238,19 @@ export const DriverHome: React.FC = () => {
     || (user.feeReceiptVerified && !!user.feeReceiptExpiry && new Date(user.feeReceiptExpiry) > new Date());
 
   // ── Rental helpers ────────────────────────────────────────────────────────
+  // license_url is a Storage signed link generated once at upload time — it
+  // expires (365 days) and, once it does, is a permanently dead link.
+  // Generate a fresh one on demand from the stable storage path instead.
+  const [viewingLicenseId, setViewingLicenseId] = useState<string | null>(null);
+  const viewRentalLicense = async (bk: { id: string; license_url: string; license_storage_path?: string }) => {
+    if (!bk.license_storage_path) { window.open(bk.license_url, '_blank', 'noopener,noreferrer'); return; }
+    setViewingLicenseId(bk.id);
+    const { data, error } = await supabase.storage.from('rental-licenses').createSignedUrl(bk.license_storage_path, 60 * 10);
+    setViewingLicenseId(null);
+    if (error || !data?.signedUrl) { showToast('Could not open this document.'); return; }
+    window.open(data.signedUrl, '_blank', 'noopener,noreferrer');
+  };
+
   const loadRentalData = useCallback(async () => {
     const isAdmin = isAdminForRental;
     if (!user.canRent && !isAdmin) return;
@@ -248,7 +262,7 @@ export const DriverHome: React.FC = () => {
     if (isAdmin) {
       const { data: allBookings } = await supabase
         .from('rental_bookings')
-        .select('id, booking_no, date, end_date, booking_type, start_hour, duration, persons, total_price, status, notes, license_url, created_at, owner_id, customer_id')
+        .select('id, booking_no, date, end_date, booking_type, start_hour, duration, persons, total_price, status, notes, license_url, license_storage_path, created_at, owner_id, customer_id')
         .order('date', { ascending: false })
         .limit(100);
 
@@ -298,7 +312,7 @@ export const DriverHome: React.FC = () => {
     const [{ data: vehicle }, { data: bookings }, { data: blocks }] = await Promise.all([
       supabase.from('rental_vehicles').select('*').eq('owner_id', uid).maybeSingle(),
       supabase.from('rental_bookings')
-        .select('id, booking_no, date, end_date, booking_type, start_hour, duration, persons, total_price, status, notes, license_url, created_at, customer_id')
+        .select('id, booking_no, date, end_date, booking_type, start_hour, duration, persons, total_price, status, notes, license_url, license_storage_path, created_at, customer_id')
         .eq('owner_id', uid)
         .order('date', { ascending: false })
         .limit(50),
@@ -765,7 +779,7 @@ export const DriverHome: React.FC = () => {
     if (upErr) { showToast('Upload failed. Please try again.'); setUploadingDoc(null); return; }
     const { data: signed } = await supabase.storage.from('driver-documents').createSignedUrl(path, 60 * 60 * 24 * 365);
     const url = signed?.signedUrl ?? '';
-    const { error: profileErr } = await supabase.from('profiles').update({ license_url: url, docs_status: 'pending' }).eq('id', authUser.id);
+    const { error: profileErr } = await supabase.from('profiles').update({ license_url: url, license_storage_path: path, docs_status: 'pending' }).eq('id', authUser.id);
     setUploadingDoc(null);
     if (e.target) e.target.value = '';
     if (profileErr) { showToast('Upload saved, but failed to submit for review. Please try again.'); return; }
@@ -2023,11 +2037,12 @@ export const DriverHome: React.FC = () => {
                   </div>
                 </div>
                 {bk.license_url && (
-                  <a href={bk.license_url} target="_blank" rel="noreferrer"
-                    onClick={e => e.stopPropagation()}
-                    className="flex items-center gap-1 text-xs font-semibold text-emerald-600 bg-white border border-emerald-200 px-3 py-1.5 rounded-xl active:scale-95 transition shrink-0">
-                    <ExternalLink className="w-3 h-3" /> View
-                  </a>
+                  <button type="button"
+                    onClick={e => { e.stopPropagation(); viewRentalLicense(bk); }}
+                    disabled={viewingLicenseId === bk.id}
+                    className="flex items-center gap-1 text-xs font-semibold text-emerald-600 bg-white border border-emerald-200 px-3 py-1.5 rounded-xl active:scale-95 transition shrink-0 disabled:opacity-50">
+                    <ExternalLink className="w-3 h-3" /> {viewingLicenseId === bk.id ? 'Opening…' : 'View'}
+                  </button>
                 )}
               </div>
 

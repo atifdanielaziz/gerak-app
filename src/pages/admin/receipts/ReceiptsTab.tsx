@@ -17,6 +17,7 @@ interface DriverReceipt {
   phone: string;
   status: string;
   fee_receipt_url: string;
+  fee_receipt_storage_path: string;
   fee_receipt_verified: boolean;
   fee_receipt_auto_verified: boolean;
   fee_receipt_amount: string;
@@ -75,7 +76,7 @@ export const ReceiptsTab = forwardRef<ReceiptsTabHandle, ReceiptsTabProps>(funct
     const [{ data, count }, { data: setting }] = await Promise.all([
       supabase
         .from('profiles')
-        .select('id, name, gerak_id, campus, email, phone, status, fee_receipt_url, fee_receipt_verified, fee_receipt_auto_verified, fee_receipt_amount, fee_receipt_date, fee_receipt_expiry, fee_receipt_reject_reason', { count: 'exact' })
+        .select('id, name, gerak_id, campus, email, phone, status, fee_receipt_url, fee_receipt_storage_path, fee_receipt_verified, fee_receipt_auto_verified, fee_receipt_amount, fee_receipt_date, fee_receipt_expiry, fee_receipt_reject_reason', { count: 'exact' })
         .eq('role', receiptRoleFilter)
         .in('campus', UNIVERSITY_MAP[universityKey]?.campuses ?? [])
         .order('name')
@@ -90,6 +91,20 @@ export const ReceiptsTab = forwardRef<ReceiptsTabHandle, ReceiptsTabProps>(funct
 
   useLoadOnActive(active, loadReceipts);
   useImperativeHandle(ref, () => ({ reload: loadReceipts }), [loadReceipts]);
+
+  // fee_receipt_url is a Storage signed link generated once at upload time —
+  // it expires (30 days) and, once it does, is a permanently dead link with
+  // no recovery. Generate a fresh one on demand from the stable storage
+  // path instead of trusting the stored URL.
+  const [viewingReceiptId, setViewingReceiptId] = useState<string | null>(null);
+  const viewReceipt = async (r: DriverReceipt) => {
+    if (!r.fee_receipt_storage_path) { window.open(r.fee_receipt_url, '_blank', 'noopener,noreferrer'); return; }
+    setViewingReceiptId(r.id);
+    const { data, error } = await supabase.storage.from('driver-receipts').createSignedUrl(r.fee_receipt_storage_path, 60 * 10);
+    setViewingReceiptId(null);
+    if (error || !data?.signedUrl) { showToast('Could not open this receipt. Please try again.'); return; }
+    window.open(data.signedUrl, '_blank', 'noopener,noreferrer');
+  };
 
   const handleToggleReceiptGate = async () => {
     setTogglingReceiptGate(true);
@@ -277,7 +292,7 @@ export const ReceiptsTab = forwardRef<ReceiptsTabHandle, ReceiptsTabProps>(funct
               <table className="min-w-[68rem] w-full border-collapse text-left text-xs"><thead><tr className="border-b border-slate-100 text-slate-400">{['Name','Role','Gerak ID','Campus','Status','Amount','Paid','Expires','Receipt','Actions'].map(h => <th key={h} className="sticky top-0 z-10 bg-white py-2.5 pr-4 font-semibold whitespace-nowrap">{h}</th>)}</tr></thead><tbody>
                 {filteredReceipts.map(r => { const status = receiptStatus(r); const expires = r.fee_receipt_expiry ? new Date(r.fee_receipt_expiry).toLocaleDateString('en-MY') : '—'; return <tr key={r.id} onClick={() => onViewProfile({ id: r.id, name: r.name, gerak_id: r.gerak_id, role: receiptRoleFilter, campus: r.campus, email: r.email, status: r.status || 'active', phone: r.phone || '' })} className="border-b border-slate-100 last:border-b-0 cursor-pointer active:bg-slate-50">
                   <td className="py-3 pr-4 font-semibold text-slate-800 max-w-[14rem] truncate">{r.name}</td><td className="py-3 pr-4 text-slate-600 capitalize">{receiptRoleFilter}</td><td className="py-3 pr-4 text-slate-600 whitespace-nowrap">{r.gerak_id}</td><td className="py-3 pr-4 text-slate-600 whitespace-nowrap">{r.campus}</td><td className={`py-3 pr-4 font-semibold capitalize ${status === 'verified' ? 'text-emerald-600' : status === 'expired' ? 'text-red-500' : status === 'rejected' ? 'text-orange-600' : 'text-amber-600'}`}>{status}</td><td className="py-3 pr-4 text-slate-600 whitespace-nowrap">{r.fee_receipt_amount || '—'}</td><td className="py-3 pr-4 text-slate-600 whitespace-nowrap">{r.fee_receipt_date || '—'}</td><td className="py-3 pr-4 text-slate-600 whitespace-nowrap">{expires}</td>
-                  <td className="py-2 pr-4" onClick={e => e.stopPropagation()}>{r.fee_receipt_url ? <a href={r.fee_receipt_url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-primary font-semibold"><ExternalLink className="w-3.5 h-3.5" /> View</a> : <span className="text-slate-300">—</span>}</td>
+                  <td className="py-2 pr-4" onClick={e => e.stopPropagation()}>{r.fee_receipt_url ? <button type="button" onClick={() => viewReceipt(r)} disabled={viewingReceiptId === r.id} className="inline-flex items-center gap-1 text-primary font-semibold disabled:opacity-50"><ExternalLink className="w-3.5 h-3.5" /> {viewingReceiptId === r.id ? 'Opening…' : 'View'}</button> : <span className="text-slate-300">—</span>}</td>
                   <td className="py-2" onClick={e => e.stopPropagation()}>{status === 'pending' && r.fee_receipt_url ? <div className="flex gap-1.5"><button type="button" onClick={() => handleApproveReceipt(r)} disabled={approvingReceipt === r.id || rejectingReceipt === r.id} className="px-2.5 py-1.5 rounded-xl bg-emerald-50 text-emerald-600 font-semibold disabled:opacity-50">Approve</button><button type="button" onClick={() => handleRejectReceipt(r)} disabled={approvingReceipt === r.id || rejectingReceipt === r.id} className="px-2.5 py-1.5 rounded-xl bg-red-50 text-red-500 font-semibold disabled:opacity-50">Reject</button></div> : <span className="text-slate-300">—</span>}</td>
                 </tr>; })}
               </tbody></table>
@@ -352,11 +367,12 @@ export const ReceiptsTab = forwardRef<ReceiptsTabHandle, ReceiptsTabProps>(funct
 
                     {/* View receipt link */}
                     {r.fee_receipt_url && (
-                      <a href={r.fee_receipt_url} target="_blank" rel="noopener noreferrer"
-                        onClick={e => e.stopPropagation()}
-                        className="flex items-center justify-center gap-1.5 bg-primary/5 border border-primary/20 text-primary font-semibold text-xs py-2 rounded-xl hover:bg-primary/10 transition active:scale-95">
-                        <ExternalLink className="w-3 h-3" /> View Receipt
-                      </a>
+                      <button type="button"
+                        onClick={e => { e.stopPropagation(); viewReceipt(r); }}
+                        disabled={viewingReceiptId === r.id}
+                        className="flex items-center justify-center gap-1.5 bg-primary/5 border border-primary/20 text-primary font-semibold text-xs py-2 rounded-xl hover:bg-primary/10 transition active:scale-95 disabled:opacity-50">
+                        <ExternalLink className="w-3 h-3" /> {viewingReceiptId === r.id ? 'Opening…' : 'View Receipt'}
+                      </button>
                     )}
 
                     {/* Approve / Reject — pending receipts only */}

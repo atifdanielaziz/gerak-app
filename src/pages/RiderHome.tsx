@@ -289,7 +289,7 @@ export const RiderHome: React.FC = () => {
     if (upErr) { showToast('Upload failed. Please try again.'); setUploadingDoc(null); return; }
     const { data: signed } = await supabase.storage.from('driver-documents').createSignedUrl(path, 60 * 60 * 24 * 365);
     const url = signed?.signedUrl ?? '';
-    const { error: profileErr } = await supabase.from('profiles').update({ license_url: url, docs_status: 'pending' }).eq('id', authUser.id);
+    const { error: profileErr } = await supabase.from('profiles').update({ license_url: url, license_storage_path: path, docs_status: 'pending' }).eq('id', authUser.id);
     setUploadingDoc(null);
     if (e.target) e.target.value = '';
     if (profileErr) { showToast('Upload saved, but failed to submit for review. Please try again.'); return; }

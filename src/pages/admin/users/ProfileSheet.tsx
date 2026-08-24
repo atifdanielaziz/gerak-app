@@ -26,6 +26,7 @@ export interface ProfileUser {
   ic_number?: string;
   ic_url?: string;
   license_url?: string;
+  license_storage_path?: string;
   vehicle?: string;
   plate_number?: string;
   docs_status?: string;
@@ -70,7 +71,7 @@ export const ProfileSheet: React.FC<{ u: ProfileUser; onClose: () => void; showT
 
   useEffect(() => {
     supabase.from('profiles')
-      .select('matric_no, ic_number, ic_url, license_url, vehicle, plate_number, docs_status, fee_receipt_verified, fee_receipt_url, fee_receipt_expiry, fee_receipt_reject_reason, campus_status, avatar_url')
+      .select('matric_no, ic_number, ic_url, license_url, license_storage_path, vehicle, plate_number, docs_status, fee_receipt_verified, fee_receipt_url, fee_receipt_expiry, fee_receipt_reject_reason, campus_status, avatar_url')
       .eq('id', u.id)
       .single()
       .then(({ data }) => { if (data) setExtra(data); setLoading(false); });
@@ -95,6 +96,19 @@ export const ProfileSheet: React.FC<{ u: ProfileUser; onClose: () => void; showT
     const { data, error } = await supabase.storage.from('driver-receipts').createSignedUrl(row.storage_path, 60 * 10);
     setViewingHistoryId(null);
     if (error || !data?.signedUrl) { showToast?.('Could not open this receipt.'); return; }
+    window.open(data.signedUrl, '_blank', 'noopener,noreferrer');
+  };
+
+  // license_url is a Storage signed link generated once at upload time — it
+  // expires (365 days) and, once it does, is a permanently dead link.
+  // Generate a fresh one on demand from the stable storage path instead.
+  const [viewingLicense, setViewingLicense] = useState(false);
+  const viewLicense = async () => {
+    if (!merged.license_storage_path) { window.open(merged.license_url, '_blank', 'noopener,noreferrer'); return; }
+    setViewingLicense(true);
+    const { data, error } = await supabase.storage.from('driver-documents').createSignedUrl(merged.license_storage_path, 60 * 10);
+    setViewingLicense(false);
+    if (error || !data?.signedUrl) { showToast?.('Could not open this document.'); return; }
     window.open(data.signedUrl, '_blank', 'noopener,noreferrer');
   };
 
@@ -257,10 +271,10 @@ export const ProfileSheet: React.FC<{ u: ProfileUser; onClose: () => void; showT
                   </Row>
                   <Row label="License">
                     {merged.license_url
-                      ? <a href={merged.license_url} target="_blank" rel="noopener noreferrer"
-                          className="text-xs font-semibold text-blue-600 bg-blue-50 border border-blue-100 px-2.5 py-1 rounded-lg active:scale-95 transition flex items-center gap-1">
-                          <ExternalLink className="w-3 h-3" /> View
-                        </a>
+                      ? <button type="button" onClick={viewLicense} disabled={viewingLicense}
+                          className="text-xs font-semibold text-blue-600 bg-blue-50 border border-blue-100 px-2.5 py-1 rounded-lg active:scale-95 transition flex items-center gap-1 disabled:opacity-50">
+                          <ExternalLink className="w-3 h-3" /> {viewingLicense ? 'Opening…' : 'View'}
+                        </button>
                       : <span className="text-xs font-semibold text-slate-300">Not uploaded</span>}
                   </Row>
                 </div>
