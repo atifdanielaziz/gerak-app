@@ -49,4 +49,17 @@ if ('serviceWorker' in navigator) {
         console.error('[GERAK] Service Worker registration failed:', error);
       });
   });
+
+  // sw.js calls skipWaiting()+clients.claim() on every install, so a new
+  // version activates almost immediately — but a tab that's already open
+  // keeps running its OLD JS bundle regardless, now against a service
+  // worker built for a possibly different one. controllerchange fires
+  // exactly at that mismatch (never on the page's own first load), so
+  // it's the one reliable point to nudge a reload rather than leaving a
+  // long-lived session silently stale indefinitely.
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    if (window.confirm('A new version of Gerak is available. Reload now?')) {
+      window.location.reload();
+    }
+  });
 }

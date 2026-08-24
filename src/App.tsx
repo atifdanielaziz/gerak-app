@@ -229,13 +229,30 @@ const SwipeBackGesture: React.FC<{ children: React.ReactNode }> = ({ children })
       if (triggered) goBackRef.current();
     };
 
-    window.addEventListener('touchstart', onStart, { passive: true });
-    window.addEventListener('touchmove',  onMove,  { passive: false });
-    window.addEventListener('touchend',   onEnd,   { passive: true });
+    // The OS can cancel an in-flight touch sequence before touchend fires
+    // (incoming call, notification-shade pull, iOS edge-swipe conflict) —
+    // without this, the page frame stays visually stuck mid-drag until
+    // reload. Same cleanup as onEnd, minus the navigation trigger (a
+    // cancelled touch was never a completed swipe). Same pattern already
+    // used in useAxisLockedScroll.ts.
+    const onCancel = () => {
+      if (modeRef.current === 'none') return;
+      modeRef.current  = 'none';
+      dragXRef.current = 0;
+      setGestureOn(false);
+      setDragX(0);
+      setShowBackUI(false);
+    };
+
+    window.addEventListener('touchstart',  onStart,  { passive: true });
+    window.addEventListener('touchmove',   onMove,   { passive: false });
+    window.addEventListener('touchend',    onEnd,    { passive: true });
+    window.addEventListener('touchcancel', onCancel, { passive: true });
     return () => {
-      window.removeEventListener('touchstart', onStart);
-      window.removeEventListener('touchmove',  onMove);
-      window.removeEventListener('touchend',   onEnd);
+      window.removeEventListener('touchstart',  onStart);
+      window.removeEventListener('touchmove',   onMove);
+      window.removeEventListener('touchend',    onEnd);
+      window.removeEventListener('touchcancel', onCancel);
     };
   }, []);
 

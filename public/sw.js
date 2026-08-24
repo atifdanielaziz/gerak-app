@@ -1,4 +1,4 @@
-const CACHE_NAME = 'gerak-cache-v466';
+const CACHE_NAME = 'gerak-cache-v467';
 const ASSETS_TO_CACHE = [
   '/',
   '/index.html',
@@ -70,6 +70,15 @@ self.addEventListener('fetch', (event) => {
             caches.open(CACHE_NAME).then((cache) => cache.put(event.request, responseToCache));
           }
           return response;
+        }).catch(() => {
+          // A genuinely new chunk failing to fetch (dropped connection, CDN
+          // propagation lag right after a deploy) previously left this
+          // unhandled — every other path in this file has a fallback,
+          // this one didn't. One retry covers a transient blip; if that
+          // also fails there's nothing cached to fall back to for a
+          // brand-new hash, so return a clean failure instead of an
+          // unhandled rejection.
+          return fetch(event.request).catch(() => new Response('', { status: 504, statusText: 'Asset unavailable' }));
         });
       })
     );
