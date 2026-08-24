@@ -1,7 +1,19 @@
 -- ============================================================
--- gerak app — Supabase schema
--- Run this in: Supabase Dashboard > SQL Editor > New query
+-- HISTORICAL BOOTSTRAP SNAPSHOT — NOT the current schema
 -- ============================================================
+--
+-- This is the original bootstrap dump from before migrations were used
+-- to track schema changes (3 tables: profiles, rides, jubah_bookings).
+-- 180+ migrations have run since — the real, current schema is defined
+-- by everything in supabase/migrations/*.sql, applied in filename order.
+-- This file is NOT regenerated automatically and does not reflect
+-- current table shapes, columns, RLS policies, or RPCs. Kept only for
+-- historical reference (how the project started); do not treat it as a
+-- schema reference for anything live.
+--
+-- To see the actual current schema: read supabase/migrations/*.sql in
+-- order, or run `supabase db dump --linked --schema public` (requires
+-- Docker Desktop locally) to generate a fresh, accurate dump.
 
 -- 1. Profiles (extends auth.users)
 create table public.profiles (
