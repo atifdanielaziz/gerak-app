@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useApp } from '../context/AppContext';
 import { supabase } from '../lib/supabase';
 import { PackageSearch, Search, GraduationCap } from 'lucide-react';
 import { WaIcon, toWa } from '../lib/whatsapp';
@@ -82,6 +83,19 @@ const STATUS_STYLE: Record<string, string> = {
 };
 
 export const TrackJubah: React.FC = () => {
+  const { setCurrentPage, setLeaveGuard } = useApp();
+
+  // A guest reaching this page directly (a shared tracking link, no prior
+  // in-app navigation) has an empty pageHistory — back was previously
+  // either fully swallowed (web) or exited the app immediately (native
+  // Android), since AppContext had nowhere queued to go back to. Same
+  // leaveGuard mechanism every other overlay/sub-page in this app already
+  // uses, just pointed at the dashboard instead of closing a sub-view.
+  useEffect(() => {
+    setLeaveGuard(() => () => setCurrentPage('dashboard'));
+    return () => setLeaveGuard(null);
+  }, [setLeaveGuard, setCurrentPage]);
+
   const [reference, setReference] = useState('');
   const [icNumber, setIcNumber]   = useState('');
   const [searching, setSearching] = useState(false);
