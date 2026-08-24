@@ -18,7 +18,7 @@ import { getJubahProgress, JUBAH_STEP_LABEL } from '../lib/jubahStatus';
 import { generateReceiptPdf } from '../lib/receiptPdf';
 import { copyToClipboard } from '../lib/clipboard';
 import { savePendingJubahBooking, clearPendingJubahBooking } from '../lib/pendingJubahBooking';
-import { formatPhone } from '../lib/format';
+import { formatPhone, formatIcNumber as formatIc } from '../lib/format';
 import { UNIVERSITY_MAP, deriveJubahCampus, jubahLocationLabel } from '../lib/universities';
 import type { JubahBookingInput } from '../types/jubahBooking';
 
@@ -52,13 +52,6 @@ const MALAYSIAN_STATES = [
   'Perak', 'Perlis', 'Pulau Pinang', 'Sabah', 'Sarawak', 'Selangor', 'Terengganu',
   'Wilayah Persekutuan Kuala Lumpur', 'Wilayah Persekutuan Labuan', 'Wilayah Persekutuan Putrajaya',
 ];
-
-const formatIc = (val: string) => {
-  const d = val.replace(/\D/g, '').slice(0, 12);
-  if (d.length <= 6) return d;
-  if (d.length <= 8) return `${d.slice(0, 6)}-${d.slice(6)}`;
-  return `${d.slice(0, 6)}-${d.slice(6, 8)}-${d.slice(8)}`;
-};
 
 // Form draft — text fields only. Uploaded documents/payment proof are
 // never persisted here (can't reliably stash File data in localStorage,

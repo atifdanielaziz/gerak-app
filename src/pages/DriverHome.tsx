@@ -19,7 +19,7 @@ import { generateReceiptPdf } from '../lib/receiptPdf';
 import { BOOKING_METHOD_ICON, bookingMethodBadgeClass } from '../lib/bookingMethodIcon';
 import { FareModal } from '../components/FareModal';
 import { MonthDrumPicker, EarningsCard, computeEarnings } from '../components/EarningsCard';
-import { fmt12, fmtDuration, todayStr } from '../lib/format';
+import { fmt12, fmtDuration, todayStr, fmtCountdown } from '../lib/format';
 
 const getTimestamp = () => Date.now();
 
@@ -730,9 +730,6 @@ export const DriverHome: React.FC = () => {
       loadOrders();
     }
   };
-
-  const fmtCountdown = (secs: number) =>
-    `${Math.floor(secs / 60)}:${(secs % 60).toString().padStart(2, '0')}`;
 
   const fmt = (order: RideOrder) =>
     order.fare === 'TBC' ? 'TBC' : `RM ${(Number(order.fare) + order.night_charge).toFixed(2)}`;

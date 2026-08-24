@@ -10,6 +10,7 @@ import { ReceiptSheet } from '../components/Receipt';
 import { buildTransportReceiptRows } from '../lib/receiptRows';
 import { generateReceiptPdf } from '../lib/receiptPdf';
 import { BOOKING_METHOD_ICON, bookingMethodBadgeClass } from '../lib/bookingMethodIcon';
+import { fmtCountdown } from '../lib/format';
 
 interface RideOrder {
   id: string;
@@ -178,9 +179,6 @@ const cancelSecsLeft = (o: RideOrder, now: number): number | null => {
   const secs = Math.floor((CANCEL_GRACE_MS - (now - new Date(o.accepted_at).getTime())) / 1000);
   return secs > 0 ? secs : null;
 };
-const fmtCountdown = (secs: number) =>
-  `${Math.floor(secs / 60)}:${(secs % 60).toString().padStart(2, '0')}`;
-
 // Before-the-fact heads-up for a still-pending order — reassurance in the
 // first minute, then a concrete auto-cancel deadline for the last 10 of the
 // 30-minute window (mirrors the server's own ride-orders-expire-pending

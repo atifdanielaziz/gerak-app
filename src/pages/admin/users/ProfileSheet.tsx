@@ -4,6 +4,7 @@ import { X, Car, Bike, ShieldCheck, ExternalLink, Phone, ContactRound, History }
 import { WaBtn } from '../../../lib/whatsapp';
 import { jubahLocationLabel, universityKeyFromCampus } from '../../../lib/universities';
 import { DigitalProfileCard } from '../../../components/DigitalProfileCard';
+import { receiptStatus } from '../../../lib/receiptStatus';
 
 export interface ProfileUser {
   id: string;
@@ -37,16 +38,6 @@ export interface ProfileUser {
   last_seen_at?: string | null;
   has_active_job?: boolean;
 }
-
-// Same logic as ReceiptsTab.tsx's receiptStatus — kept in sync manually
-// since they read the same columns but live in different components.
-const receiptStatus = (u: Partial<ProfileUser>): 'verified' | 'expired' | 'rejected' | 'pending' => {
-  if (!u.fee_receipt_url) return 'pending';
-  if (u.fee_receipt_verified && u.fee_receipt_expiry && new Date(u.fee_receipt_expiry) <= new Date()) return 'expired';
-  if (u.fee_receipt_verified) return 'verified';
-  if (u.fee_receipt_reject_reason) return 'rejected';
-  return 'pending';
-};
 
 const RECEIPT_STATUS_STYLE = {
   verified: 'text-emerald-600',

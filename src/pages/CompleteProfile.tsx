@@ -5,6 +5,7 @@ import { NativeSelect } from '../components/NativeSelect';
 import { TermsOfService } from './TermsOfService';
 import { PrivacyPolicy } from './PrivacyPolicy';
 import { UNIVERSITIES } from '../lib/universities';
+import { formatPhone } from '../lib/format';
 
 // Shown after a brand-new Google/Apple sign-up — those never supply phone
 // number, university, or campus (fields Gerak requires), so
@@ -40,12 +41,6 @@ export const CompleteProfile: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [fieldError, setFieldError] = useState<{ field: string; message: string } | null>(null);
-
-  const formatPhone = (val: string) => {
-    const d = val.replace(/\D/g, '').slice(0, 11);
-    if (d.length <= 3) return d;
-    return `${d.slice(0, 3)}-${d.slice(3)}`;
-  };
 
   const selectedUni = UNIVERSITIES.find(u => u.fullName === university);
 

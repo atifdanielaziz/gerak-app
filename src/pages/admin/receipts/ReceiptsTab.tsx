@@ -6,6 +6,7 @@ import { type ProfileUser } from '../users/ProfileSheet';
 import { NativeSelect } from '../../../components/NativeSelect';
 import { useAxisLockedScroll } from '../../../hooks/useAxisLockedScroll';
 import { UNIVERSITY_MAP } from '../../../lib/universities';
+import { receiptStatus } from '../../../lib/receiptStatus';
 
 interface DriverReceipt {
   id: string;
@@ -97,14 +98,6 @@ export const ReceiptsTab = forwardRef<ReceiptsTabHandle, ReceiptsTabProps>(funct
     setReceiptGateOn(!receiptGateOn);
     setTogglingReceiptGate(false);
     showToast(`Receipt gate ${!receiptGateOn ? 'enabled' : 'disabled'}.`);
-  };
-
-  const receiptStatus = (r: DriverReceipt): 'verified' | 'expired' | 'rejected' | 'pending' => {
-    if (!r.fee_receipt_url) return 'pending';
-    if (r.fee_receipt_verified && r.fee_receipt_expiry && new Date(r.fee_receipt_expiry) <= new Date()) return 'expired';
-    if (r.fee_receipt_verified) return 'verified';
-    if (r.fee_receipt_reject_reason) return 'rejected';
-    return 'pending';
   };
 
   // Was recomputed raw on every render — memoized so a search keystroke

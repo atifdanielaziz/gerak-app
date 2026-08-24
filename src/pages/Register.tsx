@@ -3,6 +3,7 @@ import { useApp } from '../context/AppContext';
 import { supabase } from '../lib/supabase';
 import { ShieldAlert, User, Mail, Lock, Eye, EyeOff, Phone, ArrowRight, MapPin, IdCard, Car, X, Check, ChevronLeft, CheckCircle, Mars, Venus } from 'lucide-react';
 import { NativeSelect } from '../components/NativeSelect';
+import { formatPhone } from '../lib/format';
 import { TermsOfService } from './TermsOfService';
 import { PrivacyPolicy } from './PrivacyPolicy';
 import { UNIVERSITIES, jubahLocationLabel, universityKeyFromCampus } from '../lib/universities';
@@ -45,11 +46,6 @@ export const Register: React.FC = () => {
   const [name,       setName]       = useState('');
   const [phone,      setPhone]      = useState('');
   const [gender,     setGender]     = useState<'male' | 'female' | ''>('');
-  const formatPhone = (val: string) => {
-    const d = val.replace(/\D/g, '').slice(0, 11);
-    if (d.length <= 3) return d;
-    return `${d.slice(0, 3)}-${d.slice(3)}`;
-  };
   // Prefilled from the staff-invite email's ?email= link param, if present
   // (AppContext's /register deep link) — saves a retype and guarantees it
   // exactly matches the address the invite was actually sent to, which is

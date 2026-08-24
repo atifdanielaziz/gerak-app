@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { useApp } from '../context/AppContext';
 import { supabase } from '../lib/supabase';
 import { stampWatermark } from '../lib/watermark';
+import { formatIcNumber, formatPhone } from '../lib/format';
 import {
   ChevronRight, ChevronLeft, CheckCircle2, HelpCircle, LogOut,
   Camera, Car, Upload, FileImage,
@@ -57,17 +58,6 @@ export const Profile: React.FC = () => {
   // for admin/superadmin, a separate pre-existing requirement.
   const requiresIc = ['admin', 'superadmin'].includes(user.role);
 
-  const formatIcNumber = (val: string) => {
-    const digits = val.replace(/\D/g, '').slice(0, 12);
-    if (digits.length <= 6) return digits;
-    if (digits.length <= 8) return `${digits.slice(0, 6)}-${digits.slice(6)}`;
-    return `${digits.slice(0, 6)}-${digits.slice(6, 8)}-${digits.slice(8)}`;
-  };
-  const formatPhone = (val: string) => {
-    const d = val.replace(/\D/g, '').slice(0, 11);
-    if (d.length <= 3) return d;
-    return `${d.slice(0, 3)}-${d.slice(3)}`;
-  };
   const [uploading, setUploading]       = useState(false);
   const [verifyMsg, setVerifyMsg]       = useState('');
   const [uploadingDoc, setUploadingDoc] = useState<'license' | null>(null);
