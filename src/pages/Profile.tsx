@@ -206,15 +206,13 @@ export const Profile: React.FC = () => {
     const { data: { user: authUser } } = await supabase.auth.getUser();
     if (!authUser) { setUploading(false); return; }
 
-    const { data: existingFiles } = await supabase.storage.from('driver-receipts').list(authUser.id);
-    if (existingFiles && existingFiles.length > 0) {
-      const oldPaths = existingFiles.map((f: { name: string }) => `${authUser.id}/${f.name}`);
-      await supabase.storage.from('driver-receipts').remove(oldPaths);
-    }
-
+    // Each upload gets its own file (unique name) instead of overwriting a
+    // fixed path — the previous receipt survives in fee_receipt_history
+    // once this one replaces it as "current" (see the profiles UPDATE
+    // trigger, 20260824150000). No more delete-then-upload.
     const ext  = file.name.split('.').pop() ?? 'jpg';
-    const path = `${authUser.id}/monthly_receipt.${ext}`;
-    const { error: upErr } = await supabase.storage.from('driver-receipts').upload(path, file, { upsert: true });
+    const path = `${authUser.id}/${Date.now()}.${ext}`;
+    const { error: upErr } = await supabase.storage.from('driver-receipts').upload(path, file);
 
     if (upErr) {
       setUploading(false);
@@ -224,7 +222,19 @@ export const Profile: React.FC = () => {
 
     const { data: signed } = await supabase.storage.from('driver-receipts').createSignedUrl(path, 60 * 60 * 24 * 30);
     const url = signed?.signedUrl ?? '';
-    await updateProfile({ feeReceiptUrl: url });
+    await updateProfile({ feeReceiptUrl: url, feeReceiptStoragePath: path });
+
+    // Storage mirrors the DB trigger's 3-archived-plus-current window —
+    // this upload plus the 3 before it (4 files); anything older than
+    // that has already dropped out of fee_receipt_history too, so its
+    // file is now unreferenced and safe to remove.
+    const { data: files } = await supabase.storage.from('driver-receipts')
+      .list(authUser.id, { sortBy: { column: 'created_at', order: 'desc' } });
+    if (files && files.length > 4) {
+      const stale = files.slice(4).map(f => `${authUser.id}/${f.name}`);
+      await supabase.storage.from('driver-receipts').remove(stale);
+    }
+
     setUploading(false);
 
     // Every receipt now goes to manual admin review — no AI/auto-verify

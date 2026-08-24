@@ -158,7 +158,7 @@ interface AppContextType {
   checkEmailRegistered: (email: string) => Promise<boolean>;
   completeOAuthProfile: (updates: { name: string; phone: string; university: string; campus: string; agreedToTerms: boolean; agreedToPrivacy: boolean }) => Promise<{ error: string | null }>;
   logout: () => void;
-  updateProfile: (updates: { name?: string; matricNo?: string; email?: string; phone?: string; vehicle?: string; plateNumber?: string; icNumber?: string; feeReceiptUrl?: string; avatarUrl?: string; campus?: string; gender?: 'male' | 'female' }) => Promise<{ error: string | null }>;
+  updateProfile: (updates: { name?: string; matricNo?: string; email?: string; phone?: string; vehicle?: string; plateNumber?: string; icNumber?: string; feeReceiptUrl?: string; feeReceiptStoragePath?: string; avatarUrl?: string; campus?: string; gender?: 'male' | 'female' }) => Promise<{ error: string | null }>;
   refreshUserData: () => Promise<void>;
   receiptGateActive: boolean;
   isSheetOpen: boolean;
@@ -868,7 +868,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   };
 
-  const updateProfile = async (updates: { name?: string; matricNo?: string; email?: string; phone?: string; vehicle?: string; plateNumber?: string; icNumber?: string; feeReceiptUrl?: string; avatarUrl?: string; campus?: string; gender?: 'male' | 'female' }): Promise<{ error: string | null }> => {
+  const updateProfile = async (updates: { name?: string; matricNo?: string; email?: string; phone?: string; vehicle?: string; plateNumber?: string; icNumber?: string; feeReceiptUrl?: string; feeReceiptStoragePath?: string; avatarUrl?: string; campus?: string; gender?: 'male' | 'female' }): Promise<{ error: string | null }> => {
     let { data: { user: authUser } } = await supabase.auth.getUser();
     if (!authUser) {
       const { data: refreshed } = await supabase.auth.refreshSession();
@@ -885,6 +885,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     if (updates.icNumber       !== undefined) row.ic_number       = updates.icNumber;
     if (updates.avatarUrl      !== undefined) row.avatar_url      = updates.avatarUrl;
     if (updates.feeReceiptUrl  !== undefined) row.fee_receipt_url = updates.feeReceiptUrl;
+    if (updates.feeReceiptStoragePath !== undefined) row.fee_receipt_storage_path = updates.feeReceiptStoragePath;
     if (updates.campus         !== undefined) row.campus          = updates.campus;
     if (updates.gender         !== undefined) row.gender          = updates.gender;
     const { error } = await supabase.from('profiles').update(row).eq('id', authUser.id);

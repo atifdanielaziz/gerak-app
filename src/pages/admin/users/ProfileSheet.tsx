@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '../../../lib/supabase';
-import { X, Car, Bike, ShieldCheck, ExternalLink, Phone, ContactRound } from 'lucide-react';
+import { X, Car, Bike, ShieldCheck, ExternalLink, Phone, ContactRound, History } from 'lucide-react';
 import { WaBtn } from '../../../lib/whatsapp';
 import { jubahLocationLabel, universityKeyFromCampus } from '../../../lib/universities';
 import { DigitalProfileCard } from '../../../components/DigitalProfileCard';
@@ -58,11 +58,24 @@ const RECEIPT_STATUS_STYLE = {
 // Staff/driver/rider profile detail sheet — shared by the Users tab AND the
 // Receipts tab (tapping a receipt row opens the same sheet for that driver),
 // so this stays a standalone component rather than living inside UsersTab.
+interface ReceiptHistoryRow {
+  id: string;
+  storage_path: string;
+  amount: string | null;
+  submitted_date: string | null;
+  expiry: string | null;
+  verified: boolean;
+  reject_reason: string | null;
+  archived_at: string;
+}
+
 export const ProfileSheet: React.FC<{ u: ProfileUser; onClose: () => void; showToast?: (msg: string) => void }> = ({ u, onClose, showToast }) => {
   const [extra, setExtra] = useState<Partial<ProfileUser>>({});
   const [loading, setLoading] = useState(true);
   const [savingCampusStatus, setSavingCampusStatus] = useState(false);
   const [showDigitalCard, setShowDigitalCard] = useState(false);
+  const [receiptHistory, setReceiptHistory] = useState<ReceiptHistoryRow[]>([]);
+  const [viewingHistoryId, setViewingHistoryId] = useState<string | null>(null);
 
   useEffect(() => {
     supabase.from('profiles')
@@ -70,7 +83,29 @@ export const ProfileSheet: React.FC<{ u: ProfileUser; onClose: () => void; showT
       .eq('id', u.id)
       .single()
       .then(({ data }) => { if (data) setExtra(data); setLoading(false); });
-  }, [u.id]);
+
+    // Driver-only, same gate as the Payment Status row below — riders/
+    // admins never have fee receipts to begin with.
+    if (u.role === 'driver') {
+      supabase.from('fee_receipt_history')
+        .select('id, storage_path, amount, submitted_date, expiry, verified, reject_reason, archived_at')
+        .eq('user_id', u.id)
+        .order('archived_at', { ascending: false })
+        .then(({ data }) => setReceiptHistory(data ?? []));
+    }
+  }, [u.id, u.role]);
+
+  // storage_path is a bare path, not a link — signed URLs from the
+  // original upload expire after 30 days, long before 3 months of history
+  // would be useful, so a fresh one is generated only when actually
+  // viewed instead of stored alongside the row.
+  const viewHistoryReceipt = async (row: ReceiptHistoryRow) => {
+    setViewingHistoryId(row.id);
+    const { data, error } = await supabase.storage.from('driver-receipts').createSignedUrl(row.storage_path, 60 * 10);
+    setViewingHistoryId(null);
+    if (error || !data?.signedUrl) { showToast?.('Could not open this receipt.'); return; }
+    window.open(data.signedUrl, '_blank', 'noopener,noreferrer');
+  };
 
   const handleSetCampusStatus = async (status: 'in_campus' | 'out_campus') => {
     if (status === extra.campus_status || savingCampusStatus) return;
@@ -234,6 +269,43 @@ export const ProfileSheet: React.FC<{ u: ProfileUser; onClose: () => void; showT
                         </a>
                       : <span className="text-xs font-semibold text-slate-300">Not uploaded</span>}
                   </Row>
+                </div>
+              )}
+
+              {/* Receipt History — up to the 3 most recent receipts this
+                  one replaced, kept once "current" moves on (see the
+                  profiles trigger). Absent entirely until there's actually
+                  something to show, rather than an empty card. */}
+              {u.role === 'driver' && receiptHistory.length > 0 && (
+                <div className="bg-slate-50 border border-slate-100 rounded-2xl px-4 py-3 mb-3">
+                  <p className="flex items-center gap-1.5 text-xs font-semibold text-slate-400 mb-2">
+                    <History className="w-3.5 h-3.5" /> Receipt History
+                  </p>
+                  <div className="flex flex-col gap-2">
+                    {receiptHistory.map(h => (
+                      <div key={h.id} className="flex items-center justify-between gap-2 bg-white border border-slate-100 rounded-xl px-3 py-2">
+                        <div className="min-w-0">
+                          <p className="text-xs font-semibold text-slate-700 truncate">
+                            {h.submitted_date || new Date(h.archived_at).toLocaleDateString('en-MY')}
+                            {h.amount ? ` · ${h.amount}` : ''}
+                          </p>
+                          <p className={`text-[10px] font-semibold capitalize mt-0.5 ${
+                            h.verified ? 'text-emerald-600' : h.reject_reason ? 'text-orange-500' : 'text-amber-500'
+                          }`}>
+                            {h.verified ? 'verified' : h.reject_reason ? 'rejected' : 'pending'}
+                          </p>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => viewHistoryReceipt(h)}
+                          disabled={viewingHistoryId === h.id}
+                          className="shrink-0 flex items-center gap-1 text-xs font-semibold text-blue-600 bg-blue-50 border border-blue-100 px-2.5 py-1 rounded-lg active:scale-95 transition disabled:opacity-50"
+                        >
+                          <ExternalLink className="w-3 h-3" /> {viewingHistoryId === h.id ? 'Opening…' : 'View'}
+                        </button>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               )}
             </>
