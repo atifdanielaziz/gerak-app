@@ -156,10 +156,22 @@ export const Profile: React.FC = () => {
 
   // Separate from autoSave() — that's built around onBlur of a text input;
   // this is a two-option selector that should persist the moment it's
-  // tapped, same as Register.tsx's own gender picker.
+  // tapped, same as Register.tsx's own gender picker. Guarded against
+  // rapid double-tap (in flight → ignore) rather than just letting both
+  // requests fire — two concurrent writes racing to resolve out of order
+  // could otherwise leave draftGender showing one value while the row that
+  // actually won the race silently saved the other. Reverts the optimistic
+  // update if the save itself fails, so the button never shows a selection
+  // that was never actually persisted.
+  const [savingGender, setSavingGender] = useState(false);
   const saveGender = async (value: 'male' | 'female') => {
+    if (savingGender) return;
+    setSavingGender(true);
+    const prev = draftGender;
     setDraftGender(value);
-    await updateProfile({ gender: value });
+    const { error } = await updateProfile({ gender: value });
+    if (error) setDraftGender(prev);
+    setSavingGender(false);
   };
 
   const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -456,8 +468,9 @@ export const Profile: React.FC = () => {
                 <button
                   key={value}
                   type="button"
+                  disabled={savingGender}
                   onPointerDown={e => { e.preventDefault(); saveGender(value); }}
-                  className={`flex items-center justify-center gap-1.5 py-2 rounded-xl border transition-transform transform-gpu active:scale-[0.99] ${
+                  className={`flex items-center justify-center gap-1.5 py-2 rounded-xl border transition-transform transform-gpu active:scale-[0.99] disabled:opacity-60 ${
                     draftGender === value ? 'border-slate-900 bg-white' : 'border-slate-100 bg-white'
                   }`}
                 >
