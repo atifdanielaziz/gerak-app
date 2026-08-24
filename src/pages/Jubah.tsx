@@ -794,7 +794,7 @@ export const Jubah: React.FC = () => {
       { label: 'Payment Proof', path: paymentPath ?? '' },
     ].filter(d => d.path);
 
-    submitJubahToSheets({
+    await submitJubahToSheets({
       reference, fullName, icNumber, hpNumber, university, faculty, matricId,
       paymentMode,
       depositMethod: paymentMode === 'deposit' ? depositMethod : undefined,
