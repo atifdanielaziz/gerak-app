@@ -40,6 +40,11 @@ export type ActivePage =
   | 'gerak-transporter'
   | 'privacy-policy'
   | 'terms-of-service'
+  | 'help-center'
+  | 'about-gerak'
+  | 'language-settings'
+  | 'appearance-settings'
+  | 'rate-app'
   | 'repaint-repro';
 
 export interface UserSession {

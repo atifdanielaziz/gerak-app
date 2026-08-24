@@ -30,6 +30,11 @@ const TrackJubah          = lazy(() => import('./pages/TrackJubah').then(m => ({
 const GerakTransporter    = lazy(() => import('./pages/GerakTransporter').then(m => ({ default: m.GerakTransporter })));
 const PrivacyPolicy       = lazy(() => import('./pages/PrivacyPolicy').then(m => ({ default: m.PrivacyPolicy })));
 const TermsOfService      = lazy(() => import('./pages/TermsOfService').then(m => ({ default: m.TermsOfService })));
+const HelpCenter          = lazy(() => import('./pages/HelpCenter').then(m => ({ default: m.HelpCenter })));
+const AboutGerak          = lazy(() => import('./pages/AboutGerak').then(m => ({ default: m.AboutGerak })));
+const LanguageSettings    = lazy(() => import('./pages/LanguageSettings').then(m => ({ default: m.LanguageSettings })));
+const AppearanceSettings  = lazy(() => import('./pages/AppearanceSettings').then(m => ({ default: m.AppearanceSettings })));
+const RateApp             = lazy(() => import('./pages/RateApp').then(m => ({ default: m.RateApp })));
 const RepaintRepro        = lazy(() => import('./pages/RepaintRepro').then(m => ({ default: m.RepaintRepro })));
 interface BeforeInstallPromptEvent extends Event {
   prompt: () => Promise<void>;
@@ -379,6 +384,16 @@ const AppContent: React.FC = () => {
         return <PrivacyPolicy />;
       case 'terms-of-service':
         return <TermsOfService />;
+      case 'help-center':
+        return <HelpCenter />;
+      case 'about-gerak':
+        return <AboutGerak />;
+      case 'language-settings':
+        return <LanguageSettings />;
+      case 'appearance-settings':
+        return <AppearanceSettings />;
+      case 'rate-app':
+        return <RateApp />;
       case 'repaint-repro':
         return <RepaintRepro />;
       default:
