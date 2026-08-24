@@ -241,7 +241,7 @@ export const RoutesTab = forwardRef<RoutesTabHandle, RoutesTabProps>(function Ro
                       confirmLabel: 'DELETE',
                       onConfirm: () => handleDeleteRoute(r.id),
                     })}
-                    className="px-3 bg-red-50 border border-red-100 text-red-400 font-semibold text-xs py-2 rounded-xl transition active:scale-95 flex items-center justify-center gap-1">
+                    className="w-11 h-11 bg-red-50 border border-red-100 text-red-400 font-semibold text-xs rounded-xl transition active:scale-95 flex items-center justify-center gap-1">
                     <Trash2 className="w-3 h-3" />
                   </button>
                 </div>

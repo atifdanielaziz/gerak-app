@@ -180,12 +180,12 @@ export const EarningsTab = forwardRef<EarningsTabHandle, EarningsTabProps>(funct
       {earningsPeriod === 'week' && (
         <div className="flex items-center justify-between bg-white border border-slate-100 rounded-2xl px-3 py-3">
           <button onClick={() => setEarningsWeekStart(addDays(earningsWeekStart, -7))}
-            className="w-8 h-8 flex items-center justify-center rounded-xl text-slate-400 hover:text-primary transition active:scale-90">
+            className="w-11 h-11 flex items-center justify-center rounded-xl text-slate-400 hover:text-primary transition active:scale-90">
             <ChevronLeft className="w-4 h-4" />
           </button>
           <p className="text-xs font-black text-slate-700">{weekLabel}</p>
           <button onClick={() => setEarningsWeekStart(addDays(earningsWeekStart, 7))}
-            className="w-8 h-8 flex items-center justify-center rounded-xl text-slate-400 hover:text-primary transition active:scale-90">
+            className="w-11 h-11 flex items-center justify-center rounded-xl text-slate-400 hover:text-primary transition active:scale-90">
             <ChevronRight className="w-4 h-4" />
           </button>
         </div>
@@ -223,7 +223,7 @@ export const EarningsTab = forwardRef<EarningsTabHandle, EarningsTabProps>(funct
             {earningsLeaderboard.map((d, i) => (
               <button
                 key={d.driver_id}
-                onClick={() => handleSelectEarningsDriver(d.driver_id)}
+                onPointerDown={e => { e.preventDefault(); handleSelectEarningsDriver(d.driver_id); }}
                 className="flex items-center gap-3 bg-slate-50 hover:bg-slate-100 border border-slate-100 rounded-2xl px-3.5 py-3 transition active:scale-[0.99] text-left"
               >
                 <span className="w-6 h-6 rounded-full bg-white border border-slate-200 flex items-center justify-center text-xs font-black text-slate-500 shrink-0">

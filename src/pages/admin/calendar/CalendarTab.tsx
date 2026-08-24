@@ -138,7 +138,7 @@ export const CalendarTab = forwardRef<CalendarTabHandle, CalendarTabProps>(funct
                 <Eye className="w-4 h-4 text-primary" />
                 <p className="text-xs font-semibold text-slate-700">Preview — {calParsed.academic_year}</p>
               </div>
-              <button onClick={() => setCalParsed(null)} className="w-6 h-6 flex items-center justify-center rounded-full bg-slate-100 text-slate-400 active:scale-90">
+              <button onClick={() => setCalParsed(null)} className="w-11 h-11 flex items-center justify-center rounded-full bg-slate-100 text-slate-400 active:scale-90">
                 <X className="w-3 h-3" />
               </button>
             </div>

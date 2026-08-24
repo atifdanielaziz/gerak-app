@@ -40,7 +40,7 @@ function FacultyActions({ row, busy, onEdit, onToggle, onRemove }: {
         setPosition({ top: Math.max(8, Math.min(rect.bottom + 4, window.innerHeight - 132)), right: Math.max(8, window.innerWidth - rect.right) });
         setOpen(value => !value);
       }}
-      className="w-7 h-7 flex items-center justify-center rounded-lg text-slate-400 active:scale-90 transition-transform transform-gpu disabled:opacity-40">
+      className="w-11 h-11 flex items-center justify-center rounded-lg text-slate-400 active:scale-90 transition-transform transform-gpu disabled:opacity-40">
       <MoreVertical className="w-4 h-4" />
     </button>
     {open && createPortal(<>

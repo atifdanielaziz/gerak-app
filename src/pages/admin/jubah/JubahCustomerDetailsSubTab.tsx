@@ -195,7 +195,7 @@ export function JubahCustomerDetailsSubTab({
             <button type="button" data-axis-lock-ignore disabled={!filtered.length || exporting !== null}
               onPointerDown={event => { event.preventDefault(); event.stopPropagation(); setExportMenuOpen(open => !open); }}
               aria-label="Download customer details"
-              className="w-8 h-8 flex items-center justify-center rounded-xl bg-white border border-slate-100 text-slate-500 active:bg-slate-50 active:scale-95 transition-transform transform-gpu disabled:opacity-40">
+              className="w-11 h-11 flex items-center justify-center rounded-xl bg-white border border-slate-100 text-slate-500 active:bg-slate-50 active:scale-95 transition-transform transform-gpu disabled:opacity-40">
               {exporting ? <span className="w-3.5 h-3.5 rounded-full border-2 border-slate-300 border-t-slate-600 animate-spin" /> : <Download className="w-4 h-4" />}
             </button>
           </div>

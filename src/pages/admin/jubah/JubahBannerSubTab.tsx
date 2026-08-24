@@ -211,7 +211,7 @@ export function JubahBannerSubTab({ active, onOpenSampleDocs, showToast, univers
           <div className="flex items-center justify-between px-5 pb-4 shrink-0" style={{ paddingTop: 'calc(1rem + env(safe-area-inset-top))' }}>
             <button
               onClick={closeCropModal}
-              className="w-8 h-8 flex items-center justify-center rounded-full bg-white/10 text-white active:bg-white/20 transition">
+              className="w-11 h-11 flex items-center justify-center rounded-full bg-white/10 text-white active:bg-white/20 transition">
               <X className="w-4 h-4" />
             </button>
             <span className="text-white font-black text-sm tracking-wide">Crop Banner</span>

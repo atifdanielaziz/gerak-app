@@ -73,7 +73,7 @@ const JubahRiderSheet: React.FC<{
       <div className="flex items-center justify-between px-5 pt-2 pb-4 shrink-0">
         <p className="text-sm font-semibold text-slate-700">Jubah Rider</p>
         <button
-          onClick={onClose}
+          onPointerDown={(e) => { e.preventDefault(); onClose(); }}
           className="w-7 h-7 flex items-center justify-center rounded-full bg-slate-100 text-slate-500 active:scale-90 transition"
         >
           <X className="w-4 h-4" />
@@ -484,7 +484,7 @@ export const JubahRiderSubTab = forwardRef<JubahRiderSubTabHandle, JubahRiderSub
                   {jubahAssignments.map(a => {
                     return (
                       <tr key={a.id}
-                        onClick={() => setDirSheet(a)}
+                        onPointerDown={e => { e.preventDefault(); setDirSheet(a); }}
                         className="border-b border-slate-100 text-xs cursor-pointer hover:bg-slate-50 active:bg-slate-100 transition">
                         <td className="py-2.5 pr-4 text-slate-600 font-semibold align-top whitespace-nowrap">
                           {a.method === 'pickup' ? 'Pickup Only' : a.method === 'postage' ? 'Pickup & Postage' : '—'}
@@ -527,7 +527,7 @@ export const JubahRiderSubTab = forwardRef<JubahRiderSubTabHandle, JubahRiderSub
               <div className="flex justify-center pt-3 pb-1"><div className="w-10 h-1 bg-slate-200 rounded-full" /></div>
               <div className="flex items-center justify-between px-5 pt-2 pb-4">
                 <p className="text-sm font-semibold text-slate-700">Representative</p>
-                <button onClick={() => setDirSheet(null)} className="w-7 h-7 flex items-center justify-center rounded-full bg-slate-100 text-slate-500 active:scale-90 transition">
+                <button onPointerDown={e => { e.preventDefault(); setDirSheet(null); }} className="w-7 h-7 flex items-center justify-center rounded-full bg-slate-100 text-slate-500 active:scale-90 transition">
                   <X className="w-4 h-4" />
                 </button>
               </div>

@@ -187,7 +187,7 @@ export const ActivityLogTab = forwardRef<ActivityLogTabHandle, ActivityLogTabPro
             />
           </div>
           <button onClick={load}
-            className="w-9 h-9 shrink-0 flex items-center justify-center rounded-lg bg-slate-50 border border-slate-200 text-slate-400 hover:text-primary transition active:scale-90">
+            className="w-11 h-11 shrink-0 flex items-center justify-center rounded-lg bg-slate-50 border border-slate-200 text-slate-400 hover:text-primary transition active:scale-90">
             <RefreshCw className="w-3.5 h-3.5" />
           </button>
         </div>

@@ -74,7 +74,7 @@ export function DocumentVerificationSheet({ userId, onClose, onUpdated, showToas
               </div>
             </div>
             <button type="button" onPointerDown={e => { e.preventDefault(); onClose(); }}
-              className="w-8 h-8 flex items-center justify-center text-slate-400 active:scale-95 transition-transform transform-gpu">
+              className="w-11 h-11 flex items-center justify-center text-slate-400 active:scale-95 transition-transform transform-gpu">
               <X className="w-4 h-4" />
             </button>
           </div>

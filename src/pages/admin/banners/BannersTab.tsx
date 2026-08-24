@@ -211,7 +211,7 @@ export const BannersTab = forwardRef<BannersTabHandle, BannersTabProps>(function
         {loading ? <div className="flex justify-center py-8"><span className="w-5 h-5 rounded-full border-2 border-slate-200 border-t-primary animate-spin" /></div> : announcements.length === 0 ? <p className="text-xs text-slate-400 font-normal text-center py-6">No advertisements yet.</p> : (
           <div className="flex flex-col gap-4">{announcements.map(a => {
             const url = pictureUrl(a.gradient);
-            return <div key={a.id} role="button" tabIndex={0} onClick={() => openEdit(a)} onKeyDown={e => { if (e.key === 'Enter') openEdit(a); }} className={`rounded-2xl border border-slate-100 p-4 flex flex-col gap-3 cursor-pointer active:bg-slate-50 active:scale-[0.99] transition-transform transform-gpu ${a.is_active ? 'bg-white' : 'bg-slate-50 opacity-60'}`}>
+            return <div key={a.id} role="button" tabIndex={0} onPointerDown={e => { e.preventDefault(); openEdit(a); }} onKeyDown={e => { if (e.key === 'Enter') openEdit(a); }} className={`rounded-2xl border border-slate-100 p-4 flex flex-col gap-3 cursor-pointer active:bg-slate-50 active:scale-[0.99] transition-transform transform-gpu ${a.is_active ? 'bg-white' : 'bg-slate-50 opacity-60'}`}>
               <div className={`relative overflow-hidden rounded-xl aspect-[2.15/1] ${url ? 'bg-slate-50' : `bg-gradient-to-br ${a.gradient}`}`}>
                 {url ? <img src={url} alt={a.title} className="w-full h-full object-cover" /> : <div className="absolute inset-0 p-3 text-white flex flex-col items-center justify-center text-center"><span className="text-xs font-semibold opacity-80">{a.tag}</span><p className="text-sm font-semibold line-clamp-2">{a.title}</p></div>}
               </div>
