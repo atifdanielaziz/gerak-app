@@ -158,7 +158,10 @@ export const ProfileSheet: React.FC<{ u: ProfileUser; onClose: () => void; showT
           </button>
         </div>
 
-        <div className="flex-1 min-h-0 overflow-y-auto no-scrollbar px-5 pb-4">
+        <div
+          className="flex-1 min-h-0 overflow-y-auto no-scrollbar px-5"
+          style={{ paddingBottom: 'calc(1rem + env(safe-area-inset-bottom))' }}
+        >
 
           {/* Avatar + name */}
           <div className="flex flex-col items-center pb-5 gap-2">

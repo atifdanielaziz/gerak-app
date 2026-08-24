@@ -77,7 +77,10 @@ const DriverSheet: React.FC<DriverSheetProps> = ({ order, onClose }) => (
         </button>
       </div>
 
-      <div className="flex-1 min-h-0 overflow-y-auto no-scrollbar">
+      <div
+        className="flex-1 min-h-0 overflow-y-auto no-scrollbar"
+        style={!order.driver_contact ? { paddingBottom: 'env(safe-area-inset-bottom)' } : undefined}
+      >
         {/* Avatar + name */}
         <div className="flex flex-col items-center px-5 pb-5 gap-2">
           <div className="w-20 h-20 rounded-full bg-emerald-600 flex items-center justify-center">
@@ -111,7 +114,10 @@ const DriverSheet: React.FC<DriverSheetProps> = ({ order, onClose }) => (
 
       {/* Call + WhatsApp — sticky footer, always reachable */}
       {order.driver_contact && (
-        <div className="px-4 pt-3 pb-6 flex gap-3 shrink-0 border-t border-slate-100">
+        <div
+          className="px-4 pt-3 flex gap-3 shrink-0 border-t border-slate-100"
+          style={{ paddingBottom: 'calc(1.5rem + env(safe-area-inset-bottom))' }}
+        >
           <a
             href={`tel:${order.driver_contact}`}
             className="flex-1 flex items-center justify-center gap-2 bg-slate-800 text-white font-semibold text-xs py-3.5 rounded-2xl active:scale-[0.98] transition"

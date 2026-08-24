@@ -342,7 +342,8 @@ export const DriversTab = forwardRef<DriversTabHandle, DriversTabProps>(function
           onPointerDown={(e) => { e.preventDefault(); setShowInviteConfirm(false); }}
         >
           <div
-            className="w-full max-w-sm max-h-[calc(100dvh-5rem)] overflow-y-auto no-scrollbar bg-white rounded-t-3xl p-6 pb-10 shadow-2xl animate-slide-up"
+            className="w-full max-w-sm max-h-[calc(100dvh-5rem)] overflow-y-auto no-scrollbar bg-white rounded-t-3xl p-6 shadow-2xl animate-slide-up"
+            style={{ paddingBottom: 'calc(2.5rem + env(safe-area-inset-bottom))' }}
             onPointerDown={e => e.stopPropagation()}
           >
             {/* Handle bar */}

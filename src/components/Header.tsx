@@ -230,7 +230,7 @@ export const Header: React.FC = () => {
                   ? UNIVERSITIES.map(uni => (
                     <button
                       key={uni}
-                      onClick={() => selectUni(uni)}
+                      onPointerDown={e => { e.preventDefault(); selectUni(uni); }}
                       className="w-full flex items-center justify-between px-4 py-4 bg-white border border-slate-100 rounded-2xl active:bg-slate-50 active:scale-[0.99] transition"
                     >
                       <span className="text-sm font-semibold text-slate-800">{uni}</span>
@@ -243,7 +243,7 @@ export const Header: React.FC = () => {
                     return (
                       <button
                         key={campus}
-                        onClick={() => selectCampus(campus)}
+                        onPointerDown={e => { e.preventDefault(); selectCampus(campus); }}
                         className={`w-full flex items-center justify-between px-4 py-4 border rounded-2xl bg-white active:bg-slate-50 active:scale-[0.99] transition-transform ${
                           selected ? 'border-slate-900' : 'border-slate-100'
                         }`}
@@ -405,7 +405,7 @@ export const Header: React.FC = () => {
                   >
                   {UNIVERSITY_OPTIONS.map(option => {
                     const selected = adminUniversityKey === option.key;
-                    return <button key={option.key} onClick={(e) => { e.stopPropagation(); setAdminUniversityKey(option.key); setShowAdminUniversityMenu(false); }}
+                    return <button key={option.key} onPointerDown={(e) => { e.preventDefault(); e.stopPropagation(); setAdminUniversityKey(option.key); setShowAdminUniversityMenu(false); }}
                       className={`w-full min-h-12 flex items-center gap-3 px-3 py-3 rounded-xl text-left transition-transform active:scale-[0.99] ${selected ? 'border border-slate-900 bg-slate-50' : 'border border-transparent'}`}>
                       <span className="flex-1 text-xs font-semibold text-slate-700">{option.shortLabel}</span>
                       {selected && <Check className="w-4 h-4 text-slate-800" />}
@@ -550,7 +550,7 @@ export const Header: React.FC = () => {
                 return (
                   <button
                     key={campus}
-                    onClick={() => { updateProfile({ campus }); setShowMyCampusSheet(false); }}
+                    onPointerDown={e => { e.preventDefault(); updateProfile({ campus }); setShowMyCampusSheet(false); }}
                     className={`w-full flex items-center justify-between px-4 py-4 border rounded-2xl bg-white active:bg-slate-50 active:scale-[0.99] transition-transform ${
                       selected ? 'border-slate-900' : 'border-slate-100'
                     }`}
