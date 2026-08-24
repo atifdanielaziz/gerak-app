@@ -232,27 +232,26 @@ export const Dashboard: React.FC = () => {
 
       <div className="flex flex-col gap-4">
         
-        {/* A. Transportation Module — featured: the most-booked service gets
-            real visual weight instead of another identical row, which is
-            what actually breaks the "every module looks the same" pattern
-            (color alone on the others isn't enough on its own). */}
+        {/* A. Transportation Module — same card standard as the other
+            modules below; "Most booked" stays as a small red label,
+            keeping just enough distinction without a whole separate style. */}
         <div
           onClick={() => setCurrentPage('transport')}
-          className="bg-white border-[1.5px] border-slate-900 rounded-3xl p-[18px] flex items-center gap-3.5 cursor-pointer active:scale-[0.99] transition duration-200"
+          className="bg-white border border-slate-100 rounded-3xl p-5 flex items-center justify-between cursor-pointer active:scale-[0.99] active:bg-slate-50 transition duration-200"
         >
-          <div className="w-[50px] h-[50px] rounded-2xl bg-slate-900 flex items-center justify-center shrink-0">
-            <Car className="w-6 h-6 text-white" />
+          <div className="flex items-center gap-3">
+            <div className="w-[38px] h-[38px] rounded-xl bg-red-50 flex items-center justify-center shrink-0">
+              <Car className="w-[19px] h-[19px] text-primary" />
+            </div>
+            <div>
+              <p className="text-[10px] font-bold uppercase tracking-wide text-primary m-0">Most booked</p>
+              <h4 className="text-base font-semibold text-slate-800 m-0 leading-tight">Gerak Car</h4>
+              <p className="text-xs text-slate-400 font-normal mt-0.5">
+                Book point-to-point campus travel. Live path tracking.
+              </p>
+            </div>
           </div>
-          <div className="flex-1 min-w-0">
-            <p className="text-[9.5px] font-bold uppercase tracking-wide text-primary m-0">Most booked</p>
-            <h4 className="text-[15px] font-bold text-slate-800 m-0 leading-tight mt-0.5">Gerak Car</h4>
-            <p className="text-[10.5px] text-slate-400 font-normal mt-0.5 leading-snug">
-              Book point-to-point campus travel. Live path tracking.
-            </p>
-          </div>
-          <div className="w-[30px] h-[30px] rounded-[10px] bg-slate-900 flex items-center justify-center shrink-0">
-            <ChevronRight className="w-3.5 h-3.5 text-white" />
-          </div>
+          <ChevronRight className="w-5 h-5 text-slate-300 shrink-0" />
         </div>
 
         {/* B. Jubah Delivery Module — hidden entirely while closed, not just
