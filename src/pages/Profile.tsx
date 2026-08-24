@@ -39,7 +39,12 @@ export const Profile: React.FC = () => {
   const isActive = driverIsActive(user, receiptGateActive);
   const docsApproved = user.docsStatus === 'approved' || user.role === 'admin' || user.role === 'superadmin';
 
-  const [profileView, setProfileView]     = useState<'hub' | 'edit'>('hub');
+  const [profileView, setProfileView]     = useState<'hub' | 'edit' | 'security'>('hub');
+  const [newPassword, setNewPassword]     = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [passwordError, setPasswordError] = useState('');
+  const [passwordSaving, setPasswordSaving] = useState(false);
+  const [passwordSaved, setPasswordSaved] = useState(false);
   const [draftName, setDraftName]         = useState('');
   const [draftMatric, setDraftMatric]     = useState('');
   const [draftEmail, setDraftEmail]       = useState('');
@@ -164,6 +169,34 @@ export const Profile: React.FC = () => {
     setSavingGender(false);
   };
 
+  const changePassword = async () => {
+    setPasswordError('');
+    setPasswordSaved(false);
+    if (newPassword.length < 8) { setPasswordError('Password must be at least 8 characters.'); return; }
+    if (newPassword !== confirmPassword) { setPasswordError('Passwords do not match.'); return; }
+    setPasswordSaving(true);
+    const { error } = await supabase.auth.updateUser({ password: newPassword });
+    setPasswordSaving(false);
+    if (error) { setPasswordError(error.message || 'Could not update password. Please try again.'); return; }
+    setNewPassword('');
+    setConfirmPassword('');
+    setPasswordSaved(true);
+  };
+
+  const [linkCopied, setLinkCopied] = useState(false);
+  const shareApp = async () => {
+    const shareData = { title: 'Gerak', text: 'Gerak — Smart Campus Platform', url: 'https://www.gerakmy.com' };
+    if (navigator.share) {
+      try { await navigator.share(shareData); } catch { /* user cancelled — nothing to do */ }
+      return;
+    }
+    try {
+      await navigator.clipboard.writeText(shareData.url);
+      setLinkCopied(true);
+      setTimeout(() => setLinkCopied(false), 2000);
+    } catch { /* clipboard unavailable — nothing more we can do */ }
+  };
+
   const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -261,13 +294,20 @@ export const Profile: React.FC = () => {
 
   /* ── GUEST VIEW ── */
   if (!user.isLoggedIn || isPreviewMode) {
-    const prefRows    = [{ icon: Languages, label: 'Language' }, { icon: Moon, label: 'Appearance' }];
+    const prefRows    = [
+      { icon: Languages, label: 'Language', onClick: () => setCurrentPage('language-settings') },
+      { icon: Moon, label: 'Appearance', onClick: () => setCurrentPage('appearance-settings') },
+    ];
     const supportRows = [
-      { icon: HelpCircle, label: 'Help Center' },
+      { icon: HelpCircle, label: 'Help Center', onClick: () => setCurrentPage('help-center') },
       { icon: FileText, label: 'Terms & Conditions', onClick: () => setCurrentPage('terms-of-service') },
       { icon: Lock, label: 'Privacy Policy', onClick: () => setCurrentPage('privacy-policy') },
     ];
-    const otherRows   = [{ icon: Info, label: 'About Gerak' }, { icon: Star, label: 'Rate App' }, { icon: Share2, label: 'Share App' }];
+    const otherRows   = [
+      { icon: Info, label: 'About Gerak', onClick: () => setCurrentPage('about-gerak') },
+      { icon: Star, label: 'Rate App', onClick: () => setCurrentPage('rate-app') },
+      { icon: Share2, label: linkCopied ? 'Link Copied!' : 'Share App', onClick: shareApp },
+    ];
 
     const SettingRow = ({ icon: Icon, label, onClick }: { icon: React.ElementType; label: string; onClick?: () => void }) => (
       <button onClick={onClick} className="w-full bg-white border border-slate-100 rounded-2xl flex items-center justify-between px-4 py-4 active:bg-slate-50 active:scale-[0.99] transition text-left cursor-pointer">
@@ -284,7 +324,7 @@ export const Profile: React.FC = () => {
     return (
       <div className="flex-1 min-h-0 flex flex-col bg-white overflow-y-auto no-scrollbar animate-fade-in">
         <div className="flex justify-end px-5 pt-4">
-          <button className="w-9 h-9 rounded-xl bg-slate-100 text-slate-900 flex items-center justify-center active:scale-90 transition shrink-0">
+          <button onClick={() => setCurrentPage('help-center')} className="w-9 h-9 rounded-xl bg-slate-100 text-slate-900 flex items-center justify-center active:scale-90 transition shrink-0">
             <Headset className="w-4 h-4" />
           </button>
         </div>
@@ -721,6 +761,61 @@ export const Profile: React.FC = () => {
     );
   }
 
+  /* ── SECURITY SETTINGS SUB-PAGE ── */
+  if (profileView === 'security') {
+    return (
+      <div className="flex-grow bg-white overflow-y-auto no-scrollbar animate-fade-in pb-8">
+
+        {/* Sub-page header */}
+        <div className="px-5 pt-5 pb-2 flex items-center gap-3">
+          <button
+            onClick={() => { setProfileView('hub'); setPasswordError(''); setPasswordSaved(false); setNewPassword(''); setConfirmPassword(''); }}
+            className="w-9 h-9 flex items-center justify-center rounded-xl bg-slate-100 text-slate-700 active:scale-90 transition shrink-0"
+          >
+            <ChevronLeft className="w-5 h-5" />
+          </button>
+          <h1 className="text-xl font-bold text-slate-900 m-0 flex-1">Security Settings</h1>
+        </div>
+
+        <div className="px-5 pt-4 flex flex-col gap-4">
+          <div className="bg-white border border-slate-100 rounded-3xl p-5 flex flex-col gap-3">
+            <p className="text-sm font-bold text-slate-800 m-0">Change Password</p>
+            <div className="flex flex-col gap-1.5">
+              <label className="text-xs font-semibold text-slate-400">New password</label>
+              <input
+                type="password"
+                value={newPassword}
+                onChange={e => setNewPassword(e.target.value)}
+                style={{ fontSize: '16px' }}
+                className="bg-white border border-slate-100 rounded-xl py-2.5 px-3 text-sm font-normal text-slate-700 focus:outline-none focus:border-slate-900 transition"
+              />
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <label className="text-xs font-semibold text-slate-400">Confirm new password</label>
+              <input
+                type="password"
+                value={confirmPassword}
+                onChange={e => setConfirmPassword(e.target.value)}
+                style={{ fontSize: '16px' }}
+                className="bg-white border border-slate-100 rounded-xl py-2.5 px-3 text-sm font-normal text-slate-700 focus:outline-none focus:border-slate-900 transition"
+              />
+            </div>
+            {passwordError && <p className="text-xs text-danger font-semibold">{passwordError}</p>}
+            {passwordSaved && <p className="text-xs text-emerald-600 font-semibold">Password updated.</p>}
+            <button
+              onPointerDown={(e) => { e.preventDefault(); changePassword(); }}
+              disabled={passwordSaving}
+              className="w-full bg-primary text-white font-semibold py-3 rounded-2xl active:scale-[0.98] disabled:opacity-50 transition mt-1"
+            >
+              {passwordSaving ? 'Updating…' : 'Update Password'}
+            </button>
+          </div>
+        </div>
+
+      </div>
+    );
+  }
+
   /* ── LOGGED-IN: HUB VIEW ── */
   return (
     <div className="flex-grow bg-white overflow-y-auto no-scrollbar animate-fade-in pb-8">
@@ -761,8 +856,8 @@ export const Profile: React.FC = () => {
         <p className="text-sm font-bold text-slate-700 mb-3">Quick Actions</p>
         <div className="flex gap-3 overflow-x-auto no-scrollbar pb-1">
           {([
-            { icon: Wallet, label: 'My Finance', page: isProvider ? 'provider-finance' : undefined },
-            { icon: MessageSquareText, label: 'Feedback', page: isProvider ? 'provider-feedback' : undefined },
+            ...(isProvider ? [{ icon: Wallet, label: 'My Finance', page: 'provider-finance' as const }] : []),
+            ...(isProvider ? [{ icon: MessageSquareText, label: 'Feedback', page: 'provider-feedback' as const }] : []),
             { icon: ContactRound, label: 'Profile Card', action: () => setShowDigitalCard(true) },
           ] as { icon: React.ElementType; label: string; page?: 'provider-finance' | 'provider-feedback'; action?: () => void }[]).map(({ icon: Icon, label, page, action }) => (
             <button
@@ -796,7 +891,7 @@ export const Profile: React.FC = () => {
             </div>
             <ChevronRight className="w-4 h-4 text-slate-300" />
           </button>
-          <button className="w-full bg-white border border-slate-100 rounded-2xl flex items-center justify-between px-4 py-4 active:bg-slate-50 active:scale-[0.99] transition text-left cursor-pointer">
+          <button onClick={() => setProfileView('security')} className="w-full bg-white border border-slate-100 rounded-2xl flex items-center justify-between px-4 py-4 active:bg-slate-50 active:scale-[0.99] transition text-left cursor-pointer">
             <div className="flex items-center gap-3">
               <div className="w-9 h-9 rounded-xl bg-slate-100 flex items-center justify-center shrink-0"><ShieldCheck className="w-4 h-4 text-slate-900" /></div>
               <span className="text-sm font-semibold text-slate-800">Security Settings</span>
@@ -810,8 +905,11 @@ export const Profile: React.FC = () => {
       <div className="px-5 mb-5">
         <p className="text-xs font-semibold text-slate-400 pl-1 mb-2">Preferences</p>
         <div className="flex flex-col gap-2">
-          {([{ icon: Languages, label: 'Language' }, { icon: Moon, label: 'Appearance' }] as { icon: React.ElementType; label: string }[]).map(({ icon: Icon, label }) => (
-            <button key={label} className="w-full bg-white border border-slate-100 rounded-2xl flex items-center justify-between px-4 py-4 active:bg-slate-50 active:scale-[0.99] transition text-left cursor-pointer">
+          {([
+            { icon: Languages, label: 'Language', onClick: () => setCurrentPage('language-settings') },
+            { icon: Moon, label: 'Appearance', onClick: () => setCurrentPage('appearance-settings') },
+          ] as { icon: React.ElementType; label: string; onClick?: () => void }[]).map(({ icon: Icon, label, onClick }) => (
+            <button key={label} onClick={onClick} className="w-full bg-white border border-slate-100 rounded-2xl flex items-center justify-between px-4 py-4 active:bg-slate-50 active:scale-[0.99] transition text-left cursor-pointer">
               <div className="flex items-center gap-3">
                 <div className="w-9 h-9 rounded-xl bg-slate-100 flex items-center justify-center shrink-0"><Icon className="w-4 h-4 text-slate-900" /></div>
                 <span className="text-sm font-semibold text-slate-800">{label}</span>
@@ -827,7 +925,7 @@ export const Profile: React.FC = () => {
         <p className="text-xs font-semibold text-slate-400 pl-1 mb-2">Support</p>
         <div className="flex flex-col gap-2">
           {([
-            { icon: HelpCircle, label: 'Help Center' },
+            { icon: HelpCircle, label: 'Help Center', onClick: () => setCurrentPage('help-center') },
             { icon: FileText, label: 'Terms & Conditions', onClick: () => setCurrentPage('terms-of-service') },
             { icon: Lock, label: 'Privacy Policy', onClick: () => setCurrentPage('privacy-policy') },
           ] as { icon: React.ElementType; label: string; onClick?: () => void }[]).map(({ icon: Icon, label, onClick }) => (
@@ -847,11 +945,11 @@ export const Profile: React.FC = () => {
         <p className="text-xs font-semibold text-slate-400 pl-1 mb-2">Others</p>
         <div className="flex flex-col gap-2">
           {([
-            { icon: Info, label: 'About Gerak' },
-            { icon: Star, label: 'Rate App' },
-            { icon: Share2, label: 'Share App' },
-          ] as { icon: React.ElementType; label: string }[]).map(({ icon: Icon, label }) => (
-            <button key={label} className="w-full bg-white border border-slate-100 rounded-2xl flex items-center justify-between px-4 py-4 active:bg-slate-50 active:scale-[0.99] transition text-left cursor-pointer">
+            { icon: Info, label: 'About Gerak', onClick: () => setCurrentPage('about-gerak') },
+            { icon: Star, label: 'Rate App', onClick: () => setCurrentPage('rate-app') },
+            { icon: Share2, label: linkCopied ? 'Link Copied!' : 'Share App', onClick: shareApp },
+          ] as { icon: React.ElementType; label: string; onClick?: () => void }[]).map(({ icon: Icon, label, onClick }) => (
+            <button key={label} onClick={onClick} className="w-full bg-white border border-slate-100 rounded-2xl flex items-center justify-between px-4 py-4 active:bg-slate-50 active:scale-[0.99] transition text-left cursor-pointer">
               <div className="flex items-center gap-3">
                 <div className="w-9 h-9 rounded-xl bg-slate-100 flex items-center justify-center shrink-0"><Icon className="w-4 h-4 text-slate-900" /></div>
                 <span className="text-sm font-semibold text-slate-800">{label}</span>
