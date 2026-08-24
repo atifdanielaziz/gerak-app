@@ -232,21 +232,27 @@ export const Dashboard: React.FC = () => {
 
       <div className="flex flex-col gap-4">
         
-        {/* A. Transportation Module */}
+        {/* A. Transportation Module — featured: the most-booked service gets
+            real visual weight instead of another identical row, which is
+            what actually breaks the "every module looks the same" pattern
+            (color alone on the others isn't enough on its own). */}
         <div
           onClick={() => setCurrentPage('transport')}
-          className="bg-white border border-slate-100 rounded-3xl p-5 flex items-center justify-between cursor-pointer active:scale-[0.99] active:bg-slate-50 transition duration-200"
+          className="bg-white border-[1.5px] border-slate-900 rounded-3xl p-[18px] flex items-center gap-3.5 cursor-pointer active:scale-[0.99] transition duration-200"
         >
-          <div className="flex items-center gap-3">
-            <Car className="w-5 h-5 text-slate-400 shrink-0" />
-            <div>
-              <h4 className="text-base font-semibold text-slate-800 m-0 leading-tight">Gerak Car</h4>
-              <p className="text-xs text-slate-400 font-normal mt-0.5">
-                Book point-to-point campus travel. Live path tracking.
-              </p>
-            </div>
+          <div className="w-[50px] h-[50px] rounded-2xl bg-slate-900 flex items-center justify-center shrink-0">
+            <Car className="w-6 h-6 text-white" />
           </div>
-          <ChevronRight className="w-5 h-5 text-slate-300 shrink-0" />
+          <div className="flex-1 min-w-0">
+            <p className="text-[9.5px] font-bold uppercase tracking-wide text-primary m-0">Most booked</p>
+            <h4 className="text-[15px] font-bold text-slate-800 m-0 leading-tight mt-0.5">Gerak Car</h4>
+            <p className="text-[10.5px] text-slate-400 font-normal mt-0.5 leading-snug">
+              Book point-to-point campus travel. Live path tracking.
+            </p>
+          </div>
+          <div className="w-[30px] h-[30px] rounded-[10px] bg-slate-900 flex items-center justify-center shrink-0">
+            <ChevronRight className="w-3.5 h-3.5 text-white" />
+          </div>
         </div>
 
         {/* B. Jubah Delivery Module — hidden entirely while closed, not just
@@ -258,7 +264,9 @@ export const Dashboard: React.FC = () => {
             className="bg-white border border-slate-100 rounded-3xl p-5 flex items-center justify-between cursor-pointer active:scale-[0.99] active:bg-slate-50 transition duration-200"
           >
             <div className="flex items-center gap-3">
-              <GraduationCap className="w-5 h-5 text-slate-400 shrink-0" />
+              <div className="w-[38px] h-[38px] rounded-xl bg-amber-50 flex items-center justify-center shrink-0">
+                <GraduationCap className="w-[19px] h-[19px] text-amber-500" />
+              </div>
               <div>
                 <h4 className="text-base font-semibold text-slate-800 m-0 leading-tight">Jubah Delivery</h4>
                 <p className="text-xs text-slate-400 font-normal mt-0.5">
@@ -273,7 +281,9 @@ export const Dashboard: React.FC = () => {
         {/* C. Gerak Daily Module */}
         <div className="bg-white border border-slate-100 rounded-3xl p-5 flex items-center justify-between opacity-40 cursor-not-allowed">
           <div className="flex items-center gap-3">
-            <ShoppingBasket className="w-5 h-5 text-slate-400 shrink-0" />
+            <div className="w-[38px] h-[38px] rounded-xl bg-slate-100 flex items-center justify-center shrink-0">
+              <ShoppingBasket className="w-[19px] h-[19px] text-slate-400" />
+            </div>
             <div>
               <h4 className="text-base font-semibold text-slate-800 m-0 leading-tight">Gerak Daily</h4>
               <p className="text-xs text-slate-400 font-normal mt-0.5">
@@ -290,7 +300,9 @@ export const Dashboard: React.FC = () => {
           className="bg-white border border-slate-100 rounded-3xl p-5 flex items-center justify-between cursor-pointer active:scale-[0.99] active:bg-slate-50 transition duration-200"
         >
           <div className="flex items-center gap-3">
-            <KeyRound className="w-5 h-5 text-slate-400 shrink-0" />
+            <div className="w-[38px] h-[38px] rounded-xl bg-purple-50 flex items-center justify-center shrink-0">
+              <KeyRound className="w-[19px] h-[19px] text-purple-500" />
+            </div>
             <div>
               <h4 className="text-base font-semibold text-slate-800 m-0 leading-tight">Gerak Rental</h4>
               <p className="text-xs text-slate-400 font-normal mt-0.5">
@@ -307,7 +319,9 @@ export const Dashboard: React.FC = () => {
           className="bg-white border border-slate-100 rounded-3xl p-5 flex items-center justify-between cursor-pointer active:scale-[0.99] active:bg-slate-50 transition duration-200"
         >
           <div className="flex items-center gap-3">
-            <Truck className="w-5 h-5 text-slate-400 shrink-0" />
+            <div className="w-[38px] h-[38px] rounded-xl bg-orange-50 flex items-center justify-center shrink-0">
+              <Truck className="w-[19px] h-[19px] text-orange-500" />
+            </div>
             <div>
               <h4 className="text-base font-semibold text-slate-800 m-0 leading-tight">Gerak Transporter</h4>
               <p className="text-xs text-slate-400 font-normal mt-0.5">
