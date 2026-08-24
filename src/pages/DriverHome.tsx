@@ -1028,10 +1028,34 @@ export const DriverHome: React.FC = () => {
         </div>
       )}
 
+      {/* Neither can_drive nor can_rent — activeTab still defaults to
+          'pool' in this case (see its useState above), but loadOrders()
+          and the ride_orders realtime channel are both gated on
+          effectiveCanDrive and never actually run. Without this, the pool
+          tab below rendered its normal empty-queue state regardless,
+          which looked identical to "you're connected, there's just
+          nothing pending right now" — no orders were ever silently
+          missed, the account simply isn't enabled to see them yet. */}
+      {!loading && !effectiveCanDrive && !effectiveCanRent && (
+        <div className="px-4 pt-2">
+          <div className="bg-white border border-slate-100 rounded-3xl p-10 flex flex-col items-center gap-3 text-center">
+            <div className="w-16 h-16 rounded-full bg-slate-50 flex items-center justify-center">
+              <ShieldOff className="w-7 h-7 text-slate-300" />
+            </div>
+            <div>
+              <p className="text-sm font-semibold text-slate-700">Driving not enabled yet</p>
+              <p className="text-xs text-slate-400 font-normal mt-1 leading-relaxed">
+                Your account isn't set up to accept driving or rental jobs.<br />Contact an admin to get this enabled.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* ══════════════════════════════════════════
           TAB 1: JOB POOL
       ══════════════════════════════════════════ */}
-      {!loading && activeTab === 'pool' && (
+      {!loading && effectiveCanDrive && activeTab === 'pool' && (
         <div className="px-4 pt-2 flex flex-col gap-4">
 
           {/* Inactive driver lock banner */}
@@ -1199,7 +1223,7 @@ export const DriverHome: React.FC = () => {
       {/* ══════════════════════════════════════════
           TAB 2: MY JOBS
       ══════════════════════════════════════════ */}
-      {!loading && activeTab === 'my-jobs' && (
+      {!loading && effectiveCanDrive && activeTab === 'my-jobs' && (
         <div className="px-4 pt-2 flex flex-col gap-4">
 
           {/* ── Active job ── */}
