@@ -1,6 +1,6 @@
 import { forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useState } from 'react';
 import { supabase } from '../../../lib/supabase';
-import { ShieldCheck, ShieldOff, AlertCircle, FileImage, RefreshCw, ExternalLink, BarChart3, Plus, Minus, Clock3, CalendarX2 } from 'lucide-react';
+import { ShieldCheck, ShieldOff, AlertCircle, FileImage, RefreshCw, ExternalLink, BarChart3, ChevronDown, Clock3, CalendarX2 } from 'lucide-react';
 import { useLoadOnActive } from '../../../hooks/useLoadOnActive';
 import { type ProfileUser } from '../users/ProfileSheet';
 import { NativeSelect } from '../../../components/NativeSelect';
@@ -218,10 +218,13 @@ export const ReceiptsTab = forwardRef<ReceiptsTabHandle, ReceiptsTabProps>(funct
         </div>
 
         <section className={`bg-white border border-slate-100 rounded-3xl ${overviewCollapsed ? 'p-3.5' : 'p-4'}`}>
-          <div className={`flex items-center justify-between gap-3 ${overviewCollapsed ? '' : 'mb-4'}`}>
+          <button type="button" onPointerDown={e => { e.preventDefault(); setOverviewCollapsed(v => !v); }} aria-label={overviewCollapsed ? 'Show receipt overview stats' : 'Hide receipt overview stats'} className={`w-full flex items-center justify-between gap-3 active:scale-[0.99] transition-transform transform-gpu ${overviewCollapsed ? '' : 'mb-4'}`}>
             <h3 className="flex items-center gap-2 text-sm font-semibold text-slate-700"><BarChart3 className="w-4 h-4 text-slate-400" /> Receipt Overview</h3>
-            <button type="button" onPointerDown={e => { e.preventDefault(); setOverviewCollapsed(v => !v); }} aria-label={overviewCollapsed ? 'Expand receipt overview' : 'Minimize receipt overview'} className="w-7 h-7 rounded-full bg-slate-50 text-slate-500 flex items-center justify-center active:scale-[0.99] transition-transform transform-gpu">{overviewCollapsed ? <Plus className="w-3.5 h-3.5" /> : <Minus className="w-3.5 h-3.5" />}</button>
-          </div>
+            <span className="flex items-center gap-1.5 bg-red-50 border border-red-100 text-red-600 text-xs font-bold px-3 py-1.5 rounded-full shrink-0">
+              {overviewCollapsed ? 'View Stats' : 'Hide Stats'}
+              <ChevronDown className={`w-3.5 h-3.5 transition-transform ${overviewCollapsed ? '' : 'rotate-180'}`} />
+            </span>
+          </button>
           {!overviewCollapsed && <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">{([
             ['All', driverReceipts.length, FileImage, 'bg-blue-50', 'text-blue-600'],
             ['Verified', driverReceipts.filter(r => receiptStatus(r) === 'verified').length, ShieldCheck, 'bg-emerald-50', 'text-emerald-600'],

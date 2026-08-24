@@ -2,7 +2,7 @@ import { forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useSt
 import { supabase } from '../../../lib/supabase';
 import {
   BarChart3, Car, Clock, Trash2,
-  Search, RefreshCw, X, TrendingUp, Copy, Check, Plus, Minus,
+  Search, RefreshCw, X, TrendingUp, Copy, Check, ChevronDown,
   ClipboardList, CircleDashed, CircleCheck, CircleX,
 } from 'lucide-react';
 import { useApp } from '../../../context/AppContext';
@@ -315,12 +315,18 @@ export const OrdersTab = forwardRef<OrdersTabHandle, OrdersTabProps>(function Or
 
       {/* ── Stat cards ── */}
       <section className={`bg-white border border-slate-100 rounded-3xl ${overviewExpanded ? 'p-4' : 'p-3.5'}`}>
-        <div className="flex items-center justify-between gap-3">
+        <button
+          type="button"
+          aria-label={overviewExpanded ? 'Hide overview stats' : 'Show overview stats'}
+          onPointerDown={e => { e.preventDefault(); setOverviewExpanded(v => !v); }}
+          className="w-full flex items-center justify-between gap-3 active:scale-[0.99] transition-transform transform-gpu"
+        >
           <h3 className="flex items-center gap-2 text-sm font-semibold text-slate-700"><BarChart3 className="w-4 h-4 text-slate-400" /> Orders Overview</h3>
-          <button type="button" aria-label={overviewExpanded ? 'Minimize overview' : 'Expand overview'} onPointerDown={e => { e.preventDefault(); setOverviewExpanded(v => !v); }} className="w-7 h-7 rounded-full bg-slate-50 flex items-center justify-center text-slate-500 active:scale-90 transition-transform transform-gpu">
-            {overviewExpanded ? <Minus className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
-          </button>
-        </div>
+          <span className="flex items-center gap-1.5 bg-red-50 border border-red-100 text-red-600 text-xs font-bold px-3 py-1.5 rounded-full shrink-0">
+            {overviewExpanded ? 'Hide Stats' : 'View Stats'}
+            <ChevronDown className={`w-3.5 h-3.5 transition-transform ${overviewExpanded ? 'rotate-180' : ''}`} />
+          </span>
+        </button>
         {overviewExpanded && <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 mt-4">
         {([
           ['Total orders', pendingCount + completedCount, ClipboardList, 'bg-blue-50', 'text-blue-600'],

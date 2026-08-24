@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom';
 import { supabase } from '../../../lib/supabase';
 import {
   Users, MoreVertical, Car, KeyRound, Bike, GraduationCap, MapPin, ShieldCheck, ShieldOff, Trash2, Truck, FileCheck2,
-  BarChart3, CalendarCheck2, CalendarX2, UserCheck, LogIn, LogOut, Wifi, BriefcaseBusiness, PauseCircle, PlayCircle, Minus, Plus,
+  BarChart3, CalendarCheck2, CalendarX2, UserCheck, LogIn, LogOut, Wifi, BriefcaseBusiness, PauseCircle, PlayCircle, ChevronDown,
 } from 'lucide-react';
 import { WaIcon, toWa } from '../../../lib/whatsapp';
 import { useLoadOnActive } from '../../../hooks/useLoadOnActive';
@@ -551,16 +551,17 @@ export const UsersTab = forwardRef<UsersTabHandle, UsersTabProps>(function Users
       <div className="flex flex-col gap-4 w-full">
 
         <section className={`bg-white border border-slate-100 rounded-3xl ${overviewCollapsed ? 'p-3.5' : 'p-4'}`}>
-          <div className={`flex items-center justify-between gap-3 ${overviewCollapsed ? '' : 'mb-4'}`}>
+          <button type="button" onPointerDown={e => { e.preventDefault(); setOverviewCollapsed(value => !value); }}
+            className={`w-full flex items-center justify-between gap-3 active:scale-[0.99] transition-transform transform-gpu ${overviewCollapsed ? '' : 'mb-4'}`}
+            aria-label={overviewCollapsed ? 'Show staff overview stats' : 'Hide staff overview stats'}>
             <h3 className="text-sm font-semibold text-slate-700 flex items-center gap-2">
               <BarChart3 className="w-4 h-4 text-slate-400" /> Staff Overview ({UNIVERSITY_MAP[universityKey]?.shortLabel})
             </h3>
-            <button type="button" onPointerDown={e => { e.preventDefault(); setOverviewCollapsed(value => !value); }}
-              className="w-7 h-7 rounded-full bg-slate-50 text-slate-500 flex items-center justify-center active:scale-[0.99] transition-transform transform-gpu"
-              aria-label={overviewCollapsed ? 'Expand staff overview' : 'Minimize staff overview'}>
-              {overviewCollapsed ? <Plus className="w-3.5 h-3.5" /> : <Minus className="w-3.5 h-3.5" />}
-            </button>
-          </div>
+            <span className="flex items-center gap-1.5 bg-red-50 border border-red-100 text-red-600 text-xs font-bold px-3 py-1.5 rounded-full shrink-0">
+              {overviewCollapsed ? 'View Stats' : 'Hide Stats'}
+              <ChevronDown className={`w-3.5 h-3.5 transition-transform ${overviewCollapsed ? '' : 'rotate-180'}`} />
+            </span>
+          </button>
           {!overviewCollapsed && <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
             {([
               ['Payment Valid', overview.paymentValid, CalendarCheck2, 'bg-emerald-50', 'text-emerald-600'],
