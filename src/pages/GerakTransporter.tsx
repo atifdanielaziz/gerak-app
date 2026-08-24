@@ -4,7 +4,7 @@ import { supabase } from '../lib/supabase';
 import { WaIcon } from '../lib/whatsapp';
 import {
   Truck, Home, MapPin, Banknote, Shield,
-  Package, ChevronRight, ChevronLeft, Phone, Bike,
+  Package, ChevronRight, Phone, Bike,
   Check, CheckCircle2, Navigation, ClipboardList, RotateCcw,
 } from 'lucide-react';
 
@@ -71,7 +71,7 @@ Boleh saya dapatkan maklumat harga & ketersediaan? Terima kasih 🙏`
   );
 
 export const GerakTransporter: React.FC = () => {
-  const { user, showAuthGate } = useApp();
+  const { user, showAuthGate, setLeaveGuard } = useApp();
 
   const [providers,        setProviders]        = useState<TransporterProvider[]>([]);
   const [providersLoading, setProvidersLoading]  = useState(true);
@@ -111,6 +111,17 @@ export const GerakTransporter: React.FC = () => {
     setBookingError(null);
     setBookingDone(null);
   };
+
+  // Global back button (Header's own "<", plus hardware/gesture back) closes
+  // this booking sub-page instead of leaving Gerak Transporter entirely while
+  // it's open — same leaveGuard mechanism Transport.tsx's route picker
+  // sub-page uses. The sub-page's own local back chevron is removed in favor
+  // of this, so the Header stays the only place a back button lives.
+  useEffect(() => {
+    if (!selectedProvider) { setLeaveGuard(null); return; }
+    setLeaveGuard(() => () => { setSelectedProvider(null); resetBookingForm(); });
+    return () => setLeaveGuard(null);
+  }, [selectedProvider, setLeaveGuard]);
 
   const canBook = selectedServices.size > 0 && !!tripPickup.trim() && !!tripDestination.trim() && !booking;
 
@@ -155,7 +166,7 @@ export const GerakTransporter: React.FC = () => {
               <CheckCircle2 className="w-6 h-6 text-emerald-500" />
             </div>
             <div>
-              <h2 className="text-lg font-bold text-slate-800 m-0">Booking Submitted!</h2>
+              <h2 className="text-lg font-semibold text-slate-800 m-0">Booking Submitted!</h2>
               <p className="text-xs text-emerald-500 font-normal mt-0.5">{bookingDone.ref} · Price TBC</p>
             </div>
           </div>
@@ -202,17 +213,12 @@ export const GerakTransporter: React.FC = () => {
       <div className="flex-grow bg-white overflow-y-auto no-scrollbar pb-4 animate-fade-in">
         <div className="px-4 flex flex-col gap-4">
 
-          {/* Sub-page header — own back chevron, page's global Header back
-              button navigates between top-level pages, not this in-page view */}
-          <div className="mt-4 flex items-center gap-3">
-            <button onClick={() => { setSelectedProvider(null); resetBookingForm(); }}
-              className="w-8 h-8 flex items-center justify-center rounded-xl bg-slate-100 text-slate-500 active:scale-90 transition shrink-0">
-              <ChevronLeft className="w-4 h-4" />
-            </button>
-            <div>
-              <h2 className="text-lg font-semibold text-slate-800 m-0">Book Gerak Transporter</h2>
-              <p className="text-xs text-slate-400 font-normal mt-0.5">{selectedProvider.name}</p>
-            </div>
+          {/* Sub-page header — no local back button; the global Header's own
+              back (redirected via the leaveGuard effect above) closes this
+              sub-page instead of navigating between top-level pages. */}
+          <div className="mt-4">
+            <h2 className="text-lg font-semibold text-slate-800 m-0">Book Gerak Transporter</h2>
+            <p className="text-xs text-slate-400 font-normal mt-0.5">{selectedProvider.name}</p>
           </div>
 
           {/* Our Services — multi-select */}
@@ -299,8 +305,8 @@ export const GerakTransporter: React.FC = () => {
             <div className="flex items-center gap-2">
               <span className="text-xs font-semibold text-slate-600">{formatPhone(selectedProvider.phone)}</span>
               <a href={`https://wa.me/6${selectedProvider.phone}`} target="_blank" rel="noopener noreferrer"
-                className="text-[#25D366] active:scale-90 transition shrink-0">
-                <WaIcon className="w-4 h-4" />
+                className="w-11 h-11 flex items-center justify-center bg-white border border-slate-100 rounded-2xl active:scale-95 transition shrink-0">
+                <WaIcon className="w-4 h-4 text-[#25D366]" />
               </a>
             </div>
           </div>

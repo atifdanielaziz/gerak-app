@@ -26,7 +26,7 @@ export const ConfirmModal: React.FC = () => {
           </div>
         </div>
 
-        <h2 className="text-xl font-bold text-slate-800 text-center m-0">{confirmModal.title}</h2>
+        <h2 className="text-xl font-semibold text-slate-800 text-center m-0">{confirmModal.title}</h2>
         <p className="text-sm font-normal text-slate-500 text-center leading-relaxed -mt-1">{confirmModal.message}</p>
 
         <div className="flex gap-3 w-full mt-1">

@@ -512,7 +512,7 @@ export const GerakRental: React.FC = () => {
             </span>
           </button>
           {!selected && view === 'list' && (
-            <button onClick={loadOwners} className="w-8 h-8 flex items-center justify-center rounded-xl bg-white border border-slate-100 text-slate-400 hover:text-primary transition active:scale-90">
+            <button onClick={loadOwners} className="w-11 h-11 flex items-center justify-center rounded-xl bg-white border border-slate-100 text-slate-400 hover:text-primary transition active:scale-90">
               <RefreshCw className="w-4 h-4" />
             </button>
           )}
@@ -565,7 +565,7 @@ export const GerakRental: React.FC = () => {
                             <ExternalLink className="w-3 h-3" /> View
                           </a>
                           <button onClick={() => licenseRefs.current[bk.id]?.click()}
-                            className="text-xs font-semibold text-slate-400 hover:text-slate-600 transition">
+                            className="text-xs font-semibold text-slate-400 hover:text-slate-600 transition py-3.5 -my-3.5 px-1 -mx-1">
                             Replace
                           </button>
                         </div>
@@ -857,14 +857,14 @@ export const GerakRental: React.FC = () => {
                 </div>
                 <div className="flex items-center gap-2">
                   <button onPointerDown={e => { e.preventDefault(); setDuration(d => Math.max(1, d - 1)); }}
-                    className="w-10 h-10 rounded-xl border border-slate-100 bg-white text-slate-700 font-semibold text-sm active:bg-slate-50 active:scale-95 transition-transform flex items-center justify-center shrink-0">−</button>
+                    className="w-11 h-11 rounded-xl border border-slate-100 bg-white text-slate-700 font-semibold text-sm active:bg-slate-50 active:scale-95 transition-transform flex items-center justify-center shrink-0">−</button>
                   <span className="flex-1 text-center font-black text-xs text-slate-800">{fmtDuration(duration)}</span>
                   <button onPointerDown={e => {
                       e.preventDefault();
                       const ceiling = selected ? selected.operating_end - startHour : 12;
                       setDuration(d => Math.min(12, ceiling, d + 1));
                     }}
-                    className="w-10 h-10 rounded-xl border border-slate-100 bg-white text-slate-700 font-semibold text-sm active:bg-slate-50 active:scale-95 transition-transform flex items-center justify-center shrink-0">+</button>
+                    className="w-11 h-11 rounded-xl border border-slate-100 bg-white text-slate-700 font-semibold text-sm active:bg-slate-50 active:scale-95 transition-transform flex items-center justify-center shrink-0">+</button>
                 </div>
               </div>
 
@@ -888,10 +888,10 @@ export const GerakRental: React.FC = () => {
                 </p>
                 <div className="flex items-center gap-2">
                   <button onPointerDown={e => { e.preventDefault(); setPersons(p => Math.max(1, p - 1)); }}
-                    className="w-10 h-10 rounded-xl border border-slate-100 bg-white text-slate-700 font-semibold text-sm active:bg-slate-50 active:scale-95 transition-transform flex items-center justify-center shrink-0">−</button>
+                    className="w-11 h-11 rounded-xl border border-slate-100 bg-white text-slate-700 font-semibold text-sm active:bg-slate-50 active:scale-95 transition-transform flex items-center justify-center shrink-0">−</button>
                   <span className="flex-1 text-center font-black text-xs text-slate-800">{persons}</span>
                   <button onPointerDown={e => { e.preventDefault(); setPersons(p => Math.min(selected.seats, p + 1)); }}
-                    className="w-10 h-10 rounded-xl border border-slate-100 bg-white text-slate-700 font-semibold text-sm active:bg-slate-50 active:scale-95 transition-transform flex items-center justify-center shrink-0">+</button>
+                    className="w-11 h-11 rounded-xl border border-slate-100 bg-white text-slate-700 font-semibold text-sm active:bg-slate-50 active:scale-95 transition-transform flex items-center justify-center shrink-0">+</button>
                 </div>
               </div>
 
@@ -962,10 +962,10 @@ export const GerakRental: React.FC = () => {
                 </p>
                 <div className="flex items-center gap-2">
                   <button onPointerDown={e => { e.preventDefault(); setPersons(p => Math.max(1, p - 1)); }}
-                    className="w-10 h-10 rounded-xl border border-slate-100 bg-white text-slate-700 font-semibold text-sm active:bg-slate-50 active:scale-95 transition-transform flex items-center justify-center shrink-0">−</button>
+                    className="w-11 h-11 rounded-xl border border-slate-100 bg-white text-slate-700 font-semibold text-sm active:bg-slate-50 active:scale-95 transition-transform flex items-center justify-center shrink-0">−</button>
                   <span className="flex-1 text-center font-black text-xs text-slate-800">{persons}</span>
                   <button onPointerDown={e => { e.preventDefault(); setPersons(p => Math.min(selected.seats, p + 1)); }}
-                    className="w-10 h-10 rounded-xl border border-slate-100 bg-white text-slate-700 font-semibold text-sm active:bg-slate-50 active:scale-95 transition-transform flex items-center justify-center shrink-0">+</button>
+                    className="w-11 h-11 rounded-xl border border-slate-100 bg-white text-slate-700 font-semibold text-sm active:bg-slate-50 active:scale-95 transition-transform flex items-center justify-center shrink-0">+</button>
                 </div>
               </div>
 

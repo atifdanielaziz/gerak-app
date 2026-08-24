@@ -89,7 +89,7 @@ export const BottomNav: React.FC = () => {
                   addBubble(e, item.id);
                   setCurrentPage(item.id);
                 }}
-                className="relative flex items-center justify-center py-2 px-4 min-w-[64px] transition-all duration-300 rounded-2xl active:scale-90 overflow-hidden"
+                className="relative flex items-center justify-center py-3 px-4 min-w-[64px] min-h-11 transition-all duration-300 rounded-2xl active:scale-90 overflow-hidden"
                 aria-label={item.label}
               >
                 {/* Liquid Glass bubbles */}

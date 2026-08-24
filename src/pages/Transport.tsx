@@ -542,7 +542,7 @@ export const Transport: React.FC = () => {
               <CheckCircle2 className="w-6 h-6 text-emerald-500" />
             </div>
             <div>
-              <h2 className="text-lg font-bold text-slate-800 m-0">Booking Submitted!</h2>
+              <h2 className="text-lg font-semibold text-slate-800 m-0">Booking Submitted!</h2>
               <p className="text-xs text-emerald-500 font-normal mt-0.5">
                 Searching for your driver
               </p>
@@ -609,7 +609,7 @@ export const Transport: React.FC = () => {
           <Map className="w-7 h-7 text-slate-300" />
         </div>
         <div className="text-center">
-          <p className="text-sm font-bold text-slate-700">Gerak Car Unavailable</p>
+          <p className="text-sm font-semibold text-slate-700">Gerak Car Unavailable</p>
           <p className="text-xs text-slate-400 font-normal mt-1 leading-relaxed">
             This service is for customers only.<br />You're here to drive, not to book.
           </p>
@@ -632,7 +632,7 @@ export const Transport: React.FC = () => {
     return (
       <div className="flex-grow bg-white overflow-y-auto no-scrollbar animate-fade-in">
         <div className="px-5 pt-5 pb-2">
-          <h1 className="text-xl font-bold text-slate-900 m-0">Select a Route</h1>
+          <h1 className="text-xl font-semibold text-slate-900 m-0">Select a Route</h1>
         </div>
 
         <div className="px-5 pt-2 flex flex-col gap-5" style={{ paddingBottom: 'calc(6.5rem + env(safe-area-inset-bottom))' }}>
@@ -793,10 +793,10 @@ export const Transport: React.FC = () => {
                   with fare TBC, same as picking any unmatched pair does. */}
               <button
                 type="button"
-                onClick={() => pickRoute(selectedRoute.to, selectedRoute.from)}
+                onPointerDown={(e) => { e.preventDefault(); pickRoute(selectedRoute.to, selectedRoute.from); }}
                 title="Swap pickup and destination"
                 aria-label="Swap pickup and destination"
-                className="w-7 h-7 flex items-center justify-center rounded-full bg-slate-50 text-slate-400 active:scale-90 active:bg-slate-100 transition shrink-0"
+                className="w-11 h-11 flex items-center justify-center rounded-full bg-slate-50 text-slate-400 active:scale-90 active:bg-slate-100 transition shrink-0"
               >
                 <ArrowUpDown className="w-3.5 h-3.5" />
               </button>
@@ -832,10 +832,10 @@ export const Transport: React.FC = () => {
               </h3>
               <button
                 type="button"
-                onClick={() => { setCustomPickup(customDest); setCustomDest(customPickup); }}
+                onPointerDown={(e) => { e.preventDefault(); setCustomPickup(customDest); setCustomDest(customPickup); }}
                 title="Swap pickup and destination"
                 aria-label="Swap pickup and destination"
-                className="w-7 h-7 flex items-center justify-center rounded-full bg-slate-50 text-slate-400 active:scale-90 active:bg-slate-100 transition shrink-0"
+                className="w-11 h-11 flex items-center justify-center rounded-full bg-slate-50 text-slate-400 active:scale-90 active:bg-slate-100 transition shrink-0"
               >
                 <ArrowUpDown className="w-3.5 h-3.5" />
               </button>
@@ -932,10 +932,10 @@ export const Transport: React.FC = () => {
                   — this IS the To/From direction now, no separate toggle. */}
               <button
                 type="button"
-                onClick={() => setAerbusDirection(d => d === 'to' ? 'from' : 'to')}
+                onPointerDown={(e) => { e.preventDefault(); setAerbusDirection(d => d === 'to' ? 'from' : 'to'); }}
                 title="Swap pickup and destination"
                 aria-label="Swap pickup and destination"
-                className="w-7 h-7 flex items-center justify-center rounded-full bg-slate-50 text-slate-400 active:scale-90 active:bg-slate-100 transition shrink-0"
+                className="w-11 h-11 flex items-center justify-center rounded-full bg-slate-50 text-slate-400 active:scale-90 active:bg-slate-100 transition shrink-0"
               >
                 <ArrowUpDown className="w-3.5 h-3.5" />
               </button>
@@ -987,7 +987,7 @@ export const Transport: React.FC = () => {
                   onPointerDown={(e) => { e.preventDefault(); setShowTimingMenu(open => !open); }}
                   aria-label="Choose booking time"
                   aria-expanded={showTimingMenu}
-                  className="w-7 h-7 flex items-center justify-center rounded-full bg-slate-50 text-slate-400 transition-transform transform-gpu active:scale-90 active:bg-slate-100"
+                  className="w-11 h-11 flex items-center justify-center rounded-full bg-slate-50 text-slate-400 transition-transform transform-gpu active:scale-90 active:bg-slate-100"
                 >
                   <MoreVertical className="w-4 h-4" />
                 </button>
@@ -1093,10 +1093,10 @@ export const Transport: React.FC = () => {
             </label>
             <div className="flex items-center gap-2">
               <button type="button" onPointerDown={e => { e.preventDefault(); setPassengers(p => Math.max(1, p - 1)); }}
-                className="w-10 h-10 rounded-xl border border-slate-100 bg-white text-slate-700 font-semibold text-sm active:bg-slate-50 active:scale-95 transition-transform flex items-center justify-center shrink-0">−</button>
+                className="w-11 h-11 rounded-xl border border-slate-100 bg-white text-slate-700 font-semibold text-sm active:bg-slate-50 active:scale-95 transition-transform flex items-center justify-center shrink-0">−</button>
               <span className="flex-1 text-center font-black text-xs text-slate-800">{passengers}</span>
               <button type="button" onPointerDown={e => { e.preventDefault(); setPassengers(p => Math.min(8, p + 1)); }}
-                className="w-10 h-10 rounded-xl border border-slate-100 bg-white text-slate-700 font-semibold text-sm active:bg-slate-50 active:scale-95 transition-transform flex items-center justify-center shrink-0">+</button>
+                className="w-11 h-11 rounded-xl border border-slate-100 bg-white text-slate-700 font-semibold text-sm active:bg-slate-50 active:scale-95 transition-transform flex items-center justify-center shrink-0">+</button>
             </div>
             {passengers > 4 && (
               <p className="text-xs text-amber-600 font-normal pl-1">Over 4 pax — extra charge may apply</p>
@@ -1133,7 +1133,7 @@ export const Transport: React.FC = () => {
                 <Venus className="w-4 h-4 text-primary" />
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-xs font-bold text-red-900 m-0">Prefer a female driver</p>
+                <p className="text-xs font-semibold text-red-900 m-0">Prefer a female driver</p>
                 <p className="text-[10.5px] text-red-600 font-normal mt-0.5 leading-snug">Only female drivers on campus can accept. May take longer to match.</p>
               </div>
               <div className={`w-10 h-6 rounded-full shrink-0 relative transition-colors ${preferFemaleDriver ? 'bg-primary' : 'bg-slate-200'}`}>
@@ -1234,7 +1234,7 @@ export const Transport: React.FC = () => {
               <p className="text-xs font-extrabold text-slate-400 uppercase tracking-widest">BOOKING TERMS</p>
               <button
                 onClick={() => setShowTerms(false)}
-                className="w-7 h-7 flex items-center justify-center rounded-full bg-slate-100 text-slate-500 active:scale-90 transition"
+                className="w-11 h-11 flex items-center justify-center rounded-full bg-slate-100 text-slate-500 active:scale-90 transition"
               >
                 <X className="w-4 h-4" />
               </button>
