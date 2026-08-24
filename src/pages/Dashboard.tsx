@@ -134,10 +134,27 @@ export const Dashboard: React.FC = () => {
             </p>
           </>
         ) : (
-          <>
-            <img src="/gerak-brand.png" alt="Gerak" className="w-16 h-auto" />
-            <p className="text-xs text-slate-400 font-normal mt-0.5">Smart Campus Platform</p>
-          </>
+          // Icon split from the wordmark instead of the stacked gerak-brand.png
+          // lockup, which left most of the card's width empty. A large, faint
+          // copy of the same mark bleeds off the top-right corner behind the
+          // real content — texture without inventing anything new to show.
+          <div className="relative overflow-hidden -m-5 p-5 rounded-3xl">
+            <img
+              src="/gerak-icon-transparent.png"
+              alt=""
+              aria-hidden="true"
+              className="absolute -right-3.5 -top-3.5 w-[100px] h-[100px] opacity-[0.06] pointer-events-none select-none"
+            />
+            <div className="relative flex items-center gap-3">
+              <img src="/gerak-icon-transparent.png" alt="Gerak" className="w-10 h-10 shrink-0" />
+              <div>
+                <p className="text-2xl font-black text-slate-800 m-0 leading-none">
+                  ger<span className="text-primary">a</span>k
+                </p>
+                <p className="text-xs text-slate-400 font-normal mt-1">Smart Campus Platform</p>
+              </div>
+            </div>
+          </div>
         )}
       </div>
 
