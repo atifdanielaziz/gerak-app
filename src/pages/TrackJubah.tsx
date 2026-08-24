@@ -138,24 +138,23 @@ export const TrackJubah: React.FC = () => {
     setError('');
     setResults([]);
     const refValue = reference.trim();
+    const icValue = icNumber.trim();
     const icDigits = icNumber.replace(/\D/g, '');
-    // Reference AND IC are both required together — track_jubah_booking no
-    // longer accepts either alone (or matric/phone at all). A reference or
-    // IC by itself is guessable/enumerable/shareable-via-link; requiring
-    // both closes that off, matching get_jubah_receipt's existing pattern.
-    if (!refValue || !icNumber.trim()) {
-      setError('Please enter both your reference number and IC number.');
+    // Either field alone is enough — track_jubah_booking matches on
+    // whichever of reference/IC is supplied (and both, if both are given).
+    if (!refValue && !icValue) {
+      setError('Please enter your reference number or IC number.');
       return;
     }
-    if (icDigits.length !== 12) {
+    if (icValue && icDigits.length !== 12) {
       setError('Please enter a valid 12-digit IC number (e.g. 980123-45-6789).');
       return;
     }
     setSearching(true);
     setSearched(false);
     const { data, error: rpcError } = await supabase.rpc('track_jubah_booking', {
-      p_reference:  refValue,
-      p_ic_number:  icNumber.trim(),
+      p_reference:  refValue || null,
+      p_ic_number:  icValue || null,
     });
     setSearching(false);
     setSearched(true);
@@ -179,12 +178,8 @@ export const TrackJubah: React.FC = () => {
   // Supports a bookmarked/shared "?reference=..." deep link, or returning
   // from the unfinished-booking nudge (same pending-booking marker) —
   // pre-fills the reference so the customer doesn't need to retype it.
-  // Deliberately does NOT auto-search: track_jubah_booking now requires
-  // reference + IC together (see 20260823140000_track_jubah_booking_
-  // require_ic.sql), and a shared/bookmarked link only ever carries the
-  // reference — auto-running with reference alone would just always fail
-  // validation, and a reference-only link is exactly the single-factor
-  // exposure that migration closed, so it must not be reintroduced here.
+  // Left as a pre-fill rather than auto-search so the page doesn't fire an
+  // RPC call before the user has actually landed on it.
   useEffect(() => {
     const refParam = new URLSearchParams(window.location.search).get('reference');
     const fallbackRef = refParam ? null : getPendingJubahBooking()?.reference ?? null;
@@ -255,7 +250,7 @@ export const TrackJubah: React.FC = () => {
       <form onSubmit={handleSearch} className="bg-white border border-slate-100 rounded-3xl p-5 flex flex-col gap-4">
 
         <div className="flex flex-col gap-1.5">
-          <label className="text-xs font-semibold text-slate-400">Reference Number</label>
+          <label className="text-xs font-semibold text-slate-400">Reference Number <span className="font-normal text-slate-300">(or IC below)</span></label>
           <input
             type="text"
             value={reference}
@@ -267,7 +262,7 @@ export const TrackJubah: React.FC = () => {
         </div>
 
         <div className="flex flex-col gap-1.5">
-          <label className="text-xs font-semibold text-slate-400">IC Number</label>
+          <label className="text-xs font-semibold text-slate-400">IC Number <span className="font-normal text-slate-300">(or reference above)</span></label>
           <input
             type="text"
             inputMode="numeric"
