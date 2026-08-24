@@ -172,7 +172,13 @@ export const DriverHome: React.FC = () => {
   const [accepting, setAccepting]           = useState<string | null>(null);
   const [updating, setUpdating]             = useState(false);
   const [cancelSecsLeft, setCancelSecsLeft] = useState<number>(0);
-  const [toast, setToast]                   = useState('');
+  // Queue, not a single string — a single load() pass (especially right
+  // after a realtime reconnect catches up on more than one missed event
+  // at once) can call showToast() more than once synchronously, and a
+  // single setToast() call was silently overwriting the first before
+  // React ever rendered it. Same fix already applied to MyOrders.tsx.
+  const [toastQueue, setToastQueue] = useState<string[]>([]);
+  const toast = toastQueue[0] ?? '';
   const [uploadingDoc, setUploadingDoc]     = useState<'license' | null>(null);
   const licenseDocRef                       = useRef<HTMLInputElement>(null);
   const [loading, setLoading]               = useState(true);
@@ -213,9 +219,16 @@ export const DriverHome: React.FC = () => {
   }, [sheetOrder, rentalReceiptBk, setSheetOpen]);
 
   const showToast = (msg: string) => {
-    setToast(msg);
-    setTimeout(() => setToast(''), 3000);
+    setToastQueue(q => [...q, msg]);
   };
+
+  // Sole timer, keyed on the displayed message (the queue head) so it only
+  // restarts when what's on screen actually changes.
+  useEffect(() => {
+    if (!toast) return;
+    const id = setTimeout(() => setToastQueue(q => q.slice(1)), 3000);
+    return () => clearTimeout(id);
+  }, [toast]);
 
   // Admins in driver mode, gate-exempted drivers, or a globally-OFF gate all bypass the receipt check
   const isDriverActive = (user.role === 'admin' || user.role === 'superadmin')
