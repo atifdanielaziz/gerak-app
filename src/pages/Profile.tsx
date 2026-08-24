@@ -459,26 +459,35 @@ export const Profile: React.FC = () => {
             {fieldErrors.phone && <p className="text-xs text-danger font-semibold mt-1">{fieldErrors.phone}</p>}
           </div>
 
-          {/* Gender — optional, self-serve; blank for any account created
-              before this shipped until the user sets it themselves here. */}
+          {/* Gender — one-time. Once set (here or at Register.tsx sign-up),
+              the picker is replaced by a plain read-only value; the backend
+              trigger (protect_privileged_profile_columns) pins it too, so
+              this isn't just a disabled button a direct API call could
+              route around. */}
           <div className="border border-slate-100 rounded-2xl px-4 py-3">
             <span className="text-xs font-semibold text-slate-400 block">Gender</span>
-            <div className="grid grid-cols-2 gap-2 mt-2">
-              {([['male', 'Male', Mars], ['female', 'Female', Venus]] as const).map(([value, label, Icon]) => (
-                <button
-                  key={value}
-                  type="button"
-                  disabled={savingGender}
-                  onPointerDown={e => { e.preventDefault(); saveGender(value); }}
-                  className={`flex items-center justify-center gap-1.5 py-2 rounded-xl border transition-transform transform-gpu active:scale-[0.99] disabled:opacity-60 ${
-                    draftGender === value ? 'border-slate-900 bg-white' : 'border-slate-100 bg-white'
-                  }`}
-                >
-                  <Icon className={`w-3.5 h-3.5 ${draftGender === value ? 'text-slate-900' : 'text-slate-400'}`} />
-                  <span className={`text-xs font-bold ${draftGender === value ? 'text-slate-900' : 'text-slate-500'}`}>{label}</span>
-                </button>
-              ))}
-            </div>
+            {user.gender ? (
+              <span className="text-sm font-normal text-slate-700 mt-1 block">
+                {user.gender === 'female' ? 'Female' : 'Male'}
+              </span>
+            ) : (
+              <div className="grid grid-cols-2 gap-2 mt-2">
+                {([['male', 'Male', Mars], ['female', 'Female', Venus]] as const).map(([value, label, Icon]) => (
+                  <button
+                    key={value}
+                    type="button"
+                    disabled={savingGender}
+                    onPointerDown={e => { e.preventDefault(); saveGender(value); }}
+                    className={`flex items-center justify-center gap-1.5 py-2 rounded-xl border transition-transform transform-gpu active:scale-[0.99] disabled:opacity-60 ${
+                      draftGender === value ? 'border-slate-900 bg-white' : 'border-slate-100 bg-white'
+                    }`}
+                  >
+                    <Icon className={`w-3.5 h-3.5 ${draftGender === value ? 'text-slate-900' : 'text-slate-400'}`} />
+                    <span className={`text-xs font-bold ${draftGender === value ? 'text-slate-900' : 'text-slate-500'}`}>{label}</span>
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* Email Address */}
