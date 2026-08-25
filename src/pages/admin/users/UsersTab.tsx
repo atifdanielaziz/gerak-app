@@ -10,6 +10,7 @@ import { WaIcon, toWa } from '../../../lib/whatsapp';
 import { useLoadOnActive } from '../../../hooks/useLoadOnActive';
 import { type ProfileUser } from './ProfileSheet';
 import { NativeSelect } from '../../../components/NativeSelect';
+import { MultiSelect } from '../../../components/MultiSelect';
 import { UNIVERSITIES, UNIVERSITY_MAP, jubahLocationLabel, universityKeyFromCampus } from '../../../lib/universities';
 import { DocumentVerificationSheet } from '../verify/DocumentVerificationSheet';
 import { useAxisLockedScroll } from '../../../hooks/useAxisLockedScroll';
@@ -807,19 +808,16 @@ export const UsersTab = forwardRef<UsersTabHandle, UsersTabProps>(function Users
               placeholder="Select Jubah Lead"
               label="Lead"
             />
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-              {UNIVERSITIES.map(university => {
-                const selected = leadUniversityKeys.includes(university.key);
-                return (
-                  <button key={university.key} type="button" onPointerDown={event => {
-                    event.preventDefault();
-                    setLeadUniversityKeys(keys => selected ? keys.filter(key => key !== university.key) : [...keys, university.key]);
-                  }} className={`bg-white border rounded-xl px-3 py-2 text-left text-xs font-semibold transition-transform transform-gpu active:scale-[0.99] ${selected ? 'border-slate-900 bg-slate-50 text-slate-900' : 'border-slate-100 text-slate-500'}`}>
-                    {university.shortLabel}
-                  </button>
-                );
-              })}
-            </div>
+            <MultiSelect
+              values={leadUniversityKeys}
+              onChange={setLeadUniversityKeys}
+              options={UNIVERSITIES.map(university => ({
+                value: university.key,
+                label: university.shortLabel,
+              }))}
+              placeholder="Select universities..."
+              disabled={!leadUserId}
+            />
             {leadRows.some(row => row.user_id === leadUserId && row.is_active) && (
               <button type="button" disabled={savingLead} onPointerDown={event => { event.preventDefault(); void removeJubahLead(); }}
                 className="self-end bg-white border border-red-100 text-red-600 rounded-xl px-4 py-2 text-xs font-semibold transition-transform transform-gpu active:scale-95 disabled:opacity-40">

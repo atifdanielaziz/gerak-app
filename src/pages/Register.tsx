@@ -183,11 +183,7 @@ export const Register: React.FC = () => {
 
       {/* Header */}
       <div className="flex flex-col items-center text-center mt-0">
-        <div
-          className="w-12 h-12 rounded-xl bg-white border border-slate-100 mb-2 flex items-center justify-center"
-        >
-          <span style={{ fontFamily: 'Inter, sans-serif', fontSize: '2rem', color: '#0F172A', lineHeight: 1, fontWeight: 900 }}>g</span>
-        </div>
+        <img src="/gerak-brand.png" alt="Gerak" className="w-20 h-auto mb-2" />
         <h2 className="text-xl font-bold text-slate-800 tracking-tight font-heading m-0">
           Create Gerak Account
         </h2>
