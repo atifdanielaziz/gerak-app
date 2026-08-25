@@ -1,5 +1,6 @@
 import React from 'react';
-import { HelpCircle, Mail } from 'lucide-react';
+import { HelpCircle, Mail, FileText, Lock, ChevronRight } from 'lucide-react';
+import { useApp } from '../context/AppContext';
 
 const Section: React.FC<{ title: string; children: React.ReactNode }> = ({ title, children }) => (
   <div className="bg-white border border-slate-100 rounded-3xl p-5 flex flex-col gap-2">
@@ -11,6 +12,8 @@ const Section: React.FC<{ title: string; children: React.ReactNode }> = ({ title
 );
 
 export const HelpCenter: React.FC = () => {
+  const { setCurrentPage } = useApp();
+
   return (
     <div className="flex-grow bg-white overflow-y-auto no-scrollbar pb-8 px-5 animate-fade-in flex flex-col gap-4">
 
@@ -45,6 +48,24 @@ export const HelpCenter: React.FC = () => {
           monitor payment mismatches manually and will follow up.
         </p>
       </Section>
+
+      <div>
+        <p className="text-xs font-semibold text-slate-400 pl-1 mb-2">Policies</p>
+        <div className="flex flex-col gap-2">
+          {([
+            { icon: FileText, label: 'Terms & Conditions', onClick: () => setCurrentPage('terms-of-service') },
+            { icon: Lock, label: 'Privacy Policy', onClick: () => setCurrentPage('privacy-policy') },
+          ] as { icon: React.ElementType; label: string; onClick: () => void }[]).map(({ icon: Icon, label, onClick }) => (
+            <button key={label} onClick={onClick} className="w-full bg-white border border-slate-100 rounded-2xl flex items-center justify-between px-4 py-4 active:bg-slate-50 active:scale-[0.99] transition text-left cursor-pointer">
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-xl bg-slate-100 flex items-center justify-center shrink-0"><Icon className="w-4 h-4 text-slate-900" /></div>
+                <span className="text-sm font-semibold text-slate-800">{label}</span>
+              </div>
+              <ChevronRight className="w-4 h-4 text-slate-300" />
+            </button>
+          ))}
+        </div>
+      </div>
 
       <a
         href="mailto:gerakmygroup@gmail.com"
