@@ -668,13 +668,15 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const loadProfile = async (userId: string) => {
     const [{ data }, { data: lead }, { data: leadUniversities }] = await Promise.all([
       supabase.from('profiles').select('id,name,matric_no,email,phone,university,campus,gender,gerak_id,role,status,vehicle,plate_number,fee_receipt_url,fee_receipt_verified,fee_receipt_amount,fee_receipt_date,fee_receipt_expiry,fee_receipt_reject_reason,can_drive,can_rent,can_transport,ic_number,ic_url,license_url,docs_status,docs_reject_reason,receipt_gate_exempt,avatar_url').eq('id', userId).single(),
-      supabase.from('jubah_leads').select('is_active').eq('user_id', userId).maybeSingle(),
+      supabase.from('jubah_leads').select('is_active,base_university_key,base_campus').eq('user_id', userId).maybeSingle(),
       supabase.from('jubah_lead_universities').select('university_key').eq('lead_id', userId),
     ]);
     if (data) {
       const role = data.role ?? 'customer';
       const jubahLeadUniversities = lead?.is_active
-        ? (leadUniversities ?? []).map(row => row.university_key)
+        ? (leadUniversities ?? [])
+            .map(row => row.university_key)
+            .sort((a, b) => a === lead.base_university_key ? -1 : b === lead.base_university_key ? 1 : 0)
         : [];
       const isJubahLead = jubahLeadUniversities.length > 0;
       setUser({

@@ -1,6 +1,6 @@
 ﻿import React, { useState } from 'react';
 import { useApp } from '../context/AppContext';
-import { Bell, ChevronLeft, ShieldCheck, Car, Bike, MoreHorizontal, MoreVertical, Eye, ChevronDown, X, MapPin, User, Pencil, CalendarCheck2, FileCheck2, Menu, Check, GraduationCap, Crown } from 'lucide-react';
+import { Bell, ChevronLeft, ShieldCheck, Car, Bike, MoreHorizontal, MoreVertical, Eye, ChevronDown, X, MapPin, User, Pencil, CalendarCheck2, FileCheck2, Menu, Check, GraduationCap, UserRoundCog } from 'lucide-react';
 import { WaBtn } from '../lib/whatsapp';
 import { UNIVERSITIES as UNIVERSITY_OPTIONS } from '../lib/universities';
 import { CampusStatusToggle } from './CampusStatusToggle';
@@ -417,7 +417,7 @@ export const Header: React.FC = () => {
                         activeRole === 'lead' ? 'bg-amber-50 text-amber-700' : 'text-slate-600 hover:bg-slate-50'
                       }`}
                     >
-                      <Crown className="w-4 h-4 shrink-0" />
+                      <UserRoundCog className="w-4 h-4 shrink-0" />
                       Lead
                       {activeRole === 'lead' && <span className="ml-auto text-[8px] bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded-full">Active</span>}
                     </button>
@@ -507,7 +507,7 @@ export const Header: React.FC = () => {
                   {user.isJubahLead && (<>
                     <button onPointerDown={(e) => { e.preventDefault(); switchToLeadMode(); setShowRoleMenu(false); }}
                       className={`w-full flex items-center gap-3 px-4 py-3 text-left text-xs font-semibold ${activeRole === 'lead' ? 'bg-amber-50 text-amber-700' : 'text-slate-600'}`}>
-                      <Crown className="w-4 h-4 shrink-0" /> Lead
+                      <UserRoundCog className="w-4 h-4 shrink-0" /> Lead
                       {activeRole === 'lead' && <span className="ml-auto text-[8px] bg-amber-100 px-1.5 py-0.5 rounded-full">Active</span>}
                     </button>
                     <button onPointerDown={(e) => { e.preventDefault(); switchToRiderMode(); setShowRoleMenu(false); }}

@@ -4,7 +4,7 @@ import { supabase } from '../../../lib/supabase';
 import {
   Users, MoreVertical, Car, KeyRound, Bike, GraduationCap, MapPin, ShieldCheck, ShieldOff, Trash2, Truck, FileCheck2,
   BarChart3, CalendarCheck2, CalendarX2, UserCheck, LogIn, LogOut, Wifi, BriefcaseBusiness, PauseCircle, PlayCircle, ChevronDown,
-  Crown,
+  UserRoundCog,
 } from 'lucide-react';
 import { WaIcon, toWa } from '../../../lib/whatsapp';
 import { useLoadOnActive } from '../../../hooks/useLoadOnActive';
@@ -795,7 +795,7 @@ export const UsersTab = forwardRef<UsersTabHandle, UsersTabProps>(function Users
         {isSuperAdmin && (
           <section className="bg-white border border-slate-100 rounded-3xl p-5 flex flex-col gap-4 w-full">
             <h3 className="text-sm font-semibold text-slate-700 flex items-center gap-2">
-              <Crown className="w-4 h-4 text-slate-400" /> Lead
+              <UserRoundCog className="w-4 h-4 text-slate-400" /> Lead
             </h3>
             <p className="text-xs font-normal text-slate-400">A Lead can manage Jubah bookings only for the universities selected here.</p>
             <NativeSelect
