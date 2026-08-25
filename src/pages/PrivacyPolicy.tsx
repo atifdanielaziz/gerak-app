@@ -28,7 +28,7 @@ export const PrivacyPolicy: React.FC = () => {
       <Section title="1. Who we are">
         <p>
           Gerak ("Gerak", "we", "us", "our") operates a campus platform for students and staff at the universities
-          we serve — currently UMPSA, UiTM, UMK, UKM, UIAM, UUM, UniSZA, UTP, UPM, UM, and UPSI, with more campuses
+          we serve — currently UMPSA, UiTM, UMK, UKM, UIAM, UUM, UniSZA, UTP, UPM, UM, UPSI, UMS, and UNIMAS, with more campuses
           planned — covering campus ride-hailing ("Gerak Transport"), graduation robe booking and delivery ("Gerak Jubah"),
           and peer-to-peer vehicle rental ("Gerak Rental").
         </p>

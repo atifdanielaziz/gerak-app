@@ -10,9 +10,8 @@ const Section: React.FC<{ title: string; children: React.ReactNode }> = ({ title
   </div>
 );
 
-// Same 11-university list as Terms/Privacy — keep in sync with universities.ts
-// if that list changes.
-const UNIVERSITIES = ['UMPSA', 'UiTM', 'UMK', 'UKM', 'UIAM', 'UUM', 'UniSZA', 'UTP', 'UPM', 'UM', 'UPSI'];
+// Same university list as Terms/Privacy — keep in sync with universities.ts.
+const UNIVERSITIES = ['UMPSA', 'UiTM', 'UMK', 'UKM', 'UIAM', 'UUM', 'UniSZA', 'UTP', 'UPM', 'UM', 'UPSI', 'UMS', 'UNIMAS'];
 
 export const AboutGerak: React.FC = () => {
   return (

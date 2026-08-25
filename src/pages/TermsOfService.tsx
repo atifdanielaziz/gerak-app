@@ -39,7 +39,7 @@ export const TermsOfService: React.FC = () => {
       <Section title="2. What Gerak is">
         <p>
           Gerak is a campus community platform for students and staff at the universities we serve — currently
-          UMPSA, UiTM, UMK, UKM, UIAM, UUM, UniSZA, UTP, UPM, UM, and UPSI, with more campuses planned. It connects you with
+          UMPSA, UiTM, UMK, UKM, UIAM, UUM, UniSZA, UTP, UPM, UM, UPSI, UMS, and UNIMAS, with more campuses planned. It connects you with
           fellow students and staff acting as drivers, Jubah delivery riders, and vehicle owners. Gerak facilitates
           these connections
           and processes payment on behalf of service providers — it is <strong>not</strong> a licensed public

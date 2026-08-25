@@ -79,7 +79,7 @@ export const HelpCenter: React.FC = () => {
 
       <Section title="Which universities does Gerak support?">
         <p>
-          Currently UMPSA, UiTM, UMK, UKM, UIAM, UUM, UniSZA, UTP, UPM, UM, and UPSI, with more campuses planned.
+          Currently UMPSA, UiTM, UMK, UKM, UIAM, UUM, UniSZA, UTP, UPM, UM, UPSI, UMS, and UNIMAS, with more campuses planned.
         </p>
       </Section>
 
