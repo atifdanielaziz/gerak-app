@@ -206,7 +206,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const path = window.location.pathname.replace(/\/+$/, '');
     // A custom Jubah quote is a public, secure token link. Route it directly
     // to Jubah; Jubah.tsx then asks for the matching IC before revealing it.
-    if (new URLSearchParams(window.location.search).has('jubah_quote')) return 'jubah';
+    const params = new URLSearchParams(window.location.search);
+    if (params.has('q') || params.has('jubah_quote')) return 'jubah';
     if (path.endsWith('/jubah/track')) return 'track-jubah';
     // Standalone marketing link (posters, WhatsApp shares, etc.) — lands
     // guests straight on the Jubah landing/university picker without

@@ -86,7 +86,10 @@ export const Jubah: React.FC = () => {
   const { user, jubahBooking, bookJubah, commitJubahBooking, startNewJubahBooking, setCurrentPage, setSheetOpen, goBack, setLeaveGuard, addNotification } = useApp();
 
   const [landingUniversity, setLandingUniversity] = useState('');
-  const [customQuoteToken] = useState(() => new URLSearchParams(window.location.search).get('jubah_quote') ?? '');
+  const [customQuoteToken] = useState(() => {
+    const params = new URLSearchParams(window.location.search);
+    return params.get('q') ?? params.get('jubah_quote') ?? '';
+  });
   const [customQuote, setCustomQuote] = useState<null | { agreed_price: number; university_key: string; campus: string; customer_phone: string; payment_mode: 'pickup' | 'postage' | 'deposit'; deposit_method: 'pickup' | 'postage' | null; postage_zone: 'SM' | 'SS' | null; expires_at: string }>(null);
   const [quoteChecking, setQuoteChecking] = useState(false);
   const [quoteError, setQuoteError] = useState('');

@@ -60,14 +60,14 @@ export function JubahCustomQuoteSubTab({ active, showToast }: { active: boolean;
       return;
     }
     const url = new URL(window.location.origin);
-    url.searchParams.set('jubah_quote', data.token);
+    url.searchParams.set('q', data.token);
     setLink(url.toString());
     setShowShare(true);
     showToast('Custom quote created. It expires in 48 hours.');
   };
 
   const copyLink = async () => setCopied(await copyToClipboard(link));
-  const whatsappMessage = `Hi, here is your Gerak Jubah quote. This secure link expires in 48 hours: ${link}`;
+  const whatsappMessage = `Your Gerak Jubah quote is ready. Valid for 48 hours:\n${link}`;
 
   return (
     <div className="space-y-4">
