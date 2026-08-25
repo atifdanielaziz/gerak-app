@@ -415,13 +415,49 @@ export const AdminHome: React.FC = () => {
 
   const unreadCount = notifications.filter(n => !n.isRead).length;
 
+  const jubahWorkspaceTabs = ([
+    { id: 'rider', label: 'Rider', superadminOnly: false },
+    { id: 'customer', label: 'Customer Directory', superadminOnly: false },
+    { id: 'customer_details', label: 'Customer Details', superadminOnly: false },
+    { id: 'custom', label: 'Custom', superadminOnly: false },
+    { id: 'price', label: 'Price', superadminOnly: true },
+    { id: 'faculty', label: 'Faculty', superadminOnly: false },
+    { id: 'banner', label: 'Banner', superadminOnly: false },
+  ] as const).filter(t => (!t.superadminOnly || isSuperAdmin)
+    && (!isJubahLead || ['rider', 'customer', 'customer_details', 'custom'].includes(t.id)));
+
+  const jubahWorkspaceTabBar = (
+    <div className="flex bg-white border border-slate-100 rounded-2xl p-1 gap-1 overflow-x-auto no-scrollbar">
+      {jubahWorkspaceTabs.map(t => (
+        <button
+          key={t.id}
+          onClick={() => {
+            setJubahSubTab(t.id);
+            setJubahAdminView('list');
+            setJubahAdminSelected(null);
+          }}
+          className="relative flex-1 min-w-[7.5rem] rounded-xl transition-transform transform-gpu active:scale-95"
+        >
+          <span className="block py-2 text-xs font-semibold text-slate-400 whitespace-nowrap">{t.label}</span>
+          <span
+            className={`absolute inset-0 flex items-center justify-center py-2 rounded-xl bg-primary text-white text-xs font-semibold whitespace-nowrap transition-opacity duration-150 ${
+              jubahSubTab === t.id ? 'opacity-100' : 'opacity-0 pointer-events-none'
+            }`}
+          >
+            {t.label}
+          </span>
+        </button>
+      ))}
+    </div>
+  );
+
   return (
     <>
     <div className="flex-1 flex flex-col lg:flex-row min-h-0 h-full bg-white">
 
       {/* Desktop sidebar — hidden below 1024px, where the sticky mobile
           header + tab-strip further down still handles navigation */}
-      {!sampleDocsPage && (
+      {!sampleDocsPage && !isJubahLead && (
         <aside className="hidden lg:flex lg:flex-col lg:w-64 lg:shrink-0 lg:h-full lg:border-r lg:border-slate-100 lg:overflow-y-auto lg:no-scrollbar">
           <nav className="flex-1 flex flex-col gap-1 p-3">
             {visibleAdminTabs
@@ -499,7 +535,7 @@ export const AdminHome: React.FC = () => {
       <div className="flex-1 flex flex-col min-w-0 min-h-0 lg:h-full">
 
         {/* Desktop topbar — mobile keeps its own sticky header further down instead */}
-        {!sampleDocsPage && (
+        {!sampleDocsPage && !isJubahLead && (
           <div className="hidden lg:flex items-center justify-between px-6 py-4 border-b border-slate-100 shrink-0">
             <h3 className="text-base font-black text-slate-800 m-0">
               {ADMIN_TABS.find(t => t.id === activeTab)?.label}
@@ -605,10 +641,10 @@ export const AdminHome: React.FC = () => {
       ) : (<>
 
       {/* Sticky header + tab switcher — mobile only; desktop uses the sidebar + topbar instead */}
-      <div ref={stickyHeaderRef} className="lg:hidden sticky top-0 z-20 -mx-4 px-4 pt-1 pb-2 bg-slate-50/95 backdrop-blur-sm flex flex-col">
+      <div ref={stickyHeaderRef} className={`${isJubahLead ? '' : 'lg:hidden'} sticky top-0 z-20 -mx-4 px-4 pt-1 pb-2 bg-slate-50/95 backdrop-blur-sm flex flex-col`}>
 
         {/* Tab bar */}
-      <div className="flex bg-white border border-slate-100 rounded-2xl p-1 gap-1 overflow-x-auto no-scrollbar">
+      {isJubahLead ? jubahWorkspaceTabBar : <div className="flex bg-white border border-slate-100 rounded-2xl p-1 gap-1 overflow-x-auto no-scrollbar">
         {visibleAdminTabs
           .map(tab => (
             // Two stacked layers instead of toggling bg-primary/text-white
@@ -633,7 +669,7 @@ export const AdminHome: React.FC = () => {
               </span>
             </button>
           ))}
-      </div>
+      </div>}
       </div>
 
       {/* ── DRIVERS TAB ── */}
@@ -855,8 +891,9 @@ export const AdminHome: React.FC = () => {
               </>)}
             </div>
 
-            {/* Customer | Rider | Price sub-tabs */}
-            <div className="flex bg-white border border-slate-100 rounded-2xl p-1 gap-1 overflow-x-auto no-scrollbar">
+            {/* Admins keep this secondary Jubah navigation here. Leads use
+                the same navigation as their primary top tab bar. */}
+            {!isJubahLead && <div className="flex bg-white border border-slate-100 rounded-2xl p-1 gap-1 overflow-x-auto no-scrollbar">
               {([
                 { id: 'rider',    label: 'Rider',    superadminOnly: false },
                 { id: 'customer', label: 'Customer Directory', superadminOnly: false },
@@ -883,7 +920,7 @@ export const AdminHome: React.FC = () => {
                   </span>
                 </button>
               ))}
-            </div>
+            </div>}
           </>)}
 
           {/* ── RIDER sub-tab ── */}
