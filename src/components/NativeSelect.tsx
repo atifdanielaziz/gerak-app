@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type ElementType } from 'react';
+import { useEffect, useMemo, useRef, useState, type ElementType, type PointerEvent as ReactPointerEvent } from 'react';
 import { ChevronDown, Check } from 'lucide-react';
 
 export interface DropdownOption<T extends string> {
@@ -19,6 +19,7 @@ interface NativeSelectProps<T extends string> {
   // this to sit in a toolbar-style row rather than own a full-width block
   // (e.g. a university switcher next to an ON/OFF toggle).
   icon?: ElementType;
+  searchable?: boolean;
 }
 
 // Floats directly below the field (position: absolute, anchored to it) —
@@ -31,17 +32,44 @@ interface NativeSelectProps<T extends string> {
 // plain pointerdown listener scoped to this component's own ref, not a
 // click-catching div sitting over other content.
 export function NativeSelect<T extends string>({
-  value, options, onChange, placeholder = 'Select...', disabled, icon: Icon,
+  value, options, onChange, placeholder = 'Select...', disabled, icon: Icon, searchable = false,
 }: NativeSelectProps<T>) {
   const [open, setOpen] = useState(false);
+  const [query, setQuery] = useState('');
   const selected = options.find(o => o.value === value);
   const rootRef = useRef<HTMLDivElement>(null);
+  const gestureRef = useRef<{ pointerId: number; x: number; y: number; moved: boolean } | null>(null);
+  const visibleOptions = useMemo(() => {
+    const normalized = query.trim().toLocaleLowerCase();
+    return normalized ? options.filter(option => option.label.toLocaleLowerCase().includes(normalized)) : options;
+  }, [options, query]);
 
   const selectOption = (nextValue: T) => {
     // Close first so a parent state update cannot leave the mobile menu
     // visually open after the selected value changes.
     setOpen(false);
+    setQuery('');
     onChange(nextValue);
+  };
+
+  const beginOptionGesture = (event: ReactPointerEvent) => {
+    gestureRef.current = { pointerId: event.pointerId, x: event.clientX, y: event.clientY, moved: false };
+  };
+
+  const trackOptionGesture = (event: ReactPointerEvent) => {
+    const gesture = gestureRef.current;
+    if (!gesture || gesture.pointerId !== event.pointerId) return;
+    // 10px touch slop: releasing after a scroll never counts as choosing.
+    if (Math.hypot(event.clientX - gesture.x, event.clientY - gesture.y) > 10) gesture.moved = true;
+  };
+
+  const finishOptionGesture = (event: ReactPointerEvent, nextValue: T) => {
+    const gesture = gestureRef.current;
+    gestureRef.current = null;
+    if (!gesture || gesture.pointerId !== event.pointerId || gesture.moved) return;
+    event.preventDefault();
+    event.stopPropagation();
+    selectOption(nextValue);
   };
 
   useEffect(() => {
@@ -83,23 +111,27 @@ export function NativeSelect<T extends string>({
         <div className={`absolute top-full z-20 mt-1.5 max-h-64 overflow-y-auto no-scrollbar flex flex-col gap-1.5 border border-slate-100 rounded-2xl p-2 bg-white shadow-lg ${
           Icon ? 'left-0 w-64' : 'left-0 right-0'
         }`}>
-          {options.map(o => (
+          {searchable && (
+            <input
+              autoFocus
+              type="search"
+              value={query}
+              onChange={event => setQuery(event.target.value)}
+              placeholder="Search by name or Gerak ID"
+              className="sticky top-0 z-10 w-full rounded-xl border border-slate-100 bg-white px-3 py-2.5 text-xs font-normal text-slate-700 outline-none focus:border-slate-900"
+            />
+          )}
+          {visibleOptions.map(o => (
             <button
               key={o.value}
               type="button"
-              onPointerUp={(event) => {
-                // iOS occasionally delays/swallows click after scrolling an
-                // overflow menu. pointerup reliably handles an intentional tap;
-                // an actual scroll is delivered as pointercancel instead.
-                if (event.pointerType !== 'mouse') {
-                  event.preventDefault();
-                  event.stopPropagation();
-                  selectOption(o.value);
-                }
-              }}
+              onPointerDown={beginOptionGesture}
+              onPointerMove={trackOptionGesture}
+              onPointerCancel={() => { gestureRef.current = null; }}
+              onPointerUp={(event) => finishOptionGesture(event, o.value)}
               onClick={(event) => {
-                // Mouse and keyboard activation still use the native click path.
-                if (event.detail === 0 || (event.nativeEvent as PointerEvent).pointerType === 'mouse') {
+                // Keyboard activation has no pointer gesture.
+                if (event.detail === 0) {
                   selectOption(o.value);
                 }
               }}
@@ -114,6 +146,7 @@ export function NativeSelect<T extends string>({
               </span>
             </button>
           ))}
+          {visibleOptions.length === 0 && <p className="px-3 py-3 text-xs font-normal text-slate-400">No matching Jubah Rider.</p>}
         </div>
       )}
     </div>

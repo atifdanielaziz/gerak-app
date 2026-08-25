@@ -804,9 +804,12 @@ export const UsersTab = forwardRef<UsersTabHandle, UsersTabProps>(function Users
                 setLeadUserId(value);
                 setLeadUniversityKeys(leadAssignments.filter(row => row.lead_id === value).map(row => row.university_key));
               }}
-              options={profileUsers.map(profile => ({ value: profile.id, label: `${profile.name} · ${profile.gerak_id}` }))}
+              options={profileUsers
+                .filter(profile => profile.role === 'rider' && profile.can_robe)
+                .map(profile => ({ value: profile.id, label: `${profile.name} · ${profile.gerak_id}` }))}
               placeholder="Select Jubah Lead"
               label="Lead"
+              searchable
             />
             <MultiSelect
               values={leadUniversityKeys}
@@ -833,7 +836,7 @@ export const UsersTab = forwardRef<UsersTabHandle, UsersTabProps>(function Users
               <p className="text-xs font-semibold text-slate-700">Assign a Jubah runner under a Lead</p>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                 <NativeSelect value={runnerUserId} onChange={setRunnerUserId}
-                  options={profileUsers.filter(profile => profile.role === 'rider').map(profile => ({ value: profile.id, label: `${profile.name} · ${profile.gerak_id}` }))}
+                  options={profileUsers.filter(profile => profile.role === 'rider' && profile.can_robe).map(profile => ({ value: profile.id, label: `${profile.name} · ${profile.gerak_id}` }))}
                   placeholder="Runner" label="Runner" />
                 <NativeSelect value={runnerLeadId} onChange={value => { setRunnerLeadId(value); setRunnerUniversityKey(''); }}
                   options={leadRows.filter(row => row.is_active).map(row => { const profile = profileUsers.find(user => user.id === row.user_id); return { value: row.user_id, label: profile?.name ?? row.user_id }; })}
