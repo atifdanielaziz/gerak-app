@@ -99,7 +99,7 @@ serve(async (req) => {
 const escapeHtml = (s: string) =>
   s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;')
 
-const ROLE_LABEL: Record<string, string> = { driver: 'Driver', rider: 'Rider', admin: 'Admin', jubah_lead: 'Jubah Lead' };
+const ROLE_LABEL: Record<string, string> = { driver: 'Driver', rider: 'Rider', admin: 'Admin', jubah_lead: 'Lead' };
 const ROLE_EMOJI: Record<string, string> = { driver: '🚗', rider: '🏍️', admin: '🛠️' };
 
 async function sendInviteEmail(invite: Invite) {

@@ -58,7 +58,7 @@ export const AdminHome: React.FC = () => {
   } = useApp();
 
   const isSuperAdmin = user.role === 'superadmin';
-  const isJubahLead = user.isJubahLead;
+  const isJubahLead = user.isJubahLead || activeRole === 'lead';
   // profiles.campus is always written by our own UI (Register, Invite,
   // the Staff tab's campus picker) using the exact canonical casing from
   // src/lib/universities.ts, so it's used as-is — no per-word title-casing
@@ -867,7 +867,7 @@ export const AdminHome: React.FC = () => {
                 { id: 'banner',   label: 'Banner',   superadminOnly: false },
               ] as const)
                 .filter(t => (!t.superadminOnly || isSuperAdmin)
-                  && (!isJubahLead || ['rider', 'customer', 'customer_details'].includes(t.id)))
+                  && (!isJubahLead || ['rider', 'customer', 'customer_details', 'custom'].includes(t.id)))
                 .map(t => (
                 // Same opacity-overlay technique as the mobile admin tab
                 // bar above — see its comment for why (WebView repaint bug).
@@ -960,6 +960,7 @@ export const AdminHome: React.FC = () => {
             <JubahCustomQuoteSubTab
               active={activeTab === 'jubah' && effectiveJubahSubTab === 'custom'}
               showToast={showToast}
+              lockedUniversityKey={isJubahLead ? adminUniversityKey : undefined}
             />
           )}
 

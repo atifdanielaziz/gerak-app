@@ -387,10 +387,10 @@ export const Register: React.FC = () => {
                     <Car className="w-4 h-4 shrink-0" />
                     <div>
                       <p className="font-semibold leading-tight">
-                        {invite!.role === 'jubah_lead' ? 'Pre-approved Jubah Lead' : invite!.role === 'admin' ? 'Pre-approved Admin' : invite!.role === 'rider' ? 'Pre-approved Rider' : 'Pre-approved Driver'}
+                        {invite!.role === 'jubah_lead' ? 'Pre-approved Lead' : invite!.role === 'admin' ? 'Pre-approved Admin' : invite!.role === 'rider' ? 'Pre-approved Rider' : 'Pre-approved Driver'}
                       </p>
                       <p className="text-xs font-normal opacity-70 mt-0.5">
-                        {jubahLocationLabel(universityKeyFromCampus(invite!.campus) ?? '', invite!.campus)} · {invite!.role === 'jubah_lead' ? 'Jubah Lead Account' : invite!.role === 'admin' ? 'Admin Account' : invite!.role === 'rider' ? 'Rider Account' : 'Driver Account'}
+                        {jubahLocationLabel(universityKeyFromCampus(invite!.campus) ?? '', invite!.campus)} · {invite!.role === 'jubah_lead' ? 'Lead Account' : invite!.role === 'admin' ? 'Admin Account' : invite!.role === 'rider' ? 'Rider Account' : 'Driver Account'}
                       </p>
                     </div>
                   </>

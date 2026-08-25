@@ -1,6 +1,6 @@
 ﻿import React, { useState } from 'react';
 import { useApp } from '../context/AppContext';
-import { Bell, ChevronLeft, ShieldCheck, Car, Bike, MoreHorizontal, MoreVertical, Eye, ChevronDown, X, MapPin, User, Pencil, CalendarCheck2, FileCheck2, Menu, Check, GraduationCap } from 'lucide-react';
+import { Bell, ChevronLeft, ShieldCheck, Car, Bike, MoreHorizontal, MoreVertical, Eye, ChevronDown, X, MapPin, User, Pencil, CalendarCheck2, FileCheck2, Menu, Check, GraduationCap, Crown } from 'lucide-react';
 import { WaBtn } from '../lib/whatsapp';
 import { UNIVERSITIES as UNIVERSITY_OPTIONS } from '../lib/universities';
 import { CampusStatusToggle } from './CampusStatusToggle';
@@ -87,7 +87,7 @@ export const Header: React.FC = () => {
   const {
     currentPage, setCurrentPage, goBack, canGoBack, notifications, user,
     activeRole, isPreviewMode,
-    switchToAdminMode, switchToDriverMode, switchToRiderMode, enterPreviewMode,
+    switchToAdminMode, switchToDriverMode, switchToRiderMode, switchToLeadMode, enterPreviewMode,
     showAuthGate, guestCampus, setGuestCampus, updateProfile, profileEditIntentRef,
     adminUniversityKey, setAdminUniversityKey,
   } = useApp();
@@ -313,7 +313,7 @@ export const Header: React.FC = () => {
     );
   }
 
-  const isNotAdmin = isPreviewMode || activeRole === 'driver' || activeRole === 'rider';
+  const isNotAdmin = isPreviewMode || activeRole === 'driver' || activeRole === 'rider' || activeRole === 'lead';
 
   return (
     <>
@@ -411,6 +411,17 @@ export const Header: React.FC = () => {
                       {activeRole === 'rider' && <span className="ml-auto text-[8px] bg-amber-100 text-amber-600 px-1.5 py-0.5 rounded-full">Active</span>}
                     </button>
 
+                    <button
+                      onPointerDown={(e) => { e.preventDefault(); switchToLeadMode(); setShowRoleMenu(false); }}
+                      className={`w-full flex items-center gap-3 px-4 py-3 text-left text-xs font-extrabold transition active:scale-95 ${
+                        activeRole === 'lead' ? 'bg-amber-50 text-amber-700' : 'text-slate-600 hover:bg-slate-50'
+                      }`}
+                    >
+                      <Crown className="w-4 h-4 shrink-0" />
+                      Lead
+                      {activeRole === 'lead' && <span className="ml-auto text-[8px] bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded-full">Active</span>}
+                    </button>
+
                     <div className="border-t border-slate-100" />
 
                     <button
@@ -453,10 +464,11 @@ export const Header: React.FC = () => {
                     onPointerDown={e => e.stopPropagation()}
                     onTouchMove={e => e.stopPropagation()}
                   >
-                  {UNIVERSITY_OPTIONS.filter(option => !user.isJubahLead || user.jubahLeadUniversities.includes(option.key)).map(option => {
+                  {UNIVERSITY_OPTIONS.map(option => {
                     const selected = adminUniversityKey === option.key;
-                    return <button key={option.key} onClick={(e) => { e.stopPropagation(); setAdminUniversityKey(option.key); setShowAdminUniversityMenu(false); }}
-                      className={`w-full min-h-12 flex items-center gap-3 px-3 py-3 rounded-xl text-left transition-transform active:scale-[0.99] ${selected ? 'border border-slate-900 bg-slate-50' : 'border border-transparent'}`}>
+                    const assigned = !user.isJubahLead || user.jubahLeadUniversities.includes(option.key);
+                    return <button key={option.key} disabled={!assigned} onClick={(e) => { e.stopPropagation(); if (!assigned) return; setAdminUniversityKey(option.key); setShowAdminUniversityMenu(false); }}
+                      className={`w-full min-h-12 flex items-center gap-3 px-3 py-3 rounded-xl text-left transition-transform active:scale-[0.99] disabled:cursor-not-allowed ${selected ? 'border border-slate-900 bg-slate-50' : 'border border-transparent'} ${assigned ? '' : 'bg-slate-50 opacity-40'}`}>
                       <span className="flex-1 text-xs font-semibold text-slate-700">{option.shortLabel}</span>
                       {selected && <Check className="w-4 h-4 text-slate-800" />}
                     </button>;
@@ -492,6 +504,17 @@ export const Header: React.FC = () => {
               {showRoleMenu && (<>
                 <div className="fixed inset-0 z-40" onPointerDown={(e) => { e.preventDefault(); setShowRoleMenu(false); }} />
                 <div className="absolute right-0 top-full mt-2 z-50 bg-white border border-slate-100 rounded-2xl shadow-xl overflow-hidden min-w-[220px]">
+                  {user.isJubahLead && (<>
+                    <button onPointerDown={(e) => { e.preventDefault(); switchToLeadMode(); setShowRoleMenu(false); }}
+                      className={`w-full flex items-center gap-3 px-4 py-3 text-left text-xs font-semibold ${activeRole === 'lead' ? 'bg-amber-50 text-amber-700' : 'text-slate-600'}`}>
+                      <Crown className="w-4 h-4 shrink-0" /> Lead
+                      {activeRole === 'lead' && <span className="ml-auto text-[8px] bg-amber-100 px-1.5 py-0.5 rounded-full">Active</span>}
+                    </button>
+                    <button onPointerDown={(e) => { e.preventDefault(); switchToRiderMode(); setShowRoleMenu(false); }}
+                      className={`w-full flex items-center gap-3 px-4 py-3 border-t border-slate-100 text-left text-xs font-semibold ${activeRole === 'rider' ? 'bg-amber-50 text-amber-700' : 'text-slate-600'}`}>
+                      <Bike className="w-4 h-4 shrink-0" /> Rider
+                    </button>
+                  </>)}
                   <div className="flex items-center gap-3 px-4 py-3 text-xs text-slate-600"><MapPin className="w-4 h-4 shrink-0 text-slate-400" /><span className="font-semibold">{providerUniversity} {user.campus || 'Campus'}</span></div>
                   <div className="flex items-center gap-3 px-4 py-3 border-t border-slate-100 text-xs text-slate-600"><ShieldCheck className="w-4 h-4 shrink-0 text-slate-400" /><span className="font-semibold">Status</span><span className="ml-auto text-emerald-600 font-semibold">{toTitleCase(user.status || 'active')}</span></div>
                   <div className="flex items-center gap-3 px-4 py-3 border-t border-slate-100 text-xs text-slate-600"><CalendarCheck2 className="w-4 h-4 shrink-0 text-slate-400" /><span className="font-semibold">Payment</span><span className={`ml-auto font-semibold ${paymentValid ? 'text-emerald-600' : 'text-red-500'}`}>{paymentValid ? 'Valid' : 'Expired'}</span></div>

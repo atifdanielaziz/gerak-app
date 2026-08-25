@@ -408,8 +408,8 @@ export const UsersTab = forwardRef<UsersTabHandle, UsersTabProps>(function Users
     setSavingLead(false);
     if (error) return showToast(error.message);
     const result = data as { success?: boolean; error?: string } | null;
-    if (!result?.success) return showToast(result?.error ?? 'Could not save the Jubah Lead.');
-    showToast('Jubah Lead assignment saved.');
+    if (!result?.success) return showToast(result?.error ?? 'Could not save the Lead.');
+    showToast('Lead assignment saved.');
     await loadUsers();
   };
 
@@ -424,9 +424,9 @@ export const UsersTab = forwardRef<UsersTabHandle, UsersTabProps>(function Users
     setSavingLead(false);
     if (error) return showToast(error.message);
     const result = data as { success?: boolean; error?: string } | null;
-    if (!result?.success) return showToast(result?.error ?? 'Could not remove the Jubah Lead.');
+    if (!result?.success) return showToast(result?.error ?? 'Could not remove the Lead.');
     setLeadUniversityKeys([]);
-    showToast('Jubah Lead access removed.');
+    showToast('Lead access removed.');
     await loadUsers();
   };
 
@@ -795,7 +795,7 @@ export const UsersTab = forwardRef<UsersTabHandle, UsersTabProps>(function Users
         {isSuperAdmin && (
           <section className="bg-white border border-slate-100 rounded-3xl p-5 flex flex-col gap-4 w-full">
             <h3 className="text-sm font-semibold text-slate-700 flex items-center gap-2">
-              <Crown className="w-4 h-4 text-slate-400" /> Jubah Lead Assignments
+              <Crown className="w-4 h-4 text-slate-400" /> Lead
             </h3>
             <p className="text-xs font-normal text-slate-400">A Lead can manage Jubah bookings only for the universities selected here.</p>
             <NativeSelect
@@ -807,7 +807,7 @@ export const UsersTab = forwardRef<UsersTabHandle, UsersTabProps>(function Users
               options={profileUsers
                 .filter(profile => profile.role === 'rider' && profile.can_robe)
                 .map(profile => ({ value: profile.id, label: `${profile.name} · ${profile.gerak_id}` }))}
-              placeholder="Select Jubah Lead"
+              placeholder="Select Lead"
               label="Lead"
               searchable
             />

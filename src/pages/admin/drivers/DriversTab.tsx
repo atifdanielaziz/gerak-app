@@ -69,7 +69,7 @@ export const DriversTab = forwardRef<DriversTabHandle, DriversTabProps>(function
   const [inviteCanRobe,  setInviteCanRobe]   = useState(false);
   const [inviteSending, setInviteSending]    = useState(false);
   const [showInviteConfirm, setShowInviteConfirm] = useState(false);
-  const inviteRoleLabel = inviteRole === 'jubah_lead' ? 'Jubah Lead' : inviteRole === 'admin' ? 'Admin' : inviteRole === 'rider' ? 'Rider' : 'Driver';
+  const inviteRoleLabel = inviteRole === 'jubah_lead' ? 'Lead' : inviteRole === 'admin' ? 'Admin' : inviteRole === 'rider' ? 'Rider' : 'Driver';
   const inviteLeadLabels = inviteLeadUniversities.map(key => UNIVERSITY_MAP[key]?.shortLabel ?? key.toUpperCase());
 
   useEffect(() => { onModalOpenChange(showInviteConfirm); }, [showInviteConfirm, onModalOpenChange]);
@@ -173,7 +173,7 @@ export const DriversTab = forwardRef<DriversTabHandle, DriversTabProps>(function
                   { value: 'driver', label: 'Driver' },
                   { value: 'rider',  label: 'Rider' },
                   { value: 'admin',  label: 'Admin' },
-                  ...(isSuperAdmin ? [{ value: 'jubah_lead' as const, label: 'Jubah Lead' }] : []),
+                  ...(isSuperAdmin ? [{ value: 'jubah_lead' as const, label: 'Lead' }] : []),
                 ]}
                 placeholder="Select role..."
                 label="Select Role"
@@ -323,7 +323,7 @@ export const DriversTab = forwardRef<DriversTabHandle, DriversTabProps>(function
                     return (
                       <tr key={inv.id} className="border-b border-slate-100 text-xs">
                         <td className="py-2.5 pr-4 font-semibold text-slate-800 whitespace-nowrap">{inv.email}</td>
-                        <td className="py-2.5 pr-4 text-slate-600 whitespace-nowrap">{inv.role === 'jubah_lead' ? 'Jubah Lead' : inv.role.charAt(0).toUpperCase() + inv.role.slice(1)}</td>
+                        <td className="py-2.5 pr-4 text-slate-600 whitespace-nowrap">{inv.role === 'jubah_lead' ? 'Lead' : inv.role.charAt(0).toUpperCase() + inv.role.slice(1)}</td>
                         <td className="py-2.5 pr-4 text-slate-600 whitespace-nowrap">{jubahLocationLabel(universityKeyFromCampus(inv.campus) ?? '', inv.campus)}</td>
                         <td className={`py-2.5 pr-4 font-semibold whitespace-nowrap ${inv.used ? 'text-emerald-600' : 'text-amber-600'}`}>
                           {inv.used ? 'Registered' : 'Pending'}

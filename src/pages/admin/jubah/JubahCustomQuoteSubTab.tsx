@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Check, ClipboardCheck, Clock3, Copy, X } from 'lucide-react';
 import { NativeSelect } from '../../../components/NativeSelect';
 import { supabase } from '../../../lib/supabase';
@@ -20,7 +20,15 @@ const formatPhoneNumber = (value: string) => {
   return digits.length <= 3 ? digits : `${digits.slice(0, 3)}-${digits.slice(3)}`;
 };
 
-export function JubahCustomQuoteSubTab({ active, showToast }: { active: boolean; showToast: (message: string) => void }) {
+export function JubahCustomQuoteSubTab({
+  active,
+  showToast,
+  lockedUniversityKey,
+}: {
+  active: boolean;
+  showToast: (message: string) => void;
+  lockedUniversityKey?: string;
+}) {
   const [ic, setIc] = useState('');
   const [phone, setPhone] = useState('');
   const [price, setPrice] = useState('');
@@ -34,6 +42,15 @@ export function JubahCustomQuoteSubTab({ active, showToast }: { active: boolean;
   const [link, setLink] = useState('');
   const [copied, setCopied] = useState(false);
   const [showShare, setShowShare] = useState(false);
+
+  useEffect(() => {
+    if (!lockedUniversityKey) return;
+    const lockedUniversity = UNIVERSITIES.find(item => item.key === lockedUniversityKey);
+    if (!lockedUniversity) return;
+    setUniversity(lockedUniversity.key);
+    setCampus(current => lockedUniversity.campuses.includes(current) ? current : (lockedUniversity.campuses[0] ?? ''));
+  }, [lockedUniversityKey]);
+
   if (!active) return null;
 
   const isPostage = mode === 'postage' || (mode === 'deposit' && depositMethod === 'postage');
@@ -73,8 +90,10 @@ export function JubahCustomQuoteSubTab({ active, showToast }: { active: boolean;
     setIc('');
     setPhone('');
     setPrice('');
-    setUniversity('umpsa');
-    setCampus(UNIVERSITIES[0].campuses[0]);
+    const resetUniversity = lockedUniversityKey ?? 'umpsa';
+    const resetUniversityConfig = UNIVERSITIES.find(item => item.key === resetUniversity) ?? UNIVERSITIES[0];
+    setUniversity(resetUniversity);
+    setCampus(resetUniversityConfig.campuses[0] ?? '');
     setMode('pickup');
     setDepositMethod('pickup');
     setZone('SM');
@@ -94,7 +113,9 @@ export function JubahCustomQuoteSubTab({ active, showToast }: { active: boolean;
           <label className="space-y-2"><span className="text-sm font-normal text-slate-500">Customer IC Number</span><input value={ic} onChange={e => setIc(formatIcNumber(e.target.value))} inputMode="numeric" autoComplete="off" placeholder="123456-78-9101" className="w-full rounded-xl border border-slate-100 bg-white px-3 py-2.5 text-sm focus:outline-none focus:border-slate-900" /></label>
           <label className="space-y-2"><span className="text-sm font-normal text-slate-500">Customer Phone Number</span><input value={phone} onChange={e => setPhone(formatPhoneNumber(e.target.value))} inputMode="tel" autoComplete="tel" placeholder="012-345678910" className="w-full rounded-xl border border-slate-100 bg-white px-3 py-2.5 text-sm focus:outline-none focus:border-slate-900" /></label>
           <label className="space-y-2"><span className="text-sm font-normal text-slate-500">Agreed Total Price</span><div className="flex rounded-xl border border-slate-100 focus-within:border-slate-900"><span className="px-3 py-2.5 text-sm text-slate-400">RM</span><input value={price} onChange={e => setPrice(e.target.value.replace(/[^0-9.]/g, ''))} inputMode="decimal" placeholder="100.00" className="min-w-0 flex-1 py-2.5 pr-3 text-sm focus:outline-none" /></div></label>
-          <label className="space-y-2"><span className="text-sm font-normal text-slate-500">University</span><NativeSelect value={university} onChange={value => { setUniversity(value); setCampus(UNIVERSITIES.find(item => item.key === value)?.campuses[0] ?? ''); }} options={UNIVERSITIES.map(u => ({ value: u.key, label: u.shortLabel }))} /></label>
+          <label className="space-y-2"><span className="text-sm font-normal text-slate-500">University</span>{lockedUniversityKey
+            ? <div className="w-full rounded-xl border border-slate-100 bg-slate-50 px-3 py-2.5 text-sm font-semibold text-slate-700">{selectedUniversity.shortLabel}</div>
+            : <NativeSelect value={university} onChange={value => { setUniversity(value); setCampus(UNIVERSITIES.find(item => item.key === value)?.campuses[0] ?? ''); }} options={UNIVERSITIES.map(u => ({ value: u.key, label: u.shortLabel }))} />}</label>
           <label className="space-y-2"><span className="text-sm font-normal text-slate-500">Campus</span><NativeSelect value={campus} onChange={setCampus} options={selectedUniversity.campuses.map(value => ({ value, label: value }))} /></label>
           <label className="space-y-2"><span className="text-sm font-normal text-slate-500">Service Option</span><NativeSelect value={mode} onChange={setMode} options={[{ value: 'deposit', label: 'Deposit' }, { value: 'pickup', label: 'Full Payment — Pickup Point' }, { value: 'postage', label: 'Full Payment — Pickup & Postage' }]} /></label>
           {mode === 'deposit' && <label className="space-y-2"><span className="text-sm font-normal text-slate-500">Deposit Service</span><NativeSelect value={depositMethod} onChange={setDepositMethod} options={[{ value: 'pickup', label: 'Pickup Point' }, { value: 'postage', label: 'Pickup & Postage' }]} /></label>}
