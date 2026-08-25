@@ -8,6 +8,18 @@ import { WaIcon, toWa } from '../../../lib/whatsapp';
 
 type Mode = 'deposit' | 'pickup' | 'postage';
 
+const formatIcNumber = (value: string) => {
+  const digits = value.replace(/\D/g, '').slice(0, 12);
+  if (digits.length <= 6) return digits;
+  if (digits.length <= 8) return `${digits.slice(0, 6)}-${digits.slice(6)}`;
+  return `${digits.slice(0, 6)}-${digits.slice(6, 8)}-${digits.slice(8)}`;
+};
+
+const formatPhoneNumber = (value: string) => {
+  const digits = value.replace(/\D/g, '').slice(0, 12);
+  return digits.length <= 3 ? digits : `${digits.slice(0, 3)}-${digits.slice(3)}`;
+};
+
 export function JubahCustomQuoteSubTab({ active, showToast }: { active: boolean; showToast: (message: string) => void }) {
   const [ic, setIc] = useState('');
   const [phone, setPhone] = useState('');
@@ -39,7 +51,14 @@ export function JubahCustomQuoteSubTab({ active, showToast }: { active: boolean;
       p_postage_zone: isPostage ? zone : null,
     });
     setCreating(false);
-    if (error || !data?.success) { showToast(data?.error ?? 'Could not create the quote.'); return; }
+    if (error || !data?.success) {
+      console.error('create_jubah_custom_quote failed', error ?? data);
+      const missingRpc = error?.code === 'PGRST202' || error?.message?.includes('create_jubah_custom_quote');
+      showToast(data?.error ?? (missingRpc
+        ? 'The custom quote database update has not been applied yet.'
+        : error?.message ?? 'Could not create the quote.'));
+      return;
+    }
     const url = new URL(window.location.origin);
     url.searchParams.set('jubah_quote', data.token);
     setLink(url.toString());
@@ -58,8 +77,8 @@ export function JubahCustomQuoteSubTab({ active, showToast }: { active: boolean;
           <div><h3 className="font-semibold text-slate-900">Custom Quote</h3><p className="text-xs font-normal text-slate-400 mt-1">Create a secure, single-use booking offer after agreeing the price with a customer.</p></div>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <label className="space-y-2"><span className="text-sm font-normal text-slate-500">Customer IC Number</span><input value={ic} onChange={e => setIc(e.target.value.replace(/[^0-9-]/g, '').slice(0, 14))} inputMode="numeric" placeholder="000000-00-0000" className="w-full rounded-xl border border-slate-100 bg-white px-3 py-2.5 text-sm focus:outline-none focus:border-slate-900" /></label>
-          <label className="space-y-2"><span className="text-sm font-normal text-slate-500">Customer Phone Number</span><input value={phone} onChange={e => setPhone(e.target.value.replace(/[^0-9-]/g, '').slice(0, 15))} inputMode="tel" placeholder="012-3456789" className="w-full rounded-xl border border-slate-100 bg-white px-3 py-2.5 text-sm focus:outline-none focus:border-slate-900" /></label>
+          <label className="space-y-2"><span className="text-sm font-normal text-slate-500">Customer IC Number</span><input value={ic} onChange={e => setIc(formatIcNumber(e.target.value))} inputMode="numeric" autoComplete="off" placeholder="123456-78-9101" className="w-full rounded-xl border border-slate-100 bg-white px-3 py-2.5 text-sm focus:outline-none focus:border-slate-900" /></label>
+          <label className="space-y-2"><span className="text-sm font-normal text-slate-500">Customer Phone Number</span><input value={phone} onChange={e => setPhone(formatPhoneNumber(e.target.value))} inputMode="tel" autoComplete="tel" placeholder="012-345678910" className="w-full rounded-xl border border-slate-100 bg-white px-3 py-2.5 text-sm focus:outline-none focus:border-slate-900" /></label>
           <label className="space-y-2"><span className="text-sm font-normal text-slate-500">Agreed Total Price</span><div className="flex rounded-xl border border-slate-100 focus-within:border-slate-900"><span className="px-3 py-2.5 text-sm text-slate-400">RM</span><input value={price} onChange={e => setPrice(e.target.value.replace(/[^0-9.]/g, ''))} inputMode="decimal" placeholder="100.00" className="min-w-0 flex-1 py-2.5 pr-3 text-sm focus:outline-none" /></div></label>
           <label className="space-y-2"><span className="text-sm font-normal text-slate-500">University</span><NativeSelect value={university} onChange={value => { setUniversity(value); setCampus(UNIVERSITIES.find(item => item.key === value)?.campuses[0] ?? ''); }} options={UNIVERSITIES.map(u => ({ value: u.key, label: u.shortLabel }))} /></label>
           <label className="space-y-2"><span className="text-sm font-normal text-slate-500">Campus</span><NativeSelect value={campus} onChange={setCampus} options={selectedUniversity.campuses.map(value => ({ value, label: value }))} /></label>

@@ -37,6 +37,13 @@ export function NativeSelect<T extends string>({
   const selected = options.find(o => o.value === value);
   const rootRef = useRef<HTMLDivElement>(null);
 
+  const selectOption = (nextValue: T) => {
+    // Close first so a parent state update cannot leave the mobile menu
+    // visually open after the selected value changes.
+    setOpen(false);
+    onChange(nextValue);
+  };
+
   useEffect(() => {
     if (!open) return;
     const onOutside = (e: PointerEvent) => {
@@ -80,7 +87,22 @@ export function NativeSelect<T extends string>({
             <button
               key={o.value}
               type="button"
-              onClick={() => { onChange(o.value); setOpen(false); }}
+              onPointerUp={(event) => {
+                // iOS occasionally delays/swallows click after scrolling an
+                // overflow menu. pointerup reliably handles an intentional tap;
+                // an actual scroll is delivered as pointercancel instead.
+                if (event.pointerType !== 'mouse') {
+                  event.preventDefault();
+                  event.stopPropagation();
+                  selectOption(o.value);
+                }
+              }}
+              onClick={(event) => {
+                // Mouse and keyboard activation still use the native click path.
+                if (event.detail === 0 || (event.nativeEvent as PointerEvent).pointerType === 'mouse') {
+                  selectOption(o.value);
+                }
+              }}
               className={`w-full flex items-center justify-between gap-2 px-3 py-2.5 rounded-xl border text-xs font-semibold text-left transition-transform active:scale-[0.99] ${
                 o.value === value ? 'border-slate-900 text-slate-900' : 'border-slate-100 text-slate-600'
               }`}
