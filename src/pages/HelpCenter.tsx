@@ -39,21 +39,6 @@ export const HelpCenter: React.FC = () => {
         </p>
       </Section>
 
-      <Section title="How do I become a driver, rider, or vehicle owner?">
-        <p>
-          Driver, Jubah rider, and rental owner accounts are set up by invitation. If you've received an invite
-          link, register through it and upload your driving licence for verification in Profile → My Profile.
-        </p>
-      </Section>
-
-      <Section title="Why can't I accept jobs even though my account looks approved?">
-        <p>
-          Check that your monthly fee receipt is verified and not expired (Profile shows an Active/Inactive badge),
-          and that your account has been enabled for the specific service (driving, rental, etc.) by an admin. If
-          both look correct and you're still stuck, contact us below.
-        </p>
-      </Section>
-
       <Section title="I found a bug, or my payment didn't go through">
         <p>
           Email us your Gerak ID (or booking reference number) and a short description of what happened — we
