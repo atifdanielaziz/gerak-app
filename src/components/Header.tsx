@@ -398,14 +398,19 @@ export const Header: React.FC = () => {
                 <div className="fixed inset-0 z-40" onPointerDown={(e) => { e.preventDefault(); setShowAdminUniversityMenu(false); }} />
                 <div className="absolute right-0 top-full mt-2 z-50 bg-white border border-slate-100 rounded-2xl shadow-xl min-w-[220px] p-2">
                   <div
-                    className="max-h-[15rem] overflow-y-auto overscroll-contain touch-pan-y no-scrollbar"
-                    style={{ WebkitOverflowScrolling: 'touch', touchAction: 'pan-y' }}
+                    className="max-h-[15rem] overflow-x-hidden overflow-y-scroll overscroll-contain touch-pan-y no-scrollbar"
+                    style={{
+                      WebkitOverflowScrolling: 'touch',
+                      touchAction: 'pan-y',
+                      overscrollBehaviorY: 'contain',
+                    }}
                     onWheel={e => e.stopPropagation()}
                     onPointerDown={e => e.stopPropagation()}
+                    onTouchMove={e => e.stopPropagation()}
                   >
                   {UNIVERSITY_OPTIONS.map(option => {
                     const selected = adminUniversityKey === option.key;
-                    return <button key={option.key} onPointerDown={(e) => { e.preventDefault(); e.stopPropagation(); setAdminUniversityKey(option.key); setShowAdminUniversityMenu(false); }}
+                    return <button key={option.key} onClick={(e) => { e.stopPropagation(); setAdminUniversityKey(option.key); setShowAdminUniversityMenu(false); }}
                       className={`w-full min-h-12 flex items-center gap-3 px-3 py-3 rounded-xl text-left transition-transform active:scale-[0.99] ${selected ? 'border border-slate-900 bg-slate-50' : 'border border-transparent'}`}>
                       <span className="flex-1 text-xs font-semibold text-slate-700">{option.shortLabel}</span>
                       {selected && <Check className="w-4 h-4 text-slate-800" />}
