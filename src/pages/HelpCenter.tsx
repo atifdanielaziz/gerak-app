@@ -42,6 +42,47 @@ export const HelpCenter: React.FC = () => {
         </p>
       </Section>
 
+      <Section title="How do I cancel a booking?">
+        <p>
+          Gerak Car rides can be cancelled within a short window after a driver accepts (shown in-app at the time).
+          Jubah bookings are free to cancel before the deposit is paid — once paid, the deposit is non-refundable.
+          Rental cancellations follow the terms shown at the time of booking, which can vary by vehicle owner.
+        </p>
+      </Section>
+
+      <Section title="How do I track my Jubah order?">
+        <p>
+          Go to Dashboard → Track My Order, then enter either your reference number or your IC number — you don't
+          need both.
+        </p>
+      </Section>
+
+      <Section title="Is the Jubah deposit refundable?">
+        <p>
+          No — the deposit is non-refundable once paid, disclosed clearly before you pay. Any remaining balance is
+          only charged when you choose to pay it, and is refundable if the booking is cancelled before that.
+        </p>
+      </Section>
+
+      <Section title="How do I update my profile or change my password?">
+        <p>
+          Go to Profile → My Profile to edit your details, or Profile → Security Settings to change your password.
+        </p>
+      </Section>
+
+      <Section title="How do I delete my account?">
+        <p>
+          Go to Profile and scroll to the bottom for Delete Account. This files a request to permanently delete
+          your account and data — see our Privacy Policy for details.
+        </p>
+      </Section>
+
+      <Section title="Which universities does Gerak support?">
+        <p>
+          Currently UMPSA, UiTM, UMK, UKM, UIAM, UUM, UniSZA, UTP, UPM, UM, and UPSI, with more campuses planned.
+        </p>
+      </Section>
+
       <Section title="I found a bug, or my payment didn't go through">
         <p>
           Email us your Gerak ID (or booking reference number) and a short description of what happened — we
