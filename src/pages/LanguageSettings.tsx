@@ -15,7 +15,7 @@ export const LanguageSettings: React.FC = () => {
         </div>
       </div>
 
-      <div className="bg-white border border-primary/20 bg-primary/5 rounded-2xl flex items-center justify-between px-4 py-4">
+      <div className="bg-white border border-slate-900 rounded-2xl flex items-center justify-between px-4 py-4">
         <span className="text-sm font-semibold text-slate-800">English</span>
         <Check className="w-4 h-4 text-primary" />
       </div>

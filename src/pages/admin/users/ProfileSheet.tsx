@@ -5,6 +5,7 @@ import { WaBtn } from '../../../lib/whatsapp';
 import { jubahLocationLabel, universityKeyFromCampus } from '../../../lib/universities';
 import { DigitalProfileCard } from '../../../components/DigitalProfileCard';
 import { receiptStatus } from '../../../lib/receiptStatus';
+import { getSignedUrl } from '../../../lib/jubahDocs';
 
 export interface ProfileUser {
   id: string;
@@ -93,10 +94,10 @@ export const ProfileSheet: React.FC<{ u: ProfileUser; onClose: () => void; showT
   // viewed instead of stored alongside the row.
   const viewHistoryReceipt = async (row: ReceiptHistoryRow) => {
     setViewingHistoryId(row.id);
-    const { data, error } = await supabase.storage.from('driver-receipts').createSignedUrl(row.storage_path, 60 * 10);
+    const { url, error, notFound } = await getSignedUrl('driver-receipts', row.storage_path, 60 * 10);
     setViewingHistoryId(null);
-    if (error || !data?.signedUrl) { showToast?.('Could not open this receipt.'); return; }
-    window.open(data.signedUrl, '_blank', 'noopener,noreferrer');
+    if (error || !url) { showToast?.(notFound ? 'This file no longer exists.' : 'Could not open this receipt.'); return; }
+    window.open(url, '_blank', 'noopener,noreferrer');
   };
 
   // license_url is a Storage signed link generated once at upload time — it
@@ -106,10 +107,10 @@ export const ProfileSheet: React.FC<{ u: ProfileUser; onClose: () => void; showT
   const viewLicense = async () => {
     if (!merged.license_storage_path) { window.open(merged.license_url, '_blank', 'noopener,noreferrer'); return; }
     setViewingLicense(true);
-    const { data, error } = await supabase.storage.from('driver-documents').createSignedUrl(merged.license_storage_path, 60 * 10);
+    const { url, error, notFound } = await getSignedUrl('driver-documents', merged.license_storage_path, 60 * 10);
     setViewingLicense(false);
-    if (error || !data?.signedUrl) { showToast?.('Could not open this document.'); return; }
-    window.open(data.signedUrl, '_blank', 'noopener,noreferrer');
+    if (error || !url) { showToast?.(notFound ? 'This file no longer exists.' : 'Could not open this document.'); return; }
+    window.open(url, '_blank', 'noopener,noreferrer');
   };
 
   const handleSetCampusStatus = async (status: 'in_campus' | 'out_campus') => {

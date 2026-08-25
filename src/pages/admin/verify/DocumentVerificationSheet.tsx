@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { ExternalLink, FileCheck2, ShieldCheck, ShieldOff, X } from 'lucide-react';
 import { supabase } from '../../../lib/supabase';
 import { decideDocuments } from '../../../lib/documentVerification';
+import { getSignedUrl } from '../../../lib/jubahDocs';
 
 type ReviewProfile = {
   id: string;
@@ -67,10 +68,10 @@ export function DocumentVerificationSheet({ userId, onClose, onUpdated, showToas
     if (!profile) return;
     if (!profile.license_storage_path) { window.open(profile.license_url ?? '#', '_blank', 'noopener,noreferrer'); return; }
     setViewingLicense(true);
-    const { data, error } = await supabase.storage.from('driver-documents').createSignedUrl(profile.license_storage_path, 60 * 10);
+    const { url, error, notFound } = await getSignedUrl('driver-documents', profile.license_storage_path, 60 * 10);
     setViewingLicense(false);
-    if (error || !data?.signedUrl) { showToast('Could not open this document.'); return; }
-    window.open(data.signedUrl, '_blank', 'noopener,noreferrer');
+    if (error || !url) { showToast(notFound ? 'This file no longer exists.' : 'Could not open this document.'); return; }
+    window.open(url, '_blank', 'noopener,noreferrer');
   };
 
   return (

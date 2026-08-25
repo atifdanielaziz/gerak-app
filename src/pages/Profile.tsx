@@ -20,6 +20,18 @@ import { DigitalProfileCard } from '../components/DigitalProfileCard';
    had already worked around this by passing a faked `role: 'driver'` into
    this same function — that workaround is removed below now that the
    function itself handles rider natively. */
+const SettingRow = ({ icon: Icon, label, onClick }: { icon: React.ElementType; label: string; onClick?: () => void }) => (
+  <button onClick={onClick} className="w-full bg-white border border-slate-100 rounded-2xl flex items-center justify-between px-4 py-4 active:bg-slate-50 active:scale-[0.99] transition text-left cursor-pointer">
+    <div className="flex items-center gap-3">
+      <div className="w-9 h-9 rounded-xl bg-slate-100 flex items-center justify-center shrink-0">
+        <Icon className="w-4 h-4 text-slate-900" />
+      </div>
+      <span className="text-sm font-semibold text-slate-800">{label}</span>
+    </div>
+    <ChevronRight className="w-4 h-4 text-slate-300" />
+  </button>
+);
+
 export const driverIsActive = (
   user: { role: string; feeReceiptVerified: boolean; feeReceiptExpiry: string; receiptGateExempt?: boolean },
   gateActive: boolean = true,
@@ -40,6 +52,7 @@ export const Profile: React.FC = () => {
   const docsApproved = user.docsStatus === 'approved' || user.role === 'admin' || user.role === 'superadmin';
 
   const [profileView, setProfileView]     = useState<'hub' | 'edit' | 'security'>('hub');
+  const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword]     = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [passwordError, setPasswordError] = useState('');
@@ -170,20 +183,32 @@ export const Profile: React.FC = () => {
   };
 
   const changePassword = async () => {
+    if (passwordSaving) return;
     setPasswordError('');
     setPasswordSaved(false);
+    if (!currentPassword) { setPasswordError('Enter your current password.'); return; }
     if (newPassword.length < 8) { setPasswordError('Password must be at least 8 characters.'); return; }
     if (newPassword !== confirmPassword) { setPasswordError('Passwords do not match.'); return; }
     setPasswordSaving(true);
+    // Re-authenticating with the current password before allowing the change
+    // is the only way to confirm "this is really the account owner" here —
+    // Supabase Auth has no separate "verify password" call, and updateUser()
+    // alone would let anyone with an active session (a borrowed device, a
+    // hijacked session) silently lock out the real owner with zero proof
+    // they knew the existing password.
+    const { error: verifyError } = await supabase.auth.signInWithPassword({ email: user.email, password: currentPassword });
+    if (verifyError) { setPasswordSaving(false); setPasswordError('Current password is incorrect.'); return; }
     const { error } = await supabase.auth.updateUser({ password: newPassword });
     setPasswordSaving(false);
     if (error) { setPasswordError(error.message || 'Could not update password. Please try again.'); return; }
+    setCurrentPassword('');
     setNewPassword('');
     setConfirmPassword('');
     setPasswordSaved(true);
   };
 
   const [linkCopied, setLinkCopied] = useState(false);
+  const [shareError, setShareError] = useState(false);
   const shareApp = async () => {
     const shareData = { title: 'Gerak', text: 'Gerak — Smart Campus Platform', url: 'https://www.gerakmy.com' };
     if (navigator.share) {
@@ -192,9 +217,13 @@ export const Profile: React.FC = () => {
     }
     try {
       await navigator.clipboard.writeText(shareData.url);
+      setShareError(false);
       setLinkCopied(true);
       setTimeout(() => setLinkCopied(false), 2000);
-    } catch { /* clipboard unavailable — nothing more we can do */ }
+    } catch {
+      setShareError(true);
+      setTimeout(() => setShareError(false), 2000);
+    }
   };
 
   const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -306,20 +335,8 @@ export const Profile: React.FC = () => {
     const otherRows   = [
       { icon: Info, label: 'About Gerak', onClick: () => setCurrentPage('about-gerak') },
       { icon: Star, label: 'Rate App', onClick: () => setCurrentPage('rate-app') },
-      { icon: Share2, label: linkCopied ? 'Link Copied!' : 'Share App', onClick: shareApp },
+      { icon: Share2, label: shareError ? 'Could not share' : linkCopied ? 'Link Copied!' : 'Share App', onClick: shareApp },
     ];
-
-    const SettingRow = ({ icon: Icon, label, onClick }: { icon: React.ElementType; label: string; onClick?: () => void }) => (
-      <button onClick={onClick} className="w-full bg-white border border-slate-100 rounded-2xl flex items-center justify-between px-4 py-4 active:bg-slate-50 active:scale-[0.99] transition text-left cursor-pointer">
-        <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-xl bg-slate-100 flex items-center justify-center shrink-0">
-            <Icon className="w-4 h-4 text-slate-900" />
-          </div>
-          <span className="text-sm font-semibold text-slate-800">{label}</span>
-        </div>
-        <ChevronRight className="w-4 h-4 text-slate-300" />
-      </button>
-    );
 
     return (
       <div className="flex-1 min-h-0 flex flex-col bg-white overflow-y-auto no-scrollbar animate-fade-in">
@@ -769,7 +786,7 @@ export const Profile: React.FC = () => {
         {/* Sub-page header */}
         <div className="px-5 pt-5 pb-2 flex items-center gap-3">
           <button
-            onClick={() => { setProfileView('hub'); setPasswordError(''); setPasswordSaved(false); setNewPassword(''); setConfirmPassword(''); }}
+            onClick={() => { setProfileView('hub'); setPasswordError(''); setPasswordSaved(false); setCurrentPassword(''); setNewPassword(''); setConfirmPassword(''); }}
             className="w-9 h-9 flex items-center justify-center rounded-xl bg-slate-100 text-slate-700 active:scale-90 transition shrink-0"
           >
             <ChevronLeft className="w-5 h-5" />
@@ -781,11 +798,21 @@ export const Profile: React.FC = () => {
           <div className="bg-white border border-slate-100 rounded-3xl p-5 flex flex-col gap-3">
             <p className="text-sm font-bold text-slate-800 m-0">Change Password</p>
             <div className="flex flex-col gap-1.5">
+              <label className="text-xs font-semibold text-slate-400">Current password</label>
+              <input
+                type="password"
+                value={currentPassword}
+                onChange={e => { setCurrentPassword(e.target.value); setPasswordSaved(false); }}
+                style={{ fontSize: '16px' }}
+                className="bg-white border border-slate-100 rounded-xl py-2.5 px-3 text-sm font-normal text-slate-700 focus:outline-none focus:border-slate-900 transition"
+              />
+            </div>
+            <div className="flex flex-col gap-1.5">
               <label className="text-xs font-semibold text-slate-400">New password</label>
               <input
                 type="password"
                 value={newPassword}
-                onChange={e => setNewPassword(e.target.value)}
+                onChange={e => { setNewPassword(e.target.value); setPasswordSaved(false); }}
                 style={{ fontSize: '16px' }}
                 className="bg-white border border-slate-100 rounded-xl py-2.5 px-3 text-sm font-normal text-slate-700 focus:outline-none focus:border-slate-900 transition"
               />
@@ -795,7 +822,7 @@ export const Profile: React.FC = () => {
               <input
                 type="password"
                 value={confirmPassword}
-                onChange={e => setConfirmPassword(e.target.value)}
+                onChange={e => { setConfirmPassword(e.target.value); setPasswordSaved(false); }}
                 style={{ fontSize: '16px' }}
                 className="bg-white border border-slate-100 rounded-xl py-2.5 px-3 text-sm font-normal text-slate-700 focus:outline-none focus:border-slate-900 transition"
               />
@@ -947,7 +974,7 @@ export const Profile: React.FC = () => {
           {([
             { icon: Info, label: 'About Gerak', onClick: () => setCurrentPage('about-gerak') },
             { icon: Star, label: 'Rate App', onClick: () => setCurrentPage('rate-app') },
-            { icon: Share2, label: linkCopied ? 'Link Copied!' : 'Share App', onClick: shareApp },
+            { icon: Share2, label: shareError ? 'Could not share' : linkCopied ? 'Link Copied!' : 'Share App', onClick: shareApp },
           ] as { icon: React.ElementType; label: string; onClick?: () => void }[]).map(({ icon: Icon, label, onClick }) => (
             <button key={label} onClick={onClick} className="w-full bg-white border border-slate-100 rounded-2xl flex items-center justify-between px-4 py-4 active:bg-slate-50 active:scale-[0.99] transition text-left cursor-pointer">
               <div className="flex items-center gap-3">

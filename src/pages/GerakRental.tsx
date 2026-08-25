@@ -11,6 +11,7 @@ import { fmt12, fmtDuration, toDateStr, todayStr as today } from '../lib/format'
 import { ReceiptHeader, ReceiptCard } from '../components/Receipt';
 import { buildRentalReceiptRows } from '../lib/receiptRows';
 import { generateReceiptPdf } from '../lib/receiptPdf';
+import { getSignedUrl } from '../lib/jubahDocs';
 
 interface RentalOwner {
   id: string;
@@ -49,6 +50,7 @@ interface RentalBooking {
   status: string;
   notes: string;
   license_url: string;
+  license_storage_path?: string;
   created_at: string;
   owner_name: string;
   owner_gerak_id: string;
@@ -112,6 +114,7 @@ export const GerakRental: React.FC = () => {
 
   // License upload for My Bookings
   const [uploadingLicense, setUploadingLicense] = useState<string | null>(null);
+  const [viewingLicenseId, setViewingLicenseId] = useState<string | null>(null);
   const licenseRefs = useRef<Record<string, HTMLInputElement | null>>({});
 
   const showToast = (msg: string) => { setToast(msg); setTimeout(() => setToast(''), 3000); };
@@ -467,6 +470,19 @@ export const GerakRental: React.FC = () => {
     showToast('License uploaded!');
   };
 
+  // license_url is a Storage signed link generated once at upload time — it
+  // expires and, once it does, is a permanently dead link. Generate a fresh
+  // one on demand from the stable storage path instead of trusting the
+  // stored URL, same pattern used everywhere else this license is viewed.
+  const viewLicense = async (bk: RentalBooking) => {
+    if (!bk.license_storage_path) { window.open(bk.license_url, '_blank', 'noopener,noreferrer'); return; }
+    setViewingLicenseId(bk.id);
+    const { url, error, notFound } = await getSignedUrl('rental-licenses', bk.license_storage_path, 60 * 10);
+    setViewingLicenseId(null);
+    if (error || !url) { showToast(notFound ? 'This file no longer exists.' : 'Could not open this document.'); return; }
+    window.open(url, '_blank', 'noopener,noreferrer');
+  };
+
   // ── Cancel booking ─────────────────────────────────────────────────────────
   const handleCancelBooking = async (bookingId: string) => {
     await supabase.from('rental_bookings').update({ status: 'cancelled' }).eq('id', bookingId);
@@ -560,10 +576,10 @@ export const GerakRental: React.FC = () => {
                           <p className="text-xs font-semibold text-emerald-700">License Uploaded ✓</p>
                         </div>
                         <div className="flex items-center gap-2 shrink-0">
-                          <a href={bk.license_url} target="_blank" rel="noreferrer"
-                            className="text-xs font-semibold text-emerald-600 flex items-center gap-1">
-                            <ExternalLink className="w-3 h-3" /> View
-                          </a>
+                          <button type="button" onClick={() => viewLicense(bk)} disabled={viewingLicenseId === bk.id}
+                            className="text-xs font-semibold text-emerald-600 flex items-center gap-1 disabled:opacity-50">
+                            <ExternalLink className="w-3 h-3" /> {viewingLicenseId === bk.id ? 'Opening…' : 'View'}
+                          </button>
                           <button onClick={() => licenseRefs.current[bk.id]?.click()}
                             className="text-xs font-semibold text-slate-400 hover:text-slate-600 transition py-3.5 -my-3.5 px-1 -mx-1">
                             Replace
@@ -598,10 +614,10 @@ export const GerakRental: React.FC = () => {
                         <FileText className="w-4 h-4 text-emerald-500 shrink-0" />
                         <p className="text-xs font-semibold text-emerald-700">License Uploaded ✓</p>
                       </div>
-                      <a href={bk.license_url} target="_blank" rel="noreferrer"
-                        className="text-xs font-semibold text-emerald-600 flex items-center gap-1">
-                        <ExternalLink className="w-3 h-3" /> View
-                      </a>
+                      <button type="button" onClick={() => viewLicense(bk)} disabled={viewingLicenseId === bk.id}
+                        className="text-xs font-semibold text-emerald-600 flex items-center gap-1 disabled:opacity-50">
+                        <ExternalLink className="w-3 h-3" /> {viewingLicenseId === bk.id ? 'Opening…' : 'View'}
+                      </button>
                     </div>
                   </>
                 )}

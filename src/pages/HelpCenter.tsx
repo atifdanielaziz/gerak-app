@@ -119,6 +119,7 @@ export const HelpCenter: React.FC = () => {
           <p className="text-sm font-bold text-slate-800 m-0">Still need help?</p>
           <p className="text-xs text-slate-400 font-normal mt-0.5 truncate">gerakmygroup@gmail.com</p>
         </div>
+        <ChevronRight className="w-4 h-4 text-slate-300 shrink-0" />
       </a>
 
     </div>

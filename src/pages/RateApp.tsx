@@ -11,6 +11,7 @@ export const RateApp: React.FC = () => {
   const [error, setError]     = useState('');
 
   const submit = async () => {
+    if (submitting) return;
     if (rating < 1) { setError('Please pick a star rating.'); return; }
     setError('');
     setSubmitting(true);
@@ -20,7 +21,8 @@ export const RateApp: React.FC = () => {
     });
     setSubmitting(false);
     if (rpcError || !data?.success) {
-      setError(data?.error ?? rpcError?.message ?? 'Could not submit your rating. Please try again.');
+      console.error('[GERAK] submit_app_rating failed:', { rpcError, data });
+      setError(data?.error ?? (rpcError ? 'Network error — please check your connection and try again.' : 'Could not submit your rating. Please try again.'));
       return;
     }
     setDone(true);

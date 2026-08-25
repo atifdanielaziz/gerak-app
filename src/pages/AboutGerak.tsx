@@ -1,5 +1,5 @@
 import React from 'react';
-import { Info, Mail } from 'lucide-react';
+import { Info, Mail, ChevronRight } from 'lucide-react';
 
 const Section: React.FC<{ title: string; children: React.ReactNode }> = ({ title, children }) => (
   <div className="bg-white border border-slate-100 rounded-3xl p-5 flex flex-col gap-2">
@@ -49,6 +49,7 @@ export const AboutGerak: React.FC = () => {
           <p className="text-sm font-bold text-slate-800 m-0">Contact us</p>
           <p className="text-xs text-slate-400 font-normal mt-0.5 truncate">gerakmygroup@gmail.com</p>
         </div>
+        <ChevronRight className="w-4 h-4 text-slate-300 shrink-0" />
       </a>
 
       <div className="flex items-center gap-2 justify-center text-slate-300 text-xs font-normal pt-2">

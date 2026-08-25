@@ -1,15 +1,22 @@
 import { supabase } from './supabase';
 
-// jubah-docs is a private bucket — stored values are either a raw storage
-// path (new bookings, foldered as `{reference}/{label}.{ext}`) or, for
-// bookings made before this bucket was locked down, a full public-style
-// URL like `.../storage/v1/object/public/jubah-docs/{path}`. This extracts
-// the path either way, then generates a fresh signed URL on demand for
-// whoever is actually authorized to view it (admin/superadmin or the
-// assigned rider — enforced by the bucket's RLS policies, not by this
-// function itself).
+export interface SignedUrlResult {
+  url: string | null;
+  error: string | null;
+  // True when the underlying object is actually gone (Storage's "not
+  // found" style error) rather than some transient/network failure — lets
+  // callers show "This file no longer exists" instead of "please try
+  // again" on something retrying can never fix.
+  notFound: boolean;
+}
+
+// Bucket-agnostic core used by every "fetch a fresh Storage signed URL,
+// then open it" call site in the app. Stored signed URLs (saved once at
+// upload time) expire and, once they do, are permanently dead links — so
+// every viewer regenerates one on demand from the stable storage path
+// instead of trusting a saved URL.
 //
-// Callers previously did `const signed = await getJubahDocSignedUrl(url)`
+// Callers previously did `const signed = await createSignedUrl(...)`
 // with no try/catch around it. supabase-js's createSignedUrl REJECTS
 // (throws) on a network-level failure (fetch error, CORS, timeout) rather
 // than returning it in `error` the way an API-level failure does — so a
@@ -19,13 +26,8 @@ import { supabase } from './supabase';
 // itself can never throw — every caller's failure branch now actually
 // runs, and the real reason (whatever it was) is always returned to log
 // or show, instead of vanishing into an unhandled promise rejection.
-export async function getJubahDocSignedUrl(stored: string | null | undefined, download = false): Promise<{ url: string | null; error: string | null }> {
-  if (!stored) return { url: null, error: null };
-  const marker = '/jubah-docs/';
-  const path = stored.startsWith('http')
-    ? stored.slice(stored.indexOf(marker) + marker.length)
-    : stored;
-  if (!path) return { url: null, error: 'Invalid document path.' };
+export async function getSignedUrl(bucket: string, path: string | null | undefined, expiresIn = 3600, download = false): Promise<SignedUrlResult> {
+  if (!path) return { url: null, error: 'Invalid document path.', notFound: false };
 
   try {
     // A request that's neither erroring nor resolving (blocked by a browser
@@ -37,18 +39,45 @@ export async function getJubahDocSignedUrl(stored: string | null | undefined, do
       setTimeout(() => reject(new Error('Request timed out — check your internet connection or a browser extension blocking supabase.co.')), 10000)
     );
     const { data, error } = await Promise.race([
-      supabase.storage.from('jubah-docs').createSignedUrl(path, 3600, { download }),
+      supabase.storage.from(bucket).createSignedUrl(path, expiresIn, { download }),
       timeout,
     ]);
     if (error || !data) {
-      console.error('[GERAK] Could not sign jubah-docs URL:', error);
-      return { url: null, error: error?.message ?? 'Signing failed.' };
+      console.error(`[GERAK] Could not sign ${bucket} URL:`, error);
+      // Storage returns a "not found" style error (statusCode '404', a
+      // message like "Object not found") when the file was actually
+      // deleted — distinct from a permission/network hiccup.
+      const notFound = !!error && (
+        (error as { statusCode?: string }).statusCode === '404' ||
+        /not.?found/i.test(error.message ?? '')
+      );
+      return { url: null, error: notFound ? 'This file no longer exists.' : (error?.message ?? 'Signing failed.'), notFound };
     }
-    return { url: data.signedUrl, error: null };
+    return { url: data.signedUrl, error: null, notFound: false };
   } catch (err) {
-    console.error('[GERAK] jubah-docs signing threw:', err);
-    return { url: null, error: err instanceof Error ? err.message : 'Network error while signing.' };
+    console.error(`[GERAK] ${bucket} signing threw:`, err);
+    return { url: null, error: err instanceof Error ? err.message : 'Network error while signing.', notFound: false };
   }
+}
+
+// jubah-docs is a private bucket — stored values are either a raw storage
+// path (new bookings, foldered as `{reference}/{label}.{ext}`) or, for
+// bookings made before this bucket was locked down, a full public-style
+// URL like `.../storage/v1/object/public/jubah-docs/{path}`. This extracts
+// the path either way, then generates a fresh signed URL on demand for
+// whoever is actually authorized to view it (admin/superadmin or the
+// assigned rider — enforced by the bucket's RLS policies, not by this
+// function itself).
+export async function getJubahDocSignedUrl(stored: string | null | undefined, download = false): Promise<{ url: string | null; error: string | null }> {
+  if (!stored) return { url: null, error: null };
+  const marker = '/jubah-docs/';
+  const path = stored.startsWith('http')
+    ? stored.slice(stored.indexOf(marker) + marker.length)
+    : stored;
+  if (!path) return { url: null, error: 'Invalid document path.' };
+
+  const { url, error } = await getSignedUrl('jubah-docs', path, 3600, download);
+  return { url, error };
 }
 
 // Opens a URL in a new tab via a synthetic <a> click instead of

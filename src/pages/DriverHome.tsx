@@ -20,6 +20,7 @@ import { BOOKING_METHOD_ICON, bookingMethodBadgeClass } from '../lib/bookingMeth
 import { FareModal } from '../components/FareModal';
 import { MonthDrumPicker, EarningsCard, computeEarnings } from '../components/EarningsCard';
 import { fmt12, fmtDuration, todayStr, fmtCountdown } from '../lib/format';
+import { getSignedUrl } from '../lib/jubahDocs';
 
 const getTimestamp = () => Date.now();
 
@@ -245,10 +246,10 @@ export const DriverHome: React.FC = () => {
   const viewRentalLicense = async (bk: { id: string; license_url: string; license_storage_path?: string }) => {
     if (!bk.license_storage_path) { window.open(bk.license_url, '_blank', 'noopener,noreferrer'); return; }
     setViewingLicenseId(bk.id);
-    const { data, error } = await supabase.storage.from('rental-licenses').createSignedUrl(bk.license_storage_path, 60 * 10);
+    const { url, error, notFound } = await getSignedUrl('rental-licenses', bk.license_storage_path, 60 * 10);
     setViewingLicenseId(null);
-    if (error || !data?.signedUrl) { showToast('Could not open this document.'); return; }
-    window.open(data.signedUrl, '_blank', 'noopener,noreferrer');
+    if (error || !url) { showToast(notFound ? 'This file no longer exists.' : 'Could not open this document.'); return; }
+    window.open(url, '_blank', 'noopener,noreferrer');
   };
 
   const loadRentalData = useCallback(async () => {
@@ -628,6 +629,7 @@ export const DriverHome: React.FC = () => {
       supabase.removeChannel(channel);
       clearInterval(pollId);
       document.removeEventListener('visibilitychange', onVisible);
+      if (notifTimer.current) clearTimeout(notifTimer.current);
     };
   }, [loadOrders, effectiveCanDrive, fireNotification, campusFilter]);
 
@@ -669,6 +671,7 @@ export const DriverHome: React.FC = () => {
     return () => {
       cancelled = true;
       if (channel) supabase.removeChannel(channel);
+      if (notifRentalTimer.current) clearTimeout(notifRentalTimer.current);
     };
   }, [user.canRent, isAdminForRental, loadRentalData, fireRentalNotification]);
 

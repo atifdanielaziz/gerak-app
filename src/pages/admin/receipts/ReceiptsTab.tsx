@@ -2,6 +2,7 @@ import { forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useSt
 import { supabase } from '../../../lib/supabase';
 import { ShieldCheck, ShieldOff, AlertCircle, FileImage, RefreshCw, ExternalLink, BarChart3, ChevronDown, Clock3, CalendarX2 } from 'lucide-react';
 import { useLoadOnActive } from '../../../hooks/useLoadOnActive';
+import { getSignedUrl } from '../../../lib/jubahDocs';
 import { type ProfileUser } from '../users/ProfileSheet';
 import { NativeSelect } from '../../../components/NativeSelect';
 import { useAxisLockedScroll } from '../../../hooks/useAxisLockedScroll';
@@ -100,10 +101,10 @@ export const ReceiptsTab = forwardRef<ReceiptsTabHandle, ReceiptsTabProps>(funct
   const viewReceipt = async (r: DriverReceipt) => {
     if (!r.fee_receipt_storage_path) { window.open(r.fee_receipt_url, '_blank', 'noopener,noreferrer'); return; }
     setViewingReceiptId(r.id);
-    const { data, error } = await supabase.storage.from('driver-receipts').createSignedUrl(r.fee_receipt_storage_path, 60 * 10);
+    const { url, error, notFound } = await getSignedUrl('driver-receipts', r.fee_receipt_storage_path, 60 * 10);
     setViewingReceiptId(null);
-    if (error || !data?.signedUrl) { showToast('Could not open this receipt. Please try again.'); return; }
-    window.open(data.signedUrl, '_blank', 'noopener,noreferrer');
+    if (error || !url) { showToast(notFound ? 'This file no longer exists.' : 'Could not open this receipt. Please try again.'); return; }
+    window.open(url, '_blank', 'noopener,noreferrer');
   };
 
   const handleToggleReceiptGate = async () => {

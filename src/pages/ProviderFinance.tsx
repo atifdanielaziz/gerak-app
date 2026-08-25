@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   Banknote, Car, GraduationCap, Landmark, QrCode,
   Truck, Upload, WalletCards,
@@ -26,6 +26,7 @@ export const ProviderFinance: React.FC = () => {
   const [uploading, setUploading] = useState(false);
   const [notice, setNotice] = useState('');
   const [earnings, setEarnings] = useState({ car: 0, jubah: 0, rental: 0 });
+  const qrRetriedRef = useRef(false);
 
   const isProvider = user.role === 'driver' || user.role === 'rider' || activeRole === 'driver' || activeRole === 'rider' || user.canDrive || user.canRent || user.canTransport;
   const roles = useMemo(() => {
@@ -43,6 +44,21 @@ export const ProviderFinance: React.FC = () => {
     window.setTimeout(() => setNotice(''), 2400);
   };
 
+  // Re-sign a fresh 1-hour signed URL for the QR image — reused on initial
+  // load, after a new QR upload, and from the <img onError> handler below,
+  // since the signed URL silently expires after an hour and would otherwise
+  // leave the QR broken until a full page reload.
+  const signQrUrl = async (path: string) => {
+    const { data: signed } = await supabase.storage.from('provider-payment-qr').createSignedUrl(path, 3600);
+    setQrUrl(signed?.signedUrl || '');
+  };
+
+  const handleQrError = () => {
+    if (qrRetriedRef.current || !saved.qr_path) return;
+    qrRetriedRef.current = true;
+    void signQrUrl(saved.qr_path);
+  };
+
   const load = async () => {
     setLoading(true);
     const { data, error } = await supabase.rpc('get_my_provider_payment_details');
@@ -55,8 +71,8 @@ export const ProviderFinance: React.FC = () => {
       setDraft(next);
       setBankLocked(true);
       if (next.qr_path) {
-        const { data: signed } = await supabase.storage.from('provider-payment-qr').createSignedUrl(next.qr_path, 3600);
-        setQrUrl(signed?.signedUrl || '');
+        qrRetriedRef.current = false;
+        await signQrUrl(next.qr_path);
       }
     }
 
@@ -99,8 +115,8 @@ export const ProviderFinance: React.FC = () => {
     const { data, error } = await supabase.rpc('set_my_provider_qr_path', { p_qr_path: path });
     if (error || !data?.success) showNotice(error?.message || data?.error || 'QR could not be saved.');
     else {
-      const { data: signed } = await supabase.storage.from('provider-payment-qr').createSignedUrl(path, 3600);
-      setQrUrl(signed?.signedUrl || `${signed?.signedUrl || ''}&v=${Date.now()}`);
+      qrRetriedRef.current = false;
+      await signQrUrl(path);
       setSaved(prev => ({ ...prev, qr_path: path }));
       setDraft(prev => ({ ...prev, qr_path: path }));
       showNotice('Payment QR saved.');
@@ -143,7 +159,7 @@ export const ProviderFinance: React.FC = () => {
 
       <section className="border border-slate-100 rounded-3xl p-5 mb-5">
         <div className="aspect-square w-full max-w-sm mx-auto rounded-2xl border border-slate-100 bg-white flex items-center justify-center overflow-hidden">
-          {loading ? <span className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" /> : qrUrl ? <img src={qrUrl} alt="Provider payment QR" className="w-full h-full object-contain p-4" /> : <div className="text-center px-6"><QrCode className="w-16 h-16 text-slate-200 mx-auto mb-3" /><p className="text-sm text-slate-400">Upload your DuitNow or bank payment QR.</p></div>}
+          {loading ? <span className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" /> : qrUrl ? <img src={qrUrl} alt="Provider payment QR" className="w-full h-full object-contain p-4" onError={handleQrError} /> : <div className="text-center px-6"><QrCode className="w-16 h-16 text-slate-200 mx-auto mb-3" /><p className="text-sm text-slate-400">Upload your DuitNow or bank payment QR.</p></div>}
         </div>
         <input id="provider-payment-qr-upload" type="file" accept="image/jpeg,image/png,image/webp" className="sr-only" onChange={uploadQr} disabled={uploading} />
         <label htmlFor="provider-payment-qr-upload" aria-disabled={uploading} className="mt-4 w-full flex items-center justify-center gap-2 bg-white border border-slate-100 rounded-2xl py-3.5 font-semibold text-slate-800 active:bg-slate-50 active:scale-[0.99] transition-transform transform-gpu cursor-pointer aria-disabled:opacity-50">

@@ -40,6 +40,11 @@ export function JubahCustomQuoteSubTab({ active, showToast }: { active: boolean;
   const createQuote = async () => {
     setCreating(true);
     setLink('');
+    if (!price.trim() || isNaN(Number(price)) || Number(price) <= 0) {
+      showToast('Enter a valid agreed price.');
+      setCreating(false);
+      return;
+    }
     const { data, error } = await supabase.rpc('create_jubah_custom_quote', {
       p_ic_number: ic,
       p_customer_phone: phone,
@@ -54,6 +59,7 @@ export function JubahCustomQuoteSubTab({ active, showToast }: { active: boolean;
     if (error || !data?.success) {
       console.error('create_jubah_custom_quote failed', error ?? data);
       const missingRpc = error?.code === 'PGRST202' || error?.message?.includes('create_jubah_custom_quote');
+      console.error('[GERAK] create_jubah_custom_quote failed:', { code: error?.code, university, campus, mode, agreedPrice: price });
       showToast(data?.error ?? (missingRpc
         ? 'The custom quote database update has not been applied yet.'
         : error?.message ?? 'Could not create the quote.'));
@@ -64,6 +70,14 @@ export function JubahCustomQuoteSubTab({ active, showToast }: { active: boolean;
     setLink(url.toString());
     setShowShare(true);
     showToast('Custom quote created. It expires in 48 hours.');
+    setIc('');
+    setPhone('');
+    setPrice('');
+    setUniversity('umpsa');
+    setCampus(UNIVERSITIES[0].campuses[0]);
+    setMode('pickup');
+    setDepositMethod('pickup');
+    setZone('SM');
   };
 
   const copyLink = async () => setCopied(await copyToClipboard(link));

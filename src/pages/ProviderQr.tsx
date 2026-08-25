@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Landmark, QrCode } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { supabase } from '../lib/supabase';
@@ -15,6 +15,7 @@ export function ProviderQr() {
   const [details, setDetails] = useState<PaymentDetails>({ bank_name: '', account_number: '', account_holder: '', qr_path: null });
   const [qrUrl, setQrUrl] = useState('');
   const [loading, setLoading] = useState(true);
+  const qrRetriedRef = useRef(false);
   const isProvider = user.role === 'driver' || user.role === 'rider' || activeRole === 'driver' || activeRole === 'rider' || user.canDrive || user.canRent || user.canTransport;
   const roles = useMemo(() => {
     const result: string[] = [];
@@ -24,6 +25,15 @@ export function ProviderQr() {
     if (user.canTransport) result.push('Transporter');
     return result.length ? result : ['Service Provider'];
   }, [activeRole, user]);
+
+  // Re-sign a fresh 1-hour signed URL for the QR image — reused on initial
+  // load and from the <img onError> handler below, since the signed URL
+  // silently expires after an hour and would otherwise leave the QR broken
+  // until a full page reload.
+  const signQrUrl = async (path: string) => {
+    const { data: signed } = await supabase.storage.from('provider-payment-qr').createSignedUrl(path, 3600);
+    setQrUrl(signed?.signedUrl || '');
+  };
 
   useEffect(() => {
     if (!isProvider) return;
@@ -36,13 +46,19 @@ export function ProviderQr() {
         };
         setDetails(next);
         if (next.qr_path) {
-          const { data: signed } = await supabase.storage.from('provider-payment-qr').createSignedUrl(next.qr_path, 3600);
-          setQrUrl(signed?.signedUrl || '');
+          qrRetriedRef.current = false;
+          await signQrUrl(next.qr_path);
         }
       }
       setLoading(false);
     })();
   }, [isProvider]);
+
+  const handleQrError = () => {
+    if (qrRetriedRef.current || !details.qr_path) return;
+    qrRetriedRef.current = true;
+    void signQrUrl(details.qr_path);
+  };
 
   return (
     <main className="scrollable-page flex-1 px-5 pt-5 bg-white">
@@ -55,7 +71,7 @@ export function ProviderQr() {
         {loading ? (
           <span className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
         ) : qrUrl ? (
-          <img src={qrUrl} alt="Provider payment QR" className="w-full h-full object-contain p-4" />
+          <img src={qrUrl} alt="Provider payment QR" className="w-full h-full object-contain p-4" onError={handleQrError} />
         ) : (
           <div className="text-center px-8"><QrCode className="w-16 h-16 text-slate-200 mx-auto mb-3" /><p className="text-sm font-normal text-slate-400">Set up your payment QR in Profile → My Finance.</p></div>
         )}

@@ -5,7 +5,7 @@ import { ClipboardList, Car, KeyRound, GraduationCap, Truck, Repeat } from 'luci
 import type { LucideIcon } from 'lucide-react';
 import { ReceiptSheet } from '../components/Receipt';
 import {
-  buildTransportReceiptRows, buildRentalReceiptRows, buildJubahReceiptRows, buildTransporterReceiptRows,
+  buildTransportReceiptRows, buildJubahReceiptRows,
 } from '../lib/receiptRows';
 import type { ReceiptDoc } from '../lib/receiptRows';
 import { generateReceiptPdf } from '../lib/receiptPdf';
@@ -62,131 +62,6 @@ async function loadTransportItems(customerId: string): Promise<ActivityItem[]> {
       amount:          o.fare === 'TBC' ? 'TBC' : `RM${(Number(o.fare) + (o.night_charge ?? 0)).toFixed(2)}`,
       doc,
       driverOrderId: o.driver_id ? o.id : undefined,
-    };
-  });
-}
-
-export async function loadRentalItems(customerId: string, renterName: string, renterPhone: string): Promise<ActivityItem[]> {
-  const { data: rows } = await supabase
-    .from('rental_bookings')
-    .select('*')
-    .eq('customer_id', customerId)
-    .order('date', { ascending: false })
-    .limit(30);
-  if (!rows?.length) return [];
-
-  // Same enrichment fan-out as GerakRental.tsx's loadMyBookings — rental_bookings
-  // only stores owner_id, no denormalized owner/vehicle fields.
-  const ownerIds = [...new Set(rows.map(r => r.owner_id))];
-  // rental_owner_public, not the base profiles table — same safe view
-  // GerakRental.tsx already uses for this exact lookup (id/name/gerak_id/
-  // phone only, not the owner's IC/document fields).
-  const [{ data: profiles }, { data: vehicles }] = await Promise.all([
-    supabase.from('rental_owner_public').select('id, name, gerak_id, phone').in('id', ownerIds),
-    supabase.from('rental_vehicles').select('owner_id, car_type, plate_no, color, price_hour').in('owner_id', ownerIds),
-  ]);
-
-  const profileById    = new Map(profiles?.map(p => [p.id, p]) ?? []);
-  const vehicleByOwner = new Map(vehicles?.map(v => [v.owner_id, v]) ?? []);
-  return rows.map(r => {
-    const p = profileById.get(r.owner_id);
-    const v = vehicleByOwner.get(r.owner_id);
-    const bk = {
-      ...r,
-      start_hour:     Number(r.start_hour),
-      duration:       Number(r.duration),
-      booking_type:   r.booking_type ?? 'hourly',
-      owner_name:     p?.name ?? '—',
-      owner_gerak_id: p?.gerak_id ?? '—',
-      owner_phone:    p?.phone ?? '',
-      car_type:       v?.car_type ?? '—',
-      plate_no:       v?.plate_no ?? '—',
-      color:          v?.color ?? '—',
-      price_hour:     Number(v?.price_hour ?? 0),
-      renterName,
-      renterPhone,
-    };
-    const doc = buildRentalReceiptRows(bk);
-    return {
-      id:              `rental-${r.id}`,
-      service:         'rental' as const,
-      createdAt:       r.created_at,
-      title:           bk.car_type,
-      subtitle:        `${bk.plate_no} · ${bk.color}`,
-      statusLabel:     doc.statusLabel,
-      statusClassName: doc.statusClassName,
-      amount:          `RM${Number(r.total_price).toFixed(2)}`,
-      doc,
-    };
-  });
-}
-
-export async function loadJubahItems(customerId: string): Promise<ActivityItem[]> {
-  const { data } = await supabase
-    .from('jubah_bookings')
-    .select('*')
-    .eq('customer_id', customerId)
-    .order('created_at', { ascending: false })
-    .limit(30);
-
-  return (data ?? []).map(j => {
-    const doc = buildJubahReceiptRows({
-      reference:  j.reference,
-      fullName:   j.full_name,
-      icNumber:   j.ic_number,
-      hpNumber:   j.hp_number,
-      email:      j.email ?? null,
-      university: j.university,
-      faculty:    j.faculty,
-      matricId:   j.matric_id,
-      remark:     j.remark,
-      paymentMode: j.payment_mode,
-      cost:       Number(j.cost),
-      balanceDue: j.balance_due != null ? Number(j.balance_due) : undefined,
-      balancePaid:   j.balance_paid ?? false,
-      balancePaidAt: j.balance_paid_at ?? null,
-      deliveryAddress: j.delivery_address ?? null,
-      status:     j.status,
-      initialPaid:   j.initial_paid ?? false,
-      initialPaidAt: j.initial_paid_at ?? null,
-      riderName:  j.rider_name,
-      riderPhone: null, // no rider_phone column exists on jubah_bookings — not copying that pre-existing mistake here
-      createdAt:  j.created_at,
-    });
-    return {
-      id:              `jubah-${j.id}`,
-      service:         'jubah' as const,
-      createdAt:       j.created_at,
-      title:           `${j.remark} Robe Delivery`,
-      subtitle:        `${j.matric_id} · ${j.university}`,
-      statusLabel:     doc.statusLabel,
-      statusClassName: doc.statusClassName,
-      amount:          `RM${Number(j.cost).toFixed(2)}`,
-      doc,
-    };
-  });
-}
-
-export async function loadTransporterItems(customerId: string): Promise<ActivityItem[]> {
-  const { data } = await supabase
-    .from('transporter_bookings')
-    .select('*')
-    .eq('customer_id', customerId)
-    .order('created_at', { ascending: false })
-    .limit(30);
-
-  return (data ?? []).map(t => {
-    const doc = buildTransporterReceiptRows(t);
-    return {
-      id:              `transporter-${t.id}`,
-      service:         'transporter' as const,
-      createdAt:       t.created_at,
-      title:           t.destination,
-      subtitle:        `from ${t.pickup}`,
-      statusLabel:     doc.statusLabel,
-      statusClassName: doc.statusClassName,
-      amount:          'TBC',
-      doc,
     };
   });
 }
