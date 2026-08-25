@@ -106,6 +106,18 @@ export const AdminHome: React.FC = () => {
   const [jubahAdminView,     setJubahAdminView]     = useState<'list' | 'card'>('list');
   const [jubahAdminSelected, setJubahAdminSelected] = useState<JubahBookingRow | null>(null);
   const [jubahSubTab,        setJubahSubTab]        = useState<'customer' | 'customer_details' | 'rider' | 'custom' | 'price' | 'faculty' | 'banner'>('rider');
+  const previousActiveRoleRef = useRef(activeRole);
+  useEffect(() => {
+    // AdminHome remains mounted while a superadmin switches roles. Keep its
+    // internal navigation aligned with the selected workspace.
+    if (activeRole === 'lead') {
+      setActiveTab('jubah');
+      setJubahSubTab('rider');
+    } else if (previousActiveRoleRef.current === 'lead' && activeRole === 'admin') {
+      setActiveTab('orders');
+    }
+    previousActiveRoleRef.current = activeRole;
+  }, [activeRole]);
   // Defence in depth — the sub-tab button itself is already hidden for
   // non-superadmin, but if a regular admin somehow lands on 'price' (e.g.
   // a stale tab from before a role downgrade), render as if 'rider' were
