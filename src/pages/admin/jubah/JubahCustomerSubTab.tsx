@@ -19,6 +19,7 @@ import { jubahLocationLabel } from '../../../lib/universities';
 import { useAxisLockedScroll } from '../../../hooks/useAxisLockedScroll';
 import { useApp } from '../../../context/AppContext';
 import { NativeSelect } from '../../../components/NativeSelect';
+import { RepresentativeSheet } from '../../../components/RepresentativeSheet';
 import type { SheetData } from 'write-excel-file/browser';
 
 // Shared by the "Upload Documents & Combined Document" and "Proof of
@@ -66,7 +67,7 @@ export type JubahBookingRow = {
   id: string; reference: string; full_name: string; ic_number: string; hp_number: string;
   email: string | null;
   matric_id: string; university: string; university_key: string; campus: string; faculty: string; remark: string;
-  rider_name: string | null; rider_phone: string | null; status: string; payment_mode: string; cost: number;
+  rider_id: string | null; rider_name: string | null; rider_phone: string | null; status: string; payment_mode: string; cost: number;
   balance_due: number; balance_paid: boolean; balance_paid_at: string | null; balance_proof_url: string | null;
   initial_paid: boolean; initial_paid_at: string | null;
   delivery_address: string | null;
@@ -149,13 +150,37 @@ export function JubahCustomerSubTab({
   const [confirmingId, setConfirmingId] = useState<string | null>(null);
   const [exportMenuOpen, setExportMenuOpen] = useState(false);
   const [exportingFormat, setExportingFormat] = useState<'csv' | 'xlsx' | null>(null);
+  const [representativeSheet, setRepresentativeSheet] = useState<{
+    name: string; dropPoint: string; method: string; icNumber: string | null; phone: string | null;
+  } | null>(null);
 
   // Only receiptModal is tracked here — cancelModalBooking was never part of
   // the "any sheet open" check in the original code (a pre-existing gap,
   // not something to silently fix as part of this refactor).
   useEffect(() => {
-    onModalOpenChange(!!receiptModal);
-  }, [receiptModal, onModalOpenChange]);
+    onModalOpenChange(!!receiptModal || !!representativeSheet);
+  }, [receiptModal, representativeSheet, onModalOpenChange]);
+
+  const openAssignedRepresentative = async (booking: JubahBookingRow) => {
+    if (!booking.rider_id || !booking.rider_name) return;
+    const [{ data: profile }, { data: assignments }] = await Promise.all([
+      supabase.from('profiles').select('name, ic_number, phone').eq('id', booking.rider_id).maybeSingle(),
+      supabase.from('jubah_rider_assignments')
+        .select('drop_point, method')
+        .eq('rider_id', booking.rider_id)
+        .eq('is_active', true)
+        .order('created_at')
+        .limit(1),
+    ]);
+    const assignment = assignments?.[0];
+    setRepresentativeSheet({
+      name: profile?.name ?? booking.rider_name,
+      dropPoint: assignment?.drop_point || '—',
+      method: assignment?.method === 'pickup' ? 'Pickup Only' : assignment?.method === 'postage' ? 'Pickup & Postage' : '—',
+      icNumber: profile?.ic_number ?? null,
+      phone: profile?.phone ?? booking.rider_phone,
+    });
+  };
 
   const handleDeleteJubahBooking = async (b: JubahBookingRow) => {
     setDeletingBooking(b.id);
@@ -1055,10 +1080,13 @@ export function JubahCustomerSubTab({
                 )}
               </div>
               <div className="grid grid-cols-2 gap-2">
-                <div className="bg-slate-50 border border-slate-100 rounded-xl px-3 py-2 min-w-0">
+                <button type="button"
+                  disabled={!b.rider_id}
+                  onPointerDown={e => { e.preventDefault(); void openAssignedRepresentative(b); }}
+                  className="bg-slate-50 border border-slate-100 rounded-xl px-3 py-2 min-w-0 text-left active:bg-slate-100 active:scale-[0.99] transition-transform transform-gpu disabled:cursor-default disabled:active:scale-100">
                   <p className="text-[8px] font-semibold text-slate-400 uppercase tracking-wider">Rider Assigned</p>
                   <p className="text-xs font-semibold text-slate-700">{b.rider_name ?? '—'}</p>
-                </div>
+                </button>
                 <div className="bg-slate-50 border border-slate-100 rounded-xl px-3 py-2 min-w-0">
                   <p className="text-[8px] font-semibold text-slate-400 uppercase tracking-wider">Reference</p>
                   <p className="text-xs font-semibold text-slate-700">{b.reference}</p>
@@ -1151,7 +1179,7 @@ export function JubahCustomerSubTab({
               {/* Cancellation is view-only for regular admin too — only the
                   assigned rider or superadmin can actually cancel (server-
                   enforced, see migration_jubah_cancel_superadmin_rider_only.sql). */}
-              {b.status !== 'cancelled' && isSuperAdmin && (
+              {b.status !== 'cancelled' && (
                 <button
                   onClick={() => setCancelModalBooking(b)}
                   className="w-full flex items-center justify-center gap-2 border border-amber-200 text-amber-600 hover:bg-amber-50 active:scale-[0.98] font-semibold py-3 rounded-2xl text-sm transition">
@@ -1181,6 +1209,18 @@ export function JubahCustomerSubTab({
             <ReceiptCard doc={receiptModal} onSavePdf={() => generateReceiptPdf(receiptModal)} />
           </div>
         </div>
+      )}
+
+      {representativeSheet && (
+        <RepresentativeSheet
+          name={representativeSheet.name}
+          dropPoint={representativeSheet.dropPoint}
+          method={representativeSheet.method}
+          icNumber={representativeSheet.icNumber}
+          phone={representativeSheet.phone}
+          waMessage={`Assalamualaikum ${representativeSheet.name}, saya ingin bertanya mengenai tempahan jubah saya.`}
+          onClose={() => setRepresentativeSheet(null)}
+        />
       )}
 
       {/* ── Cancel Booking Confirmation Modal ── */}

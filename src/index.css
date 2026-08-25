@@ -321,6 +321,13 @@ button {
     box-shadow: inherit !important;
     opacity: inherit !important;
   }
+
+  button.download-combined-button,
+  button.download-combined-button:hover,
+  button.download-combined-button:focus {
+    background-color: #059669 !important;
+    color: #fff !important;
+  }
 }
 
 /* ─── GPU-accelerate scale/translate animations on mobile ──────────── */

@@ -236,7 +236,7 @@ export const AdminHome: React.FC = () => {
     // bounds the worst case without touching how search behaves; at actual
     // current row counts (dozens–hundreds) this never engages.
     let bookingsQ = supabase.from('jubah_bookings')
-      .select('id, reference, full_name, ic_number, hp_number, email, matric_id, university, university_key, campus, faculty, remark, rider_name, rider_phone, status, payment_mode, cost, balance_due, balance_paid, balance_paid_at, balance_proof_url, initial_paid, initial_paid_at, delivery_address, docs_path, payment_path, oscar_path, skpg_path, konvo_path, ic_path, created_at, needs_reconciliation, reconciliation_note', { count: 'exact' })
+      .select('id, reference, full_name, ic_number, hp_number, email, matric_id, university, university_key, campus, faculty, remark, rider_id, rider_name, rider_phone, status, payment_mode, cost, balance_due, balance_paid, balance_paid_at, balance_proof_url, initial_paid, initial_paid_at, delivery_address, docs_path, payment_path, oscar_path, skpg_path, konvo_path, ic_path, created_at, needs_reconciliation, reconciliation_note', { count: 'exact' })
       .order('created_at', { ascending: false })
       .limit(1000);
     // Superadmin scopes by the new University switcher (any university);

@@ -1366,8 +1366,9 @@ export const Jubah: React.FC = () => {
                 <span className="text-xs font-semibold">Combining documents…</span>
               </div>
             ) : combinedBlob ? (
-              <button type="button" onClick={handleDownload}
-                className="w-full flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 active:scale-[0.99] text-white text-xs font-semibold py-3 rounded-xl transition cursor-pointer">
+              <button type="button"
+                onPointerDown={e => { e.preventDefault(); handleDownload(); }}
+                className="download-combined-button w-full flex items-center justify-center gap-2 bg-emerald-600 active:scale-[0.99] text-white text-xs font-semibold py-3 rounded-xl transition-transform transform-gpu cursor-pointer focus:outline-none">
                 <Download className="w-4 h-4" />
                 Download Combined PDF
               </button>
