@@ -7,7 +7,7 @@ import { useLoadOnActive } from '../../../hooks/useLoadOnActive';
 import { useApp } from '../../../context/AppContext';
 import { NativeSelect } from '../../../components/NativeSelect';
 import { MultiSelect } from '../../../components/MultiSelect';
-import { UNIVERSITY_MAP, jubahLocationLabel, universityKeyFromCampus } from '../../../lib/universities';
+import { UNIVERSITIES, UNIVERSITY_MAP, jubahLocationLabel, universityKeyFromCampus } from '../../../lib/universities';
 import { useAxisLockedScroll } from '../../../hooks/useAxisLockedScroll';
 
 interface DriverInvite {
@@ -24,6 +24,7 @@ interface DriverInvite {
   used: boolean;
   used_at: string | null;
   created_at: string;
+  jubah_lead_university_keys: string[];
 }
 
 export interface DriversTabHandle {
@@ -48,7 +49,7 @@ interface DriversTabProps {
 // AdminHome) can still trigger it without this component's data living in
 // the parent.
 export const DriversTab = forwardRef<DriversTabHandle, DriversTabProps>(function DriversTab(
-  { active, universityKey, userName, showToast, onModalOpenChange },
+  { active, isSuperAdmin, universityKey, userName, showToast, onModalOpenChange },
   ref
 ) {
   const { showConfirmModal } = useApp();
@@ -59,7 +60,8 @@ export const DriversTab = forwardRef<DriversTabHandle, DriversTabProps>(function
   const [inviteEmail, setInviteEmail]        = useState('');
   const inviteUniversityKey = universityKey;
   const [inviteCampus, setInviteCampus]      = useState(UNIVERSITY_MAP[universityKey]?.campuses[0] ?? '');
-  const [inviteRole, setInviteRole]          = useState<'driver' | 'rider' | 'admin'>('driver');
+  const [inviteRole, setInviteRole]          = useState<'driver' | 'rider' | 'admin' | 'jubah_lead'>('driver');
+  const [inviteLeadUniversities, setInviteLeadUniversities] = useState<string[]>([universityKey]);
   const [inviteCanDrive, setInviteCanDrive]  = useState(true);
   const [inviteCanRent,  setInviteCanRent]   = useState(false);
   const [inviteCanTransport, setInviteCanTransport] = useState(false);
@@ -67,6 +69,8 @@ export const DriversTab = forwardRef<DriversTabHandle, DriversTabProps>(function
   const [inviteCanRobe,  setInviteCanRobe]   = useState(false);
   const [inviteSending, setInviteSending]    = useState(false);
   const [showInviteConfirm, setShowInviteConfirm] = useState(false);
+  const inviteRoleLabel = inviteRole === 'jubah_lead' ? 'Jubah Lead' : inviteRole === 'admin' ? 'Admin' : inviteRole === 'rider' ? 'Rider' : 'Driver';
+  const inviteLeadLabels = inviteLeadUniversities.map(key => UNIVERSITY_MAP[key]?.shortLabel ?? key.toUpperCase());
 
   useEffect(() => { onModalOpenChange(showInviteConfirm); }, [showInviteConfirm, onModalOpenChange]);
   useEffect(() => {
@@ -76,14 +80,16 @@ export const DriversTab = forwardRef<DriversTabHandle, DriversTabProps>(function
 
   const loadInvites = useCallback(async () => {
     setInvitesLoading(true);
-    let query = supabase
+    const query = supabase
       .from('driver_invites')
-      .select('id,email,campus,university,role,can_drive,can_rent,can_transport,can_daily,can_robe,used,used_at,created_at')
+      .select('id,email,campus,university,role,can_drive,can_rent,can_transport,can_daily,can_robe,used,used_at,created_at,jubah_lead_university_keys')
       .order('created_at', { ascending: false });
     const campuses = UNIVERSITY_MAP[universityKey]?.campuses ?? [];
-    if (campuses.length) query = query.in('campus', campuses);
     const { data } = await query;
-    setInvites(data ?? []);
+    setInvites((data ?? []).filter(invite =>
+      campuses.includes(invite.campus)
+      || (invite.role === 'jubah_lead' && (invite.jubah_lead_university_keys ?? []).includes(universityKey))
+    ));
     setInvitesLoading(false);
   }, [universityKey]);
 
@@ -94,18 +100,21 @@ export const DriversTab = forwardRef<DriversTabHandle, DriversTabProps>(function
     if (!inviteEmail.trim()) return;
     if (inviteRole === 'driver' && !inviteCanDrive && !inviteCanRent && !inviteCanTransport) { showToast('Select at least one capability.'); return; }
     if (inviteRole === 'rider'  && !inviteCanDaily && !inviteCanRobe)  { showToast('Select at least one capability.'); return; }
+    if (inviteRole === 'jubah_lead' && inviteLeadUniversities.length === 0) { showToast('Assign at least one university.'); return; }
     setInviteSending(true);
     const { data: { user: authUser } } = await supabase.auth.getUser();
+    const leadPrimaryUniversity = UNIVERSITY_MAP[inviteLeadUniversities[0]];
     const { data: inserted, error } = await supabase.from('driver_invites').insert({
       email:      inviteEmail.trim().toLowerCase(),
-      campus:     inviteCampus,
-      university: UNIVERSITY_MAP[inviteUniversityKey]?.fullName ?? '',
+      campus:     inviteRole === 'jubah_lead' ? (leadPrimaryUniversity?.campuses[0] ?? inviteCampus) : inviteCampus,
+      university: inviteRole === 'jubah_lead' ? (leadPrimaryUniversity?.fullName ?? '') : (UNIVERSITY_MAP[inviteUniversityKey]?.fullName ?? ''),
       role:       inviteRole,
       can_drive:     inviteRole === 'driver' ? inviteCanDrive     : false,
       can_rent:      inviteRole === 'driver' ? inviteCanRent      : false,
       can_transport: inviteRole === 'driver' ? inviteCanTransport : false,
       can_daily:  inviteRole === 'rider'  ? inviteCanDaily : false,
       can_robe:   inviteRole === 'rider'  ? inviteCanRobe  : false,
+      jubah_lead_university_keys: inviteRole === 'jubah_lead' ? inviteLeadUniversities : [],
       created_by: authUser?.id,
     }).select('id').single();
     setInviteSending(false);
@@ -114,6 +123,7 @@ export const DriversTab = forwardRef<DriversTabHandle, DriversTabProps>(function
       showToast('Invite added!');
       setInviteEmail('');
       setInviteRole('driver');
+      setInviteLeadUniversities([universityKey]);
       setInviteCanDrive(true); setInviteCanRent(false); setInviteCanTransport(false);
       setInviteCanDaily(false); setInviteCanRobe(false);
       loadInvites();
@@ -163,13 +173,14 @@ export const DriversTab = forwardRef<DriversTabHandle, DriversTabProps>(function
                   { value: 'driver', label: 'Driver' },
                   { value: 'rider',  label: 'Rider' },
                   { value: 'admin',  label: 'Admin' },
+                  ...(isSuperAdmin ? [{ value: 'jubah_lead' as const, label: 'Jubah Lead' }] : []),
                 ]}
                 placeholder="Select role..."
                 label="Select Role"
               />
             </div>
             <div className="min-w-0">
-              <p className="text-sm font-semibold text-slate-700 mb-2">Capabilities</p>
+              <p className="text-sm font-semibold text-slate-700 mb-2">{inviteRole === 'jubah_lead' ? 'Universities' : 'Capabilities'}</p>
               {inviteRole === 'driver' && (
                 <MultiSelect
                   values={[...(inviteCanDrive ? ['drive'] : []), ...(inviteCanRent ? ['rent'] : []), ...(inviteCanTransport ? ['transport'] : [])]}
@@ -196,12 +207,20 @@ export const DriversTab = forwardRef<DriversTabHandle, DriversTabProps>(function
               {inviteRole === 'admin' && (
                 <div className="h-[42px] flex items-center rounded-xl border border-slate-100 bg-white px-3 text-xs font-semibold text-slate-700">Full access</div>
               )}
+              {inviteRole === 'jubah_lead' && (
+                <MultiSelect
+                  values={inviteLeadUniversities}
+                  onChange={setInviteLeadUniversities}
+                  options={UNIVERSITIES.map(u => ({ value: u.key, label: u.shortLabel }))}
+                  placeholder="Select universities..."
+                />
+              )}
             </div>
           </div>
 
           {/* University + Campus picker — superadmin only; regular admin
               locked to their own university/campus */}
-          <div>
+          {inviteRole !== 'jubah_lead' && <div>
             <p className="text-sm font-semibold text-slate-700 mb-2">Campus</p>
               {/* Campus only shown when the chosen university has a real
                   multi-campus split — a single-campus university is
@@ -213,7 +232,7 @@ export const DriversTab = forwardRef<DriversTabHandle, DriversTabProps>(function
                     placeholder="Select campus..."
                     label="Select Campus"
             />
-          </div>
+          </div>}
 
           {/* Email input */}
           <div className="relative">
@@ -232,6 +251,8 @@ export const DriversTab = forwardRef<DriversTabHandle, DriversTabProps>(function
             onClick={() => {
               if (!inviteEmail.trim()) return;
               if (inviteRole === 'driver' && !inviteCanDrive && !inviteCanRent && !inviteCanTransport) { showToast('Select at least one capability.'); return; }
+              if (inviteRole === 'rider' && !inviteCanDaily && !inviteCanRobe) { showToast('Select at least one capability.'); return; }
+              if (inviteRole === 'jubah_lead' && inviteLeadUniversities.length === 0) { showToast('Assign at least one university.'); return; }
               setShowInviteConfirm(true);
             }}
             disabled={!inviteEmail.trim()}
@@ -302,12 +323,16 @@ export const DriversTab = forwardRef<DriversTabHandle, DriversTabProps>(function
                     return (
                       <tr key={inv.id} className="border-b border-slate-100 text-xs">
                         <td className="py-2.5 pr-4 font-semibold text-slate-800 whitespace-nowrap">{inv.email}</td>
-                        <td className="py-2.5 pr-4 text-slate-600 capitalize whitespace-nowrap">{inv.role}</td>
+                        <td className="py-2.5 pr-4 text-slate-600 whitespace-nowrap">{inv.role === 'jubah_lead' ? 'Jubah Lead' : inv.role.charAt(0).toUpperCase() + inv.role.slice(1)}</td>
                         <td className="py-2.5 pr-4 text-slate-600 whitespace-nowrap">{jubahLocationLabel(universityKeyFromCampus(inv.campus) ?? '', inv.campus)}</td>
                         <td className={`py-2.5 pr-4 font-semibold whitespace-nowrap ${inv.used ? 'text-emerald-600' : 'text-amber-600'}`}>
                           {inv.used ? 'Registered' : 'Pending'}
                         </td>
-                        <td className="py-2.5 pr-4 text-slate-600 whitespace-nowrap">{capabilities}</td>
+                        <td className="py-2.5 pr-4 text-slate-600 whitespace-nowrap">
+                          {inv.role === 'jubah_lead'
+                            ? (inv.jubah_lead_university_keys ?? []).map(key => UNIVERSITY_MAP[key]?.shortLabel ?? key.toUpperCase()).join(', ')
+                            : capabilities}
+                        </td>
                         <td className="py-2.5 pr-4 text-slate-400 whitespace-nowrap">{new Date(inv.created_at).toLocaleDateString('en-MY')}</td>
                         <td className="py-2.5 text-right">
                           {!inv.used ? (
@@ -350,7 +375,7 @@ export const DriversTab = forwardRef<DriversTabHandle, DriversTabProps>(function
             <div className="w-10 h-1 bg-slate-200 rounded-full mx-auto mb-5" />
 
             {/* Title */}
-            <h3 className="text-sm font-black text-slate-800 text-center mb-1">Confirm {inviteRole === 'admin' ? 'Admin' : inviteRole === 'rider' ? 'Rider' : 'Driver'} Invite</h3>
+            <h3 className="text-sm font-black text-slate-800 text-center mb-1">Confirm {inviteRoleLabel} Invite</h3>
             <p className="text-xs text-slate-400 font-semibold text-center mb-5">
               Please review before sending.
             </p>
@@ -361,7 +386,7 @@ export const DriversTab = forwardRef<DriversTabHandle, DriversTabProps>(function
               {/* Header stripe */}
               <div className={`px-4 py-3 flex items-center gap-2 ${inviteRole === 'admin' ? 'bg-violet-600' : inviteRole === 'rider' ? 'bg-emerald-600' : 'bg-primary'}`}>
                 <Send className="w-3.5 h-3.5 text-white" />
-                <span className="text-white font-semibold text-xs uppercase tracking-widest">{inviteRole === 'admin' ? 'Admin' : inviteRole === 'rider' ? 'Rider' : 'Driver'} Invite</span>
+                <span className="text-white font-semibold text-xs uppercase tracking-widest">{inviteRoleLabel} Invite</span>
               </div>
 
               {/* Details */}
@@ -374,14 +399,14 @@ export const DriversTab = forwardRef<DriversTabHandle, DriversTabProps>(function
                 <div className="h-px bg-slate-100" />
 
                 <div className="flex items-center justify-between gap-2">
-                  <p className="text-xs font-normal text-slate-400">Campus</p>
-                  <span className="text-xs font-semibold text-slate-800">{jubahLocationLabel(inviteUniversityKey, inviteCampus)}</span>
+                  <p className="text-xs font-normal text-slate-400">{inviteRole === 'jubah_lead' ? 'Universities' : 'Campus'}</p>
+                  <span className="text-xs font-semibold text-slate-800 text-right">{inviteRole === 'jubah_lead' ? inviteLeadLabels.join(', ') : jubahLocationLabel(inviteUniversityKey, inviteCampus)}</span>
                 </div>
 
                 <div className="h-px bg-slate-100" />
 
                 <div className="flex items-start justify-between gap-2">
-                  <p className="text-xs font-normal text-slate-400">Capabilities</p>
+                  <p className="text-xs font-normal text-slate-400">{inviteRole === 'jubah_lead' ? 'Access' : 'Capabilities'}</p>
                   <div className="flex flex-col items-end gap-1.5">
                     {inviteRole === 'driver' && (<>
                       <span className={`flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full ${inviteCanDrive ? 'bg-primary/10 text-primary' : 'bg-slate-100 text-slate-400 line-through'}`}>
@@ -405,6 +430,11 @@ export const DriversTab = forwardRef<DriversTabHandle, DriversTabProps>(function
                     {inviteRole === 'admin' && (
                       <span className="flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full bg-violet-50 text-violet-700">
                         <Settings className="w-3 h-3" /> Full Access
+                      </span>
+                    )}
+                    {inviteRole === 'jubah_lead' && (
+                      <span className="flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full bg-primary/10 text-primary">
+                        <GraduationCap className="w-3 h-3" /> Jubah Management
                       </span>
                     )}
                   </div>

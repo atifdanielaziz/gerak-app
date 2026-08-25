@@ -654,10 +654,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const applyPendingInviteIfAny = async () => {
     const { data, error } = await supabase.rpc('apply_pending_invite');
     if (error || !data?.applied) return;
-    const roleLabel = data.role === 'rider' ? 'Rider' : data.role === 'driver' ? 'Driver' : 'Admin';
+    const roleLabel = data.role === 'jubah_lead' ? 'Jubah Lead' : data.role === 'rider' ? 'Rider' : data.role === 'driver' ? 'Driver' : 'Admin';
     addNotification(
       `You now have ${roleLabel} access`,
-      `An admin granted you ${roleLabel} access for UMPSA ${data.campus}. Explore your new tab to get started.`,
+      data.role === 'jubah_lead'
+        ? 'You can now manage Jubah services for your assigned universities.'
+        : `An admin granted you ${roleLabel} access for ${data.campus}. Explore your new tab to get started.`,
       'system',
     );
   };

@@ -25,6 +25,7 @@ type Invite = {
   can_daily: boolean
   can_robe: boolean
   created_by: string | null
+  jubah_lead_university_keys: string[]
 }
 
 // Triggered by DriversTab.tsx's handleSendInvite right after the
@@ -76,7 +77,7 @@ serve(async (req) => {
 
     const { data: invite, error: fetchErr } = await admin
       .from('driver_invites')
-      .select('id, email, university, campus, role, can_drive, can_rent, can_transport, can_daily, can_robe, created_by')
+      .select('id, email, university, campus, role, can_drive, can_rent, can_transport, can_daily, can_robe, created_by, jubah_lead_university_keys')
       .eq('id', inviteId)
       .maybeSingle<Invite>()
 
@@ -98,7 +99,7 @@ serve(async (req) => {
 const escapeHtml = (s: string) =>
   s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;')
 
-const ROLE_LABEL: Record<string, string> = { driver: 'Driver', rider: 'Rider', admin: 'Admin' };
+const ROLE_LABEL: Record<string, string> = { driver: 'Driver', rider: 'Rider', admin: 'Admin', jubah_lead: 'Jubah Lead' };
 const ROLE_EMOJI: Record<string, string> = { driver: '🚗', rider: '🏍️', admin: '🛠️' };
 
 async function sendInviteEmail(invite: Invite) {
@@ -114,6 +115,7 @@ async function sendInviteEmail(invite: Invite) {
   if (invite.can_daily)     tags.push('Gerak Daily')
   if (invite.can_robe)      tags.push('Jubah Delivery')
   if (invite.role === 'admin') tags.push('Admin Panel')
+  if (invite.role === 'jubah_lead') tags.push('Jubah Management')
 
   const roles = [
     ...(invite.role === 'admin' ? ['admin'] : []),
@@ -124,7 +126,9 @@ async function sendInviteEmail(invite: Invite) {
   const roleLabel = roles.map(role => ROLE_LABEL[role] ?? role).join(', ')
   const roleEmoji = roles.map(role => ROLE_EMOJI[role] ?? '').filter(Boolean).join(' ')
   const subject = `You're invited to join the Gerak team as ${roleLabel} ${roleEmoji}`.trim()
-  const locationLabel = `${invite.university || 'Gerak'} ${invite.campus}`.trim()
+  const locationLabel = invite.role === 'jubah_lead'
+    ? (invite.jubah_lead_university_keys ?? []).map(key => key.toUpperCase()).join(', ')
+    : `${invite.university || 'Gerak'} ${invite.campus}`.trim()
   // Straight to the register form (AppContext's /register deep link), not
   // just the app root — with the invited email prefilled so it always
   // matches exactly what the invite was actually issued to.
@@ -151,7 +155,7 @@ async function sendInviteEmail(invite: Invite) {
           <p style="font-size: 13px; font-weight: 600; color: #1e293b; margin: 0;">${escapeHtml(roleLabel)}</p>
         </td>
         <td style="width: 50%; padding: 10px 12px; background: #f8fafc; border: 1px solid #f1f5f9; border-radius: 0 10px 10px 0;">
-          <p style="font-size: 9.5px; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; color: #94a3b8; margin: 0 0 3px;">Campus</p>
+          <p style="font-size: 9.5px; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; color: #94a3b8; margin: 0 0 3px;">${invite.role === 'jubah_lead' ? 'Universities' : 'Campus'}</p>
           <p style="font-size: 13px; font-weight: 600; color: #1e293b; margin: 0;">${escapeHtml(locationLabel)}</p>
         </td>
       </tr></table>
