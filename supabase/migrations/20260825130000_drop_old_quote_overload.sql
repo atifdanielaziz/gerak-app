@@ -1,0 +1,11 @@
+-- create_jubah_custom_quote had two overloads live at once: the original
+-- 6-param version (20260823120000) and the current 8-param version
+-- (20260823130000, adds p_customer_phone/p_campus in the middle of the
+-- signature — which is why `create or replace` created a second function
+-- instead of replacing the first one, since the param list doesn't match
+-- exactly). The old version has zero execute grants to any role (revoked
+-- in 20260823130000) so it's unreachable dead code — but two functions
+-- sharing a name is a known PostgREST overload-resolution trap that can
+-- cause a call that should resolve cleanly to fail instead. Confirmed via
+-- diag_quote_overloads() that both were still present live.
+drop function if exists public.create_jubah_custom_quote(text, numeric, text, text, text, text);
