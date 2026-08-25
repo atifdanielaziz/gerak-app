@@ -53,7 +53,7 @@ export const BottomNav: React.FC = () => {
 
   const items =
     isProvider                                ? providerItems :
-    role === 'superadmin' || role === 'admin' ? adminItems   :
+    role === 'superadmin' || role === 'admin' || user.isJubahLead ? adminItems   :
     customerItems;
 
   return (

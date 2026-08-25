@@ -58,6 +58,7 @@ export const AdminHome: React.FC = () => {
   } = useApp();
 
   const isSuperAdmin = user.role === 'superadmin';
+  const isJubahLead = user.isJubahLead;
   // profiles.campus is always written by our own UI (Register, Invite,
   // the Staff tab's campus picker) using the exact canonical casing from
   // src/lib/universities.ts, so it's used as-is — no per-word title-casing
@@ -69,7 +70,13 @@ export const AdminHome: React.FC = () => {
     setAdminCampus(current => campuses.includes(current) ? current : (campuses[0] ?? user.campus));
   }, [adminUniversityKey, user.campus]);
 
-  const [activeTab, setActiveTab] = useState<AdminTab>('orders');
+  const [activeTab, setActiveTab] = useState<AdminTab>(isJubahLead ? 'jubah' : 'orders');
+  const visibleAdminTabs = useMemo(
+    () => isJubahLead
+      ? ADMIN_TABS.filter(tab => tab.id === 'jubah')
+      : ADMIN_TABS.filter(tab => !tab.superadminOnly || user.role === 'superadmin'),
+    [isJubahLead, user.role],
+  );
   // campusView only ever drives Routes/Orders (Gerak Rides transport,
   // deliberately UMPSA-only) — default Gambang unless this admin's own
   // campus is literally Pekan; a non-UMPSA admin has no meaningful
@@ -84,17 +91,6 @@ export const AdminHome: React.FC = () => {
   // it. sheetUser/ProfileSheet stay here since Receipts also opens it.
   const [usersModalOpen, setUsersModalOpen] = useState(false);
   const [sheetUser, setSheetUser]           = useState<ProfileUser | null>(null);
-
-  // Jubah delivery on/off — toggled from a button inside the Jubah tab, but
-  // declared here (pre-existing quirk, not moved as part of this refactor).
-  const [jubahActive, setJubahActive]   = useState(false);
-  const [togglingJubah, setTogglingJubah] = useState(false);
-  // Bumped every time handleToggleJubah writes a fresh value, so a slower
-  // loadJubahData() settings-fetch that was already in flight before the
-  // toggle (common on a slow connection) can detect it's now stale and skip
-  // overwriting the just-toggled value — was previously clobbering the
-  // toggle back to its old colour a moment after it changed.
-  const jubahActiveSeqRef = useRef(0);
 
   // Reported up by ReceiptsTab's own gate-master confirm dialog, so the
   // shared "hide BottomNav while any sheet is open" effect still sees it.
@@ -224,10 +220,6 @@ export const AdminHome: React.FC = () => {
 
   const loadJubahData = useCallback(async () => {
     setJubahBookingsLoading(true);
-
-    const mySeq = jubahActiveSeqRef.current;
-    const { data: setting } = await supabase.from('app_settings').select('value').eq('key', 'jubah_active').single();
-    if (setting && jubahActiveSeqRef.current === mySeq) setJubahActive(setting.value === 'true');
 
     // Capped, not truly paginated — the Customer Directory's search box
     // filters over whatever's already loaded, so real "load more" paging
@@ -394,18 +386,8 @@ export const AdminHome: React.FC = () => {
     setTimeout(() => setToast(''), 3000);
   };
 
-  const handleToggleJubah = async () => {
-    setTogglingJubah(true);
-    const newVal = (!jubahActive).toString();
-    await supabase.from('app_settings').update({ value: newVal }).eq('key', 'jubah_active');
-    jubahActiveSeqRef.current += 1; // invalidate any older in-flight settings fetch
-    setJubahActive(!jubahActive);
-    setTogglingJubah(false);
-    showToast(`Jubah delivery ${!jubahActive ? 'activated' : 'deactivated'}.`);
-  };
-
   // Guard — redirect non-admin users
-  if (!['admin', 'superadmin'].includes(user.role)) {
+  if (!['admin', 'superadmin'].includes(user.role) && !isJubahLead) {
     setCurrentPage('dashboard');
     return null;
   }
@@ -442,8 +424,7 @@ export const AdminHome: React.FC = () => {
       {!sampleDocsPage && (
         <aside className="hidden lg:flex lg:flex-col lg:w-64 lg:shrink-0 lg:h-full lg:border-r lg:border-slate-100 lg:overflow-y-auto lg:no-scrollbar">
           <nav className="flex-1 flex flex-col gap-1 p-3">
-            {ADMIN_TABS
-              .filter(t => !t.superadminOnly || user.role === 'superadmin')
+            {visibleAdminTabs
               .map(tab => {
                 const Icon = tab.icon;
                 return (
@@ -628,8 +609,7 @@ export const AdminHome: React.FC = () => {
 
         {/* Tab bar */}
       <div className="flex bg-white border border-slate-100 rounded-2xl p-1 gap-1 overflow-x-auto no-scrollbar">
-        {ADMIN_TABS
-          .filter(t => !t.superadminOnly || user.role === 'superadmin')
+        {visibleAdminTabs
           .map(tab => (
             // Two stacked layers instead of toggling bg-primary/text-white
             // directly — this WebView unreliably repaints background/text
@@ -735,7 +715,7 @@ export const AdminHome: React.FC = () => {
       {activeTab === 'jubah' && (
         <div className="flex flex-col gap-4">
 
-          {/* Jubah Period Toggle + sub-tab switcher — hidden when inside customer sub-pages */}
+          {/* Jubah controls — hidden when inside customer sub-pages */}
           {!(jubahSubTab === 'customer' && jubahAdminView !== 'list') && (<>
             {/* University switcher — superadmin only; regular admin is locked to
                 their own university (today, that's always UMPSA — see
@@ -746,19 +726,6 @@ export const AdminHome: React.FC = () => {
                 used to each have their own separate dropdown — now just this
                 one, same labeled-pill style Pricing Matrix's used to have,
                 not the old icon-only trigger). */}
-            <div className="flex items-center gap-2">
-              <button
-                onPointerDown={e => { e.preventDefault(); handleToggleJubah(); }}
-                disabled={togglingJubah}
-                aria-label="Toggle Jubah delivery period"
-                title={jubahActive ? 'Jubah delivery period: OPEN — students can book' : 'Jubah delivery period: CLOSED — booking disabled'}
-                className={`shrink-0 px-3 py-2 rounded-xl text-xs font-semibold border transition-transform transform-gpu active:scale-95 disabled:opacity-50 ${
-                  jubahActive ? 'bg-blue-50 border-blue-200 text-blue-700' : 'bg-slate-50 border-slate-200 text-slate-500'
-                }`}>
-                {togglingJubah ? '…' : jubahActive ? <><span className="inline-block w-2 h-2 rounded-full bg-emerald-400 mr-1" />ON</> : <><span className="inline-block w-2 h-2 rounded-full bg-slate-400 mr-1" />OFF</>}
-              </button>
-            </div>
-
             {/* Payment records that need manual financial reconciliation. */}
             {jubahNeedsReconciliation.length > 0 && (
               <div className="bg-red-50 border border-red-100 rounded-3xl p-5 flex flex-col gap-3">
@@ -899,7 +866,8 @@ export const AdminHome: React.FC = () => {
                 { id: 'faculty',  label: 'Faculty',  superadminOnly: false },
                 { id: 'banner',   label: 'Banner',   superadminOnly: false },
               ] as const)
-                .filter(t => !t.superadminOnly || isSuperAdmin)
+                .filter(t => (!t.superadminOnly || isSuperAdmin)
+                  && (!isJubahLead || ['rider', 'customer', 'customer_details'].includes(t.id)))
                 .map(t => (
                 // Same opacity-overlay technique as the mobile admin tab
                 // bar above — see its comment for why (WebView repaint bug).
@@ -924,6 +892,7 @@ export const AdminHome: React.FC = () => {
               ref={jubahRiderTabRef}
               active={activeTab === 'jubah' && effectiveJubahSubTab === 'rider'}
               isSuperAdmin={isSuperAdmin}
+              useUniversityScope={isJubahLead}
               adminCampus={adminCampus}
               jubahUniversityView={jubahUniversityView}
               showToast={showToast}
@@ -935,7 +904,7 @@ export const AdminHome: React.FC = () => {
           {effectiveJubahSubTab === 'customer' && (
             <JubahCustomerSubTab
               active={activeTab === 'jubah' && effectiveJubahSubTab === 'customer'}
-              isSuperAdmin={isSuperAdmin}
+              canManageJubah={isSuperAdmin || isJubahLead}
               bookings={jubahBookings}
               bookingsTotalCount={jubahBookingsTotalCount}
               bookingsLoading={jubahBookingsLoading}

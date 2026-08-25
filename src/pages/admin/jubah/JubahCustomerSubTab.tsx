@@ -84,7 +84,7 @@ interface JubahCustomerSubTabProps {
   // update_jubah_booking_status/mark_jubah_balance_paid, see migration_
   // jubah_confirm_superadmin_rider_only.sql). This just controls whether
   // the confirm/advance controls render as clickable here.
-  isSuperAdmin: boolean;
+  canManageJubah: boolean;
   bookings: JubahBookingRow[];
   // Real DB row count vs bookings.length (capped at 1000, see AdminHome.tsx's
   // loadJubahData) — only used to show a "showing X of Y" note when the cap
@@ -125,7 +125,7 @@ interface JubahCustomerSubTabProps {
 // fragmented across list/card/details files — those three views share one
 // tightly-coupled navigation state machine that's clearer kept together.
 export function JubahCustomerSubTab({
-  isSuperAdmin, bookings, bookingsTotalCount, bookingsLoading, setBookings, reload,
+  canManageJubah, bookings, bookingsTotalCount, bookingsLoading, setBookings, reload,
   adminView, selected, setSelected, onGoToCard, onGoBack, onGoToList,
   showToast, onModalOpenChange, universityLabel,
 }: JubahCustomerSubTabProps) {
@@ -687,7 +687,7 @@ export function JubahCustomerSubTab({
                             }
                             // View-only for regular admin — only the assigned rider or
                             // superadmin can actually approve (server-enforced too).
-                            if (!isSuperAdmin) {
+                            if (!canManageJubah) {
                               return (
                                 <span title="Only the assigned rider or superadmin can confirm this">
                                   <Eye className="w-4 h-4 text-slate-300" />
@@ -915,7 +915,7 @@ export function JubahCustomerSubTab({
                   {/* Was an unlabeled icon-only circle button here — easy to miss
                       next to the clearly labeled "Confirm" button for the initial
                       payment just below. Same action, matching visible label now. */}
-                  {!b.balance_paid && isSuperAdmin && (
+                  {!b.balance_paid && canManageJubah && (
                     <button
                       type="button"
                       onClick={() => confirmBooking(b)}
@@ -935,7 +935,7 @@ export function JubahCustomerSubTab({
                   one button — the proof to verify against is already shown
                   in the persistent card above. Applies to both full-payment
                   and deposit bookings alike. */}
-              {notStarted && b.status !== 'cancelled' && isSuperAdmin && (
+              {notStarted && b.status !== 'cancelled' && canManageJubah && (
                 <div className="flex flex-col gap-2">
                   <button
                     type="button"
@@ -950,7 +950,7 @@ export function JubahCustomerSubTab({
               )}
               {/* Advance status button — deposit bookings stay gated until the balance is
                   confirmed above. View-only for regular admin — see isSuperAdmin note. */}
-              {!notStarted && !isDone && b.status !== 'cancelled' && isSuperAdmin && (() => {
+              {!notStarted && !isDone && b.status !== 'cancelled' && canManageJubah && (() => {
                 // Only gate the 'paid' -> 'processing' hop — reaching 'paid'
                 // itself doesn't require the balance yet, only advancing past it.
                 const balanceGateActive = b.payment_mode === 'deposit' && b.status === 'paid' && !b.balance_paid;
@@ -1159,7 +1159,7 @@ export function JubahCustomerSubTab({
             {/* Delete + Cancel row — Confirm itself lives contextually up in
                 the stepper card (next to the payment status it applies to),
                 so it isn't repeated down here too. */}
-            <div className="flex flex-col gap-3">
+            {canManageJubah && <div className="flex flex-col gap-3">
               <button
                 onClick={() => showConfirmModal({
                   title: 'Delete Booking?',
@@ -1186,7 +1186,7 @@ export function JubahCustomerSubTab({
                   <Ban className="w-4 h-4" />Cancel Booking
                 </button>
               )}
-            </div>
+            </div>}
           </div>
         );
       })()}

@@ -4,6 +4,7 @@ import { supabase } from '../../../lib/supabase';
 import {
   Users, MoreVertical, Car, KeyRound, Bike, GraduationCap, MapPin, ShieldCheck, ShieldOff, Trash2, Truck, FileCheck2,
   BarChart3, CalendarCheck2, CalendarX2, UserCheck, LogIn, LogOut, Wifi, BriefcaseBusiness, PauseCircle, PlayCircle, ChevronDown,
+  Crown,
 } from 'lucide-react';
 import { WaIcon, toWa } from '../../../lib/whatsapp';
 import { useLoadOnActive } from '../../../hooks/useLoadOnActive';
@@ -308,6 +309,14 @@ export const UsersTab = forwardRef<UsersTabHandle, UsersTabProps>(function Users
   // was tapped (there are 12 campuses now, too many for inline buttons).
   const [campusPickerUniversity, setCampusPickerUniversity] = useState('');
   const [campusPickerCampus, setCampusPickerCampus]         = useState('');
+  const [leadUserId, setLeadUserId] = useState('');
+  const [leadUniversityKeys, setLeadUniversityKeys] = useState<string[]>([]);
+  const [runnerUserId, setRunnerUserId] = useState('');
+  const [runnerLeadId, setRunnerLeadId] = useState('');
+  const [runnerUniversityKey, setRunnerUniversityKey] = useState('');
+  const [leadRows, setLeadRows] = useState<Array<{ user_id: string; is_active: boolean }>>([]);
+  const [leadAssignments, setLeadAssignments] = useState<Array<{ lead_id: string; university_key: string }>>([]);
+  const [savingLead, setSavingLead] = useState(false);
 
   useEffect(() => { onModalOpenChange(!!pendingAction || !!reviewingUserId); }, [pendingAction, reviewingUserId, onModalOpenChange]);
 
@@ -373,11 +382,67 @@ export const UsersTab = forwardRef<UsersTabHandle, UsersTabProps>(function Users
     ] as string[]);
     users.forEach(u => { u.has_active_job = busyIds.has(u.id); });
     setProfileUsers(users);
+    if (isSuperAdmin) {
+      const [{ data: leads }, { data: assignments }] = await Promise.all([
+        supabase.from('jubah_leads').select('user_id,is_active'),
+        supabase.from('jubah_lead_universities').select('lead_id,university_key'),
+      ]);
+      setLeadRows((leads ?? []) as Array<{ user_id: string; is_active: boolean }>);
+      setLeadAssignments((assignments ?? []) as Array<{ lead_id: string; university_key: string }>);
+    }
     setUsersLoading(false);
   }, [isSuperAdmin, adminCampus]);
 
   useLoadOnActive(active, loadUsers);
   useImperativeHandle(ref, () => ({ reload: loadUsers }), [loadUsers]);
+
+  const saveJubahLead = async () => {
+    if (!leadUserId || leadUniversityKeys.length === 0) return showToast('Select a staff member and at least one university.');
+    setSavingLead(true);
+    const { data, error } = await supabase.rpc('set_jubah_lead', {
+      p_user_id: leadUserId,
+      p_university_keys: leadUniversityKeys,
+      p_active: true,
+    });
+    setSavingLead(false);
+    if (error) return showToast(error.message);
+    const result = data as { success?: boolean; error?: string } | null;
+    if (!result?.success) return showToast(result?.error ?? 'Could not save the Jubah Lead.');
+    showToast('Jubah Lead assignment saved.');
+    await loadUsers();
+  };
+
+  const removeJubahLead = async () => {
+    if (!leadUserId) return;
+    setSavingLead(true);
+    const { data, error } = await supabase.rpc('set_jubah_lead', {
+      p_user_id: leadUserId,
+      p_university_keys: [],
+      p_active: false,
+    });
+    setSavingLead(false);
+    if (error) return showToast(error.message);
+    const result = data as { success?: boolean; error?: string } | null;
+    if (!result?.success) return showToast(result?.error ?? 'Could not remove the Jubah Lead.');
+    setLeadUniversityKeys([]);
+    showToast('Jubah Lead access removed.');
+    await loadUsers();
+  };
+
+  const saveRunnerLead = async () => {
+    if (!runnerUserId || !runnerLeadId || !runnerUniversityKey) return showToast('Select a runner, Lead and university.');
+    setSavingLead(true);
+    const { data, error } = await supabase.rpc('assign_jubah_runner_to_lead', {
+      p_runner_id: runnerUserId,
+      p_lead_id: runnerLeadId,
+      p_university_key: runnerUniversityKey,
+    });
+    setSavingLead(false);
+    if (error) return showToast(error.message);
+    const result = data as { success?: boolean; error?: string } | null;
+    if (!result?.success) return showToast(result?.error ?? 'Could not assign the Jubah runner.');
+    showToast('Jubah runner assigned to the Lead.');
+  };
 
   const handleToggleCapability = async (u: ProfileUser, canDrive: boolean, canRent: boolean, canTransport: boolean) => {
     const { data: { user: authUser } } = await supabase.auth.getUser();
@@ -725,6 +790,67 @@ export const UsersTab = forwardRef<UsersTabHandle, UsersTabProps>(function Users
           </div>
           </>)}
         </div>
+
+        {isSuperAdmin && (
+          <section className="bg-white border border-slate-100 rounded-3xl p-5 flex flex-col gap-4 w-full">
+            <h3 className="text-sm font-semibold text-slate-700 flex items-center gap-2">
+              <Crown className="w-4 h-4 text-slate-400" /> Jubah Lead Assignments
+            </h3>
+            <p className="text-xs font-normal text-slate-400">A Lead can manage Jubah bookings only for the universities selected here.</p>
+            <NativeSelect
+              value={leadUserId}
+              onChange={value => {
+                setLeadUserId(value);
+                setLeadUniversityKeys(leadAssignments.filter(row => row.lead_id === value).map(row => row.university_key));
+              }}
+              options={profileUsers.map(profile => ({ value: profile.id, label: `${profile.name} · ${profile.gerak_id}` }))}
+              placeholder="Select Jubah Lead"
+              label="Lead"
+            />
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+              {UNIVERSITIES.map(university => {
+                const selected = leadUniversityKeys.includes(university.key);
+                return (
+                  <button key={university.key} type="button" onPointerDown={event => {
+                    event.preventDefault();
+                    setLeadUniversityKeys(keys => selected ? keys.filter(key => key !== university.key) : [...keys, university.key]);
+                  }} className={`bg-white border rounded-xl px-3 py-2 text-left text-xs font-semibold transition-transform transform-gpu active:scale-[0.99] ${selected ? 'border-slate-900 bg-slate-50 text-slate-900' : 'border-slate-100 text-slate-500'}`}>
+                    {university.shortLabel}
+                  </button>
+                );
+              })}
+            </div>
+            {leadRows.some(row => row.user_id === leadUserId && row.is_active) && (
+              <button type="button" disabled={savingLead} onPointerDown={event => { event.preventDefault(); void removeJubahLead(); }}
+                className="self-end bg-white border border-red-100 text-red-600 rounded-xl px-4 py-2 text-xs font-semibold transition-transform transform-gpu active:scale-95 disabled:opacity-40">
+                Remove Lead
+              </button>
+            )}
+            <button type="button" disabled={savingLead || !leadUserId || leadUniversityKeys.length === 0} onPointerDown={event => { event.preventDefault(); void saveJubahLead(); }}
+              className="self-end bg-primary text-white rounded-xl px-4 py-2 text-xs font-semibold transition-transform transform-gpu active:scale-95 disabled:opacity-40">
+              {savingLead ? 'Saving…' : 'Save Lead'}
+            </button>
+
+            {leadRows.some(row => row.is_active) && <div className="border-t border-slate-100 pt-4 flex flex-col gap-3">
+              <p className="text-xs font-semibold text-slate-700">Assign a Jubah runner under a Lead</p>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                <NativeSelect value={runnerUserId} onChange={setRunnerUserId}
+                  options={profileUsers.filter(profile => profile.role === 'rider').map(profile => ({ value: profile.id, label: `${profile.name} · ${profile.gerak_id}` }))}
+                  placeholder="Runner" label="Runner" />
+                <NativeSelect value={runnerLeadId} onChange={value => { setRunnerLeadId(value); setRunnerUniversityKey(''); }}
+                  options={leadRows.filter(row => row.is_active).map(row => { const profile = profileUsers.find(user => user.id === row.user_id); return { value: row.user_id, label: profile?.name ?? row.user_id }; })}
+                  placeholder="Lead" label="Lead" />
+                <NativeSelect value={runnerUniversityKey} onChange={setRunnerUniversityKey}
+                  options={leadAssignments.filter(row => row.lead_id === runnerLeadId).map(row => ({ value: row.university_key, label: UNIVERSITY_MAP[row.university_key]?.shortLabel ?? row.university_key }))}
+                  placeholder="University" label="University" />
+              </div>
+              <button type="button" disabled={savingLead || !runnerUserId || !runnerLeadId || !runnerUniversityKey} onPointerDown={event => { event.preventDefault(); void saveRunnerLead(); }}
+                className="self-end bg-primary text-white rounded-xl px-4 py-2 text-xs font-semibold transition-transform transform-gpu active:scale-95 disabled:opacity-40">
+                Assign Runner
+              </button>
+            </div>}
+          </section>
+        )}
 
           <div className="bg-white border border-slate-100 rounded-3xl p-5 flex flex-col gap-4 w-full">
           <h3 className="text-sm font-semibold text-slate-700 flex items-center gap-1.5">

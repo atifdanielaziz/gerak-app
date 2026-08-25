@@ -318,6 +318,7 @@ export interface JubahRiderSubTabHandle {
 interface JubahRiderSubTabProps {
   active: boolean;
   isSuperAdmin: boolean;
+  useUniversityScope?: boolean;
   adminCampus: string;
   // Which university's riders to show for superadmin (regular admin still
   // uses adminCampus, same lock-in as every other campus-scoped admin tab).
@@ -331,7 +332,7 @@ interface JubahRiderSubTabProps {
 // that also fetched bookings (used by the Customer sub-tab) — decomposed
 // here into its own independent fetch of riders + their assignments only.
 export const JubahRiderSubTab = forwardRef<JubahRiderSubTabHandle, JubahRiderSubTabProps>(function JubahRiderSubTab(
-  { active, isSuperAdmin, adminCampus, jubahUniversityView, showToast, onModalOpenChange },
+  { active, isSuperAdmin, useUniversityScope = false, adminCampus, jubahUniversityView, showToast, onModalOpenChange },
   ref
 ) {
   const representativeDirectoryScrollRef = useAxisLockedScroll<HTMLDivElement>();
@@ -347,7 +348,7 @@ export const JubahRiderSubTab = forwardRef<JubahRiderSubTabHandle, JubahRiderSub
   // Same university this admin's rider/representative data is scoped to
   // (see loadJubahRiders below) — shown next to card headers.
   const universityLabel = UNIVERSITY_MAP[
-    isSuperAdmin ? jubahUniversityView : (universityKeyFromCampus(adminCampus) ?? 'umpsa')
+    (isSuperAdmin || useUniversityScope) ? jubahUniversityView : (universityKeyFromCampus(adminCampus) ?? 'umpsa')
   ]?.shortLabel ?? 'UMPSA';
 
   useEffect(() => { onModalOpenChange(!!jubahSheetRider); }, [jubahSheetRider, onModalOpenChange]);
@@ -359,7 +360,7 @@ export const JubahRiderSubTab = forwardRef<JubahRiderSubTabHandle, JubahRiderSub
       .eq('role', 'rider')
       .eq('can_robe', true)
       .order('name');
-    ridersQ = isSuperAdmin
+    ridersQ = (isSuperAdmin || useUniversityScope)
       ? ridersQ.in('campus', UNIVERSITY_MAP[jubahUniversityView]?.campuses ?? [])
       : ridersQ.eq('campus', adminCampus);
     const { data: ridersData } = await ridersQ;
@@ -385,7 +386,7 @@ export const JubahRiderSubTab = forwardRef<JubahRiderSubTabHandle, JubahRiderSub
     } else {
       setJubahAssignments([]);
     }
-  }, [isSuperAdmin, adminCampus, jubahUniversityView]);
+  }, [isSuperAdmin, useUniversityScope, adminCampus, jubahUniversityView]);
 
   useLoadOnActive(active, loadJubahRiders);
   useImperativeHandle(ref, () => ({ reload: loadJubahRiders }), [loadJubahRiders]);

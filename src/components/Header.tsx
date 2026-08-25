@@ -1,9 +1,10 @@
 ﻿import React, { useState } from 'react';
 import { useApp } from '../context/AppContext';
-import { Bell, ChevronLeft, ShieldCheck, Car, Bike, MoreHorizontal, MoreVertical, Eye, ChevronDown, X, MapPin, User, Pencil, CalendarCheck2, FileCheck2, Menu, Check } from 'lucide-react';
+import { Bell, ChevronLeft, ShieldCheck, Car, Bike, MoreHorizontal, MoreVertical, Eye, ChevronDown, X, MapPin, User, Pencil, CalendarCheck2, FileCheck2, Menu, Check, GraduationCap } from 'lucide-react';
 import { WaBtn } from '../lib/whatsapp';
 import { UNIVERSITIES as UNIVERSITY_OPTIONS } from '../lib/universities';
 import { CampusStatusToggle } from './CampusStatusToggle';
+import { supabase } from '../lib/supabase';
 
 const UNI_CAMPUSES: Record<string, string[]> = Object.fromEntries(
   UNIVERSITY_OPTIONS.flatMap(university => [
@@ -16,6 +17,50 @@ const UNIVERSITIES = UNIVERSITY_OPTIONS.map(university => university.shortLabel)
 
 const toTitleCase = (str: string) =>
   str.toLowerCase().replace(/\b\w/g, c => c.toUpperCase());
+
+const JubahAvailabilityToggle: React.FC = () => {
+  const [enabled, setEnabled] = useState(false);
+  const [saving, setSaving] = useState(false);
+
+  React.useEffect(() => {
+    let mounted = true;
+    void supabase.from('app_settings').select('value').eq('key', 'jubah_active').single()
+      .then(({ data }) => {
+        if (mounted && data) setEnabled(data.value === 'true');
+      });
+    return () => { mounted = false; };
+  }, []);
+
+  const toggle = async () => {
+    if (saving) return;
+    const next = !enabled;
+    setSaving(true);
+    setEnabled(next);
+    const { error } = await supabase.from('app_settings')
+      .update({ value: String(next) })
+      .eq('key', 'jubah_active');
+    if (error) setEnabled(!next);
+    setSaving(false);
+  };
+
+  return (
+    <button
+      type="button"
+      role="switch"
+      aria-checked={enabled}
+      aria-label={`Jubah service ${enabled ? 'on' : 'off'}`}
+      disabled={saving}
+      onPointerDown={e => {
+        e.preventDefault();
+        e.stopPropagation();
+        void toggle();
+      }}
+      className={`relative h-6 w-11 shrink-0 rounded-full transform-gpu transition-transform active:scale-95 disabled:opacity-60 ${enabled ? 'bg-emerald-500' : 'bg-slate-300'}`}
+    >
+      <span className={`absolute top-0.5 h-5 w-5 rounded-full bg-white transition-transform transform-gpu ${enabled ? 'translate-x-5' : 'translate-x-0.5'}`} />
+    </button>
+  );
+};
 
 const Avatar: React.FC<{ url?: string; name?: string; size: number; guest?: boolean }> = ({ url, name, size, guest }) => {
   const dim = { width: `${size}px`, height: `${size}px` };
@@ -387,7 +432,7 @@ export const Header: React.FC = () => {
             </div>
           )}
 
-          {(user.role === 'admin' || user.role === 'superadmin') && (
+          {(user.role === 'admin' || user.role === 'superadmin' || user.isJubahLead) && (
             <div className="relative order-3">
               <button onPointerDown={(e) => { e.preventDefault(); setShowAdminUniversityMenu(p => !p); }}
                 className="w-8 h-8 flex items-center justify-center rounded-xl text-slate-600 active:bg-slate-50 active:scale-90 transition-transform"
@@ -408,7 +453,7 @@ export const Header: React.FC = () => {
                     onPointerDown={e => e.stopPropagation()}
                     onTouchMove={e => e.stopPropagation()}
                   >
-                  {UNIVERSITY_OPTIONS.map(option => {
+                  {UNIVERSITY_OPTIONS.filter(option => !user.isJubahLead || user.jubahLeadUniversities.includes(option.key)).map(option => {
                     const selected = adminUniversityKey === option.key;
                     return <button key={option.key} onClick={(e) => { e.stopPropagation(); setAdminUniversityKey(option.key); setShowAdminUniversityMenu(false); }}
                       className={`w-full min-h-12 flex items-center gap-3 px-3 py-3 rounded-xl text-left transition-transform active:scale-[0.99] ${selected ? 'border border-slate-900 bg-slate-50' : 'border border-transparent'}`}>
@@ -417,12 +462,19 @@ export const Header: React.FC = () => {
                     </button>;
                   })}
                   </div>
+                  {!user.isJubahLead && (
+                    <div className="flex items-center gap-3 border-t border-slate-100 px-3 py-3 text-xs text-slate-600">
+                      <GraduationCap className="h-4 w-4 shrink-0 text-slate-400" />
+                      <span className="font-semibold">Jubah Service</span>
+                      <span className="ml-auto"><JubahAvailabilityToggle /></span>
+                    </div>
+                  )}
                 </div>
               </>)}
             </div>
           )}
 
-          {(user.role === 'admin' || user.role === 'superadmin') && (
+          {(user.role === 'admin' || user.role === 'superadmin' || user.isJubahLead) && (
             <button onPointerDown={(e) => { e.preventDefault(); setCurrentPage('notifications'); }}
               className="relative order-2 p-2 text-slate-600 active:scale-90 transition-transform" aria-label="Inbox">
               <Bell className="w-5 h-5" />

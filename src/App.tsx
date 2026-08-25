@@ -361,7 +361,7 @@ const AppContent: React.FC = () => {
       case 'rider-home':
         return <RiderHome />;
       case 'admin-home':
-        return (user.role === 'admin' || user.role === 'superadmin') ? <AdminHome /> : <Dashboard />;
+        return (user.role === 'admin' || user.role === 'superadmin' || user.isJubahLead) ? <AdminHome /> : <Dashboard />;
       case 'my-orders':
         return <MyOrders />;
       case 'activity':
