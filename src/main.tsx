@@ -30,6 +30,24 @@ window.addEventListener('error', (event) => {
   console.error('[GERAK] Uncaught error:', event.error ?? event.message);
 });
 
+// A tab/installed-app left open across a deploy keeps its old index.html,
+// which references JS chunk hashes that no longer exist once a newer
+// build replaces them (every hash changes per build) — a lazy-loaded
+// page (App.tsx's route-level lazy()) then 404s trying to fetch its own
+// chunk. Vite dispatches this specific failure as 'vite:preloadError'
+// (distinct from the generic 'error' handler above, which fires on plain
+// resource-load errors like a broken image and shouldn't force a reload).
+// Previously this just left the app stuck on a blank/broken screen with
+// no way out short of the user manually clearing site data — reload once
+// automatically instead. Guarded by sessionStorage so a genuine offline/
+// network-down case (where reloading won't help) doesn't loop forever.
+window.addEventListener('vite:preloadError', () => {
+  const key = 'gerak_preload_reload';
+  if (sessionStorage.getItem(key)) return;
+  sessionStorage.setItem(key, '1');
+  window.location.reload();
+});
+
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <ErrorBoundary>
