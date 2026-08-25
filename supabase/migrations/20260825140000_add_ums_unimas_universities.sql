@@ -72,12 +72,29 @@ begin
   where n.nspname = 'public' and p.proname = 'create_jubah_booking' and p.pronargs = 24
   order by p.oid desc limit 1;
   if v_definition is null then raise exception 'create_jubah_booking(24 args) was not found'; end if;
-  v_widened := replace(
-    v_definition,
-    $old$'umpsa', 'uitm', 'umk', 'ukm', 'uiam', 'uum', 'unisza', 'utp', 'upm', 'um', 'upsi'$old$,
-    $new$'umpsa', 'uitm', 'umk', 'ukm', 'uiam', 'uum', 'unisza', 'utp', 'upm', 'um', 'upsi', 'ums', 'unimas'$new$
-  );
-  if v_widened = v_definition then raise exception 'create_jubah_booking university allowlist was not found'; end if;
+  -- The latest hardened RPC may contain either the original six-university
+  -- allowlist or the subsequently widened eleven-university allowlist,
+  -- depending on which historical migrations were applied to the project.
+  -- Accept both known-safe predecessors and make this migration idempotent.
+  if position($old$'umpsa', 'uitm', 'umk', 'ukm', 'uiam', 'uum', 'unisza', 'utp', 'upm', 'um', 'upsi'$old$ in v_definition) > 0 then
+    v_widened := replace(
+      v_definition,
+      $old$'umpsa', 'uitm', 'umk', 'ukm', 'uiam', 'uum', 'unisza', 'utp', 'upm', 'um', 'upsi'$old$,
+      $new$'umpsa', 'uitm', 'umk', 'ukm', 'uiam', 'uum', 'unisza', 'utp', 'upm', 'um', 'upsi', 'ums', 'unimas'$new$
+    );
+  elsif position($old$'umpsa', 'uitm', 'umk', 'ukm', 'uiam', 'uum'$old$ in v_definition) > 0 then
+    v_widened := replace(
+      v_definition,
+      $old$'umpsa', 'uitm', 'umk', 'ukm', 'uiam', 'uum'$old$,
+      $new$'umpsa', 'uitm', 'umk', 'ukm', 'uiam', 'uum', 'unisza', 'utp', 'upm', 'um', 'upsi', 'ums', 'unimas'$new$
+    );
+  else
+    v_widened := v_definition;
+  end if;
+  if v_widened = v_definition
+     and position($already$'ums', 'unimas'$already$ in v_definition) = 0 then
+    raise exception 'create_jubah_booking university allowlist was not found';
+  end if;
   execute v_widened;
 end;
 $migration$;
@@ -97,7 +114,10 @@ begin
     $old$'umpsa','uitm','umk','ukm','uiam','uum','unisza','utp','upm','um','upsi'$old$,
     $new$'umpsa','uitm','umk','ukm','uiam','uum','unisza','utp','upm','um','upsi','ums','unimas'$new$
   );
-  if v_with_universities = v_definition then raise exception 'create_jubah_custom_quote university allowlist was not found'; end if;
+  if v_with_universities = v_definition
+     and position($already$'ums','unimas'$already$ in v_definition) = 0 then
+    raise exception 'create_jubah_custom_quote university allowlist was not found';
+  end if;
   v_widened := replace(
     v_with_universities,
     $old$(p_university_key = 'upsi' and p_campus in ('KSAJS','KSAS'))$old$,
@@ -105,7 +125,10 @@ begin
     (p_university_key = 'ums' and p_campus in ('Kota Kinabalu','Labuan International','Sandakan')) or
     (p_university_key = 'unimas' and p_campus in ('Barat','Timur','Bandar'))$new$
   );
-  if v_widened = v_with_universities then raise exception 'create_jubah_custom_quote campus validation was not found'; end if;
+  if v_widened = v_with_universities
+     and position($already$p_university_key = 'ums'$already$ in v_with_universities) = 0 then
+    raise exception 'create_jubah_custom_quote campus validation was not found';
+  end if;
   execute v_widened;
 end;
 $migration$;
