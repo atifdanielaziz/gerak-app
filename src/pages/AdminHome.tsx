@@ -653,7 +653,9 @@ export const AdminHome: React.FC = () => {
       ) : (<>
 
       {/* Sticky header + tab switcher — mobile only; desktop uses the sidebar + topbar instead */}
-      <div ref={stickyHeaderRef} className={`${isJubahLead ? '' : 'lg:hidden'} sticky top-0 z-20 -mx-4 px-4 pt-1 pb-2 bg-slate-50/95 backdrop-blur-sm flex flex-col`}>
+      <div ref={stickyHeaderRef} className={isJubahLead
+        ? 'relative z-20 pt-1 pb-2 bg-white flex flex-col'
+        : 'lg:hidden sticky top-0 z-20 -mx-4 px-4 pt-1 pb-2 bg-slate-50/95 backdrop-blur-sm flex flex-col'}>
 
         {/* Tab bar */}
       {isJubahLead ? jubahWorkspaceTabBar : <div className="flex bg-white border border-slate-100 rounded-2xl p-1 gap-1 overflow-x-auto no-scrollbar">

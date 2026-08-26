@@ -21,12 +21,14 @@ const toTitleCase = (str: string) =>
 const JubahAvailabilityToggle: React.FC = () => {
   const [enabled, setEnabled] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [failed, setFailed] = useState(false);
 
   React.useEffect(() => {
     let mounted = true;
-    void supabase.from('app_settings').select('value').eq('key', 'jubah_active').single()
-      .then(({ data }) => {
+    void supabase.from('app_settings').select('value').eq('key', 'jubah_active').maybeSingle()
+      .then(({ data, error }) => {
         if (mounted && data) setEnabled(data.value === 'true');
+        if (mounted) setFailed(Boolean(error));
       });
     return () => { mounted = false; };
   }, []);
@@ -35,11 +37,19 @@ const JubahAvailabilityToggle: React.FC = () => {
     if (saving) return;
     const next = !enabled;
     setSaving(true);
+    setFailed(false);
     setEnabled(next);
-    const { error } = await supabase.from('app_settings')
+    const { data, error } = await supabase.from('app_settings')
       .update({ value: String(next) })
-      .eq('key', 'jubah_active');
-    if (error) setEnabled(!next);
+      .eq('key', 'jubah_active')
+      .select('value')
+      .maybeSingle();
+    if (error || !data) {
+      setEnabled(!next);
+      setFailed(true);
+    } else {
+      setEnabled(data.value === 'true');
+    }
     setSaving(false);
   };
 
@@ -48,14 +58,14 @@ const JubahAvailabilityToggle: React.FC = () => {
       type="button"
       role="switch"
       aria-checked={enabled}
-      aria-label={`Jubah service ${enabled ? 'on' : 'off'}`}
+      aria-label={`Jubah service ${failed ? 'could not be updated' : enabled ? 'on' : 'off'}`}
       disabled={saving}
       onPointerDown={e => {
         e.preventDefault();
         e.stopPropagation();
         void toggle();
       }}
-      className={`relative h-6 w-11 shrink-0 rounded-full transform-gpu transition-transform active:scale-95 disabled:opacity-60 ${enabled ? 'bg-emerald-500' : 'bg-slate-300'}`}
+      className={`relative h-6 w-11 shrink-0 rounded-full transform-gpu transition-transform active:scale-95 disabled:opacity-60 ${failed ? 'ring-2 ring-red-200' : ''} ${enabled ? 'bg-emerald-500' : 'bg-slate-300'}`}
     >
       <span className={`absolute top-0.5 h-5 w-5 rounded-full bg-white transition-transform transform-gpu ${enabled ? 'translate-x-5' : 'translate-x-0.5'}`} />
     </button>

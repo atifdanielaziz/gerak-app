@@ -13,6 +13,7 @@ import { useAxisLockedScroll } from '../../../hooks/useAxisLockedScroll';
 type JubahRider = {
   id: string; name: string; gerak_id: string; campus: string; status: string; can_robe: boolean;
   ic_number: string | null; phone: string | null; jubah_method: string | null; jubah_drop_point: string | null;
+  is_jubah_lead?: boolean;
 };
 type JubahAssignment = {
   id: string; rider_id: string; name: string; drop_point: string | null; method: string; campus: string;
@@ -355,6 +356,9 @@ export const JubahRiderSubTab = forwardRef<JubahRiderSubTabHandle, JubahRiderSub
 
   const loadJubahRiders = useCallback(async () => {
     setJubahRidersLoading(true);
+    const scopedUniversityKey = (isSuperAdmin || useUniversityScope)
+      ? jubahUniversityView
+      : (universityKeyFromCampus(adminCampus) ?? 'umpsa');
     let ridersQ = supabase.from('profiles')
       .select('id, name, gerak_id, campus, status, can_robe, ic_number, phone, jubah_method, jubah_drop_point')
       .eq('role', 'rider')
@@ -363,12 +367,27 @@ export const JubahRiderSubTab = forwardRef<JubahRiderSubTabHandle, JubahRiderSub
     ridersQ = (isSuperAdmin || useUniversityScope)
       ? ridersQ.in('campus', UNIVERSITY_MAP[jubahUniversityView]?.campuses ?? [])
       : ridersQ.eq('campus', adminCampus);
-    const { data: ridersData } = await ridersQ;
-    setJubahRiders((ridersData as JubahRider[]) ?? []);
+    const [{ data: ridersData }, { data: leadRows }] = await Promise.all([
+      ridersQ,
+      supabase.from('jubah_lead_universities').select('lead_id').eq('university_key', scopedUniversityKey),
+    ]);
+    const leadIds = (leadRows ?? []).map(row => row.lead_id as string);
+    const existingIds = new Set((ridersData ?? []).map((r: JubahRider) => r.id));
+    const missingLeadIds = leadIds.filter(id => !existingIds.has(id));
+    const { data: missingLeads } = missingLeadIds.length > 0
+      ? await supabase.from('profiles')
+        .select('id, name, gerak_id, campus, status, can_robe, ic_number, phone, jubah_method, jubah_drop_point')
+        .in('id', missingLeadIds)
+      : { data: [] as JubahRider[] };
+    const leadIdSet = new Set(leadIds);
+    const scopedRiders = [...((ridersData as JubahRider[]) ?? []), ...((missingLeads as JubahRider[]) ?? [])]
+      .map(rider => ({ ...rider, is_jubah_lead: leadIdSet.has(rider.id) }))
+      .sort((a, b) => a.name.localeCompare(b.name));
+    setJubahRiders(scopedRiders);
     setJubahRidersLoading(false);
 
     // Load assignments for Representative Directory
-    const riderIds = (ridersData ?? []).map((r: JubahRider) => r.id);
+    const riderIds = scopedRiders.map((r: JubahRider) => r.id);
     if (riderIds.length > 0) {
       const { data: assignData } = await supabase
         .from('jubah_rider_assignments')
@@ -376,7 +395,7 @@ export const JubahRiderSubTab = forwardRef<JubahRiderSubTabHandle, JubahRiderSub
         .in('rider_id', riderIds)
         .eq('is_active', true)
         .order('created_at');
-      const profileMap = Object.fromEntries((ridersData ?? []).map((r: JubahRider) => [r.id, r]));
+      const profileMap = Object.fromEntries(scopedRiders.map((r: JubahRider) => [r.id, r]));
       setJubahAssignments(
         (assignData ?? []).map((a: { id: string; rider_id: string; drop_point: string | null; method: string; campus: string }) => {
           const p = profileMap[a.rider_id] as JubahRider | undefined;
@@ -441,7 +460,10 @@ export const JubahRiderSubTab = forwardRef<JubahRiderSubTabHandle, JubahRiderSub
                 className="flex items-center justify-between gap-3 px-3 py-2.5 rounded-2xl border border-slate-100 bg-white active:opacity-70 transition text-left"
               >
                 <div className="flex-1 min-w-0">
-                  <p className="text-xs font-semibold text-slate-700 truncate">{r.name}</p>
+                  <p className="text-xs font-semibold text-slate-700 truncate flex items-center gap-1.5">
+                    <span className="truncate">{r.name}</span>
+                    {r.is_jubah_lead && <span className="shrink-0 rounded-full bg-violet-50 border border-violet-100 px-1.5 py-0.5 text-[9px] font-semibold text-violet-600">Lead</span>}
+                  </p>
                   <p className="text-xs text-slate-400 font-semibold mt-0.5">{r.gerak_id} · {jubahLocationLabel(universityKeyFromCampus(r.campus) ?? 'umpsa', r.campus)}</p>
                 </div>
                 <div className="flex flex-col items-end gap-1 shrink-0">
