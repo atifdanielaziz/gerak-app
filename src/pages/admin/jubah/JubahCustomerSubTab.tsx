@@ -5,6 +5,7 @@ import {
   ExternalLink, BadgeCheck, Trash2, Ban, X, XCircle, CheckCircle2, Clock,
 } from 'lucide-react';
 import { WaIcon, toWa } from '../../../lib/whatsapp';
+import { AdminSearchInput } from '../../../components/AdminSearchInput';
 import { getJubahDocSignedUrl, openInNewTab } from '../../../lib/jubahDocs';
 import { copyToClipboard } from '../../../lib/clipboard';
 import { ReceiptCard } from '../../../components/Receipt';
@@ -437,25 +438,12 @@ export function JubahCustomerSubTab({
       {adminView === 'list' && (<>
 
         {/* Search bar */}
-        <div className="bg-white border border-slate-100 rounded-2xl p-3.5 flex flex-col gap-2">
-          <div className="flex gap-2">
-            <input type="text" value={jubahSearch} onChange={e => setJubahSearch(e.target.value)}
-              placeholder="Search by name, phone or reference…"
-              style={{ fontSize: '12px' }}
-              className="flex-1 bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 font-semibold text-slate-700 focus:outline-none focus:border-primary transition placeholder:font-normal placeholder:text-slate-300"
-            />
-            <button onClick={() => {
-                setJubahSearch('');
-                setJubahModeFilter('all'); setJubahTypeFilter('all');
-                setJubahRobeStatusFilter('all'); setJubahRiderFilter('all');
-              }}
-              disabled={!jubahSearch.trim() && jubahModeFilter === 'all' &&
-                jubahTypeFilter === 'all' && jubahRobeStatusFilter === 'all' && jubahRiderFilter === 'all'}
-              className="px-3.5 bg-primary text-white font-semibold text-xs rounded-lg transition active:scale-95 disabled:opacity-40 flex items-center gap-1.5">
-              Clear
-            </button>
-            <button onClick={reload}
-              className="w-9 h-9 flex items-center justify-center rounded-lg bg-slate-50 border border-slate-200 text-slate-400 hover:text-primary transition active:scale-90 shrink-0">
+          <div className="bg-white border border-slate-100 rounded-2xl p-3.5 flex flex-col gap-2">
+            <div className="flex gap-2">
+              <AdminSearchInput value={jubahSearch} onChange={setJubahSearch}
+                placeholder="Search by name, phone or reference…" className="flex-1" />
+              <button onClick={reload}
+                className="w-10 h-10 flex items-center justify-center rounded-xl bg-white border border-slate-100 text-slate-400 hover:text-primary transition active:scale-90 shrink-0">
               <RefreshCw className="w-4 h-4" />
             </button>
           </div>

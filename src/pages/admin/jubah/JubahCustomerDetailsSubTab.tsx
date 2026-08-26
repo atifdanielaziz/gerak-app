@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useState } from 'react';
-import { CheckCircle2, Download, RefreshCw, Search, Users, XCircle } from 'lucide-react';
+import { CheckCircle2, Download, RefreshCw, Users, XCircle } from 'lucide-react';
 import type { SheetData } from 'write-excel-file/browser';
 import { supabase } from '../../../lib/supabase';
 import { useAxisLockedScroll } from '../../../hooks/useAxisLockedScroll';
+import { AdminSearchInput } from '../../../components/AdminSearchInput';
 import { JUBAH_STEP_LABEL as JUBAH_STATUS_LABEL } from '../../../lib/jubahStatus';
 import type { JubahBookingRow } from './JubahCustomerSubTab';
 
@@ -164,23 +165,10 @@ export function JubahCustomerDetailsSubTab({
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="bg-white border border-slate-100 rounded-2xl p-3.5 flex gap-2">
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-300" />
-          <input
-            value={search}
-            onChange={event => setSearch(event.target.value)}
-            placeholder="Search customer details…"
-            style={{ fontSize: '12px' }}
-            className="w-full bg-slate-50 border border-slate-200 rounded-lg pl-9 pr-3 py-2 font-semibold text-slate-700 focus:outline-none focus:border-slate-900 placeholder:font-normal placeholder:text-slate-300"
-          />
-        </div>
-        <button type="button" onPointerDown={event => { event.preventDefault(); setSearch(''); }} disabled={!search}
-          className="px-3.5 bg-primary text-white text-xs font-semibold rounded-lg active:scale-95 transition-transform transform-gpu disabled:opacity-40">
-          Clear
-        </button>
-        <button type="button" onPointerDown={event => { event.preventDefault(); reload(); }} aria-label="Refresh customer details"
-          className="w-9 h-9 flex items-center justify-center rounded-lg bg-white border border-slate-100 text-slate-400 active:scale-90 transition-transform transform-gpu">
+        <div className="bg-white border border-slate-100 rounded-2xl p-3.5 flex gap-2">
+          <AdminSearchInput value={search} onChange={setSearch} placeholder="Search customer details…" className="flex-1" />
+          <button type="button" onPointerDown={event => { event.preventDefault(); reload(); }} aria-label="Refresh customer details"
+            className="w-10 h-10 flex items-center justify-center rounded-xl bg-white border border-slate-100 text-slate-400 active:scale-90 transition-transform transform-gpu">
           <RefreshCw className="w-4 h-4" />
         </button>
       </div>
