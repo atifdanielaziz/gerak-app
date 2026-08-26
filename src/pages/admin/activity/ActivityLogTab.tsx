@@ -10,6 +10,7 @@ interface ActivityLogRow {
   id: string;
   actor_id: string | null;
   actor_name: string;
+  actor_role: string | null;
   table_name: string;
   record_id: string | null;
   action: 'insert' | 'update' | 'delete';
@@ -27,9 +28,16 @@ const TABLE_LABEL: Record<string, string> = {
   profiles:                 'Users',
   jubah_bookings:           'Jubah Bookings',
   ride_orders:              'Ride Orders',
+  rental_bookings:          'Rental Bookings',
 };
 
 const ROLE_LABEL: Record<string, string> = { driver: 'Driver', rider: 'Rider', admin: 'Admin', customer: 'Customer', superadmin: 'Superadmin' };
+
+// actor_role is a snapshot of who performed the action, not what table it
+// touched — 'system' covers cron/service-role writes (the retention job
+// deleting old ride_orders, the jubah-expire-unpaid sweep) which have no
+// auth.uid() at all, so they'd otherwise be invisible to a role filter.
+const ACTOR_ROLE_LABEL: Record<string, string> = { admin: 'Admin', superadmin: 'Superadmin', system: 'System (automated)' };
 
 const ACTION_ICON: Record<ActivityLogRow['action'], ElementType> = {
   insert: PlusCircle,
@@ -117,7 +125,19 @@ function describeChange(row: ActivityLogRow): string {
   }
 
   if (table === 'ride_orders') {
-    return `Deleted ride order (was ${fmtVal(oldR.status)})`;
+    if (action === 'delete') return `Deleted ride order (was ${fmtVal(oldR.status)})`;
+    const parts: string[] = [];
+    if (changedKeys.includes('status')) parts.push(`status: ${fmtVal(oldR.status)} → ${fmtVal(newR.status)}`);
+    if (changedKeys.includes('driver_id')) parts.push(newR.driver_id ? 'driver reassigned' : 'driver unassigned');
+    return parts.length ? `Changed ${parts.join(', ')}` : 'Updated ride order';
+  }
+
+  if (table === 'rental_bookings') {
+    if (action === 'delete') return `Deleted rental booking (was ${fmtVal(oldR.status)})`;
+    const parts: string[] = [];
+    if (changedKeys.includes('status')) parts.push(`status: ${fmtVal(oldR.status)} → ${fmtVal(newR.status)}`);
+    if (changedKeys.includes('total_price')) parts.push(`price: RM ${fmtVal(oldR.total_price)} → RM ${fmtVal(newR.total_price)}`);
+    return parts.length ? `Changed ${parts.join(', ')}` : 'Updated rental booking';
   }
 
   // Fallback for anything not covered above.
@@ -145,13 +165,15 @@ export const ActivityLogTab = forwardRef<ActivityLogTabHandle, ActivityLogTabPro
   const [rows, setRows]         = useState<ActivityLogRow[]>([]);
   const [loading, setLoading]   = useState(false);
   const [tableFilter, setTableFilter] = useState<string>('all');
+  const [roleFilter, setRoleFilter]   = useState<string>('all');
+  const [actionFilter, setActionFilter] = useState<string>('all');
   const [search, setSearch]     = useState('');
 
   const load = useCallback(async () => {
     setLoading(true);
     const { data } = await supabase
       .from('admin_activity_log')
-      .select('id, actor_id, actor_name, table_name, record_id, action, changes, created_at')
+      .select('id, actor_id, actor_name, actor_role, table_name, record_id, action, changes, created_at')
       .order('created_at', { ascending: false })
       .limit(300);
     setRows((data as ActivityLogRow[]) ?? []);
@@ -163,10 +185,13 @@ export const ActivityLogTab = forwardRef<ActivityLogTabHandle, ActivityLogTabPro
 
   const filtered = useMemo(() => rows
     .filter(r => tableFilter === 'all' || r.table_name === tableFilter)
+    .filter(r => roleFilter === 'all' || (r.actor_role ?? 'system') === roleFilter)
+    .filter(r => actionFilter === 'all' || r.action === actionFilter)
     .filter(r => !search.trim() || r.actor_name.toLowerCase().includes(search.trim().toLowerCase())),
-    [rows, tableFilter, search]);
+    [rows, tableFilter, roleFilter, actionFilter, search]);
 
   const tablesPresent = useMemo(() => Array.from(new Set(rows.map(r => r.table_name))), [rows]);
+  const rolesPresent = useMemo(() => Array.from(new Set(rows.map(r => r.actor_role ?? 'system'))), [rows]);
 
   return (
     <div className="flex flex-col gap-4">
@@ -213,7 +238,11 @@ export const ActivityLogTab = forwardRef<ActivityLogTabHandle, ActivityLogTabPro
             );
           })}
         </div>
-        <NativeSelect value={tableFilter} onChange={setTableFilter} options={[{ value: 'all', label: 'All Activity' }, ...tablesPresent.map(value => ({ value, label: TABLE_LABEL[value] ?? value }))]} placeholder="Activity" label="Activity" />
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+          <NativeSelect value={tableFilter} onChange={setTableFilter} options={[{ value: 'all', label: 'All Activity' }, ...tablesPresent.map(value => ({ value, label: TABLE_LABEL[value] ?? value }))]} placeholder="Activity" label="Activity" />
+          <NativeSelect value={roleFilter} onChange={setRoleFilter} options={[{ value: 'all', label: 'All Roles' }, ...rolesPresent.map(value => ({ value, label: ACTOR_ROLE_LABEL[value] ?? value }))]} placeholder="Role" label="Role" />
+          <NativeSelect value={actionFilter} onChange={setActionFilter} options={[{ value: 'all', label: 'All Actions' }, { value: 'insert', label: 'Created' }, { value: 'update', label: 'Updated' }, { value: 'delete', label: 'Deleted' }]} placeholder="Action" label="Action" />
+        </div>
       </div>
 
       {/* Log list */}
@@ -231,7 +260,7 @@ export const ActivityLogTab = forwardRef<ActivityLogTabHandle, ActivityLogTabPro
         ) : (<>
           <div ref={activityDirectoryScrollRef} className="table-scroll-x relative w-full max-w-full overflow-x-auto overflow-y-hidden overscroll-none" style={{ contain: 'layout paint' }}>
             <div data-axis-y className="max-h-[520px] overflow-y-auto overflow-x-hidden overscroll-none no-scrollbar" style={{ WebkitOverflowScrolling: 'touch' }}>
-            <table className="min-w-[52rem] w-full border-collapse text-left text-xs"><thead><tr className="border-b border-slate-100 text-slate-400">{['Action','Details','Admin','Area','Date & Time'].map(h => <th key={h} className="sticky top-0 z-10 bg-white py-2.5 pr-4 font-semibold whitespace-nowrap">{h}</th>)}</tr></thead><tbody>{filtered.map(row => { const Icon = ACTION_ICON[row.action]; return <tr key={row.id} className="border-b border-slate-100 last:border-b-0"><td className="py-3 pr-4"><span className={`w-8 h-8 rounded-xl inline-flex items-center justify-center ${ACTION_STYLE[row.action]}`}><Icon className="w-4 h-4" /></span></td><td className="py-3 pr-4 font-semibold text-slate-700 max-w-[22rem]">{describeChange(row)}</td><td className="py-3 pr-4 text-slate-600 whitespace-nowrap">{row.actor_name}</td><td className="py-3 pr-4 text-slate-600 whitespace-nowrap">{TABLE_LABEL[row.table_name] ?? row.table_name}</td><td className="py-3 text-slate-400 whitespace-nowrap">{new Date(row.created_at).toLocaleString('en-MY', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</td></tr>; })}</tbody></table>
+            <table className="min-w-[52rem] w-full border-collapse text-left text-xs"><thead><tr className="border-b border-slate-100 text-slate-400">{['Action','Details','Admin','Area','Date & Time'].map(h => <th key={h} className="sticky top-0 z-10 bg-white py-2.5 pr-4 font-semibold whitespace-nowrap">{h}</th>)}</tr></thead><tbody>{filtered.map(row => { const Icon = ACTION_ICON[row.action]; return <tr key={row.id} className="border-b border-slate-100 last:border-b-0"><td className="py-3 pr-4"><span className={`w-8 h-8 rounded-xl inline-flex items-center justify-center ${ACTION_STYLE[row.action]}`}><Icon className="w-4 h-4" /></span></td><td className="py-3 pr-4 font-semibold text-slate-700 max-w-[22rem]">{describeChange(row)}</td><td className="py-3 pr-4 text-slate-600 whitespace-nowrap">{row.actor_name}{row.actor_role ? <span className="ml-1.5 text-[10px] font-semibold text-slate-400">({ACTOR_ROLE_LABEL[row.actor_role] ?? row.actor_role})</span> : null}</td><td className="py-3 pr-4 text-slate-600 whitespace-nowrap">{TABLE_LABEL[row.table_name] ?? row.table_name}</td><td className="py-3 text-slate-400 whitespace-nowrap">{new Date(row.created_at).toLocaleString('en-MY', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</td></tr>; })}</tbody></table>
             </div>
           </div>
           <div className="hidden">
