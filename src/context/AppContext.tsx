@@ -154,10 +154,11 @@ interface AppContextType {
   isPreviewMode: boolean;
   enterPreviewMode: () => void;
   exitPreviewMode: () => void;
-  activeRole: 'admin' | 'driver' | 'rider' | null;
+  activeRole: 'admin' | 'driver' | 'rider' | 'lead' | null;
   switchToDriverMode: () => void;
   switchToAdminMode: () => void;
   switchToRiderMode: () => void;
+  switchToLeadMode: () => void;
   user: UserSession;
   login: (email: string, password: string) => Promise<{ error: string | null }>;
   register: (name: string, matricNo: string, email: string, password: string, phone: string, university: string, campus: string, gender: 'male' | 'female', agreedToTerms: boolean) => Promise<{ error: string | null; needsConfirmation?: boolean }>;
@@ -236,7 +237,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   useEffect(() => { localStorage.setItem('gerak_admin_university', adminUniversityKey); }, [adminUniversityKey]);
   const [pageHistory, setPageHistory] = useState<ActivePage[]>([]);
   const [isPreviewMode, setIsPreviewMode] = useState(false);
-  const [activeRole, setActiveRole] = useState<'admin' | 'driver' | 'rider' | null>(null);
+  const [activeRole, setActiveRole] = useState<'admin' | 'driver' | 'rider' | 'lead' | null>(null);
 
   const HISTORY_EXCLUDED: ActivePage[] = ['splash'];
   const HOME_PAGES: ActivePage[] = ['dashboard', 'driver-home', 'rider-home', 'admin-home', 'login', 'profile', 'provider-finance', 'provider-qr', 'academic-calendar', 'activity'];
@@ -654,7 +655,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const applyPendingInviteIfAny = async () => {
     const { data, error } = await supabase.rpc('apply_pending_invite');
     if (error || !data?.applied) return;
-    const roleLabel = data.role === 'jubah_lead' ? 'Jubah Lead' : data.role === 'rider' ? 'Rider' : data.role === 'driver' ? 'Driver' : 'Admin';
+    const roleLabel = data.role === 'jubah_lead' ? 'Lead' : data.role === 'rider' ? 'Rider' : data.role === 'driver' ? 'Driver' : 'Admin';
     addNotification(
       `You now have ${roleLabel} access`,
       data.role === 'jubah_lead'
@@ -667,13 +668,15 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const loadProfile = async (userId: string) => {
     const [{ data }, { data: lead }, { data: leadUniversities }] = await Promise.all([
       supabase.from('profiles').select('id,name,matric_no,email,phone,university,campus,gender,gerak_id,role,status,vehicle,plate_number,fee_receipt_url,fee_receipt_verified,fee_receipt_amount,fee_receipt_date,fee_receipt_expiry,fee_receipt_reject_reason,can_drive,can_rent,can_transport,ic_number,ic_url,license_url,docs_status,docs_reject_reason,receipt_gate_exempt,avatar_url').eq('id', userId).single(),
-      supabase.from('jubah_leads').select('is_active').eq('user_id', userId).maybeSingle(),
+      supabase.from('jubah_leads').select('is_active,base_university_key,base_campus').eq('user_id', userId).maybeSingle(),
       supabase.from('jubah_lead_universities').select('university_key').eq('lead_id', userId),
     ]);
     if (data) {
       const role = data.role ?? 'customer';
       const jubahLeadUniversities = lead?.is_active
-        ? (leadUniversities ?? []).map(row => row.university_key)
+        ? (leadUniversities ?? [])
+            .map(row => row.university_key)
+            .sort((a, b) => a === lead.base_university_key ? -1 : b === lead.base_university_key ? 1 : 0)
         : [];
       const isJubahLead = jubahLeadUniversities.length > 0;
       setUser({
@@ -735,7 +738,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       if (deepLinkPage && deepLinkPage !== 'register') {
         _setCurrentPage(deepLinkPage);
       } else if (isJubahLead) {
-        setActiveRole('admin');
+        setActiveRole('lead');
         setAdminUniversityKey(jubahLeadUniversities[0]);
         _setCurrentPage('admin-home');
       } else if (role === 'driver') {
@@ -940,6 +943,16 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setActiveRole('rider');
     setPageHistory([]);
     _setCurrentPage('rider-home');
+  };
+
+  const switchToLeadMode = () => {
+    setIsPreviewMode(false);
+    setActiveRole('lead');
+    setPageHistory([]);
+    if (user.jubahLeadUniversities.length > 0) {
+      setAdminUniversityKey(user.jubahLeadUniversities[0]);
+    }
+    _setCurrentPage('admin-home');
   };
 
   const enterPreviewMode = () => {
@@ -1148,6 +1161,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         switchToDriverMode,
         switchToAdminMode,
         switchToRiderMode,
+        switchToLeadMode,
         user,
         login,
         register,

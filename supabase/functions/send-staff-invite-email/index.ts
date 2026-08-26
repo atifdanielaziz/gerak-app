@@ -26,6 +26,7 @@ type Invite = {
   can_robe: boolean
   created_by: string | null
   jubah_lead_university_keys: string[]
+  jubah_lead_base_university_key: string | null
 }
 
 // Triggered by DriversTab.tsx's handleSendInvite right after the
@@ -77,7 +78,7 @@ serve(async (req) => {
 
     const { data: invite, error: fetchErr } = await admin
       .from('driver_invites')
-      .select('id, email, university, campus, role, can_drive, can_rent, can_transport, can_daily, can_robe, created_by, jubah_lead_university_keys')
+      .select('id, email, university, campus, role, can_drive, can_rent, can_transport, can_daily, can_robe, created_by, jubah_lead_university_keys, jubah_lead_base_university_key')
       .eq('id', inviteId)
       .maybeSingle<Invite>()
 
@@ -99,7 +100,7 @@ serve(async (req) => {
 const escapeHtml = (s: string) =>
   s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;')
 
-const ROLE_LABEL: Record<string, string> = { driver: 'Driver', rider: 'Rider', admin: 'Admin', jubah_lead: 'Jubah Lead' };
+const ROLE_LABEL: Record<string, string> = { driver: 'Driver', rider: 'Rider', admin: 'Admin', jubah_lead: 'Lead' };
 const ROLE_EMOJI: Record<string, string> = { driver: '🚗', rider: '🏍️', admin: '🛠️' };
 
 async function sendInviteEmail(invite: Invite) {
@@ -126,8 +127,10 @@ async function sendInviteEmail(invite: Invite) {
   const roleLabel = roles.map(role => ROLE_LABEL[role] ?? role).join(', ')
   const roleEmoji = roles.map(role => ROLE_EMOJI[role] ?? '').filter(Boolean).join(' ')
   const subject = `You're invited to join the Gerak team as ${roleLabel} ${roleEmoji}`.trim()
+  const leadBaseKey = invite.jubah_lead_base_university_key ?? invite.jubah_lead_university_keys?.[0] ?? ''
+  const leadManagedKeys = (invite.jubah_lead_university_keys ?? []).filter(key => key !== leadBaseKey)
   const locationLabel = invite.role === 'jubah_lead'
-    ? (invite.jubah_lead_university_keys ?? []).map(key => key.toUpperCase()).join(', ')
+    ? `${leadBaseKey.toUpperCase()} ${invite.campus}`.trim()
     : `${invite.university || 'Gerak'} ${invite.campus}`.trim()
   // Straight to the register form (AppContext's /register deep link), not
   // just the app root — with the invited email prefilled so it always
@@ -155,10 +158,16 @@ async function sendInviteEmail(invite: Invite) {
           <p style="font-size: 13px; font-weight: 600; color: #1e293b; margin: 0;">${escapeHtml(roleLabel)}</p>
         </td>
         <td style="width: 50%; padding: 10px 12px; background: #f8fafc; border: 1px solid #f1f5f9; border-radius: 0 10px 10px 0;">
-          <p style="font-size: 9.5px; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; color: #94a3b8; margin: 0 0 3px;">${invite.role === 'jubah_lead' ? 'Universities' : 'Campus'}</p>
+          <p style="font-size: 9.5px; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; color: #94a3b8; margin: 0 0 3px;">${invite.role === 'jubah_lead' ? 'Base University / Campus' : 'Campus'}</p>
           <p style="font-size: 13px; font-weight: 600; color: #1e293b; margin: 0;">${escapeHtml(locationLabel)}</p>
         </td>
       </tr></table>
+      ${invite.role === 'jubah_lead' ? `
+      <div style="background: #f8fafc; border: 1px solid #f1f5f9; border-radius: 10px; padding: 10px 12px; margin-bottom: 20px;">
+        <p style="font-size: 9.5px; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; color: #94a3b8; margin: 0 0 6px;">Managed Universities</p>
+        <p style="font-size: 13px; font-weight: 600; color: #1e293b; margin: 0;">${escapeHtml(leadManagedKeys.length ? leadManagedKeys.map(key => key.toUpperCase()).join(', ') : 'None')}</p>
+        <p style="font-size: 11px; color: #92400e; line-height: 1.5; margin: 8px 0 0;">Your Base University and Base Campus are permanent. Managed Universities may be updated by a superadmin.</p>
+      </div>` : ''}
       ${tags.length ? `
       <div style="background: #f8fafc; border: 1px solid #f1f5f9; border-radius: 10px; padding: 10px 12px; margin-bottom: 20px;">
         <p style="font-size: 9.5px; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; color: #94a3b8; margin: 0 0 6px;">Access Granted</p>

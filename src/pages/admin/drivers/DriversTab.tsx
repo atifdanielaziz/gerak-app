@@ -1,7 +1,7 @@
 import { forwardRef, useCallback, useEffect, useImperativeHandle, useState } from 'react';
 import { supabase } from '../../../lib/supabase';
 import {
-  UserPlus, Send, Mail, Car, KeyRound, Bike, GraduationCap, X, AlertCircle, Settings, Truck,
+  UserPlus, Send, Mail, Car, KeyRound, Bike, GraduationCap, X, Settings, Truck,
 } from 'lucide-react';
 import { useLoadOnActive } from '../../../hooks/useLoadOnActive';
 import { useApp } from '../../../context/AppContext';
@@ -55,13 +55,14 @@ export const DriversTab = forwardRef<DriversTabHandle, DriversTabProps>(function
   const { showConfirmModal } = useApp();
   const inviteDirectoryScrollRef = useAxisLockedScroll<HTMLDivElement>();
   const [invites, setInvites]               = useState<DriverInvite[]>([]);
+  const [allInvites, setAllInvites]          = useState<DriverInvite[]>([]);
   const [invitesLoading, setInvitesLoading]  = useState(false);
-  const [inviteSearch, setInviteSearch]      = useState('');
   const [inviteEmail, setInviteEmail]        = useState('');
   const inviteUniversityKey = universityKey;
   const [inviteCampus, setInviteCampus]      = useState(UNIVERSITY_MAP[universityKey]?.campuses[0] ?? '');
   const [inviteRole, setInviteRole]          = useState<'driver' | 'rider' | 'admin' | 'jubah_lead'>('driver');
   const [inviteLeadUniversities, setInviteLeadUniversities] = useState<string[]>([universityKey]);
+  const [inviteLeadBaseCampus, setInviteLeadBaseCampus] = useState(UNIVERSITY_MAP[universityKey]?.campuses[0] ?? '');
   const [inviteCanDrive, setInviteCanDrive]  = useState(true);
   const [inviteCanRent,  setInviteCanRent]   = useState(false);
   const [inviteCanTransport, setInviteCanTransport] = useState(false);
@@ -69,14 +70,19 @@ export const DriversTab = forwardRef<DriversTabHandle, DriversTabProps>(function
   const [inviteCanRobe,  setInviteCanRobe]   = useState(false);
   const [inviteSending, setInviteSending]    = useState(false);
   const [showInviteConfirm, setShowInviteConfirm] = useState(false);
-  const inviteRoleLabel = inviteRole === 'jubah_lead' ? 'Jubah Lead' : inviteRole === 'admin' ? 'Admin' : inviteRole === 'rider' ? 'Rider' : 'Driver';
-  const inviteLeadLabels = inviteLeadUniversities.map(key => UNIVERSITY_MAP[key]?.shortLabel ?? key.toUpperCase());
+  const inviteRoleLabel = inviteRole === 'jubah_lead' ? 'Lead' : inviteRole === 'admin' ? 'Admin' : inviteRole === 'rider' ? 'Rider' : 'Driver';
+  const inviteLeadBaseUniversity = UNIVERSITY_MAP[inviteLeadUniversities[0]];
+  const inviteLeadManagedLabels = inviteLeadUniversities.slice(1).map(key => UNIVERSITY_MAP[key]?.shortLabel ?? key.toUpperCase());
 
   useEffect(() => { onModalOpenChange(showInviteConfirm); }, [showInviteConfirm, onModalOpenChange]);
   useEffect(() => {
     const campuses = UNIVERSITY_MAP[universityKey]?.campuses ?? [];
     setInviteCampus(current => campuses.includes(current) ? current : (campuses[0] ?? ''));
   }, [universityKey]);
+  useEffect(() => {
+    const campuses = inviteLeadBaseUniversity?.campuses ?? [];
+    setInviteLeadBaseCampus(current => campuses.includes(current) ? current : (campuses[0] ?? ''));
+  }, [inviteLeadUniversities[0]]);
 
   const loadInvites = useCallback(async () => {
     setInvitesLoading(true);
@@ -85,13 +91,22 @@ export const DriversTab = forwardRef<DriversTabHandle, DriversTabProps>(function
       .select('id,email,campus,university,role,can_drive,can_rent,can_transport,can_daily,can_robe,used,used_at,created_at,jubah_lead_university_keys')
       .order('created_at', { ascending: false });
     const campuses = UNIVERSITY_MAP[universityKey]?.campuses ?? [];
-    const { data } = await query;
-    setInvites((data ?? []).filter(invite =>
+    const { data, error } = await query;
+    if (error) {
+      setAllInvites([]);
+      setInvites([]);
+      setInvitesLoading(false);
+      showToast('Could not load invitations: ' + error.message);
+      return;
+    }
+    const loadedInvites = data ?? [];
+    setAllInvites(loadedInvites);
+    setInvites(loadedInvites.filter(invite =>
       campuses.includes(invite.campus)
       || (invite.role === 'jubah_lead' && (invite.jubah_lead_university_keys ?? []).includes(universityKey))
     ));
     setInvitesLoading(false);
-  }, [universityKey]);
+  }, [showToast, universityKey]);
 
   useLoadOnActive(active, loadInvites);
   useImperativeHandle(ref, () => ({ reload: loadInvites }), [loadInvites]);
@@ -106,7 +121,7 @@ export const DriversTab = forwardRef<DriversTabHandle, DriversTabProps>(function
     const leadPrimaryUniversity = UNIVERSITY_MAP[inviteLeadUniversities[0]];
     const { data: inserted, error } = await supabase.from('driver_invites').insert({
       email:      inviteEmail.trim().toLowerCase(),
-      campus:     inviteRole === 'jubah_lead' ? (leadPrimaryUniversity?.campuses[0] ?? inviteCampus) : inviteCampus,
+      campus:     inviteRole === 'jubah_lead' ? inviteLeadBaseCampus : inviteCampus,
       university: inviteRole === 'jubah_lead' ? (leadPrimaryUniversity?.fullName ?? '') : (UNIVERSITY_MAP[inviteUniversityKey]?.fullName ?? ''),
       role:       inviteRole,
       can_drive:     inviteRole === 'driver' ? inviteCanDrive     : false,
@@ -115,10 +130,18 @@ export const DriversTab = forwardRef<DriversTabHandle, DriversTabProps>(function
       can_daily:  inviteRole === 'rider'  ? inviteCanDaily : false,
       can_robe:   inviteRole === 'rider'  ? inviteCanRobe  : false,
       jubah_lead_university_keys: inviteRole === 'jubah_lead' ? inviteLeadUniversities : [],
+      jubah_lead_base_university_key: inviteRole === 'jubah_lead' ? inviteLeadUniversities[0] : null,
       created_by: authUser?.id,
     }).select('id').single();
     setInviteSending(false);
-    if (error) showToast(error.message.includes('unique') ? 'This email already has a pending invite.' : error.message);
+    if (error) {
+      if (error.message.includes('unique')) {
+        showToast('This email already has a pending invite. You can cancel it in the Invite List below.');
+        await loadInvites();
+      } else {
+        showToast(error.message);
+      }
+    }
     else {
       showToast('Invite added!');
       setInviteEmail('');
@@ -139,12 +162,26 @@ export const DriversTab = forwardRef<DriversTabHandle, DriversTabProps>(function
     }
   };
 
+  const openInviteConfirmation = () => {
+    if (!inviteEmail.trim()) return;
+    if (inviteRole === 'driver' && !inviteCanDrive && !inviteCanRent && !inviteCanTransport) { showToast('Select at least one capability.'); return; }
+    if (inviteRole === 'rider' && !inviteCanDaily && !inviteCanRobe) { showToast('Select at least one capability.'); return; }
+    if (inviteRole === 'jubah_lead' && inviteLeadUniversities.length === 0) { showToast('Assign at least one university.'); return; }
+    if (inviteRole === 'jubah_lead' && !inviteLeadBaseCampus) { showToast('Select the permanent Base Campus.'); return; }
+    setShowInviteConfirm(true);
+  };
+
   const handleRevokeInvite = async (id: string) => {
     const { error } = await supabase.from('driver_invites').delete().eq('id', id);
     if (error) { showToast('Delete failed: ' + error.message); return; }
     showToast('Invite removed.');
     loadInvites();
   };
+
+  const normalizedInviteEmail = inviteEmail.trim().toLowerCase();
+  const displayedInvites = normalizedInviteEmail
+    ? allInvites.filter(invite => invite.email.toLowerCase().includes(normalizedInviteEmail))
+    : invites;
 
   return (
     <>
@@ -173,7 +210,7 @@ export const DriversTab = forwardRef<DriversTabHandle, DriversTabProps>(function
                   { value: 'driver', label: 'Driver' },
                   { value: 'rider',  label: 'Rider' },
                   { value: 'admin',  label: 'Admin' },
-                  ...(isSuperAdmin ? [{ value: 'jubah_lead' as const, label: 'Jubah Lead' }] : []),
+                  ...(isSuperAdmin ? [{ value: 'jubah_lead' as const, label: 'Lead' }] : []),
                 ]}
                 placeholder="Select role..."
                 label="Select Role"
@@ -218,6 +255,20 @@ export const DriversTab = forwardRef<DriversTabHandle, DriversTabProps>(function
             </div>
           </div>
 
+          {inviteRole === 'jubah_lead' && inviteLeadBaseUniversity && <div>
+            <p className="text-sm font-semibold text-slate-700 mb-2">Base Campus</p>
+            <NativeSelect
+              value={inviteLeadBaseCampus}
+              onChange={setInviteLeadBaseCampus}
+              options={inviteLeadBaseUniversity.campuses.map(c => ({ value: c, label: c }))}
+              placeholder="Select base campus..."
+              label="Select Base Campus"
+            />
+            <p className="mt-2 text-xs font-normal text-slate-400">
+              {inviteLeadBaseUniversity.shortLabel} is the Base University because it is first. The remaining selections are Managed Universities.
+            </p>
+          </div>}
+
           {/* University + Campus picker — superadmin only; regular admin
               locked to their own university/campus */}
           {inviteRole !== 'jubah_lead' && <div>
@@ -241,49 +292,19 @@ export const DriversTab = forwardRef<DriversTabHandle, DriversTabProps>(function
               type="email"
               value={inviteEmail}
               onChange={e => setInviteEmail(e.target.value)}
-              onKeyDown={e => e.key === 'Enter' && inviteEmail.trim() && setShowInviteConfirm(true)}
+              onKeyDown={e => { if (e.key === 'Enter') openInviteConfirmation(); }}
               placeholder="staff@email.com"
               className="w-full bg-slate-50 border border-slate-200 rounded-xl py-2.5 pl-9 pr-3 text-xs text-slate-700 focus:outline-none focus:border-primary transition"
             />
           </div>
 
           <button
-            onClick={() => {
-              if (!inviteEmail.trim()) return;
-              if (inviteRole === 'driver' && !inviteCanDrive && !inviteCanRent && !inviteCanTransport) { showToast('Select at least one capability.'); return; }
-              if (inviteRole === 'rider' && !inviteCanDaily && !inviteCanRobe) { showToast('Select at least one capability.'); return; }
-              if (inviteRole === 'jubah_lead' && inviteLeadUniversities.length === 0) { showToast('Assign at least one university.'); return; }
-              setShowInviteConfirm(true);
-            }}
+            onClick={openInviteConfirmation}
             disabled={!inviteEmail.trim()}
             className="flex items-center justify-center gap-2 bg-primary hover:bg-primary-hover text-white font-semibold text-xs py-2.5 rounded-xl transition active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed shadow-md shadow-primary/20"
           >
             <Send className="w-3.5 h-3.5" /> Add Invite
           </button>
-        </div>
-
-        {/* Search */}
-        <div className="bg-white border border-slate-100 rounded-2xl p-3.5 flex flex-col gap-2">
-          <h3 className="text-sm font-semibold text-slate-700 flex items-center gap-1.5">
-            <AlertCircle className="w-3.5 h-3.5" /> Find Staff
-          </h3>
-          <div className="flex gap-2">
-            <input
-              type="email"
-              value={inviteSearch}
-              onChange={e => setInviteSearch(e.target.value)}
-              placeholder="Search by email"
-              style={{ fontSize: '12px' }}
-              className="flex-1 bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 font-semibold text-slate-700 focus:outline-none focus:border-primary transition placeholder:font-normal"
-            />
-            <button
-              onClick={() => setInviteSearch('')}
-              disabled={!inviteSearch.trim()}
-              className="px-3.5 bg-primary text-white font-semibold text-xs rounded-lg transition active:scale-95 disabled:opacity-50 flex items-center gap-1.5"
-            >
-              Clear
-            </button>
-          </div>
         </div>
 
         {/* Invite list */}
@@ -296,9 +317,9 @@ export const DriversTab = forwardRef<DriversTabHandle, DriversTabProps>(function
             <div className="flex justify-center py-6">
               <span className="w-5 h-5 rounded-full border-2 border-slate-200 border-t-primary animate-spin" />
             </div>
-          ) : invites.filter(inv => !inviteSearch.trim() || inv.email.toLowerCase().includes(inviteSearch.toLowerCase())).length === 0 ? (
+          ) : displayedInvites.length === 0 ? (
             <p className="text-xs text-slate-400 font-semibold text-center py-4">
-              {inviteSearch.trim() ? 'No matching invites found' : 'No invites yet'}
+              {normalizedInviteEmail ? 'No matching invites found. You can send a new invitation above.' : 'No invites yet'}
             </p>
           ) : (
             <div ref={inviteDirectoryScrollRef}
@@ -315,7 +336,7 @@ export const DriversTab = forwardRef<DriversTabHandle, DriversTabProps>(function
                   </tr>
                 </thead>
                 <tbody>
-                  {invites.filter(inv => !inviteSearch.trim() || inv.email.toLowerCase().includes(inviteSearch.toLowerCase())).map(inv => {
+                  {displayedInvites.map(inv => {
                     const capabilities = [
                       inv.can_drive && 'Car', inv.can_rent && 'Rental', inv.can_transport && 'Transporter',
                       inv.can_daily && 'Daily', inv.can_robe && 'Robe',
@@ -323,7 +344,7 @@ export const DriversTab = forwardRef<DriversTabHandle, DriversTabProps>(function
                     return (
                       <tr key={inv.id} className="border-b border-slate-100 text-xs">
                         <td className="py-2.5 pr-4 font-semibold text-slate-800 whitespace-nowrap">{inv.email}</td>
-                        <td className="py-2.5 pr-4 text-slate-600 whitespace-nowrap">{inv.role === 'jubah_lead' ? 'Jubah Lead' : inv.role.charAt(0).toUpperCase() + inv.role.slice(1)}</td>
+                        <td className="py-2.5 pr-4 text-slate-600 whitespace-nowrap">{inv.role === 'jubah_lead' ? 'Lead' : inv.role.charAt(0).toUpperCase() + inv.role.slice(1)}</td>
                         <td className="py-2.5 pr-4 text-slate-600 whitespace-nowrap">{jubahLocationLabel(universityKeyFromCampus(inv.campus) ?? '', inv.campus)}</td>
                         <td className={`py-2.5 pr-4 font-semibold whitespace-nowrap ${inv.used ? 'text-emerald-600' : 'text-amber-600'}`}>
                           {inv.used ? 'Registered' : 'Pending'}
@@ -399,9 +420,20 @@ export const DriversTab = forwardRef<DriversTabHandle, DriversTabProps>(function
                 <div className="h-px bg-slate-100" />
 
                 <div className="flex items-center justify-between gap-2">
-                  <p className="text-xs font-normal text-slate-400">{inviteRole === 'jubah_lead' ? 'Universities' : 'Campus'}</p>
-                  <span className="text-xs font-semibold text-slate-800 text-right">{inviteRole === 'jubah_lead' ? inviteLeadLabels.join(', ') : jubahLocationLabel(inviteUniversityKey, inviteCampus)}</span>
+                  <p className="text-xs font-normal text-slate-400">{inviteRole === 'jubah_lead' ? 'Base University' : 'Campus'}</p>
+                  <span className="text-xs font-semibold text-slate-800 text-right">{inviteRole === 'jubah_lead' ? `${inviteLeadBaseUniversity?.shortLabel ?? ''} · ${inviteLeadBaseCampus}` : jubahLocationLabel(inviteUniversityKey, inviteCampus)}</span>
                 </div>
+
+                {inviteRole === 'jubah_lead' && <>
+                  <div className="h-px bg-slate-100" />
+                  <div className="flex items-start justify-between gap-2">
+                    <p className="text-xs font-normal text-slate-400">Managed Universities</p>
+                    <span className="text-xs font-semibold text-slate-800 text-right">{inviteLeadManagedLabels.length ? inviteLeadManagedLabels.join(', ') : 'None'}</span>
+                  </div>
+                  <p className="text-xs font-normal leading-relaxed text-amber-700 bg-amber-50 border border-amber-100 rounded-xl p-3">
+                    Confirm that {inviteLeadBaseUniversity?.shortLabel ?? 'this university'} · {inviteLeadBaseCampus} will be this Lead's permanent Base University and Base Campus. This cannot be changed after the invitation is sent.
+                  </p>
+                </>}
 
                 <div className="h-px bg-slate-100" />
 

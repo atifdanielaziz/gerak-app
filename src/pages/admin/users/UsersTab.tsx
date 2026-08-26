@@ -4,7 +4,7 @@ import { supabase } from '../../../lib/supabase';
 import {
   Users, MoreVertical, Car, KeyRound, Bike, GraduationCap, MapPin, ShieldCheck, ShieldOff, Trash2, Truck, FileCheck2,
   BarChart3, CalendarCheck2, CalendarX2, UserCheck, LogIn, LogOut, Wifi, BriefcaseBusiness, PauseCircle, PlayCircle, ChevronDown,
-  Crown,
+  UserRoundCog,
 } from 'lucide-react';
 import { WaIcon, toWa } from '../../../lib/whatsapp';
 import { useLoadOnActive } from '../../../hooks/useLoadOnActive';
@@ -408,8 +408,8 @@ export const UsersTab = forwardRef<UsersTabHandle, UsersTabProps>(function Users
     setSavingLead(false);
     if (error) return showToast(error.message);
     const result = data as { success?: boolean; error?: string } | null;
-    if (!result?.success) return showToast(result?.error ?? 'Could not save the Jubah Lead.');
-    showToast('Jubah Lead assignment saved.');
+    if (!result?.success) return showToast(result?.error ?? 'Could not save the Lead.');
+    showToast('Lead assignment saved.');
     await loadUsers();
   };
 
@@ -424,9 +424,9 @@ export const UsersTab = forwardRef<UsersTabHandle, UsersTabProps>(function Users
     setSavingLead(false);
     if (error) return showToast(error.message);
     const result = data as { success?: boolean; error?: string } | null;
-    if (!result?.success) return showToast(result?.error ?? 'Could not remove the Jubah Lead.');
+    if (!result?.success) return showToast(result?.error ?? 'Could not remove the Lead.');
     setLeadUniversityKeys([]);
-    showToast('Jubah Lead access removed.');
+    showToast('Lead access removed.');
     await loadUsers();
   };
 
@@ -696,7 +696,7 @@ export const UsersTab = forwardRef<UsersTabHandle, UsersTabProps>(function Users
                   onChange={e => setStaffSearch(e.target.value)}
                   placeholder="Name or Gerak ID"
                   style={{ fontSize: '12px' }}
-                  className="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 font-semibold text-slate-700 focus:outline-none focus:border-primary transition placeholder:font-normal placeholder:text-slate-400"
+                  className="flex-1 min-w-0 bg-white border border-slate-100 rounded-xl px-3 py-2.5 font-normal text-slate-700 focus:outline-none focus:border-slate-900 transition-colors placeholder:font-normal placeholder:text-slate-300"
                 />
                 <button
                   onClick={() => setStaffSearch('')}
@@ -766,7 +766,7 @@ export const UsersTab = forwardRef<UsersTabHandle, UsersTabProps>(function Users
               onChange={e => setStaffSearch(e.target.value)}
               placeholder="Name or Gerak ID"
               style={{ fontSize: '12px' }}
-              className="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 font-semibold text-slate-700 focus:outline-none focus:border-primary transition placeholder:font-normal placeholder:text-slate-400"
+              className="flex-1 min-w-0 bg-white border border-slate-100 rounded-xl px-3 py-2.5 font-normal text-slate-700 focus:outline-none focus:border-slate-900 transition-colors placeholder:font-normal placeholder:text-slate-300"
             />
             <button
               onClick={() => setStaffSearch('')}
@@ -795,7 +795,7 @@ export const UsersTab = forwardRef<UsersTabHandle, UsersTabProps>(function Users
         {isSuperAdmin && (
           <section className="bg-white border border-slate-100 rounded-3xl p-5 flex flex-col gap-4 w-full">
             <h3 className="text-sm font-semibold text-slate-700 flex items-center gap-2">
-              <Crown className="w-4 h-4 text-slate-400" /> Jubah Lead Assignments
+              <UserRoundCog className="w-4 h-4 text-slate-400" /> Lead
             </h3>
             <p className="text-xs font-normal text-slate-400">A Lead can manage Jubah bookings only for the universities selected here.</p>
             <NativeSelect
@@ -804,9 +804,12 @@ export const UsersTab = forwardRef<UsersTabHandle, UsersTabProps>(function Users
                 setLeadUserId(value);
                 setLeadUniversityKeys(leadAssignments.filter(row => row.lead_id === value).map(row => row.university_key));
               }}
-              options={profileUsers.map(profile => ({ value: profile.id, label: `${profile.name} · ${profile.gerak_id}` }))}
-              placeholder="Select Jubah Lead"
+              options={profileUsers
+                .filter(profile => profile.role === 'rider' && profile.can_robe)
+                .map(profile => ({ value: profile.id, label: `${profile.name} · ${profile.gerak_id}` }))}
+              placeholder="Select Lead"
               label="Lead"
+              searchable
             />
             <MultiSelect
               values={leadUniversityKeys}
@@ -833,7 +836,7 @@ export const UsersTab = forwardRef<UsersTabHandle, UsersTabProps>(function Users
               <p className="text-xs font-semibold text-slate-700">Assign a Jubah runner under a Lead</p>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                 <NativeSelect value={runnerUserId} onChange={setRunnerUserId}
-                  options={profileUsers.filter(profile => profile.role === 'rider').map(profile => ({ value: profile.id, label: `${profile.name} · ${profile.gerak_id}` }))}
+                  options={profileUsers.filter(profile => profile.role === 'rider' && profile.can_robe).map(profile => ({ value: profile.id, label: `${profile.name} · ${profile.gerak_id}` }))}
                   placeholder="Runner" label="Runner" />
                 <NativeSelect value={runnerLeadId} onChange={value => { setRunnerLeadId(value); setRunnerUniversityKey(''); }}
                   options={leadRows.filter(row => row.is_active).map(row => { const profile = profileUsers.find(user => user.id === row.user_id); return { value: row.user_id, label: profile?.name ?? row.user_id }; })}
