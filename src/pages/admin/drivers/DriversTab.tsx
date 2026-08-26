@@ -1,7 +1,7 @@
 import { forwardRef, useCallback, useEffect, useImperativeHandle, useState } from 'react';
 import { supabase } from '../../../lib/supabase';
 import {
-  UserPlus, Send, Mail, Car, KeyRound, Bike, GraduationCap, X, AlertCircle, Settings, Truck,
+  UserPlus, Send, Mail, Car, KeyRound, Bike, GraduationCap, X, Settings, Truck,
 } from 'lucide-react';
 import { useLoadOnActive } from '../../../hooks/useLoadOnActive';
 import { useApp } from '../../../context/AppContext';
@@ -55,8 +55,8 @@ export const DriversTab = forwardRef<DriversTabHandle, DriversTabProps>(function
   const { showConfirmModal } = useApp();
   const inviteDirectoryScrollRef = useAxisLockedScroll<HTMLDivElement>();
   const [invites, setInvites]               = useState<DriverInvite[]>([]);
+  const [allInvites, setAllInvites]          = useState<DriverInvite[]>([]);
   const [invitesLoading, setInvitesLoading]  = useState(false);
-  const [inviteSearch, setInviteSearch]      = useState('');
   const [inviteEmail, setInviteEmail]        = useState('');
   const inviteUniversityKey = universityKey;
   const [inviteCampus, setInviteCampus]      = useState(UNIVERSITY_MAP[universityKey]?.campuses[0] ?? '');
@@ -91,13 +91,22 @@ export const DriversTab = forwardRef<DriversTabHandle, DriversTabProps>(function
       .select('id,email,campus,university,role,can_drive,can_rent,can_transport,can_daily,can_robe,used,used_at,created_at,jubah_lead_university_keys')
       .order('created_at', { ascending: false });
     const campuses = UNIVERSITY_MAP[universityKey]?.campuses ?? [];
-    const { data } = await query;
-    setInvites((data ?? []).filter(invite =>
+    const { data, error } = await query;
+    if (error) {
+      setAllInvites([]);
+      setInvites([]);
+      setInvitesLoading(false);
+      showToast('Could not load invitations: ' + error.message);
+      return;
+    }
+    const loadedInvites = data ?? [];
+    setAllInvites(loadedInvites);
+    setInvites(loadedInvites.filter(invite =>
       campuses.includes(invite.campus)
       || (invite.role === 'jubah_lead' && (invite.jubah_lead_university_keys ?? []).includes(universityKey))
     ));
     setInvitesLoading(false);
-  }, [universityKey]);
+  }, [showToast, universityKey]);
 
   useLoadOnActive(active, loadInvites);
   useImperativeHandle(ref, () => ({ reload: loadInvites }), [loadInvites]);
@@ -125,7 +134,14 @@ export const DriversTab = forwardRef<DriversTabHandle, DriversTabProps>(function
       created_by: authUser?.id,
     }).select('id').single();
     setInviteSending(false);
-    if (error) showToast(error.message.includes('unique') ? 'This email already has a pending invite.' : error.message);
+    if (error) {
+      if (error.message.includes('unique')) {
+        showToast('This email already has a pending invite. You can cancel it in the Invite List below.');
+        await loadInvites();
+      } else {
+        showToast(error.message);
+      }
+    }
     else {
       showToast('Invite added!');
       setInviteEmail('');
@@ -161,6 +177,11 @@ export const DriversTab = forwardRef<DriversTabHandle, DriversTabProps>(function
     showToast('Invite removed.');
     loadInvites();
   };
+
+  const normalizedInviteEmail = inviteEmail.trim().toLowerCase();
+  const displayedInvites = normalizedInviteEmail
+    ? allInvites.filter(invite => invite.email.toLowerCase().includes(normalizedInviteEmail))
+    : invites;
 
   return (
     <>
@@ -286,30 +307,6 @@ export const DriversTab = forwardRef<DriversTabHandle, DriversTabProps>(function
           </button>
         </div>
 
-        {/* Search */}
-        <div className="bg-white border border-slate-100 rounded-2xl p-3.5 flex flex-col gap-2">
-          <h3 className="text-sm font-semibold text-slate-700 flex items-center gap-1.5">
-            <AlertCircle className="w-3.5 h-3.5" /> Find Staff
-          </h3>
-          <div className="flex gap-2">
-            <input
-              type="email"
-              value={inviteSearch}
-              onChange={e => setInviteSearch(e.target.value)}
-              placeholder="Search by email"
-              style={{ fontSize: '12px' }}
-              className="flex-1 bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 font-semibold text-slate-700 focus:outline-none focus:border-primary transition placeholder:font-normal"
-            />
-            <button
-              onClick={() => setInviteSearch('')}
-              disabled={!inviteSearch.trim()}
-              className="px-3.5 bg-primary text-white font-semibold text-xs rounded-lg transition active:scale-95 disabled:opacity-50 flex items-center gap-1.5"
-            >
-              Clear
-            </button>
-          </div>
-        </div>
-
         {/* Invite list */}
         <div className="bg-white border border-slate-100 rounded-3xl p-5 flex flex-col gap-4">
           <h3 className="text-sm font-semibold text-slate-700 flex items-center gap-1.5">
@@ -320,9 +317,9 @@ export const DriversTab = forwardRef<DriversTabHandle, DriversTabProps>(function
             <div className="flex justify-center py-6">
               <span className="w-5 h-5 rounded-full border-2 border-slate-200 border-t-primary animate-spin" />
             </div>
-          ) : invites.filter(inv => !inviteSearch.trim() || inv.email.toLowerCase().includes(inviteSearch.toLowerCase())).length === 0 ? (
+          ) : displayedInvites.length === 0 ? (
             <p className="text-xs text-slate-400 font-semibold text-center py-4">
-              {inviteSearch.trim() ? 'No matching invites found' : 'No invites yet'}
+              {normalizedInviteEmail ? 'No matching invites found. You can send a new invitation above.' : 'No invites yet'}
             </p>
           ) : (
             <div ref={inviteDirectoryScrollRef}
@@ -339,7 +336,7 @@ export const DriversTab = forwardRef<DriversTabHandle, DriversTabProps>(function
                   </tr>
                 </thead>
                 <tbody>
-                  {invites.filter(inv => !inviteSearch.trim() || inv.email.toLowerCase().includes(inviteSearch.toLowerCase())).map(inv => {
+                  {displayedInvites.map(inv => {
                     const capabilities = [
                       inv.can_drive && 'Car', inv.can_rent && 'Rental', inv.can_transport && 'Transporter',
                       inv.can_daily && 'Daily', inv.can_robe && 'Robe',
