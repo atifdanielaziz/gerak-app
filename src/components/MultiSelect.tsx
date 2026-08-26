@@ -52,9 +52,9 @@ export function MultiSelect<T extends string>({
         type="button"
         disabled={disabled}
         onClick={() => !disabled && setOpen(o => !o)}
-        className="w-full bg-white border border-slate-100 rounded-xl py-2.5 px-3 flex items-center justify-between gap-2 active:bg-slate-50 transition disabled:opacity-50"
+        className="w-full bg-white border border-slate-100 rounded-xl py-2.5 px-3 flex items-center justify-between gap-2 active:bg-slate-50 transition-colors disabled:bg-slate-50 disabled:cursor-not-allowed"
       >
-        <span className={`text-xs truncate ${values.length ? 'font-semibold text-slate-700' : 'font-normal text-slate-300'}`}>
+        <span className={`text-xs truncate ${values.length ? 'font-semibold text-slate-700' : disabled ? 'font-normal text-slate-400' : 'font-normal text-slate-300'}`}>
           {summary}
         </span>
         <ChevronDown className={`w-3.5 h-3.5 text-slate-400 shrink-0 transition-transform ${open ? 'rotate-180' : ''}`} />

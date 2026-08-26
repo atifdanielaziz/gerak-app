@@ -696,7 +696,7 @@ export const UsersTab = forwardRef<UsersTabHandle, UsersTabProps>(function Users
                   onChange={e => setStaffSearch(e.target.value)}
                   placeholder="Name or Gerak ID"
                   style={{ fontSize: '12px' }}
-                  className="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 font-semibold text-slate-700 focus:outline-none focus:border-primary transition placeholder:font-normal placeholder:text-slate-400"
+                  className="flex-1 min-w-0 bg-white border border-slate-100 rounded-xl px-3 py-2.5 font-normal text-slate-700 focus:outline-none focus:border-slate-900 transition-colors placeholder:font-normal placeholder:text-slate-300"
                 />
                 <button
                   onClick={() => setStaffSearch('')}
@@ -766,7 +766,7 @@ export const UsersTab = forwardRef<UsersTabHandle, UsersTabProps>(function Users
               onChange={e => setStaffSearch(e.target.value)}
               placeholder="Name or Gerak ID"
               style={{ fontSize: '12px' }}
-              className="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 font-semibold text-slate-700 focus:outline-none focus:border-primary transition placeholder:font-normal placeholder:text-slate-400"
+              className="flex-1 min-w-0 bg-white border border-slate-100 rounded-xl px-3 py-2.5 font-normal text-slate-700 focus:outline-none focus:border-slate-900 transition-colors placeholder:font-normal placeholder:text-slate-300"
             />
             <button
               onClick={() => setStaffSearch('')}
