@@ -1,4 +1,4 @@
-import { forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useState } from 'react';
+import { forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState } from 'react';
 import { supabase } from '../../../lib/supabase';
 import { ShieldCheck, ShieldOff, AlertCircle, FileImage, RefreshCw, ExternalLink, BarChart3, ChevronDown, Clock3, CalendarX2 } from 'lucide-react';
 import { useLoadOnActive } from '../../../hooks/useLoadOnActive';
@@ -8,6 +8,7 @@ import { NativeSelect } from '../../../components/NativeSelect';
 import { useAxisLockedScroll } from '../../../hooks/useAxisLockedScroll';
 import { UNIVERSITY_MAP } from '../../../lib/universities';
 import { receiptStatus } from '../../../lib/receiptStatus';
+import { AdminSearchInput } from '../../../components/AdminSearchInput';
 
 interface DriverReceipt {
   id: string;
@@ -54,7 +55,12 @@ export const ReceiptsTab = forwardRef<ReceiptsTabHandle, ReceiptsTabProps>(funct
   { active, showToast, onViewProfile, onModalOpenChange, universityKey },
   ref
 ) {
-  const receiptDirectoryScrollRef = useAxisLockedScroll<HTMLDivElement>();
+  const receiptDirectoryAxisRef = useAxisLockedScroll<HTMLDivElement>();
+  const receiptDirectoryElementRef = useRef<HTMLDivElement | null>(null);
+  const receiptDirectoryScrollRef = useCallback((element: HTMLDivElement | null) => {
+    receiptDirectoryElementRef.current = element;
+    receiptDirectoryAxisRef(element);
+  }, [receiptDirectoryAxisRef]);
   const [driverReceipts, setDriverReceipts] = useState<DriverReceipt[]>([]);
   // Real total vs driverReceipts.length, which is capped below — only used
   // to show "showing X of Y" if that cap is ever actually hit.
@@ -74,7 +80,7 @@ export const ReceiptsTab = forwardRef<ReceiptsTabHandle, ReceiptsTabProps>(funct
 
   const loadReceipts = useCallback(async () => {
     setReceiptsLoading(true);
-    const [{ data, count }, { data: setting }] = await Promise.all([
+    const [{ data, count, error: receiptsError }, { data: setting }] = await Promise.all([
       supabase
         .from('profiles')
         .select('id, name, gerak_id, campus, email, phone, status, fee_receipt_url, fee_receipt_storage_path, fee_receipt_verified, fee_receipt_auto_verified, fee_receipt_amount, fee_receipt_date, fee_receipt_expiry, fee_receipt_reject_reason', { count: 'exact' })
@@ -84,8 +90,15 @@ export const ReceiptsTab = forwardRef<ReceiptsTabHandle, ReceiptsTabProps>(funct
         .limit(1000),
       supabase.from('app_settings').select('value').eq('key', 'receipt_gate_active').single(),
     ]);
-    setDriverReceiptsTotalCount(count ?? null);
-    setDriverReceipts((data as DriverReceipt[]) ?? []);
+    if (receiptsError) {
+      console.error('[GERAK] Could not load monthly receipts:', receiptsError);
+      setDriverReceiptsTotalCount(0);
+      setDriverReceipts([]);
+      showToast('Could not load receipts. Please refresh and try again.');
+    } else {
+      setDriverReceiptsTotalCount(count ?? null);
+      setDriverReceipts((data as DriverReceipt[]) ?? []);
+    }
     if (setting) setReceiptGateOn(setting.value === 'true');
     setReceiptsLoading(false);
   }, [receiptRoleFilter, universityKey]);
@@ -93,13 +106,29 @@ export const ReceiptsTab = forwardRef<ReceiptsTabHandle, ReceiptsTabProps>(funct
   useLoadOnActive(active, loadReceipts);
   useImperativeHandle(ref, () => ({ reload: loadReceipts }), [loadReceipts]);
 
+  // Always open a new receipt view at the identifying columns. Previously a
+  // retained far-right scroll offset made populated rows appear blank.
+  useEffect(() => {
+    const frame = window.requestAnimationFrame(() => {
+      const horizontal = receiptDirectoryElementRef.current;
+      if (!horizontal) return;
+      horizontal.scrollLeft = 0;
+      horizontal.querySelector<HTMLElement>('[data-axis-y]')?.scrollTo({ top: 0 });
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, [active, receiptFilter, receiptRoleFilter, receiptSearch, universityKey]);
+
   // fee_receipt_url is a Storage signed link generated once at upload time —
   // it expires (30 days) and, once it does, is a permanently dead link with
   // no recovery. Generate a fresh one on demand from the stable storage
   // path instead of trusting the stored URL.
   const [viewingReceiptId, setViewingReceiptId] = useState<string | null>(null);
   const viewReceipt = async (r: DriverReceipt) => {
-    if (!r.fee_receipt_storage_path) { window.open(r.fee_receipt_url, '_blank', 'noopener,noreferrer'); return; }
+    if (!r.fee_receipt_storage_path) {
+      if (r.fee_receipt_url) window.open(r.fee_receipt_url, '_blank', 'noopener,noreferrer');
+      else showToast('No receipt file was uploaded for this record.');
+      return;
+    }
     setViewingReceiptId(r.id);
     const { url, error, notFound } = await getSignedUrl('driver-receipts', r.fee_receipt_storage_path, 60 * 10);
     setViewingReceiptId(null);
@@ -247,23 +276,7 @@ export const ReceiptsTab = forwardRef<ReceiptsTabHandle, ReceiptsTabProps>(funct
           <h3 className="text-sm font-semibold text-slate-700 flex items-center gap-1.5">
             <AlertCircle className="w-3.5 h-3.5" /> Find {receiptRoleFilter === 'driver' ? 'Driver' : 'Rider'}
           </h3>
-          <div className="flex gap-2">
-            <input
-              type="text"
-              value={receiptSearch}
-              onChange={e => setReceiptSearch(e.target.value)}
-              placeholder="Name or Gerak ID"
-              style={{ fontSize: '12px' }}
-              className="flex-1 bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 font-semibold text-slate-700 focus:outline-none focus:border-primary transition placeholder:font-normal"
-            />
-            <button
-              onClick={() => setReceiptSearch('')}
-              disabled={!receiptSearch.trim()}
-              className="px-3.5 bg-primary text-white font-semibold text-xs rounded-lg transition active:scale-95 disabled:opacity-50 flex items-center gap-1.5"
-            >
-              Clear
-            </button>
-          </div>
+          <AdminSearchInput value={receiptSearch} onChange={setReceiptSearch} placeholder="Name or Gerak ID" />
           <div className="grid grid-cols-2 gap-2">
             <NativeSelect value={receiptFilter} onChange={value => setReceiptFilter(value as typeof receiptFilter)} options={[{ value: 'all', label: 'All Statuses' }, { value: 'verified', label: 'Verified' }, { value: 'expired', label: 'Expired' }, { value: 'pending', label: 'Pending' }]} placeholder="Status" label="Status" />
             <NativeSelect value={receiptRoleFilter} onChange={value => setReceiptRoleFilter(value as typeof receiptRoleFilter)} options={[{ value: 'driver', label: 'Driver' }, { value: 'rider', label: 'Rider' }]} placeholder="Role" label="Role" />
@@ -293,8 +306,8 @@ export const ReceiptsTab = forwardRef<ReceiptsTabHandle, ReceiptsTabProps>(funct
               <table className="min-w-[68rem] w-full border-collapse text-left text-xs"><thead><tr className="border-b border-slate-100 text-slate-400">{['Name','Role','Gerak ID','Campus','Status','Amount','Paid','Expires','Receipt','Actions'].map(h => <th key={h} className="sticky top-0 z-10 bg-white py-2.5 pr-4 font-semibold whitespace-nowrap">{h}</th>)}</tr></thead><tbody>
                 {filteredReceipts.map(r => { const status = receiptStatus(r); const expires = r.fee_receipt_expiry ? new Date(r.fee_receipt_expiry).toLocaleDateString('en-MY') : '—'; return <tr key={r.id} onClick={() => onViewProfile({ id: r.id, name: r.name, gerak_id: r.gerak_id, role: receiptRoleFilter, campus: r.campus, email: r.email, status: r.status || 'active', phone: r.phone || '' })} className="border-b border-slate-100 last:border-b-0 cursor-pointer active:bg-slate-50">
                   <td className="py-3 pr-4 font-semibold text-slate-800 max-w-[14rem] truncate">{r.name}</td><td className="py-3 pr-4 text-slate-600 capitalize">{receiptRoleFilter}</td><td className="py-3 pr-4 text-slate-600 whitespace-nowrap">{r.gerak_id}</td><td className="py-3 pr-4 text-slate-600 whitespace-nowrap">{r.campus}</td><td className={`py-3 pr-4 font-semibold capitalize ${status === 'verified' ? 'text-emerald-600' : status === 'expired' ? 'text-red-500' : status === 'rejected' ? 'text-orange-600' : 'text-amber-600'}`}>{status}</td><td className="py-3 pr-4 text-slate-600 whitespace-nowrap">{r.fee_receipt_amount || '—'}</td><td className="py-3 pr-4 text-slate-600 whitespace-nowrap">{r.fee_receipt_date || '—'}</td><td className="py-3 pr-4 text-slate-600 whitespace-nowrap">{expires}</td>
-                  <td className="py-2 pr-4" onClick={e => e.stopPropagation()}>{r.fee_receipt_url ? <button type="button" onClick={() => viewReceipt(r)} disabled={viewingReceiptId === r.id} className="inline-flex items-center gap-1 text-primary font-semibold disabled:opacity-50"><ExternalLink className="w-3.5 h-3.5" /> {viewingReceiptId === r.id ? 'Opening…' : 'View'}</button> : <span className="text-slate-300">—</span>}</td>
-                  <td className="py-2" onClick={e => e.stopPropagation()}>{status === 'pending' && r.fee_receipt_url ? <div className="flex gap-1.5"><button type="button" onClick={() => handleApproveReceipt(r)} disabled={approvingReceipt === r.id || rejectingReceipt === r.id} className="px-2.5 py-1.5 rounded-xl bg-emerald-50 text-emerald-600 font-semibold disabled:opacity-50">Approve</button><button type="button" onClick={() => handleRejectReceipt(r)} disabled={approvingReceipt === r.id || rejectingReceipt === r.id} className="px-2.5 py-1.5 rounded-xl bg-red-50 text-red-500 font-semibold disabled:opacity-50">Reject</button></div> : <span className="text-slate-300">—</span>}</td>
+                  <td className="py-2 pr-4" onClick={e => e.stopPropagation()}>{(r.fee_receipt_url || r.fee_receipt_storage_path) ? <button type="button" onClick={() => viewReceipt(r)} disabled={viewingReceiptId === r.id} className="inline-flex items-center gap-1 text-primary font-semibold disabled:opacity-50"><ExternalLink className="w-3.5 h-3.5" /> {viewingReceiptId === r.id ? 'Opening…' : 'View'}</button> : <span className="text-slate-300">—</span>}</td>
+                  <td className="py-2" onClick={e => e.stopPropagation()}>{status === 'pending' && (r.fee_receipt_url || r.fee_receipt_storage_path) ? <div className="flex gap-1.5"><button type="button" onClick={() => handleApproveReceipt(r)} disabled={approvingReceipt === r.id || rejectingReceipt === r.id} className="px-2.5 py-1.5 rounded-xl bg-emerald-50 text-emerald-600 font-semibold disabled:opacity-50">Approve</button><button type="button" onClick={() => handleRejectReceipt(r)} disabled={approvingReceipt === r.id || rejectingReceipt === r.id} className="px-2.5 py-1.5 rounded-xl bg-red-50 text-red-500 font-semibold disabled:opacity-50">Reject</button></div> : <span className="text-slate-300">—</span>}</td>
                 </tr>; })}
               </tbody></table>
             </div>
@@ -367,7 +380,7 @@ export const ReceiptsTab = forwardRef<ReceiptsTabHandle, ReceiptsTabProps>(funct
                     )}
 
                     {/* View receipt link */}
-                    {r.fee_receipt_url && (
+                    {(r.fee_receipt_url || r.fee_receipt_storage_path) && (
                       <button type="button"
                         onClick={e => { e.stopPropagation(); viewReceipt(r); }}
                         disabled={viewingReceiptId === r.id}
@@ -377,7 +390,7 @@ export const ReceiptsTab = forwardRef<ReceiptsTabHandle, ReceiptsTabProps>(funct
                     )}
 
                     {/* Approve / Reject — pending receipts only */}
-                    {status === 'pending' && r.fee_receipt_url && (
+                    {status === 'pending' && (r.fee_receipt_url || r.fee_receipt_storage_path) && (
                       <div className="flex gap-2" onClick={e => e.stopPropagation()}>
                         <button
                           onClick={() => handleApproveReceipt(r)}

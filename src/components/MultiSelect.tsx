@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react';
 import { ChevronDown, Check } from 'lucide-react';
 
 export interface MultiSelectOption<T extends string> {
@@ -27,6 +27,7 @@ export function MultiSelect<T extends string>({
 }: MultiSelectProps<T>) {
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
+  const gestureRef = useRef<{ pointerId: number; x: number; y: number; moved: boolean } | null>(null);
 
   useEffect(() => {
     if (!open) return;
@@ -41,17 +42,39 @@ export function MultiSelect<T extends string>({
     onChange(values.includes(v) ? values.filter(x => x !== v) : [...values, v]);
   };
 
+  const beginOptionGesture = (event: ReactPointerEvent) => {
+    gestureRef.current = { pointerId: event.pointerId, x: event.clientX, y: event.clientY, moved: false };
+  };
+
+  const trackOptionGesture = (event: ReactPointerEvent) => {
+    const gesture = gestureRef.current;
+    if (!gesture || gesture.pointerId !== event.pointerId) return;
+    if (Math.hypot(event.clientX - gesture.x, event.clientY - gesture.y) > 10) gesture.moved = true;
+  };
+
+  const finishOptionGesture = (event: ReactPointerEvent, value: T) => {
+    const gesture = gestureRef.current;
+    gestureRef.current = null;
+    if (!gesture || gesture.pointerId !== event.pointerId || gesture.moved) return;
+    event.preventDefault();
+    event.stopPropagation();
+    toggle(value);
+  };
+
   const summary =
     values.length === 0 ? placeholder :
     values.length <= 2 ? options.filter(o => values.includes(o.value)).map(o => o.label).join(', ') :
     `${values.length} selected`;
 
   return (
-    <div ref={rootRef} className="relative w-full">
+    <div ref={rootRef} data-axis-lock-ignore className="relative w-full">
       <button
         type="button"
         disabled={disabled}
-        onClick={() => !disabled && setOpen(o => !o)}
+        onPointerDown={event => {
+          event.preventDefault();
+          if (!disabled) setOpen(current => !current);
+        }}
         className="w-full bg-white border border-slate-100 rounded-xl py-2.5 px-3 flex items-center justify-between gap-2 active:bg-slate-50 transition-colors disabled:bg-slate-50 disabled:cursor-not-allowed"
       >
         <span className={`text-xs truncate ${values.length ? 'font-semibold text-slate-700' : disabled ? 'font-normal text-slate-400' : 'font-normal text-slate-300'}`}>
@@ -61,14 +84,20 @@ export function MultiSelect<T extends string>({
       </button>
 
       {open && (
-        <div className="absolute top-full z-20 mt-1.5 max-h-64 overflow-y-auto no-scrollbar flex flex-col gap-1.5 border border-slate-100 rounded-2xl p-2 bg-white shadow-lg left-0 right-0">
+        <div data-axis-lock-ignore className="absolute top-full z-50 mt-1.5 max-h-64 overflow-y-auto overscroll-contain touch-pan-y no-scrollbar flex flex-col gap-1.5 border border-slate-100 rounded-2xl p-2 bg-white shadow-lg left-0 right-0">
           {options.map(o => {
             const checked = values.includes(o.value);
             return (
               <button
                 key={o.value}
                 type="button"
-                onClick={() => toggle(o.value)}
+                onPointerDown={beginOptionGesture}
+                onPointerMove={trackOptionGesture}
+                onPointerCancel={() => { gestureRef.current = null; }}
+                onPointerUp={event => finishOptionGesture(event, o.value)}
+                onClick={event => {
+                  if (event.detail === 0) toggle(o.value);
+                }}
                 className={`w-full flex items-center justify-between gap-2 px-3 py-2.5 rounded-xl border text-xs font-semibold text-left transition-transform active:scale-[0.99] ${
                   checked ? 'border-slate-900 text-slate-900' : 'border-slate-100 text-slate-600'
                 }`}

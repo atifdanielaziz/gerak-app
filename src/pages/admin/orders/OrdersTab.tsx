@@ -2,11 +2,12 @@ import { forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useSt
 import { supabase } from '../../../lib/supabase';
 import {
   BarChart3, Car, Clock, Trash2,
-  Search, RefreshCw, X, TrendingUp, Copy, Check, ChevronDown,
+  RefreshCw, X, TrendingUp, Copy, Check, ChevronDown,
   ClipboardList, CircleDashed, CircleCheck, CircleX, Venus,
 } from 'lucide-react';
 import { useApp } from '../../../context/AppContext';
 import { NativeSelect } from '../../../components/NativeSelect';
+import { AdminSearchInput } from '../../../components/AdminSearchInput';
 import { BOOKING_METHOD_LABEL, buildTransportReceiptRows } from '../../../lib/receiptRows';
 import { copyToClipboard } from '../../../lib/clipboard';
 import { ReceiptSheet } from '../../../components/Receipt';
@@ -359,21 +360,12 @@ export const OrdersTab = forwardRef<OrdersTabHandle, OrdersTabProps>(function Or
 
       {/* ── Search + filters ── */}
       <div className="bg-white border border-slate-100 rounded-2xl p-3.5 flex flex-col gap-2">
-        <div className="flex gap-2">
-          <div className="flex-1 relative">
-            <Search className="w-3.5 h-3.5 text-slate-300 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
-            <input
-              type="text"
-              value={search}
-              onChange={e => setSearch(e.target.value)}
-              placeholder="Search by customer or phone…"
-              style={{ fontSize: '12px' }}
-              className="w-full bg-slate-50 border border-slate-200 rounded-lg pl-8 pr-3 py-2 font-semibold text-slate-700 focus:outline-none focus:border-primary transition placeholder:font-normal placeholder:text-slate-300"
-            />
-          </div>
-          <button
-            onClick={() => loadOrders()}
-            className="w-9 h-9 flex items-center justify-center rounded-lg bg-slate-50 border border-slate-200 text-slate-400 hover:text-primary transition active:scale-90 shrink-0"
+          <div className="flex gap-2">
+            <AdminSearchInput value={search} onChange={setSearch}
+              placeholder="Search by customer or phone…" className="flex-1" />
+            <button
+              onClick={() => loadOrders()}
+              className="w-10 h-10 flex items-center justify-center rounded-xl bg-white border border-slate-100 text-slate-400 hover:text-primary transition active:scale-90 shrink-0"
           >
             <RefreshCw className="w-4 h-4" />
           </button>

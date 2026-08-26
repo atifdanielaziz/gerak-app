@@ -1,9 +1,10 @@
 import { forwardRef, useCallback, useImperativeHandle, useMemo, useState, type ElementType } from 'react';
 import { supabase } from '../../../lib/supabase';
-import { History, RefreshCw, Search, User, PlusCircle, Pencil, Trash2 } from 'lucide-react';
+import { History, RefreshCw, User, PlusCircle, Pencil, Trash2 } from 'lucide-react';
 import { useLoadOnActive } from '../../../hooks/useLoadOnActive';
 import { NativeSelect } from '../../../components/NativeSelect';
 import { useAxisLockedScroll } from '../../../hooks/useAxisLockedScroll';
+import { AdminSearchInput } from '../../../components/AdminSearchInput';
 
 interface ActivityLogRow {
   id: string;
@@ -172,22 +173,11 @@ export const ActivityLogTab = forwardRef<ActivityLogTabHandle, ActivityLogTabPro
 
       {/* Filters */}
       <div className="bg-white border border-slate-100 rounded-2xl p-3.5 flex flex-col gap-2.5">
-        <div className="flex gap-2">
-          <div className="relative flex-1">
-            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">
-              <Search className="w-3.5 h-3.5" />
-            </span>
-            <input
-              type="text"
-              value={search}
-              onChange={e => setSearch(e.target.value)}
-              placeholder="Search by admin name"
-              style={{ fontSize: '12px' }}
-              className="w-full bg-slate-50 border border-slate-200 rounded-lg pl-8 pr-3 py-2 font-semibold text-slate-700 focus:outline-none focus:border-primary transition placeholder:font-normal"
-            />
-          </div>
-          <button onClick={load}
-            className="w-11 h-11 shrink-0 flex items-center justify-center rounded-lg bg-slate-50 border border-slate-200 text-slate-400 hover:text-primary transition active:scale-90">
+          <div className="flex gap-2">
+            <AdminSearchInput value={search} onChange={setSearch}
+              placeholder="Search by admin name" className="flex-1" />
+            <button onClick={load}
+              className="w-10 h-10 shrink-0 flex items-center justify-center rounded-xl bg-white border border-slate-100 text-slate-400 hover:text-primary transition active:scale-90">
             <RefreshCw className="w-3.5 h-3.5" />
           </button>
         </div>

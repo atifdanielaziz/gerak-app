@@ -7,6 +7,7 @@ import { useLoadOnActive } from '../../../hooks/useLoadOnActive';
 import { useApp } from '../../../context/AppContext';
 import { NativeSelect } from '../../../components/NativeSelect';
 import { MultiSelect } from '../../../components/MultiSelect';
+import { AdminSearchInput } from '../../../components/AdminSearchInput';
 import { UNIVERSITIES, UNIVERSITY_MAP, jubahLocationLabel, universityKeyFromCampus } from '../../../lib/universities';
 import { useAxisLockedScroll } from '../../../hooks/useAxisLockedScroll';
 
@@ -286,17 +287,14 @@ export const DriversTab = forwardRef<DriversTabHandle, DriversTabProps>(function
           </div>}
 
           {/* Email input */}
-          <div className="relative">
-            <Mail className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
-            <input
-              type="email"
-              value={inviteEmail}
-              onChange={e => setInviteEmail(e.target.value)}
-              onKeyDown={e => { if (e.key === 'Enter') openInviteConfirmation(); }}
-              placeholder="staff@email.com"
-              className="w-full bg-slate-50 border border-slate-200 rounded-xl py-2.5 pl-9 pr-3 text-xs text-slate-700 focus:outline-none focus:border-primary transition"
-            />
-          </div>
+          <AdminSearchInput
+            value={inviteEmail}
+            onChange={setInviteEmail}
+            onKeyDown={event => { if (event.key === 'Enter') openInviteConfirmation(); }}
+            inputMode="email"
+            autoComplete="email"
+            placeholder="staff@email.com"
+          />
 
           <button
             onClick={openInviteConfirmation}

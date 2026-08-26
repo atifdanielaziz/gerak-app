@@ -11,6 +11,7 @@ import { useLoadOnActive } from '../../../hooks/useLoadOnActive';
 import { type ProfileUser } from './ProfileSheet';
 import { NativeSelect } from '../../../components/NativeSelect';
 import { MultiSelect } from '../../../components/MultiSelect';
+import { AdminSearchInput } from '../../../components/AdminSearchInput';
 import { UNIVERSITIES, UNIVERSITY_MAP, jubahLocationLabel, universityKeyFromCampus } from '../../../lib/universities';
 import { DocumentVerificationSheet } from '../verify/DocumentVerificationSheet';
 import { useAxisLockedScroll } from '../../../hooks/useAxisLockedScroll';
@@ -689,23 +690,7 @@ export const UsersTab = forwardRef<UsersTabHandle, UsersTabProps>(function Users
             <>
               {/* Search input — same behavior as the Staff List search
                   (name or Gerak ID), shared staffSearch state. */}
-              <div className="flex gap-2">
-                <input
-                  type="text"
-                  value={staffSearch}
-                  onChange={e => setStaffSearch(e.target.value)}
-                  placeholder="Name or Gerak ID"
-                  style={{ fontSize: '12px' }}
-                  className="flex-1 min-w-0 bg-white border border-slate-100 rounded-xl px-3 py-2.5 font-normal text-slate-700 focus:outline-none focus:border-slate-900 transition-colors placeholder:font-normal placeholder:text-slate-300"
-                />
-                <button
-                  onClick={() => setStaffSearch('')}
-                  disabled={!staffSearch.trim()}
-                  className="px-3.5 bg-primary text-white font-semibold text-xs rounded-xl transition active:scale-95 disabled:opacity-50"
-                >
-                  Clear
-                </button>
-              </div>
+              <AdminSearchInput value={staffSearch} onChange={setStaffSearch} placeholder="Name or Gerak ID" />
 
               {/* In/Out Campus filter — same opacity-overlay pill technique
                   as every other toggle in this app. */}
@@ -759,23 +744,7 @@ export const UsersTab = forwardRef<UsersTabHandle, UsersTabProps>(function Users
             </>
           ) : (<>
           {/* Search input */}
-          <div className="flex gap-2">
-            <input
-              type="text"
-              value={staffSearch}
-              onChange={e => setStaffSearch(e.target.value)}
-              placeholder="Name or Gerak ID"
-              style={{ fontSize: '12px' }}
-              className="flex-1 min-w-0 bg-white border border-slate-100 rounded-xl px-3 py-2.5 font-normal text-slate-700 focus:outline-none focus:border-slate-900 transition-colors placeholder:font-normal placeholder:text-slate-300"
-            />
-            <button
-              onClick={() => setStaffSearch('')}
-              disabled={!staffSearch.trim()}
-              className="px-3.5 bg-primary text-white font-semibold text-xs rounded-xl transition active:scale-95 disabled:opacity-50"
-            >
-              Clear
-            </button>
-          </div>
+          <AdminSearchInput value={staffSearch} onChange={setStaffSearch} placeholder="Name or Gerak ID" />
 
           <div className="grid grid-cols-2 gap-2">
             <NativeSelect value={overviewFilter} onChange={value => setOverviewFilter(value as typeof overviewFilter)} options={[
@@ -804,8 +773,10 @@ export const UsersTab = forwardRef<UsersTabHandle, UsersTabProps>(function Users
                 setLeadUserId(value);
                 setLeadUniversityKeys(leadAssignments.filter(row => row.lead_id === value).map(row => row.university_key));
               }}
-              options={profileUsers
-                .filter(profile => profile.role === 'rider' && profile.can_robe)
+              options={leadRows
+                .filter(row => row.is_active)
+                .map(row => profileUsers.find(profile => profile.id === row.user_id))
+                .filter((profile): profile is ProfileUser => Boolean(profile))
                 .map(profile => ({ value: profile.id, label: `${profile.name} · ${profile.gerak_id}` }))}
               placeholder="Select Lead"
               label="Lead"
