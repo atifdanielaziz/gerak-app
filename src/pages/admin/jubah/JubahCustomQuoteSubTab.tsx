@@ -2,12 +2,18 @@ import { useState } from 'react';
 import { Check, ClipboardCheck, Clock3, Copy } from 'lucide-react';
 import { supabase } from '../../../lib/supabase';
 import { copyToClipboard } from '../../../lib/clipboard';
+import { WaIcon, toWa } from '../../../lib/whatsapp';
 
 const formatIcNumber = (value: string) => {
   const digits = value.replace(/\D/g, '').slice(0, 12);
   if (digits.length <= 6) return digits;
   if (digits.length <= 8) return `${digits.slice(0, 6)}-${digits.slice(6)}`;
   return `${digits.slice(0, 6)}-${digits.slice(6, 8)}-${digits.slice(8)}`;
+};
+
+const formatPhoneNumber = (value: string) => {
+  const digits = value.replace(/\D/g, '').slice(0, 12);
+  return digits.length <= 3 ? digits : `${digits.slice(0, 3)}-${digits.slice(3)}`;
 };
 
 // Deliberately minimal — the customer supplies everything else (phone,
@@ -24,6 +30,12 @@ export function JubahCustomQuoteSubTab({
 }) {
   const [ic, setIc] = useState('');
   const [price, setPrice] = useState('');
+  // Not sent to the backend at all — the quote itself is IC + price only
+  // (see create_jubah_custom_quote). This is purely a local convenience so
+  // the generated link can be handed straight to the customer via WhatsApp
+  // without leaving this screen; the customer still supplies their own
+  // phone number when they fill in the rest of the form.
+  const [phone, setPhone] = useState('');
   const [creating, setCreating] = useState(false);
   const [link, setLink] = useState('');
   const [copied, setCopied] = useState(false);
@@ -60,6 +72,7 @@ export function JubahCustomQuoteSubTab({
   };
 
   const copyLink = async () => setCopied(await copyToClipboard(link));
+  const whatsappMessage = `Your Gerak Jubah quote is ready. Valid for 48 hours:\n${link}`;
 
   return (
     <div className="space-y-4">
@@ -71,10 +84,26 @@ export function JubahCustomQuoteSubTab({
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <label className="space-y-2"><span className="text-sm font-normal text-slate-500">Customer IC Number</span><input value={ic} onChange={e => setIc(formatIcNumber(e.target.value))} inputMode="numeric" autoComplete="off" placeholder="123456-78-9101" className="w-full rounded-xl border border-slate-100 bg-white px-3 py-2.5 text-sm focus:outline-none focus:border-slate-900" /></label>
           <label className="space-y-2"><span className="text-sm font-normal text-slate-500">Agreed Total Price</span><div className="flex rounded-xl border border-slate-100 focus-within:border-slate-900"><span className="px-3 py-2.5 text-sm text-slate-400">RM</span><input value={price} onChange={e => setPrice(e.target.value.replace(/[^0-9.]/g, ''))} inputMode="decimal" placeholder="100.00" className="min-w-0 flex-1 py-2.5 pr-3 text-sm focus:outline-none" /></div></label>
+          <label className="space-y-2"><span className="text-sm font-normal text-slate-500">Customer Phone Number</span><input value={phone} onChange={e => setPhone(formatPhoneNumber(e.target.value))} inputMode="tel" autoComplete="tel" placeholder="012-3456789" className="w-full rounded-xl border border-slate-100 bg-white px-3 py-2.5 text-sm focus:outline-none focus:border-slate-900" /></label>
         </div>
         <button type="button" disabled={creating} onClick={createQuote} className="mt-5 w-full rounded-xl bg-primary text-white py-3 text-sm font-semibold active:scale-[0.99] transition-transform disabled:opacity-50">{creating ? 'Creating…' : 'Generate Quote Link'}</button>
       </section>
-      {link && <section className="border border-slate-100 rounded-3xl p-5 bg-white"><div className="flex items-center gap-2 mb-3"><Clock3 className="w-4 h-4 text-slate-400"/><p className="text-sm font-semibold text-slate-800">Secure quote link</p></div><p className="text-xs font-normal text-slate-400 mb-1">Send this to the customer on WhatsApp. Valid for 48 hours; the price only unlocks once they enter the matching IC number.</p><p className="text-xs font-normal text-slate-400 break-all">{link}</p><button type="button" onClick={copyLink} className="mt-4 w-full border border-slate-100 rounded-xl py-2.5 flex items-center justify-center gap-2 text-sm font-semibold text-slate-700 active:bg-slate-50">{copied ? <Check className="w-4 h-4"/> : <Copy className="w-4 h-4"/>}{copied ? 'Copied' : 'Copy Link'}</button></section>}
+      {link && <section className="border border-slate-100 rounded-3xl p-5 bg-white">
+        <div className="flex items-center gap-2 mb-3"><Clock3 className="w-4 h-4 text-slate-400"/><p className="text-sm font-semibold text-slate-800">Secure quote link</p></div>
+        <p className="text-xs font-normal text-slate-400 mb-1">Send this to the customer on WhatsApp. Valid for 48 hours; the price only unlocks once they enter the matching IC number.</p>
+        <p className="text-xs font-normal text-slate-400 break-all">{link}</p>
+        <div className="mt-4 flex gap-2">
+          <button type="button" onClick={copyLink} className="flex-1 border border-slate-100 rounded-xl py-2.5 flex items-center justify-center gap-2 text-sm font-semibold text-slate-700 active:bg-slate-50">{copied ? <Check className="w-4 h-4"/> : <Copy className="w-4 h-4"/>}{copied ? 'Copied' : 'Copy Link'}</button>
+          {phone.replace(/\D/g, '').length >= 9 && (
+            <a href={`https://wa.me/${toWa(phone)}?text=${encodeURIComponent(whatsappMessage)}`}
+              target="_blank" rel="noopener noreferrer"
+              className="shrink-0 rounded-xl bg-[#25D366] text-white px-4 py-2.5 flex items-center justify-center gap-2 text-sm font-semibold active:scale-[0.98] transition-transform">
+              <WaIcon className="w-4 h-4" />
+              Send via WhatsApp
+            </a>
+          )}
+        </div>
+      </section>}
     </div>
   );
 }
