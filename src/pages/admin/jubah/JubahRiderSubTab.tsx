@@ -361,9 +361,10 @@ export const JubahRiderSubTab = forwardRef<JubahRiderSubTabHandle, JubahRiderSub
       : (universityKeyFromCampus(adminCampus) ?? 'umpsa');
     let ridersQ = supabase.from('profiles')
       .select('id, name, gerak_id, campus, status, can_robe, ic_number, phone, jubah_method, jubah_drop_point')
-      // An admin/superadmin with can_robe set is a real assignable rider too
-      // (mirrors how the driver side already lets admin double as a driver).
-      .in('role', ['rider', 'admin', 'superadmin'])
+      // A driver/admin/superadmin with can_robe set is a real assignable
+      // rider too (mirrors how the driver side already lets admin double as
+      // a driver).
+      .in('role', ['rider', 'driver', 'admin', 'superadmin'])
       .eq('can_robe', true)
       .order('name');
     ridersQ = (isSuperAdmin || useUniversityScope)

@@ -47,11 +47,11 @@ const UserCard: React.FC<{
   const [showMenu, setShowMenu] = useState(false);
   const [menuPosition, setMenuPosition] = useState({ top: 0, right: 0 });
   const isDriverLike = u.role === 'driver' || u.role === 'admin';
-  // Mirrors isDriverLike — an admin can already double as a real driver
-  // (can_drive + the driver-matching RPCs already accept admin/superadmin),
-  // so the same applies to Robe/Daily: an admin with can_robe set is a real
-  // assignable Jubah rider, not just a UI preview.
-  const isRiderLike = u.role === 'rider' || u.role === 'admin';
+  // Mirrors isDriverLike — a driver or admin can already double as a real
+  // rider (can_robe + the rider-eligibility RPCs now accept driver/admin/
+  // superadmin too), so an existing driver/admin account with can_robe set
+  // is a real assignable Jubah rider, not just a UI preview.
+  const isRiderLike = u.role === 'rider' || u.role === 'driver' || u.role === 'admin';
   const isDriverOrRider = isDriverLike || u.role === 'rider';
   // University/campus reassignment is now open to admin cards too (not
   // just driver/rider) — separate from isDriverOrRider since that gate is
