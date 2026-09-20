@@ -524,22 +524,28 @@ export const Header: React.FC = () => {
                       className={`w-full flex items-center gap-3 px-4 py-3 border-t border-slate-100 text-left text-xs font-semibold ${activeRole === 'rider' ? 'bg-amber-50 text-amber-700' : 'text-slate-600'}`}>
                       <Bike className="w-4 h-4 shrink-0" /> Rider
                     </button>
-                  </>) : (user.canDrive && user.canRobe) && (<>
-                    {/* Not a Jubah Lead, but this account holds both the driving
-                        and Jubah-rider capabilities (e.g. an existing driver
-                        given Robe access) — same switcher, so there's a way to
-                        reach the other dashboard at all. Without this, an
-                        account like this had no path into RiderHome. */}
-                    <button onPointerDown={(e) => { e.preventDefault(); switchToDriverMode(); setShowRoleMenu(false); }}
-                      className={`w-full flex items-center gap-3 px-4 py-3 text-left text-xs font-semibold ${activeRole === 'driver' ? 'bg-amber-50 text-amber-700' : 'text-slate-600'}`}>
-                      <Car className="w-4 h-4 shrink-0" /> Driver
-                      {activeRole === 'driver' && <span className="ml-auto text-[8px] bg-amber-100 px-1.5 py-0.5 rounded-full">Active</span>}
-                    </button>
-                    <button onPointerDown={(e) => { e.preventDefault(); switchToRiderMode(); setShowRoleMenu(false); }}
-                      className={`w-full flex items-center gap-3 px-4 py-3 border-t border-slate-100 text-left text-xs font-semibold ${activeRole === 'rider' ? 'bg-amber-50 text-amber-700' : 'text-slate-600'}`}>
-                      <Bike className="w-4 h-4 shrink-0" /> Jubah Rider
-                      {activeRole === 'rider' && <span className="ml-auto text-[8px] bg-amber-100 px-1.5 py-0.5 rounded-full">Active</span>}
-                    </button>
+                  </>) : (user.canDrive || user.canRobe) && (<>
+                    {/* Not a Jubah Lead, but this account holds the Jubah-rider
+                        capability (with or without also driving) — needs a way
+                        to reach RiderHome regardless, since its natural landing
+                        page (DriverHome, or a dead-end "not enabled" screen if
+                        canDrive is off) has no Jubah section of its own. Each
+                        button only shows for the capability this account
+                        actually has, rather than requiring both. */}
+                    {user.canDrive && (
+                      <button onPointerDown={(e) => { e.preventDefault(); switchToDriverMode(); setShowRoleMenu(false); }}
+                        className={`w-full flex items-center gap-3 px-4 py-3 text-left text-xs font-semibold ${activeRole === 'driver' ? 'bg-amber-50 text-amber-700' : 'text-slate-600'}`}>
+                        <Car className="w-4 h-4 shrink-0" /> Driver
+                        {activeRole === 'driver' && <span className="ml-auto text-[8px] bg-amber-100 px-1.5 py-0.5 rounded-full">Active</span>}
+                      </button>
+                    )}
+                    {user.canRobe && (
+                      <button onPointerDown={(e) => { e.preventDefault(); switchToRiderMode(); setShowRoleMenu(false); }}
+                        className={`w-full flex items-center gap-3 px-4 py-3 text-left text-xs font-semibold ${user.canDrive ? 'border-t border-slate-100' : ''} ${activeRole === 'rider' ? 'bg-amber-50 text-amber-700' : 'text-slate-600'}`}>
+                        <Bike className="w-4 h-4 shrink-0" /> Jubah Rider
+                        {activeRole === 'rider' && <span className="ml-auto text-[8px] bg-amber-100 px-1.5 py-0.5 rounded-full">Active</span>}
+                      </button>
+                    )}
                   </>)}
                   <div className="flex items-center gap-3 px-4 py-3 text-xs text-slate-600"><MapPin className="w-4 h-4 shrink-0 text-slate-400" /><span className="font-semibold">{providerUniversity} {user.campus || 'Campus'}</span></div>
                   <div className="flex items-center gap-3 px-4 py-3 border-t border-slate-100 text-xs text-slate-600"><ShieldCheck className="w-4 h-4 shrink-0 text-slate-400" /><span className="font-semibold">Status</span><span className="ml-auto text-emerald-600 font-semibold">{toTitleCase(user.status || 'active')}</span></div>
