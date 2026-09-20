@@ -2,7 +2,7 @@ import React, { useEffect, useState, useCallback, useRef, useMemo } from 'react'
 import { useApp } from '../context/AppContext';
 import { supabase } from '../lib/supabase';
 import { useLoadOnActive } from '../hooks/useLoadOnActive';
-import { UNIVERSITY_MAP } from '../lib/universities';
+import { UNIVERSITY_MAP, UNIVERSITIES as UNIVERSITY_OPTIONS } from '../lib/universities';
 import {
   BarChart3, Car, Users, Clock,
   AlertCircle, RefreshCw, Trash2,
@@ -54,7 +54,7 @@ export const AdminHome: React.FC = () => {
   const {
     user, setCurrentPage, setSheetOpen, notifications,
     activeRole, isPreviewMode, switchToDriverMode, switchToRiderMode, enterPreviewMode,
-    setLeaveGuard, showConfirmModal, adminUniversityKey,
+    setLeaveGuard, showConfirmModal, adminUniversityKey, setAdminUniversityKey,
   } = useApp();
 
   const isSuperAdmin = user.role === 'superadmin';
@@ -85,6 +85,11 @@ export const AdminHome: React.FC = () => {
     adminCampus === 'Pekan' ? 'Pekan' : 'Gambang'
   );
   const [toast, setToast] = useState('');
+  // Desktop-only university switcher — mobile has its own copy of this same
+  // dropdown in Header.tsx's hamburger menu, but Header is lg:hidden on this
+  // page (AdminHome's sidebar+topbar replace it), so desktop had no way to
+  // switch universities at all until this was added.
+  const [showDesktopUniversityMenu, setShowDesktopUniversityMenu] = useState(false);
 
   // Reported up by UsersTab's own pending-action confirm dialog, so the
   // shared "hide BottomNav while any sheet is open" effect below still sees
@@ -552,12 +557,40 @@ export const AdminHome: React.FC = () => {
             <h3 className="text-base font-black text-slate-800 m-0">
               {ADMIN_TABS.find(t => t.id === activeTab)?.label}
             </h3>
-            <button
-              onClick={refreshActiveTab}
-              className="w-8 h-8 flex items-center justify-center rounded-xl bg-white border border-slate-100 text-slate-400 hover:text-primary transition active:scale-90"
-            >
-              <RefreshCw className="w-4 h-4" />
-            </button>
+            <div className="flex items-center gap-2">
+              <div className="relative">
+                <button
+                  onClick={() => setShowDesktopUniversityMenu(p => !p)}
+                  className="flex items-center gap-2 h-8 pl-3 pr-2 rounded-xl bg-white border border-slate-100 text-xs font-semibold text-slate-600 hover:border-slate-200 transition active:scale-95"
+                >
+                  {UNIVERSITY_MAP[adminUniversityKey]?.shortLabel ?? 'UMPSA'}
+                  <ChevronDown className="w-3.5 h-3.5 text-slate-400" />
+                </button>
+                {showDesktopUniversityMenu && (<>
+                  <div className="fixed inset-0 z-40" onClick={() => setShowDesktopUniversityMenu(false)} />
+                  <div className="absolute right-0 top-full mt-2 z-50 bg-white border border-slate-100 rounded-2xl shadow-xl min-w-[220px] p-2 max-h-[15rem] overflow-y-auto no-scrollbar">
+                    {UNIVERSITY_OPTIONS.map(option => {
+                      const selected = adminUniversityKey === option.key;
+                      return (
+                        <button key={option.key}
+                          onClick={() => { setAdminUniversityKey(option.key); setShowDesktopUniversityMenu(false); }}
+                          className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left transition-transform active:scale-[0.99] ${selected ? 'border border-slate-900 bg-slate-50' : 'border border-transparent hover:bg-slate-50'}`}
+                        >
+                          <span className="flex-1 text-xs font-semibold text-slate-700">{option.shortLabel}</span>
+                          {selected && <Check className="w-4 h-4 text-slate-800" />}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </>)}
+              </div>
+              <button
+                onClick={refreshActiveTab}
+                className="w-8 h-8 flex items-center justify-center rounded-xl bg-white border border-slate-100 text-slate-400 hover:text-primary transition active:scale-90"
+              >
+                <RefreshCw className="w-4 h-4" />
+              </button>
+            </div>
           </div>
         )}
 
