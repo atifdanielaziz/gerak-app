@@ -19,7 +19,7 @@ import { generateReceiptPdf } from '../lib/receiptPdf';
 import { copyToClipboard } from '../lib/clipboard';
 import { savePendingJubahBooking, clearPendingJubahBooking } from '../lib/pendingJubahBooking';
 import { formatPhone, formatIcNumber as formatIc } from '../lib/format';
-import { UNIVERSITY_MAP, deriveJubahCampus, jubahLocationLabel } from '../lib/universities';
+import { UNIVERSITY_MAP, deriveJubahCampus, jubahLocationLabel, universityKeyFromCampus } from '../lib/universities';
 import type { JubahBookingInput } from '../types/jubahBooking';
 
 const FALLBACK_UNIVERSITY_FACULTIES: Record<string, string[]> = {
@@ -97,7 +97,7 @@ export const Jubah: React.FC = () => {
   // either via the special link (token+IC) or, now, by typing a matching
   // IC directly into the general form's own IC field (IC alone — see
   // resolve_jubah_custom_quote_by_ic).
-  const [customQuote, setCustomQuote] = useState<null | { agreed_price: number; customer_phone?: string; rider_id?: string; rider_name?: string; expires_at: string }>(null);
+  const [customQuote, setCustomQuote] = useState<null | { agreed_price: number; customer_phone?: string; rider_id?: string; rider_name?: string; campus?: string; expires_at: string }>(null);
   const [quoteChecking, setQuoteChecking] = useState(false);
   const [quoteError, setQuoteError] = useState('');
   // Once booked, landingUniversity/form/tracking are all one page instance —
@@ -407,11 +407,30 @@ export const Jubah: React.FC = () => {
     ? depositAmount
     : customQuote?.agreed_price ?? (paymentMode === 'postage' ? postagePrice + ssCharge : pickupPrice);
 
-  const applyResolvedQuote = (data: { agreed_price: number; customer_phone?: string; rider_id?: string; rider_name?: string; expires_at: string }) => {
+  const applyResolvedQuote = (data: { agreed_price: number; customer_phone?: string; rider_id?: string; rider_name?: string; campus?: string; expires_at: string }) => {
     setCustomQuote(data);
-    // Pre-fill only — the field stays fully editable below (no `disabled`),
-    // this is just a convenience default from what the runner entered.
+    // Pre-fill only — every field this touches stays fully editable, this
+    // is just a convenience default from what the runner already knows.
     if (data.customer_phone) setHpNumber(formatPhone(data.customer_phone));
+    if (data.campus) {
+      const quotedUniversityKey = universityKeyFromCampus(data.campus);
+      const quotedUni = quotedUniversityKey ? UNIVERSITY_MAP[quotedUniversityKey] : null;
+      if (quotedUniversityKey && quotedUni) {
+        const campusText = quotedUni.campuses.length === 1 ? quotedUni.label : `${quotedUni.fullName} (${data.campus})`;
+        if (!landingUniversity) {
+          // Link flow: no university chosen yet — skip JubahLanding entirely.
+          setLandingUniversity(quotedUniversityKey);
+          setUniversity(campusText);
+        } else if (landingUniversity === quotedUniversityKey) {
+          // General-form flow: already on the right university's page —
+          // just fill in the Campus field so Select Rider has what it needs.
+          setUniversity(campusText);
+        }
+        // Otherwise the customer is on a different university's form than
+        // this rider serves — leave campus for manual selection rather
+        // than silently jumping them to an unrelated university.
+      }
+    }
   };
 
   const verifyCustomQuote = async () => {
