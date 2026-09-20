@@ -1,8 +1,10 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Check, ClipboardCheck, Clock3, Copy } from 'lucide-react';
 import { supabase } from '../../../lib/supabase';
 import { copyToClipboard } from '../../../lib/clipboard';
 import { WaIcon, toWa } from '../../../lib/whatsapp';
+import { jubahLocationLabel, universityKeyFromCampus } from '../../../lib/universities';
+import { NativeSelect } from '../../../components/NativeSelect';
 
 const formatIcNumber = (value: string) => {
   const digits = value.replace(/\D/g, '').slice(0, 12);
@@ -39,6 +41,27 @@ export function JubahCustomQuoteSubTab({
   const [creating, setCreating] = useState(false);
   const [link, setLink] = useState('');
   const [copied, setCopied] = useState(false);
+  // Only relevant once this account is assigned at more than one campus
+  // (e.g. a UMPSA rider who also covers UKM) — otherwise campus/method are
+  // unambiguous and get derived automatically downstream, same as before.
+  const [myCampuses, setMyCampuses] = useState<string[]>([]);
+  const [campus, setCampus] = useState('');
+
+  useEffect(() => {
+    if (!active) return;
+    (async () => {
+      const { data: { user: authUser } } = await supabase.auth.getUser();
+      if (!authUser) return;
+      const { data } = await supabase
+        .from('jubah_rider_assignments')
+        .select('campus')
+        .eq('rider_id', authUser.id)
+        .eq('is_active', true);
+      const campuses = [...new Set((data ?? []).map(a => a.campus as string))];
+      setMyCampuses(campuses);
+      setCampus(prev => prev || campuses[0] || '');
+    })();
+  }, [active]);
 
   if (!active) return null;
 
@@ -55,10 +78,16 @@ export function JubahCustomQuoteSubTab({
       setCreating(false);
       return;
     }
+    if (myCampuses.length > 1 && !campus) {
+      showToast('Select which campus this quote is for.');
+      setCreating(false);
+      return;
+    }
     const { data, error } = await supabase.rpc('create_jubah_custom_quote', {
       p_ic_number: ic,
       p_agreed_price: Number(price),
       p_customer_phone: phone,
+      p_campus: myCampuses.length > 1 ? campus : null,
     });
     setCreating(false);
     if (error || !data?.success) {
@@ -88,6 +117,18 @@ export function JubahCustomQuoteSubTab({
           <div><h3 className="font-semibold text-slate-900">Custom Quote</h3><p className="text-xs font-normal text-slate-400 mt-1">Agree a total price with the customer over WhatsApp, then generate a link. Their phone number pre-fills on the form; they fill in the rest (university, campus, service option, documents) themselves.</p></div>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          {myCampuses.length > 1 && (
+            <label className="space-y-2 sm:col-span-2">
+              <span className="text-sm font-normal text-slate-500">Campus (you serve more than one)</span>
+              <NativeSelect
+                value={campus}
+                onChange={setCampus}
+                options={myCampuses.map(c => ({ value: c, label: jubahLocationLabel(universityKeyFromCampus(c) ?? 'umpsa', c) }))}
+                placeholder="Select campus..."
+                label="Select Campus"
+              />
+            </label>
+          )}
           <label className="space-y-2"><span className="text-sm font-normal text-slate-500">Customer IC Number</span><input value={ic} onChange={e => setIc(formatIcNumber(e.target.value))} inputMode="numeric" autoComplete="off" placeholder="123456-78-9101" className="w-full rounded-xl border border-slate-100 bg-white px-3 py-2.5 text-sm focus:outline-none focus:border-slate-900" /></label>
           <label className="space-y-2"><span className="text-sm font-normal text-slate-500">Agreed Total Price</span><div className="flex rounded-xl border border-slate-100 focus-within:border-slate-900"><span className="px-3 py-2.5 text-sm text-slate-400">RM</span><input value={price} onChange={e => setPrice(e.target.value.replace(/[^0-9.]/g, ''))} inputMode="decimal" placeholder="100.00" className="min-w-0 flex-1 py-2.5 pr-3 text-sm focus:outline-none" /></div></label>
           <label className="space-y-2"><span className="text-sm font-normal text-slate-500">Customer Phone Number</span><input value={phone} onChange={e => setPhone(formatPhoneNumber(e.target.value))} inputMode="tel" autoComplete="tel" placeholder="012-3456789" className="w-full rounded-xl border border-slate-100 bg-white px-3 py-2.5 text-sm focus:outline-none focus:border-slate-900" /></label>

@@ -6,7 +6,7 @@ import {
 import { WaIcon, toWa } from '../../../lib/whatsapp';
 import { NativeSelect } from '../../../components/NativeSelect';
 import { useLoadOnActive } from '../../../hooks/useLoadOnActive';
-import { UNIVERSITY_MAP, jubahLocationLabel, universityKeyFromCampus } from '../../../lib/universities';
+import { UNIVERSITIES, UNIVERSITY_MAP, jubahLocationLabel, universityKeyFromCampus } from '../../../lib/universities';
 import { useApp } from '../../../context/AppContext';
 import { useAxisLockedScroll } from '../../../hooks/useAxisLockedScroll';
 
@@ -20,17 +20,26 @@ type JubahAssignment = {
   ic_number: string | null; phone: string | null;
 };
 
+// Flattened for the "Add Assignment" campus picker — a rider can now be
+// assigned at a campus outside whichever university the admin currently has
+// selected, e.g. adding a UKM assignment to a rider whose home campus is
+// UMPSA's. Grouped label makes that unambiguous even for universities that
+// share short campus names.
+const CAMPUS_OPTIONS = UNIVERSITIES.flatMap(u =>
+  u.campuses.map(c => ({ value: c, label: u.campuses.length > 1 ? `${u.shortLabel} — ${c}` : u.shortLabel }))
+);
+
 // ── Jubah rider assignment sheet ─────────────────────────────────────────────
 const JubahRiderSheet: React.FC<{
   rider: { name: string; gerak_id: string; campus: string; ic_number: string | null; phone: string | null };
   method: 'pickup' | 'postage' | '';
   dropPoint: string;
   saving: boolean;
-  assignments: { id: string; method: string; drop_point: string | null }[];
+  assignments: { id: string; method: string; drop_point: string | null; campus: string }[];
   onMethodChange: (m: 'pickup' | 'postage') => void;
   onDropPointChange: (v: string) => void;
   onSave: () => void;
-  onAddAssignment: (method: 'pickup' | 'postage', dropPoint: string) => Promise<void>;
+  onAddAssignment: (method: 'pickup' | 'postage', dropPoint: string, campus: string) => Promise<void>;
   onDeleteAssignment: (id: string) => Promise<void>;
   onClose: () => void;
 }> = ({ rider, method, dropPoint, saving, assignments, onMethodChange, onDropPointChange, onSave, onAddAssignment, onDeleteAssignment, onClose }) => {
@@ -42,16 +51,21 @@ const JubahRiderSheet: React.FC<{
   const [deleteMode, setDeleteMode] = useState(false);
   const [addMethod,    setAddMethod]    = useState<'pickup' | 'postage'>('pickup');
   const [addDropPoint, setAddDropPoint] = useState('');
+  // Defaults to the rider's own home campus — the common case is still
+  // "another method at the same campus"; a different campus (a different
+  // university entirely, even) is an explicit choice here.
+  const [addCampus,    setAddCampus]    = useState(rider.campus);
   const [addSaving,    setAddSaving]    = useState(false);
 
   const handleAdd = async () => {
     if (addMethod !== 'postage' && !addDropPoint.trim()) return;
     setAddSaving(true);
-    await onAddAssignment(addMethod, addMethod === 'postage' ? '-' : addDropPoint.trim());
+    await onAddAssignment(addMethod, addMethod === 'postage' ? '-' : addDropPoint.trim(), addCampus);
     setAddSaving(false);
     setShowAdd(false);
     setAddDropPoint('');
     setAddMethod('pickup');
+    setAddCampus(rider.campus);
   };
 
   // secondary = any assignments beyond the first (which was migrated from profiles)
@@ -132,7 +146,7 @@ const JubahRiderSheet: React.FC<{
                     </button>
                   )}
                   {assignments.length < 3 && !deleteMode && (
-                    <button onPointerDown={e => { e.preventDefault(); setShowAdd(v => !v); setAddDropPoint(''); setAddMethod('pickup'); }} className="active:scale-90 transition-transform">
+                    <button onPointerDown={e => { e.preventDefault(); setShowAdd(v => !v); setAddDropPoint(''); setAddMethod('pickup'); setAddCampus(rider.campus); }} className="active:scale-90 transition-transform">
                       <PlusCircle className={`w-5 h-5 ${showAdd ? 'text-indigo-500' : 'text-slate-300'}`} />
                     </button>
                   )}
@@ -155,7 +169,12 @@ const JubahRiderSheet: React.FC<{
             {/* METHOD 2+ — secondary (read-only) */}
             {secondary.map((a, i) => (
               <div key={a.id} className="flex flex-col gap-1">
-                <span className="text-xs font-normal text-slate-400">Method {i + 2}</span>
+                <span className="text-xs font-normal text-slate-400">
+                  Method {i + 2}
+                  {/* Only worth spelling out when it differs from the home
+                      campus — otherwise it's just noise repeating Method 1. */}
+                  {a.campus !== rider.campus && ` · ${jubahLocationLabel(universityKeyFromCampus(a.campus) ?? 'umpsa', a.campus)}`}
+                </span>
                 <div className="flex items-center gap-2">
                   {deleteMode && (
                     <button
@@ -177,7 +196,19 @@ const JubahRiderSheet: React.FC<{
               </div>
             ))}
 
-            {/* New method input */}
+            {/* New method + campus */}
+            {showAdd && (
+              <div className="flex flex-col gap-1">
+                <span className="text-xs font-semibold text-indigo-400">Campus</span>
+                <NativeSelect
+                  value={addCampus}
+                  onChange={setAddCampus}
+                  options={CAMPUS_OPTIONS}
+                  searchable
+                  label="Select Campus"
+                />
+              </div>
+            )}
             {showAdd && (
               <div className="flex flex-col gap-1">
                 <span className="text-xs font-semibold text-indigo-400">
@@ -359,23 +390,38 @@ export const JubahRiderSubTab = forwardRef<JubahRiderSubTabHandle, JubahRiderSub
     const scopedUniversityKey = (isSuperAdmin || useUniversityScope)
       ? jubahUniversityView
       : (universityKeyFromCampus(adminCampus) ?? 'umpsa');
-    let ridersQ = supabase.from('profiles')
-      .select('id, name, gerak_id, campus, status, can_robe, ic_number, phone, jubah_method, jubah_drop_point')
-      // A driver/admin/superadmin with can_robe set is a real assignable
-      // rider too (mirrors how the driver side already lets admin double as
-      // a driver).
-      .in('role', ['rider', 'driver', 'admin', 'superadmin'])
-      .eq('can_robe', true)
-      .order('name');
-    ridersQ = (isSuperAdmin || useUniversityScope)
-      ? ridersQ.in('campus', UNIVERSITY_MAP[jubahUniversityView]?.campuses ?? [])
-      : ridersQ.eq('campus', adminCampus);
-    const [{ data: ridersData }, { data: leadRows }] = await Promise.all([
-      ridersQ,
+    // Same granularity as before for a non-superadmin admin (locked to
+    // their own single campus, not their whole university) — just also
+    // pulls in riders whose HOME campus is elsewhere but who have an
+    // active assignment here (a UMPSA rider also covering UKM, say), which
+    // used to be invisible in every view but their home one.
+    const targetCampuses = (isSuperAdmin || useUniversityScope)
+      ? (UNIVERSITY_MAP[jubahUniversityView]?.campuses ?? [])
+      : [adminCampus];
+    const riderSelect = 'id, name, gerak_id, campus, status, can_robe, ic_number, phone, jubah_method, jubah_drop_point';
+    const [{ data: homeRidersData }, { data: crossAssignRows }, { data: leadRows }] = await Promise.all([
+      supabase.from('profiles').select(riderSelect)
+        // A driver/admin/superadmin with can_robe set is a real assignable
+        // rider too (mirrors how the driver side already lets admin double as
+        // a driver).
+        .in('role', ['rider', 'driver', 'admin', 'superadmin'])
+        .eq('can_robe', true)
+        .in('campus', targetCampuses)
+        .order('name'),
+      supabase.from('jubah_rider_assignments').select('rider_id').in('campus', targetCampuses).eq('is_active', true),
       supabase.from('jubah_lead_universities').select('lead_id').eq('university_key', scopedUniversityKey),
     ]);
+    const homeIds = new Set((homeRidersData ?? []).map((r: JubahRider) => r.id));
+    const crossIds = [...new Set((crossAssignRows ?? []).map(r => r.rider_id as string))].filter(id => !homeIds.has(id));
+    const { data: crossRidersData } = crossIds.length > 0
+      ? await supabase.from('profiles').select(riderSelect)
+        .in('role', ['rider', 'driver', 'admin', 'superadmin'])
+        .eq('can_robe', true)
+        .in('id', crossIds)
+      : { data: [] as JubahRider[] };
+    const ridersData = [...((homeRidersData as JubahRider[]) ?? []), ...((crossRidersData as JubahRider[]) ?? [])];
     const leadIds = (leadRows ?? []).map(row => row.lead_id as string);
-    const existingIds = new Set((ridersData ?? []).map((r: JubahRider) => r.id));
+    const existingIds = new Set(ridersData.map((r: JubahRider) => r.id));
     const missingLeadIds = leadIds.filter(id => !existingIds.has(id));
     const { data: missingLeads } = missingLeadIds.length > 0
       ? await supabase.from('profiles')
@@ -383,19 +429,22 @@ export const JubahRiderSubTab = forwardRef<JubahRiderSubTabHandle, JubahRiderSub
         .in('id', missingLeadIds)
       : { data: [] as JubahRider[] };
     const leadIdSet = new Set(leadIds);
-    const scopedRiders = [...((ridersData as JubahRider[]) ?? []), ...((missingLeads as JubahRider[]) ?? [])]
+    const scopedRiders = [...ridersData, ...((missingLeads as JubahRider[]) ?? [])]
       .map(rider => ({ ...rider, is_jubah_lead: leadIdSet.has(rider.id) }))
       .sort((a, b) => a.name.localeCompare(b.name));
     setJubahRiders(scopedRiders);
     setJubahRidersLoading(false);
 
-    // Load assignments for Representative Directory
+    // Load assignments for Representative Directory — scoped to this same
+    // university's campuses, so a cross-assigned rider's OTHER university's
+    // row doesn't leak into this one's directory table.
     const riderIds = scopedRiders.map((r: JubahRider) => r.id);
     if (riderIds.length > 0) {
       const { data: assignData } = await supabase
         .from('jubah_rider_assignments')
         .select('id, rider_id, drop_point, method, campus')
         .in('rider_id', riderIds)
+        .in('campus', targetCampuses)
         .eq('is_active', true)
         .order('created_at');
       const profileMap = Object.fromEntries(scopedRiders.map((r: JubahRider) => [r.id, r]));
@@ -602,16 +651,16 @@ export const JubahRiderSubTab = forwardRef<JubahRiderSubTabHandle, JubahRiderSub
           }}
           onDropPointChange={setJubahDropPointDraft}
           onSave={handleSaveJubahAssignment}
-          onAddAssignment={async (method, dropPoint) => {
+          onAddAssignment={async (method, dropPoint, campus) => {
             const { error } = await supabase.from('jubah_rider_assignments').insert({
               rider_id:   jubahSheetRider.id,
               drop_point: dropPoint,
               method,
-              campus:     jubahSheetRider.campus,
+              campus,
               is_active:  true,
             });
             if (error) { showToast('Failed: ' + error.message); return; }
-            showToast('Assignment added.');
+            showToast(campus === jubahSheetRider.campus ? 'Assignment added.' : `Assignment added — now also a rider at ${jubahLocationLabel(universityKeyFromCampus(campus) ?? 'umpsa', campus)}.`);
             loadJubahRiders();
           }}
           onDeleteAssignment={async (id) => {
