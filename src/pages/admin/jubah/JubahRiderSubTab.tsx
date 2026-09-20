@@ -476,10 +476,16 @@ export const JubahRiderSubTab = forwardRef<JubahRiderSubTabHandle, JubahRiderSub
   const handleSaveJubahAssignment = async () => {
     if (!jubahSheetRider) return;
     setSavingJubahAssignment(true);
+    // Must target the exact row the sheet opened (scoped to whichever
+    // university's list is currently active) — without this, the RPC's own
+    // fallback (oldest assignment) silently edits a DIFFERENT campus's row
+    // for any rider with more than one, and the save looks like a no-op.
+    const primary = jubahAssignments.find(a => a.rider_id === jubahSheetRider.id);
     const { error } = await supabase.rpc('set_rider_jubah_assignment', {
       p_user_id:    jubahSheetRider.id,
       p_method:     jubahMethodDraft || null,
       p_drop_point: jubahDropPointDraft.trim() || null,
+      p_assignment_id: primary?.id ?? null,
     });
     setSavingJubahAssignment(false);
     if (error) { showToast('Failed to update assignment.'); return; }
