@@ -181,6 +181,12 @@ interface AppContextType {
   setGuestCampus: (campus: string) => void;
   adminUniversityKey: string;
   setAdminUniversityKey: (key: string) => void;
+  // Which of a multi-campus rider's own active campuses they're currently
+  // working as — same "one global switcher drives every scoped view"
+  // pattern as adminUniversityKey, just for a rider instead of an admin.
+  // Empty for a single-campus rider (nothing to switch between).
+  riderCampus: string;
+  setRiderCampus: (campus: string) => void;
 
   // Notifications
   notifications: NotificationItem[];
@@ -236,6 +242,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   });
   const [adminUniversityKey, setAdminUniversityKey] = useState(() => localStorage.getItem('gerak_admin_university') || 'umpsa');
   useEffect(() => { localStorage.setItem('gerak_admin_university', adminUniversityKey); }, [adminUniversityKey]);
+  const [riderCampus, setRiderCampus] = useState(() => localStorage.getItem('gerak_rider_campus') || '');
+  useEffect(() => { localStorage.setItem('gerak_rider_campus', riderCampus); }, [riderCampus]);
   const [pageHistory, setPageHistory] = useState<ActivePage[]>([]);
   const [isPreviewMode, setIsPreviewMode] = useState(false);
   const [activeRole, setActiveRole] = useState<'admin' | 'driver' | 'rider' | 'lead' | null>(null);
@@ -1205,6 +1213,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         setGuestCampus,
         adminUniversityKey,
         setAdminUniversityKey,
+        riderCampus,
+        setRiderCampus,
         notifications,
         addNotification,
         markAllNotificationsRead,
