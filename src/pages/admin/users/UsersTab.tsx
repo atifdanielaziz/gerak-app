@@ -51,7 +51,7 @@ const UserCard: React.FC<{
   // (can_drive + the driver-matching RPCs already accept admin/superadmin),
   // so the same applies to Robe/Daily: an admin with can_robe set is a real
   // assignable Jubah rider, not just a UI preview.
-  const isRiderLike = u.role === 'rider' || u.role === 'admin';
+  const isRiderLike = u.role === 'rider' || u.role === 'admin' || u.role === 'superadmin';
   const isDriverOrRider = isDriverLike || u.role === 'rider';
   // University/campus reassignment is now open to admin cards too (not
   // just driver/rider) — separate from isDriverOrRider since that gate is
