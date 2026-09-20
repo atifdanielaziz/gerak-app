@@ -16,11 +16,13 @@ const formatPhoneNumber = (value: string) => {
   return digits.length <= 3 ? digits : `${digits.slice(0, 3)}-${digits.slice(3)}`;
 };
 
-// Deliberately minimal — the customer supplies everything else (phone,
-// university, campus, service option, documents) themselves via the link.
-// This exists purely so pricing stays a WhatsApp negotiation rather than a
-// published rate card: the runner agrees a total with the customer first,
-// then issues a link that only fixes that one number.
+// Deliberately minimal — the customer still supplies university, campus,
+// service option and documents themselves via the link. This exists
+// purely so pricing stays a WhatsApp negotiation rather than a published
+// rate card: the runner agrees a total with the customer first, then
+// issues a link that fixes that price plus their phone number (saved with
+// the quote and used to pre-fill the customer's HP Number field once they
+// verify by IC — still editable on their side, just a convenience default).
 export function JubahCustomQuoteSubTab({
   active,
   showToast,
@@ -30,11 +32,9 @@ export function JubahCustomQuoteSubTab({
 }) {
   const [ic, setIc] = useState('');
   const [price, setPrice] = useState('');
-  // Not sent to the backend at all — the quote itself is IC + price only
-  // (see create_jubah_custom_quote). This is purely a local convenience so
-  // the generated link can be handed straight to the customer via WhatsApp
-  // without leaving this screen; the customer still supplies their own
-  // phone number when they fill in the rest of the form.
+  // Saved with the quote (create_jubah_custom_quote) so the customer's HP
+  // Number pre-fills once they verify by IC — also lets this same value
+  // drive the "Send via WhatsApp" button below right after generating.
   const [phone, setPhone] = useState('');
   const [creating, setCreating] = useState(false);
   const [link, setLink] = useState('');
@@ -50,9 +50,15 @@ export function JubahCustomQuoteSubTab({
       setCreating(false);
       return;
     }
+    if (phone.replace(/\D/g, '').length < 9) {
+      showToast('Enter a valid customer phone number.');
+      setCreating(false);
+      return;
+    }
     const { data, error } = await supabase.rpc('create_jubah_custom_quote', {
       p_ic_number: ic,
       p_agreed_price: Number(price),
+      p_customer_phone: phone,
     });
     setCreating(false);
     if (error || !data?.success) {
@@ -79,7 +85,7 @@ export function JubahCustomQuoteSubTab({
       <section className="border border-slate-100 rounded-3xl p-5 bg-white">
         <div className="flex items-start gap-3 mb-5">
           <ClipboardCheck className="w-5 h-5 text-slate-400 mt-0.5" />
-          <div><h3 className="font-semibold text-slate-900">Custom Quote</h3><p className="text-xs font-normal text-slate-400 mt-1">Agree a total price with the customer over WhatsApp, then generate a link. They fill in the rest (phone, university, campus, service option, documents) themselves.</p></div>
+          <div><h3 className="font-semibold text-slate-900">Custom Quote</h3><p className="text-xs font-normal text-slate-400 mt-1">Agree a total price with the customer over WhatsApp, then generate a link. Their phone number pre-fills on the form; they fill in the rest (university, campus, service option, documents) themselves.</p></div>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <label className="space-y-2"><span className="text-sm font-normal text-slate-500">Customer IC Number</span><input value={ic} onChange={e => setIc(formatIcNumber(e.target.value))} inputMode="numeric" autoComplete="off" placeholder="123456-78-9101" className="w-full rounded-xl border border-slate-100 bg-white px-3 py-2.5 text-sm focus:outline-none focus:border-slate-900" /></label>

@@ -90,10 +90,11 @@ export const Jubah: React.FC = () => {
     const params = new URLSearchParams(window.location.search);
     return params.get('q') ?? params.get('jubah_quote') ?? '';
   });
-  // A quote now only ever fixes the agreed price against an IC number — the
-  // customer supplies their own university/campus/phone/service option
-  // through the rest of this form, same as a non-quoted booking.
-  const [customQuote, setCustomQuote] = useState<null | { agreed_price: number; expires_at: string }>(null);
+  // A quote fixes the agreed price against an IC number, and pre-fills the
+  // phone number the runner entered (still editable) — the customer
+  // supplies their own university/campus/service option through the rest
+  // of this form, same as a non-quoted booking.
+  const [customQuote, setCustomQuote] = useState<null | { agreed_price: number; customer_phone?: string; expires_at: string }>(null);
   const [quoteChecking, setQuoteChecking] = useState(false);
   const [quoteError, setQuoteError] = useState('');
   // Once booked, landingUniversity/form/tracking are all one page instance —
@@ -410,6 +411,9 @@ export const Jubah: React.FC = () => {
     setQuoteChecking(false);
     if (error || !data?.success) { setQuoteError(data?.error ?? 'This quote could not be verified.'); return; }
     setCustomQuote(data);
+    // Pre-fill only — the field stays fully editable below (no `disabled`),
+    // this is just a convenience default from what the runner entered.
+    if (data.customer_phone) setHpNumber(formatPhone(data.customer_phone));
   };
 
   // Fetch active riders whenever campus or service option (Pickup/Postage) changes
