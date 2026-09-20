@@ -13,7 +13,7 @@ import {
   ShoppingBasket, GraduationCap, TrendingUp,
   Upload, FileImage, ShieldCheck, ShieldAlert,
   ChevronLeft, Download, ExternalLink, CheckCircle2, XCircle, Eye, X, Clock,
-  Copy, ClipboardCheck,
+  Copy, ClipboardCheck, Users,
 } from 'lucide-react';
 import { driverIsActive } from './Profile';
 import { JubahStepper } from '../components/JubahStepper';
@@ -22,10 +22,16 @@ import { buildJubahReceiptRows, type ReceiptDoc } from '../lib/receiptRows';
 import { generateReceiptPdf } from '../lib/receiptPdf';
 import { useAxisLockedScroll } from '../hooks/useAxisLockedScroll';
 import { JubahCustomQuoteSubTab } from './admin/jubah/JubahCustomQuoteSubTab';
+import { JubahCustomerDetailsSubTab } from './admin/jubah/JubahCustomerDetailsSubTab';
+import { UNIVERSITY_MAP, universityKeyFromCampus } from '../lib/universities';
 
-type RiderTab    = 'daily' | 'jubah' | 'quote' | 'earnings';
+type RiderTab    = 'daily' | 'jubah' | 'quote' | 'customers' | 'earnings';
 type JubahView   = 'list' | 'card' | 'details';
 
+// Structurally identical to admin/jubah/JubahCustomerSubTab's JubahBookingRow
+// (same fields JubahCustomerDetailsSubTab actually reads) — kept as its own
+// type here rather than importing that one directly, since this file only
+// ever populates it from the rider's own scoped query, not the admin's.
 type JubahJobRow = {
   id: string;
   reference: string;
@@ -35,6 +41,7 @@ type JubahJobRow = {
   email: string | null;
   matric_id: string;
   university: string;
+  university_key: string;
   campus: string;
   faculty: string;
   remark: string;
@@ -54,7 +61,11 @@ type JubahJobRow = {
   konvo_path: string | null;
   ic_path: string | null;
   status: string;
+  rider_id: string | null;
   rider_name: string | null;
+  rider_phone: string | null;
+  needs_reconciliation: boolean;
+  reconciliation_note: string | null;
   created_at: string;
 };
 
@@ -92,7 +103,7 @@ export const RiderHome: React.FC = () => {
     if (!authUser) { setJubahLoading(false); return; }
     const { data, error } = await supabase
       .from('jubah_bookings')
-      .select('id, reference, full_name, ic_number, hp_number, email, matric_id, university, campus, faculty, remark, payment_mode, cost, balance_due, balance_paid, balance_paid_at, initial_paid, initial_paid_at, balance_proof_url, delivery_address, docs_path, payment_path, oscar_path, skpg_path, konvo_path, ic_path, status, rider_name, created_at')
+      .select('id, reference, full_name, ic_number, hp_number, email, matric_id, university, university_key, campus, faculty, remark, payment_mode, cost, balance_due, balance_paid, balance_paid_at, initial_paid, initial_paid_at, balance_proof_url, delivery_address, docs_path, payment_path, oscar_path, skpg_path, konvo_path, ic_path, status, rider_id, rider_name, rider_phone, needs_reconciliation, reconciliation_note, created_at')
       .eq('rider_id', authUser.id)
       .order('created_at', { ascending: false });
     if (error) console.error('[GERAK] jubah jobs load error:', error.message);
@@ -100,7 +111,7 @@ export const RiderHome: React.FC = () => {
     setJubahLoading(false);
   }, []);
 
-  useLoadOnActive(activeTab === 'jubah', loadJubahJobs);
+  useLoadOnActive(activeTab === 'jubah' || activeTab === 'customers', loadJubahJobs);
 
   // riderCampus (set via the ☰ menu in the header, same switcher pattern as
   // admin's university picker) is only ever populated once this rider
@@ -433,10 +444,11 @@ export const RiderHome: React.FC = () => {
           <div className="px-4 pt-1 mb-4">
             <div className="flex bg-white border border-slate-100 rounded-2xl p-1 gap-1">
               {([
-                { id: 'daily',    label: 'Daily Job',   icon: ShoppingBasket },
-                { id: 'jubah',    label: 'Jubah Job',   icon: GraduationCap },
-                { id: 'quote',    label: 'Custom',      icon: ClipboardCheck },
-                { id: 'earnings', label: 'Earnings',    icon: TrendingUp },
+                { id: 'daily',     label: 'Daily Job',   icon: ShoppingBasket },
+                { id: 'jubah',     label: 'Jubah Job',   icon: GraduationCap },
+                { id: 'quote',     label: 'Custom',      icon: ClipboardCheck },
+                { id: 'customers', label: 'Customers',   icon: Users },
+                { id: 'earnings',  label: 'Earnings',    icon: TrendingUp },
               ] as { id: RiderTab; label: string; icon: React.ElementType }[]).map(tab => {
                 const Icon = tab.icon;
                 // Two stacked layers instead of toggling bg-primary directly —
@@ -948,10 +960,29 @@ export const RiderHome: React.FC = () => {
           </div>
         )}
 
-        {/* ── Earnings Tab ── */}
+        {/* ── Custom Quote Tab ── */}
         {activeTab === 'quote' && (
           <div className="px-4 pb-[calc(6.5rem+env(safe-area-inset-bottom))]">
             <JubahCustomQuoteSubTab active showToast={showToast} />
+          </div>
+        )}
+
+        {/* ── Customer Details Tab — same table admins get, scoped to this
+            rider's own jobs only (jubahJobs is already rider_id-filtered at
+            the query level; visibleJubahJobs further narrows to whichever
+            campus is currently active, same as "My Assignments" above). ── */}
+        {activeTab === 'customers' && (
+          <div className="px-4 pb-[calc(6.5rem+env(safe-area-inset-bottom))]">
+            <JubahCustomerDetailsSubTab
+              active
+              bookings={visibleJubahJobs}
+              bookingsTotalCount={visibleJubahJobs.length}
+              bookingsLoading={jubahLoading}
+              reload={loadJubahJobs}
+              showToast={showToast}
+              universityKey={universityKeyFromCampus(riderCampus || user.campus) ?? 'umpsa'}
+              universityLabel={UNIVERSITY_MAP[universityKeyFromCampus(riderCampus || user.campus) ?? 'umpsa']?.shortLabel ?? 'UMPSA'}
+            />
           </div>
         )}
 
