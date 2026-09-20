@@ -1213,20 +1213,14 @@ export const Jubah: React.FC = () => {
               </div>
             </label>
 
-            {/* Cost HUD — the actual amount is intentionally withheld until
-                the payment step for a self-service booking (pricing is a
-                WhatsApp conversation, not a published rate card); a custom
-                quote already has an agreed number, so that one shows it. */}
+            {/* Cost HUD — used to withhold the amount here and only reveal it
+                later in "How to Pay", which defeats the point (it's the same
+                page, one scroll away) and just reads as a broken/inconsistent
+                number. Shows the real cost upfront now, for both flows. */}
             <div className="border border-slate-100 rounded-2xl p-3.5 mt-1">
               <span className="text-xs text-slate-400 font-semibold block">Service Fee</span>
-              {customQuote ? (
-                <>
-                  <span className="text-xl font-black text-slate-800">RM{Number(cost).toFixed(2)}</span>
-                  <span className="text-xs text-slate-400 block mt-0.5">This total was agreed with your runner.</span>
-                </>
-              ) : (
-                <span className="text-sm font-semibold text-slate-500">Confirmed at the payment step</span>
-              )}
+              <span className="text-xl font-black text-slate-800">RM{Number(cost).toFixed(2)}</span>
+              {customQuote && <span className="text-xs text-slate-400 block mt-0.5">This total was agreed with your runner.</span>}
             </div>
 
           </div>

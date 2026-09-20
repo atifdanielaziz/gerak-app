@@ -379,17 +379,28 @@ export const JubahRiderSubTab = forwardRef<JubahRiderSubTabHandle, JubahRiderSub
 
   // Same university this admin's rider/representative data is scoped to
   // (see loadJubahRiders below) — shown next to card headers.
-  const universityLabel = UNIVERSITY_MAP[
-    (isSuperAdmin || useUniversityScope) ? jubahUniversityView : (universityKeyFromCampus(adminCampus) ?? 'umpsa')
-  ]?.shortLabel ?? 'UMPSA';
+  const scopedUniversityKey = (isSuperAdmin || useUniversityScope) ? jubahUniversityView : (universityKeyFromCampus(adminCampus) ?? 'umpsa');
+  const universityLabel = UNIVERSITY_MAP[scopedUniversityKey]?.shortLabel ?? 'UMPSA';
+
+  // A rider's card used to always show profiles.campus — their one static
+  // home campus — regardless of which university's list it was rendered
+  // in, so a UMPSA-home rider with a UKM assignment still showed "UMPSA
+  // Pekan" while sitting in the "Jubah Riders (UKM)" list. Uses the actual
+  // assignment scoped to THIS view instead (jubahAssignments is already
+  // filtered to the current university's campuses), falling back to their
+  // home campus only if no assignment exists here yet. UMPSA collapses to
+  // just "UMPSA" — Pekan and Gambang share one rider pool now, so singling
+  // out which specific campus a rider is registered under is no longer
+  // meaningful there.
+  const riderCampusLabel = (r: JubahRider) => {
+    const campus = jubahAssignments.find(a => a.rider_id === r.id)?.campus ?? r.campus;
+    return scopedUniversityKey === 'umpsa' ? 'UMPSA' : jubahLocationLabel(universityKeyFromCampus(campus) ?? 'umpsa', campus);
+  };
 
   useEffect(() => { onModalOpenChange(!!jubahSheetRider); }, [jubahSheetRider, onModalOpenChange]);
 
   const loadJubahRiders = useCallback(async () => {
     setJubahRidersLoading(true);
-    const scopedUniversityKey = (isSuperAdmin || useUniversityScope)
-      ? jubahUniversityView
-      : (universityKeyFromCampus(adminCampus) ?? 'umpsa');
     // Same granularity as before for a non-superadmin admin (locked to
     // their own single campus, not their whole university) — just also
     // pulls in riders whose HOME campus is elsewhere but who have an
@@ -457,7 +468,7 @@ export const JubahRiderSubTab = forwardRef<JubahRiderSubTabHandle, JubahRiderSub
     } else {
       setJubahAssignments([]);
     }
-  }, [isSuperAdmin, useUniversityScope, adminCampus, jubahUniversityView]);
+  }, [isSuperAdmin, useUniversityScope, adminCampus, jubahUniversityView, scopedUniversityKey]);
 
   useLoadOnActive(active, loadJubahRiders);
   useImperativeHandle(ref, () => ({ reload: loadJubahRiders }), [loadJubahRiders]);
@@ -516,7 +527,7 @@ export const JubahRiderSubTab = forwardRef<JubahRiderSubTabHandle, JubahRiderSub
                     <span className="truncate">{r.name}</span>
                     {r.is_jubah_lead && <span className="shrink-0 rounded-full bg-violet-50 border border-violet-100 px-1.5 py-0.5 text-[9px] font-semibold text-violet-600">Lead</span>}
                   </p>
-                  <p className="text-xs text-slate-400 font-semibold mt-0.5">{r.gerak_id} · {jubahLocationLabel(universityKeyFromCampus(r.campus) ?? 'umpsa', r.campus)}</p>
+                  <p className="text-xs text-slate-400 font-semibold mt-0.5">{r.gerak_id} · {riderCampusLabel(r)}</p>
                 </div>
                 <div className="flex flex-col items-end gap-1 shrink-0">
                   <span className={`text-xs font-semibold px-2 py-1 rounded-full border ${
