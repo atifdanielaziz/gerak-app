@@ -1073,7 +1073,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           p_booking: {
             reference, full_name: fullName, ic_number: icNumber, hp_number: hpNumber,
             matric_id: matricId, university, university_key: universityKey ?? 'umpsa', campus,
-            faculty, remark, rider_id: riderId ?? null, rider_name: riderName ?? null,
+            faculty, remark, payment_mode: paymentMode, deposit_method: depositMethod ?? null,
+            postage_zone: postageZone ?? null, rider_id: riderId ?? null, rider_name: riderName ?? null,
             delivery_address: deliveryAddress ?? null, docs_path: docsPath ?? null,
             payment_path: paymentPath ?? null, oscar_path: oscarPath ?? null,
             skpg_path: skpgPath ?? null, konvo_path: konvoPath ?? null, ic_path: icPath ?? null,

@@ -1011,7 +1011,6 @@ export const AdminHome: React.FC = () => {
             <JubahCustomQuoteSubTab
               active={activeTab === 'jubah' && effectiveJubahSubTab === 'custom'}
               showToast={showToast}
-              lockedUniversityKey={isJubahLead ? adminUniversityKey : undefined}
             />
           )}
 
