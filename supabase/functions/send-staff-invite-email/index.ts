@@ -207,11 +207,11 @@ async function sendInviteEmail(invite: Invite) {
   }
 }
 
-// The "additive" counterpart to sendInviteEmail — same visual shell, but for
-// someone who's already staff and is only gaining an extra Jubah campus on
-// their EXISTING account. No "create your account" CTA (they already have
-// one) and no role/capability table (nothing else about their account
-// changed) — just the one new fact and a note that it applies on its own.
+// The "additive" counterpart to sendInviteEmail — same visual shell and
+// Role/Campus/Access-Granted layout, but for someone who's already staff
+// and is only gaining an extra Jubah campus on their EXISTING account. No
+// "create your account" CTA (they already have one, and it applies on its
+// own the next time they open the app).
 async function sendAdditiveGrantEmail(invite: Invite) {
   const apiKey = Deno.env.get('RESEND_API_KEY')
   const from   = Deno.env.get('RESEND_FROM_EMAIL')
@@ -230,8 +230,22 @@ async function sendAdditiveGrantEmail(invite: Invite) {
       <span style="display:inline-block;font-size:10.5px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:#dc2626;background:rgba(220,38,38,0.08);padding:4px 10px;border-radius:999px;margin-bottom:14px;">New Campus</span>
       <h1 style="font-size: 20px; margin: 6px 0 6px;">You've been added at ${escapeHtml(locationLabel)}</h1>
       <p style="font-size: 13.5px; color: #64748b; line-height: 1.6; margin: 0 0 22px;">
-        A Gerak admin added you as a Jubah rider for <strong>${escapeHtml(locationLabel)}</strong>, alongside your existing account. There's nothing to sign up for — this activates automatically the next time you open the Gerak app.
+        A Gerak admin added you as a Jubah rider for this campus, alongside your existing account. There's nothing to sign up for — this activates automatically the next time you open the Gerak app.
       </p>
+      <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;"><tr>
+        <td style="width: 50%; padding: 10px 12px; background: #f8fafc; border: 1px solid #f1f5f9; border-radius: 10px 0 0 10px; border-right: none;">
+          <p style="font-size: 9.5px; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; color: #94a3b8; margin: 0 0 3px;">Role</p>
+          <p style="font-size: 13px; font-weight: 600; color: #1e293b; margin: 0;">Rider</p>
+        </td>
+        <td style="width: 50%; padding: 10px 12px; background: #f8fafc; border: 1px solid #f1f5f9; border-radius: 0 10px 10px 0;">
+          <p style="font-size: 9.5px; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; color: #94a3b8; margin: 0 0 3px;">Campus</p>
+          <p style="font-size: 13px; font-weight: 600; color: #1e293b; margin: 0;">${escapeHtml(locationLabel)}</p>
+        </td>
+      </tr></table>
+      <div style="background: #f8fafc; border: 1px solid #f1f5f9; border-radius: 10px; padding: 10px 12px; margin-bottom: 20px;">
+        <p style="font-size: 9.5px; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; color: #94a3b8; margin: 0 0 6px;">Access Granted</p>
+        <div><span style="display:inline-block;font-size:11.5px;font-weight:600;padding:5px 10px;border-radius:999px;background:rgba(220,38,38,0.08);color:#b91c1c;border:1px solid rgba(220,38,38,0.15);">Jubah Delivery</span></div>
+      </div>
       <p style="font-size: 12px; color: #64748b; line-height: 1.65; border-top: 1px dashed #f1f5f9; padding-top: 16px; margin: 0;">
         Just open <code style="background:#f8fafc;border:1px solid #f1f5f9;border-radius:5px;padding:1px 6px;font-size:11.5px;color:#1e293b;">${escapeHtml(appBaseUrl.replace(/^https?:\/\//, ''))}</code> and log in as usual — your new campus will be waiting in the Jubah tab.
       </p>
