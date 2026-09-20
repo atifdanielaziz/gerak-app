@@ -69,6 +69,7 @@ export interface UserSession {
   canDrive: boolean;
   canRent: boolean;
   canTransport: boolean;
+  canRobe: boolean;
   icNumber: string;
   icUrl: string;
   licenseUrl: string;
@@ -398,6 +399,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     canDrive: false,
     canRent:  false,
     canTransport: false,
+    canRobe: false,
     icNumber: '',
     icUrl: '',
     licenseUrl: '',
@@ -667,7 +669,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const loadProfile = async (userId: string) => {
     const [{ data }, { data: lead }, { data: leadUniversities }] = await Promise.all([
-      supabase.from('profiles').select('id,name,matric_no,email,phone,university,campus,gender,gerak_id,role,status,vehicle,plate_number,fee_receipt_url,fee_receipt_verified,fee_receipt_amount,fee_receipt_date,fee_receipt_expiry,fee_receipt_reject_reason,can_drive,can_rent,can_transport,ic_number,ic_url,license_url,docs_status,docs_reject_reason,receipt_gate_exempt,avatar_url').eq('id', userId).single(),
+      supabase.from('profiles').select('id,name,matric_no,email,phone,university,campus,gender,gerak_id,role,status,vehicle,plate_number,fee_receipt_url,fee_receipt_verified,fee_receipt_amount,fee_receipt_date,fee_receipt_expiry,fee_receipt_reject_reason,can_drive,can_rent,can_transport,can_robe,ic_number,ic_url,license_url,docs_status,docs_reject_reason,receipt_gate_exempt,avatar_url').eq('id', userId).single(),
       supabase.from('jubah_leads').select('is_active,base_university_key,base_campus').eq('user_id', userId).maybeSingle(),
       supabase.from('jubah_lead_universities').select('university_key').eq('lead_id', userId),
     ]);
@@ -701,6 +703,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         canDrive:               data.can_drive ?? (data.role === 'driver'),
         canRent:                data.can_rent  ?? false,
         canTransport:           data.can_transport ?? false,
+        canRobe:                data.can_robe ?? false,
         icNumber:               data.ic_number ?? '',
         icUrl:                  data.ic_url           ?? '',
         licenseUrl:             data.license_url      ?? '',
@@ -974,7 +977,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setPageHistory([]);
     setActiveRole(null);
     setIsPreviewMode(false);
-    setUser({ name: '', matricNo: '', email: '', phone: '', university: '', campus: '', gender: '', gerakId: '', role: 'customer', status: 'active', vehicle: '', plateNumber: '', feeReceiptUrl: '', feeReceiptVerified: false, feeReceiptAmount: '', feeReceiptDate: '', feeReceiptExpiry: '', feeReceiptRejectReason: '', canDrive: false, canRent: false, canTransport: false, icNumber: '', icUrl: '', licenseUrl: '', docsStatus: 'none', docsRejectReason: '', receiptGateExempt: false, isJubahLead: false, jubahLeadUniversities: [], avatarUrl: '', isLoggedIn: false });
+    setUser({ name: '', matricNo: '', email: '', phone: '', university: '', campus: '', gender: '', gerakId: '', role: 'customer', status: 'active', vehicle: '', plateNumber: '', feeReceiptUrl: '', feeReceiptVerified: false, feeReceiptAmount: '', feeReceiptDate: '', feeReceiptExpiry: '', feeReceiptRejectReason: '', canDrive: false, canRent: false, canTransport: false, canRobe: false, icNumber: '', icUrl: '', licenseUrl: '', docsStatus: 'none', docsRejectReason: '', receiptGateExempt: false, isJubahLead: false, jubahLeadUniversities: [], avatarUrl: '', isLoggedIn: false });
     setActiveRide(null);
     setJubahBooking(null);
     _setCurrentPage('login');

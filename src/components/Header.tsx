@@ -514,7 +514,7 @@ export const Header: React.FC = () => {
               {showRoleMenu && (<>
                 <div className="fixed inset-0 z-40" onPointerDown={(e) => { e.preventDefault(); setShowRoleMenu(false); }} />
                 <div className="absolute right-0 top-full mt-2 z-50 bg-white border border-slate-100 rounded-2xl shadow-xl overflow-hidden min-w-[220px]">
-                  {user.isJubahLead && (<>
+                  {user.isJubahLead ? (<>
                     <button onPointerDown={(e) => { e.preventDefault(); switchToLeadMode(); setShowRoleMenu(false); }}
                       className={`w-full flex items-center gap-3 px-4 py-3 text-left text-xs font-semibold ${activeRole === 'lead' ? 'bg-amber-50 text-amber-700' : 'text-slate-600'}`}>
                       <UserRoundCog className="w-4 h-4 shrink-0" /> Lead
@@ -523,6 +523,22 @@ export const Header: React.FC = () => {
                     <button onPointerDown={(e) => { e.preventDefault(); switchToRiderMode(); setShowRoleMenu(false); }}
                       className={`w-full flex items-center gap-3 px-4 py-3 border-t border-slate-100 text-left text-xs font-semibold ${activeRole === 'rider' ? 'bg-amber-50 text-amber-700' : 'text-slate-600'}`}>
                       <Bike className="w-4 h-4 shrink-0" /> Rider
+                    </button>
+                  </>) : (user.canDrive && user.canRobe) && (<>
+                    {/* Not a Jubah Lead, but this account holds both the driving
+                        and Jubah-rider capabilities (e.g. an existing driver
+                        given Robe access) — same switcher, so there's a way to
+                        reach the other dashboard at all. Without this, an
+                        account like this had no path into RiderHome. */}
+                    <button onPointerDown={(e) => { e.preventDefault(); switchToDriverMode(); setShowRoleMenu(false); }}
+                      className={`w-full flex items-center gap-3 px-4 py-3 text-left text-xs font-semibold ${activeRole === 'driver' ? 'bg-amber-50 text-amber-700' : 'text-slate-600'}`}>
+                      <Car className="w-4 h-4 shrink-0" /> Driver
+                      {activeRole === 'driver' && <span className="ml-auto text-[8px] bg-amber-100 px-1.5 py-0.5 rounded-full">Active</span>}
+                    </button>
+                    <button onPointerDown={(e) => { e.preventDefault(); switchToRiderMode(); setShowRoleMenu(false); }}
+                      className={`w-full flex items-center gap-3 px-4 py-3 border-t border-slate-100 text-left text-xs font-semibold ${activeRole === 'rider' ? 'bg-amber-50 text-amber-700' : 'text-slate-600'}`}>
+                      <Bike className="w-4 h-4 shrink-0" /> Jubah Rider
+                      {activeRole === 'rider' && <span className="ml-auto text-[8px] bg-amber-100 px-1.5 py-0.5 rounded-full">Active</span>}
                     </button>
                   </>)}
                   <div className="flex items-center gap-3 px-4 py-3 text-xs text-slate-600"><MapPin className="w-4 h-4 shrink-0 text-slate-400" /><span className="font-semibold">{providerUniversity} {user.campus || 'Campus'}</span></div>
