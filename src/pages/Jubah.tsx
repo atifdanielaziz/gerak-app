@@ -1620,8 +1620,12 @@ export const Jubah: React.FC = () => {
                   paid:       { label: 'Payment Confirmed', desc: 'Payment received — your order is in the queue.' },
                   processing: { label: 'Processing',        desc: isPostageDelivery ? 'Robe being prepared for delivery.' : 'Robe being prepared for collection.' },
                   collected:  { label: isPostageDelivery ? 'Collected' : 'Ready for Pickup', desc: isPostageDelivery ? 'Robe collected from university.' : 'Available at collection counter.' },
+                  // 'at_hub' is the legacy postage terminal value — only ever
+                  // seen on bookings stamped before getJubahSteps was fixed to
+                  // stop producing it; new postage bookings now also terminate
+                  // at 'delivered', so that label must follow isPostageDelivery too.
                   at_hub:     { label: 'Delivered',         desc: 'Safe in your hands!' },
-                  delivered:  { label: 'Collected',         desc: 'Safe in your hands!' },
+                  delivered:  { label: isPostageDelivery ? 'Delivered' : 'Collected', desc: 'Safe in your hands!' },
                 };
                 const { steps, curStep } = getJubahProgress(liveStatus ?? jubahBooking.status, jubahBooking.paymentMode);
                 return steps.map((key, idx) => {

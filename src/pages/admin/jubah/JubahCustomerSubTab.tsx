@@ -293,7 +293,8 @@ export function JubahCustomerSubTab({
       p_status:     next,
     });
     if (error || !data?.success) {
-      showToast('Update failed. Please try again.');
+      console.error('[GERAK] update_jubah_booking_status failed:', error ?? data?.error);
+      showToast(data?.error ?? 'Update failed. Please try again.');
     } else {
       const updated = { ...selected, status: next };
       setSelected(updated);

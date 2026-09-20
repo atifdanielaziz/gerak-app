@@ -49,10 +49,13 @@ export const JUBAH_NEXT_LABEL: Record<string, string> = {
 // to advance through. Deposit mode now lands on 'paid' the moment the
 // deposit clears too, matching the other two modes (previously it skipped
 // straight from 'ordered' to 'booked', bypassing 'paid' entirely).
-export const getJubahSteps = (paymentMode: string): string[] =>
-  paymentMode === 'postage'
-    ? ['paid', 'processing', 'collected', 'at_hub']
-    : ['paid', 'processing', 'collected', 'delivered'];
+// 'at_hub' was postage's terminal status name here, but the backend
+// (update_jubah_booking_status) only ever computes/accepts 'delivered' for
+// every payment mode — the mismatch made every postage "Mark Delivered"
+// call fail with "Invalid status transition." 'at_hub' is kept everywhere
+// else (labels/styles/filters) purely to display bookings already stamped
+// with that legacy value; new transitions must never produce it again.
+const JUBAH_STEPS = ['paid', 'processing', 'collected', 'delivered'];
 
 export type JubahProgress = {
   steps: string[];
@@ -65,8 +68,13 @@ export type JubahProgress = {
   nextStatus: string | null;
 };
 
-export const getJubahProgress = (status: string, paymentMode: string): JubahProgress => {
-  const steps = getJubahSteps(paymentMode);
+// paymentMode no longer branches the step sequence (both flows now share
+// one, see JUBAH_STEPS above) but stays in the signature — every call site
+// already has it on hand from the same booking row, and it keeps this
+// function's shape stable for the callers that also destructure it locally.
+// eslint-disable-next-line @typescript-eslint/no-unused-vars -- kept for callers' shape, see comment above
+export const getJubahProgress = (status: string, _paymentMode: string): JubahProgress => {
+  const steps = JUBAH_STEPS;
   const curStep = steps.indexOf(status);
   return {
     steps,

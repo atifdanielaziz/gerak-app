@@ -260,7 +260,7 @@ export const RiderHome: React.FC = () => {
     });
     if (error || !data?.success) {
       console.error('[GERAK] status update failed:', error ?? data?.error);
-      showToast('Update failed. Please try again.');
+      showToast(data?.error ?? 'Update failed. Please try again.');
     } else {
       const updated = { ...selectedJob, status: next };
       setSelectedJob(updated);
