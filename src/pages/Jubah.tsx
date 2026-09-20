@@ -407,11 +407,19 @@ export const Jubah: React.FC = () => {
     ? depositAmount
     : customQuote?.agreed_price ?? (paymentMode === 'postage' ? postagePrice + ssCharge : pickupPrice);
 
-  const applyResolvedQuote = (data: { agreed_price: number; customer_phone?: string; rider_id?: string; rider_name?: string; campus?: string; expires_at: string }) => {
+  const applyResolvedQuote = (data: { agreed_price: number; customer_phone?: string; rider_id?: string; rider_name?: string; campus?: string; payment_mode?: 'pickup' | 'postage' | 'deposit'; deposit_method?: 'pickup' | 'postage'; expires_at: string }) => {
     setCustomQuote(data);
     // Pre-fill only — every field this touches stays fully editable, this
     // is just a convenience default from what the runner already knows.
     if (data.customer_phone) setHpNumber(formatPhone(data.customer_phone));
+    // Matters beyond convenience: the rider list further down only ever
+    // shows riders eligible for whichever method is currently selected, so
+    // leaving this at its "Full Payment — Pickup Point" default silently
+    // hid the rider auto-fill whenever the quote was actually postage-only.
+    if (data.payment_mode) {
+      setPaymentMode(data.payment_mode);
+      if (data.payment_mode === 'deposit' && data.deposit_method) setDepositMethod(data.deposit_method);
+    }
     if (data.campus) {
       const quotedUniversityKey = universityKeyFromCampus(data.campus);
       const quotedUni = quotedUniversityKey ? UNIVERSITY_MAP[quotedUniversityKey] : null;
