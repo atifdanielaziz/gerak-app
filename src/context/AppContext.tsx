@@ -657,6 +657,19 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const applyPendingInviteIfAny = async () => {
     const { data, error } = await supabase.rpc('apply_pending_invite');
     if (error || !data?.applied) return;
+    // An existing staff member invited for another Jubah campus keeps their
+    // current role/capabilities untouched — only a new campus assignment
+    // was added, so this needs its own wording rather than the "you now
+    // have X access" framing below, which reads oddly for someone who
+    // already had rider access elsewhere.
+    if (data.additional_campus) {
+      addNotification(
+        'New Jubah campus added',
+        `An admin added you as a Jubah rider for ${data.campus}. Set your pickup/postage details in the Jubah tab.`,
+        'system',
+      );
+      return;
+    }
     const roleLabel = data.role === 'jubah_lead' ? 'Lead' : data.role === 'rider' ? 'Rider' : data.role === 'driver' ? 'Driver' : 'Admin';
     addNotification(
       `You now have ${roleLabel} access`,
