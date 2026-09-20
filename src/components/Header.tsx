@@ -2,7 +2,7 @@
 import { useApp } from '../context/AppContext';
 import { Bell, ChevronLeft, ShieldCheck, Car, Bike, MoreHorizontal, MoreVertical, Eye, ChevronDown, X, MapPin, User, Pencil, CalendarCheck2, FileCheck2, Menu, Check, GraduationCap, UserRoundCog } from 'lucide-react';
 import { WaBtn } from '../lib/whatsapp';
-import { UNIVERSITIES as UNIVERSITY_OPTIONS } from '../lib/universities';
+import { UNIVERSITIES as UNIVERSITY_OPTIONS, jubahLocationLabel, universityKeyFromCampus } from '../lib/universities';
 import { CampusStatusToggle } from './CampusStatusToggle';
 import { supabase } from '../lib/supabase';
 
@@ -116,6 +116,27 @@ export const Header: React.FC = () => {
   const providerUniversity = UNIVERSITY_OPTIONS.find(option =>
     option.shortLabel === user.university || option.fullName === user.university || option.label === user.university,
   )?.shortLabel || user.university || 'UMPSA';
+
+  // Jubah riders can now be assigned at more than one campus — possibly a
+  // different university entirely — but this panel's "campus" line only
+  // ever showed profiles.campus (their single home campus), so a
+  // multi-campus rider's own account gave no sign they'd been added
+  // anywhere else. Lists every active assignment once there's more than
+  // one; single-campus riders (the common case) see no change at all.
+  const [myRiderCampuses, setMyRiderCampuses] = React.useState<string[]>([]);
+  React.useEffect(() => {
+    if (!user.canRobe) { queueMicrotask(() => setMyRiderCampuses([])); return; }
+    (async () => {
+      const { data: { user: authUser } } = await supabase.auth.getUser();
+      if (!authUser) return;
+      const { data } = await supabase
+        .from('jubah_rider_assignments')
+        .select('campus')
+        .eq('rider_id', authUser.id)
+        .eq('is_active', true);
+      setMyRiderCampuses([...new Set((data ?? []).map(a => a.campus as string))]);
+    })();
+  }, [user.canRobe]);
 
   if (currentPage === 'splash' || currentPage === 'login' || currentPage === 'register' || currentPage === 'forgot-password' || currentPage === 'reset-password' || currentPage === 'profile' || currentPage === 'complete-profile') {
     return null;
@@ -554,7 +575,11 @@ export const Header: React.FC = () => {
                       </button>
                     )}
                   </>)}
-                  <div className={`flex items-center gap-3 px-4 py-3 text-xs text-slate-600 ${(user.role === 'admin' || user.canDrive || user.canRobe || user.isJubahLead) ? 'border-t border-slate-100' : ''}`}><MapPin className="w-4 h-4 shrink-0 text-slate-400" /><span className="font-semibold">{providerUniversity} {user.campus || 'Campus'}</span></div>
+                  <div className={`flex items-center gap-3 px-4 py-3 text-xs text-slate-600 ${(user.role === 'admin' || user.canDrive || user.canRobe || user.isJubahLead) ? 'border-t border-slate-100' : ''}`}><MapPin className="w-4 h-4 shrink-0 text-slate-400" /><span className="font-semibold">
+                    {myRiderCampuses.length > 1
+                      ? myRiderCampuses.map(c => jubahLocationLabel(universityKeyFromCampus(c) ?? 'umpsa', c)).join(' · ')
+                      : `${providerUniversity} ${user.campus || 'Campus'}`}
+                  </span></div>
                   <div className="flex items-center gap-3 px-4 py-3 border-t border-slate-100 text-xs text-slate-600"><ShieldCheck className="w-4 h-4 shrink-0 text-slate-400" /><span className="font-semibold">Status</span><span className="ml-auto text-emerald-600 font-semibold">{toTitleCase(user.status || 'active')}</span></div>
                   <div className="flex items-center gap-3 px-4 py-3 border-t border-slate-100 text-xs text-slate-600"><CalendarCheck2 className="w-4 h-4 shrink-0 text-slate-400" /><span className="font-semibold">Payment</span><span className={`ml-auto font-semibold ${paymentValid ? 'text-emerald-600' : 'text-red-500'}`}>{paymentValid ? 'Valid' : 'Expired'}</span></div>
                   <div className="flex items-center gap-3 px-4 py-3 border-t border-slate-100 text-xs text-slate-600"><FileCheck2 className="w-4 h-4 shrink-0 text-slate-400" /><span className="font-semibold">Document</span><span className={`ml-auto font-semibold ${user.docsStatus === 'approved' ? 'text-emerald-600' : 'text-slate-500'}`}>{documentLabel}</span></div>
