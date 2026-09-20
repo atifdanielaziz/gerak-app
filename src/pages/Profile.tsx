@@ -72,9 +72,17 @@ export const Profile: React.FC = () => {
   const [showDigitalCard, setShowDigitalCard] = useState(false);
 
   // Neither drivers nor riders need an IC for their own verification anymore
-  // (licence only) — this only governs the plain IC-number text field below
-  // for admin/superadmin, a separate pre-existing requirement.
-  const requiresIc = ['admin', 'superadmin'].includes(user.role);
+  // (licence only) — this only governs the plain IC-number text field below.
+  // Superadmin only, not admin: profiles.ic_number has a unique index
+  // (WHERE ic_number IS NOT NULL), and the admin/superadmin dual-account
+  // pattern (one person legitimately holding both, e.g. to also act as a
+  // Jubah rider on the admin account) means the SAME real IC can never be
+  // entered on the second account while it's required there — confirmed
+  // live: an admin stuck unable to save their real IC because their own
+  // superadmin account already holds it. Making it optional for admin lets
+  // that field stay blank (exempt from the unique index) instead of forcing
+  // a fabricated value in just to pass validation.
+  const requiresIc = user.role === 'superadmin';
 
   const [uploading, setUploading]       = useState(false);
   const [verifyMsg, setVerifyMsg]       = useState('');
