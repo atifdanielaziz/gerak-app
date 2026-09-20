@@ -74,6 +74,9 @@ export const DriversTab = forwardRef<DriversTabHandle, DriversTabProps>(function
   const inviteRoleLabel = inviteRole === 'jubah_lead' ? 'Lead' : inviteRole === 'admin' ? 'Admin' : inviteRole === 'rider' ? 'Rider' : 'Driver';
   const inviteLeadBaseUniversity = UNIVERSITY_MAP[inviteLeadUniversities[0]];
   const inviteLeadManagedLabels = inviteLeadUniversities.slice(1).map(key => UNIVERSITY_MAP[key]?.shortLabel ?? key.toUpperCase());
+  const inviteCampuses = UNIVERSITY_MAP[inviteUniversityKey]?.campuses ?? [];
+  const robeUniversityAssignment = inviteRole === 'rider' && inviteCanRobe;
+  const effectiveInviteCampus = robeUniversityAssignment ? (inviteCampuses[0] ?? '') : inviteCampus;
 
   useEffect(() => { onModalOpenChange(showInviteConfirm); }, [showInviteConfirm, onModalOpenChange]);
   useEffect(() => {
@@ -122,7 +125,7 @@ export const DriversTab = forwardRef<DriversTabHandle, DriversTabProps>(function
     const leadPrimaryUniversity = UNIVERSITY_MAP[inviteLeadUniversities[0]];
     const { data: inserted, error } = await supabase.from('driver_invites').insert({
       email:      inviteEmail.trim().toLowerCase(),
-      campus:     inviteRole === 'jubah_lead' ? inviteLeadBaseCampus : inviteCampus,
+      campus:     inviteRole === 'jubah_lead' ? inviteLeadBaseCampus : effectiveInviteCampus,
       university: inviteRole === 'jubah_lead' ? (leadPrimaryUniversity?.fullName ?? '') : (UNIVERSITY_MAP[inviteUniversityKey]?.fullName ?? ''),
       role:       inviteRole,
       can_drive:     inviteRole === 'driver' ? inviteCanDrive     : false,
@@ -278,12 +281,18 @@ export const DriversTab = forwardRef<DriversTabHandle, DriversTabProps>(function
                   multi-campus split — a single-campus university is
                   auto-filled above, nothing left to ask. */}
             <NativeSelect
-                    value={inviteCampus}
+                    value={effectiveInviteCampus}
                     onChange={setInviteCampus}
-                    options={(UNIVERSITY_MAP[inviteUniversityKey]?.campuses ?? []).map(c => ({ value: c, label: c }))}
+                    options={inviteCampuses.map(c => ({ value: c, label: c }))}
                     placeholder="Select campus..."
                     label="Select Campus"
+                    disabled={robeUniversityAssignment}
             />
+            {robeUniversityAssignment && (
+              <p className="mt-2 text-xs font-normal text-slate-400">
+                Assigned automatically from the selected university.
+              </p>
+            )}
           </div>}
 
           {/* Email input */}
@@ -419,7 +428,7 @@ export const DriversTab = forwardRef<DriversTabHandle, DriversTabProps>(function
 
                 <div className="flex items-center justify-between gap-2">
                   <p className="text-xs font-normal text-slate-400">{inviteRole === 'jubah_lead' ? 'Base University' : 'Campus'}</p>
-                  <span className="text-xs font-semibold text-slate-800 text-right">{inviteRole === 'jubah_lead' ? `${inviteLeadBaseUniversity?.shortLabel ?? ''} · ${inviteLeadBaseCampus}` : jubahLocationLabel(inviteUniversityKey, inviteCampus)}</span>
+                  <span className="text-xs font-semibold text-slate-800 text-right">{inviteRole === 'jubah_lead' ? `${inviteLeadBaseUniversity?.shortLabel ?? ''} · ${inviteLeadBaseCampus}` : jubahLocationLabel(inviteUniversityKey, effectiveInviteCampus)}</span>
                 </div>
 
                 {inviteRole === 'jubah_lead' && <>

@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
-import { CheckCircle2, X, Upload, FileText, ShieldAlert, Download, User, Pencil, MapPin, Copy, Check, Info, GraduationCap, FileUser, ClipboardList, Landmark, ReceiptText } from 'lucide-react';
+import { CheckCircle2, X, Upload, FileText, ShieldAlert, Download, User, Pencil, MapPin, Copy, Check, Info, GraduationCap, FileUser, ClipboardList, Landmark, ReceiptText, ArrowDown } from 'lucide-react';
 import { submitJubahToSheets } from '../lib/sheetsService';
 import { JubahLanding } from '../components/JubahLanding';
 import { supabase } from '../lib/supabase';
@@ -1374,11 +1374,21 @@ export const Jubah: React.FC = () => {
                     <label className="flex-1 text-xs font-semibold text-slate-400">
                       {field.label} <span className="text-danger">*</span>
                     </label>
-                    <button type="button"
-                      onClick={() => sampleLoaded[field.id] ? setSamplePreview(sampleUrls[field.id]) : setFileError(`No sample uploaded for ${field.label} yet.`)}
-                      className={`w-11 h-11 flex items-center justify-center rounded-lg transition shrink-0 active:scale-90 ${sampleLoaded[field.id] ? 'text-blue-400' : 'text-slate-300'}`}>
-                      <FileUser className="w-3.5 h-3.5" />
-                    </button>
+                    <div className="relative shrink-0">
+                      {field.label.trim().toUpperCase() === 'OSCAR' && (
+                        <span className="pointer-events-none absolute bottom-9 right-0 flex w-max items-center gap-1 text-[10px] font-semibold text-blue-500 animate-pulse">
+                          Example Doc. <ArrowDown className="h-3 w-3" />
+                        </span>
+                      )}
+                      <button type="button"
+                        onPointerDown={(event) => {
+                          event.preventDefault();
+                          sampleLoaded[field.id] ? setSamplePreview(sampleUrls[field.id]) : setFileError(`No sample uploaded for ${field.label} yet.`);
+                        }}
+                        className={`w-11 h-11 flex items-center justify-center rounded-lg transition-transform transform-gpu shrink-0 active:scale-90 animate-pulse ${sampleLoaded[field.id] ? 'text-blue-400' : 'text-slate-300'}`}>
+                        <FileUser className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
                   </div>
                   {field.hint && <p className="text-xs text-slate-400 -mt-0.5">{field.hint}</p>}
                   <input

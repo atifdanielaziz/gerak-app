@@ -139,7 +139,17 @@ export function JubahCustomQuoteSubTab({
           <label className="space-y-2"><span className="text-sm font-normal text-slate-500">Agreed Total Price</span><div className="flex rounded-xl border border-slate-100 focus-within:border-slate-900"><span className="px-3 py-2.5 text-sm text-slate-400">RM</span><input value={price} onChange={e => setPrice(e.target.value.replace(/[^0-9.]/g, ''))} inputMode="decimal" placeholder="100.00" className="min-w-0 flex-1 py-2.5 pr-3 text-sm focus:outline-none" /></div></label>
           <label className="space-y-2"><span className="text-sm font-normal text-slate-500">Customer Phone Number</span><input value={phone} onChange={e => setPhone(formatPhoneNumber(e.target.value))} inputMode="tel" autoComplete="tel" placeholder="012-3456789" className="w-full rounded-xl border border-slate-100 bg-white px-3 py-2.5 text-sm focus:outline-none focus:border-slate-900" /></label>
         </div>
-        <button type="button" disabled={creating} onClick={() => createQuote()} className="mt-5 w-full rounded-xl bg-primary text-white py-3 text-sm font-semibold active:scale-[0.99] transition-transform disabled:opacity-50">{creating ? 'Creating…' : 'Generate Quote Link'}</button>
+        <button
+          type="button"
+          disabled={creating}
+          onPointerDown={(event) => {
+            event.preventDefault();
+            if (!creating) void createQuote();
+          }}
+          className="mt-5 w-full rounded-xl bg-primary text-white py-3 text-sm font-semibold active:scale-[0.99] transition-transform transform-gpu touch-manipulation select-none disabled:opacity-50"
+        >
+          {creating ? 'Creating…' : 'Generate Quote Link'}
+        </button>
       </section>
       {link && <section className="border border-slate-100 rounded-3xl p-5 bg-white">
         <div className="flex items-center gap-2 mb-3"><Clock3 className="w-4 h-4 text-slate-400"/><p className="text-sm font-semibold text-slate-800">Secure quote link</p></div>

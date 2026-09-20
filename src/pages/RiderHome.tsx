@@ -459,8 +459,8 @@ export const RiderHome: React.FC = () => {
 
         {/* Tab Switcher — hide when in jubah sub-pages */}
         {(activeTab !== 'jubah' || jubahView === 'list') && (
-          <div className="px-4 pt-1 mb-4">
-            <div className="flex bg-white border border-slate-100 rounded-2xl p-1 gap-1">
+          <div className="px-4 pt-1 mb-4 overflow-x-auto overscroll-x-contain no-scrollbar">
+            <div className="flex w-max min-w-full bg-white border border-slate-100 rounded-2xl p-1 gap-1">
               {([
                 { id: 'daily',     label: 'Daily Job',   icon: ShoppingBasket },
                 { id: 'jubah',     label: 'Jubah Job',   icon: GraduationCap },
@@ -475,13 +475,13 @@ export const RiderHome: React.FC = () => {
                 return (
                   <button key={tab.id}
                     onPointerDown={(e) => { e.preventDefault(); setActiveTab(tab.id); setJubahView('list'); setSelectedJob(null); }}
-                    className="relative flex-1 rounded-xl transition-transform">
-                    <span className="flex items-center justify-center gap-1.5 py-2.5 text-xs font-semibold text-slate-400">
+                    className="relative shrink-0 min-w-[7.25rem] rounded-xl transition-transform transform-gpu touch-manipulation whitespace-nowrap">
+                    <span className="flex items-center justify-center gap-1.5 px-3 py-2.5 text-xs font-semibold text-slate-400 whitespace-nowrap">
                       <Icon className="w-3.5 h-3.5" />
                       {tab.label}
                     </span>
                     <span
-                      className={`absolute inset-0 flex items-center justify-center gap-1.5 py-2.5 rounded-xl bg-primary text-white text-xs font-semibold transition-opacity duration-150 ${
+                      className={`absolute inset-0 flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-xl bg-primary text-white text-xs font-semibold whitespace-nowrap transition-opacity duration-150 ${
                         activeTab === tab.id ? 'opacity-100' : 'opacity-0 pointer-events-none'
                       }`}
                     >
@@ -874,9 +874,12 @@ export const RiderHome: React.FC = () => {
                       const balanceGateActive = selectedJob.payment_mode === 'deposit' && selectedJob.status === 'paid' && !selectedJob.balance_paid;
                       return (
                         <button
-                          onClick={handleAdvanceStatus}
+                          onPointerDown={(event) => {
+                            event.preventDefault();
+                            if (!updatingStatus && !balanceGateActive) void handleAdvanceStatus();
+                          }}
                           disabled={updatingStatus || balanceGateActive}
-                          className="w-full bg-primary hover:bg-primary-hover active:scale-[0.98] disabled:bg-slate-200 disabled:cursor-not-allowed text-white font-semibold py-3 rounded-2xl transition flex items-center justify-center gap-2 text-sm"
+                          className="w-full bg-primary hover:bg-primary-hover active:scale-[0.98] disabled:bg-slate-200 disabled:cursor-not-allowed text-white font-semibold py-3 rounded-2xl transition-transform transform-gpu touch-manipulation select-none flex items-center justify-center gap-2 text-sm"
                         >
                           {updatingStatus
                             ? <span className="w-4 h-4 rounded-full border-2 border-white/40 border-t-white animate-spin" />
