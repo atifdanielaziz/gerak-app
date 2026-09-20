@@ -1,9 +1,10 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Check, ClipboardCheck, Clock3, Copy } from 'lucide-react';
 import { supabase } from '../../../lib/supabase';
 import { copyToClipboard } from '../../../lib/clipboard';
 import { WaIcon, toWa } from '../../../lib/whatsapp';
 import { useApp } from '../../../context/AppContext';
+import { UNIVERSITY_MAP, universityKeyFromCampus } from '../../../lib/universities';
 
 const formatIcNumber = (value: string) => {
   const digits = value.replace(/\D/g, '').slice(0, 12);
@@ -27,11 +28,14 @@ const formatPhoneNumber = (value: string) => {
 export function JubahCustomQuoteSubTab({
   active,
   showToast,
+  lockedUniversityKey,
 }: {
   active: boolean;
   showToast: (message: string) => void;
+  lockedUniversityKey?: string;
 }) {
   const { riderCampus } = useApp();
+  const [scopedCampus, setScopedCampus] = useState<string | null>(null);
   const [ic, setIc] = useState('');
   const [price, setPrice] = useState('');
   // Saved with the quote (create_jubah_custom_quote) so the customer's HP
@@ -41,6 +45,30 @@ export function JubahCustomQuoteSubTab({
   const [creating, setCreating] = useState(false);
   const [link, setLink] = useState('');
   const [copied, setCopied] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    if (!lockedUniversityKey) {
+      setScopedCampus(riderCampus || null);
+      return;
+    }
+    setScopedCampus(null);
+    void (async () => {
+      const { data: { user: authUser } } = await supabase.auth.getUser();
+      if (!authUser || cancelled) return;
+      const { data } = await supabase
+        .from('jubah_rider_assignments')
+        .select('campus')
+        .eq('rider_id', authUser.id)
+        .eq('is_active', true);
+      if (cancelled) return;
+      const assignedCampus = ((data as Array<{ campus: string }> | null) ?? [])
+        .map(row => row.campus)
+        .find(campus => universityKeyFromCampus(campus) === lockedUniversityKey);
+      setScopedCampus(assignedCampus ?? UNIVERSITY_MAP[lockedUniversityKey]?.campuses[0] ?? null);
+    })();
+    return () => { cancelled = true; };
+  }, [lockedUniversityKey, riderCampus]);
 
   if (!active) return null;
 
@@ -61,7 +89,7 @@ export function JubahCustomQuoteSubTab({
       p_ic_number: ic,
       p_agreed_price: Number(price),
       p_customer_phone: phone,
-      p_campus: riderCampus || null,
+      p_campus: scopedCampus,
     });
     setCreating(false);
     if (error || !data?.success) {
