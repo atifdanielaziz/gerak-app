@@ -504,7 +504,7 @@ export const Header: React.FC = () => {
             </button>
           )}
 
-          {user.role !== 'superadmin' && isProviderRole && (
+          {user.role !== 'superadmin' && (user.role === 'admin' || isProviderRole) && (
             <div className="relative order-1">
               <button onPointerDown={(e) => { e.preventDefault(); setShowRoleMenu(p => !p); }}
                 className="w-8 h-8 flex items-center justify-center rounded-xl text-slate-500 active:bg-slate-50 active:scale-90 transition-transform"
@@ -514,9 +514,16 @@ export const Header: React.FC = () => {
               {showRoleMenu && (<>
                 <div className="fixed inset-0 z-40" onPointerDown={(e) => { e.preventDefault(); setShowRoleMenu(false); }} />
                 <div className="absolute right-0 top-full mt-2 z-50 bg-white border border-slate-100 rounded-2xl shadow-xl overflow-hidden min-w-[220px]">
+                  {user.role === 'admin' && (
+                    <button onPointerDown={(e) => { e.preventDefault(); switchToAdminMode(); setShowRoleMenu(false); }}
+                      className={`w-full flex items-center gap-3 px-4 py-3 text-left text-xs font-semibold ${!isNotAdmin ? 'bg-amber-50 text-amber-700' : 'text-slate-600'}`}>
+                      <ShieldCheck className="w-4 h-4 shrink-0" /> Admin
+                      {!isNotAdmin && <span className="ml-auto text-[8px] bg-amber-100 px-1.5 py-0.5 rounded-full">Active</span>}
+                    </button>
+                  )}
                   {user.isJubahLead ? (<>
                     <button onPointerDown={(e) => { e.preventDefault(); switchToLeadMode(); setShowRoleMenu(false); }}
-                      className={`w-full flex items-center gap-3 px-4 py-3 text-left text-xs font-semibold ${activeRole === 'lead' ? 'bg-amber-50 text-amber-700' : 'text-slate-600'}`}>
+                      className={`w-full flex items-center gap-3 px-4 py-3 text-left text-xs font-semibold ${user.role === 'admin' ? 'border-t border-slate-100' : ''} ${activeRole === 'lead' ? 'bg-amber-50 text-amber-700' : 'text-slate-600'}`}>
                       <UserRoundCog className="w-4 h-4 shrink-0" /> Lead
                       {activeRole === 'lead' && <span className="ml-auto text-[8px] bg-amber-100 px-1.5 py-0.5 rounded-full">Active</span>}
                     </button>
@@ -534,7 +541,7 @@ export const Header: React.FC = () => {
                         actually has, rather than requiring both. */}
                     {user.canDrive && (
                       <button onPointerDown={(e) => { e.preventDefault(); switchToDriverMode(); setShowRoleMenu(false); }}
-                        className={`w-full flex items-center gap-3 px-4 py-3 text-left text-xs font-semibold ${activeRole === 'driver' ? 'bg-amber-50 text-amber-700' : 'text-slate-600'}`}>
+                        className={`w-full flex items-center gap-3 px-4 py-3 text-left text-xs font-semibold ${user.role === 'admin' ? 'border-t border-slate-100' : ''} ${activeRole === 'driver' ? 'bg-amber-50 text-amber-700' : 'text-slate-600'}`}>
                         <Car className="w-4 h-4 shrink-0" /> Driver
                         {activeRole === 'driver' && <span className="ml-auto text-[8px] bg-amber-100 px-1.5 py-0.5 rounded-full">Active</span>}
                       </button>
@@ -547,73 +554,13 @@ export const Header: React.FC = () => {
                       </button>
                     )}
                   </>)}
-                  <div className="flex items-center gap-3 px-4 py-3 text-xs text-slate-600"><MapPin className="w-4 h-4 shrink-0 text-slate-400" /><span className="font-semibold">{providerUniversity} {user.campus || 'Campus'}</span></div>
+                  <div className={`flex items-center gap-3 px-4 py-3 text-xs text-slate-600 ${(user.role === 'admin' || user.canDrive || user.canRobe || user.isJubahLead) ? 'border-t border-slate-100' : ''}`}><MapPin className="w-4 h-4 shrink-0 text-slate-400" /><span className="font-semibold">{providerUniversity} {user.campus || 'Campus'}</span></div>
                   <div className="flex items-center gap-3 px-4 py-3 border-t border-slate-100 text-xs text-slate-600"><ShieldCheck className="w-4 h-4 shrink-0 text-slate-400" /><span className="font-semibold">Status</span><span className="ml-auto text-emerald-600 font-semibold">{toTitleCase(user.status || 'active')}</span></div>
                   <div className="flex items-center gap-3 px-4 py-3 border-t border-slate-100 text-xs text-slate-600"><CalendarCheck2 className="w-4 h-4 shrink-0 text-slate-400" /><span className="font-semibold">Payment</span><span className={`ml-auto font-semibold ${paymentValid ? 'text-emerald-600' : 'text-red-500'}`}>{paymentValid ? 'Valid' : 'Expired'}</span></div>
                   <div className="flex items-center gap-3 px-4 py-3 border-t border-slate-100 text-xs text-slate-600"><FileCheck2 className="w-4 h-4 shrink-0 text-slate-400" /><span className="font-semibold">Document</span><span className={`ml-auto font-semibold ${user.docsStatus === 'approved' ? 'text-emerald-600' : 'text-slate-500'}`}>{documentLabel}</span></div>
                   <div className="flex items-center gap-3 px-4 py-3 border-t border-slate-100 text-xs text-slate-600"><MapPin className="w-4 h-4 shrink-0 text-slate-400" /><span className="font-semibold">Campus Presence</span><span className="ml-auto"><CampusStatusToggle variant="icon" /></span></div>
                 </div>
               </>)}
-            </div>
-          )}
-
-          {user.role === 'admin' && activeRole !== 'driver' && (
-            <div className="relative order-1">
-              <button onPointerDown={(e) => { e.preventDefault(); setShowRoleMenu(p => !p); }}
-                className="w-8 h-8 flex items-center justify-center rounded-xl text-slate-500 active:bg-slate-50 active:scale-90 transition-transform"
-                aria-label="Campus status">
-                <MoreVertical className="w-4 h-4" />
-              </button>
-              {showRoleMenu && (<>
-                <div className="fixed inset-0 z-40" onPointerDown={(e) => { e.preventDefault(); setShowRoleMenu(false); }} />
-                <div className="absolute right-0 top-full mt-2 z-50 bg-white border border-slate-100 rounded-2xl shadow-xl overflow-hidden min-w-[210px]">
-                  <div className="flex items-center gap-3 px-4 py-3 text-xs text-slate-600"><MapPin className="w-4 h-4 shrink-0 text-slate-400" /><span className="font-semibold">Campus Presence</span><span className="ml-auto"><CampusStatusToggle variant="icon" /></span></div>
-                </div>
-              </>)}
-            </div>
-          )}
-
-          {/* Regular admin + canDrive — 2-segment pill toggle.
-              Two stacked layers instead of toggling colour classes
-              directly — this WebView unreliably repaints colour changes;
-              opacity changes repaint reliably, so only opacity is
-              toggled here. */}
-          {user.role === 'admin' && user.canDrive && (
-            <div className="flex bg-slate-100 rounded-xl p-0.5 gap-0.5">
-              <button
-                onPointerDown={(e) => { e.preventDefault(); switchToAdminMode(); }}
-                className="relative rounded-[10px] transition-transform active:scale-95"
-              >
-                <span className="flex items-center gap-1 px-2.5 py-1.5 text-xs font-extrabold text-slate-400">
-                  <ShieldCheck className="w-3 h-3" />
-                  Admin
-                </span>
-                <span
-                  className={`absolute inset-0 flex items-center justify-center gap-1 px-2.5 py-1.5 rounded-[10px] bg-white text-slate-800 shadow-sm text-xs font-extrabold transition-opacity duration-150 ${
-                    activeRole !== 'driver' ? 'opacity-100' : 'opacity-0 pointer-events-none'
-                  }`}
-                >
-                  <ShieldCheck className="w-3 h-3" />
-                  Admin
-                </span>
-              </button>
-              <button
-                onPointerDown={(e) => { e.preventDefault(); switchToDriverMode(); }}
-                className="relative rounded-[10px] transition-transform active:scale-95"
-              >
-                <span className="flex items-center gap-1 px-2.5 py-1.5 text-xs font-extrabold text-slate-400">
-                  <Car className="w-3 h-3" />
-                  Driver
-                </span>
-                <span
-                  className={`absolute inset-0 flex items-center justify-center gap-1 px-2.5 py-1.5 rounded-[10px] bg-primary text-white shadow-sm text-xs font-extrabold transition-opacity duration-150 ${
-                    activeRole === 'driver' ? 'opacity-100' : 'opacity-0 pointer-events-none'
-                  }`}
-                >
-                  <Car className="w-3 h-3" />
-                  Driver
-                </span>
-              </button>
             </div>
           )}
 
