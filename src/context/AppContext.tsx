@@ -1034,7 +1034,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const {
       reference, fullName, icNumber, hpNumber, university, faculty, matricId,
       campus, paymentMode, remark, combinedFileName, depositMethod, postageZone,
-      riderId, riderName, deliveryAddress, universityKey, email, customQuoteToken,
+      riderId, riderName, deliveryAddress, universityKey, email, customQuoteToken, isCustomQuote,
       documents: { docs: docsPath, payment: paymentPath, oscar: oscarPath, skpg: skpgPath, konvo: konvoPath, ic: icPath } = {},
     } = input;
 
@@ -1070,9 +1070,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       p_university_key:    universityKey   ?? 'umpsa',
       p_email:             email ?? null,
     };
-    const { data, error } = customQuoteToken
+    // customQuoteToken stays empty for a quote resolved by IC alone (no
+    // real token to carry — see resolve_jubah_custom_quote_by_ic), so the
+    // routing decision has to key off isCustomQuote, not the token itself.
+    // create_custom_jubah_booking accepts an empty/null token and falls
+    // back to IC-only lookup for that case.
+    const { data, error } = (isCustomQuote || customQuoteToken)
       ? await supabase.rpc('create_custom_jubah_booking', {
-          p_token: customQuoteToken,
+          p_token: customQuoteToken || null,
           p_booking: {
             reference, full_name: fullName, ic_number: icNumber, hp_number: hpNumber,
             matric_id: matricId, university, university_key: universityKey ?? 'umpsa', campus,

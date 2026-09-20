@@ -29,6 +29,11 @@ export interface JubahBookingInput {
   riderName?: string;
   universityKey?: string;
   customQuoteToken?: string;
+  // True whenever a custom quote is active, even one resolved by IC alone
+  // (resolve_jubah_custom_quote_by_ic) with no real token to carry —
+  // customQuoteToken alone can't signal "route through
+  // create_custom_jubah_booking" for that path since it stays empty.
+  isCustomQuote?: boolean;
   documents: {
     docs?: string;
     payment?: string;

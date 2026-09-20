@@ -91,10 +91,13 @@ export const Jubah: React.FC = () => {
     return params.get('q') ?? params.get('jubah_quote') ?? '';
   });
   // A quote fixes the agreed price against an IC number, and pre-fills the
-  // phone number the runner entered (still editable) — the customer
-  // supplies their own university/campus/service option through the rest
-  // of this form, same as a non-quoted booking.
-  const [customQuote, setCustomQuote] = useState<null | { agreed_price: number; customer_phone?: string; expires_at: string }>(null);
+  // phone number and rider the runner entered (still editable/reassignable)
+  // — the customer supplies their own university/campus/service option
+  // through the rest of this form, same as a non-quoted booking. Resolved
+  // either via the special link (token+IC) or, now, by typing a matching
+  // IC directly into the general form's own IC field (IC alone — see
+  // resolve_jubah_custom_quote_by_ic).
+  const [customQuote, setCustomQuote] = useState<null | { agreed_price: number; customer_phone?: string; rider_id?: string; rider_name?: string; expires_at: string }>(null);
   const [quoteChecking, setQuoteChecking] = useState(false);
   const [quoteError, setQuoteError] = useState('');
   // Once booked, landingUniversity/form/tracking are all one page instance —
@@ -404,16 +407,32 @@ export const Jubah: React.FC = () => {
     ? depositAmount
     : customQuote?.agreed_price ?? (paymentMode === 'postage' ? postagePrice + ssCharge : pickupPrice);
 
+  const applyResolvedQuote = (data: { agreed_price: number; customer_phone?: string; rider_id?: string; rider_name?: string; expires_at: string }) => {
+    setCustomQuote(data);
+    // Pre-fill only — the field stays fully editable below (no `disabled`),
+    // this is just a convenience default from what the runner entered.
+    if (data.customer_phone) setHpNumber(formatPhone(data.customer_phone));
+  };
+
   const verifyCustomQuote = async () => {
     if (!customQuoteToken || icNumber.replace(/\D/g, '').length !== 12) { setQuoteError('Enter the 12-digit IC number used for this quote.'); return; }
     setQuoteChecking(true); setQuoteError('');
     const { data, error } = await supabase.rpc('resolve_jubah_custom_quote', { p_token: customQuoteToken, p_ic_number: icNumber });
     setQuoteChecking(false);
     if (error || !data?.success) { setQuoteError(data?.error ?? 'This quote could not be verified.'); return; }
-    setCustomQuote(data);
-    // Pre-fill only — the field stays fully editable below (no `disabled`),
-    // this is just a convenience default from what the runner entered.
-    if (data.customer_phone) setHpNumber(formatPhone(data.customer_phone));
+    applyResolvedQuote(data);
+  };
+
+  // General (no link) flow: typing a matching IC alone unlocks an active
+  // quote too, same as the special link — see resolve_jubah_custom_quote_by_ic.
+  // Silent by design (no error shown for "no match"), since most customers
+  // typing their IC here have no quote at all and this must never feel like
+  // a validation failure.
+  const checkIcForCustomQuote = async () => {
+    if (customQuoteToken || customQuote) return;
+    if (icNumber.replace(/\D/g, '').length !== 12) return;
+    const { data } = await supabase.rpc('resolve_jubah_custom_quote_by_ic', { p_ic_number: icNumber });
+    if (data?.success) applyResolvedQuote(data);
   };
 
   // Fetch active riders whenever campus or service option (Pickup/Postage) changes
@@ -432,8 +451,20 @@ export const Jubah: React.FC = () => {
     });
     supabase
       .rpc('get_active_jubah_riders', { p_campus: campus, p_method: paymentMode === 'deposit' ? depositMethod : paymentMode })
-      .then(({ data }) => { setRiders(data ?? []); setRidersLoading(false); });
-  }, [university, paymentMode, depositMethod, landingUniversity]);
+      .then(({ data }) => {
+        const list = data ?? [];
+        setRiders(list);
+        setRidersLoading(false);
+        // Auto-assign whoever created this quote — they're the one who
+        // actually negotiated it with the customer, not just any rider
+        // serving this campus/method. Falls through to normal manual
+        // selection if that rider isn't eligible here (e.g. the customer
+        // picked a different service option than the quote assumed).
+        if (customQuote?.rider_id && list.some((r: { id: string }) => r.id === customQuote.rider_id)) {
+          setSelectedRiderId(customQuote.rider_id);
+        }
+      });
+  }, [university, paymentMode, depositMethod, landingUniversity, customQuote]);
 
   // Shared Jubah bank account — one account for every rider/customer, set by
   // superadmin (JubahPriceSubTab.tsx). Public read, same as jubah_active.
@@ -745,6 +776,7 @@ export const Jubah: React.FC = () => {
       riderId: selectedRiderId, riderName: selectedRider?.name,
       deliveryAddress: addr, universityKey: landingUniversity, email,
       customQuoteToken: customQuoteToken || undefined,
+      isCustomQuote: Boolean(customQuote),
       documents: { docs: docsPath, payment: paymentPath, oscar: oscarPath, skpg: skpgPath, konvo: konvoPath, ic: icPath },
     };
 
@@ -903,6 +935,7 @@ export const Jubah: React.FC = () => {
                 inputMode="numeric"
                 value={icNumber}
                 onChange={e => setIcNumber(formatIc(e.target.value))}
+                onBlur={checkIcForCustomQuote}
                 placeholder="980123-45-6789"
                 maxLength={14}
                 required
