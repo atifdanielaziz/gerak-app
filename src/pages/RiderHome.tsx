@@ -22,6 +22,8 @@ import { buildJubahReceiptRows, type ReceiptDoc } from '../lib/receiptRows';
 import { generateReceiptPdf } from '../lib/receiptPdf';
 import { useAxisLockedScroll } from '../hooks/useAxisLockedScroll';
 import { JubahCustomQuoteSubTab } from './admin/jubah/JubahCustomQuoteSubTab';
+import { NativeSelect } from '../components/NativeSelect';
+import { jubahLocationLabel, universityKeyFromCampus } from '../lib/universities';
 
 type RiderTab    = 'daily' | 'jubah' | 'quote' | 'earnings';
 type JubahView   = 'list' | 'card' | 'details';
@@ -77,6 +79,13 @@ export const RiderHome: React.FC = () => {
   const [jubahLoading,   setJubahLoading]  = useState(false);
   const [updatingStatus, setUpdatingStatus] = useState(false);
   const [receiptModal,   setReceiptModal]  = useState<ReceiptDoc | null>(null);
+  // Campus filter for "My Assignments" — only meaningful once this rider
+  // covers more than one campus (possibly a different university, via the
+  // multi-campus Jubah assignment/invite flow). Purely a client-side view
+  // filter over the already-fetched jubahJobs, same as admin's campusView
+  // pattern elsewhere — the fetch itself stays rider_id-scoped, unfiltered.
+  const [myCampuses,  setMyCampuses]  = useState<string[]>([]);
+  const [campusFilter, setCampusFilter] = useState('all');
 
   const showToast = (msg: string) => { setToast(msg); setTimeout(() => setToast(''), 3000); };
 
@@ -101,6 +110,22 @@ export const RiderHome: React.FC = () => {
   }, []);
 
   useLoadOnActive(activeTab === 'jubah', loadJubahJobs);
+
+  useEffect(() => {
+    if (!user.canRobe) { queueMicrotask(() => setMyCampuses([])); return; }
+    (async () => {
+      const { data: { user: authUser } } = await supabase.auth.getUser();
+      if (!authUser) return;
+      const { data } = await supabase
+        .from('jubah_rider_assignments')
+        .select('campus')
+        .eq('rider_id', authUser.id)
+        .eq('is_active', true);
+      setMyCampuses([...new Set((data ?? []).map(a => a.campus as string))]);
+    })();
+  }, [user.canRobe]);
+
+  const visibleJubahJobs = campusFilter === 'all' ? jubahJobs : jubahJobs.filter(j => j.campus === campusFilter);
 
   // Realtime + polling safety net, same pattern already proven in
   // DriverHome.tsx for ride_orders. Without this, a status/balance change
@@ -481,14 +506,28 @@ export const RiderHome: React.FC = () => {
               <div className="bg-white border border-slate-100 rounded-3xl p-5 flex flex-col gap-4">
                 <h3 className="text-sm font-semibold text-slate-700 flex items-center justify-between">
                   <span className="flex items-center gap-1.5"><GraduationCap className="w-4 h-4" /> My Assignments</span>
-                  <span className="font-normal text-slate-300 normal-case tracking-normal">{jubahJobs.length} jobs</span>
+                  <span className="font-normal text-slate-300 normal-case tracking-normal">{visibleJubahJobs.length} jobs</span>
                 </h3>
+
+                {/* Campus filter — only shown once this rider actually covers
+                    more than one, so a single-campus rider sees no change. */}
+                {myCampuses.length > 1 && (
+                  <NativeSelect
+                    value={campusFilter}
+                    onChange={setCampusFilter}
+                    options={[
+                      { value: 'all', label: 'All Campuses' },
+                      ...myCampuses.map(c => ({ value: c, label: jubahLocationLabel(universityKeyFromCampus(c) ?? 'umpsa', c) })),
+                    ]}
+                    label="Filter by campus"
+                  />
+                )}
 
                 {jubahLoading ? (
                   <div className="flex justify-center py-8">
                     <span className="w-5 h-5 rounded-full border-2 border-slate-200 border-t-primary animate-spin" />
                   </div>
-                ) : jubahJobs.length === 0 ? (
+                ) : visibleJubahJobs.length === 0 ? (
                   <div className="flex flex-col items-center gap-3 py-8">
                     <div className="w-14 h-14 rounded-3xl bg-blue-50 border border-blue-100 flex items-center justify-center">
                       <GraduationCap className="w-6 h-6 text-blue-300" />
@@ -524,7 +563,7 @@ export const RiderHome: React.FC = () => {
                         </tr>
                       </thead>
                       <tbody>
-                        {jubahJobs.map(job => {
+                        {visibleJubahJobs.map(job => {
                           // Was `status !== 'ordered'` for non-deposit modes, which is also
                           // true for 'cancelled' — showing a green "confirmed" check for a
                           // cancelled, unpaid job. Same fix as AdminHome's matching table,
