@@ -230,8 +230,19 @@ export const Jubah: React.FC = () => {
 
   // Silently restore a saved draft on mount — same behaviour as returning
   // to an unsubmitted Google Form: no extra prompt, fields just reappear.
+  // Skipped entirely for a custom quote link (customQuoteToken set): that
+  // flow must start clean and be populated only by the verified quote
+  // itself. Confirmed live: a leftover draft from an earlier, different
+  // university/customer (plausible on a shared/incognito browser — the
+  // draft has no owner check at all) silently pre-filled personal fields
+  // and pinned landingUniversity to whatever that old draft was for
+  // (previously always hardcoded to 'umpsa' regardless), which then made
+  // applyResolvedQuote's own university match fail for the quote actually
+  // being opened, leaving the wrong, stale campus on screen instead of
+  // the quote's real one.
   const draftRestoredRef = useRef(false);
   useEffect(() => {
+    if (customQuoteToken) return;
     const d = loadFormDraft();
     if (!d) return;
     draftRestoredRef.current = true;
@@ -253,7 +264,13 @@ export const Jubah: React.FC = () => {
       setAddressPostal(d.addressPostal ?? '');
       setAddressCity(d.addressCity ?? '');
       setAddressState(d.addressState ?? '');
-      if (d.university) setLandingUniversity('umpsa');
+      // university is always either uni.label or `${uni.fullName} (${campus})`
+      // (see the effects/handlers that set it), so it always contains fullName —
+      // derive the real key instead of assuming which university this draft was for.
+      if (d.university) {
+        const draftUniversityKey = Object.values(UNIVERSITY_MAP).find(u => d.university.includes(u.fullName))?.key;
+        if (draftUniversityKey) setLandingUniversity(draftUniversityKey);
+      }
     });
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
