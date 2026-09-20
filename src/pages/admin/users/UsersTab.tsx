@@ -47,6 +47,11 @@ const UserCard: React.FC<{
   const [showMenu, setShowMenu] = useState(false);
   const [menuPosition, setMenuPosition] = useState({ top: 0, right: 0 });
   const isDriverLike = u.role === 'driver' || u.role === 'admin';
+  // Mirrors isDriverLike — an admin can already double as a real driver
+  // (can_drive + the driver-matching RPCs already accept admin/superadmin),
+  // so the same applies to Robe/Daily: an admin with can_robe set is a real
+  // assignable Jubah rider, not just a UI preview.
+  const isRiderLike = u.role === 'rider' || u.role === 'admin';
   const isDriverOrRider = isDriverLike || u.role === 'rider';
   // University/campus reassignment is now open to admin cards too (not
   // just driver/rider) — separate from isDriverOrRider since that gate is
@@ -136,7 +141,7 @@ const UserCard: React.FC<{
                 )}
 
                 {/* Rider capabilities */}
-                {u.role === 'rider' && onRiderCapToggle && (
+                {isRiderLike && onRiderCapToggle && (
                   <>
                     <button onClick={() => { onRiderCapToggle(u, !u.can_daily, u.can_robe ?? false); setShowMenu(false); }}
                       className={`w-full flex items-center gap-3 px-4 py-3 text-left text-xs font-semibold transition active:scale-95 ${u.can_daily ? 'bg-slate-100 text-slate-900' : 'text-slate-500 hover:bg-slate-50'}`}>
