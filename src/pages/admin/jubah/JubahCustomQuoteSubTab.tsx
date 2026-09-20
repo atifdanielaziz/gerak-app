@@ -73,6 +73,11 @@ export function JubahCustomQuoteSubTab({
   if (!active) return null;
 
   const createQuote = async () => {
+    // A fast double-tap fires this before React re-renders the disabled
+    // button — without this guard that created two quotes for the same IC,
+    // burning rate-limit quota and orphaning whichever one wasn't newest
+    // (the by-IC lookup only ever resolves the latest match).
+    if (creating) return;
     setCreating(true);
     setLink('');
     if (!price.trim() || isNaN(Number(price)) || Number(price) <= 0) {

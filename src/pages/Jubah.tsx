@@ -439,6 +439,13 @@ export const Jubah: React.FC = () => {
     if (data.campus) {
       const quotedUniversityKey = universityKeyFromCampus(data.campus);
       const quotedUni = quotedUniversityKey ? UNIVERSITY_MAP[quotedUniversityKey] : null;
+      if (!quotedUniversityKey || !quotedUni) {
+        // A typo'd or renamed campus on the rider's own assignment row —
+        // this silently skipped auto-fill with zero trace, which is exactly
+        // what "it's not working" looked like from the customer's side the
+        // one time this actually happened this session.
+        console.warn('[GERAK] applyResolvedQuote: campus does not match any known university:', data.campus);
+      }
       if (quotedUniversityKey && quotedUni) {
         const campusText = quotedUni.campuses.length === 1 ? quotedUni.label : `${quotedUni.fullName} (${data.campus})`;
         if (!landingUniversity) {
@@ -476,6 +483,18 @@ export const Jubah: React.FC = () => {
     if (icNumber.replace(/\D/g, '').length !== 12) return;
     const { data } = await supabase.rpc('resolve_jubah_custom_quote_by_ic', { p_ic_number: icNumber });
     if (data?.success) applyResolvedQuote(data);
+  };
+
+  // Only offered for the IC-only match (checkIcForCustomQuote above) — that
+  // lookup is genuinely ambiguous when the same IC has more than one active
+  // quote (order by created_at desc limit 1 just picks the newest), so a
+  // customer could get locked to the wrong one with no way out except
+  // reloading and losing everything else they'd filled in. A token link's
+  // match is a hash of token+IC together — there's no "wrong quote" case
+  // for it to recover from, so this stays hidden for that flow.
+  const resetCustomQuote = () => {
+    setCustomQuote(null);
+    setIcNumber('');
   };
 
   // Fetch active riders whenever campus or service option (Pickup/Postage) changes
@@ -985,6 +1004,15 @@ export const Jubah: React.FC = () => {
                 disabled={Boolean(customQuote)}
                 className="bg-white border border-slate-100 rounded-xl py-2.5 px-3 text-xs font-semibold text-slate-700 focus:outline-none focus:border-slate-900 transition placeholder:font-normal placeholder:text-slate-300"
               />
+              {customQuote && !customQuoteToken && (
+                <button
+                  type="button"
+                  onClick={resetCustomQuote}
+                  className="self-start text-xs font-semibold text-slate-400 underline decoration-slate-300 active:text-slate-600 transition"
+                >
+                  Not you? Clear and re-enter your IC
+                </button>
+              )}
             </div>
 
             {/* HP Number */}

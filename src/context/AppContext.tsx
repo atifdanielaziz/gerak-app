@@ -678,10 +678,15 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       );
       return;
     }
-    const roleLabel = data.role === 'jubah_lead' ? 'Lead' : data.role === 'rider' ? 'Rider' : data.role === 'driver' ? 'Driver' : 'Admin';
+    // apply_pending_invite's jubah_lead branch returns role:'rider' plus a
+    // separate jubah_lead:true flag (a lead IS a rider underneath) — this
+    // used to check data.role === 'jubah_lead', which that branch never
+    // actually sets, so every new Lead saw the generic Rider-access wording
+    // below instead of this one.
+    const roleLabel = data.jubah_lead ? 'Lead' : data.role === 'rider' ? 'Rider' : data.role === 'driver' ? 'Driver' : 'Admin';
     addNotification(
       `You now have ${roleLabel} access`,
-      data.role === 'jubah_lead'
+      data.jubah_lead
         ? 'You can now manage Jubah services for your assigned universities.'
         : `An admin granted you ${roleLabel} access for ${data.campus}. Explore your new tab to get started.`,
       'system',
