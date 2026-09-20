@@ -98,7 +98,7 @@ export const Profile: React.FC = () => {
     const ext  = stamped.name.split('.').pop() ?? 'jpg';
     const path = `${authUser.id}/license.${ext}`;
     const { error: upErr } = await supabase.storage.from('driver-documents').upload(path, stamped, { upsert: true });
-    if (upErr) { setDocMsg('Upload failed. Please try again.'); setUploadingDoc(null); return; }
+    if (upErr) { console.error('[GERAK] License upload failed:', upErr); setDocMsg('Upload failed. Please try again.'); setUploadingDoc(null); return; }
     const { data: signed } = await supabase.storage.from('driver-documents').createSignedUrl(path, 60 * 60 * 24 * 365);
     const url = signed?.signedUrl ?? '';
     const { error: profileErr } = await supabase.from('profiles').update({ license_url: url, license_storage_path: path, docs_status: 'pending' }).eq('id', authUser.id);

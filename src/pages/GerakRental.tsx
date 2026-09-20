@@ -461,7 +461,7 @@ export const GerakRental: React.FC = () => {
     const ext  = file.name.split('.').pop() ?? 'jpg';
     const path = `${bookingId}/license.${ext}`;
     const { error: upErr } = await supabase.storage.from('rental-licenses').upload(path, file, { upsert: true });
-    if (upErr) { showToast('Upload failed. Please try again.'); setUploadingLicense(null); return; }
+    if (upErr) { console.error('[GERAK] License upload failed:', upErr); showToast('Upload failed. Please try again.'); setUploadingLicense(null); return; }
     const { data: signed } = await supabase.storage.from('rental-licenses').createSignedUrl(path, 60 * 60 * 24 * 365);
     const url = signed?.signedUrl ?? '';
     await supabase.from('rental_bookings').update({ license_url: url, license_storage_path: path }).eq('id', bookingId);
