@@ -73,7 +73,7 @@ const getNextStatus = (job: JubahJobRow): string | null =>
   getJubahProgress(job.status, job.payment_mode).nextStatus;
 
 export const RiderHome: React.FC = () => {
-  const { user, refreshUserData, receiptGateActive, setLeaveGuard, riderCampus } = useApp();
+  const { user, refreshUserData, receiptGateActive, setLeaveGuard, adminUniversityKey } = useApp();
   const jubahJobsScrollRef = useAxisLockedScroll<HTMLDivElement>();
 
   const [activeTab,     setActiveTab]     = useState<RiderTab>('daily');
@@ -96,6 +96,17 @@ export const RiderHome: React.FC = () => {
   // role: 'driver' override to evaluate correctly.
   const isActive    = driverIsActive(user, receiptGateActive) || isAdminRole;
 
+  const bookingMatchesUniversity = useCallback((booking: Pick<JubahJobRow, 'university' | 'campus'>) => {
+    const selected = UNIVERSITY_MAP[adminUniversityKey];
+    if (!selected) return true;
+    const rawUniversity = (booking.university || '').trim().toLowerCase();
+    return rawUniversity === selected.key
+      || rawUniversity === selected.shortLabel.toLowerCase()
+      || rawUniversity === selected.fullName.toLowerCase()
+      || rawUniversity === selected.label.toLowerCase()
+      || universityKeyFromCampus(booking.campus || '') === selected.key;
+  }, [adminUniversityKey]);
+
   // ── Load jubah assignments ────────────────────────────────────────────────
   const loadJubahJobs = useCallback(async () => {
     setJubahLoading(true);
@@ -107,17 +118,13 @@ export const RiderHome: React.FC = () => {
       .eq('rider_id', authUser.id)
       .order('created_at', { ascending: false });
     if (error) console.error('[GERAK] jubah jobs load error:', error.message);
-    setJubahJobs((data as JubahJobRow[]) ?? []);
+    setJubahJobs(((data as JubahJobRow[]) ?? []).filter(bookingMatchesUniversity));
     setJubahLoading(false);
-  }, []);
+  }, [bookingMatchesUniversity]);
 
   useLoadOnActive(activeTab === 'jubah' || activeTab === 'customers', loadJubahJobs);
 
-  // riderCampus (set via the ☰ menu in the header, same switcher pattern as
-  // admin's university picker) is only ever populated once this rider
-  // actually covers more than one campus — a single-campus rider never has
-  // it set, so this stays a no-op filter for the common case.
-  const visibleJubahJobs = riderCampus ? jubahJobs.filter(j => j.campus === riderCampus) : jubahJobs;
+  const visibleJubahJobs = jubahJobs;
 
   // Realtime + polling safety net, same pattern already proven in
   // DriverHome.tsx for ride_orders. Without this, a status/balance change
@@ -166,11 +173,22 @@ export const RiderHome: React.FC = () => {
 
   const loadJubahEarnings = useCallback(async () => {
     setJubahEarningsLoading(true);
-    const { data, error } = await supabase.rpc('get_rider_jubah_earnings');
+    const { data: { user: authUser } } = await supabase.auth.getUser();
+    if (!authUser) { setJubahEarnings([]); setJubahEarningsLoading(false); return; }
+    const [{ data, error }, { data: scopedBookings, error: bookingsError }] = await Promise.all([
+      supabase.rpc('get_rider_jubah_earnings'),
+      supabase.from('jubah_bookings').select('reference, university, campus').eq('rider_id', authUser.id),
+    ]);
     if (error) console.error('[GERAK] jubah earnings load error:', error.message);
-    setJubahEarnings((data as JubahEarningRow[]) ?? []);
+    if (bookingsError) console.error('[GERAK] jubah earning scope load error:', bookingsError.message);
+    const allowedReferences = new Set(
+      ((scopedBookings as Array<Pick<JubahJobRow, 'reference' | 'university' | 'campus'>>) ?? [])
+        .filter(bookingMatchesUniversity)
+        .map(booking => booking.reference),
+    );
+    setJubahEarnings(((data as JubahEarningRow[]) ?? []).filter(row => allowedReferences.has(row.reference)));
     setJubahEarningsLoading(false);
-  }, []);
+  }, [bookingMatchesUniversity]);
 
   useLoadOnActive(activeTab === 'earnings', loadJubahEarnings);
 
@@ -963,7 +981,7 @@ export const RiderHome: React.FC = () => {
         {/* ── Custom Quote Tab ── */}
         {activeTab === 'quote' && (
           <div className="px-4 pb-[calc(6.5rem+env(safe-area-inset-bottom))]">
-            <JubahCustomQuoteSubTab active showToast={showToast} />
+            <JubahCustomQuoteSubTab active showToast={showToast} lockedUniversityKey={adminUniversityKey} />
           </div>
         )}
 
@@ -980,8 +998,8 @@ export const RiderHome: React.FC = () => {
               bookingsLoading={jubahLoading}
               reload={loadJubahJobs}
               showToast={showToast}
-              universityKey={universityKeyFromCampus(riderCampus || user.campus) ?? 'umpsa'}
-              universityLabel={UNIVERSITY_MAP[universityKeyFromCampus(riderCampus || user.campus) ?? 'umpsa']?.shortLabel ?? 'UMPSA'}
+              universityKey={adminUniversityKey}
+              universityLabel={UNIVERSITY_MAP[adminUniversityKey]?.shortLabel ?? 'UMPSA'}
             />
           </div>
         )}

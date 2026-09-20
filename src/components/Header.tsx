@@ -2,7 +2,7 @@
 import { useApp } from '../context/AppContext';
 import { Bell, ChevronLeft, ShieldCheck, Car, Bike, MoreHorizontal, MoreVertical, Eye, ChevronDown, X, MapPin, User, Pencil, CalendarCheck2, FileCheck2, Menu, Check, GraduationCap, UserRoundCog } from 'lucide-react';
 import { WaBtn } from '../lib/whatsapp';
-import { UNIVERSITIES as UNIVERSITY_OPTIONS, jubahLocationLabel, universityKeyFromCampus } from '../lib/universities';
+import { UNIVERSITIES as UNIVERSITY_OPTIONS, universityKeyFromCampus } from '../lib/universities';
 import { CampusStatusToggle } from './CampusStatusToggle';
 import { supabase } from '../lib/supabase';
 
@@ -100,7 +100,6 @@ export const Header: React.FC = () => {
     switchToAdminMode, switchToDriverMode, switchToRiderMode, switchToLeadMode, enterPreviewMode,
     showAuthGate, guestCampus, setGuestCampus, updateProfile, profileEditIntentRef,
     adminUniversityKey, setAdminUniversityKey,
-    riderCampus, setRiderCampus,
   } = useApp();
 
   const [showRoleMenu, setShowRoleMenu] = useState(false);
@@ -117,13 +116,8 @@ export const Header: React.FC = () => {
   const providerUniversity = UNIVERSITY_OPTIONS.find(option =>
     option.shortLabel === user.university || option.fullName === user.university || option.label === user.university,
   )?.shortLabel || user.university || 'UMPSA';
-
-  // Jubah riders can now be assigned at more than one campus — possibly a
-  // different university entirely — but this panel's "campus" line only
-  // ever showed profiles.campus (their single home campus), so a
-  // multi-campus rider's own account gave no sign they'd been added
-  // anywhere else. Lists every active assignment once there's more than
-  // one; single-campus riders (the common case) see no change at all.
+  // Active Jubah assignments may span campuses and universities. The rider's
+  // profile campus remains identity data; this list only drives page scope.
   const [myRiderCampuses, setMyRiderCampuses] = React.useState<string[]>([]);
   React.useEffect(() => {
     if (!user.canRobe) { queueMicrotask(() => setMyRiderCampuses([])); return; }
@@ -139,13 +133,29 @@ export const Header: React.FC = () => {
     })();
   }, [user.canRobe]);
 
-  // Keeps riderCampus pointed at a campus this rider actually still has —
-  // defaults to the first one once the list loads, and re-picks if the
-  // previously-selected campus was ever removed from underneath them.
+  const baseUniversityKey = UNIVERSITY_OPTIONS.find(option =>
+    option.key === user.university?.toLowerCase()
+      || option.shortLabel === user.university
+      || option.fullName === user.university
+      || option.label === user.university,
+  )?.key || universityKeyFromCampus(user.campus || '') || 'umpsa';
+  const isRiderUniversityScope = activeRole === 'rider' || activeRole === 'lead';
+  const riderUniversityKeys = Array.from(new Set([
+    baseUniversityKey,
+    ...myRiderCampuses.map(campus => universityKeyFromCampus(campus)).filter((key): key is string => Boolean(key)),
+    ...(user.jubahLeadUniversities || []),
+  ]));
+  const canUseUniversityMenu = user.role === 'admin'
+    || user.role === 'superadmin'
+    || user.isJubahLead
+    || activeRole === 'rider';
+
   React.useEffect(() => {
-    if (myRiderCampuses.length === 0) return;
-    if (!myRiderCampuses.includes(riderCampus)) setRiderCampus(myRiderCampuses[0]);
-  }, [myRiderCampuses, riderCampus, setRiderCampus]);
+    if (!isRiderUniversityScope || user.role === 'admin' || user.role === 'superadmin') return;
+    if (!riderUniversityKeys.includes(adminUniversityKey)) {
+      setAdminUniversityKey(riderUniversityKeys[0] || baseUniversityKey);
+    }
+  }, [adminUniversityKey, baseUniversityKey, isRiderUniversityScope, riderUniversityKeys.join('|'), setAdminUniversityKey, user.role]);
 
   if (currentPage === 'splash' || currentPage === 'login' || currentPage === 'register' || currentPage === 'forgot-password' || currentPage === 'reset-password' || currentPage === 'profile' || currentPage === 'complete-profile') {
     return null;
@@ -483,20 +493,11 @@ export const Header: React.FC = () => {
             </div>
           )}
 
-          {(() => {
-            const isAdminLikeMenu = user.role === 'admin' || user.role === 'superadmin' || user.isJubahLead;
-            // A plain rider/driver with more than one active Jubah campus
-            // gets this same ☰ menu, just scoped to the campuses they
-            // actually cover instead of every university — same "one
-            // switcher drives everything" pattern admin already has,
-            // requested directly instead of the separate inline dropdowns
-            // (Custom Quote, My Assignments) tried before this.
-            if (!isAdminLikeMenu && !(user.canRobe && myRiderCampuses.length > 1)) return null;
-            return (
+          {canUseUniversityMenu && (
             <div className="relative order-3">
               <button onPointerDown={(e) => { e.preventDefault(); setShowAdminUniversityMenu(p => !p); }}
                 className="w-8 h-8 flex items-center justify-center rounded-xl text-slate-600 active:bg-slate-50 active:scale-90 transition-transform"
-                aria-label={isAdminLikeMenu ? 'Select admin university' : 'Select your campus'}>
+                aria-label="Select university">
                 <Menu className="w-5 h-5" />
               </button>
               {showAdminUniversityMenu && (<>
@@ -513,24 +514,21 @@ export const Header: React.FC = () => {
                     onPointerDown={e => e.stopPropagation()}
                     onTouchMove={e => e.stopPropagation()}
                   >
-                  {isAdminLikeMenu ? UNIVERSITY_OPTIONS.map(option => {
+                  {UNIVERSITY_OPTIONS
+                    .filter(option => user.role === 'admin' || user.role === 'superadmin' || user.isJubahLead || riderUniversityKeys.includes(option.key))
+                    .map(option => {
                     const selected = adminUniversityKey === option.key;
-                    const assigned = !user.isJubahLead || user.jubahLeadUniversities.includes(option.key);
+                    const assigned = user.role === 'admin'
+                      || user.role === 'superadmin'
+                      || riderUniversityKeys.includes(option.key);
                     return <button key={option.key} disabled={!assigned} onClick={(e) => { e.stopPropagation(); if (!assigned) return; setAdminUniversityKey(option.key); setShowAdminUniversityMenu(false); }}
                       className={`w-full min-h-12 flex items-center gap-3 px-3 py-3 rounded-xl text-left transition-transform active:scale-[0.99] disabled:cursor-not-allowed ${selected ? 'border border-slate-900 bg-slate-50' : 'border border-transparent'} ${assigned ? '' : 'bg-slate-50 opacity-40'}`}>
                       <span className="flex-1 text-xs font-semibold text-slate-700">{option.shortLabel}</span>
                       {selected && <Check className="w-4 h-4 text-slate-800" />}
                     </button>;
-                  }) : myRiderCampuses.map(campus => {
-                    const selected = riderCampus === campus;
-                    return <button key={campus} onClick={(e) => { e.stopPropagation(); setRiderCampus(campus); setShowAdminUniversityMenu(false); }}
-                      className={`w-full min-h-12 flex items-center gap-3 px-3 py-3 rounded-xl text-left transition-transform active:scale-[0.99] ${selected ? 'border border-slate-900 bg-slate-50' : 'border border-transparent'}`}>
-                      <span className="flex-1 text-xs font-semibold text-slate-700">{jubahLocationLabel(universityKeyFromCampus(campus) ?? 'umpsa', campus)}</span>
-                      {selected && <Check className="w-4 h-4 text-slate-800" />}
-                    </button>;
                   })}
                   </div>
-                  {isAdminLikeMenu && !user.isJubahLead && (
+                  {(user.role === 'admin' || user.role === 'superadmin') && (
                     <div className="flex items-center gap-3 border-t border-slate-100 px-3 py-3 text-xs text-slate-600">
                       <GraduationCap className="h-4 w-4 shrink-0 text-slate-400" />
                       <span className="font-semibold">Jubah Service</span>
@@ -540,8 +538,7 @@ export const Header: React.FC = () => {
                 </div>
               </>)}
             </div>
-            );
-          })()}
+          )}
 
           {(user.role === 'admin' || user.role === 'superadmin' || user.isJubahLead) && (
             <button onPointerDown={(e) => { e.preventDefault(); setCurrentPage('notifications'); }}
@@ -602,9 +599,7 @@ export const Header: React.FC = () => {
                     )}
                   </>)}
                   <div className={`flex items-center gap-3 px-4 py-3 text-xs text-slate-600 ${(user.role === 'admin' || user.canDrive || user.canRobe || user.isJubahLead) ? 'border-t border-slate-100' : ''}`}><MapPin className="w-4 h-4 shrink-0 text-slate-400" /><span className="font-semibold">
-                    {myRiderCampuses.length > 1
-                      ? jubahLocationLabel(universityKeyFromCampus(riderCampus) ?? 'umpsa', riderCampus)
-                      : `${providerUniversity} ${user.campus || 'Campus'}`}
+                    {`${providerUniversity} ${user.campus || 'Campus'}`}
                   </span>
                   {/* Switchable via the ☰ menu next to the bell, not here — this row is a quick-glance confirmation, not itself the control. */}
                   </div>
