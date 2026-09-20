@@ -84,7 +84,17 @@ serve(async (req) => {
 
     if (fetchErr || !invite) return json({ success: false, reason: 'Invite not found.' }, 404)
 
-    await sendInviteEmail(invite)
+    // A rider invite for an email that already belongs to a non-customer
+    // profile is handled additively by apply_pending_invite() — it grants
+    // an extra Jubah campus on their existing account rather than creating
+    // a new one. Telling them to "create your account" in that case is
+    // just wrong (they already have one, and re-registering with the same
+    // email would fail), so this needs its own email entirely.
+    const { data: existingStaff } = invite.role === 'rider'
+      ? await admin.from('profiles').select('role').ilike('email', invite.email).neq('role', 'customer').maybeSingle()
+      : { data: null }
+
+    await (existingStaff ? sendAdditiveGrantEmail(invite) : sendInviteEmail(invite))
     return json({ success: true })
 
   } catch (err) {
@@ -194,5 +204,51 @@ async function sendInviteEmail(invite: Invite) {
     }
   } catch (err) {
     console.error('sendInviteEmail: failed to send:', err)
+  }
+}
+
+// The "additive" counterpart to sendInviteEmail — same visual shell, but for
+// someone who's already staff and is only gaining an extra Jubah campus on
+// their EXISTING account. No "create your account" CTA (they already have
+// one) and no role/capability table (nothing else about their account
+// changed) — just the one new fact and a note that it applies on its own.
+async function sendAdditiveGrantEmail(invite: Invite) {
+  const apiKey = Deno.env.get('RESEND_API_KEY')
+  const from   = Deno.env.get('RESEND_FROM_EMAIL')
+  const appBaseUrl = Deno.env.get('APP_BASE_URL') ?? 'https://gerakmy.com'
+  if (!apiKey || !from) return
+
+  const locationLabel = `${invite.university || 'Gerak'} ${invite.campus}`.trim()
+  const subject = `You're now a Jubah rider at ${locationLabel} 🏍️`
+
+  const html = `
+  <div style="font-family: -apple-system, Helvetica, Arial, sans-serif; max-width: 480px; margin: 0 auto; color: #1e293b;">
+    <div style="background:#ffffff;padding:22px 26px;border:1px solid #f1f5f9;border-bottom:none;border-radius:14px 14px 0 0;">
+      <img src="https://www.gerakmy.com/gerak-brand.png" alt="Gerak" width="72" style="display:block;width:72px;height:auto;border-radius:6px;">
+    </div>
+    <div style="background: #ffffff; border: 1px solid #f1f5f9; border-top: none; border-radius: 0 0 14px 14px; padding: 28px 26px 24px;">
+      <span style="display:inline-block;font-size:10.5px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:#dc2626;background:rgba(220,38,38,0.08);padding:4px 10px;border-radius:999px;margin-bottom:14px;">New Campus</span>
+      <h1 style="font-size: 20px; margin: 6px 0 6px;">You've been added at ${escapeHtml(locationLabel)}</h1>
+      <p style="font-size: 13.5px; color: #64748b; line-height: 1.6; margin: 0 0 22px;">
+        A Gerak admin added you as a Jubah rider for <strong>${escapeHtml(locationLabel)}</strong>, alongside your existing account. There's nothing to sign up for — this activates automatically the next time you open the Gerak app.
+      </p>
+      <p style="font-size: 12px; color: #64748b; line-height: 1.65; border-top: 1px dashed #f1f5f9; padding-top: 16px; margin: 0;">
+        Just open <code style="background:#f8fafc;border:1px solid #f1f5f9;border-radius:5px;padding:1px 6px;font-size:11.5px;color:#1e293b;">${escapeHtml(appBaseUrl.replace(/^https?:\/\//, ''))}</code> and log in as usual — your new campus will be waiting in the Jubah tab.
+      </p>
+    </div>
+    <p style="font-size: 11px; color: #cbd5e1; text-align: center; margin: 18px 0 0;">This was sent by a Gerak admin. If you weren't expecting this, contact your admin.</p>
+  </div>`
+
+  try {
+    const res = await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ from, to: invite.email, cc: 'gerakmygroup@gmail.com', subject, html }),
+    })
+    if (!res.ok) {
+      console.error('sendAdditiveGrantEmail: Resend API error:', res.status, await res.text())
+    }
+  } catch (err) {
+    console.error('sendAdditiveGrantEmail: failed to send:', err)
   }
 }
