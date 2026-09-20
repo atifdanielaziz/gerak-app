@@ -407,11 +407,18 @@ export const Jubah: React.FC = () => {
     ? depositAmount
     : customQuote?.agreed_price ?? (paymentMode === 'postage' ? postagePrice + ssCharge : pickupPrice);
 
-  const applyResolvedQuote = (data: { agreed_price: number; customer_phone?: string; rider_id?: string; rider_name?: string; campus?: string; expires_at: string }) => {
+  const applyResolvedQuote = (data: { agreed_price: number; customer_phone?: string; rider_id?: string; rider_name?: string; campus?: string; payment_mode?: 'pickup' | 'postage'; expires_at: string }) => {
     setCustomQuote(data);
     // Pre-fill only — every field this touches stays fully editable, this
     // is just a convenience default from what the runner already knows.
     if (data.customer_phone) setHpNumber(formatPhone(data.customer_phone));
+    // Auto-detected from the rider's own assignment (campus + method come
+    // from the same jubah_rider_assignments row) — not something the admin
+    // fills in. Matters beyond convenience: "Select Rider" only ever shows
+    // riders eligible for whichever method is currently selected, so
+    // leaving this at its "Full Payment — Pickup Point" default silently
+    // hid the rider auto-fill whenever the quote's rider was postage-only.
+    if (data.payment_mode) setPaymentMode(data.payment_mode);
     if (data.campus) {
       const quotedUniversityKey = universityKeyFromCampus(data.campus);
       const quotedUni = quotedUniversityKey ? UNIVERSITY_MAP[quotedUniversityKey] : null;
