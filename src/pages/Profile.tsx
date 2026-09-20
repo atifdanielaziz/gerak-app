@@ -390,7 +390,7 @@ export const Profile: React.FC = () => {
       <div className="flex-grow bg-white overflow-y-auto no-scrollbar animate-fade-in pb-8">
 
         {/* Sub-page header */}
-        <div className="px-5 pt-5 pb-2 flex items-center gap-3">
+        <div className="px-5 pt-5 pb-2 flex items-center gap-3" style={{ paddingTop: 'calc(1.25rem + env(safe-area-inset-top))' }}>
           <button
             onClick={() => setProfileView('hub')}
             className="w-9 h-9 flex items-center justify-center rounded-xl bg-slate-100 text-slate-700 active:scale-90 transition shrink-0"
@@ -784,7 +784,7 @@ export const Profile: React.FC = () => {
       <div className="flex-grow bg-white overflow-y-auto no-scrollbar animate-fade-in pb-8">
 
         {/* Sub-page header */}
-        <div className="px-5 pt-5 pb-2 flex items-center gap-3">
+        <div className="px-5 pt-5 pb-2 flex items-center gap-3" style={{ paddingTop: 'calc(1.25rem + env(safe-area-inset-top))' }}>
           <button
             onClick={() => { setProfileView('hub'); setPasswordError(''); setPasswordSaved(false); setCurrentPassword(''); setNewPassword(''); setConfirmPassword(''); }}
             className="w-9 h-9 flex items-center justify-center rounded-xl bg-slate-100 text-slate-700 active:scale-90 transition shrink-0"
@@ -854,7 +854,7 @@ export const Profile: React.FC = () => {
       }} onClose={() => setShowDigitalCard(false)} />}
 
       {/* Logout icon */}
-      <div className="flex justify-end px-5 pt-4">
+      <div className="flex justify-end px-5 pt-4" style={{ paddingTop: 'calc(1rem + env(safe-area-inset-top))' }}>
         <button
           onClick={() => showConfirmModal({ title: 'Logout', message: 'Are you sure you want to logout?', onConfirm: logout })}
           className="w-9 h-9 flex items-center justify-center rounded-xl bg-slate-100 text-slate-700 active:scale-90 transition"

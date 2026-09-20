@@ -61,7 +61,7 @@ export const Login: React.FC = () => {
       style={{ paddingBottom: 'calc(2rem + env(safe-area-inset-bottom))' }}>
 
       {/* Back / close */}
-      <div className="px-5 pt-4">
+      <div className="px-5 pt-4" style={{ paddingTop: 'calc(1rem + env(safe-area-inset-top))' }}>
         <button
           onClick={() => setCurrentPage('dashboard')}
           className="w-8 h-8 flex items-center justify-center rounded-full bg-slate-100 text-slate-500 active:scale-90 transition"

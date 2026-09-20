@@ -27,7 +27,7 @@ export const ResetPassword: React.FC = () => {
   if (done) {
     return (
       <div className="flex-1 bg-white flex flex-col items-center justify-center p-6 gap-4 animate-fade-in h-full"
-        style={{ paddingBottom: 'calc(1.5rem + env(safe-area-inset-bottom))' }}>
+        style={{ paddingTop: 'calc(1.5rem + env(safe-area-inset-top))', paddingBottom: 'calc(1.5rem + env(safe-area-inset-bottom))' }}>
         <div className="w-16 h-16 rounded-full bg-emerald-50 flex items-center justify-center">
           <CheckCircle className="w-8 h-8 text-emerald-500" />
         </div>
