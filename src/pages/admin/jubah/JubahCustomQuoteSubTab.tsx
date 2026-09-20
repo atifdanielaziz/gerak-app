@@ -3,9 +3,6 @@ import { Check, ClipboardCheck, Clock3, Copy } from 'lucide-react';
 import { supabase } from '../../../lib/supabase';
 import { copyToClipboard } from '../../../lib/clipboard';
 import { WaIcon, toWa } from '../../../lib/whatsapp';
-import { NativeSelect } from '../../../components/NativeSelect';
-
-type Mode = 'deposit' | 'pickup' | 'postage';
 
 const formatIcNumber = (value: string) => {
   const digits = value.replace(/\D/g, '').slice(0, 12);
@@ -39,13 +36,6 @@ export function JubahCustomQuoteSubTab({
   // Number pre-fills once they verify by IC — also lets this same value
   // drive the "Send via WhatsApp" button below right after generating.
   const [phone, setPhone] = useState('');
-  // Saved with the quote too, so the customer's Service Option (and, once
-  // resolved, Select Rider — which only ever shows riders eligible for
-  // whichever method is currently chosen) pre-fill to what was actually
-  // agreed, instead of defaulting to "Full Payment — Pickup Point" and
-  // silently showing no eligible riders if the runner only serves postage.
-  const [mode, setMode] = useState<Mode>('pickup');
-  const [depositMethod, setDepositMethod] = useState<'pickup' | 'postage'>('pickup');
   const [creating, setCreating] = useState(false);
   const [link, setLink] = useState('');
   const [copied, setCopied] = useState(false);
@@ -69,8 +59,6 @@ export function JubahCustomQuoteSubTab({
       p_ic_number: ic,
       p_agreed_price: Number(price),
       p_customer_phone: phone,
-      p_payment_mode: mode,
-      p_deposit_method: mode === 'deposit' ? depositMethod : null,
     });
     setCreating(false);
     if (error || !data?.success) {
@@ -87,8 +75,6 @@ export function JubahCustomQuoteSubTab({
     showToast('Custom quote created. It expires in 48 hours.');
     setIc('');
     setPrice('');
-    setMode('pickup');
-    setDepositMethod('pickup');
   };
 
   const copyLink = async () => setCopied(await copyToClipboard(link));
@@ -99,14 +85,12 @@ export function JubahCustomQuoteSubTab({
       <section className="border border-slate-100 rounded-3xl p-5 bg-white">
         <div className="flex items-start gap-3 mb-5">
           <ClipboardCheck className="w-5 h-5 text-slate-400 mt-0.5" />
-          <div><h3 className="font-semibold text-slate-900">Custom Quote</h3><p className="text-xs font-normal text-slate-400 mt-1">Agree a total price and service option with the customer over WhatsApp, then generate a link. Phone, campus, service option and you as their rider all pre-fill; they only need to upload documents and confirm.</p></div>
+          <div><h3 className="font-semibold text-slate-900">Custom Quote</h3><p className="text-xs font-normal text-slate-400 mt-1">Agree a total price with the customer over WhatsApp, then generate a link. Their phone number pre-fills on the form; they fill in the rest (university, campus, service option, documents) themselves.</p></div>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <label className="space-y-2"><span className="text-sm font-normal text-slate-500">Customer IC Number</span><input value={ic} onChange={e => setIc(formatIcNumber(e.target.value))} inputMode="numeric" autoComplete="off" placeholder="123456-78-9101" className="w-full rounded-xl border border-slate-100 bg-white px-3 py-2.5 text-sm focus:outline-none focus:border-slate-900" /></label>
           <label className="space-y-2"><span className="text-sm font-normal text-slate-500">Agreed Total Price</span><div className="flex rounded-xl border border-slate-100 focus-within:border-slate-900"><span className="px-3 py-2.5 text-sm text-slate-400">RM</span><input value={price} onChange={e => setPrice(e.target.value.replace(/[^0-9.]/g, ''))} inputMode="decimal" placeholder="100.00" className="min-w-0 flex-1 py-2.5 pr-3 text-sm focus:outline-none" /></div></label>
           <label className="space-y-2"><span className="text-sm font-normal text-slate-500">Customer Phone Number</span><input value={phone} onChange={e => setPhone(formatPhoneNumber(e.target.value))} inputMode="tel" autoComplete="tel" placeholder="012-3456789" className="w-full rounded-xl border border-slate-100 bg-white px-3 py-2.5 text-sm focus:outline-none focus:border-slate-900" /></label>
-          <label className="space-y-2"><span className="text-sm font-normal text-slate-500">Service Option</span><NativeSelect value={mode} onChange={v => setMode(v as Mode)} options={[{ value: 'deposit', label: 'Deposit' }, { value: 'pickup', label: 'Full Payment — Pickup Point' }, { value: 'postage', label: 'Full Payment — Pickup & Postage' }]} /></label>
-          {mode === 'deposit' && <label className="space-y-2"><span className="text-sm font-normal text-slate-500">Deposit Service</span><NativeSelect value={depositMethod} onChange={v => setDepositMethod(v as 'pickup' | 'postage')} options={[{ value: 'pickup', label: 'Pickup Point' }, { value: 'postage', label: 'Pickup & Postage' }]} /></label>}
         </div>
         <button type="button" disabled={creating} onClick={createQuote} className="mt-5 w-full rounded-xl bg-primary text-white py-3 text-sm font-semibold active:scale-[0.99] transition-transform disabled:opacity-50">{creating ? 'Creating…' : 'Generate Quote Link'}</button>
       </section>
