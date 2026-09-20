@@ -36,13 +36,18 @@ const JubahRiderSheet: React.FC<{
   dropPoint: string;
   saving: boolean;
   assignments: { id: string; method: string; drop_point: string | null; campus: string }[];
+  // Every active campus this rider covers, across every university —
+  // unlike `assignments` (scoped to whichever university's list the admin
+  // currently has open), this is fetched fresh for the rider regardless
+  // of view, so the sheet always shows the complete picture.
+  allCampuses: string[];
   onMethodChange: (m: 'pickup' | 'postage') => void;
   onDropPointChange: (v: string) => void;
   onSave: () => void;
   onAddAssignment: (method: 'pickup' | 'postage', dropPoint: string, campus: string) => Promise<void>;
   onDeleteAssignment: (id: string) => Promise<void>;
   onClose: () => void;
-}> = ({ rider, method, dropPoint, saving, assignments, onMethodChange, onDropPointChange, onSave, onAddAssignment, onDeleteAssignment, onClose }) => {
+}> = ({ rider, method, dropPoint, saving, assignments, allCampuses, onMethodChange, onDropPointChange, onSave, onAddAssignment, onDeleteAssignment, onClose }) => {
   const { showConfirmModal } = useApp();
   const [isEditingDropPoint, setIsEditingDropPoint] = useState(!dropPoint);
   const dropPointDisabled = method === 'postage' || !isEditingDropPoint;
@@ -112,7 +117,13 @@ const JubahRiderSheet: React.FC<{
         {/* Info block */}
         <div className="mx-4 mb-4 bg-slate-50 border border-slate-100 rounded-2xl p-4 text-xs font-mono text-slate-700 space-y-1.5 leading-relaxed">
           <p><span className="text-slate-400">Gerak ID:</span> <span className="text-blue-600 font-semibold">{rider.gerak_id}</span></p>
-          <p><span className="text-slate-400">Campus:</span> {jubahLocationLabel(universityKeyFromCampus(rider.campus) ?? 'umpsa', rider.campus)}</p>
+          <p><span className="text-slate-400">Campus:</span> {UNIVERSITY_MAP[universityKeyFromCampus(rider.campus) ?? 'umpsa']?.shortLabel ?? 'UMPSA'}</p>
+          <p>
+            <span className="text-slate-400">Assigned:</span>{' '}
+            {allCampuses.length > 0
+              ? [...allCampuses].sort().map(c => jubahLocationLabel(universityKeyFromCampus(c) ?? 'umpsa', c)).join(', ')
+              : '—'}
+          </p>
           <p><span className="text-slate-400">IC Number:</span> {rider.ic_number || '—'}</p>
           <div className="flex items-center gap-2">
             <span><span className="text-slate-400">H/P:</span> {rider.phone || '—'}</span>
@@ -376,6 +387,19 @@ export const JubahRiderSubTab = forwardRef<JubahRiderSubTabHandle, JubahRiderSub
   const [jubahMethodDraft, setJubahMethodDraft] = useState<'pickup' | 'postage' | ''>('');
   const [jubahDropPointDraft, setJubahDropPointDraft] = useState('');
   const [savingJubahAssignment, setSavingJubahAssignment] = useState(false);
+  // Every campus the open sheet's rider actually covers, across every
+  // university — fetched fresh per rider since jubahAssignments (below) is
+  // scoped to whichever university's list is currently open, not the
+  // rider's complete picture.
+  const [jubahSheetAllCampuses, setJubahSheetAllCampuses] = useState<string[]>([]);
+  useEffect(() => {
+    if (!jubahSheetRider) { queueMicrotask(() => setJubahSheetAllCampuses([])); return; }
+    supabase.from('jubah_rider_assignments')
+      .select('campus')
+      .eq('rider_id', jubahSheetRider.id)
+      .eq('is_active', true)
+      .then(({ data }) => setJubahSheetAllCampuses([...new Set((data ?? []).map(a => a.campus as string))]));
+  }, [jubahSheetRider]);
 
   // Same university this admin's rider/representative data is scoped to
   // (see loadJubahRiders below) — shown next to card headers.
@@ -662,6 +686,7 @@ export const JubahRiderSubTab = forwardRef<JubahRiderSubTabHandle, JubahRiderSub
           dropPoint={jubahDropPointDraft}
           saving={savingJubahAssignment}
           assignments={jubahAssignments.filter(a => a.rider_id === jubahSheetRider.id)}
+          allCampuses={jubahSheetAllCampuses}
           onMethodChange={m => {
             setJubahMethodDraft(m);
             if (m === 'postage') setJubahDropPointDraft('-');
