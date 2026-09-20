@@ -1,9 +1,10 @@
 import { useCallback, useState } from 'react';
 import { supabase } from '../../../lib/supabase';
-import { TrendingUp, GraduationCap, Landmark, CircleDollarSign } from 'lucide-react';
+import { TrendingUp, GraduationCap, Landmark, CircleDollarSign, Users, RotateCcw } from 'lucide-react';
 import { useLoadOnActive } from '../../../hooks/useLoadOnActive';
 import { JubahQrButton } from '../../../components/JubahQrButton';
 import { UNIVERSITY_MAP } from '../../../lib/universities';
+import { useApp } from '../../../context/AppContext';
 
 type JubahPrice = { remark: string; payment_mode: string; price: number; university: string };
 
@@ -43,6 +44,7 @@ interface JubahPriceSubTabProps {
 // only when this sub-tab is actually viewed — same data, same RPCs, just no
 // longer tangled with riders/bookings loading that this sub-tab never uses.
 export function JubahPriceSubTab({ active, isSuperAdmin, showToast, jubahUniversity }: JubahPriceSubTabProps) {
+  const { showConfirmModal } = useApp();
   const [priceDrafts,       setPriceDrafts]       = useState<Record<string, string>>({});
   // Last-saved values — compared against priceDrafts to know which fields
   // are actually dirty, so the one global Save button below the matrix
@@ -246,6 +248,68 @@ export function JubahPriceSubTab({ active, isSuperAdmin, showToast, jubahUnivers
     showToast('Global Jubah deposit updated.');
   };
 
+  // Rider order cap + season start — same "no manual flag to forget"
+  // design as everywhere else: the cap itself is just a number, and
+  // whether a rider is still eligible gets computed live from their real
+  // order count every time (get_active_jubah_riders, the booking
+  // functions), never a stale per-rider toggle an admin has to remember
+  // to flip back. Shared across every university — a rider's cap is the
+  // same number everywhere, just counted separately per university (see
+  // jubah_rider_order_count).
+  const [capDraft, setCapDraft] = useState('45');
+  const [capOriginal, setCapOriginal] = useState('45');
+  const [capLocked, setCapLocked] = useState(true);
+  const [savingCap, setSavingCap] = useState(false);
+  const [seasonStartedAt, setSeasonStartedAt] = useState<string | null>(null);
+  const [startingSeason, setStartingSeason] = useState(false);
+
+  const loadRiderCap = useCallback(async () => {
+    const { data } = await supabase.from('app_settings').select('key, value')
+      .in('key', ['jubah_rider_order_cap', 'jubah_season_started_at']);
+    const cap = data?.find(r => r.key === 'jubah_rider_order_cap')?.value ?? '45';
+    setCapDraft(cap);
+    setCapOriginal(cap);
+    setCapLocked(true);
+    setSeasonStartedAt(data?.find(r => r.key === 'jubah_season_started_at')?.value ?? null);
+  }, []);
+
+  useLoadOnActive(active, loadRiderCap);
+
+  const capDirty = capDraft !== capOriginal;
+  const handleSaveCap = async () => {
+    const cap = Number(capDraft);
+    if (!Number.isInteger(cap) || cap < 1) { showToast('Enter a whole number of at least 1.'); return; }
+    setSavingCap(true);
+    const { data, error } = await supabase.rpc('set_jubah_rider_order_cap', { p_cap: cap });
+    if (error || !data?.success) {
+      setSavingCap(false);
+      showToast(data?.error ?? 'Failed to save the order cap.');
+      return;
+    }
+    const saved = String(data.cap ?? cap);
+    setCapDraft(saved);
+    setCapOriginal(saved);
+    setCapLocked(true);
+    setSavingCap(false);
+    showToast('Rider order cap updated.');
+  };
+
+  const handleStartNewSeason = () => {
+    showConfirmModal({
+      title: 'Start New Season?',
+      message: 'Every rider\'s order count resets to zero — orders from the current season stay on record, they just stop counting toward anyone\'s cap. Use this at the start of a new convocation, not mid-season.',
+      confirmLabel: 'START NEW SEASON',
+      onConfirm: async () => {
+        setStartingSeason(true);
+        const { data, error } = await supabase.rpc('start_new_jubah_season');
+        setStartingSeason(false);
+        if (error || !data?.success) { showToast(data?.error ?? 'Failed to start a new season.'); return; }
+        setSeasonStartedAt(data.started_at ?? new Date().toISOString());
+        showToast('New season started — every rider\'s count is back to zero.');
+      },
+    });
+  };
+
   return (
     <div className="flex flex-col gap-4">
 
@@ -330,6 +394,61 @@ export function JubahPriceSubTab({ active, isSuperAdmin, showToast, jubahUnivers
             <span className="text-xs font-normal text-slate-400 ml-2">superadmin only to change</span>
           </div>
         )}
+      </div>
+
+      {/* Per-rider order cap — shared across every university a rider
+          covers, counted separately per university. Once a rider hits it,
+          they stop appearing as an eligible rider there (dropdown +
+          directory) automatically — no manual "mark as full" step. */}
+      <div className="bg-amber-50 border border-amber-100 rounded-3xl p-5 flex flex-col gap-3">
+        <h3 className="text-sm font-semibold text-slate-700 flex items-center gap-1.5">
+          <Users className="w-4 h-4" /> Rider Order Cap
+        </h3>
+        <p className="text-xs text-slate-400 font-semibold -mt-1.5">
+          Max orders a rider can take per university before they stop showing as available. Same number everywhere — counted separately for each university.
+        </p>
+        {isSuperAdmin ? (
+          <div className="flex gap-2 items-end">
+            <div className="flex-1 flex flex-col gap-1.5">
+              <label className="text-xs font-normal text-slate-400">Orders per University</label>
+              <input
+                type="number"
+                min="1"
+                step="1"
+                value={capDraft}
+                onChange={e => setCapDraft(e.target.value)}
+                readOnly={capLocked}
+                onClick={() => { if (capLocked) setCapLocked(false); }}
+                style={{ fontSize: '13px' }}
+                className={`bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 font-semibold focus:outline-none focus:border-primary transition ${capLocked ? 'text-slate-400 cursor-pointer' : 'text-slate-700'}`}
+              />
+            </div>
+            <SaveStateButton dirty={capDirty} saving={savingCap} onSave={handleSaveCap} />
+          </div>
+        ) : (
+          <div className="bg-slate-50 border border-slate-100 rounded-xl px-3 py-2.5">
+            <span className="text-xs font-semibold text-slate-600">{capDraft} orders per university</span>
+            <span className="text-xs font-normal text-slate-400 ml-2">superadmin only to change</span>
+          </div>
+        )}
+        <div className="border-t border-amber-100 pt-3 flex items-center justify-between gap-3">
+          <div className="flex flex-col gap-0.5 min-w-0">
+            <span className="text-xs font-normal text-slate-400">Current season started</span>
+            <span className="text-xs font-semibold text-slate-600 truncate">
+              {seasonStartedAt ? new Date(seasonStartedAt).toLocaleString('en-MY', { timeZone: 'Asia/Kuala_Lumpur' }) : 'Loading…'}
+            </span>
+          </div>
+          {isSuperAdmin && (
+            <button type="button" disabled={startingSeason}
+              onPointerDown={e => { e.preventDefault(); handleStartNewSeason(); }}
+              className="shrink-0 flex items-center gap-1.5 px-4 py-2.5 rounded-xl border border-slate-300 bg-white text-xs font-semibold text-slate-600 transition-transform active:scale-[0.99] disabled:opacity-50">
+              <RotateCcw className="w-3.5 h-3.5" /> {startingSeason ? 'Starting…' : 'Start New Season'}
+            </button>
+          )}
+        </div>
+        <p className="text-xs text-slate-400 font-normal -mt-1">
+          Only orders placed after this date count toward the cap above — orders from before it still exist and stay in Customer Details, they just don't take up a slot. Use "Start New Season" at the beginning of a new convocation to reset everyone back to zero.
+        </p>
       </div>
 
       {/* Rider commission — regular admin sees it read-only for
