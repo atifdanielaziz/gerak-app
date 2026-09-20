@@ -121,7 +121,13 @@ const JubahRiderSheet: React.FC<{
           <p>
             <span className="text-slate-400">Assigned:</span>{' '}
             {allCampuses.length > 0
-              ? [...allCampuses].sort().map(c => jubahLocationLabel(universityKeyFromCampus(c) ?? 'umpsa', c)).join(', ')
+              // UMPSA collapses to just "UMPSA" here too (Pekan/Gambang share
+              // one rider pool — see the Campus line above), deduped so a
+              // rider assigned at both doesn't show "UMPSA, UMPSA".
+              ? [...new Set(allCampuses.map(c => {
+                  const key = universityKeyFromCampus(c) ?? 'umpsa';
+                  return key === 'umpsa' ? 'UMPSA' : jubahLocationLabel(key, c);
+                }))].sort().join(', ')
               : '—'}
           </p>
           <p><span className="text-slate-400">IC Number:</span> {rider.ic_number || '—'}</p>
