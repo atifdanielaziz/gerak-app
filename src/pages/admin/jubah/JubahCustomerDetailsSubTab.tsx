@@ -66,9 +66,15 @@ export function JubahCustomerDetailsSubTab({
 
   const removeBooking = async (booking: JubahBookingRow) => {
     setRemovingId(booking.id);
-    const { error } = await supabase.from('jubah_bookings').delete().eq('id', booking.id);
+    // .delete() alone reports success even when RLS filters the row out of
+    // its own USING clause and zero rows are actually removed — confirmed
+    // live: superadmin had no delete policy on jubah_bookings at all, so
+    // this silently no-op'd for months. .select('id') forces the deleted
+    // row back so an empty result can be told apart from a real success.
+    const { data, error } = await supabase.from('jubah_bookings').delete().eq('id', booking.id).select('id');
     setRemovingId(null);
     if (error) { showToast('Delete failed: ' + error.message); return; }
+    if (!data || data.length === 0) { showToast("Delete didn't go through — you may not have permission."); return; }
     showToast(`${booking.reference} deleted.`);
     reload();
   };
