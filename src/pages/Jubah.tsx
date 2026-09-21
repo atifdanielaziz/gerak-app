@@ -423,6 +423,7 @@ export const Jubah: React.FC = () => {
   const cost = paymentMode === 'deposit'
     ? depositAmount
     : customQuote?.agreed_price ?? (paymentMode === 'postage' ? postagePrice + ssCharge : pickupPrice);
+  const formatServicePrice = (amount: number) => `RM${Number.isInteger(amount) ? amount : amount.toFixed(2)}`;
 
   const applyResolvedQuote = (data: { agreed_price: number; customer_phone?: string; rider_id?: string; rider_name?: string; campus?: string; payment_mode?: 'pickup' | 'postage'; expires_at: string }) => {
     setCustomQuote(data);
@@ -1155,7 +1156,7 @@ export const Jubah: React.FC = () => {
               <input type="radio" name="paymentMode" value="deposit" checked={paymentMode === 'deposit'} onChange={() => setPaymentMode('deposit')} className="mt-0.5 accent-slate-900 shrink-0" />
               <div className="flex-1">
                 <span className={`text-xs font-semibold block ${paymentMode === 'deposit' ? 'text-slate-900' : 'text-slate-700'}`}>
-                  Deposit — Pay before robe Collection date
+                  Deposit ({formatServicePrice(depositAmount)}) — Pay before robe Collection date
                 </span>
                 <span className="text-xs text-slate-400 leading-relaxed block mt-0.5">
                   Pay a small deposit now to secure your booking. Pay the remaining balance <span className="font-bold text-slate-500">1 day before collection day</span> via Track My Order. <span className="bg-yellow-200 text-slate-800 font-semibold px-1 rounded">The deposit is non-refundable once paid — you can cancel for free before paying it, but not after.</span>
@@ -1205,6 +1206,11 @@ export const Jubah: React.FC = () => {
                             }`}
                           >
                             <span className="flex-1 text-left">{zone === 'SM' ? 'SM — Semenanjung Malaysia' : 'SS — Sabah & Sarawak'}</span>
+                            <span className="font-normal text-slate-400">
+                              {zone === 'SM'
+                                ? formatServicePrice(postagePrice)
+                                : `${formatServicePrice(postagePrice)}+${formatServicePrice(10)}`}
+                            </span>
                           </button>
                         ))}
                       </div>
@@ -1219,7 +1225,7 @@ export const Jubah: React.FC = () => {
               <input type="radio" name="paymentMode" value="pickup" checked={paymentMode === 'pickup'} onChange={() => setPaymentMode('pickup')} className="mt-0.5 accent-slate-900 shrink-0" />
               <div>
                 <span className={`text-xs font-semibold block ${paymentMode === 'pickup' ? 'text-slate-900' : 'text-slate-700'}`}>
-                  Full Payment — Pickup Point
+                  Full Payment ({formatServicePrice(pickupPrice)}) — Pickup Point
                 </span>
                 <span className="text-xs text-slate-400 leading-relaxed block mt-0.5">
                   Service charge for pickup only at {jubahLocationLabel(landingUniversity, deriveJubahCampus(landingUniversity, university))} on your scheduled date. We store, manage and maintain all items (jubah, mortarboard, kad jemputan, cenderahati &amp; selempang) until handover.
@@ -1232,7 +1238,7 @@ export const Jubah: React.FC = () => {
               <input type="radio" name="paymentMode" value="postage" checked={paymentMode === 'postage'} onChange={() => setPaymentMode('postage')} className="mt-0.5 accent-slate-900 shrink-0" />
               <div className="flex-1">
                 <span className={`text-xs font-semibold block ${paymentMode === 'postage' ? 'text-slate-900' : 'text-slate-700'}`}>
-                  Full Payment — Pickup &amp; Postage
+                  Full Payment ({formatServicePrice(postagePrice)}) — Pickup &amp; Postage
                 </span>
                 <span className="text-xs text-slate-400 leading-relaxed block mt-0.5">
                   Total weight ≈ 3–4 kg (jubah, mortarboard, kad jemputan, cenderahati &amp; selempang).
@@ -1251,6 +1257,11 @@ export const Jubah: React.FC = () => {
                         }`}
                       >
                         <span className="flex-1 text-left">{zone === 'SM' ? 'SM — Semenanjung Malaysia' : 'SS — Sabah & Sarawak'}</span>
+                        <span className="font-normal text-slate-400">
+                          {zone === 'SM'
+                            ? formatServicePrice(postagePrice)
+                            : `${formatServicePrice(postagePrice)}+${formatServicePrice(10)}`}
+                        </span>
                       </button>
                     ))}
                   </div>
