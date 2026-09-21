@@ -324,6 +324,13 @@ export const UsersTab = forwardRef<UsersTabHandle, UsersTabProps>(function Users
   const [leadRows, setLeadRows] = useState<Array<{ user_id: string; is_active: boolean }>>([]);
   const [leadAssignments, setLeadAssignments] = useState<Array<{ lead_id: string; university_key: string }>>([]);
   const [savingLead, setSavingLead] = useState(false);
+  // A rider invited to an additional Jubah campus (see
+  // 20260920240000_invite_existing_staff_additional_campus.sql) keeps their
+  // original home campus/university — so a rider whose home is UMPSA but
+  // who also picks up UKM Jubah jobs would otherwise never appear when this
+  // page is scoped to UKM. Tracked separately from profileUsers so
+  // universityUsers can union home-campus staff with cross-assigned riders.
+  const [riderAssignments, setRiderAssignments] = useState<Array<{ rider_id: string; campus: string }>>([]);
 
   useEffect(() => { onModalOpenChange(!!pendingAction || !!reviewingUserId); }, [pendingAction, reviewingUserId, onModalOpenChange]);
 
@@ -343,6 +350,31 @@ export const UsersTab = forwardRef<UsersTabHandle, UsersTabProps>(function Users
     setProfileUsersTotalCount(count ?? null);
     // Enrich drivers with capability flags from profiles table
     const users = (data as ProfileUser[]) ?? [];
+    const usersByIdEarly = new Map(users.map(u => [u.id, u]));
+
+    // Cross-campus Jubah assignments (see comment on riderAssignments state)
+    // — a non-superadmin's get_all_profiles(adminCampus) call above only
+    // returns home-campus profiles, so a cross-assigned rider whose home
+    // campus is elsewhere needs their profile pulled in separately here.
+    const { data: assignments } = await supabase
+      .from('jubah_rider_assignments')
+      .select('rider_id, campus')
+      .eq('is_active', true);
+    const riderAssignmentRows = (assignments as Array<{ rider_id: string; campus: string }> | null) ?? [];
+    setRiderAssignments(riderAssignmentRows);
+    const missingRiderIds = [...new Set(riderAssignmentRows.map(a => a.rider_id))]
+      .filter(id => !usersByIdEarly.has(id));
+    if (missingRiderIds.length > 0) {
+      const { data: missingProfiles } = await supabase
+        .from('profiles')
+        .select('*')
+        .in('id', missingRiderIds)
+        .in('role', ['admin', 'driver', 'rider']);
+      (missingProfiles as ProfileUser[] | null)?.forEach(p => {
+        if (!usersByIdEarly.has(p.id)) { users.push(p); usersByIdEarly.set(p.id, p); }
+      });
+    }
+
     const driverIds      = users.filter(u => u.role === 'driver').map(u => u.id);
     const riderIds       = users.filter(u => u.role === 'rider').map(u => u.id);
     const driverRiderIds = [...driverIds, ...riderIds];
@@ -553,11 +585,20 @@ export const UsersTab = forwardRef<UsersTabHandle, UsersTabProps>(function Users
     return !['admin', 'superadmin'].includes(targetRole);
   };
 
+  // Riders assigned to a campus of this university via jubah_rider_assignments,
+  // even though their home campus (and so their default university) is
+  // elsewhere — see riderAssignments' state comment.
+  const crossAssignedRiderIds = useMemo(() => new Set(
+    riderAssignments
+      .filter(a => universityKeyFromCampus(a.campus) === universityKey)
+      .map(a => a.rider_id)
+  ), [riderAssignments, universityKey]);
+
   // Was recomputed raw in the render body on every render, so every
   // keystroke into the search box re-filtered the full list synchronously.
   const universityUsers = useMemo(() => profileUsers.filter(u =>
-    (universityKeyFromCampus(u.campus) ?? 'umpsa') === universityKey
-  ), [profileUsers, universityKey]);
+    (universityKeyFromCampus(u.campus) ?? 'umpsa') === universityKey || crossAssignedRiderIds.has(u.id)
+  ), [profileUsers, universityKey, crossAssignedRiderIds]);
 
   const filteredUsers = useMemo(() => {
     const now = Date.now();
