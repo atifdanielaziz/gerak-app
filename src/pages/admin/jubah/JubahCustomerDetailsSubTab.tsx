@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
-import { CheckCircle2, Download, RefreshCw, Users, XCircle } from 'lucide-react';
+import { CheckCircle2, Download, RefreshCw, Trash2, Users, XCircle } from 'lucide-react';
 import type { SheetData } from 'write-excel-file/browser';
 import { supabase } from '../../../lib/supabase';
+import { useApp } from '../../../context/AppContext';
 import { useAxisLockedScroll } from '../../../hooks/useAxisLockedScroll';
 import { AdminSearchInput } from '../../../components/AdminSearchInput';
 import { JUBAH_STEP_LABEL as JUBAH_STATUS_LABEL } from '../../../lib/jubahStatus';
@@ -18,6 +19,13 @@ interface Props {
   showToast: (message: string) => void;
   universityKey: string;
   universityLabel: string;
+  // Only superadmin gets a Remove button on this table — this view is a
+  // flat, exportable list rather than a single-booking drill-down, so
+  // deleting straight from a row here is easier to fat-finger than the
+  // existing per-booking Delete button in JubahCustomerSubTab (also
+  // confirm-gated). Omitted entirely for the rider-facing "Customers" tab,
+  // which reuses this same component with no delete affordance at all.
+  isSuperAdmin?: boolean;
 }
 
 const FALLBACK_FIELDS: Record<string, DocField[]> = {
@@ -46,13 +54,33 @@ const safeFilePart = (value: string) => value.toLowerCase().replace(/[^a-z0-9]+/
 
 export function JubahCustomerDetailsSubTab({
   active, bookings, bookingsTotalCount, bookingsLoading, reload, showToast,
-  universityKey, universityLabel,
+  universityKey, universityLabel, isSuperAdmin = false,
 }: Props) {
+  const { showConfirmModal } = useApp();
   const tableScrollRef = useAxisLockedScroll<HTMLDivElement>();
   const [search, setSearch] = useState('');
   const [docFields, setDocFields] = useState<DocField[]>(FALLBACK_FIELDS[universityKey] ?? FALLBACK_FIELDS.default);
   const [exportMenuOpen, setExportMenuOpen] = useState(false);
   const [exporting, setExporting] = useState<'csv' | 'xlsx' | null>(null);
+  const [removingId, setRemovingId] = useState<string | null>(null);
+
+  const removeBooking = async (booking: JubahBookingRow) => {
+    setRemovingId(booking.id);
+    const { error } = await supabase.from('jubah_bookings').delete().eq('id', booking.id);
+    setRemovingId(null);
+    if (error) { showToast('Delete failed: ' + error.message); return; }
+    showToast(`${booking.reference} deleted.`);
+    reload();
+  };
+
+  const confirmRemoveBooking = (booking: JubahBookingRow) => {
+    showConfirmModal({
+      title: 'Delete this order?',
+      message: `This permanently deletes ${booking.reference} (${booking.full_name}, RM${Number(booking.cost || 0).toFixed(2)}). This can't be undone.`,
+      confirmLabel: 'DELETE',
+      onConfirm: () => { void removeBooking(booking); },
+    });
+  };
 
   useEffect(() => {
     if (!active) return;
@@ -214,6 +242,7 @@ export function JubahCustomerDetailsSubTab({
               <table className="min-w-max border-collapse text-left">
                 <thead><tr className="border-b border-slate-100">
                   {headers.map(header => <th key={header} className="sticky top-0 bg-white py-2 pr-5 whitespace-nowrap text-xs font-semibold text-slate-400">{header}</th>)}
+                  {isSuperAdmin && <th className="sticky top-0 bg-white py-2 pr-5 whitespace-nowrap text-xs font-semibold text-slate-400">Remove</th>}
                 </tr></thead>
                 <tbody>{filtered.map((booking, rowIndex) => {
                   const values = detailRows[rowIndex];
@@ -227,6 +256,20 @@ export function JubahCustomerDetailsSubTab({
                           : <span className={index === 1 ? 'font-mono font-semibold text-primary' : index === 2 ? 'font-semibold text-slate-800' : ''}>{value || '—'}</span>}
                       </td>;
                     })}
+                    {isSuperAdmin && (
+                      <td className="py-2.5 pr-5 whitespace-nowrap">
+                        <button
+                          type="button"
+                          disabled={removingId === booking.id}
+                          onPointerDown={event => { event.preventDefault(); confirmRemoveBooking(booking); }}
+                          aria-label={`Remove ${booking.reference}`}
+                          className="w-8 h-8 flex items-center justify-center rounded-lg border border-red-100 text-red-500 active:bg-red-50 active:scale-90 transition-transform transform-gpu disabled:opacity-40">
+                          {removingId === booking.id
+                            ? <span className="w-3.5 h-3.5 rounded-full border-2 border-red-300 border-t-red-500 animate-spin" />
+                            : <Trash2 className="w-4 h-4" />}
+                        </button>
+                      </td>
+                    )}
                   </tr>;
                 })}</tbody>
               </table>

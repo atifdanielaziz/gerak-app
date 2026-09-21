@@ -1017,6 +1017,7 @@ export const AdminHome: React.FC = () => {
               showToast={showToast}
               universityKey={adminUniversityKey}
               universityLabel={jubahUniversityLabel}
+              isSuperAdmin={isSuperAdmin}
             />
           )}
 
