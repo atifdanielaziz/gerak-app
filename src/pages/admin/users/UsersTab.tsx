@@ -347,13 +347,15 @@ export const UsersTab = forwardRef<UsersTabHandle, UsersTabProps>(function Users
     const riderIds       = users.filter(u => u.role === 'rider').map(u => u.id);
     const driverRiderIds = [...driverIds, ...riderIds];
 
-    // Three independent lookups — fire together instead of awaiting one at a time.
-    const [{ data: driverCaps }, { data: riderCaps }, { data: exempts }, { data: presence }, { data: rideJobs }, { data: jubahJobs }] = await Promise.all([
-      driverIds.length > 0
-        ? supabase.from('profiles').select('id, can_drive, can_rent, can_transport').in('id', driverIds)
-        : Promise.resolve({ data: null }),
-      riderIds.length > 0
-        ? supabase.from('profiles').select('id, can_daily, can_robe').in('id', riderIds)
+    // Fetched for every driver AND rider id together (not driverIds-only /
+    // riderIds-only) — a driver invited to an additional Jubah campus gets
+    // can_robe=true while staying role='driver' (see
+    // 20260920240000_invite_existing_staff_additional_campus.sql), and the
+    // Riders filter below needs that flag on driver rows too, not just rows
+    // whose role already says 'rider'.
+    const [{ data: caps }, { data: exempts }, { data: presence }, { data: rideJobs }, { data: jubahJobs }] = await Promise.all([
+      driverRiderIds.length > 0
+        ? supabase.from('profiles').select('id, can_drive, can_rent, can_transport, can_daily, can_robe').in('id', driverRiderIds)
         : Promise.resolve({ data: null }),
       driverRiderIds.length > 0
         ? supabase.from('profiles').select('id, receipt_gate_exempt').in('id', driverRiderIds)
@@ -370,13 +372,9 @@ export const UsersTab = forwardRef<UsersTabHandle, UsersTabProps>(function Users
     ]);
 
     const usersById = new Map(users.map(u => [u.id, u]));
-    driverCaps?.forEach(c => {
+    caps?.forEach(c => {
       const u = usersById.get(c.id);
-      if (u) { u.can_drive = c.can_drive; u.can_rent = c.can_rent; u.can_transport = c.can_transport; }
-    });
-    riderCaps?.forEach(c => {
-      const u = usersById.get(c.id);
-      if (u) { u.can_daily = c.can_daily; u.can_robe = c.can_robe; }
+      if (u) { u.can_drive = c.can_drive; u.can_rent = c.can_rent; u.can_transport = c.can_transport; u.can_daily = c.can_daily; u.can_robe = c.can_robe; }
     });
     exempts?.forEach(c => {
       const u = usersById.get(c.id);
@@ -567,7 +565,10 @@ export const UsersTab = forwardRef<UsersTabHandle, UsersTabProps>(function Users
       const roleMatch =
         staffFilter === 'all'     ? true :
         staffFilter === 'drivers' ? u.role === 'driver' :
-        staffFilter === 'riders'  ? u.role === 'rider' :
+        // A driver invited to an additional Jubah campus stays role='driver'
+        // with can_robe=true (additive grant, home role untouched) — without
+        // this OR they'd never appear under Riders anywhere in Staff.
+        staffFilter === 'riders'  ? u.role === 'rider' || (u.role === 'driver' && !!u.can_robe) :
         ['admin', 'superadmin'].includes(u.role);
       if (!roleMatch) return false;
       const overviewMatch =
@@ -591,7 +592,7 @@ export const UsersTab = forwardRef<UsersTabHandle, UsersTabProps>(function Users
     const roleUsers = universityUsers.filter(u =>
       staffFilter === 'all' ? true :
       staffFilter === 'drivers' ? u.role === 'driver' :
-      staffFilter === 'riders' ? u.role === 'rider' :
+      staffFilter === 'riders' ? u.role === 'rider' || (u.role === 'driver' && !!u.can_robe) :
       ['admin', 'superadmin'].includes(u.role)
     );
     const paymentStaff = roleUsers.filter(u => u.role === 'driver' || u.role === 'rider');
