@@ -237,6 +237,22 @@ export const MyOrders: React.FC = () => {
   const [expandingId, setExpandingId] = useState<string | null>(null);
   const prevStatuses                = useRef<Record<string, string>>({});
   const prevFares                   = useRef<Record<string, string>>({});
+  // Guards against firing the same (order, status) notification twice —
+  // realtime, the 20s poll, and load()'s own post-action call can all
+  // resolve around the same moment after one DB write, each reading
+  // prevStatuses before any of the others had a chance to update it.
+  // Confirmed live: a single cancel produced 3 duplicate "Booking
+  // Cancelled" toasts. Keyed by "id:status" so it doesn't block a later,
+  // genuinely different transition on the same order.
+  const notifiedTransitions         = useRef<Set<string>>(new Set());
+  // Which order ids the customer just cancelled/edited themselves —
+  // merged in at the very top of load(), synchronously, before its own
+  // await, so a concurrent realtime-triggered load() (no opts, no way to
+  // know this was self-service) still sees it in time and doesn't
+  // mislabel it as an admin cancellation. Never written directly inside
+  // handleCancel/handleEdit themselves — only load() touches this ref,
+  // same as prevStatuses/prevFares above.
+  const selfActionedIds             = useRef<Set<string>>(new Set());
   // Deliberately impure — re-evaluated every render (forceTick below drives
   // a render every 30s) to keep pendingBanner()/canCancel()'s elapsed-time
   // thresholds current, same pattern as OrdersTab.tsx's own `now`.
@@ -267,14 +283,14 @@ export const MyOrders: React.FC = () => {
     return () => clearTimeout(id);
   }, [toast]);
 
-  // skipCancelNotifyIds: a one-shot list for the single load() call right
-  // after the customer's own cancel/edit action — those already got their
-  // own toast, so the "cancelled elsewhere" notification below shouldn't
-  // also fire for them. Only needs to cover that one call: once this pass
-  // records the new status in prevStatuses, later load() calls (polling,
-  // realtime, visibility) see status already matching prev and never
-  // re-enter the diff branch for that order again.
+  // skipCancelNotifyIds: passed once, right after the customer's own
+  // cancel/edit action — merged into selfActionedIds synchronously below,
+  // before this function's own first await, so a concurrent realtime- or
+  // poll-triggered load() (no opts, no way to otherwise know this was
+  // self-service) still sees it in time.
   const load = async (opts?: { skipCancelNotifyIds?: string[] }) => {
+    opts?.skipCancelNotifyIds?.forEach(id => selfActionedIds.current.add(id));
+
     const { data: { user: authUser } } = await supabase.auth.getUser();
     if (!authUser) { setLoading(false); return; }
 
@@ -288,7 +304,9 @@ export const MyOrders: React.FC = () => {
 
     rows.forEach(o => {
       const prev = prevStatuses.current[o.id];
-      if (prev && prev !== o.status) {
+      const transitionKey = `${o.id}:${o.status}`;
+      if (prev && prev !== o.status && !notifiedTransitions.current.has(transitionKey)) {
+        notifiedTransitions.current.add(transitionKey);
         if (o.status === 'accepted') {
           showToast(`Driver assigned! ${o.driver_name ?? 'Your driver'} is on the way.`);
           addNotification(
@@ -314,7 +332,7 @@ export const MyOrders: React.FC = () => {
             `Your ride request for ${o.date}, ${o.time} didn't get accepted in time and was cancelled. Feel free to try again.`,
             'transport',
           );
-        } else if (o.status === 'cancelled' && !o.cancel_reason && !opts?.skipCancelNotifyIds?.includes(o.id)) {
+        } else if (o.status === 'cancelled' && !o.cancel_reason && !selfActionedIds.current.has(o.id)) {
           // No cancel_reason and not something this client just did itself
           // — the only other way to land here is an admin force-cancelling
           // it from OrdersTab, which the customer would otherwise never
@@ -338,6 +356,7 @@ export const MyOrders: React.FC = () => {
             'transport',
           );
         }
+        selfActionedIds.current.delete(o.id);
       }
       prevStatuses.current[o.id] = o.status;
 
