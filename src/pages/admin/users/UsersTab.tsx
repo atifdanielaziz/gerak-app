@@ -503,17 +503,23 @@ export const UsersTab = forwardRef<UsersTabHandle, UsersTabProps>(function Users
     const { data: { user: authUser } } = await supabase.auth.getUser();
     if (!authUser) { showToast('Session expired — please log in again.'); return; }
     setTogglingCap(u.id);
-    const { error } = await supabase.rpc('set_rider_capabilities', {
+    const { data, error } = await supabase.rpc('set_rider_capabilities', {
       p_user_id:  u.id,
       p_can_daily: canDaily,
       p_can_robe:  canRobe,
     });
     setTogglingCap(null);
-    if (error) showToast('Failed to update capabilities.');
-    else {
-      showToast(`${u.name}: ${canDaily ? 'Daily ✓' : 'Daily ✗'} · ${canRobe ? 'Robe ✓' : 'Robe ✗'}`);
-      loadUsers();
-    }
+    if (error) { showToast('Failed to update capabilities.'); return; }
+    const result = data as { role?: string; role_changed?: boolean } | null;
+    const capsText = `${canDaily ? 'Daily ✓' : 'Daily ✗'} · ${canRobe ? 'Robe ✓' : 'Robe ✗'}`;
+    // Dropping both capabilities to false demotes a plain rider back to
+    // customer (and granting either one promotes a customer to rider) —
+    // set_rider_capabilities now does that itself; surface it here so the
+    // admin isn't left wondering why the Role column also changed.
+    showToast(result?.role_changed
+      ? `${u.name}: ${capsText} — role set to ${result.role === 'customer' ? 'Customer' : 'Rider'}.`
+      : `${u.name}: ${capsText}`);
+    loadUsers();
   };
 
   const handleToggleReceiptGateExempt = async (u: ProfileUser) => {
@@ -1007,6 +1013,16 @@ export const UsersTab = forwardRef<UsersTabHandle, UsersTabProps>(function Users
 
         const isRoleToAdmin = pendingAction.type === 'toggle-role' && pendingAction.newRole === 'admin';
 
+        // Only role='rider' <-> 'customer' ever moves — matches exactly
+        // what set_rider_capabilities itself does server-side, so this is
+        // purely a preview shown before confirming, not the source of truth.
+        const riderCapRoleChange =
+          pendingAction.type === 'toggle-rider-cap'
+            ? (u.role === 'rider' && !pendingAction.canDaily && !pendingAction.canRobe ? 'customer'
+              : u.role === 'customer' && (pendingAction.canDaily || pendingAction.canRobe) ? 'rider'
+              : null)
+            : null;
+
         const title =
           pendingAction.type === 'terminate'     ? `Terminate ${u.name}?` :
           pendingAction.type === 'toggle-status' ? (isStop ? `Suspend ${u.name}?` : `Reactivate ${u.name}?`) :
@@ -1020,7 +1036,9 @@ export const UsersTab = forwardRef<UsersTabHandle, UsersTabProps>(function Users
           isStop       ? 'They will lose access to the app until reactivated.' :
           pendingAction.type === 'toggle-status' ? 'They will regain access to the app.' :
           pendingAction.type === 'toggle-cap'    ? 'Their service capabilities will be updated immediately.' :
-          pendingAction.type === 'toggle-rider-cap' ? 'Their service capabilities will be updated immediately.' :
+          pendingAction.type === 'toggle-rider-cap' ? (riderCapRoleChange
+            ? `Their service capabilities will be updated immediately. This will also change their role to ${riderCapRoleChange === 'customer' ? 'Customer' : 'Rider'}.`
+            : 'Their service capabilities will be updated immediately.') :
           pendingAction.type === 'toggle-role'   ? (isRoleToAdmin ? 'They will gain Admin panel access + full driving capabilities.' : 'They will lose Admin panel access and become a driver only.') :
           (u.receipt_gate_exempt ? 'They will need a valid monthly receipt again to stay active.' : 'They will bypass the monthly receipt requirement and stay active regardless.');
 
