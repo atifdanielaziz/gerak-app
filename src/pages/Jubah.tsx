@@ -1269,19 +1269,13 @@ export const Jubah: React.FC = () => {
               </div>
             </label>
 
-            {/* Cost HUD — the actual amount is intentionally withheld until
-                the payment step for a self-service booking (pricing is a
-                WhatsApp conversation, not a published rate card); a custom
-                quote already has an agreed number, so that one shows it. */}
+            {/* The payable service fee mirrors the selected admin pricing, or
+                the runner-agreed total when this booking uses a custom quote. */}
             <div className="border border-slate-100 rounded-2xl p-3.5 mt-1">
               <span className="text-xs text-slate-400 font-semibold block">Service Fee</span>
-              {customQuote ? (
-                <>
-                  <span className="text-xl font-black text-slate-800">RM{Number(cost).toFixed(2)}</span>
-                  <span className="text-xs text-slate-400 block mt-0.5">This total was agreed with your runner.</span>
-                </>
-              ) : (
-                <span className="text-sm font-semibold text-slate-500">Confirmed at the payment step</span>
+              <span className="text-xl font-black text-slate-800">{formatServicePrice(cost)}</span>
+              {customQuote && (
+                <span className="text-xs text-slate-400 block mt-0.5">This total was agreed with your runner.</span>
               )}
             </div>
 
@@ -1499,23 +1493,16 @@ export const Jubah: React.FC = () => {
             ) : (
               <p className="text-xs text-blue-600">Payment details not set yet — contact admin.</p>
             )}
-            <p className="text-xs text-blue-700 leading-relaxed">
-              {customQuote ? (
-                <>Transfer <span className="font-bold">RM{cost.toFixed(2)}</span>{paymentMode === 'deposit' && <> (RM{depositAmount} deposit)</>} using the details above — put your <span className="font-bold">full name</span> as the transfer reference so it's easy to match. Then upload your receipt below and tap Book.</>
-              ) : (
-                <>Transfer the amount confirmed with your runner using the details above — put your <span className="font-bold">full name</span> as the transfer reference so it's easy to match. Then upload your receipt below and tap Book.</>
-              )}
-            </p>
           </div>
 
           {/* ── PROOF OF PAYMENT ── */}
           <div className="bg-white border border-slate-100 rounded-3xl p-5 flex flex-col gap-4">
             <h3 className="text-sm font-semibold text-slate-700 flex items-center gap-1.5">
               <ReceiptText className="w-4 h-4 text-slate-400" />
-              {paymentMode === 'deposit' ? `Proof of Deposit (RM${depositAmount})` : 'Proof of Payment'}
+              {`Proof of Payment (${formatServicePrice(cost)})`}
             </h3>
             <p className="text-xs text-slate-500 leading-relaxed">
-              Upload your <span className="font-bold text-slate-700">{paymentMode === 'deposit' ? `RM${depositAmount} deposit receipt` : 'payment receipt'}</span> (screenshot or PDF). The Book button will activate once uploaded.
+              Upload your <span className="font-bold text-slate-700">{formatServicePrice(cost)} payment receipt</span> (screenshot or PDF). The Book button will activate once uploaded.
             </p>
             <input
               type="file"
