@@ -473,6 +473,44 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return () => { cancelled = true; };
   }, [user.isLoggedIn]);
 
+  // Server-side triggers (e.g. notify_customer_ride_cancelled) insert
+  // directly into this table so a notification exists reliably whether or
+  // not this app happens to be open at the moment — that's the whole
+  // point of moving it server-side. But without this subscription, an
+  // already-open session would only see a row like that after its next
+  // login, since the fetch above only runs once. This is what makes it
+  // show up live instead.
+  useEffect(() => {
+    if (!user.isLoggedIn) return;
+    let channel: ReturnType<typeof supabase.channel> | null = null;
+    let cancelled = false;
+    void (async () => {
+      const { data: { user: authUser } } = await supabase.auth.getUser();
+      if (!authUser || cancelled) return;
+      channel = supabase
+        .channel('notifications_own')
+        .on('postgres_changes', {
+          event: 'INSERT', schema: 'public', table: 'notifications',
+          filter: `user_id=eq.${authUser.id}`,
+        }, (payload) => {
+          const row = payload.new as { id: string; title: string; description: string; type: NotificationItem['type']; is_read: boolean; created_at: string };
+          setNotifications(prev => prev.some(n => n.id === row.id) ? prev : [{
+            id: row.id,
+            title: row.title,
+            description: row.description,
+            type: row.type,
+            isRead: row.is_read,
+            time: fmtRelativeTime(row.created_at),
+          }, ...prev]);
+        })
+        .subscribe();
+    })();
+    return () => {
+      cancelled = true;
+      if (channel) supabase.removeChannel(channel);
+    };
+  }, [user.isLoggedIn]);
+
   // One-time "we updated our Privacy Policy / Terms" nudge — fires once per
   // browser per version bump (tracked in localStorage, independent of
   // login, since guests can read these too), not once per session, since

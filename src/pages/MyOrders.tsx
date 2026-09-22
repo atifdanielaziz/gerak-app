@@ -325,24 +325,20 @@ export const MyOrders: React.FC = () => {
           );
         }
         // cancel_reason is only ever set by the 30-minute auto-expire cron.
+        // Both branches here are toast-only now — the persisted Campus
+        // Inbox entry comes from notify_customer_ride_cancelled (a DB
+        // trigger), not from here. This block only ever ran while the
+        // customer's own tab was open and polling/subscribed at the exact
+        // moment the cancellation happened; anyone who checked later (the
+        // realistic case for "an admin cancelled it") got nothing at all —
+        // confirmed live. The trigger fires unconditionally on the DB
+        // write itself, so it works regardless of whether this page is
+        // open, and AppContext's own realtime subscription on
+        // `notifications` picks it up live if it is.
         if (o.status === 'cancelled' && o.cancel_reason) {
           showToast('No driver was found for your ride request.');
-          addNotification(
-            'No Driver Found',
-            `Your ride request for ${o.date}, ${o.time} didn't get accepted in time and was cancelled. Feel free to try again.`,
-            'transport',
-          );
         } else if (o.status === 'cancelled' && !o.cancel_reason && !selfActionedIds.current.has(o.id)) {
-          // No cancel_reason and not something this client just did itself
-          // — the only other way to land here is an admin force-cancelling
-          // it from OrdersTab, which the customer would otherwise never
-          // hear about at all.
           showToast('Your ride booking was cancelled by Gerak admin.');
-          addNotification(
-            'Booking Cancelled',
-            `Your ride request for ${o.date}, ${o.time} was cancelled by an admin. Contact support if you have questions.`,
-            'transport',
-          );
         }
         // Driver backed out within their own 3-minute window
         // (cancel_ride_order) — the only path that sends an order from

@@ -3,7 +3,13 @@ const SESSION_MSG_KEY = 'gerak_session_msg';
 const DEVICE_MSG_KEY = 'gerak_device_session_msg';
 const ACTIVITY_WRITE_THROTTLE_MS = 60_000;
 
-export const INACTIVITY_LIMIT_MS = 5 * 24 * 60 * 60 * 1000;
+// Was 5 days — still forced a real logout ("Your session expired due to
+// inactivity") for any account not touched in that window, which kept
+// interrupting testing across the many accounts this team switches
+// between. Set high enough to functionally never trigger day-to-day
+// (~10 years) rather than removing the mechanism outright, so it's a
+// single number to dial back down later if there's ever a real reason to.
+export const INACTIVITY_LIMIT_MS = 3650 * 24 * 60 * 60 * 1000;
 
 let lastWrite = 0;
 
