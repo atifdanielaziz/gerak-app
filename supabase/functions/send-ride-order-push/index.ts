@@ -25,15 +25,27 @@ function timingSafeEqual(a: string, b: string): boolean {
 
 // "Fake bold" via Unicode Mathematical Sans-Serif Bold — real push
 // notification bodies don't render HTML/Markdown on any platform, so this
-// is the only way to make the fare visually pop out from the rest of the
-// text without a title-only workaround. Digits + uppercase (RM amounts
-// only need those two ranges).
-const BOLD_DIGITS = '𝟬𝟭𝟮𝟯𝟰𝟱𝟲𝟳𝟴𝟵'
-const BOLD_UPPER  = '𝗔𝗕𝗖𝗗𝗘𝗙𝗚𝗛𝗜𝗝𝗞𝗟𝗠𝗡𝗢𝗣𝗤𝗥𝗦𝗧𝗨𝗩𝗪𝗫𝗬𝗭'
+// is the only way to make fare/pickup/destination visually pop out from
+// the rest of the text. Covers digits, upper and lower case — pickup and
+// destination are free-text place names (e.g. "UMP Pekan / Fakulti"),
+// not just RM amounts, so unlike the fare-only version this needs the
+// lowercase range too. Anything outside those three ranges (spaces,
+// slashes, punctuation) passes through unchanged — there's no bold glyph
+// for it in this Unicode block.
+//
+// Every character in this block is outside the BMP (a surrogate pair, 2
+// UTF-16 units each) — plain string indexing (BOLD_DIGITS[i]) grabs a
+// lone surrogate half instead of a full character, producing invalid
+// output. Array.from() splits by code point instead, so each array entry
+// is one real character.
+const BOLD_DIGITS = Array.from('𝟬𝟭𝟮𝟯𝟰𝟱𝟲𝟳𝟴𝟵')
+const BOLD_UPPER  = Array.from('𝗔𝗕𝗖𝗗𝗘𝗙𝗚𝗛𝗜𝗝𝗞𝗟𝗠𝗡𝗢𝗣𝗤𝗥𝗦𝗧𝗨𝗩𝗪𝗫𝗬𝗭')
+const BOLD_LOWER  = Array.from('𝗮𝗯𝗰𝗱𝗲𝗳𝗴𝗵𝗶𝗷𝗸𝗹𝗺𝗻𝗼𝗽𝗾𝗿𝘀𝘁𝘂𝘃𝘄𝘅𝘆𝘇')
 function toBold(text: string): string {
   return text.split('').map(ch => {
     if (ch >= '0' && ch <= '9') return BOLD_DIGITS[ch.charCodeAt(0) - 48]
     if (ch >= 'A' && ch <= 'Z') return BOLD_UPPER[ch.charCodeAt(0) - 65]
+    if (ch >= 'a' && ch <= 'z') return BOLD_LOWER[ch.charCodeAt(0) - 97]
     return ch
   }).join('')
 }
@@ -100,7 +112,7 @@ serve(async (req) => {
 
     const fareText = order.fare === 'TBC' ? 'TBC' : `RM${(Number(order.fare) + order.night_charge).toFixed(0)}`
     const title = 'Gerak — New Ride Request'
-    const body = `${toBold(fareText)} · ${order.pickup} → ${order.destination}`
+    const body = `${toBold(fareText)} · ${toBold(order.pickup)} → ${toBold(order.destination)}`
     const payload = JSON.stringify({
       title,
       body,
