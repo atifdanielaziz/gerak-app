@@ -879,7 +879,13 @@ export const Jubah: React.FC = () => {
       { label: 'Payment Proof', path: paymentPath ?? '' },
     ].filter(d => d.path);
 
-    await submitJubahToSheets({
+    // Fire-and-forget, not awaited — the booking already succeeded
+    // (result.booking above), so the customer's confirmation shouldn't
+    // depend on an external analytics sync. Same fix as Transport.tsx's
+    // submitRideToSheets: fetch() has no default timeout, so a slow/hung
+    // response from Google's side previously could have left this screen
+    // stuck before ever showing the confirmation.
+    void submitJubahToSheets({
       reference, fullName, icNumber, hpNumber, university, faculty, matricId,
       paymentMode,
       depositMethod: paymentMode === 'deposit' ? depositMethod : undefined,

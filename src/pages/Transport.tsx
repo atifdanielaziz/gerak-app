@@ -483,8 +483,15 @@ export const Transport: React.FC = () => {
       }
       setSubmittedOrderId(data.id);
 
-      // Log to Google Sheets for new bookings only
-      await submitRideToSheets({
+      // Log to Google Sheets for new bookings only — fire-and-forget, not
+      // awaited. The booking itself already succeeded (the insert above),
+      // so the customer's own confirmation screen shouldn't depend on an
+      // external analytics sync. fetch() has no default timeout, and a
+      // slow/hung response from the Apps Script endpoint (Google's side,
+      // outside our control) previously left the Book button stuck
+      // spinning indefinitely even though the order was already placed —
+      // confirmed live as the cause of a reported stuck "Book" button.
+      void submitRideToSheets({
         campus: campus === 'pekan' ? 'UMPSA Pekan' : 'UMPSA Gambang',
         date: orderPayload.date, time: orderPayload.time,
         pickup: pickupLabel,
