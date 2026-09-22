@@ -51,31 +51,25 @@ export const Dashboard: React.FC = () => {
   const { user, setCurrentPage, activeRide } = useApp();
   const [activeBanner, setActiveBanner] = useState(0);
   const [banners, setBanners] = useState<Banner[]>(FALLBACK_BANNERS);
-  const [jubahActive, setJubahActive] = useState(false);
-  // Same shape as jubahActive — orders were auto-cancelling with no driver
-  // to pick them up, so the tile is hidden (not the whole Transport flow)
-  // until drivers are onboarded properly; see 20260922100000.
-  const [gerakCarActive, setGerakCarActive] = useState(false);
+  // Each Campus Modules tile is hidden entirely (not greyed out) while its
+  // flag is off, controlled from Settings > Service Availability — starts
+  // empty (all tiles hidden) until the fetch resolves, same fail-hidden
+  // default jubahActive already used before this became five flags instead
+  // of one, at which point five separate useState/useEffect pairs made
+  // less sense than one query for all of them.
+  const [serviceFlags, setServiceFlags] = useState<Record<string, boolean>>({});
   const touchStartX = useRef(0);
   const touchEndX   = useRef(0);
 
-  // Fetch Jubah period status
   useEffect(() => {
     supabase
       .from('app_settings')
-      .select('value')
-      .eq('key', 'jubah_active')
-      .single()
-      .then(({ data }) => { if (data) setJubahActive(data.value === 'true'); });
-  }, []);
-
-  useEffect(() => {
-    supabase
-      .from('app_settings')
-      .select('value')
-      .eq('key', 'gerak_car_active')
-      .single()
-      .then(({ data }) => { if (data) setGerakCarActive(data.value === 'true'); });
+      .select('key, value')
+      .in('key', ['jubah_active', 'gerak_car_active', 'gerak_daily_active', 'gerak_rental_active', 'gerak_transporter_active'])
+      .then(({ data }) => {
+        if (!data) return;
+        setServiceFlags(Object.fromEntries(data.map(row => [row.key, row.value === 'true'])));
+      });
   }, []);
 
   // Fetch active announcements from Supabase; fall back to hardcoded if none
@@ -248,9 +242,9 @@ export const Dashboard: React.FC = () => {
         {/* A. Transportation Module — same card standard as the other
             modules below; "Most booked" stays as a small red label,
             keeping just enough distinction without a whole separate style.
-            Hidden entirely (not greyed out) while gerakCarActive is off —
+            Hidden entirely (not greyed out) while gerak_car_active is off —
             same treatment as the Jubah tile below. */}
-        {gerakCarActive && (
+        {serviceFlags.gerak_car_active && (
           <div
             onClick={() => setCurrentPage('transport')}
             className="bg-white border border-slate-100 rounded-3xl p-5 flex items-center justify-between cursor-pointer active:scale-[0.99] active:bg-slate-50 transition duration-200"
@@ -274,7 +268,7 @@ export const Dashboard: React.FC = () => {
         {/* B. Jubah Delivery Module — hidden entirely while closed, not just
             greyed out (was previously always visible, disabled + "Closed"
             badge; now the tile doesn't render at all outside the period). */}
-        {jubahActive && (
+        {serviceFlags.jubah_active && (
           <div
             onClick={() => setCurrentPage('jubah')}
             className="bg-white border border-slate-100 rounded-3xl p-5 flex items-center justify-between cursor-pointer active:scale-[0.99] active:bg-slate-50 transition duration-200"
@@ -294,59 +288,67 @@ export const Dashboard: React.FC = () => {
           </div>
         )}
 
-        {/* C. Gerak Daily Module */}
-        <div className="bg-white border border-slate-100 rounded-3xl p-5 flex items-center justify-between opacity-40 cursor-not-allowed">
-          <div className="flex items-center gap-3">
-            <div className="w-[38px] h-[38px] rounded-xl bg-slate-100 flex items-center justify-center shrink-0">
-              <ShoppingBasket className="w-[19px] h-[19px] text-slate-400" />
+        {/* C. Gerak Daily Module — still a permanent "Coming soon"
+            placeholder (opacity-40, no onClick) whenever it's shown; the
+            flag only controls whether the placeholder itself appears. */}
+        {serviceFlags.gerak_daily_active && (
+          <div className="bg-white border border-slate-100 rounded-3xl p-5 flex items-center justify-between opacity-40 cursor-not-allowed">
+            <div className="flex items-center gap-3">
+              <div className="w-[38px] h-[38px] rounded-xl bg-slate-100 flex items-center justify-center shrink-0">
+                <ShoppingBasket className="w-[19px] h-[19px] text-slate-400" />
+              </div>
+              <div>
+                <h4 className="text-base font-semibold text-slate-800 m-0 leading-tight">Gerak Daily</h4>
+                <p className="text-xs text-slate-400 font-normal mt-0.5">
+                  Food & groceries delivered to your doorstep. Coming soon.
+                </p>
+              </div>
             </div>
-            <div>
-              <h4 className="text-base font-semibold text-slate-800 m-0 leading-tight">Gerak Daily</h4>
-              <p className="text-xs text-slate-400 font-normal mt-0.5">
-                Food & groceries delivered to your doorstep. Coming soon.
-              </p>
-            </div>
+            <ChevronRight className="w-5 h-5 text-slate-300 shrink-0" />
           </div>
-          <ChevronRight className="w-5 h-5 text-slate-300 shrink-0" />
-        </div>
+        )}
 
         {/* D. Gerak Rental Module */}
-        <div
-          onClick={() => setCurrentPage('gerak-rental')}
-          className="bg-white border border-slate-100 rounded-3xl p-5 flex items-center justify-between cursor-pointer active:scale-[0.99] active:bg-slate-50 transition duration-200"
-        >
-          <div className="flex items-center gap-3">
-            <div className="w-[38px] h-[38px] rounded-xl bg-purple-50 flex items-center justify-center shrink-0">
-              <KeyRound className="w-[19px] h-[19px] text-purple-500" />
+        {serviceFlags.gerak_rental_active && (
+          <div
+            onClick={() => setCurrentPage('gerak-rental')}
+            className="bg-white border border-slate-100 rounded-3xl p-5 flex items-center justify-between cursor-pointer active:scale-[0.99] active:bg-slate-50 transition duration-200"
+          >
+            <div className="flex items-center gap-3">
+              <div className="w-[38px] h-[38px] rounded-xl bg-purple-50 flex items-center justify-center shrink-0">
+                <KeyRound className="w-[19px] h-[19px] text-purple-500" />
+              </div>
+              <div>
+                <h4 className="text-base font-semibold text-slate-800 m-0 leading-tight">Gerak Rental</h4>
+                <p className="text-xs text-slate-400 font-normal mt-0.5">
+                  Rent campus vehicles by the hour.
+                </p>
+              </div>
             </div>
-            <div>
-              <h4 className="text-base font-semibold text-slate-800 m-0 leading-tight">Gerak Rental</h4>
-              <p className="text-xs text-slate-400 font-normal mt-0.5">
-                Rent campus vehicles by the hour.
-              </p>
-            </div>
+            <ChevronRight className="w-5 h-5 text-slate-300 shrink-0" />
           </div>
-          <ChevronRight className="w-5 h-5 text-slate-300 shrink-0" />
-        </div>
+        )}
 
         {/* E. Gerak Transporter Module */}
-        <div
-          onClick={() => setCurrentPage('gerak-transporter')}
-          className="bg-white border border-slate-100 rounded-3xl p-5 flex items-center justify-between cursor-pointer active:scale-[0.99] active:bg-slate-50 transition duration-200"
-        >
-          <div className="flex items-center gap-3">
-            <div className="w-[38px] h-[38px] rounded-xl bg-orange-50 flex items-center justify-center shrink-0">
-              <Truck className="w-[19px] h-[19px] text-orange-500" />
+        {serviceFlags.gerak_transporter_active && (
+          <div
+            onClick={() => setCurrentPage('gerak-transporter')}
+            className="bg-white border border-slate-100 rounded-3xl p-5 flex items-center justify-between cursor-pointer active:scale-[0.99] active:bg-slate-50 transition duration-200"
+          >
+            <div className="flex items-center gap-3">
+              <div className="w-[38px] h-[38px] rounded-xl bg-orange-50 flex items-center justify-center shrink-0">
+                <Truck className="w-[19px] h-[19px] text-orange-500" />
+              </div>
+              <div>
+                <h4 className="text-base font-semibold text-slate-800 m-0 leading-tight">Gerak Transporter</h4>
+                <p className="text-xs text-slate-400 font-normal mt-0.5">
+                  Hantar moto pintu ke pintu. Pindah barang berskala kecil.
+                </p>
+              </div>
             </div>
-            <div>
-              <h4 className="text-base font-semibold text-slate-800 m-0 leading-tight">Gerak Transporter</h4>
-              <p className="text-xs text-slate-400 font-normal mt-0.5">
-                Hantar moto pintu ke pintu. Pindah barang berskala kecil.
-              </p>
-            </div>
+            <ChevronRight className="w-5 h-5 text-slate-300 shrink-0" />
           </div>
-          <ChevronRight className="w-5 h-5 text-slate-300 shrink-0" />
-        </div>
+        )}
 
       </div>
 

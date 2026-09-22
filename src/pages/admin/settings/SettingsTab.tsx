@@ -1,6 +1,17 @@
 import { useEffect, useState } from 'react';
-import { Car, GraduationCap, Sliders } from 'lucide-react';
+import { Car, GraduationCap, KeyRound, ShoppingBasket, Sliders, Truck } from 'lucide-react';
 import { supabase } from '../../../lib/supabase';
+
+// Mirrors the Dashboard's Campus Modules tiles one-to-one — same order,
+// icon and color per service, so Settings reads as "the switch for that
+// tile" rather than a separately-maintained list.
+const SERVICES = [
+  { key: 'gerak_car_active', label: 'Gerak Car', description: 'Point-to-point campus travel', icon: Car, iconBg: 'bg-red-50', iconColor: 'text-primary' },
+  { key: 'jubah_active', label: 'Jubah Delivery', description: 'Convocation robe delivery & returns', icon: GraduationCap, iconBg: 'bg-amber-50', iconColor: 'text-amber-500' },
+  { key: 'gerak_daily_active', label: 'Gerak Daily', description: 'Food & groceries delivery (Coming soon placeholder)', icon: ShoppingBasket, iconBg: 'bg-slate-100', iconColor: 'text-slate-400' },
+  { key: 'gerak_rental_active', label: 'Gerak Rental', description: 'Rent campus vehicles by the hour', icon: KeyRound, iconBg: 'bg-purple-50', iconColor: 'text-purple-500' },
+  { key: 'gerak_transporter_active', label: 'Gerak Transporter', description: 'Door-to-door motorcycle & small item transport', icon: Truck, iconBg: 'bg-orange-50', iconColor: 'text-orange-500' },
+] as const;
 
 interface Props {
   active: boolean;
@@ -74,27 +85,18 @@ export function SettingsTab({ active, showToast }: Props) {
           </div>
         </div>
 
-        <div className="flex items-center gap-3 border-t border-slate-100 pt-4">
-          <div className="w-9 h-9 rounded-xl bg-red-50 flex items-center justify-center shrink-0">
-            <Car className="w-4 h-4 text-primary" />
+        {SERVICES.map(service => (
+          <div key={service.key} className="flex items-center gap-3 border-t border-slate-100 pt-4">
+            <div className={`w-9 h-9 rounded-xl ${service.iconBg} flex items-center justify-center shrink-0`}>
+              <service.icon className={`w-4 h-4 ${service.iconColor}`} />
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="text-sm font-semibold text-slate-700">{service.label}</p>
+              <p className="text-xs font-normal text-slate-400">{service.description}</p>
+            </div>
+            <AppSettingToggle settingKey={service.key} showToast={showToast} />
           </div>
-          <div className="min-w-0 flex-1">
-            <p className="text-sm font-semibold text-slate-700">Gerak Car</p>
-            <p className="text-xs font-normal text-slate-400">Point-to-point campus travel</p>
-          </div>
-          <AppSettingToggle settingKey="gerak_car_active" showToast={showToast} />
-        </div>
-
-        <div className="flex items-center gap-3 border-t border-slate-100 pt-4">
-          <div className="w-9 h-9 rounded-xl bg-amber-50 flex items-center justify-center shrink-0">
-            <GraduationCap className="w-4 h-4 text-amber-500" />
-          </div>
-          <div className="min-w-0 flex-1">
-            <p className="text-sm font-semibold text-slate-700">Jubah Delivery</p>
-            <p className="text-xs font-normal text-slate-400">Convocation robe delivery & returns</p>
-          </div>
-          <AppSettingToggle settingKey="jubah_active" showToast={showToast} />
-        </div>
+        ))}
       </div>
     </div>
   );
