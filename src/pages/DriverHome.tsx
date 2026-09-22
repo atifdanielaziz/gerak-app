@@ -176,7 +176,7 @@ const HISTORY_STATUS: Record<string, { label: string; cls: string }> = {
 };
 
 export const DriverHome: React.FC = () => {
-  const { user, activeRole, refreshUserData, receiptGateActive, setSheetOpen, addNotification } = useApp();
+  const { user, activeRole, refreshUserData, receiptGateActive, setSheetOpen } = useApp();
   // Admin/superadmin who switched the pill to Driver should behave as a full driver
   const effectiveCanDrive = user.canDrive || activeRole === 'driver';
 
@@ -526,13 +526,12 @@ export const DriverHome: React.FC = () => {
             tag: 'gerak-customer-cancelled',
           });
         }
-        // Drivers had no Campus Inbox entries at all before this — only
-        // the transient toast/push above, nothing to look back at later.
-        addNotification(
-          'Ride Cancelled',
-          `Your customer cancelled the ${vanished.date}, ${vanished.time} ride (${vanished.pickup} → ${vanished.destination}).`,
-          'transport',
-        );
+        // The persisted Campus Inbox entry comes from
+        // notify_cancelled_ride_order (a DB trigger), not from here — it
+        // fires unconditionally on the DB write itself, so it works
+        // whether or not this tab happens to be open, unlike this block
+        // (only reached at all while polling/realtime is live). Writing it
+        // here too would just duplicate that same entry.
       }
     }
     prevMyJobId.current = mine?.id ?? null;
@@ -541,11 +540,6 @@ export const DriverHome: React.FC = () => {
     setMyJob(mine ?? null);
     setMyHistory((history ?? []).filter(o => !(mine && o.id === mine.id)));
     setLoading(false);
-  // addNotification is a plain function from AppContext (not memoized),
-  // so its identity changes every provider render — including it here
-  // would redefine loadOrders (and cascade into every effect keyed on
-  // it) far more often than campusFilter alone actually warrants.
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [campusFilter]);
 
   // Request notification permission once when driver loads, then register
