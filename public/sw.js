@@ -1,4 +1,4 @@
-const CACHE_NAME = 'gerak-cache-v530';
+const CACHE_NAME = 'gerak-cache-v531';
 const ASSETS_TO_CACHE = [
   '/',
   '/index.html',
@@ -117,5 +117,39 @@ self.addEventListener('fetch', (event) => {
           }
         });
       })
+  );
+});
+
+// Web Push — this is what makes a new-order alert reach a driver whose
+// screen is off or app is backgrounded/closed, unlike the in-page
+// Notification() call DriverHome.tsx fires when it's actually open and
+// connected. The push event itself has no DOM/page context at all, so
+// showNotification() here is the only way to surface it.
+self.addEventListener('push', (event) => {
+  let payload = {};
+  try { payload = event.data ? event.data.json() : {}; } catch (e) { payload = {}; }
+  const title = payload.title || 'Gerak';
+  event.waitUntil(
+    self.registration.showNotification(title, {
+      body: payload.body || '',
+      icon: '/gerak-full-icon-v2-192.png',
+      badge: '/gerak-full-icon-v2-192.png',
+      tag: payload.tag || 'gerak-notification',
+      data: payload.data || {},
+      vibrate: [200, 100, 200],
+    })
+  );
+});
+
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+  const url = (event.notification.data && event.notification.data.url) || '/';
+  event.waitUntil(
+    clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
+      for (const client of clientList) {
+        if ('focus' in client) return client.focus();
+      }
+      if (clients.openWindow) return clients.openWindow(url);
+    })
   );
 });

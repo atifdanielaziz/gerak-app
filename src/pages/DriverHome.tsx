@@ -24,6 +24,26 @@ import { getSignedUrl } from '../lib/jubahDocs';
 
 const getTimestamp = () => Date.now();
 
+// Public VAPID key — safe to ship in client code, it's the whole point of
+// the public/private split (only the private half, held server-side in the
+// send-ride-order-push edge function, can actually sign a push). Generated
+// once via `web-push generate-vapid-keys`; changing it invalidates every
+// existing subscription, so treat it as a fixed identity, not a rotatable
+// secret.
+const VAPID_PUBLIC_KEY = 'BBo7Z-_QuvKRvLUd8p5Aa595qcPmL0Dfa_B2b_VRjWZ3sFKR8hMFqojvA33uyLFxRbHl5Sj55IlGR0bJ_3AMlj4';
+
+// Web Push subscribe() needs the VAPID public key as a raw Uint8Array, not
+// the base64url string it's distributed as — standard conversion, no
+// library needed for just this one call.
+function urlBase64ToUint8Array(base64String: string): Uint8Array<ArrayBuffer> {
+  const padding = '='.repeat((4 - (base64String.length % 4)) % 4);
+  const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+  const rawData = atob(base64);
+  const output = new Uint8Array(rawData.length);
+  for (let i = 0; i < rawData.length; i++) output[i] = rawData.charCodeAt(i);
+  return output;
+}
+
 // Quick Routes / AerBus store short internal hub names ("DHUAM", "Taman
 // Beruas", "TSK") — geocodable, but ambiguous without campus context (a
 // same-named place could exist anywhere in the country). Custom/map-pin
@@ -516,12 +536,47 @@ export const DriverHome: React.FC = () => {
     setLoading(false);
   }, [campusFilter]);
 
-  // Request notification permission once when driver loads
+  // Request notification permission once when driver loads, then register
+  // a real Web Push subscription — the in-page Notification() calls below
+  // only fire while this tab is open and connected; push is what reaches
+  // the driver with the app backgrounded, screen off, or fully closed.
   useEffect(() => {
     if (!effectiveCanDrive) return;
-    if ('Notification' in window && Notification.permission === 'default') {
-      Notification.requestPermission();
-    }
+    if (!('Notification' in window) || !('serviceWorker' in navigator) || !('PushManager' in window)) return;
+
+    void (async () => {
+      if (Notification.permission === 'default') {
+        await Notification.requestPermission();
+      }
+      if (Notification.permission !== 'granted') return;
+
+      try {
+        const registration = await navigator.serviceWorker.ready;
+        let subscription = await registration.pushManager.getSubscription();
+        if (!subscription) {
+          subscription = await registration.pushManager.subscribe({
+            userVisibleOnly: true,
+            applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY),
+          });
+        }
+        const { data: { user: authUser } } = await supabase.auth.getUser();
+        if (!authUser) return;
+        const json = subscription.toJSON();
+        if (!json.endpoint || !json.keys?.p256dh || !json.keys?.auth) return;
+        await supabase.from('push_subscriptions').upsert({
+          user_id: authUser.id,
+          endpoint: json.endpoint,
+          p256dh: json.keys.p256dh,
+          auth: json.keys.auth,
+        }, { onConflict: 'user_id,endpoint' });
+      } catch (err) {
+        // Push isn't available on every platform (notably iOS Safari
+        // outside an installed home-screen PWA) — the in-page alert above
+        // still covers those while the app is open, so this stays silent
+        // rather than surfacing a toast for something the driver can't act on.
+        console.warn('[GERAK] Push subscription failed:', err);
+      }
+    })();
   }, [effectiveCanDrive]);
 
   // Debounce refs — ride orders
