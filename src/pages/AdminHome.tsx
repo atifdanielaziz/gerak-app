@@ -10,7 +10,7 @@ import {
   FileImage, ShieldCheck,
   CalendarDays, Upload, Eye, ArrowLeftRight, GraduationCap,
   ChevronLeft, Check, TrendingUp, Bike,
-  Bell, User, Ban, History, ChevronDown,
+  Bell, User, Ban, History, ChevronDown, Sliders,
 } from 'lucide-react';
 import { JubahBannerSubTab } from './admin/jubah/JubahBannerSubTab';
 import { JubahPriceSubTab } from './admin/jubah/JubahPriceSubTab';
@@ -30,8 +30,9 @@ import { JubahRiderSubTab, type JubahRiderSubTabHandle } from './admin/jubah/Jub
 import { JubahCustomerSubTab, type JubahBookingRow } from './admin/jubah/JubahCustomerSubTab';
 import { JubahCustomerDetailsSubTab } from './admin/jubah/JubahCustomerDetailsSubTab';
 import { ActivityLogTab, type ActivityLogTabHandle } from './admin/activity/ActivityLogTab';
+import { SettingsTab } from './admin/settings/SettingsTab';
 
-type AdminTab = 'orders' | 'drivers' | 'users' | 'banners' | 'receipts' | 'calendar' | 'routes' | 'verify' | 'jubah' | 'earnings' | 'activity';
+type AdminTab = 'orders' | 'drivers' | 'users' | 'banners' | 'receipts' | 'calendar' | 'routes' | 'verify' | 'jubah' | 'earnings' | 'activity' | 'settings';
 
 // Single source of truth for tab metadata — shared by the mobile tab-strip
 // and the desktop sidebar (see AdminHome's return), so the superadmin-only
@@ -48,6 +49,7 @@ const ADMIN_TABS: { id: AdminTab; label: string; icon: React.ElementType; supera
   { id: 'earnings', label: 'Earnings',  icon: TrendingUp,      superadminOnly: true  },
   { id: 'activity', label: 'Activity',  icon: History,         superadminOnly: true  },
   { id: 'calendar', label: 'Calendar',  icon: CalendarDays,    superadminOnly: false },
+  { id: 'settings', label: 'Settings',  icon: Sliders,         superadminOnly: true  },
 ];
 
 export const AdminHome: React.FC = () => {
@@ -1094,6 +1096,14 @@ export const AdminHome: React.FC = () => {
           ref={calendarTabRef}
           active={activeTab === 'calendar'}
           universityKey={adminUniversityKey}
+          showToast={showToast}
+        />
+      )}
+
+      {/* ── SETTINGS TAB ── */}
+      {activeTab === 'settings' && (
+        <SettingsTab
+          active={activeTab === 'settings'}
           showToast={showToast}
         />
       )}
