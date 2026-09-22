@@ -1,4 +1,4 @@
-const CACHE_NAME = 'gerak-cache-v534';
+const CACHE_NAME = 'gerak-cache-v535';
 const ASSETS_TO_CACHE = [
   '/',
   '/index.html',
@@ -142,6 +142,14 @@ self.addEventListener('push', (event) => {
       // until the driver actually dismisses or taps it, instead of the
       // default few-second auto-hide that made it easy to miss entirely.
       requireInteraction: true,
+      // Every push reuses one of a handful of fixed tags (e.g.
+      // 'gerak-new-order'), so two orders arriving before the driver
+      // dismisses the first would otherwise have the second silently
+      // replace it in place — no sound, no vibration, no heads-up banner,
+      // exactly the "arrived silently" symptom this was built to fix.
+      // renotify forces the full alert treatment again even when reusing
+      // an already-visible tag.
+      renotify: true,
     })
   );
 });
