@@ -51,3 +51,21 @@ export const formatIcNumber = (val: string) => {
   if (d.length <= 8) return `${d.slice(0, 6)}-${d.slice(6)}`;
   return `${d.slice(0, 6)}-${d.slice(6, 8)}-${d.slice(8)}`;
 };
+
+// ISO timestamp -> "Just now" / "5m ago" / "3h ago" / "Yesterday" / a
+// date. Freshly-added notifications already carry a literal 'Just now'
+// set once at creation (AppContext's addNotification) and never
+// recomputed — this is only for rows fetched back from the database on
+// a later load, where the original creation moment is long past.
+export const fmtRelativeTime = (iso: string) => {
+  const diffMs = Date.now() - new Date(iso).getTime();
+  const mins = Math.floor(diffMs / 60_000);
+  if (mins < 1) return 'Just now';
+  if (mins < 60) return `${mins}m ago`;
+  const hours = Math.floor(mins / 60);
+  if (hours < 24) return `${hours}h ago`;
+  const days = Math.floor(hours / 24);
+  if (days === 1) return 'Yesterday';
+  if (days < 7) return `${days}d ago`;
+  return new Date(iso).toLocaleDateString('en-MY', { day: 'numeric', month: 'short' });
+};

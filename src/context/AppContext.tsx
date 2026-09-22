@@ -3,6 +3,7 @@ import { Capacitor } from '@capacitor/core';
 import { App as CapacitorApp } from '@capacitor/app';
 import { supabase } from '../lib/supabase';
 import { INACTIVITY_LIMIT_MS, isSessionExpired, touchActivity, setDeviceSessionReplacedMessage, setSessionExpiredMessage } from '../lib/idleSession';
+import { fmtRelativeTime } from '../lib/format';
 import type { JubahBookingInput } from '../types/jubahBooking';
 
 // window.location.origin on web — always correct wherever the app is
@@ -423,12 +424,54 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   // Notifications — previously seeded with two hardcoded fake items shown
   // to every single user regardless of anything they'd actually done
   // ("Welcome to gerak!", a "Graduation Notice 2026" that only made sense
-  // for one particular convocation). Combined with notifications never
-  // being persisted anywhere, this meant every fresh session/reload showed
-  // exactly the same phantom "1 unread" badge forever, whether or not
-  // there was ever anything real to read. Starts empty now — real events
-  // populate it as they actually happen (see addNotification call sites).
+  // for one particular convocation). Starts empty now — real events
+  // populate it as they actually happen (see addNotification call sites),
+  // and are now persisted to the notifications table so a reload or a
+  // fresh login restores real history instead of showing an empty inbox
+  // every time (see the load effect below and addNotification/
+  // markAllNotificationsRead, which write through to the same table).
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
+
+  // Loads this user's persisted history once per login. Merges by id
+  // rather than replacing outright — addNotification can fire (Email
+  // confirmed, the policy-update notice, etc.) around the same moment a
+  // fresh login triggers this fetch, and a blind replace could drop
+  // whichever one lost the race.
+  useEffect(() => {
+    if (!user.isLoggedIn) return;
+    let cancelled = false;
+    void (async () => {
+      const { data: { user: authUser } } = await supabase.auth.getUser();
+      if (!authUser || cancelled) return;
+      const { data } = await supabase
+        .from('notifications')
+        .select('id, title, description, type, is_read, created_at')
+        .eq('user_id', authUser.id)
+        .order('created_at', { ascending: false })
+        .limit(50);
+      if (cancelled || !data) return;
+      setNotifications(prev => {
+        // Local items (already newest-first, whether they came from
+        // earlier in this same load or from an addNotification() call
+        // that raced this fetch) stay exactly where they are; only rows
+        // this session hasn't seen yet — older history from before this
+        // login — get appended after them, in their own newest-first order.
+        const existingIds = new Set(prev.map(n => n.id));
+        const olderHistory = data
+          .filter(row => !existingIds.has(row.id))
+          .map(row => ({
+            id: row.id,
+            title: row.title,
+            description: row.description,
+            type: row.type as NotificationItem['type'],
+            isRead: row.is_read,
+            time: fmtRelativeTime(row.created_at),
+          }));
+        return [...prev, ...olderHistory];
+      });
+    })();
+    return () => { cancelled = true; };
+  }, [user.isLoggedIn]);
 
   // One-time "we updated our Privacy Policy / Terms" nudge — fires once per
   // browser per version bump (tracked in localStorage, independent of
@@ -1006,6 +1049,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setUser({ name: '', matricNo: '', email: '', phone: '', university: '', campus: '', gender: '', gerakId: '', role: 'customer', status: 'active', vehicle: '', plateNumber: '', feeReceiptUrl: '', feeReceiptVerified: false, feeReceiptAmount: '', feeReceiptDate: '', feeReceiptExpiry: '', feeReceiptRejectReason: '', canDrive: false, canRent: false, canTransport: false, canRobe: false, icNumber: '', icUrl: '', licenseUrl: '', docsStatus: 'none', docsRejectReason: '', receiptGateExempt: false, isJubahLead: false, jubahLeadUniversities: [], avatarUrl: '', isLoggedIn: false });
     setActiveRide(null);
     setJubahBooking(null);
+    // Without this, logging out and back in as a different account in the
+    // same tab (no full reload) left the previous account's notifications
+    // sitting in memory — the merge-on-login fetch only adds rows, it
+    // never had a reason to remove ones that don't belong to whoever's
+    // signed in now.
+    setNotifications([]);
     _setCurrentPage('login');
     supabase.auth.signOut();
   };
@@ -1044,10 +1093,35 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       type
     };
     setNotifications(prev => [newNotif, ...prev]);
+    // Persisted in the background, keyed by the same id — the local
+    // prepend above already covers this session; this is what makes the
+    // entry survive a reload or a fresh login instead of vanishing with
+    // the rest of the in-memory list.
+    void (async () => {
+      const { data: { user: authUser } } = await supabase.auth.getUser();
+      if (!authUser) return;
+      const { error } = await supabase.from('notifications').insert({
+        id: newNotif.id,
+        user_id: authUser.id,
+        title,
+        description,
+        type,
+      });
+      if (error) console.error('[GERAK] Failed to persist notification:', error);
+    })();
   };
 
   const markAllNotificationsRead = () => {
     setNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
+    void (async () => {
+      const { data: { user: authUser } } = await supabase.auth.getUser();
+      if (!authUser) return;
+      const { error } = await supabase.from('notifications')
+        .update({ is_read: true })
+        .eq('user_id', authUser.id)
+        .eq('is_read', false);
+      if (error) console.error('[GERAK] Failed to persist mark-all-read:', error);
+    })();
   };
 
   // 3. Jubah Delivery Operations
