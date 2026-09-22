@@ -52,6 +52,10 @@ export const Dashboard: React.FC = () => {
   const [activeBanner, setActiveBanner] = useState(0);
   const [banners, setBanners] = useState<Banner[]>(FALLBACK_BANNERS);
   const [jubahActive, setJubahActive] = useState(false);
+  // Same shape as jubahActive — orders were auto-cancelling with no driver
+  // to pick them up, so the tile is hidden (not the whole Transport flow)
+  // until drivers are onboarded properly; see 20260922100000.
+  const [gerakCarActive, setGerakCarActive] = useState(false);
   const touchStartX = useRef(0);
   const touchEndX   = useRef(0);
 
@@ -63,6 +67,15 @@ export const Dashboard: React.FC = () => {
       .eq('key', 'jubah_active')
       .single()
       .then(({ data }) => { if (data) setJubahActive(data.value === 'true'); });
+  }, []);
+
+  useEffect(() => {
+    supabase
+      .from('app_settings')
+      .select('value')
+      .eq('key', 'gerak_car_active')
+      .single()
+      .then(({ data }) => { if (data) setGerakCarActive(data.value === 'true'); });
   }, []);
 
   // Fetch active announcements from Supabase; fall back to hardcoded if none
@@ -234,25 +247,29 @@ export const Dashboard: React.FC = () => {
         
         {/* A. Transportation Module — same card standard as the other
             modules below; "Most booked" stays as a small red label,
-            keeping just enough distinction without a whole separate style. */}
-        <div
-          onClick={() => setCurrentPage('transport')}
-          className="bg-white border border-slate-100 rounded-3xl p-5 flex items-center justify-between cursor-pointer active:scale-[0.99] active:bg-slate-50 transition duration-200"
-        >
-          <div className="flex items-center gap-3">
-            <div className="w-[38px] h-[38px] rounded-xl bg-red-50 flex items-center justify-center shrink-0">
-              <Car className="w-[19px] h-[19px] text-primary" />
+            keeping just enough distinction without a whole separate style.
+            Hidden entirely (not greyed out) while gerakCarActive is off —
+            same treatment as the Jubah tile below. */}
+        {gerakCarActive && (
+          <div
+            onClick={() => setCurrentPage('transport')}
+            className="bg-white border border-slate-100 rounded-3xl p-5 flex items-center justify-between cursor-pointer active:scale-[0.99] active:bg-slate-50 transition duration-200"
+          >
+            <div className="flex items-center gap-3">
+              <div className="w-[38px] h-[38px] rounded-xl bg-red-50 flex items-center justify-center shrink-0">
+                <Car className="w-[19px] h-[19px] text-primary" />
+              </div>
+              <div>
+                <p className="text-[10px] font-bold uppercase tracking-wide text-primary m-0">Most booked</p>
+                <h4 className="text-base font-semibold text-slate-800 m-0 leading-tight">Gerak Car</h4>
+                <p className="text-xs text-slate-400 font-normal mt-0.5">
+                  Book point-to-point campus travel. Live path tracking.
+                </p>
+              </div>
             </div>
-            <div>
-              <p className="text-[10px] font-bold uppercase tracking-wide text-primary m-0">Most booked</p>
-              <h4 className="text-base font-semibold text-slate-800 m-0 leading-tight">Gerak Car</h4>
-              <p className="text-xs text-slate-400 font-normal mt-0.5">
-                Book point-to-point campus travel. Live path tracking.
-              </p>
-            </div>
+            <ChevronRight className="w-5 h-5 text-slate-300 shrink-0" />
           </div>
-          <ChevronRight className="w-5 h-5 text-slate-300 shrink-0" />
-        </div>
+        )}
 
         {/* B. Jubah Delivery Module — hidden entirely while closed, not just
             greyed out (was previously always visible, disabled + "Closed"
