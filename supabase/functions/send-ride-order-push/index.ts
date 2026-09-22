@@ -59,6 +59,51 @@ type RideOrder = {
   night_charge: number
   customer_name: string
   status: string
+  driver_id: string | null
+}
+
+type PushSubRow = { id: string; endpoint: string; p256dh: string; auth: string }
+
+// High urgency + a short TTL both matter for "does this actually wake the
+// phone" — left unset, a push can sit deprioritized in Doze/battery-saver
+// scheduling instead of being delivered immediately, which is exactly the
+// "arrived silently, screen never woke up" complaint this was built to fix.
+// requireInteraction (set in sw.js's push handler, not here) keeps it
+// visible on screen once shown; this is what gets it delivered promptly
+// in the first place.
+const PUSH_OPTIONS = { TTL: 300, urgency: 'high' as const }
+
+async function sendToSubscriptions(
+  admin: ReturnType<typeof createClient>,
+  subs: PushSubRow[],
+  payload: string,
+) {
+  let sent = 0
+  let failed = 0
+  const staleIds: string[] = []
+  await Promise.all(subs.map(async (sub) => {
+    try {
+      await webpush.sendNotification(
+        { endpoint: sub.endpoint, keys: { p256dh: sub.p256dh, auth: sub.auth } },
+        payload,
+        PUSH_OPTIONS,
+      )
+      sent++
+    } catch (err) {
+      failed++
+      // 404/410 means the browser/OS has permanently invalidated this
+      // subscription (uninstalled, permission revoked, endpoint expired)
+      // — nothing will ever succeed against it again, so clean it up
+      // instead of retrying it on every future order forever.
+      const statusCode = (err as { statusCode?: number })?.statusCode
+      if (statusCode === 404 || statusCode === 410) staleIds.push(sub.id)
+      else console.error('send-ride-order-push: push failed for', sub.id, err)
+    }
+  }))
+  if (staleIds.length > 0) {
+    await admin.from('push_subscriptions').delete().in('id', staleIds)
+  }
+  return { sent, failed, removed: staleIds.length }
 }
 
 serve(async (req) => {
@@ -77,7 +122,7 @@ serve(async (req) => {
       return json({ success: false, reason: 'Unauthorized' }, 401)
     }
 
-    const { order_id } = await req.json().catch(() => ({}))
+    const { order_id, event } = await req.json().catch(() => ({}))
     if (!order_id) return json({ success: false, reason: 'order_id required' }, 400)
 
     const admin = createClient(
@@ -87,17 +132,55 @@ serve(async (req) => {
 
     const { data: order, error: orderErr } = await admin
       .from('ride_orders')
-      .select('id,campus,pickup,destination,fare,night_charge,customer_name,status')
+      .select('id,campus,pickup,destination,fare,night_charge,customer_name,status,driver_id')
       .eq('id', order_id)
       .maybeSingle<RideOrder>()
-    if (orderErr || !order || order.status !== 'pending') {
-      return json({ success: true, sent: 0, reason: 'order not found or no longer pending' })
+    if (orderErr || !order) {
+      return json({ success: true, sent: 0, reason: 'order not found' })
     }
 
-    // Same eligible-driver definition DriverHome.tsx's realtime subscription
-    // already uses: same campus (case-insensitive — 'Pekan' vs 'pekan'),
-    // can_drive true, not suspended. Not scoped by driver_id since this is
-    // an open pool — every eligible driver in-campus can accept it.
+    webpush.setVapidDetails(
+      Deno.env.get('VAPID_SUBJECT')!,
+      Deno.env.get('VAPID_PUBLIC_KEY')!,
+      Deno.env.get('VAPID_PRIVATE_KEY')!,
+    )
+
+    if (event === 'cancelled') {
+      // Targeted at the one driver who'd already accepted this — not the
+      // campus broadcast the 'new' branch below does. No can_drive/status
+      // filter here: they accepted it while eligible, and still deserve to
+      // know it's off even if something about their account changed since.
+      if (order.status !== 'cancelled' || !order.driver_id) {
+        return json({ success: true, sent: 0, reason: 'not a driver-assigned cancellation' })
+      }
+      const { data: subs, error: subsErr } = await admin
+        .from('push_subscriptions')
+        .select('id, endpoint, p256dh, auth')
+        .eq('user_id', order.driver_id)
+      if (subsErr) {
+        console.error('send-ride-order-push: cancel subs query error:', subsErr)
+        return json({ success: false, reason: subsErr.message }, 500)
+      }
+      if (!subs || subs.length === 0) return json({ success: true, sent: 0 })
+
+      const payload = JSON.stringify({
+        title: 'Gerak — Ride Cancelled',
+        // Matches DriverHome.tsx's existing in-page copy for this exact
+        // event — same wording whether it's delivered while the app is
+        // open or arrives as a push.
+        body: `Your customer cancelled this ride (${toBold(order.pickup)} → ${toBold(order.destination)}).`,
+        tag: 'gerak-customer-cancelled',
+        data: { url: '/' },
+      })
+      const result = await sendToSubscriptions(admin, subs as PushSubRow[], payload)
+      return json({ success: true, ...result })
+    }
+
+    // event === 'new' (or omitted) — broadcast to every eligible driver in
+    // the order's campus, same as before.
+    if (order.status !== 'pending') {
+      return json({ success: true, sent: 0, reason: 'order no longer pending' })
+    }
     const { data: subs, error: subsErr } = await admin
       .from('push_subscriptions')
       .select('id, endpoint, p256dh, auth, profiles!inner(campus, can_drive, status)')
@@ -111,49 +194,14 @@ serve(async (req) => {
     if (!subs || subs.length === 0) return json({ success: true, sent: 0 })
 
     const fareText = order.fare === 'TBC' ? 'TBC' : `RM${(Number(order.fare) + order.night_charge).toFixed(0)}`
-    const title = 'Gerak — New Ride Request'
-    const body = `${toBold(fareText)} · ${toBold(order.pickup)} → ${toBold(order.destination)}`
     const payload = JSON.stringify({
-      title,
-      body,
+      title: 'Gerak — New Ride Request',
+      body: `${toBold(fareText)} · ${toBold(order.pickup)} → ${toBold(order.destination)}`,
       tag: 'gerak-new-order',
       data: { url: '/' },
     })
-
-    webpush.setVapidDetails(
-      Deno.env.get('VAPID_SUBJECT')!,
-      Deno.env.get('VAPID_PUBLIC_KEY')!,
-      Deno.env.get('VAPID_PRIVATE_KEY')!,
-    )
-
-    let sent = 0
-    let failed = 0
-    const staleIds: string[] = []
-
-    await Promise.all(subs.map(async (sub) => {
-      try {
-        await webpush.sendNotification(
-          { endpoint: sub.endpoint, keys: { p256dh: sub.p256dh, auth: sub.auth } },
-          payload,
-        )
-        sent++
-      } catch (err) {
-        failed++
-        // 404/410 means the browser/OS has permanently invalidated this
-        // subscription (uninstalled, permission revoked, endpoint expired)
-        // — nothing will ever succeed against it again, so clean it up
-        // instead of retrying it on every future order forever.
-        const statusCode = (err as { statusCode?: number })?.statusCode
-        if (statusCode === 404 || statusCode === 410) staleIds.push(sub.id)
-        else console.error('send-ride-order-push: push failed for', sub.id, err)
-      }
-    }))
-
-    if (staleIds.length > 0) {
-      await admin.from('push_subscriptions').delete().in('id', staleIds)
-    }
-
-    return json({ success: true, sent, failed, removed: staleIds.length })
+    const result = await sendToSubscriptions(admin, subs as PushSubRow[], payload)
+    return json({ success: true, ...result })
   } catch (err) {
     console.error('send-ride-order-push unhandled error:', err)
     return json({ success: false, reason: 'Server error.' }, 500)

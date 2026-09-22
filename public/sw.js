@@ -1,4 +1,4 @@
-const CACHE_NAME = 'gerak-cache-v533';
+const CACHE_NAME = 'gerak-cache-v534';
 const ASSETS_TO_CACHE = [
   '/',
   '/index.html',
@@ -137,6 +137,11 @@ self.addEventListener('push', (event) => {
       tag: payload.tag || 'gerak-notification',
       data: payload.data || {},
       vibrate: [200, 100, 200],
+      // A new ride request or a cancellation on an already-accepted job is
+      // time-critical — this keeps it on screen (lock screen included)
+      // until the driver actually dismisses or taps it, instead of the
+      // default few-second auto-hide that made it easy to miss entirely.
+      requireInteraction: true,
     })
   );
 });

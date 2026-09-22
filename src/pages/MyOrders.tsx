@@ -267,7 +267,14 @@ export const MyOrders: React.FC = () => {
     return () => clearTimeout(id);
   }, [toast]);
 
-  const load = async () => {
+  // skipCancelNotifyIds: a one-shot list for the single load() call right
+  // after the customer's own cancel/edit action — those already got their
+  // own toast, so the "cancelled elsewhere" notification below shouldn't
+  // also fire for them. Only needs to cover that one call: once this pass
+  // records the new status in prevStatuses, later load() calls (polling,
+  // realtime, visibility) see status already matching prev and never
+  // re-enter the diff branch for that order again.
+  const load = async (opts?: { skipCancelNotifyIds?: string[] }) => {
     const { data: { user: authUser } } = await supabase.auth.getUser();
     if (!authUser) { setLoading(false); return; }
 
@@ -299,14 +306,23 @@ export const MyOrders: React.FC = () => {
             'transport',
           );
         }
-        // cancel_reason is only ever set by the 30-minute auto-expire cron —
-        // customer self-cancel and admin force-cancel both leave it null, so
-        // this can't fire for a cancellation the customer already knows about.
+        // cancel_reason is only ever set by the 30-minute auto-expire cron.
         if (o.status === 'cancelled' && o.cancel_reason) {
           showToast('No driver was found for your ride request.');
           addNotification(
             'No Driver Found',
             `Your ride request for ${o.date}, ${o.time} didn't get accepted in time and was cancelled. Feel free to try again.`,
+            'transport',
+          );
+        } else if (o.status === 'cancelled' && !o.cancel_reason && !opts?.skipCancelNotifyIds?.includes(o.id)) {
+          // No cancel_reason and not something this client just did itself
+          // — the only other way to land here is an admin force-cancelling
+          // it from OrdersTab, which the customer would otherwise never
+          // hear about at all.
+          showToast('Your ride booking was cancelled by Gerak admin.');
+          addNotification(
+            'Booking Cancelled',
+            `Your ride request for ${o.date}, ${o.time} was cancelled by an admin. Contact support if you have questions.`,
             'transport',
           );
         }
@@ -403,7 +419,7 @@ export const MyOrders: React.FC = () => {
       showToast(data?.error ?? error?.message ?? 'Could not cancel order.');
     } else {
       showToast('Order cancelled.');
-      load();
+      load({ skipCancelNotifyIds: [o.id] });
     }
   };
 
@@ -436,6 +452,10 @@ export const MyOrders: React.FC = () => {
     const { data } = await supabase.rpc('cancel_customer_order', { p_order_id: o.id });
     setCancellingId(null);
     if (data?.success) {
+      // No skip-list needed here (unlike handleCancel) — this navigates
+      // straight to 'transport', unmounting MyOrders entirely, so
+      // prevStatuses resets before this order could ever be re-diffed
+      // against its pre-cancel status.
       setCurrentPage('transport');
     } else {
       showToast(data?.error ?? 'Could not edit order.');
