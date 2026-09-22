@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Car, Sliders } from 'lucide-react';
+import { Car, GraduationCap, Sliders } from 'lucide-react';
 import { supabase } from '../../../lib/supabase';
 
 interface Props {
@@ -83,6 +83,17 @@ export function SettingsTab({ active, showToast }: Props) {
             <p className="text-xs font-normal text-slate-400">Point-to-point campus travel</p>
           </div>
           <AppSettingToggle settingKey="gerak_car_active" showToast={showToast} />
+        </div>
+
+        <div className="flex items-center gap-3 border-t border-slate-100 pt-4">
+          <div className="w-9 h-9 rounded-xl bg-amber-50 flex items-center justify-center shrink-0">
+            <GraduationCap className="w-4 h-4 text-amber-500" />
+          </div>
+          <div className="min-w-0 flex-1">
+            <p className="text-sm font-semibold text-slate-700">Jubah Delivery</p>
+            <p className="text-xs font-normal text-slate-400">Convocation robe delivery & returns</p>
+          </div>
+          <AppSettingToggle settingKey="jubah_active" showToast={showToast} />
         </div>
       </div>
     </div>
