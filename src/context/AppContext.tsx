@@ -503,6 +503,19 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             time: fmtRelativeTime(row.created_at),
           }, ...prev]);
         })
+        // Without this, a row deleted server-side (cleanup, a future
+        // user-facing delete, anything) stays visible in an already-open
+        // session indefinitely — confirmed live: diagnostic test rows kept
+        // showing in Campus Inbox long after being deleted from the table,
+        // since only a full app close (resetting local state to empty)
+        // actually cleared them.
+        .on('postgres_changes', {
+          event: 'DELETE', schema: 'public', table: 'notifications',
+          filter: `user_id=eq.${authUser.id}`,
+        }, (payload) => {
+          const oldRow = payload.old as { id?: string };
+          if (oldRow.id) setNotifications(prev => prev.filter(n => n.id !== oldRow.id));
+        })
         .subscribe();
     })();
     return () => {
