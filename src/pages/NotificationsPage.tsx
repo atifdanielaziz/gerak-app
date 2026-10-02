@@ -1,7 +1,8 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useApp } from '../context/AppContext';
 import type { NotificationItem } from '../context/AppContext';
 import { BellRing, Check, Info, Car, GraduationCap, HelpCircle } from 'lucide-react';
+import { fmtRelativeTime } from '../lib/format';
 
 export const NotificationsPage: React.FC = () => {
   const { notifications, markAllNotificationsRead } = useApp();
@@ -10,6 +11,17 @@ export const NotificationsPage: React.FC = () => {
   useEffect(() => {
     markAllNotificationsRead();
   // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Ticks every 30s purely to re-render so fmtRelativeTime(createdAt) below
+  // stays current while this page stays open — otherwise a notification's
+  // displayed age only updates on the next unrelated re-render, same
+  // "frozen forever" bug this whole thing was added to fix. Same pattern
+  // as MyOrders.tsx/DriverHome.tsx's own elapsed-time ticks.
+  const [, forceTick] = useState(0);
+  useEffect(() => {
+    const id = setInterval(() => forceTick(t => t + 1), 30_000);
+    return () => clearInterval(id);
   }, []);
 
   const getIcon = (type: NotificationItem['type']) => {
@@ -89,7 +101,7 @@ export const NotificationsPage: React.FC = () => {
                   }`}>
                     {notif.title}
                   </h4>
-                  <span className="text-[8px] text-slate-400 font-normal whitespace-nowrap">{notif.time}</span>
+                  <span className="text-[8px] text-slate-400 font-normal whitespace-nowrap">{fmtRelativeTime(notif.createdAt)}</span>
                 </div>
                 <p className="text-xs text-slate-500 leading-normal font-normal mt-1">
                   {notif.description}

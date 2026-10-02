@@ -3,7 +3,6 @@ import { Capacitor } from '@capacitor/core';
 import { App as CapacitorApp } from '@capacitor/app';
 import { supabase } from '../lib/supabase';
 import { INACTIVITY_LIMIT_MS, isSessionExpired, touchActivity, setDeviceSessionReplacedMessage, setSessionExpiredMessage } from '../lib/idleSession';
-import { fmtRelativeTime } from '../lib/format';
 import type { JubahBookingInput } from '../types/jubahBooking';
 
 // window.location.origin on web — always correct wherever the app is
@@ -87,7 +86,12 @@ export interface NotificationItem {
   id: string;
   title: string;
   description: string;
-  time: string;
+  // ISO timestamp, not a pre-rendered "Just now" string — the display
+  // string needs to be recomputed on every render (see NotificationsPage's
+  // fmtRelativeTime call), otherwise an item created an hour ago still
+  // reads "Just now" forever, since nothing ever revisits a value baked in
+  // once at creation/fetch time. Confirmed live: exactly that.
+  createdAt: string;
   isRead: boolean;
   type: 'system' | 'transport' | 'jubah';
 }
@@ -465,7 +469,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             description: row.description,
             type: row.type as NotificationItem['type'],
             isRead: row.is_read,
-            time: fmtRelativeTime(row.created_at),
+            createdAt: row.created_at,
           }));
         return [...prev, ...olderHistory];
       });
@@ -500,7 +504,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             description: row.description,
             type: row.type,
             isRead: row.is_read,
-            time: fmtRelativeTime(row.created_at),
+            createdAt: row.created_at,
           }, ...prev]);
         })
         // Without this, a row deleted server-side (cleanup, a future
@@ -879,13 +883,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             setNotifications(prev => [{
               id: `fee-expired-${Date.now()}`, title: '🔴 Monthly Fee Expired',
               description: `Your Gerak account is now inactive. Pay RM25 to MUHAMMAD ATIF DANIEL and upload your receipt to reactivate.`,
-              time: 'Just now', isRead: false, type: 'system' as const,
+              createdAt: new Date().toISOString(), isRead: false, type: 'system' as const,
             }, ...prev]);
           } else if (daysLeft <= 3) {
             setNotifications(prev => [{
               id: `fee-reminder-${Date.now()}`, title: `⚠️ Fee Due in ${daysLeft} Day${daysLeft === 1 ? '' : 's'}`,
               description: `Your account expires on ${expiryLabel}. Pay RM25 to MUHAMMAD ATIF DANIEL on 1st–3rd of the month to stay active.`,
-              time: 'Just now', isRead: false, type: 'system' as const,
+              createdAt: new Date().toISOString(), isRead: false, type: 'system' as const,
             }, ...prev]);
           }
         }
@@ -1139,7 +1143,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       id: crypto.randomUUID(),
       title,
       description,
-      time: 'Just now',
+      createdAt: new Date().toISOString(),
       isRead: false,
       type
     };
