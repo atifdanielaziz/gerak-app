@@ -6,7 +6,7 @@ import {
 } from 'lucide-react';
 import { WaIcon, toWa } from '../../../lib/whatsapp';
 import { AdminSearchInput } from '../../../components/AdminSearchInput';
-import { getJubahDocSignedUrl, openInNewTab, staffReplaceJubahDocument, type JubahDocField } from '../../../lib/jubahDocs';
+import { getJubahDocSignedUrl, openInNewTab, staffReplaceJubahDocument, regenerateJubahCombinedPdf, type JubahDocField } from '../../../lib/jubahDocs';
 import { JubahDocReplaceButton } from '../../../components/JubahDocReplaceButton';
 import { copyToClipboard } from '../../../lib/clipboard';
 import { ReceiptCard } from '../../../components/Receipt';
@@ -1152,6 +1152,11 @@ export function JubahCustomerSubTab({
                         onSuccess={p => {
                           setBookings(prev => prev.map(r => r.id === b.id ? { ...r, [`${field}_path`]: p } : r));
                           setSelected(prev => prev?.id === b.id ? { ...prev, [`${field}_path`]: p } : prev);
+                        }}
+                        onRegenerateCombined={() => regenerateJubahCombinedPdf({ bookingId: b.id })}
+                        onCombinedUpdated={p => {
+                          setBookings(prev => prev.map(r => r.id === b.id ? { ...r, docs_path: p } : r));
+                          setSelected(prev => prev?.id === b.id ? { ...prev, docs_path: p } : prev);
                         }}
                         showToast={showToast}
                       />

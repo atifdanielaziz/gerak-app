@@ -11,7 +11,7 @@ import { JUBAH_STEP_LABEL, getJubahProgress } from '../lib/jubahStatus';
 import { JubahBalancePayment } from '../components/JubahBalancePayment';
 import { JubahStepper } from '../components/JubahStepper';
 import { JubahDocReplaceButton, DOC_REPLACE_SUCCESS_MSG } from '../components/JubahDocReplaceButton';
-import { customerReplaceJubahDocument, type JubahDocField } from '../lib/jubahDocs';
+import { customerReplaceJubahDocument, regenerateJubahCombinedPdf, type JubahDocField } from '../lib/jubahDocs';
 
 interface JubahBookingResult {
   id: string;
@@ -439,6 +439,7 @@ export const TrackJubah: React.FC = () => {
                               field={field}
                               onReplace={(f, p) => customerReplaceJubahDocument(b.reference, verifiedIcLast4[b.id] ?? '', f, p)}
                               onSuccess={p => setReceiptData(prev => ({ ...prev, [b.id]: { ...prev[b.id], [`${field}_path`]: p } }))}
+                              onRegenerateCombined={() => regenerateJubahCombinedPdf({ reference: b.reference, icLast4: verifiedIcLast4[b.id] ?? '' })}
                               showToast={msg => setReplaceMsg(prev => ({ ...prev, [b.id]: { ok: msg === DOC_REPLACE_SUCCESS_MSG, text: msg } }))}
                             />
                           </div>

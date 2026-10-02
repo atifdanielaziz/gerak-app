@@ -147,6 +147,35 @@ export async function staffReplaceJubahDocument(bookingId: string, field: JubahD
   return { success: !!data?.success, error: data?.success ? null : (data?.error ?? 'Replace failed.') };
 }
 
+export interface CombineResult {
+  success: boolean;
+  path?: string;
+  error: string | null;
+}
+
+// Re-merges a booking's current OSCAR/SKPG/Konvo/IC into a fresh Combined
+// PDF, server-side (jubah-doc-combine edge function) — the Combined PDF is
+// otherwise only ever built once, client-side, at original booking
+// submission (Jubah.tsx's generateCombinedBlob), so without this it goes
+// stale the moment one of the four source docs is replaced. Runs
+// server-side rather than re-doing the same merge in the browser because a
+// customer's browser has no Storage read access to the other three
+// documents (RLS only allows admin/superadmin/assigned-rider reads).
+export async function regenerateJubahCombinedPdf(
+  params: { bookingId: string } | { reference: string; icLast4: string }
+): Promise<CombineResult> {
+  const { data, error } = await supabase.functions.invoke('jubah-doc-combine', { body: params });
+  if (error) {
+    console.error('[GERAK] jubah-doc-combine failed:', error);
+    return { success: false, error: error.message };
+  }
+  return {
+    success: !!data?.success,
+    path: data?.path,
+    error: data?.success ? null : (data?.error ?? 'Combined PDF update failed.'),
+  };
+}
+
 export function openInNewTab(url: string) {
   // This runs after the async signed-URL request. iOS Safari/PWA commonly
   // rejects a synthetic target=_blank click once the original user gesture

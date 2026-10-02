@@ -1,6 +1,6 @@
 import React, { useRef, useState } from 'react';
 import { RefreshCw } from 'lucide-react';
-import { uploadJubahDocReplacement, type JubahDocField, type ReplaceResult } from '../lib/jubahDocs';
+import { uploadJubahDocReplacement, type JubahDocField, type ReplaceResult, type CombineResult } from '../lib/jubahDocs';
 
 // Exported so a caller whose showToast needs to distinguish success from
 // failure (TrackJubah.tsx's inline message, since it has no real toast
@@ -17,6 +17,14 @@ interface JubahDocReplaceButtonProps {
   // than this component picking one.
   onReplace: (field: JubahDocField, newPath: string) => Promise<ReplaceResult>;
   onSuccess: (newPath: string) => void;
+  // Re-merges the 4 current docs into a fresh Combined PDF right after a
+  // successful replace, so it doesn't silently go stale. Optional because
+  // it needs server-side Storage access (see jubahDocs.ts's
+  // regenerateJubahCombinedPdf) — each caller wires its own
+  // identity-appropriate call (reference+IC for customer, bookingId for
+  // staff) rather than this component guessing which.
+  onRegenerateCombined?: () => Promise<CombineResult>;
+  onCombinedUpdated?: (newPath: string) => void;
   showToast: (msg: string) => void;
 }
 
@@ -25,7 +33,7 @@ interface JubahDocReplaceButtonProps {
 // at it. Rendered as `null` by the caller once the booking's Robe Status
 // has passed 'paid' — that lock is enforced server-side in the RPC too, so
 // hiding the button here is just UX, not the real security boundary.
-export const JubahDocReplaceButton: React.FC<JubahDocReplaceButtonProps> = ({ reference, field, onReplace, onSuccess, showToast }) => {
+export const JubahDocReplaceButton: React.FC<JubahDocReplaceButtonProps> = ({ reference, field, onReplace, onSuccess, onRegenerateCombined, onCombinedUpdated, showToast }) => {
   const inputRef = useRef<HTMLInputElement>(null);
   const [busy, setBusy] = useState(false);
 
@@ -38,12 +46,25 @@ export const JubahDocReplaceButton: React.FC<JubahDocReplaceButtonProps> = ({ re
       return;
     }
     const result = await onReplace(field, path);
-    setBusy(false);
-    if (result.success) {
-      onSuccess(path);
-      showToast(DOC_REPLACE_SUCCESS_MSG);
-    } else {
+    if (!result.success) {
+      setBusy(false);
       showToast(result.error ?? 'Replace failed.');
+      return;
+    }
+    onSuccess(path);
+
+    if (onRegenerateCombined) {
+      const combined = await onRegenerateCombined();
+      setBusy(false);
+      if (combined.success && combined.path) {
+        onCombinedUpdated?.(combined.path);
+        showToast(DOC_REPLACE_SUCCESS_MSG);
+      } else {
+        showToast(`Document replaced, but Combined PDF couldn't be updated: ${combined.error ?? 'unknown error'}`);
+      }
+    } else {
+      setBusy(false);
+      showToast(DOC_REPLACE_SUCCESS_MSG);
     }
   };
 

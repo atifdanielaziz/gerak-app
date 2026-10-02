@@ -2,7 +2,7 @@
 import { useApp } from '../context/AppContext';
 import { supabase } from '../lib/supabase';
 import { WaIcon, toWa } from '../lib/whatsapp';
-import { getJubahDocSignedUrl, openInNewTab, staffReplaceJubahDocument, type JubahDocField } from '../lib/jubahDocs';
+import { getJubahDocSignedUrl, openInNewTab, staffReplaceJubahDocument, regenerateJubahCombinedPdf, type JubahDocField } from '../lib/jubahDocs';
 import { JubahDocReplaceButton } from '../components/JubahDocReplaceButton';
 import { stampWatermark } from '../lib/watermark';
 import { useLoadOnActive } from '../hooks/useLoadOnActive';
@@ -966,6 +966,11 @@ export const RiderHome: React.FC = () => {
                               const updated = { ...selectedJob, [`${field}_path`]: p };
                               setSelectedJob(updated);
                               setJubahJobs(prev => prev.map(j => j.id === selectedJob.id ? updated : j));
+                            }}
+                            onRegenerateCombined={() => regenerateJubahCombinedPdf({ bookingId: selectedJob.id })}
+                            onCombinedUpdated={p => {
+                              setSelectedJob(prev => prev && prev.id === selectedJob.id ? { ...prev, docs_path: p } : prev);
+                              setJubahJobs(prev => prev.map(j => j.id === selectedJob.id ? { ...j, docs_path: p } : j));
                             }}
                             showToast={showToast}
                           />
