@@ -135,7 +135,11 @@ serve(async (req) => {
     }
 
     const pdfBytes = await merged.save()
-    const newPath = `${booking.reference}/combined_${Date.now()}.pdf`
+    // Matches Jubah.tsx's original uploadFile() naming convention
+    // ({reference}/{Name}_{label}_{timestamp}.{ext}) so a downloaded file
+    // shows the student's name instead of a bare "combined_<timestamp>.pdf".
+    const namePart = (booking.full_name || 'combined').replace(/\s+/g, '_')
+    const newPath = `${booking.reference}/${namePart}_combined_${Date.now()}.pdf`
     const { error: upErr } = await admin.storage.from('jubah-docs')
       .upload(newPath, pdfBytes, { contentType: 'application/pdf', upsert: false })
     if (upErr) {
