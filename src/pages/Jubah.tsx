@@ -1327,18 +1327,6 @@ export const Jubah: React.FC = () => {
                 No {isPostageDelivery ? 'postage' : 'self-pickup'} riders available for this campus at the moment.
               </p>
             )}
-
-            {/* Drop Point — read-only, set by admin for the selected rider */}
-            {selectedRiderId && !isPostageDelivery && (
-              <div className="flex flex-col gap-1">
-                <label className="text-xs font-semibold text-slate-400">Drop Point</label>
-                <div className="bg-white border border-slate-100 rounded-xl py-2.5 px-3">
-                  <span className="text-xs font-semibold text-slate-700">
-                    {riders.find(r => r.id === selectedRiderId)?.jubah_drop_point || 'Not set yet — contact admin'}
-                  </span>
-                </div>
-              </div>
-            )}
           </div>
 
           {/* ── DELIVERY ADDRESS (postage or deposit+postage) ── */}
