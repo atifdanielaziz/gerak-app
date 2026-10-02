@@ -176,6 +176,25 @@ export async function regenerateJubahCombinedPdf(
   };
 }
 
+// Customer-only document view/download — customers have no Storage read
+// RLS on jubah-docs (only admin/superadmin/assigned-rider do), so this goes
+// through the jubah-doc-view edge function instead, which re-verifies the
+// same reference + last-4-IC gate as get_jubah_receipt server-side before
+// signing a URL with the service role.
+export async function getJubahCustomerDocUrl(
+  reference: string, icLast4: string, field: JubahDocField, download = false
+): Promise<{ url: string | null; error: string | null }> {
+  const { data, error } = await supabase.functions.invoke('jubah-doc-view', {
+    body: { reference, icLast4, field, download },
+  });
+  if (error) {
+    console.error('[GERAK] jubah-doc-view failed:', error);
+    return { url: null, error: error.message };
+  }
+  if (!data?.success) return { url: null, error: data?.error ?? 'Could not open this document.' };
+  return { url: data.url, error: null };
+}
+
 export function openInNewTab(url: string) {
   // This runs after the async signed-URL request. iOS Safari/PWA commonly
   // rejects a synthetic target=_blank click once the original user gesture

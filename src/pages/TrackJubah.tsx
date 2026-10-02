@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
 import { supabase } from '../lib/supabase';
-import { PackageSearch, Search, GraduationCap } from 'lucide-react';
+import { PackageSearch, Search, GraduationCap, Eye, Download } from 'lucide-react';
 import { WaIcon, toWa } from '../lib/whatsapp';
 import { ReceiptCard } from '../components/Receipt';
 import { buildJubahReceiptRows } from '../lib/receiptRows';
@@ -11,7 +11,7 @@ import { JUBAH_STEP_LABEL, getJubahProgress } from '../lib/jubahStatus';
 import { JubahBalancePayment } from '../components/JubahBalancePayment';
 import { JubahStepper } from '../components/JubahStepper';
 import { JubahDocReplaceButton, DOC_REPLACE_SUCCESS_MSG } from '../components/JubahDocReplaceButton';
-import { customerReplaceJubahDocument, regenerateJubahCombinedPdf, type JubahDocField } from '../lib/jubahDocs';
+import { customerReplaceJubahDocument, regenerateJubahCombinedPdf, getJubahCustomerDocUrl, openInNewTab, type JubahDocField } from '../lib/jubahDocs';
 
 interface JubahBookingResult {
   id: string;
@@ -413,44 +413,78 @@ export const TrackJubah: React.FC = () => {
                   <>
                     <ReceiptCard doc={jubahDoc} onSavePdf={() => generateReceiptPdf(jubahDoc)} />
 
-                    {/* Replace a wrongly-uploaded document — locked once Robe
-                        Status passes 'paid' (enforced server-side too, this is
-                        just so the lock is visible rather than a silent no-op).
-                        Combined PDF is excluded — it's generated from these
-                        four, not uploaded directly. */}
-                    {(receipt.status === 'ordered' || receipt.status === 'paid') && (
-                      <div className="bg-white border border-slate-100 rounded-2xl p-4 flex flex-col gap-3">
-                        <p className="text-xs font-semibold text-slate-500">Uploaded the wrong file? Replace it below.</p>
-                        {([
-                          { label: 'OSCAR',      url: receipt.oscar_path, field: 'oscar' as JubahDocField },
-                          { label: 'SKPG',       url: receipt.skpg_path,  field: 'skpg' as JubahDocField },
-                          { label: 'Konvo Slip', url: receipt.konvo_path, field: 'konvo' as JubahDocField },
-                          { label: 'IC Copy',    url: receipt.ic_path,    field: 'ic' as JubahDocField },
-                        ]).map(({ label, url, field }) => (
-                          <div key={label} className="flex items-center justify-between gap-3 bg-slate-50 border border-slate-100 rounded-xl px-3 py-2.5">
-                            <div className="flex items-center gap-2 min-w-0">
-                              <span className="text-xs font-semibold text-slate-700 truncate">{label}</span>
-                              <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full shrink-0 ${url ? 'bg-emerald-50 text-emerald-600' : 'bg-amber-50 text-amber-600'}`}>
-                                {url ? 'Uploaded' : 'Missing'}
-                              </span>
-                            </div>
-                            <JubahDocReplaceButton
-                              reference={b.reference}
-                              field={field}
-                              onReplace={(f, p) => customerReplaceJubahDocument(b.reference, verifiedIcLast4[b.id] ?? '', f, p)}
-                              onSuccess={p => setReceiptData(prev => ({ ...prev, [b.id]: { ...prev[b.id], [`${field}_path`]: p } }))}
-                              onRegenerateCombined={() => regenerateJubahCombinedPdf({ reference: b.reference, icLast4: verifiedIcLast4[b.id] ?? '' })}
-                              showToast={msg => setReplaceMsg(prev => ({ ...prev, [b.id]: { ok: msg === DOC_REPLACE_SUCCESS_MSG, text: msg } }))}
-                            />
-                          </div>
-                        ))}
-                        {replaceMsg[b.id] && (
-                          <p className={`text-xs font-semibold ${replaceMsg[b.id].ok ? 'text-emerald-600' : 'text-danger'}`}>
-                            {replaceMsg[b.id].text}
+                    {/* Your Documents — view/download always available (same
+                        as the rider/superadmin views), Replace only while
+                        unlocked (Robe Status 'ordered'/'paid' — enforced
+                        server-side too, this is just so the lock is visible
+                        rather than a silent no-op). Combined PDF is excluded
+                        — it's generated from these four, not uploaded directly. */}
+                    {(() => {
+                      const unlocked = receipt.status === 'ordered' || receipt.status === 'paid';
+                      return (
+                        <div className="bg-white border border-slate-100 rounded-2xl p-4 flex flex-col gap-3">
+                          <p className="text-xs font-semibold text-slate-500">
+                            {unlocked ? 'Your Documents — uploaded the wrong file? Replace it below.' : 'Your Documents'}
                           </p>
-                        )}
-                      </div>
-                    )}
+                          {([
+                            { label: 'OSCAR',      url: receipt.oscar_path, field: 'oscar' as JubahDocField },
+                            { label: 'SKPG',       url: receipt.skpg_path,  field: 'skpg' as JubahDocField },
+                            { label: 'Konvo Slip', url: receipt.konvo_path, field: 'konvo' as JubahDocField },
+                            { label: 'IC Copy',    url: receipt.ic_path,    field: 'ic' as JubahDocField },
+                          ]).map(({ label, url, field }) => (
+                            <div key={label} className="flex items-center justify-between gap-3 bg-slate-50 border border-slate-100 rounded-xl px-3 py-2.5">
+                              <div className="flex items-center gap-2 min-w-0">
+                                <span className="text-xs font-semibold text-slate-700 truncate">{label}</span>
+                                <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full shrink-0 ${url ? 'bg-emerald-50 text-emerald-600' : 'bg-amber-50 text-amber-600'}`}>
+                                  {url ? 'Uploaded' : 'Missing'}
+                                </span>
+                              </div>
+                              <div className="flex items-center gap-2 shrink-0">
+                                <button
+                                  type="button"
+                                  disabled={!url}
+                                  aria-label={`View ${label}`}
+                                  onClick={async () => {
+                                    const { url: signed, error } = await getJubahCustomerDocUrl(b.reference, verifiedIcLast4[b.id] ?? '', field);
+                                    if (signed) openInNewTab(signed);
+                                    else setReplaceMsg(prev => ({ ...prev, [b.id]: { ok: false, text: error ? `Couldn't open ${label}: ${error}` : `Couldn't open ${label}.` } }));
+                                  }}
+                                  className={`w-8 h-8 flex items-center justify-center rounded-lg border transition shrink-0 ${url ? 'bg-blue-50 border-blue-100 text-blue-600 hover:bg-blue-100 active:scale-95' : 'bg-white border-slate-100 text-slate-300 cursor-not-allowed'}`}>
+                                  <Eye className="w-3.5 h-3.5" />
+                                </button>
+                                <button
+                                  type="button"
+                                  disabled={!url}
+                                  aria-label={`Download ${label}`}
+                                  onClick={async () => {
+                                    const { url: signed, error } = await getJubahCustomerDocUrl(b.reference, verifiedIcLast4[b.id] ?? '', field, true);
+                                    if (signed) openInNewTab(signed);
+                                    else setReplaceMsg(prev => ({ ...prev, [b.id]: { ok: false, text: error ? `Couldn't download ${label}: ${error}` : `Couldn't download ${label}.` } }));
+                                  }}
+                                  className={`w-8 h-8 flex items-center justify-center rounded-lg border transition shrink-0 ${url ? 'bg-slate-800 border-slate-700 text-white hover:bg-slate-700 active:scale-95' : 'bg-white border-slate-100 text-slate-300 cursor-not-allowed'}`}>
+                                  <Download className="w-3.5 h-3.5" />
+                                </button>
+                                {unlocked && (
+                                  <JubahDocReplaceButton
+                                    reference={b.reference}
+                                    field={field}
+                                    onReplace={(f, p) => customerReplaceJubahDocument(b.reference, verifiedIcLast4[b.id] ?? '', f, p)}
+                                    onSuccess={p => setReceiptData(prev => ({ ...prev, [b.id]: { ...prev[b.id], [`${field}_path`]: p } }))}
+                                    onRegenerateCombined={() => regenerateJubahCombinedPdf({ reference: b.reference, icLast4: verifiedIcLast4[b.id] ?? '' })}
+                                    showToast={msg => setReplaceMsg(prev => ({ ...prev, [b.id]: { ok: msg === DOC_REPLACE_SUCCESS_MSG, text: msg } }))}
+                                  />
+                                )}
+                              </div>
+                            </div>
+                          ))}
+                          {replaceMsg[b.id] && (
+                            <p className={`text-xs font-semibold ${replaceMsg[b.id].ok ? 'text-emerald-600' : 'text-danger'}`}>
+                              {replaceMsg[b.id].text}
+                            </p>
+                          )}
+                        </div>
+                      );
+                    })()}
                   </>
                 ) : receiptOpenId === b.id ? (
                   <div className="flex flex-col gap-2 bg-white border border-slate-100 rounded-2xl p-3">
