@@ -6,7 +6,8 @@ import {
 } from 'lucide-react';
 import { WaIcon, toWa } from '../../../lib/whatsapp';
 import { AdminSearchInput } from '../../../components/AdminSearchInput';
-import { getJubahDocSignedUrl, openInNewTab } from '../../../lib/jubahDocs';
+import { getJubahDocSignedUrl, openInNewTab, staffReplaceJubahDocument, type JubahDocField } from '../../../lib/jubahDocs';
+import { JubahDocReplaceButton } from '../../../components/JubahDocReplaceButton';
 import { copyToClipboard } from '../../../lib/clipboard';
 import { ReceiptCard } from '../../../components/Receipt';
 import { JubahStepper } from '../../../components/JubahStepper';
@@ -26,10 +27,11 @@ import type { SheetData } from 'write-excel-file/browser';
 // Shared by the "Upload Documents & Combined Document" and "Proof of
 // Payment" sections below — same view/download-via-signed-URL row, reused
 // so both sections stay visually identical instead of drifting apart.
-const DocLinkRow: React.FC<{ label: string; url: string | null; showToast: (msg: string) => void }> = ({ label, url, showToast }) => (
+const DocLinkRow: React.FC<{ label: string; url: string | null; showToast: (msg: string) => void; replaceSlot?: React.ReactNode }> = ({ label, url, showToast, replaceSlot }) => (
   <div className="flex items-center justify-between gap-3 bg-slate-50 border border-slate-100 rounded-xl px-3 py-2.5">
     <span className="text-xs font-semibold text-slate-700 truncate">{label}</span>
     <div className="flex items-center gap-2 shrink-0">
+      {replaceSlot}
       <button
         type="button"
         disabled={!url}
@@ -86,6 +88,13 @@ interface JubahCustomerSubTabProps {
   // jubah_confirm_superadmin_rider_only.sql). This just controls whether
   // the confirm/advance controls render as clickable here.
   canManageJubah: boolean;
+  // Document replace is narrower than canManageJubah — the RPC behind it
+  // only allows superadmin or that specific booking's assigned rider, and
+  // this view shows every booking regardless of who it's assigned to, so a
+  // Jubah Lead who isn't superadmin would just get "Not authorised." back.
+  // The assigned-rider case is handled on their own "My Assignments" view
+  // instead (RiderHome.tsx), where every booking shown already is theirs.
+  isSuperAdmin: boolean;
   bookings: JubahBookingRow[];
   // Real DB row count vs bookings.length (capped at 1000, see AdminHome.tsx's
   // loadJubahData) — only used to show a "showing X of Y" note when the cap
@@ -126,7 +135,7 @@ interface JubahCustomerSubTabProps {
 // fragmented across list/card/details files — those three views share one
 // tightly-coupled navigation state machine that's clearer kept together.
 export function JubahCustomerSubTab({
-  canManageJubah, bookings, bookingsTotalCount, bookingsLoading, setBookings, reload,
+  canManageJubah, isSuperAdmin, bookings, bookingsTotalCount, bookingsLoading, setBookings, reload,
   adminView, selected, setSelected, onGoToCard, onGoBack, onGoToList,
   showToast, onModalOpenChange, universityLabel,
 }: JubahCustomerSubTabProps) {
@@ -1129,14 +1138,29 @@ export function JubahCustomerSubTab({
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 {([
-                  { label: 'OSCAR',         url: b.oscar_path },
-                  { label: 'SKPG',          url: b.skpg_path },
-                  { label: 'Konvo Slip',    url: b.konvo_path },
-                  { label: 'IC Copy',       url: b.ic_path },
-                  { label: 'Combined PDF',  url: b.docs_path },
-                ] as { label: string; url: string | null }[]).map(({ label, url }) => (
-                  <DocLinkRow key={label} label={label} url={url} showToast={showToast} />
+                  { label: 'OSCAR',      url: b.oscar_path, field: 'oscar' as JubahDocField },
+                  { label: 'SKPG',       url: b.skpg_path,  field: 'skpg' as JubahDocField },
+                  { label: 'Konvo Slip', url: b.konvo_path, field: 'konvo' as JubahDocField },
+                  { label: 'IC Copy',    url: b.ic_path,    field: 'ic' as JubahDocField },
+                ]).map(({ label, url, field }) => (
+                  <DocLinkRow key={label} label={label} url={url} showToast={showToast}
+                    replaceSlot={isSuperAdmin && b.status !== 'cancelled' && (b.status === 'ordered' || b.status === 'paid') ? (
+                      <JubahDocReplaceButton
+                        reference={b.reference}
+                        field={field}
+                        onReplace={(f, p) => staffReplaceJubahDocument(b.id, f, p)}
+                        onSuccess={p => {
+                          setBookings(prev => prev.map(r => r.id === b.id ? { ...r, [`${field}_path`]: p } : r));
+                          setSelected(prev => prev?.id === b.id ? { ...prev, [`${field}_path`]: p } : prev);
+                        }}
+                        showToast={showToast}
+                      />
+                    ) : undefined}
+                  />
                 ))}
+                {/* Combined PDF is generated from the four docs above, not uploaded
+                    directly — never editable here, see the migration's rationale. */}
+                <DocLinkRow label="Combined PDF" url={b.docs_path} showToast={showToast} />
               </div>
             </div>
 

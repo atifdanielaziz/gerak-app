@@ -991,6 +991,7 @@ export const AdminHome: React.FC = () => {
             <JubahCustomerSubTab
               active={activeTab === 'jubah' && effectiveJubahSubTab === 'customer'}
               canManageJubah={isSuperAdmin || isJubahLead}
+              isSuperAdmin={isSuperAdmin}
               bookings={jubahBookings}
               bookingsTotalCount={jubahBookingsTotalCount}
               bookingsLoading={jubahBookingsLoading}

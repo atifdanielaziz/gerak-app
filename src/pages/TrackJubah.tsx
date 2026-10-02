@@ -10,6 +10,8 @@ import { getPendingJubahBooking, clearPendingJubahBooking } from '../lib/pending
 import { JUBAH_STEP_LABEL, getJubahProgress } from '../lib/jubahStatus';
 import { JubahBalancePayment } from '../components/JubahBalancePayment';
 import { JubahStepper } from '../components/JubahStepper';
+import { JubahDocReplaceButton, DOC_REPLACE_SUCCESS_MSG } from '../components/JubahDocReplaceButton';
+import { customerReplaceJubahDocument, type JubahDocField } from '../lib/jubahDocs';
 
 interface JubahBookingResult {
   id: string;
@@ -56,6 +58,10 @@ interface JubahReceiptData {
   initial_paid_at: string | null;
   delivery_address: string | null;
   created_at: string;
+  oscar_path: string | null;
+  skpg_path: string | null;
+  konvo_path: string | null;
+  ic_path: string | null;
 }
 
 const STATUS_LABEL: Record<string, string> = {
@@ -114,6 +120,12 @@ export const TrackJubah: React.FC = () => {
   const [verifyingReceipt, setVerifyingReceipt] = useState(false);
   const [receiptErrors, setReceiptErrors]   = useState<Record<string, string>>({});
   const [receiptData, setReceiptData]       = useState<Record<string, JubahReceiptData>>({});
+  // get_jubah_receipt's gate is "reference + last-4 IC" — the same thing
+  // customer_replace_jubah_document re-checks server-side, so the digits
+  // need to survive past verification (icLast4 itself is cleared right
+  // after) for the Replace buttons below to be able to call it.
+  const [verifiedIcLast4, setVerifiedIcLast4] = useState<Record<string, string>>({});
+  const [replaceMsg, setReplaceMsg] = useState<Record<string, { ok: boolean; text: string }>>({});
 
   // Shared Jubah bank account — one account for every rider/customer, set by
   // superadmin (JubahPriceSubTab.tsx). Public read, same as jubah_active.
@@ -207,6 +219,7 @@ export const TrackJubah: React.FC = () => {
       return;
     }
     setReceiptData(prev => ({ ...prev, [b.id]: row }));
+    setVerifiedIcLast4(prev => ({ ...prev, [b.id]: icLast4 }));
     setReceiptOpenId(null);
     setIcLast4('');
   };
@@ -397,7 +410,47 @@ export const TrackJubah: React.FC = () => {
                     page is reachable via a guessable matric ID and the receipt
                     carries phone/address that matric ID alone shouldn't unlock. */}
                 {jubahDoc && receipt ? (
-                  <ReceiptCard doc={jubahDoc} onSavePdf={() => generateReceiptPdf(jubahDoc)} />
+                  <>
+                    <ReceiptCard doc={jubahDoc} onSavePdf={() => generateReceiptPdf(jubahDoc)} />
+
+                    {/* Replace a wrongly-uploaded document — locked once Robe
+                        Status passes 'paid' (enforced server-side too, this is
+                        just so the lock is visible rather than a silent no-op).
+                        Combined PDF is excluded — it's generated from these
+                        four, not uploaded directly. */}
+                    {(receipt.status === 'ordered' || receipt.status === 'paid') && (
+                      <div className="bg-white border border-slate-100 rounded-2xl p-4 flex flex-col gap-3">
+                        <p className="text-xs font-semibold text-slate-500">Uploaded the wrong file? Replace it below.</p>
+                        {([
+                          { label: 'OSCAR',      url: receipt.oscar_path, field: 'oscar' as JubahDocField },
+                          { label: 'SKPG',       url: receipt.skpg_path,  field: 'skpg' as JubahDocField },
+                          { label: 'Konvo Slip', url: receipt.konvo_path, field: 'konvo' as JubahDocField },
+                          { label: 'IC Copy',    url: receipt.ic_path,    field: 'ic' as JubahDocField },
+                        ]).map(({ label, url, field }) => (
+                          <div key={label} className="flex items-center justify-between gap-3 bg-slate-50 border border-slate-100 rounded-xl px-3 py-2.5">
+                            <div className="flex items-center gap-2 min-w-0">
+                              <span className="text-xs font-semibold text-slate-700 truncate">{label}</span>
+                              <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full shrink-0 ${url ? 'bg-emerald-50 text-emerald-600' : 'bg-amber-50 text-amber-600'}`}>
+                                {url ? 'Uploaded' : 'Missing'}
+                              </span>
+                            </div>
+                            <JubahDocReplaceButton
+                              reference={b.reference}
+                              field={field}
+                              onReplace={(f, p) => customerReplaceJubahDocument(b.reference, verifiedIcLast4[b.id] ?? '', f, p)}
+                              onSuccess={p => setReceiptData(prev => ({ ...prev, [b.id]: { ...prev[b.id], [`${field}_path`]: p } }))}
+                              showToast={msg => setReplaceMsg(prev => ({ ...prev, [b.id]: { ok: msg === DOC_REPLACE_SUCCESS_MSG, text: msg } }))}
+                            />
+                          </div>
+                        ))}
+                        {replaceMsg[b.id] && (
+                          <p className={`text-xs font-semibold ${replaceMsg[b.id].ok ? 'text-emerald-600' : 'text-danger'}`}>
+                            {replaceMsg[b.id].text}
+                          </p>
+                        )}
+                      </div>
+                    )}
+                  </>
                 ) : receiptOpenId === b.id ? (
                   <div className="flex flex-col gap-2 bg-white border border-slate-100 rounded-2xl p-3">
                     <p className="text-xs text-slate-500 font-normal">

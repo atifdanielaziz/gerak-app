@@ -2,7 +2,8 @@
 import { useApp } from '../context/AppContext';
 import { supabase } from '../lib/supabase';
 import { WaIcon, toWa } from '../lib/whatsapp';
-import { getJubahDocSignedUrl, openInNewTab } from '../lib/jubahDocs';
+import { getJubahDocSignedUrl, openInNewTab, staffReplaceJubahDocument, type JubahDocField } from '../lib/jubahDocs';
+import { JubahDocReplaceButton } from '../components/JubahDocReplaceButton';
 import { stampWatermark } from '../lib/watermark';
 import { useLoadOnActive } from '../hooks/useLoadOnActive';
 import {
@@ -943,16 +944,32 @@ export const RiderHome: React.FC = () => {
                   <h3 className="text-sm font-semibold text-slate-700">Documents</h3>
 
                   {([
-                    { label: 'Combined PDF',    url: selectedJob.docs_path },
-                    { label: 'Payment Proof',   url: selectedJob.payment_path },
-                    { label: 'OSCAR',           url: selectedJob.oscar_path },
-                    { label: 'SKPG',            url: selectedJob.skpg_path },
-                    { label: 'Konvo Slip',      url: selectedJob.konvo_path },
-                    { label: 'IC Copy',         url: selectedJob.ic_path },
-                  ] as { label: string; url: string | null }[]).map(({ label, url }) => (
+                    { label: 'Combined PDF',    url: selectedJob.docs_path,    field: null },
+                    { label: 'Payment Proof',   url: selectedJob.payment_path, field: null },
+                    { label: 'OSCAR',           url: selectedJob.oscar_path,   field: 'oscar' },
+                    { label: 'SKPG',            url: selectedJob.skpg_path,    field: 'skpg' },
+                    { label: 'Konvo Slip',      url: selectedJob.konvo_path,   field: 'konvo' },
+                    { label: 'IC Copy',         url: selectedJob.ic_path,      field: 'ic' },
+                  ] as { label: string; url: string | null; field: JubahDocField | null }[]).map(({ label, url, field }) => (
                     <div key={label} className="flex items-center justify-between gap-3 border-b border-slate-100 pb-3 last:border-0 last:pb-0">
                       <span className="text-sm font-semibold text-slate-700">{label}</span>
                       <div className="flex items-center gap-2 shrink-0">
+                        {/* Combined PDF is generated from the other docs, not uploaded
+                            directly, so it has no replace field — see the migration's
+                            rationale. Locked once Robe Status passes 'paid'. */}
+                        {field && (selectedJob.status === 'ordered' || selectedJob.status === 'paid') && (
+                          <JubahDocReplaceButton
+                            reference={selectedJob.reference}
+                            field={field}
+                            onReplace={(f, p) => staffReplaceJubahDocument(selectedJob.id, f, p)}
+                            onSuccess={p => {
+                              const updated = { ...selectedJob, [`${field}_path`]: p };
+                              setSelectedJob(updated);
+                              setJubahJobs(prev => prev.map(j => j.id === selectedJob.id ? updated : j));
+                            }}
+                            showToast={showToast}
+                          />
+                        )}
                         <button type="button" disabled={!url} aria-label={`View ${label}`}
                           onClick={async () => {
                             const { url: signed, error } = await getJubahDocSignedUrl(url);

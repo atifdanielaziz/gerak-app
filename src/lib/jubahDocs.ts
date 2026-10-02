@@ -91,6 +91,62 @@ export async function getJubahDocSignedUrl(stored: string | null | undefined, do
 // which isn't gated by the popup blocker the way window.open() is — so
 // this works even after the async signing call has already finished,
 // with no blank placeholder tab needed at all.
+export type JubahDocField = 'oscar' | 'skpg' | 'konvo' | 'ic';
+
+export interface ReplaceResult {
+  success: boolean;
+  error: string | null;
+}
+
+// Uploads a replacement file for one Jubah document slot. Reuses the exact
+// foldering convention the original booking upload uses (`{reference}/...`,
+// upsert:false so the old object is left in place, just unlinked once the
+// DB row is repointed) — this bucket's INSERT policy is already open to
+// anon+authenticated for that same reason, so no new storage policy is
+// needed for replace either.
+export async function uploadJubahDocReplacement(reference: string, field: JubahDocField, file: File): Promise<{ path: string | null; error: string | null }> {
+  const ext = file.name.split('.').pop() ?? 'pdf';
+  const path = `${reference}/replace_${field}_${Date.now()}.${ext}`;
+  const { data, error } = await supabase.storage
+    .from('jubah-docs')
+    .upload(path, file, { contentType: file.type, upsert: false });
+  if (error || !data) {
+    console.error('[GERAK] Jubah doc replace upload failed:', error);
+    return { path: null, error: error?.message ?? 'Upload failed.' };
+  }
+  return { path: data.path, error: null };
+}
+
+// Customer self-service path — same reference + last-4-IC gate as
+// get_jubah_receipt, re-verified server-side inside the RPC itself.
+export async function customerReplaceJubahDocument(reference: string, icLast4: string, field: JubahDocField, newPath: string): Promise<ReplaceResult> {
+  const { data, error } = await supabase.rpc('customer_replace_jubah_document', {
+    p_reference: reference,
+    p_ic_last4: icLast4,
+    p_document_field: field,
+    p_new_path: newPath,
+  });
+  if (error) {
+    console.error('[GERAK] customer_replace_jubah_document failed:', error);
+    return { success: false, error: error.message };
+  }
+  return { success: !!data?.success, error: data?.success ? null : (data?.error ?? 'Replace failed.') };
+}
+
+// Rider (own assigned booking) / superadmin (any booking) path.
+export async function staffReplaceJubahDocument(bookingId: string, field: JubahDocField, newPath: string): Promise<ReplaceResult> {
+  const { data, error } = await supabase.rpc('staff_replace_jubah_document', {
+    p_booking_id: bookingId,
+    p_document_field: field,
+    p_new_path: newPath,
+  });
+  if (error) {
+    console.error('[GERAK] staff_replace_jubah_document failed:', error);
+    return { success: false, error: error.message };
+  }
+  return { success: !!data?.success, error: data?.success ? null : (data?.error ?? 'Replace failed.') };
+}
+
 export function openInNewTab(url: string) {
   // This runs after the async signed-URL request. iOS Safari/PWA commonly
   // rejects a synthetic target=_blank click once the original user gesture
