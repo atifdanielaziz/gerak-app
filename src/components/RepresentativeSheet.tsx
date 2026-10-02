@@ -5,8 +5,12 @@ import { copyToClipboard } from '../lib/clipboard';
 
 interface Props {
   name:       string;
-  dropPoint:  string;
-  method:     string;
+  // Optional — the Jubah booking form's own rider sheet (Jubah.tsx) omits
+  // these two, showing just name/IC/phone; the admin/superadmin view
+  // (JubahCustomerSubTab.tsx) and the landing page (JubahLanding.tsx) still
+  // pass them and keep showing both.
+  dropPoint?: string;
+  method?:    string;
   icNumber:   string | null;
   phone:      string | null;
   waMessage:  string;
@@ -79,16 +83,20 @@ export const RepresentativeSheet: React.FC<Props> = ({
             </div>
 
             {/* Drop Point */}
-            <div className="flex flex-col gap-0.5">
-              <span className="text-xs font-normal text-slate-400">Drop Point</span>
-              <span className="text-sm font-semibold text-slate-800">{dropPoint}</span>
-            </div>
+            {dropPoint !== undefined && (
+              <div className="flex flex-col gap-0.5">
+                <span className="text-xs font-normal text-slate-400">Drop Point</span>
+                <span className="text-sm font-semibold text-slate-800">{dropPoint}</span>
+              </div>
+            )}
 
             {/* Method */}
-            <div className="flex flex-col gap-0.5">
-              <span className="text-xs font-normal text-slate-400">Method</span>
-              <span className="text-sm font-semibold text-slate-800">{method}</span>
-            </div>
+            {method !== undefined && (
+              <div className="flex flex-col gap-0.5">
+                <span className="text-xs font-normal text-slate-400">Method</span>
+                <span className="text-sm font-semibold text-slate-800">{method}</span>
+              </div>
+            )}
 
             {/* I/C Number — masked only; full number is via WhatsApp */}
             <div className="flex flex-col gap-0.5">
