@@ -93,6 +93,12 @@ export async function getJubahDocSignedUrl(stored: string | null | undefined, do
 // with no blank placeholder tab needed at all.
 export type JubahDocField = 'oscar' | 'skpg' | 'konvo' | 'ic';
 
+// Combined PDF is viewable but never a replace target (it's generated from
+// the four fields above, not uploaded directly) — a separate, wider type
+// for the view-only path rather than loosening JubahDocField itself, so a
+// stray 'combined' can't typecheck its way into a replace call.
+export type JubahDocViewField = JubahDocField | 'combined';
+
 export interface ReplaceResult {
   success: boolean;
   error: string | null;
@@ -182,7 +188,7 @@ export async function regenerateJubahCombinedPdf(
 // same reference + last-4-IC gate as get_jubah_receipt server-side before
 // signing a URL with the service role.
 export async function getJubahCustomerDocUrl(
-  reference: string, icLast4: string, field: JubahDocField, download = false
+  reference: string, icLast4: string, field: JubahDocViewField, download = false
 ): Promise<{ url: string | null; error: string | null }> {
   const { data, error } = await supabase.functions.invoke('jubah-doc-view', {
     body: { reference, icLast4, field, download },

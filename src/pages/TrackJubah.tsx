@@ -11,7 +11,7 @@ import { JUBAH_STEP_LABEL, getJubahProgress } from '../lib/jubahStatus';
 import { JubahBalancePayment } from '../components/JubahBalancePayment';
 import { JubahStepper } from '../components/JubahStepper';
 import { JubahDocReplaceButton, DOC_REPLACE_SUCCESS_MSG } from '../components/JubahDocReplaceButton';
-import { customerReplaceJubahDocument, regenerateJubahCombinedPdf, getJubahCustomerDocUrl, openInNewTab, type JubahDocField } from '../lib/jubahDocs';
+import { customerReplaceJubahDocument, regenerateJubahCombinedPdf, getJubahCustomerDocUrl, openInNewTab, type JubahDocField, type JubahDocViewField } from '../lib/jubahDocs';
 
 interface JubahBookingResult {
   id: string;
@@ -62,6 +62,7 @@ interface JubahReceiptData {
   skpg_path: string | null;
   konvo_path: string | null;
   ic_path: string | null;
+  docs_path: string | null;
 }
 
 const STATUS_LABEL: Record<string, string> = {
@@ -427,11 +428,12 @@ export const TrackJubah: React.FC = () => {
                             {unlocked ? 'Your Documents — uploaded the wrong file? Replace it below.' : 'Your Documents'}
                           </p>
                           {([
-                            { label: 'OSCAR',      url: receipt.oscar_path, field: 'oscar' as JubahDocField },
-                            { label: 'SKPG',       url: receipt.skpg_path,  field: 'skpg' as JubahDocField },
-                            { label: 'Konvo Slip', url: receipt.konvo_path, field: 'konvo' as JubahDocField },
-                            { label: 'IC Copy',    url: receipt.ic_path,    field: 'ic' as JubahDocField },
-                          ]).map(({ label, url, field }) => (
+                            { label: 'OSCAR',       url: receipt.oscar_path, field: 'oscar' as JubahDocViewField,    replaceable: true },
+                            { label: 'SKPG',        url: receipt.skpg_path,  field: 'skpg' as JubahDocViewField,     replaceable: true },
+                            { label: 'Konvo Slip',  url: receipt.konvo_path, field: 'konvo' as JubahDocViewField,    replaceable: true },
+                            { label: 'IC Copy',     url: receipt.ic_path,    field: 'ic' as JubahDocViewField,       replaceable: true },
+                            { label: 'Combined PDF', url: receipt.docs_path, field: 'combined' as JubahDocViewField, replaceable: false },
+                          ]).map(({ label, url, field, replaceable }) => (
                             <div key={label} className="flex items-center justify-between gap-3 bg-slate-50 border border-slate-100 rounded-xl px-3 py-2.5">
                               <div className="flex items-center gap-2 min-w-0">
                                 <span className="text-xs font-semibold text-slate-700 truncate">{label}</span>
@@ -464,13 +466,14 @@ export const TrackJubah: React.FC = () => {
                                   className={`w-8 h-8 flex items-center justify-center rounded-lg border transition shrink-0 ${url ? 'bg-slate-800 border-slate-700 text-white hover:bg-slate-700 active:scale-95' : 'bg-white border-slate-100 text-slate-300 cursor-not-allowed'}`}>
                                   <Download className="w-3.5 h-3.5" />
                                 </button>
-                                {unlocked && (
+                                {replaceable && unlocked && (
                                   <JubahDocReplaceButton
                                     reference={b.reference}
-                                    field={field}
+                                    field={field as JubahDocField}
                                     onReplace={(f, p) => customerReplaceJubahDocument(b.reference, verifiedIcLast4[b.id] ?? '', f, p)}
                                     onSuccess={p => setReceiptData(prev => ({ ...prev, [b.id]: { ...prev[b.id], [`${field}_path`]: p } }))}
                                     onRegenerateCombined={() => regenerateJubahCombinedPdf({ reference: b.reference, icLast4: verifiedIcLast4[b.id] ?? '' })}
+                                    onCombinedUpdated={p => setReceiptData(prev => ({ ...prev, [b.id]: { ...prev[b.id], docs_path: p } }))}
                                     showToast={msg => setReplaceMsg(prev => ({ ...prev, [b.id]: { ok: msg === DOC_REPLACE_SUCCESS_MSG, text: msg } }))}
                                   />
                                 )}

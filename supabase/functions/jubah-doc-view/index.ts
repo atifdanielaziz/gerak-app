@@ -15,6 +15,10 @@ const FIELD_COLUMNS: Record<string, string> = {
   skpg: 'skpg_path',
   konvo: 'konvo_path',
   ic: 'ic_path',
+  // View/download only — never a target of customer_replace_jubah_document
+  // (it's generated from the four above, not uploaded directly), so it's
+  // valid here but deliberately absent from that function's field check.
+  combined: 'docs_path',
 }
 
 // Lets a customer preview/download their own currently-uploaded OSCAR/SKPG/
