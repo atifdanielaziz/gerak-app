@@ -1855,6 +1855,7 @@ export const Jubah: React.FC = () => {
           phone={r.phone}
           waMessage={`Asslammualaikum Jubah rider, saya perlukan 6 digit IC ${r.ic_number ? r.ic_number.replace(/\D/g,'').slice(0,6) + '-XX-XXXX' : 'XXXXXX-XX-XXXX'} terakhir awak untuk pengisian representative jubah ${uniAbbrev}`}
           onClose={close}
+          riderId={r.id}
         />
       );
     })()}
