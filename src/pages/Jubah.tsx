@@ -568,21 +568,33 @@ export const Jubah: React.FC = () => {
       load();
     });
 
-    const applyFields = (fields: JubahDocField[], univKey: string) => {
+    const applyFields = async (fields: JubahDocField[], univKey: string) => {
       setDocFields(fields);
+      // Versioned by each file's actual last-modified time (one list() call
+      // for the whole folder), not busted unconditionally on every load —
+      // these are near-immutable reference images admin uploads rarely, and
+      // this runs on every customer's visit to the booking form, so busting
+      // every load (the old behavior) meant every customer re-downloaded
+      // every sample every time, defeating browser/CDN caching entirely.
+      // But with no bust at all (what replaced that), the 1-year
+      // cacheControl set at upload time meant a REPLACED sample stayed
+      // invisible to anyone with an already-cached copy for up to a year —
+      // confirmed live: a superadmin's Konvo Slip replacement didn't show
+      // up on the customer form. Keying the cache-bust to updated_at fixes
+      // both: the URL only changes when the file actually changes, so
+      // caching still works between replaces, but a real replace is picked
+      // up immediately since it's a genuinely different URL.
+      const { data: listing } = await supabase.storage.from('jubah-banners').list(`samples/${univKey}`);
+      const versionByFieldKey: Record<string, number> = {};
+      (listing ?? []).forEach(obj => {
+        const key = obj.name.replace(/\.[^.]+$/, '');
+        if (obj.updated_at) versionByFieldKey[key] = new Date(obj.updated_at).getTime();
+      });
       const urls: Record<string, string> = {};
       fields.forEach(f => {
-        // No cache-busting param here on purpose — these are static
-        // reference images admin uploads rarely, and this runs on every
-        // customer's visit to the booking form. Busting on every load (the
-        // old behavior) meant every single customer re-downloaded every
-        // sample image every time, defeating browser/CDN caching entirely
-        // for what should be near-immutable content. Admin's own upload
-        // preview (AdminHome.tsx's sampleUrls) still busts on its own —
-        // that's a separate, low-traffic management view where seeing the
-        // just-uploaded file immediately actually matters.
         const { data } = supabase.storage.from('jubah-banners').getPublicUrl(`samples/${univKey}/${f.field_key}.jpg`);
-        urls[f.id] = data.publicUrl;
+        const v = versionByFieldKey[f.field_key];
+        urls[f.id] = v ? `${data.publicUrl}?v=${v}` : data.publicUrl;
       });
       setSampleUrls(urls);
     };
@@ -593,14 +605,14 @@ export const Jubah: React.FC = () => {
         .select('id, field_key, label, hint, position')
         .eq('university_key', landingUniversity)
         .order('position');
-      if (data && data.length > 0) { applyFields(data, landingUniversity); return; }
+      if (data && data.length > 0) { await applyFields(data, landingUniversity); return; }
       const { data: defaults } = await supabase
         .from('jubah_doc_fields')
         .select('id, field_key, label, hint, position')
         .eq('university_key', 'umpsa')
         .order('position');
-      if (defaults && defaults.length > 0) { applyFields(defaults, 'umpsa'); return; }
-      applyFields(FALLBACK_DOC_FIELDS, 'umpsa');
+      if (defaults && defaults.length > 0) { await applyFields(defaults, 'umpsa'); return; }
+      await applyFields(FALLBACK_DOC_FIELDS, 'umpsa');
     };
   }, [landingUniversity]);
 
