@@ -169,18 +169,30 @@ export const RiderHome: React.FC = () => {
     order_value: number; rider_commission_rate: number | null; rider_commission_amount: number;
     earned_at: string;
   };
+  // Confirmed commission is stamped once a booking reaches 'processing' (see
+  // update_jubah_booking_status) — this is a separate, never-persisted
+  // projection for bookings still at 'ordered'/'paid' that haven't earned
+  // anything yet, so a rider can see what's coming without it being
+  // mistaken for money already locked in.
+  type JubahEstimatedEarningRow = {
+    reference: string; remark: string; payment_mode: string; is_postage: boolean;
+    order_value: number; estimated_amount: number;
+  };
   const [jubahEarnings,        setJubahEarnings]        = useState<JubahEarningRow[]>([]);
   const [jubahEarningsLoading, setJubahEarningsLoading] = useState(false);
+  const [jubahEstimated,       setJubahEstimated]       = useState<JubahEstimatedEarningRow[]>([]);
 
   const loadJubahEarnings = useCallback(async () => {
     setJubahEarningsLoading(true);
     const { data: { user: authUser } } = await supabase.auth.getUser();
-    if (!authUser) { setJubahEarnings([]); setJubahEarningsLoading(false); return; }
-    const [{ data, error }, { data: scopedBookings, error: bookingsError }] = await Promise.all([
+    if (!authUser) { setJubahEarnings([]); setJubahEstimated([]); setJubahEarningsLoading(false); return; }
+    const [{ data, error }, { data: estimatedData, error: estimatedError }, { data: scopedBookings, error: bookingsError }] = await Promise.all([
       supabase.rpc('get_rider_jubah_earnings'),
+      supabase.rpc('get_rider_jubah_estimated_earnings'),
       supabase.from('jubah_bookings').select('reference, university, campus').eq('rider_id', authUser.id),
     ]);
     if (error) console.error('[GERAK] jubah earnings load error:', error.message);
+    if (estimatedError) console.error('[GERAK] jubah estimated earnings load error:', estimatedError.message);
     if (bookingsError) console.error('[GERAK] jubah earning scope load error:', bookingsError.message);
     const allowedReferences = new Set(
       ((scopedBookings as Array<Pick<JubahJobRow, 'reference' | 'university' | 'campus'>>) ?? [])
@@ -188,12 +200,14 @@ export const RiderHome: React.FC = () => {
         .map(booking => booking.reference),
     );
     setJubahEarnings(((data as JubahEarningRow[]) ?? []).filter(row => allowedReferences.has(row.reference)));
+    setJubahEstimated(((estimatedData as JubahEstimatedEarningRow[]) ?? []).filter(row => allowedReferences.has(row.reference)));
     setJubahEarningsLoading(false);
   }, [bookingMatchesUniversity]);
 
   useLoadOnActive(activeTab === 'earnings', loadJubahEarnings);
 
   const totalJubahEarnings = jubahEarnings.reduce((sum, e) => sum + Number(e.rider_commission_amount), 0);
+  const totalJubahEstimated = jubahEstimated.reduce((sum, e) => sum + Number(e.estimated_amount), 0);
 
   // ── Browser / gesture back navigation (3→2→1) ────────────────────────────
   // Registers with AppContext's single shared goBack() (see GerakRental.tsx
@@ -1036,55 +1050,95 @@ export const RiderHome: React.FC = () => {
               <div className="flex justify-center py-12">
                 <span className="w-5 h-5 rounded-full border-2 border-slate-200 border-t-primary animate-spin" />
               </div>
-            ) : jubahEarnings.length === 0 ? (
+            ) : jubahEarnings.length === 0 && jubahEstimated.length === 0 ? (
               <div className="flex flex-col items-center justify-center flex-1 gap-3 py-12">
                 <div className="w-16 h-16 rounded-3xl bg-emerald-50 border border-emerald-100 flex items-center justify-center">
                   <TrendingUp className="w-7 h-7 text-emerald-300" />
                 </div>
                 <p className="text-sm font-semibold text-slate-700">No Earnings Yet</p>
                 <p className="text-xs text-slate-400 font-normal text-center leading-relaxed max-w-xs">
-                  Your commission from completed Jubah deliveries will be tracked here.
+                  Your commission from Jubah deliveries will be tracked here — it counts once an order reaches Processing.
                 </p>
               </div>
             ) : (
               <>
-                <div className="bg-emerald-50 border border-emerald-100 rounded-3xl p-5 flex flex-col items-center gap-1">
-                  <span className="text-[10px] font-semibold text-emerald-500 uppercase tracking-wider">Total Earned</span>
-                  <span className="text-2xl font-black text-emerald-700">RM{totalJubahEarnings.toFixed(2)}</span>
-                  <span className="text-xs font-semibold text-emerald-600 mt-0.5">{jubahEarnings.length} completed {jubahEarnings.length === 1 ? 'order' : 'orders'}</span>
-                </div>
-
-                <div className="bg-white border border-slate-100 rounded-3xl p-5 flex flex-col gap-3">
-                  <h3 className="text-sm font-semibold text-slate-700">Order Breakdown</h3>
-                  <div className="flex flex-col divide-y divide-slate-100">
-                    {jubahEarnings.map(e => (
-                      <div key={e.reference} className="flex items-center justify-between gap-3 py-3 first:pt-0 last:pb-0">
-                        <div className="min-w-0">
-                          <div className="flex items-center gap-1.5">
-                            <p className="text-xs font-mono font-bold text-primary truncate">{e.reference}</p>
-                            <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full border shrink-0 ${
-                              e.is_postage ? 'bg-blue-50 border-blue-100 text-blue-600' : 'bg-slate-50 border-slate-200 text-slate-500'
-                            }`}>
-                              {e.is_postage ? 'POSTAGE' : 'PICKUP'}
-                            </span>
-                          </div>
-                          <p className="text-xs text-slate-400 font-semibold mt-0.5">
-                            {e.remark} · RM{Number(e.order_value).toFixed(2)} order
-                            {/* Historical bookings completed under the old percentage-based
-                                commission still have a rate on record — new ones are a flat
-                                RM amount (already shown via the +RM badge), so there's
-                                nothing extra to show here for them. */}
-                            {e.rider_commission_rate != null && ` · ${e.rider_commission_rate}%`}
-                          </p>
-                          <p className="text-xs text-slate-300 font-normal mt-0.5">
-                            {new Date(e.earned_at).toLocaleDateString('en-MY', { day: '2-digit', month: 'short', year: 'numeric' })}
-                          </p>
-                        </div>
-                        <span className="text-sm font-black text-emerald-600 shrink-0">+RM{Number(e.rider_commission_amount).toFixed(2)}</span>
-                      </div>
-                    ))}
+                {jubahEarnings.length > 0 && (
+                  <div className="bg-emerald-50 border border-emerald-100 rounded-3xl p-5 flex flex-col items-center gap-1">
+                    <span className="text-[10px] font-semibold text-emerald-500 uppercase tracking-wider">Total Earned</span>
+                    <span className="text-2xl font-black text-emerald-700">RM{totalJubahEarnings.toFixed(2)}</span>
+                    <span className="text-xs font-semibold text-emerald-600 mt-0.5">{jubahEarnings.length} {jubahEarnings.length === 1 ? 'order' : 'orders'} in Processing+</span>
                   </div>
-                </div>
+                )}
+
+                {jubahEstimated.length > 0 && (
+                  <div className="bg-amber-50 border border-amber-100 rounded-3xl p-5 flex flex-col items-center gap-1">
+                    <span className="text-[10px] font-semibold text-amber-600 uppercase tracking-wider">Estimated Earnings</span>
+                    <span className="text-2xl font-black text-amber-700">RM{totalJubahEstimated.toFixed(2)}</span>
+                    <span className="text-xs font-semibold text-amber-600 mt-0.5">
+                      {jubahEstimated.length} {jubahEstimated.length === 1 ? 'order' : 'orders'} not yet Processing — not confirmed
+                    </span>
+                  </div>
+                )}
+
+                {jubahEarnings.length > 0 && (
+                  <div className="bg-white border border-slate-100 rounded-3xl p-5 flex flex-col gap-3">
+                    <h3 className="text-sm font-semibold text-slate-700">Order Breakdown</h3>
+                    <div className="flex flex-col divide-y divide-slate-100">
+                      {jubahEarnings.map(e => (
+                        <div key={e.reference} className="flex items-center justify-between gap-3 py-3 first:pt-0 last:pb-0">
+                          <div className="min-w-0">
+                            <div className="flex items-center gap-1.5">
+                              <p className="text-xs font-mono font-bold text-primary truncate">{e.reference}</p>
+                              <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full border shrink-0 ${
+                                e.is_postage ? 'bg-blue-50 border-blue-100 text-blue-600' : 'bg-slate-50 border-slate-200 text-slate-500'
+                              }`}>
+                                {e.is_postage ? 'POSTAGE' : 'PICKUP'}
+                              </span>
+                            </div>
+                            <p className="text-xs text-slate-400 font-semibold mt-0.5">
+                              {e.remark} · RM{Number(e.order_value).toFixed(2)} order
+                              {/* Historical bookings completed under the old percentage-based
+                                  commission still have a rate on record — new ones are a flat
+                                  RM amount (already shown via the +RM badge), so there's
+                                  nothing extra to show here for them. */}
+                              {e.rider_commission_rate != null && ` · ${e.rider_commission_rate}%`}
+                            </p>
+                            <p className="text-xs text-slate-300 font-normal mt-0.5">
+                              {new Date(e.earned_at).toLocaleDateString('en-MY', { day: '2-digit', month: 'short', year: 'numeric' })}
+                            </p>
+                          </div>
+                          <span className="text-sm font-black text-emerald-600 shrink-0">+RM{Number(e.rider_commission_amount).toFixed(2)}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {jubahEstimated.length > 0 && (
+                  <div className="bg-white border border-slate-100 rounded-3xl p-5 flex flex-col gap-3">
+                    <h3 className="text-sm font-semibold text-slate-700">Pending Orders (Not Yet Confirmed)</h3>
+                    <div className="flex flex-col divide-y divide-slate-100">
+                      {jubahEstimated.map(e => (
+                        <div key={e.reference} className="flex items-center justify-between gap-3 py-3 first:pt-0 last:pb-0">
+                          <div className="min-w-0">
+                            <div className="flex items-center gap-1.5">
+                              <p className="text-xs font-mono font-bold text-primary truncate">{e.reference}</p>
+                              <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full border shrink-0 ${
+                                e.is_postage ? 'bg-blue-50 border-blue-100 text-blue-600' : 'bg-slate-50 border-slate-200 text-slate-500'
+                              }`}>
+                                {e.is_postage ? 'POSTAGE' : 'PICKUP'}
+                              </span>
+                            </div>
+                            <p className="text-xs text-slate-400 font-semibold mt-0.5">
+                              {e.remark} · RM{Number(e.order_value).toFixed(2)} order
+                            </p>
+                          </div>
+                          <span className="text-sm font-black text-amber-600 shrink-0">~RM{Number(e.estimated_amount).toFixed(2)}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </>
             )}
           </div>
