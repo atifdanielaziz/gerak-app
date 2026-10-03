@@ -10,6 +10,7 @@ import { getPendingJubahBooking, clearPendingJubahBooking } from '../lib/pending
 import { JUBAH_STEP_LABEL, getJubahProgress } from '../lib/jubahStatus';
 import { JubahBalancePayment } from '../components/JubahBalancePayment';
 import { JubahStepper } from '../components/JubahStepper';
+import { JubahTutorialList } from '../components/JubahTutorials';
 import { JubahDocReplaceButton, DOC_REPLACE_SUCCESS_MSG } from '../components/JubahDocReplaceButton';
 import { customerReplaceJubahDocument, regenerateJubahCombinedPdf, getJubahCustomerDocUrl, openInNewTab, type JubahDocField, type JubahDocViewField } from '../lib/jubahDocs';
 
@@ -533,6 +534,10 @@ export const TrackJubah: React.FC = () => {
           </div>
         )
       )}
+
+      {/* How-to videos for after booking — sits under the form before a
+          search, and drops below the results once there are some. */}
+      <JubahTutorialList keys={['track', 'balance', 'replace']} />
 
     </div>
   );

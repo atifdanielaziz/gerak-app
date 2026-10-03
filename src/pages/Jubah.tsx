@@ -17,6 +17,7 @@ import { buildJubahReceiptRows } from '../lib/receiptRows';
 import { getJubahProgress, JUBAH_STEP_LABEL } from '../lib/jubahStatus';
 import { generateReceiptPdf } from '../lib/receiptPdf';
 import { copyToClipboard } from '../lib/clipboard';
+import { JubahTutorialLink } from '../components/JubahTutorials';
 import { savePendingJubahBooking, clearPendingJubahBooking } from '../lib/pendingJubahBooking';
 import { formatPhone, formatIcNumber as formatIc } from '../lib/format';
 import { UNIVERSITY_MAP, deriveJubahCampus, jubahLocationLabel, universityKeyFromCampus } from '../lib/universities';
@@ -982,6 +983,11 @@ export const Jubah: React.FC = () => {
             ← Change university
           </button>
         )}
+        {!jubahBooking && (
+          <div className="mt-2">
+            <JubahTutorialLink tutorialKey="book" label="Watch: how to fill in this form" />
+          </div>
+        )}
       </div>
 
       {!jubahBooking ? (
@@ -1428,6 +1434,12 @@ export const Jubah: React.FC = () => {
                 </div>
               );
             })()}
+
+            {/* The rider's name + IC go into UMPSA's ICMS portal as the
+                customer's representative — show how, right where they copy them. */}
+            {landingUniversity === 'umpsa' && (
+              <JubahTutorialLink tutorialKey="icms" label="Watch: how to enter your rider in ICMS" className="self-center" />
+            )}
           </div>
 
           {/* ── DELIVERY ADDRESS (postage or deposit+postage) ── */}

@@ -34,3 +34,8 @@ android/captures/
 # ~/.claude/skills/graphify — not something this repo can provide).
 graphify-out/
 src/graphify-out/
+
+# Jubah tutorial video source files (~30MB total) — live in Supabase
+# Storage (jubah-tutorials bucket), not the repo. See src/lib/jubahTutorials.ts.
+marketing/*.mp4
+marketing/in-app/

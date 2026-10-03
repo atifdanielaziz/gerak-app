@@ -1,6 +1,7 @@
 import React from 'react';
 import { HelpCircle, Mail, FileText, Lock, ChevronRight } from 'lucide-react';
 import { useApp } from '../context/AppContext';
+import { JubahTutorialList } from '../components/JubahTutorials';
 
 const Section: React.FC<{ title: string; children: React.ReactNode }> = ({ title, children }) => (
   <div className="bg-white border border-slate-100 rounded-3xl p-5 flex flex-col gap-2">
@@ -27,6 +28,8 @@ export const HelpCenter: React.FC = () => {
           <p className="text-xs text-slate-400 font-normal mt-0.5">Common questions &amp; how to reach us</p>
         </div>
       </div>
+
+      <JubahTutorialList />
 
       <Section title="How do I book a ride, Jubah delivery, or rental?">
         <p>

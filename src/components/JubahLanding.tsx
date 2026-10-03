@@ -7,6 +7,7 @@ import { RepresentativeSheet } from './RepresentativeSheet';
 import { NativeSelect } from './NativeSelect';
 import { getPendingJubahBooking, clearPendingJubahBooking, type PendingJubahBooking } from '../lib/pendingJubahBooking';
 import { UNIVERSITIES, UNIVERSITY_MAP } from '../lib/universities';
+import { JubahTutorialList } from './JubahTutorials';
 
 type RiderDir = { id: string; name: string; drop_point: string | null; method: string | null; ic_number: string | null; phone: string | null };
 
@@ -217,6 +218,9 @@ export const JubahLanding: React.FC<Props> = ({ onProceed }) => {
         <span className="flex-1 text-sm font-semibold text-slate-700 text-left">Track My Jubah Order</span>
         <ChevronRight className="w-4 h-4 text-slate-300 shrink-0" />
       </button>
+
+      {/* How-to videos — every step of the journey, ICMS one hidden for non-UMPSA */}
+      <JubahTutorialList university={selectedKey} />
 
       {/* Rider Directory Table */}
       {riderDir.length > 0 && (
