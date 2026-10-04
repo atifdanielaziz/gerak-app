@@ -18,9 +18,10 @@ import { getJubahProgress, JUBAH_STEP_LABEL } from '../lib/jubahStatus';
 import { generateReceiptPdf } from '../lib/receiptPdf';
 import { copyToClipboard } from '../lib/clipboard';
 import { JubahTutorialLink } from '../components/JubahTutorials';
+import { getJubahWhatsappGroup } from '../lib/jubahWhatsappGroup';
 import { savePendingJubahBooking, clearPendingJubahBooking } from '../lib/pendingJubahBooking';
 import { formatPhone, formatIcNumber as formatIc } from '../lib/format';
-import { UNIVERSITY_MAP, deriveJubahCampus, jubahLocationLabel, universityKeyFromCampus } from '../lib/universities';
+import { UNIVERSITIES, UNIVERSITY_MAP, deriveJubahCampus, jubahLocationLabel, universityKeyFromCampus } from '../lib/universities';
 import type { JubahBookingInput } from '../types/jubahBooking';
 
 const FALLBACK_UNIVERSITY_FACULTIES: Record<string, string[]> = {
@@ -694,6 +695,21 @@ export const Jubah: React.FC = () => {
 
   const [booking, setBooking] = useState(false);
   const [copied, setCopied]   = useState(false);
+
+  // University's WhatsApp group invite, shown once the booking is placed.
+  // Only fetched after booking — nothing to show before that.
+  // After an app reload the landing selection is empty, so fall back to the
+  // booking's own university (stored as "<full name> (<campus>)").
+  const [waGroupUrl, setWaGroupUrl] = useState<string | null>(null);
+  const bookedUniversityKey = landingUniversity
+    || UNIVERSITIES.find(u => jubahBooking?.university?.startsWith(u.fullName))?.key
+    || '';
+  useEffect(() => {
+    if (!jubahBooking?.reference || !bookedUniversityKey) return;
+    let cancelled = false;
+    getJubahWhatsappGroup(bookedUniversityKey).then(url => { if (!cancelled) setWaGroupUrl(url); });
+    return () => { cancelled = true; };
+  }, [jubahBooking?.reference, bookedUniversityKey]);
 
   // Live status polled from DB (replaces the demo simulation)
   const [liveStatus,        setLiveStatus]        = useState<string | null>(null);
@@ -1700,6 +1716,28 @@ export const Jubah: React.FC = () => {
               </button>
             )}
           </div>
+
+          {/* WhatsApp group — per university, set by superadmin in Jubah
+              settings. href is a validated chat.whatsapp.com invite only
+              (isValidWhatsappInvite), never an arbitrary stored URL. */}
+          {waGroupUrl && (
+            <div className="bg-emerald-50 border border-emerald-100 rounded-3xl p-5 flex flex-col gap-3 text-center">
+              <div className="flex flex-col gap-1">
+                <span className="text-sm font-semibold text-emerald-800">Mintak join group ya 🙏</span>
+                <span className="text-xs text-emerald-700 font-normal">
+                  Updates on collection &amp; delivery will be shared in our WhatsApp group.
+                </span>
+              </div>
+              <a
+                href={waGroupUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center justify-center gap-2 bg-[#25D366] text-white text-sm font-semibold py-3 rounded-2xl active:scale-[0.98] transition"
+              >
+                <WaIcon className="w-4 h-4" /> Join WhatsApp Group
+              </a>
+            </div>
+          )}
 
           {/* Book Another — leaves this booking as-is, just starts a fresh form */}
           <button

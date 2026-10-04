@@ -1,6 +1,7 @@
 import { useCallback, useState } from 'react';
 import { supabase } from '../../../lib/supabase';
-import { TrendingUp, GraduationCap, Landmark, CircleDollarSign, Users, RotateCcw } from 'lucide-react';
+import { TrendingUp, GraduationCap, Landmark, CircleDollarSign, Users, RotateCcw, MessageCircle } from 'lucide-react';
+import { jubahWhatsappGroupKey } from '../../../lib/jubahWhatsappGroup';
 import { useLoadOnActive } from '../../../hooks/useLoadOnActive';
 import { JubahQrButton } from '../../../components/JubahQrButton';
 import { UNIVERSITY_MAP } from '../../../lib/universities';
@@ -248,6 +249,45 @@ export function JubahPriceSubTab({ active, isSuperAdmin, showToast, jubahUnivers
     showToast('Global Jubah deposit updated.');
   };
 
+  // WhatsApp group invite per university — shown to the customer right
+  // after booking. Superadmin-only write via set_jubah_whatsapp_group,
+  // which validates it's a real chat.whatsapp.com invite server-side.
+  const [waDraft, setWaDraft] = useState('');
+  const [waOriginal, setWaOriginal] = useState('');
+  const [waLocked, setWaLocked] = useState(true);
+  const [savingWa, setSavingWa] = useState(false);
+
+  const loadWaGroup = useCallback(async () => {
+    const { data } = await supabase.from('app_settings').select('value')
+      .eq('key', jubahWhatsappGroupKey(jubahUniversity)).maybeSingle();
+    const value = data?.value ?? '';
+    setWaDraft(value);
+    setWaOriginal(value);
+    setWaLocked(true);
+  }, [jubahUniversity]);
+
+  useLoadOnActive(active, loadWaGroup);
+
+  const waDirty = waDraft.trim() !== waOriginal;
+  const handleSaveWa = async () => {
+    setSavingWa(true);
+    const { data, error } = await supabase.rpc('set_jubah_whatsapp_group', {
+      p_university: jubahUniversity,
+      p_url: waDraft.trim(),
+    });
+    if (error || !data?.success) {
+      setSavingWa(false);
+      showToast(data?.error ?? 'Failed to save the WhatsApp group link.');
+      return;
+    }
+    const saved = data.url ?? '';
+    setWaDraft(saved);
+    setWaOriginal(saved);
+    setWaLocked(true);
+    setSavingWa(false);
+    showToast(saved ? 'WhatsApp group link updated.' : 'WhatsApp group link removed.');
+  };
+
   // Rider order cap + season start — same "no manual flag to forget"
   // design as everywhere else: the cap itself is just a number, and
   // whether a rider is still eligible gets computed live from their real
@@ -391,6 +431,40 @@ export function JubahPriceSubTab({ active, isSuperAdmin, showToast, jubahUnivers
         ) : (
           <div className="bg-slate-50 border border-slate-100 rounded-xl px-3 py-2.5">
             <span className="text-xs font-semibold text-slate-600">RM{depositDraft}</span>
+            <span className="text-xs font-normal text-slate-400 ml-2">superadmin only to change</span>
+          </div>
+        )}
+      </div>
+
+      {/* WhatsApp group — per university, shown on the booking confirmation. */}
+      <div className="bg-white border border-slate-100 rounded-3xl p-5 flex flex-col gap-3">
+        <h3 className="text-sm font-semibold text-slate-700 flex items-center gap-1.5">
+          <MessageCircle className="w-4 h-4" /> WhatsApp Group ({UNIVERSITY_MAP[jubahUniversity]?.shortLabel ?? jubahUniversity.toUpperCase()})
+        </h3>
+        <p className="text-xs text-slate-400 font-semibold -mt-1.5">
+          Customers see a "Mintak join group ya" button with this link right after booking. Leave empty to hide it.
+        </p>
+        {isSuperAdmin ? (
+          <div className="flex gap-2 items-end">
+            <div className="flex-1 flex flex-col gap-1.5 min-w-0">
+              <label className="text-xs font-normal text-slate-400">Group Invite Link</label>
+              <input
+                type="url"
+                inputMode="url"
+                placeholder="https://chat.whatsapp.com/…"
+                value={waDraft}
+                onChange={e => setWaDraft(e.target.value)}
+                readOnly={waLocked}
+                onClick={() => { if (waLocked) setWaLocked(false); }}
+                style={{ fontSize: '13px' }}
+                className={`bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 font-semibold focus:outline-none focus:border-primary transition min-w-0 ${waLocked ? 'text-slate-400 cursor-pointer' : 'text-slate-700'}`}
+              />
+            </div>
+            <SaveStateButton dirty={waDirty} saving={savingWa} onSave={handleSaveWa} />
+          </div>
+        ) : (
+          <div className="bg-slate-50 border border-slate-100 rounded-xl px-3 py-2.5">
+            <span className="text-xs font-semibold text-slate-600 break-all">{waDraft || 'Not set'}</span>
             <span className="text-xs font-normal text-slate-400 ml-2">superadmin only to change</span>
           </div>
         )}
