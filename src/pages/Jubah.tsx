@@ -5,7 +5,7 @@ import { submitJubahToSheets } from '../lib/sheetsService';
 import { JubahLanding } from '../components/JubahLanding';
 import { supabase } from '../lib/supabase';
 import { compressImage } from '../lib/imageCompress';
-import { stampWatermark } from '../lib/watermark';
+import { stampWatermark, jubahIcWatermarkText } from '../lib/watermark';
 import { saveOrShareBlob } from '../lib/nativeDownload';
 import { FloatingMessage } from '../components/FloatingMessage';
 import { WaIcon, toWa } from '../lib/whatsapp';
@@ -121,7 +121,7 @@ export const Jubah: React.FC = () => {
   // same deterrent treatment, not just the IC. Baked into the individual
   // file itself (not just the combined PDF), so it's there regardless of
   // which one an admin/rider actually opens.
-  const jubahWatermarkText = `UNTUK KEGUNAAN MAJLIS KONVOKESYEN ${uniAbbrev} SAHAJA`;
+  const jubahWatermarkText = jubahIcWatermarkText(uniAbbrev);
   const [faculty, setFaculty]         = useState('');
   // Tagged with the university it was loaded for, so a previous
   // university's list is never shown for the current one (replaces

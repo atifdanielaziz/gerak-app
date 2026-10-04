@@ -1,4 +1,7 @@
 import { supabase } from './supabase';
+import { compressImage } from './imageCompress';
+import { stampWatermark, jubahIcWatermarkText } from './watermark';
+import { UNIVERSITIES } from './universities';
 
 export interface SignedUrlResult {
   url: string | null;
@@ -110,7 +113,35 @@ export interface ReplaceResult {
 // DB row is repointed) — this bucket's INSERT policy is already open to
 // anon+authenticated for that same reason, so no new storage policy is
 // needed for replace either.
-export async function uploadJubahDocReplacement(reference: string, field: JubahDocField, file: File): Promise<{ path: string | null; error: string | null }> {
+// Same file handling as the booking form (Jubah.tsx handleFileSelect):
+// type allowlist, image compression, and the IC watermark. Previously a
+// replacement went up exactly as picked — so a replaced IC lost its
+// "UNTUK KEGUNAAN MAJLIS KONVOKESYEN … SAHAJA" watermark entirely.
+const ACCEPTED_DOC_TYPES = ['application/pdf', 'image/jpeg', 'image/png', 'image/webp'];
+
+// University short label is the third segment of the reference
+// (JUB-26-UMPSA-XXXX) — the same value the booking form stamps with.
+function universityAbbrevFromReference(reference: string): string {
+  const seg = reference.split('-')[2]?.toUpperCase() ?? '';
+  const known = UNIVERSITIES.find(u => u.shortLabel.toUpperCase() === seg);
+  return known?.shortLabel ?? (/^[A-Z]{2,12}$/.test(seg) ? seg : 'UMPSA');
+}
+
+export async function uploadJubahDocReplacement(reference: string, field: JubahDocField, original: File): Promise<{ path: string | null; error: string | null }> {
+  // Allowlist, not the picker's accept= hint (which a user can bypass).
+  if (!ACCEPTED_DOC_TYPES.includes(original.type)) {
+    return { path: null, error: 'Only PDF, JPG or PNG files are accepted.' };
+  }
+  let file = await compressImage(original);
+  if (field === 'ic') {
+    // Fail closed: an IC copy is never stored without its watermark.
+    try {
+      file = await stampWatermark(file, jubahIcWatermarkText(universityAbbrevFromReference(reference)));
+    } catch (err) {
+      console.error('[GERAK] IC watermark failed on replace:', err);
+      return { path: null, error: "Couldn't process this IC file. Please try a clear JPG, PNG or PDF." };
+    }
+  }
   const ext = file.name.split('.').pop() ?? 'pdf';
   const path = `${reference}/replace_${field}_${Date.now()}.${ext}`;
   const { data, error } = await supabase.storage

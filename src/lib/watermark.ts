@@ -115,6 +115,11 @@ async function stampImage(file: File, text: string): Promise<File> {
 // (deters a leaked/screenshotted document from being reused elsewhere).
 // Handles both a raw image and a PDF, since driver IC/license uploads accept
 // either — unlike Jubah's flow, which always merges into one combined PDF.
+// Jubah IC watermark wording — shared by the booking form and the
+// Replace-document path so the two can never drift apart.
+export const jubahIcWatermarkText = (uniAbbrev: string) =>
+  `UNTUK KEGUNAAN MAJLIS KONVOKESYEN ${uniAbbrev} SAHAJA`;
+
 export async function stampWatermark(file: File, text: string = WATERMARK_TEXT): Promise<File> {
   if (file.type === 'application/pdf') return stampPdf(file, text);
   if (file.type.startsWith('image/')) return stampImage(file, text);
