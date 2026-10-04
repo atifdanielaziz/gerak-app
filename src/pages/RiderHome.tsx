@@ -81,6 +81,19 @@ export const RiderHome: React.FC = () => {
   const [toast,         setToast]         = useState('');
   const [uploadingDoc,  setUploadingDoc]  = useState<'license' | null>(null);
   const licenseDocRef = useRef<HTMLInputElement>(null);
+  // The tab switcher's scroll container stays mounted continuously across
+  // every non-jubah-subpage tab (the condition that renders it never goes
+  // false between daily/jubah/quote/customers/earnings) — so its native
+  // scrollLeft is never reset by React and silently drifts/sticks from any
+  // stray swipe, eventually scrolling the active tab (or all tabs) out of
+  // view permanently. Confirmed live: a user's switcher was stuck at
+  // left:-171px showing nothing, on every tab, across page reloads.
+  const tabScrollRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    tabScrollRef.current
+      ?.querySelector(`[data-tab="${activeTab}"]`)
+      ?.scrollIntoView({ inline: 'nearest', block: 'nearest' });
+  }, [activeTab]);
 
   // Jubah sub-navigation
   const [jubahView,      setJubahView]     = useState<JubahView>('list');
@@ -474,7 +487,7 @@ export const RiderHome: React.FC = () => {
 
         {/* Tab Switcher — hide when in jubah sub-pages */}
         {(activeTab !== 'jubah' || jubahView === 'list') && (
-          <div className="px-4 pt-1 mb-4 overflow-x-auto overscroll-x-contain no-scrollbar">
+          <div ref={tabScrollRef} className="px-4 pt-1 mb-4 overflow-x-auto overscroll-x-contain no-scrollbar">
             <div className="flex w-max min-w-full bg-white border border-slate-100 rounded-2xl p-1 gap-1">
               {([
                 { id: 'daily',     label: 'Daily Job',   icon: ShoppingBasket },
@@ -488,7 +501,7 @@ export const RiderHome: React.FC = () => {
                 // this WebView unreliably repaints colour changes; opacity
                 // changes repaint reliably, so only opacity is toggled here.
                 return (
-                  <button key={tab.id}
+                  <button key={tab.id} data-tab={tab.id}
                     onPointerDown={(e) => { e.preventDefault(); setActiveTab(tab.id); setJubahView('list'); setSelectedJob(null); }}
                     className="relative shrink-0 min-w-[7.25rem] rounded-xl transition-transform transform-gpu touch-manipulation whitespace-nowrap">
                     <span className="flex items-center justify-center gap-1.5 px-3 py-2.5 text-xs font-semibold text-slate-400 whitespace-nowrap">
