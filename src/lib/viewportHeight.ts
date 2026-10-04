@@ -15,11 +15,39 @@ const isEditing = () => {
   return !!el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || (el as HTMLElement).isContentEditable);
 };
 
+// env(safe-area-inset-top) in px, read via a throwaway probe element.
+function safeAreaTop(): number {
+  if (!document.body) return 0;
+  const probe = document.createElement('div');
+  probe.style.cssText = 'position:fixed;visibility:hidden;pointer-events:none;padding-top:env(safe-area-inset-top)';
+  document.body.appendChild(probe);
+  const px = parseFloat(getComputedStyle(probe).paddingTop) || 0;
+  probe.remove();
+  return px;
+}
+
+// Second iOS standalone quirk (index.html uses black-translucent +
+// viewport-fit=cover): the app is drawn from the very top, under the
+// status bar, yet innerHeight/100dvh report the screen height MINUS the
+// status bar — so the shell ends that much short and BottomNav sits
+// ~47pt too high (reported live on a driver's iPhone, Job Pool page).
+// Only corrected when the shortfall matches the status-bar inset exactly,
+// so Android, Safari tabs, iPad split view and desktop are never touched.
+function appHeight(): number {
+  const inner = window.innerHeight;
+  if ((navigator as Navigator & { standalone?: boolean }).standalone !== true) return inner;
+  const portrait = window.matchMedia('(orientation: portrait)').matches;
+  const full = portrait ? Math.max(screen.width, screen.height) : Math.min(screen.width, screen.height);
+  const top = safeAreaTop();
+  return top > 0 && Math.abs(inner + top - full) <= 2 ? full : inner;
+}
+
 function sync() {
-  // Height always tracks innerHeight: on Android (Capacitor adjustResize)
-  // that correctly shrinks with the keyboard so focused inputs stay
-  // visible; on iOS innerHeight ignores the keyboard, so it stays full.
-  document.documentElement.style.setProperty('--app-height', `${window.innerHeight}px`);
+  // Height tracks innerHeight (corrected above for iOS standalone): on
+  // Android (Capacitor adjustResize) that correctly shrinks with the
+  // keyboard so focused inputs stay visible; on iOS innerHeight ignores the
+  // keyboard, so it stays full.
+  document.documentElement.style.setProperty('--app-height', `${appHeight()}px`);
   if (isEditing()) return;
   if (window.scrollY !== 0 || (window.visualViewport?.offsetTop ?? 0) !== 0) {
     window.scrollTo(0, 0);
