@@ -123,8 +123,12 @@ export const Jubah: React.FC = () => {
   // which one an admin/rider actually opens.
   const jubahWatermarkText = `UNTUK KEGUNAAN MAJLIS KONVOKESYEN ${uniAbbrev} SAHAJA`;
   const [faculty, setFaculty]         = useState('');
-  const [facultyOptions, setFacultyOptions] = useState<string[]>([]);
-  const [facultyDirectoryConfigured, setFacultyDirectoryConfigured] = useState(false);
+  // Tagged with the university it was loaded for, so a previous
+  // university's list is never shown for the current one (replaces
+  // resetting both values synchronously inside the effect below).
+  const [facultyState, setFacultyState] = useState<{ uni: string; options: string[]; configured: boolean }>({ uni: '', options: [], configured: false });
+  const facultyOptions = facultyState.uni === landingUniversity ? facultyState.options : [];
+  const facultyDirectoryConfigured = facultyState.uni === landingUniversity && facultyState.configured;
   const [matricId, setMatricId]       = useState('');
   const [paymentMode, setPaymentMode]   = useState<'pickup' | 'postage' | 'deposit'>('pickup');
   const [postageZone, setPostageZone]   = useState<'SM' | 'SS'>('SM');
@@ -182,11 +186,7 @@ export const Jubah: React.FC = () => {
   // that have not been configured yet retain the legacy free-text field so
   // launching this directory cannot block their existing booking flow.
   useEffect(() => {
-    if (!landingUniversity) {
-      setFacultyOptions([]);
-      setFacultyDirectoryConfigured(false);
-      return;
-    }
+    if (!landingUniversity) return;
     let cancelled = false;
     const loadFaculties = async () => {
       const { data, error } = await supabase.from('jubah_faculties')
@@ -195,13 +195,11 @@ export const Jubah: React.FC = () => {
       if (cancelled) return;
       if (error) {
         const fallback = FALLBACK_UNIVERSITY_FACULTIES[university] ?? [];
-        setFacultyOptions(fallback);
-        setFacultyDirectoryConfigured(fallback.length > 0);
+        setFacultyState({ uni: landingUniversity, options: fallback, configured: fallback.length > 0 });
         return;
       }
       const options = (data ?? []).map(row => row.name);
-      setFacultyOptions(options);
-      setFacultyDirectoryConfigured(options.length > 0);
+      setFacultyState({ uni: landingUniversity, options, configured: options.length > 0 });
       if (faculty && options.length > 0 && !options.includes(faculty)) setFaculty('');
     };
     void loadFaculties();
@@ -1511,7 +1509,8 @@ export const Jubah: React.FC = () => {
                       <button type="button"
                         onPointerDown={(event) => {
                           event.preventDefault();
-                          sampleLoaded[field.id] ? setSamplePreview(sampleUrls[field.id]) : setFileError(`No sample uploaded for ${field.label} yet.`);
+                          if (sampleLoaded[field.id]) setSamplePreview(sampleUrls[field.id]);
+                          else setFileError(`No sample uploaded for ${field.label} yet.`);
                         }}
                         className={`w-11 h-11 flex items-center justify-center rounded-lg transition-transform transform-gpu shrink-0 active:scale-90 animate-pulse ${sampleLoaded[field.id] ? 'text-blue-400' : 'text-slate-300'}`}>
                         <FileUser className="w-3.5 h-3.5" />

@@ -342,7 +342,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       window.removeEventListener('popstate', handlePopState);
       removeNativeListener?.();
     };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Global receipt gate — fetched once on mount, controlled by superadmin
@@ -547,7 +546,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         localStorage.setItem(key, POLICY_NOTICE_VERSION);
       }
     } catch { /* localStorage unavailable — skip silently, same as elsewhere in this file */ }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Transport Module
@@ -736,7 +734,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       window.removeEventListener('focus', check);
       if (channel) supabase.removeChannel(channel);
     };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user.isLoggedIn, user.role, user.canRobe, user.isJubahLead]);
 
   // An admin toggling someone's role (toggle_user_role) never reached an
@@ -775,7 +772,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   // user state and does role-based routing in the same pass — applying
   // the promotion after that would show the stale pre-promotion role for
   // this particular load.
-  const applyPendingInviteIfAny = async () => {
+  async function applyPendingInviteIfAny() {
     const { data, error } = await supabase.rpc('apply_pending_invite');
     if (error || !data?.applied) return;
     // An existing staff member invited for another Jubah campus keeps their
@@ -804,9 +801,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         : `An admin granted you ${roleLabel} access for ${data.campus}. Explore your new tab to get started.`,
       'system',
     );
-  };
+  }
 
-  const loadProfile = async (userId: string) => {
+  async function loadProfile(userId: string) {
     const [{ data }, { data: lead }, { data: leadUniversities }] = await Promise.all([
       supabase.from('profiles').select('id,name,matric_no,email,phone,university,campus,gender,gerak_id,role,status,vehicle,plate_number,fee_receipt_url,fee_receipt_verified,fee_receipt_amount,fee_receipt_date,fee_receipt_expiry,fee_receipt_reject_reason,can_drive,can_rent,can_transport,can_robe,ic_number,ic_url,license_url,docs_status,docs_reject_reason,receipt_gate_exempt,avatar_url').eq('id', userId).single(),
       supabase.from('jubah_leads').select('is_active,base_university_key,base_campus').eq('user_id', userId).maybeSingle(),
@@ -918,7 +915,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         _setCurrentPage('dashboard');
       }
     }
-  };
+  }
 
 
   // 1. Session Operations
@@ -1132,7 +1129,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
 
   // 2. Notification Operations
-  const addNotification = (title: string, description: string, type: NotificationItem['type']) => {
+  function addNotification(title: string, description: string, type: NotificationItem['type']) {
     const newNotif: NotificationItem = {
       // Date.now() alone collides when two notifications fire in the same
       // millisecond — a realistic case, since a single MyOrders.tsx load()
@@ -1165,7 +1162,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       });
       if (error) console.error('[GERAK] Failed to persist notification:', error);
     })();
-  };
+  }
 
   const markAllNotificationsRead = () => {
     setNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
@@ -1367,6 +1364,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   );
 };
 
+// Exporting this hook next to AppProvider only affects dev hot-reload of
+// this one file (it falls back to a full reload), not production. Moving
+// it would mean re-pointing the import in nearly every page, so it stays.
+// eslint-disable-next-line react-refresh/only-export-components
 export const useApp = () => {
   const context = useContext(AppContext);
   if (!context) {

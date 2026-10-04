@@ -104,7 +104,17 @@ export const TrackJubah: React.FC = () => {
     return () => setLeaveGuard(null);
   }, [setLeaveGuard, setCurrentPage]);
 
-  const [reference, setReference] = useState('');
+  // Supports a bookmarked/shared "?reference=..." deep link, or returning
+  // from the unfinished-booking nudge (same pending-booking marker) —
+  // pre-fills the reference so the customer doesn't need to retype it.
+  // Left as a pre-fill rather than auto-search so the page doesn't fire an
+  // RPC call before the user has actually landed on it. Computed as the
+  // initial state rather than set from a mount effect.
+  const [reference, setReference] = useState(() => {
+    const refParam = new URLSearchParams(window.location.search).get('reference');
+    const target = refParam || getPendingJubahBooking()?.reference || '';
+    return target.toUpperCase();
+  });
   const [icNumber, setIcNumber]   = useState('');
   const [searching, setSearching] = useState(false);
   const [searched, setSearched]   = useState(false);
@@ -185,19 +195,6 @@ export const TrackJubah: React.FC = () => {
     e.preventDefault();
     runSearch();
   };
-
-  // Supports a bookmarked/shared "?reference=..." deep link, or returning
-  // from the unfinished-booking nudge (same pending-booking marker) —
-  // pre-fills the reference so the customer doesn't need to retype it.
-  // Left as a pre-fill rather than auto-search so the page doesn't fire an
-  // RPC call before the user has actually landed on it.
-  useEffect(() => {
-    const refParam = new URLSearchParams(window.location.search).get('reference');
-    const fallbackRef = refParam ? null : getPendingJubahBooking()?.reference ?? null;
-    const target = refParam || fallbackRef;
-    if (target) setReference(target.toUpperCase());
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
 
   const handleVerifyReceipt = async (b: JubahBookingResult) => {
     if (!/^\d{4}$/.test(icLast4)) {

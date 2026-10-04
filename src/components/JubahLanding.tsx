@@ -41,14 +41,11 @@ export const JubahLanding: React.FC<Props> = ({ onProceed }) => {
   const [imgError, setImgError]         = useState<Record<string, boolean>>({});
   const [riderDir, setRiderDir]         = useState<RiderDir[]>([]);
   const [selectedRider, setSelectedRider] = useState<RiderDir | null>(null);
-  const [pendingBooking, setPendingBooking] = useState<PendingJubahBooking | null>(null);
-
   // Booking that was saved but whose confirmation flow was never completed
   // in this browser (back button, closed tab) — a quiet nudge back to it,
   // not the full receipt, so an unpaid order never looks "confirmed" here.
-  useEffect(() => {
-    setPendingBooking(getPendingJubahBooking());
-  }, []);
+  // Read once as the initial state rather than set from an effect.
+  const [pendingBooking, setPendingBooking] = useState<PendingJubahBooking | null>(() => getPendingJubahBooking());
 
   const dismissPendingBooking = () => {
     clearPendingJubahBooking();
