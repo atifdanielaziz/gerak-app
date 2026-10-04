@@ -485,9 +485,15 @@ export const RiderHome: React.FC = () => {
         </div>
         )}
 
-        {/* Tab Switcher — hide when in jubah sub-pages */}
+        {/* Tab Switcher — hide when in jubah sub-pages.
+            shrink-0 is the actual fix for the "tabs missing" reports: this
+            row is a flex child of the vertical scroll column above, and
+            overflow-x-auto gives it min-height:0, so on long tabs
+            (Jubah Job, Customers, Earnings) flexbox squashed it to ~21px
+            and clipped every tab button out of view — leaving just a blank
+            gap, or a sliver of the red active tab on shorter ones. */}
         {(activeTab !== 'jubah' || jubahView === 'list') && (
-          <div ref={tabScrollRef} className="px-4 pt-1 mb-4 overflow-x-auto overscroll-x-contain no-scrollbar">
+          <div ref={tabScrollRef} className="shrink-0 px-4 pt-1 mb-4 overflow-x-auto overscroll-x-contain no-scrollbar">
             <div className="flex w-max min-w-full bg-white border border-slate-100 rounded-2xl p-1 gap-1">
               {([
                 { id: 'daily',     label: 'Daily Job',   icon: ShoppingBasket },
