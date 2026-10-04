@@ -1,8 +1,10 @@
 import { supabase } from './supabase';
 
 // In-app Jubah how-to videos, served from the public jubah-tutorials bucket
-// (see migration 20261003150000_jubah_tutorials_bucket.sql). Object names
-// are fixed so re-uploading a file replaces the video without a code change.
+// (see migration 20261003150000_jubah_tutorials_bucket.sql). When a video
+// is re-recorded, upload it under a new name (e.g. book-v2.mp4) and update
+// `file` here — overwriting in place can keep serving the old copy from the
+// storage CDN cache for up to an hour.
 const BUCKET = 'jubah-tutorials';
 
 export type JubahTutorialKey = 'book' | 'icms' | 'track' | 'balance' | 'replace';
@@ -19,7 +21,7 @@ export interface JubahTutorial {
 // Listed in the order a customer actually goes through: book → appoint
 // representative → track → pay balance → fix a document.
 export const JUBAH_TUTORIALS: JubahTutorial[] = [
-  { key: 'book',    title: 'How to book your Jubah',              duration: '2:31', file: 'book.mp4' },
+  { key: 'book',    title: 'How to book your Jubah',              duration: '2:31', file: 'book-v2.mp4' },
   { key: 'icms',    title: 'Appoint your rider in ICMS (UMPSA)',  duration: '1:00', file: 'icms.mp4', umpsaOnly: true },
   { key: 'track',   title: 'How to track your order',             duration: '1:21', file: 'track.mp4' },
   { key: 'balance', title: 'How to pay your deposit balance',     duration: '1:04', file: 'balance.mp4' },
