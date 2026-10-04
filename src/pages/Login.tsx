@@ -17,7 +17,11 @@ export const Login: React.FC = () => {
     if (consumeDeviceSessionReplacedMessage()) {
       setError('Your account is active on another device. Log in here to continue; the other device will be signed out automatically.');
     } else if (consumeSessionExpiredMessage()) {
-      setError('Your session expired due to inactivity. Please log in again.');
+      // Not actually attributable to inactivity — any unexpected session
+      // loss (a token refresh that failed, a backgrounded tab resuming
+      // after its access token went stale, etc.) lands here too, and
+      // blaming "inactivity" specifically was misleading for those cases.
+      setError('Your session ended. Please log in again.');
     }
   }, []);
 

@@ -624,6 +624,37 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     };
   }, [user.isLoggedIn]);
 
+  // Proactively refresh the access token the moment the app comes back to
+  // the foreground/regains network, rather than relying only on
+  // supabase-js's own background timer. A backgrounded PWA/tab has its JS
+  // timers suspended by the OS/browser to save battery, so that timer can
+  // miss the token's expiry window entirely during a long background
+  // period — the first request after resuming then fires with an already-
+  // stale access token, killing the session and forcing a re-login that
+  // had nothing to do with actual inactivity (reported live: "why it
+  // always logging out"). Only refreshes when actually close to expiry
+  // (not on every visibility flicker) so this doesn't cause unnecessary
+  // refresh-token rotation if multiple tabs/devices are open at once.
+  useEffect(() => {
+    if (!user.isLoggedIn) return;
+    const maybeRefresh = async () => {
+      if (document.visibilityState !== 'visible') return;
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.expires_at) return;
+      const msUntilExpiry = session.expires_at * 1000 - Date.now();
+      if (msUntilExpiry < 5 * 60 * 1000) await supabase.auth.refreshSession();
+    };
+    void maybeRefresh();
+    document.addEventListener('visibilitychange', maybeRefresh);
+    window.addEventListener('online', maybeRefresh);
+    window.addEventListener('focus', maybeRefresh);
+    return () => {
+      document.removeEventListener('visibilitychange', maybeRefresh);
+      window.removeEventListener('online', maybeRefresh);
+      window.removeEventListener('focus', maybeRefresh);
+    };
+  }, [user.isLoggedIn]);
+
   // ── Supabase: restore session on app load ──────────────────────────
   useEffect(() => {
     const isRecovery = window.location.hash.includes('type=recovery');
