@@ -4,6 +4,11 @@ import '@capacitor-community/safe-area'
 import './index.css'
 import App from './App.tsx'
 import { ErrorBoundary } from './components/ErrorBoundary.tsx'
+import { installViewportHeightFix } from './lib/viewportHeight'
+
+// See viewportHeight.ts — keeps the app shell full-height on iPhone after
+// the keyboard closes or the app resumes from another app.
+installViewportHeightFix();
 
 // Newer Android versions render app content edge-to-edge under the status
 // bar by default. The previous fix here (@capacitor/status-bar's

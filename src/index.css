@@ -154,9 +154,12 @@ body {
 .mobile-container {
   width: 100%;
 
-  /* 100dvh adjusts when iOS Safari toolbar appears/hides */
+  /* 100dvh adjusts when iOS Safari toolbar appears/hides. --app-height is
+     the real measured height (src/lib/viewportHeight.ts) — iOS can leave
+     100dvh stuck at the keyboard-open height, floating BottomNav mid-screen. */
   height: 100vh;
   height: 100dvh;
+  height: var(--app-height, 100dvh);
 
   background-color: #FFFFFF;
   display: flex;
