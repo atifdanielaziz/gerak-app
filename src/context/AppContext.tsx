@@ -2,7 +2,7 @@ import React, { createContext, useContext, useState, useEffect, useRef, useCallb
 import { Capacitor } from '@capacitor/core';
 import { App as CapacitorApp } from '@capacitor/app';
 import { supabase } from '../lib/supabase';
-import { INACTIVITY_LIMIT_MS, isSessionExpired, touchActivity, setDeviceSessionReplacedMessage, setSessionExpiredMessage } from '../lib/idleSession';
+import { setDeviceSessionReplacedMessage, setSessionExpiredMessage } from '../lib/idleSession';
 import type { JubahBookingInput } from '../types/jubahBooking';
 
 // window.location.origin on web — always correct wherever the app is
@@ -611,19 +611,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return () => { window.clearInterval(timer); document.removeEventListener('visibilitychange', touch); };
   }, [user.isLoggedIn, user.role]);
 
-  // Track activity while logged in so isSessionExpired() has a fresh timestamp.
-  useEffect(() => {
-    if (!user.isLoggedIn) return;
-    touchActivity();
-    const handler = () => touchActivity();
-    window.addEventListener('pointerdown', handler, { passive: true });
-    window.addEventListener('keydown', handler, { passive: true });
-    return () => {
-      window.removeEventListener('pointerdown', handler);
-      window.removeEventListener('keydown', handler);
-    };
-  }, [user.isLoggedIn]);
-
   // Proactively refresh the access token the moment the app comes back to
   // the foreground/regains network, rather than relying only on
   // supabase-js's own background timer. A backgrounded PWA/tab has its JS
@@ -668,11 +655,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     supabase.auth.getSession().then(async ({ data: { session } }) => {
       if (!session?.user || isRecovery) return;
-      if (isSessionExpired(INACTIVITY_LIMIT_MS)) {
-        supabase.auth.signOut();
-        setSessionExpiredMessage();
-        return;
-      }
       const oauthLogin = sessionStorage.getItem('gerak_claim_device_on_auth') === '1';
       if (oauthLogin) sessionStorage.removeItem('gerak_claim_device_on_auth');
       const isFreshLogin = isEmailConfirmation || oauthLogin;
@@ -1145,20 +1127,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     supabase.auth.signOut();
   };
 
-  // Re-check the inactivity limit periodically while the app stays open, so a
-  // tab left open continuously (never reloaded) still gets force-logged-out
-  // once past the limit, not just on next app load.
-  useEffect(() => {
-    if (!user.isLoggedIn) return;
-    const intervalId = window.setInterval(() => {
-      if (isSessionExpired(INACTIVITY_LIMIT_MS)) {
-        setSessionExpiredMessage();
-        logout();
-      }
-    }, 15 * 60 * 1000);
-    return () => window.clearInterval(intervalId);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user.isLoggedIn]);
 
 
   // 2. Notification Operations
