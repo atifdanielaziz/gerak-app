@@ -695,7 +695,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   // Remove an older open device promptly after a newer login claims the same
   // non-exempt account. Reopening a sleeping PWA checks immediately.
   useEffect(() => {
-    if (!user.isLoggedIn || ['admin', 'superadmin', 'rider'].includes(user.role)) return;
+    // Same exemption as is_single_device_exempt() server-side: any Jubah
+    // rider (incl. a driver/admin with can_robe) or Jubah Lead stays multi-device.
+    if (!user.isLoggedIn || ['admin', 'superadmin', 'rider'].includes(user.role) || user.canRobe || user.isJubahLead) return;
     deviceSessionCheckRef.current = false;
     const check = async () => {
       if (document.visibilityState !== 'visible' || deviceSessionCheckRef.current) return;
@@ -735,7 +737,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       if (channel) supabase.removeChannel(channel);
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user.isLoggedIn, user.role]);
+  }, [user.isLoggedIn, user.role, user.canRobe, user.isJubahLead]);
 
   // An admin toggling someone's role (toggle_user_role) never reached an
   // already-open session — RLS always re-checks profiles.role fresh
