@@ -1,6 +1,6 @@
 import { forwardRef, useCallback, useImperativeHandle, useMemo, useState, type ElementType } from 'react';
 import { supabase } from '../../../lib/supabase';
-import { History, RefreshCw, User, PlusCircle, Pencil, Trash2 } from 'lucide-react';
+import { History, RefreshCw, User, PlusCircle, Pencil, Trash2, FileUp, Files, Undo2 } from 'lucide-react';
 import { useLoadOnActive } from '../../../hooks/useLoadOnActive';
 import { NativeSelect } from '../../../components/NativeSelect';
 import { useAxisLockedScroll } from '../../../hooks/useAxisLockedScroll';
@@ -13,8 +13,11 @@ interface ActivityLogRow {
   actor_role: string | null;
   table_name: string;
   record_id: string | null;
-  action: 'insert' | 'update' | 'delete';
-  changes: { old: Record<string, unknown> | null; new: Record<string, unknown> | null } | null;
+  // Trigger rows are insert/update/delete with { old, new } diffs; RPC-written
+  // rows add their own actions with their own changes shape (see
+  // describeChange). Typed as string so a new action can never crash the tab.
+  action: string;
+  changes: (Record<string, unknown> & { old?: Record<string, unknown> | null; new?: Record<string, unknown> | null }) | null;
   created_at: string;
 }
 
@@ -39,17 +42,40 @@ const ROLE_LABEL: Record<string, string> = { driver: 'Driver', rider: 'Rider', a
 // auth.uid() at all, so they'd otherwise be invisible to a role filter.
 const ACTOR_ROLE_LABEL: Record<string, string> = { admin: 'Admin', superadmin: 'Superadmin', system: 'System (automated)' };
 
-const ACTION_ICON: Record<ActivityLogRow['action'], ElementType> = {
+const ACTION_ICON: Record<string, ElementType> = {
   insert: PlusCircle,
   update: Pencil,
   delete: Trash2,
+  replace_document: FileUp,
+  regenerate_combined_pdf: Files,
+  manual_status_revert: Undo2,
 };
 
-const ACTION_STYLE: Record<ActivityLogRow['action'], string> = {
+const ACTION_STYLE: Record<string, string> = {
   insert: 'bg-emerald-50 text-emerald-600',
   update: 'bg-amber-50 text-amber-600',
   delete: 'bg-red-50 text-red-500',
+  replace_document: 'bg-blue-50 text-blue-600',
+  regenerate_combined_pdf: 'bg-blue-50 text-blue-600',
+  manual_status_revert: 'bg-violet-50 text-violet-600',
 };
+
+const ACTION_FILTER_LABEL: Record<string, string> = {
+  insert: 'Created',
+  update: 'Updated',
+  delete: 'Deleted',
+  replace_document: 'Document replaced',
+  regenerate_combined_pdf: 'Combined PDF regenerated',
+  manual_status_revert: 'Status reverted',
+};
+
+// An action this tab doesn't know yet (a new RPC logging its own action
+// name) used to look up `undefined` here and crash the whole Activity tab
+// with React error #130 — fall back to a neutral icon instead.
+const actionIcon = (action: string): ElementType => ACTION_ICON[action] ?? History;
+const actionStyle = (action: string): string => ACTION_STYLE[action] ?? 'bg-slate-50 text-slate-500';
+
+const DOC_FIELD_LABEL: Record<string, string> = { oscar: 'OSCAR', skpg: 'SKPG', konvo: 'Konvo Slip', ic: 'IC Copy', combined: 'Combined PDF' };
 
 // Turns a row's raw old/new jsonb diff into a plain-English sentence, one
 // small formatter per table (per plan). Anything not covered by a specific
@@ -64,6 +90,17 @@ function describeChange(row: ActivityLogRow): string {
   const changedKeys = Object.keys({ ...oldR, ...newR }).filter(k => JSON.stringify(oldR[k]) !== JSON.stringify(newR[k]));
 
   const fmtVal = (v: unknown) => v === null || v === undefined || v === '' ? '—' : String(v);
+
+  // RPC-written actions carry their own flat changes shape, not { old, new }.
+  if (action === 'replace_document') {
+    const field = String(changes?.field ?? '');
+    return `Replaced document: ${DOC_FIELD_LABEL[field] ?? (field || 'unknown')}`;
+  }
+  if (action === 'regenerate_combined_pdf') return 'Regenerated Combined PDF';
+  if (action === 'manual_status_revert') {
+    const reason = changes?.reason ? ` (${fmtVal(changes.reason)})` : '';
+    return `Reverted status: ${fmtVal(changes?.from)} → ${fmtVal(changes?.to)}${reason}`;
+  }
 
   if (table === 'app_settings') {
     if (changedKeys.includes('value')) return `Changed "${record_id}": ${fmtVal(oldR.value)} → ${fmtVal(newR.value)}`;
@@ -168,6 +205,11 @@ export const ActivityLogTab = forwardRef<ActivityLogTabHandle, ActivityLogTabPro
   const [roleFilter, setRoleFilter]   = useState<string>('all');
   const [actionFilter, setActionFilter] = useState<string>('all');
   const [search, setSearch]     = useState('');
+  // Jubah booking id → reference (JUB-26-…). The log stores only the row id,
+  // so without this an entry like "status: ordered → paid" can't be traced
+  // to an order. Fetched for the loaded rows only (superadmin can read
+  // jubah_bookings; a booking deleted since just shows no reference).
+  const [bookingRefs, setBookingRefs] = useState<Record<string, string>>({});
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -176,9 +218,18 @@ export const ActivityLogTab = forwardRef<ActivityLogTabHandle, ActivityLogTabPro
       .select('id, actor_id, actor_name, actor_role, table_name, record_id, action, changes, created_at')
       .order('created_at', { ascending: false })
       .limit(300);
-    setRows((data as ActivityLogRow[]) ?? []);
+    const loaded = (data as ActivityLogRow[]) ?? [];
+    setRows(loaded);
+    const ids = Array.from(new Set(loaded.filter(r => r.table_name === 'jubah_bookings' && r.record_id).map(r => r.record_id as string)));
+    if (ids.length) {
+      const { data: refs } = await supabase.from('jubah_bookings').select('id, reference').in('id', ids);
+      setBookingRefs(Object.fromEntries((refs ?? []).map(b => [b.id, b.reference])));
+    }
     setLoading(false);
   }, []);
+
+  const refOf = useCallback((r: ActivityLogRow) =>
+    r.table_name === 'jubah_bookings' && r.record_id ? bookingRefs[r.record_id] ?? '' : '', [bookingRefs]);
 
   useLoadOnActive(active, load);
   useImperativeHandle(ref, () => ({ reload: load }), [load]);
@@ -187,10 +238,14 @@ export const ActivityLogTab = forwardRef<ActivityLogTabHandle, ActivityLogTabPro
     .filter(r => tableFilter === 'all' || r.table_name === tableFilter)
     .filter(r => roleFilter === 'all' || (r.actor_role ?? 'system') === roleFilter)
     .filter(r => actionFilter === 'all' || r.action === actionFilter)
-    .filter(r => !search.trim() || r.actor_name.toLowerCase().includes(search.trim().toLowerCase())),
-    [rows, tableFilter, roleFilter, actionFilter, search]);
+    .filter(r => {
+      const q = search.trim().toLowerCase();
+      return !q || r.actor_name.toLowerCase().includes(q) || refOf(r).toLowerCase().includes(q);
+    }),
+    [rows, tableFilter, roleFilter, actionFilter, search, refOf]);
 
   const tablesPresent = useMemo(() => Array.from(new Set(rows.map(r => r.table_name))), [rows]);
+  const actionsPresent = useMemo(() => Array.from(new Set(rows.map(r => r.action))), [rows]);
   const rolesPresent = useMemo(() => Array.from(new Set(rows.map(r => r.actor_role ?? 'system'))), [rows]);
 
   return (
@@ -200,7 +255,7 @@ export const ActivityLogTab = forwardRef<ActivityLogTabHandle, ActivityLogTabPro
       <div className="bg-white border border-slate-100 rounded-2xl p-3.5 flex flex-col gap-2.5">
           <div className="flex gap-2">
             <AdminSearchInput value={search} onChange={setSearch}
-              placeholder="Search by admin name" className="flex-1" />
+              placeholder="Search by name or booking reference" className="flex-1" />
             <button onClick={load}
               className="w-10 h-10 shrink-0 flex items-center justify-center rounded-xl bg-white border border-slate-100 text-slate-400 hover:text-primary transition active:scale-90">
             <RefreshCw className="w-3.5 h-3.5" />
@@ -241,7 +296,7 @@ export const ActivityLogTab = forwardRef<ActivityLogTabHandle, ActivityLogTabPro
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
           <NativeSelect value={tableFilter} onChange={setTableFilter} options={[{ value: 'all', label: 'All Activity' }, ...tablesPresent.map(value => ({ value, label: TABLE_LABEL[value] ?? value }))]} placeholder="Activity" label="Activity" />
           <NativeSelect value={roleFilter} onChange={setRoleFilter} options={[{ value: 'all', label: 'All Roles' }, ...rolesPresent.map(value => ({ value, label: ACTOR_ROLE_LABEL[value] ?? value }))]} placeholder="Role" label="Role" />
-          <NativeSelect value={actionFilter} onChange={setActionFilter} options={[{ value: 'all', label: 'All Actions' }, { value: 'insert', label: 'Created' }, { value: 'update', label: 'Updated' }, { value: 'delete', label: 'Deleted' }]} placeholder="Action" label="Action" />
+          <NativeSelect value={actionFilter} onChange={setActionFilter} options={[{ value: 'all', label: 'All Actions' }, ...actionsPresent.map(value => ({ value, label: ACTION_FILTER_LABEL[value] ?? value }))]} placeholder="Action" label="Action" />
         </div>
       </div>
 
@@ -260,15 +315,15 @@ export const ActivityLogTab = forwardRef<ActivityLogTabHandle, ActivityLogTabPro
         ) : (<>
           <div ref={activityDirectoryScrollRef} className="table-scroll-x relative w-full max-w-full overflow-x-auto overflow-y-hidden overscroll-none" style={{ contain: 'layout paint' }}>
             <div data-axis-y className="max-h-[520px] overflow-y-auto overflow-x-hidden overscroll-none no-scrollbar" style={{ WebkitOverflowScrolling: 'touch' }}>
-            <table className="min-w-[52rem] w-full border-collapse text-left text-xs"><thead><tr className="border-b border-slate-100 text-slate-400">{['Action','Details','Admin','Area','Date & Time'].map(h => <th key={h} className="sticky top-0 z-10 bg-white py-2.5 pr-4 font-semibold whitespace-nowrap">{h}</th>)}</tr></thead><tbody>{filtered.map(row => { const Icon = ACTION_ICON[row.action]; return <tr key={row.id} className="border-b border-slate-100 last:border-b-0"><td className="py-3 pr-4"><span className={`w-8 h-8 rounded-xl inline-flex items-center justify-center ${ACTION_STYLE[row.action]}`}><Icon className="w-4 h-4" /></span></td><td className="py-3 pr-4 font-semibold text-slate-700 max-w-[22rem]">{describeChange(row)}</td><td className="py-3 pr-4 text-slate-600 whitespace-nowrap">{row.actor_name}{row.actor_role ? <span className="ml-1.5 text-[10px] font-semibold text-slate-400">({ACTOR_ROLE_LABEL[row.actor_role] ?? row.actor_role})</span> : null}</td><td className="py-3 pr-4 text-slate-600 whitespace-nowrap">{TABLE_LABEL[row.table_name] ?? row.table_name}</td><td className="py-3 text-slate-400 whitespace-nowrap">{new Date(row.created_at).toLocaleString('en-MY', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</td></tr>; })}</tbody></table>
+            <table className="min-w-[52rem] w-full border-collapse text-left text-xs"><thead><tr className="border-b border-slate-100 text-slate-400">{['Action','Details','Admin','Area','Date & Time'].map(h => <th key={h} className="sticky top-0 z-10 bg-white py-2.5 pr-4 font-semibold whitespace-nowrap">{h}</th>)}</tr></thead><tbody>{filtered.map(row => { const Icon = actionIcon(row.action); const ref = refOf(row); return <tr key={row.id} className="border-b border-slate-100 last:border-b-0"><td className="py-3 pr-4"><span className={`w-8 h-8 rounded-xl inline-flex items-center justify-center ${actionStyle(row.action)}`}><Icon className="w-4 h-4" /></span></td><td className="py-3 pr-4 font-semibold text-slate-700 max-w-[22rem]">{ref && <span className="block font-mono text-[11px] text-primary">{ref}</span>}{describeChange(row)}</td><td className="py-3 pr-4 text-slate-600 whitespace-nowrap">{row.actor_name}{row.actor_role ? <span className="ml-1.5 text-[10px] font-semibold text-slate-400">({ACTOR_ROLE_LABEL[row.actor_role] ?? row.actor_role})</span> : null}</td><td className="py-3 pr-4 text-slate-600 whitespace-nowrap">{TABLE_LABEL[row.table_name] ?? row.table_name}</td><td className="py-3 text-slate-400 whitespace-nowrap">{new Date(row.created_at).toLocaleString('en-MY', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</td></tr>; })}</tbody></table>
             </div>
           </div>
           <div className="hidden">
             {filtered.map(row => {
-              const Icon = ACTION_ICON[row.action];
+              const Icon = actionIcon(row.action);
               return (
                 <div key={row.id} className="border border-slate-100 rounded-2xl p-3.5 flex items-start gap-3">
-                  <div className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 ${ACTION_STYLE[row.action]}`}>
+                  <div className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 ${actionStyle(row.action)}`}>
                     <Icon className="w-4 h-4" />
                   </div>
                   <div className="flex-1 min-w-0">
