@@ -5,6 +5,11 @@ import './index.css'
 import App from './App.tsx'
 import { ErrorBoundary } from './components/ErrorBoundary.tsx'
 import { installViewportHeightFix } from './lib/viewportHeight'
+import { installTranslateGuard } from './lib/translateGuard'
+
+// See translateGuard.ts — stops Chrome's Google Translate from crashing the
+// app (it rewrites text nodes React still owns). Must run before render.
+installTranslateGuard();
 
 // See viewportHeight.ts — keeps the app shell full-height on iPhone after
 // the keyboard closes or the app resumes from another app.

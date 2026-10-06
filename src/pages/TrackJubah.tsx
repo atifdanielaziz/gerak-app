@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useApp } from '../context/AppContext';
 import { supabase } from '../lib/supabase';
 import { PackageSearch, Search, GraduationCap, Eye, Download } from 'lucide-react';
@@ -99,10 +99,17 @@ export const TrackJubah: React.FC = () => {
   // Android), since AppContext had nowhere queued to go back to. Same
   // leaveGuard mechanism every other overlay/sub-page in this app already
   // uses, just pointed at the dashboard instead of closing a sub-view.
+  // setCurrentPage is a new function on every AppContext render, so it must
+  // not be an effect dependency: re-registering the guard re-rendered
+  // AppContext, which made a new setCurrentPage, which re-ran this effect —
+  // an endless loop ("Maximum update depth exceeded"). The guard reads the
+  // latest one through a ref instead and is registered once.
+  const setCurrentPageRef = useRef(setCurrentPage);
+  useEffect(() => { setCurrentPageRef.current = setCurrentPage; }, [setCurrentPage]);
   useEffect(() => {
-    setLeaveGuard(() => () => setCurrentPage('dashboard'));
+    setLeaveGuard(() => () => setCurrentPageRef.current('dashboard'));
     return () => setLeaveGuard(null);
-  }, [setLeaveGuard, setCurrentPage]);
+  }, [setLeaveGuard]);
 
   // Supports a bookmarked/shared "?reference=..." deep link, or returning
   // from the unfinished-booking nudge (same pending-booking marker) —
