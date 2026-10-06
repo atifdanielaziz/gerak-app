@@ -142,6 +142,10 @@ export async function uploadJubahDocReplacement(reference: string, field: JubahD
       return { path: null, error: "Couldn't process this IC file. Please try a clear JPG, PNG or PDF." };
     }
   }
+  // jubah-docs bucket limit — say so plainly instead of a raw storage error.
+  if (file.size > 5 * 1024 * 1024) {
+    return { path: null, error: 'File is larger than 5 MB. Please upload a smaller file (e.g. a photo or a compressed PDF).' };
+  }
   const ext = file.name.split('.').pop() ?? 'pdf';
   const path = `${reference}/replace_${field}_${Date.now()}.${ext}`;
   const { data, error } = await supabase.storage

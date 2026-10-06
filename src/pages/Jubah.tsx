@@ -19,6 +19,7 @@ import { generateReceiptPdf } from '../lib/receiptPdf';
 import { copyToClipboard } from '../lib/clipboard';
 import { JubahTutorialLink } from '../components/JubahTutorials';
 import { getJubahWhatsappGroup } from '../lib/jubahWhatsappGroup';
+import { regenerateJubahCombinedPdf } from '../lib/jubahDocs';
 import { savePendingJubahBooking, clearPendingJubahBooking } from '../lib/pendingJubahBooking';
 import { formatPhone, formatIcNumber as formatIc } from '../lib/format';
 import { UNIVERSITIES, UNIVERSITY_MAP, deriveJubahCampus, jubahLocationLabel, universityKeyFromCampus } from '../lib/universities';
@@ -619,6 +620,8 @@ export const Jubah: React.FC = () => {
   const allFilesReady = docFields.length > 0 && docFields.every(f => !!docFiles[f.id]);
 
   const ACCEPTED_TYPES = ['application/pdf', 'image/jpeg', 'image/png', 'image/webp'];
+  // Matches the jubah-docs bucket's file_size_limit (5 MB).
+  const MAX_UPLOAD_BYTES = 5 * 1024 * 1024;
 
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>, fieldId: string) => {
     const file = e.target.files?.[0] || null;
@@ -637,6 +640,15 @@ export const Jubah: React.FC = () => {
     if (compressed && isIc) {
       try { stamped = await stampWatermark(compressed, jubahWatermarkText); }
       catch (err) { console.error('[GERAK] Watermark failed, uploading original file:', err); }
+    }
+    // jubah-docs rejects files over 5 MB. Images are compressed above, but
+    // PDFs go up as-is — catch it here instead of the upload silently
+    // failing at Book time.
+    if (stamped && stamped.size > MAX_UPLOAD_BYTES) {
+      const label = docFields.find(f => f.id === fieldId)?.label ?? 'This file';
+      setFileError(`${label} is larger than 5 MB. Please upload a smaller file (e.g. a photo or a compressed PDF).`);
+      if (e.target) e.target.value = '';
+      return;
     }
     setDocFiles(prev => ({ ...prev, [fieldId]: stamped }));
   };
@@ -865,6 +877,22 @@ export const Jubah: React.FC = () => {
       console.error('[GERAK] Storage upload failed:', err);
     }
 
+    // A failed upload used to be logged and then ignored — the booking was
+    // still created with that document missing and the customer told it
+    // succeeded (seen live: SKPG + Konvo + Combined lost on a paid booking).
+    // Every required document and the payment proof must be in storage
+    // before the booking is created. The Combined PDF is derived from them,
+    // so it's rebuilt server-side after booking instead (see below).
+    const failedUploads = [
+      ...docFields.filter((_, i) => !docUploads[i]).map(f => f.label),
+      ...(paymentPath ? [] : ['Payment Proof']),
+    ];
+    if (failedUploads.length) {
+      setBooking(false);
+      setFileError(`Couldn't upload: ${failedUploads.join(', ')}. Your booking has NOT been submitted — please check your connection and tap Book again.`);
+      return;
+    }
+
     const bookingInput: JubahBookingInput = {
       reference, fullName, icNumber, hpNumber, university, faculty, matricId,
       campus: bookingCampus, paymentMode, remark, combinedFileName,
@@ -896,6 +924,15 @@ export const Jubah: React.FC = () => {
       return;
     }
     clearFormDraft();
+
+    // The Combined PDF is the largest upload and the one most likely to hit
+    // the 5 MB limit. Every source document is confirmed in storage above,
+    // so rebuild it server-side (same reference + last-4-IC gate the
+    // customer Replace flow uses) rather than leave the booking without one.
+    if (!docsPath) {
+      void regenerateJubahCombinedPdf({ reference, icLast4: icNumber.replace(/\D/g, '').slice(-4) })
+        .then(r => { if (!r.success) console.error('[GERAK] Combined PDF rebuild after booking failed:', r.error); });
+    }
 
     // Saved now, so that if the customer closes the tab right after booking,
     // the app can still point them back at this booking next time they open
@@ -1632,7 +1669,13 @@ export const Jubah: React.FC = () => {
               ref={paymentProofRef}
               onChange={async e => {
                 const file = e.target.files?.[0] || null;
-                setPaymentProof(file ? await compressImage(file) : null);
+                const compressed = file ? await compressImage(file) : null;
+                if (compressed && compressed.size > MAX_UPLOAD_BYTES) {
+                  setFileError('Payment receipt is larger than 5 MB. Please upload a screenshot or a smaller PDF.');
+                  e.target.value = '';
+                  return;
+                }
+                setPaymentProof(compressed);
               }}
               className="hidden"
             />

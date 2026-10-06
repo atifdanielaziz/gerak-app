@@ -132,7 +132,12 @@ export const RiderHome: React.FC = () => {
       .eq('rider_id', authUser.id)
       .order('created_at', { ascending: false });
     if (error) console.error('[GERAK] jubah jobs load error:', error.message);
-    setJubahJobs(((data as JubahJobRow[]) ?? []).filter(bookingMatchesUniversity));
+    const rows = ((data as JubahJobRow[]) ?? []).filter(bookingMatchesUniversity);
+    setJubahJobs(rows);
+    // The open Job Details page holds its own snapshot of the job — refresh
+    // it too, or a customer's document replacement (or any other change)
+    // never shows there until the rider leaves and reopens the job.
+    if (!error) setSelectedJob(prev => (prev ? rows.find(r => r.id === prev.id) ?? prev : prev));
     setJubahLoading(false);
   }, [bookingMatchesUniversity]);
 
