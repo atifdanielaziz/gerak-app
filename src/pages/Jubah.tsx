@@ -1421,7 +1421,7 @@ export const Jubah: React.FC = () => {
                   {/* Name */}
                   <div className="flex items-end justify-between gap-2">
                     <div className="flex flex-col gap-0.5 min-w-0">
-                      <span className="text-xs font-normal text-slate-400">Representative Name</span>
+                      <span className="text-xs font-normal text-slate-400">Runner Name</span>
                       <span className="text-sm font-semibold text-slate-800 truncate">{r.name}</span>
                     </div>
                     <button type="button" onPointerDown={e => { e.preventDefault(); copy(r.name, 'name'); }}
@@ -1486,10 +1486,10 @@ export const Jubah: React.FC = () => {
               );
             })()}
 
-            {/* The rider's name + IC go into UMPSA's ICMS portal as the
-                customer's representative — show how, right where they copy them. */}
+            {/* In UMPSA's ICMS portal the customer picks this rider as their
+                Runner from a list (no IC needed) — show how, right here. */}
             {landingUniversity === 'umpsa' && (
-              <JubahTutorialLink tutorialKey="icms" label="Watch: how to enter your rider in ICMS" className="self-center" />
+              <JubahTutorialLink tutorialKey="icms" label="Watch: how to choose your rider as Runner in ICMS" className="self-center" />
             )}
           </div>
 

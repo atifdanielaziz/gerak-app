@@ -223,14 +223,14 @@ export const JubahLanding: React.FC<Props> = ({ onProceed }) => {
       {riderDir.length > 0 && (
         <div className="bg-white border border-slate-100 rounded-3xl p-5 flex flex-col gap-4">
           <h3 className="text-sm font-bold text-slate-700 flex items-center gap-1.5">
-            <Users className="w-4 h-4" /> Representative Directory
+            <Users className="w-4 h-4" /> Runner Directory
           </h3>
           <div className="overflow-x-auto overflow-y-auto no-scrollbar max-h-[280px]">
             <table className="text-left border-collapse" style={{ minWidth: 480 }}>
               <thead className="sticky top-0 bg-white">
                 <tr className="text-xs font-semibold text-slate-400 border-b border-slate-100">
                   <th className="py-2 pr-4 whitespace-nowrap">Method</th>
-                  <th className="py-2 pr-4 whitespace-nowrap">Representative Name</th>
+                  <th className="py-2 pr-4 whitespace-nowrap">Runner Name</th>
                   <th className="py-2 pr-4 whitespace-nowrap">I/C Number</th>
                   <th className="py-2 whitespace-nowrap">H/P</th>
                 </tr>
@@ -260,13 +260,13 @@ export const JubahLanding: React.FC<Props> = ({ onProceed }) => {
             </table>
           </div>
           <p className="text-xs text-slate-400 font-normal">
-            I/C numbers are partially masked. Tap a row to contact the representative and confirm the full IC for physical registration.
+            In ICMS, choose <b>Runner</b> and select your rider's name from the list. Tap a row to contact the runner.
           </p>
         </div>
       )}
 
 
-      {/* Representative profile sheet */}
+      {/* Runner profile sheet */}
       {selectedRider && (
         <RepresentativeSheet
           name={selectedRider.name}
@@ -274,7 +274,7 @@ export const JubahLanding: React.FC<Props> = ({ onProceed }) => {
           method={selectedRider.method === 'pickup' ? 'Pickup Only' : selectedRider.method === 'postage' ? 'Pickup & Postage' : '—'}
           icNumber={selectedRider.ic_number}
           phone={selectedRider.phone}
-          waMessage={`Asslammualaikum Jubah rider, saya perlukan 6 digit IC ${selectedRider.ic_number ? selectedRider.ic_number.replace(/\D/g,'').slice(0,6) + '-XX-XXXX' : 'XXXXXX-XX-XXXX'} terakhir awak untuk pengisian representative jubah ${UNIVERSITY_MAP[selectedKey]?.shortLabel ?? selectedKey.toUpperCase()}`}
+          waMessage={`Assalamualaikum, saya ingin pilih awak sebagai runner jubah ${UNIVERSITY_MAP[selectedKey]?.shortLabel ?? selectedKey.toUpperCase()}.`}
           onClose={closeRider}
         />
       )}

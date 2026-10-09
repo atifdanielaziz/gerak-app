@@ -79,7 +79,7 @@ export const RepresentativeSheet: React.FC<Props> = ({
         {/* Header */}
         <div className="flex items-center justify-between px-5 pt-2 pb-4 shrink-0">
           <div>
-            <p className="text-xs font-normal text-slate-400">Representative</p>
+            <p className="text-xs font-normal text-slate-400">Runner</p>
             <h3 className="text-base font-semibold text-slate-800 mt-0.5">{name}</h3>
           </div>
           <button onPointerDown={e => { e.preventDefault(); onClose(); }}
@@ -96,7 +96,7 @@ export const RepresentativeSheet: React.FC<Props> = ({
             {/* Representative Name */}
             <div className="flex items-end justify-between gap-2">
               <div className="flex flex-col gap-0.5 min-w-0">
-                <span className="text-xs font-normal text-slate-400">Representative Name</span>
+                <span className="text-xs font-normal text-slate-400">Runner Name</span>
                 <span className="text-sm font-semibold text-slate-800">{name}</span>
               </div>
               <button onPointerDown={e => { e.preventDefault(); copyValue(name, 'name'); }}
