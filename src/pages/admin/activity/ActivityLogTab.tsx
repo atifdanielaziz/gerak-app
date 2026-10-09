@@ -1,6 +1,6 @@
 import { forwardRef, useCallback, useImperativeHandle, useMemo, useState, type ElementType } from 'react';
 import { supabase } from '../../../lib/supabase';
-import { History, RefreshCw, User, PlusCircle, Pencil, Trash2, FileUp, Files, Undo2 } from 'lucide-react';
+import { History, RefreshCw, User, PlusCircle, Pencil, Trash2, FileUp, Files, Undo2, UserCog } from 'lucide-react';
 import { useLoadOnActive } from '../../../hooks/useLoadOnActive';
 import { NativeSelect } from '../../../components/NativeSelect';
 import { useAxisLockedScroll } from '../../../hooks/useAxisLockedScroll';
@@ -49,6 +49,7 @@ const ACTION_ICON: Record<string, ElementType> = {
   replace_document: FileUp,
   regenerate_combined_pdf: Files,
   manual_status_revert: Undo2,
+  reassign_rider: UserCog,
 };
 
 const ACTION_STYLE: Record<string, string> = {
@@ -58,6 +59,7 @@ const ACTION_STYLE: Record<string, string> = {
   replace_document: 'bg-blue-50 text-blue-600',
   regenerate_combined_pdf: 'bg-blue-50 text-blue-600',
   manual_status_revert: 'bg-violet-50 text-violet-600',
+  reassign_rider: 'bg-violet-50 text-violet-600',
 };
 
 const ACTION_FILTER_LABEL: Record<string, string> = {
@@ -67,6 +69,7 @@ const ACTION_FILTER_LABEL: Record<string, string> = {
   replace_document: 'Document replaced',
   regenerate_combined_pdf: 'Combined PDF regenerated',
   manual_status_revert: 'Status reverted',
+  reassign_rider: 'Rider changed',
 };
 
 // An action this tab doesn't know yet (a new RPC logging its own action
@@ -97,6 +100,7 @@ function describeChange(row: ActivityLogRow): string {
     return `Replaced document: ${DOC_FIELD_LABEL[field] ?? (field || 'unknown')}`;
   }
   if (action === 'regenerate_combined_pdf') return 'Regenerated Combined PDF';
+  if (action === 'reassign_rider') return `Changed rider: ${fmtVal(changes?.from_rider)} → ${fmtVal(changes?.to_rider)}`;
   if (action === 'manual_status_revert') {
     const reason = changes?.reason ? ` (${fmtVal(changes.reason)})` : '';
     return `Reverted status: ${fmtVal(changes?.from)} → ${fmtVal(changes?.to)}${reason}`;

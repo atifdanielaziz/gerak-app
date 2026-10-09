@@ -61,7 +61,7 @@ serve(async (req) => {
     )
 
     const { bookingId, stage } = await req.json()
-    if (!bookingId || !['full', 'deposit', 'balance'].includes(stage)) {
+    if (!bookingId || !['full', 'deposit', 'balance', 'rider_changed'].includes(stage)) {
       return json({ success: false, reason: 'Missing or invalid parameters.' }, 400)
     }
 
@@ -86,8 +86,13 @@ serve(async (req) => {
     if (!isAdmin && !isAssignedRider) {
       return json({ success: false, reason: 'Forbidden' }, 403)
     }
+    // Rider-changed notice follows superadmin_reassign_jubah_rider, which is
+    // superadmin-only — keep the email trigger to the same role.
+    if (stage === 'rider_changed' && profile?.role !== 'superadmin') {
+      return json({ success: false, reason: 'Forbidden' }, 403)
+    }
 
-    await sendReceiptEmail(admin, booking, stage as 'full' | 'deposit' | 'balance')
+    await sendReceiptEmail(admin, booking, stage as Stage)
     return json({ success: true })
 
   } catch (err) {
@@ -126,7 +131,9 @@ const row = (label: string, value: string | null | undefined, opts?: { bold?: bo
 // signup address) until a real domain is bought and verified in Resend, at
 // which point switching to a real branded sender is just changing that one
 // secret — no redeploy of this logic needed.
-async function sendReceiptEmail(admin: ReturnType<typeof createClient>, booking: Booking, stage: 'full' | 'deposit' | 'balance') {
+type Stage = 'full' | 'deposit' | 'balance' | 'rider_changed'
+
+async function sendReceiptEmail(admin: ReturnType<typeof createClient>, booking: Booking, stage: Stage) {
   const apiKey = Deno.env.get('RESEND_API_KEY')
   const from   = Deno.env.get('RESEND_FROM_EMAIL')
   // Email clients need a real fetchable URL, not a bundled asset path — reuse
@@ -141,15 +148,20 @@ async function sendReceiptEmail(admin: ReturnType<typeof createClient>, booking:
   }
 
   const { subject, headline, note } =
-    stage === 'full'
+    stage === 'rider_changed'
+      ? { subject: `Your rider has changed — ${booking.reference}`, headline: 'Rider Updated', note: `Your Jubah order has a new rider: ${escapeHtml(booking.rider_name ?? '')}. Please update ICMS: open your convocation attendance form, choose <b>Runner</b> under Attire Pickup Option, and select this rider's name from the list.` }
+      : stage === 'full'
       ? { subject: `Payment received — ${booking.reference}`, headline: 'Payment Confirmed', note: 'Your Jubah order is now being processed.' }
       : stage === 'deposit'
         ? { subject: `Deposit received — ${booking.reference}`, headline: 'Deposit Confirmed', note: `A balance of RM${Number(booking.balance_due).toFixed(2)} is still due before delivery — you'll be able to pay it from your tracking page. This deposit is non-refundable.` }
         : { subject: `Balance received — ${booking.reference}`, headline: 'Fully Paid', note: 'Your Jubah order is now fully paid.' }
 
   const today = fmtDate()
+  // A rider change isn't a payment event — no payment rows, the booking may
+  // not even be paid yet.
   const paymentRows =
-    stage === 'deposit'
+    stage === 'rider_changed' ? ''
+    : stage === 'deposit'
       ? row('Deposit Paid', `RM${Number(booking.cost).toFixed(2)}`, { sub: today }) +
         row('Balance Due', `RM${Number(booking.balance_due).toFixed(2)}`) +
         // Total Due here means what's still owed right now — the deposit

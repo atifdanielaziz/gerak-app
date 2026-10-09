@@ -10,7 +10,7 @@ import { getPendingJubahBooking, clearPendingJubahBooking } from '../lib/pending
 import { JUBAH_STEP_LABEL, getJubahProgress } from '../lib/jubahStatus';
 import { JubahBalancePayment } from '../components/JubahBalancePayment';
 import { JubahStepper } from '../components/JubahStepper';
-import { JubahTutorialList } from '../components/JubahTutorials';
+import { JubahTutorialList, JubahTutorialLink } from '../components/JubahTutorials';
 import { JubahDocReplaceButton, DOC_REPLACE_SUCCESS_MSG } from '../components/JubahDocReplaceButton';
 import { customerReplaceJubahDocument, regenerateJubahCombinedPdf, getJubahCustomerDocUrl, openInNewTab, type JubahDocField, type JubahDocViewField } from '../lib/jubahDocs';
 
@@ -31,6 +31,9 @@ interface JubahBookingResult {
   balance_paid: boolean;
   balance_proof_url: string | null;
   created_at: string;
+  // Set when superadmin moved this order to another rider — the customer
+  // must then pick the new runner in ICMS.
+  rider_changed_at?: string | null;
 }
 
 // Full receipt fields — only fetched once the last-4 IC gate passes, kept
@@ -372,6 +375,20 @@ export const TrackJubah: React.FC = () => {
                       : b.payment_mode === 'postage' ? 'Postage' : 'Pickup'}
                   </span>
                 </div>
+
+                {/* Rider was changed by superadmin — the customer's ICMS
+                    Runner still points at the old rider until they update it. */}
+                {b.rider_changed_at && b.rider_name && !['collected', 'at_hub', 'delivered', 'cancelled'].includes(b.status) && (
+                  <div className="bg-amber-50 border border-amber-100 rounded-2xl p-3 flex flex-col gap-1">
+                    <p className="text-xs text-amber-800 font-semibold">
+                      Your rider has changed to {b.rider_name}.
+                    </p>
+                    <p className="text-xs text-amber-700">
+                      Please update ICMS: in your convocation attendance form, choose <b>Runner</b> and select <b>{b.rider_name}</b> from the list.
+                    </p>
+                    <JubahTutorialLink tutorialKey="icms" label="Watch: how to choose your runner in ICMS" className="mt-1" />
+                  </div>
+                )}
 
                 {/* Awaiting confirmation — proof uploaded at booking time, just
                     waiting on an admin to review it. Still cancellable from

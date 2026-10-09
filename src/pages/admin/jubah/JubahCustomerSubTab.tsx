@@ -8,6 +8,7 @@ import { WaIcon, toWa } from '../../../lib/whatsapp';
 import { AdminSearchInput } from '../../../components/AdminSearchInput';
 import { getJubahDocSignedUrl, openInNewTab, staffReplaceJubahDocument, regenerateJubahCombinedPdf, type JubahDocField } from '../../../lib/jubahDocs';
 import { JubahDocReplaceButton } from '../../../components/JubahDocReplaceButton';
+import { JubahChangeRider } from '../../../components/JubahChangeRider';
 import { copyToClipboard } from '../../../lib/clipboard';
 import { ReceiptCard } from '../../../components/Receipt';
 import { JubahStepper } from '../../../components/JubahStepper';
@@ -1096,6 +1097,13 @@ export function JubahCustomerSubTab({
                   <p className="text-xs font-semibold text-slate-700">{b.reference}</p>
                 </div>
               </div>
+              {isSuperAdmin && (
+                <JubahChangeRider bookingId={b.id} status={b.status} showToast={showToast}
+                  onChanged={name => {
+                    setSelected(prev => prev?.id === b.id ? { ...prev, rider_name: name } : prev);
+                    reload();
+                  }} />
+              )}
             </div>
 
             {/* Receipt — same component/PDF export customers see, built

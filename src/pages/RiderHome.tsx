@@ -4,6 +4,7 @@ import { supabase } from '../lib/supabase';
 import { WaIcon, toWa } from '../lib/whatsapp';
 import { getJubahDocSignedUrl, openInNewTab, staffReplaceJubahDocument, regenerateJubahCombinedPdf, type JubahDocField } from '../lib/jubahDocs';
 import { JubahDocReplaceButton } from '../components/JubahDocReplaceButton';
+import { JubahChangeRider } from '../components/JubahChangeRider';
 import { stampWatermark } from '../lib/watermark';
 import { useLoadOnActive } from '../hooks/useLoadOnActive';
 import {
@@ -934,6 +935,13 @@ export const RiderHome: React.FC = () => {
                       </div>
                     )}
                   </div>
+
+                  {/* Superadmin-only: move this order to another rider. The
+                      job may leave this rider's own list, so go back to it. */}
+                  {user.role === 'superadmin' && (
+                    <JubahChangeRider bookingId={selectedJob.id} status={selectedJob.status} showToast={showToast}
+                      onChanged={() => { setSelectedJob(null); setJubahView('list'); void loadJubahJobs(); }} />
+                  )}
 
                   {/* View Full Details button */}
                   <button
