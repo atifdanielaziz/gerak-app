@@ -20,6 +20,8 @@ interface JubahBalancePaymentProps {
   balanceProofUrl: string | null;
   bankDetails: JubahBankDetails | null;
   onSubmitted: (proofPathOrSubmitted: string) => void;
+  /** jubah-qr path of the account above (shared qr.jpg or a direct payee's). */
+  qrPath?: string;
 }
 
 // Deposit-balance upload flow — shown from both Jubah.tsx's post-booking
@@ -29,7 +31,7 @@ interface JubahBalancePaymentProps {
 // instance owns its own file/submitting/error state, so TrackJubah.tsx
 // rendering one per search result needs no id-keyed state of its own.
 export function JubahBalancePayment({
-  reference, hpNumber, fullName, balanceDue, balancePaid, balanceProofUrl, bankDetails, onSubmitted,
+  reference, hpNumber, fullName, balanceDue, balancePaid, balanceProofUrl, bankDetails, onSubmitted, qrPath,
 }: JubahBalancePaymentProps) {
   const [file, setFile] = useState<File | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
@@ -111,7 +113,7 @@ export function JubahBalancePayment({
             <div className="bg-blue-50 border border-blue-100 rounded-xl p-3 flex flex-col gap-1.5 text-xs">
               <div className="flex items-center justify-between">
                 <span className="text-blue-400 font-semibold">Bank Details</span>
-                <JubahQrButton />
+                <JubahQrButton key={qrPath} path={qrPath} />
               </div>
               <div className="bg-white border border-blue-100 rounded-xl px-3 py-2.5">
                 <JubahBankDetails bank={bankDetails} tone="blue" />

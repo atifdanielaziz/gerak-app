@@ -248,13 +248,16 @@ export function JubahCustomerSubTab({
     // Initial payment is never gated on payment_path being set — the
     // customer can't even submit a booking without attaching that proof, so
     // it's always present by the time a booking row exists at all.
-    const canConfirmPayment = b.status === 'ordered';
+    // Confirming money needs someone who can see it land — server-side
+    // (jubah_can_confirm_payment) that's superadmin, or the rider when the
+    // booking's payee is their own account. From this admin screen: superadmin.
+    const canConfirmPayment = b.status === 'ordered' && isSuperAdmin;
     // Balance, by contrast, IS gated on balance_proof_url — unlike the
     // initial proof, submitting it is a genuinely separate, optional step
     // that can lag behind the deposit confirmation by any amount of time,
     // so there's a real window where "Confirm Balance" would otherwise be
     // clickable with nothing to confirm against yet.
-    const canConfirmBalance = b.payment_mode === 'deposit' && b.status !== 'ordered' && b.status !== 'cancelled' && !b.balance_paid && !!b.balance_proof_url;
+    const canConfirmBalance = isSuperAdmin && b.payment_mode === 'deposit' && b.status !== 'ordered' && b.status !== 'cancelled' && !b.balance_paid && !!b.balance_proof_url;
     return {
       canConfirmPayment,
       canConfirmBalance,
@@ -920,7 +923,7 @@ export function JubahCustomerSubTab({
                   {/* Was an unlabeled icon-only circle button here — easy to miss
                       next to the clearly labeled "Confirm" button for the initial
                       payment just below. Same action, matching visible label now. */}
-                  {!b.balance_paid && canManageJubah && (
+                  {!b.balance_paid && canManageJubah && isSuperAdmin && (
                     <button
                       type="button"
                       onClick={() => confirmBooking(b)}

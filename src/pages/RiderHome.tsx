@@ -68,6 +68,8 @@ type JubahJobRow = {
   rider_phone: string | null;
   needs_reconciliation: boolean;
   reconciliation_note: string | null;
+  // Rider whose own account this booking was paid into (null = shared).
+  payee_rider_id: string | null;
   created_at: string;
 };
 
@@ -129,7 +131,7 @@ export const RiderHome: React.FC = () => {
     if (!authUser) { setJubahLoading(false); return; }
     const { data, error } = await supabase
       .from('jubah_bookings')
-      .select('id, reference, full_name, ic_number, hp_number, email, matric_id, university, university_key, campus, faculty, remark, payment_mode, cost, balance_due, balance_paid, balance_paid_at, initial_paid, initial_paid_at, balance_proof_url, delivery_address, docs_path, payment_path, oscar_path, skpg_path, konvo_path, ic_path, status, rider_id, rider_name, rider_phone, needs_reconciliation, reconciliation_note, created_at')
+      .select('id, reference, full_name, ic_number, hp_number, email, matric_id, university, university_key, campus, faculty, remark, payment_mode, cost, balance_due, balance_paid, balance_paid_at, initial_paid, initial_paid_at, balance_proof_url, delivery_address, docs_path, payment_path, oscar_path, skpg_path, konvo_path, ic_path, status, rider_id, rider_name, rider_phone, needs_reconciliation, reconciliation_note, created_at, payee_rider_id')
       .eq('rider_id', authUser.id)
       .order('created_at', { ascending: false });
     if (error) console.error('[GERAK] jubah jobs load error:', error.message);
@@ -267,9 +269,14 @@ export const RiderHome: React.FC = () => {
   // JubahCustomerSubTab.tsx's getConfirmState/confirmBooking.
   const [confirmingJobId, setConfirmingJobId] = useState<string | null>(null);
 
+  // A rider can only confirm money paid into their OWN account (booking
+  // payee = this rider); shared-account bookings are confirmed by
+  // superadmin — same rule as jubah_can_confirm_payment server-side.
+  const mayConfirmMoney = (j: JubahJobRow) =>
+    user.role === 'superadmin' || (!!j.payee_rider_id && j.payee_rider_id === j.rider_id);
   const getJobConfirmState = (j: JubahJobRow) => ({
-    canConfirmPayment: j.status === 'ordered',
-    canConfirmBalance: j.payment_mode === 'deposit' && j.status !== 'ordered' && j.status !== 'cancelled' && !j.balance_paid && !!j.balance_proof_url,
+    canConfirmPayment: j.status === 'ordered' && mayConfirmMoney(j),
+    canConfirmBalance: mayConfirmMoney(j) && j.payment_mode === 'deposit' && j.status !== 'ordered' && j.status !== 'cancelled' && !j.balance_paid && !!j.balance_proof_url,
   });
 
   // Best-effort, same as the admin equivalent in JubahCustomerSubTab.tsx —

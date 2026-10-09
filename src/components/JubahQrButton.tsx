@@ -12,13 +12,15 @@ interface JubahQrButtonProps {
   // THIS instance renders the controls.
   canManage?: boolean;
   showToast?: (msg: string) => void;
+  /** Object path in jubah-qr: 'qr.jpg' (shared account) or payees/<rider>.jpg. */
+  path?: string;
 }
 
-// Payment QR code for the one shared Jubah bank account, so customers can
-// scan instead of typing account numbers. upsert:true so a new upload
-// overwrites the old file in place — nothing orphaned to separately
-// delete — plus a cache-busting query param.
-export function JubahQrButton({ canManage = false, showToast }: JubahQrButtonProps) {
+// Payment QR code for a Jubah payee — the shared account, or a direct-payee
+// rider's own account — so customers can scan instead of typing account
+// numbers. upsert:true so a new upload overwrites the old file in place —
+// nothing orphaned to separately delete — plus a cache-busting query param.
+export function JubahQrButton({ canManage = false, showToast, path = QR_PATH }: JubahQrButtonProps) {
   const { showConfirmModal } = useApp();
   const [open, setOpen] = useState(false);
   const [imgError, setImgError] = useState(false);
@@ -31,7 +33,7 @@ export function JubahQrButton({ canManage = false, showToast }: JubahQrButtonPro
   const [uploading, setUploading] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
-  const qrPath = QR_PATH;
+  const qrPath = path;
   const { data } = supabase.storage.from(QR_BUCKET).getPublicUrl(qrPath);
   const url = refreshKey ? `${data.publicUrl}?t=${refreshKey}` : data.publicUrl;
 

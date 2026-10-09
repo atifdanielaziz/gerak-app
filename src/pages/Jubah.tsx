@@ -12,7 +12,8 @@ import { WaIcon, toWa } from '../lib/whatsapp';
 import { ReceiptCard } from '../components/Receipt';
 import { JubahBalancePayment } from '../components/JubahBalancePayment';
 import { JubahQrButton } from '../components/JubahQrButton';
-import { JubahBankDetails } from '../components/JubahBankDetails';
+import { JubahBankDetails, type JubahBankInfo } from '../components/JubahBankDetails';
+import { getJubahPaymentTarget, payeeQrPath, SHARED_QR_PATH } from '../lib/jubahPayee';
 import { NativeSelect } from '../components/NativeSelect';
 import { buildJubahReceiptRows } from '../lib/receiptRows';
 import { getJubahProgress, JUBAH_STEP_LABEL } from '../lib/jubahStatus';
@@ -559,6 +560,26 @@ export const Jubah: React.FC = () => {
       .subscribe();
     return () => { supabase.removeChannel(channel); };
   }, []);
+
+  // Direct-payee riders (owners) are paid into their own account; everyone
+  // else's customers pay the shared account above. The rider in question is
+  // the one chosen on the form, or the booked rider after Book. Tagged with
+  // the rider it was loaded for so a previous rider's account never shows.
+  const payTargetRiderId = jubahBooking ? (jubahBooking.riderId ?? '') : selectedRiderId;
+  // bank is null when the rider isn't a direct payee (→ shared account).
+  const [payee, setPayee] = useState<{ riderId: string; bank: JubahBankInfo | null } | null>(null);
+  useEffect(() => {
+    if (!payTargetRiderId) return;
+    let cancelled = false;
+    getJubahPaymentTarget(payTargetRiderId).then(t => {
+      if (!cancelled) setPayee({ riderId: payTargetRiderId, bank: t?.payeeRiderId ? t.bank : null });
+    });
+    return () => { cancelled = true; };
+  }, [payTargetRiderId]);
+  const payeeLoaded = !!payee && payee.riderId === payTargetRiderId;
+  const directBank = payeeLoaded ? payee!.bank : null;
+  const payBank = directBank ?? bankDetails;
+  const payQrPath = directBank ? payeeQrPath(payTargetRiderId) : SHARED_QR_PATH;
 
   // Load doc fields for the selected university; fall back to UMPSA then hardcoded defaults
   useEffect(() => {
@@ -1633,11 +1654,18 @@ export const Jubah: React.FC = () => {
               <h3 className="text-sm font-semibold text-blue-800 flex items-center gap-1.5">
                 <Landmark className="w-4 h-4 text-slate-400" /> How to Pay
               </h3>
-              <JubahQrButton />
+              {selectedRiderId && payeeLoaded && <JubahQrButton key={payQrPath} path={payQrPath} />}
             </div>
-            {bankDetails ? (
+            {/* Where to pay depends on the rider (owners are paid directly),
+                so nothing is shown until one is chosen — a customer must
+                never transfer to an account that then changes under them. */}
+            {!selectedRiderId ? (
+              <p className="text-xs text-blue-600">Select a rider above to see where to pay.</p>
+            ) : !payeeLoaded ? (
+              <div className="flex justify-center py-3"><span className="w-4 h-4 rounded-full border-2 border-blue-200 border-t-blue-500 animate-spin" /></div>
+            ) : payBank ? (
               <div className="bg-white border border-blue-100 rounded-2xl px-4 py-3">
-                <JubahBankDetails bank={bankDetails} />
+                <JubahBankDetails bank={payBank} />
               </div>
             ) : (
               <p className="text-xs text-blue-600">Payment details not set yet — contact admin.</p>
@@ -1903,7 +1931,8 @@ export const Jubah: React.FC = () => {
                 balanceDue={jubahBooking.balanceDue}
                 balancePaid={liveBalancePaid}
                 balanceProofUrl={liveBalanceProofUrl}
-                bankDetails={bankDetails}
+                bankDetails={payeeLoaded ? payBank : null}
+                qrPath={payQrPath}
                 onSubmitted={proof => setLiveBalanceProofUrl(proof)}
               />
             </div>

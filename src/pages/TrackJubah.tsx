@@ -10,6 +10,8 @@ import { getPendingJubahBooking, clearPendingJubahBooking } from '../lib/pending
 import { JUBAH_STEP_LABEL, getJubahProgress } from '../lib/jubahStatus';
 import { JubahBalancePayment } from '../components/JubahBalancePayment';
 import { JubahStepper } from '../components/JubahStepper';
+import type { JubahBankInfo } from '../components/JubahBankDetails';
+import { getJubahPaymentTarget, payeeQrPath, SHARED_QR_PATH } from '../lib/jubahPayee';
 import { JubahTutorialList, JubahTutorialLink } from '../components/JubahTutorials';
 import { JubahDocReplaceButton, DOC_REPLACE_SUCCESS_MSG } from '../components/JubahDocReplaceButton';
 import { customerReplaceJubahDocument, regenerateJubahCombinedPdf, getJubahCustomerDocUrl, openInNewTab, type JubahDocField, type JubahDocViewField } from '../lib/jubahDocs';
@@ -34,6 +36,8 @@ interface JubahBookingResult {
   // Set when superadmin moved this order to another rider — the customer
   // must then pick the new runner in ICMS.
   rider_changed_at?: string | null;
+  // Rider whose own account this booking pays into; null = shared account.
+  payee_rider_id?: string | null;
 }
 
 // Full receipt fields — only fetched once the last-4 IC gate passes, kept
@@ -152,6 +156,8 @@ export const TrackJubah: React.FC = () => {
   // Shared Jubah bank account — one account for every rider/customer, set by
   // superadmin (JubahPriceSubTab.tsx). Public read, same as jubah_active.
   const [bankDetails, setBankDetails] = useState<{ name: string; account: string; holder: string } | null>(null);
+  // Direct-payee rider id → their account (see runSearch).
+  const [payeeBanks, setPayeeBanks] = useState<Record<string, JubahBankInfo>>({});
   useEffect(() => {
     supabase
       .from('app_settings')
@@ -192,6 +198,12 @@ export const TrackJubah: React.FC = () => {
     if (rpcError) { setError(rpcError.message || 'Something went wrong. Please try again.'); return; }
     const found = (data as JubahBookingResult[]) ?? [];
     setResults(found);
+
+    // Bookings paid to a direct-payee rider (owners) show that rider's own
+    // account for the balance; the rest use the shared account loaded above.
+    const payeeIds = Array.from(new Set(found.map(b => b.payee_rider_id).filter((x): x is string => !!x)));
+    const targets = await Promise.all(payeeIds.map(id => getJubahPaymentTarget(id)));
+    setPayeeBanks(Object.fromEntries(targets.filter((t): t is NonNullable<typeof t> => !!t?.payeeRiderId).map(t => [t.payeeRiderId as string, t.bank])));
 
     // They've now seen this booking's status directly — the "unfinished
     // booking" nudge on the landing page has done its job, so stop showing it.
@@ -424,7 +436,8 @@ export const TrackJubah: React.FC = () => {
                     balanceDue={b.balance_due}
                     balancePaid={b.balance_paid}
                     balanceProofUrl={b.balance_proof_url}
-                    bankDetails={bankDetails}
+                    bankDetails={(b.payee_rider_id && payeeBanks[b.payee_rider_id]) || bankDetails}
+                    qrPath={b.payee_rider_id && payeeBanks[b.payee_rider_id] ? payeeQrPath(b.payee_rider_id) : SHARED_QR_PATH}
                     onSubmitted={proof => setResults(prev => prev.map(r => r.id === b.id ? { ...r, balance_proof_url: proof } : r))}
                   />
                 )}
