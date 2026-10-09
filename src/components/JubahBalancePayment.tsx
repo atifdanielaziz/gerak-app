@@ -3,6 +3,7 @@ import { Upload, FileText, X, CheckCircle2 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { updateJubahBalanceProof } from '../lib/sheetsService';
 import { JubahQrButton } from './JubahQrButton';
+import { JubahBankDetails } from './JubahBankDetails';
 
 export interface JubahBankDetails {
   name: string;
@@ -112,17 +113,8 @@ export function JubahBalancePayment({
                 <span className="text-blue-400 font-semibold">Bank Details</span>
                 <JubahQrButton />
               </div>
-              <div className="flex items-center justify-between">
-                <span className="text-blue-400 font-semibold">Bank</span>
-                <span className="font-bold text-blue-800">{bankDetails.name}</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-blue-400 font-semibold">Account No.</span>
-                <span className="font-bold text-blue-800 font-mono">{bankDetails.account}</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-blue-400 font-semibold">Account Holder</span>
-                <span className="font-bold text-blue-800">{bankDetails.holder}</span>
+              <div className="bg-white border border-blue-100 rounded-xl px-3 py-2.5">
+                <JubahBankDetails bank={bankDetails} tone="blue" />
               </div>
               <p className="text-blue-600 font-semibold pt-1 border-t border-blue-100 mt-0.5">
                 Put your reference <span className="font-mono">{reference}</span> in the transfer note.

@@ -12,6 +12,7 @@ import { WaIcon, toWa } from '../lib/whatsapp';
 import { ReceiptCard } from '../components/Receipt';
 import { JubahBalancePayment } from '../components/JubahBalancePayment';
 import { JubahQrButton } from '../components/JubahQrButton';
+import { JubahBankDetails } from '../components/JubahBankDetails';
 import { NativeSelect } from '../components/NativeSelect';
 import { buildJubahReceiptRows } from '../lib/receiptRows';
 import { getJubahProgress, JUBAH_STEP_LABEL } from '../lib/jubahStatus';
@@ -1635,19 +1636,8 @@ export const Jubah: React.FC = () => {
               <JubahQrButton />
             </div>
             {bankDetails ? (
-              <div className="bg-white border border-blue-100 rounded-2xl p-4 flex flex-col gap-2 text-xs">
-                <div className="flex items-center justify-between">
-                  <span className="text-slate-400 font-semibold">Bank</span>
-                  <span className="font-bold text-slate-800">{bankDetails.name}</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-slate-400 font-semibold">Account No.</span>
-                  <span className="font-bold text-slate-800 font-mono">{bankDetails.account}</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-slate-400 font-semibold">Account Holder</span>
-                  <span className="font-bold text-slate-800">{bankDetails.holder}</span>
-                </div>
+              <div className="bg-white border border-blue-100 rounded-2xl px-4 py-3">
+                <JubahBankDetails bank={bankDetails} />
               </div>
             ) : (
               <p className="text-xs text-blue-600">Payment details not set yet — contact admin.</p>
