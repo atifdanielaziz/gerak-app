@@ -164,13 +164,9 @@ export const Jubah: React.FC = () => {
   const [depositAmount,     setDepositAmount]     = useState(25);
   const [ridersLoading,     setRidersLoading]     = useState(false);
   // Shown inline directly under the rider dropdown once one is picked — no
-  // extra tap needed. riderCopied tracks which field's Copy button last
-  // succeeded (brief checkmark feedback); riderIcCopying/riderIcError cover
-  // the full-IC fetch specifically, since that's an async RPC call rather
-  // than an instant clipboard write.
-  const [riderCopied,       setRiderCopied]       = useState<'name' | 'phone' | 'ic' | null>(null);
-  const [riderIcCopying,    setRiderIcCopying]    = useState(false);
-  const [riderIcError,      setRiderIcError]      = useState<string | null>(null);
+  // extra tap needed. riderCopied gives the name's Copy button a brief
+  // checkmark after it succeeds.
+  const [riderCopied,       setRiderCopied]       = useState(false);
 
   // Address state — only used for postage mode
   const [addressLine1,      setAddressLine1]      = useState('');
@@ -1402,7 +1398,7 @@ export const Jubah: React.FC = () => {
             </h3>
             <NativeSelect
               value={selectedRiderId}
-              onChange={id => { setSelectedRiderId(id); setRiderCopied(null); setRiderIcError(null); }}
+              onChange={id => { setSelectedRiderId(id); setRiderCopied(false); }}
               options={riders.map(r => ({ value: r.id, label: r.name }))}
               placeholder={
                 ridersLoading
@@ -1421,31 +1417,16 @@ export const Jubah: React.FC = () => {
             )}
 
             {/* Rider details — shown right away once picked, no extra tap.
-                I/C Number stays masked on screen; Copy fetches the full
-                number via get_jubah_rider_full_ic and puts it straight on
-                the clipboard without ever rendering it. */}
+                In ICMS the customer just picks the Runner by name, so only
+                the name has Copy; I/C stays masked and H/P is WhatsApp-only. */}
             {(() => {
               const r = riders.find(rd => rd.id === selectedRiderId);
               if (!r) return null;
 
-              const copy = async (value: string, field: 'name' | 'phone') => {
+              const copy = async (value: string) => {
                 if (!(await copyToClipboard(value))) return;
-                setRiderCopied(field);
-                setTimeout(() => setRiderCopied(prev => (prev === field ? null : prev)), 2000);
-              };
-              const copyFullIc = async () => {
-                setRiderIcCopying(true);
-                setRiderIcError(null);
-                const { data, error } = await supabase.rpc('get_jubah_rider_full_ic', { p_rider_id: r.id });
-                setRiderIcCopying(false);
-                if (error || !data?.success) {
-                  setRiderIcError(data?.error ?? error?.message ?? 'Could not copy right now.');
-                  setTimeout(() => setRiderIcError(null), 2500);
-                  return;
-                }
-                if (!(await copyToClipboard(data.ic_number))) return;
-                setRiderCopied('ic');
-                setTimeout(() => setRiderCopied(prev => (prev === 'ic' ? null : prev)), 2000);
+                setRiderCopied(true);
+                setTimeout(() => setRiderCopied(false), 2000);
               };
               const icDigits = r.ic_number ? r.ic_number.replace(/\D/g, '') : '';
 
@@ -1457,9 +1438,9 @@ export const Jubah: React.FC = () => {
                       <span className="text-xs font-normal text-slate-400">Runner Name</span>
                       <span className="text-sm font-semibold text-slate-800 truncate">{r.name}</span>
                     </div>
-                    <button type="button" onPointerDown={e => { e.preventDefault(); copy(r.name, 'name'); }}
+                    <button type="button" onPointerDown={e => { e.preventDefault(); copy(r.name); }}
                       className="w-10 h-10 flex items-center justify-center rounded-lg text-slate-400 active:scale-90 transition-transform shrink-0">
-                      {riderCopied === 'name' ? <Check className="w-4 h-4 text-emerald-500" /> : <Copy className="w-4 h-4" />}
+                      {riderCopied ? <Check className="w-4 h-4 text-emerald-500" /> : <Copy className="w-4 h-4" />}
                     </button>
                   </div>
 
@@ -1480,16 +1461,8 @@ export const Jubah: React.FC = () => {
                           ) : r.ic_number}
                         </span>
                       </div>
-                      <button type="button" disabled={riderIcCopying} onPointerDown={e => { e.preventDefault(); copyFullIc(); }}
-                        className="w-10 h-10 flex items-center justify-center rounded-lg text-slate-400 active:scale-90 transition-transform shrink-0 disabled:opacity-50">
-                        {riderIcCopying
-                          ? <span className="w-4 h-4 rounded-full border-2 border-slate-300 border-t-transparent animate-spin" />
-                          : riderCopied === 'ic' ? <Check className="w-4 h-4 text-emerald-500" />
-                          : <Copy className="w-4 h-4" />}
-                      </button>
                     </div>
                   )}
-                  {riderIcError && <p className="text-xs text-danger font-semibold -mt-1">{riderIcError}</p>}
 
                   {/* Phone */}
                   {r.phone && (
@@ -1508,10 +1481,6 @@ export const Jubah: React.FC = () => {
                         >
                           <WaIcon className="w-4.5 h-4.5" />
                         </a>
-                        <button type="button" onPointerDown={e => { e.preventDefault(); copy(r.phone!, 'phone'); }}
-                          className="w-10 h-10 flex items-center justify-center rounded-lg text-slate-400 active:scale-90 transition-transform">
-                          {riderCopied === 'phone' ? <Check className="w-4 h-4 text-emerald-500" /> : <Copy className="w-4 h-4" />}
-                        </button>
                       </div>
                     </div>
                   )}
