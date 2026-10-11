@@ -134,6 +134,7 @@ export const Jubah: React.FC = () => {
   const facultyDirectoryConfigured = facultyState.uni === landingUniversity && facultyState.configured;
   const [matricId, setMatricId]       = useState('');
   const [paymentMode, setPaymentMode]   = useState<'pickup' | 'postage' | 'deposit'>('pickup');
+  const [depositOpen, setDepositOpen]   = useState(true);
   const [postageZone, setPostageZone]   = useState<'SM' | 'SS'>('SM');
   const [depositMethod, setDepositMethod] = useState<'pickup' | 'postage'>('pickup');
   const [remark, setRemark]           = useState<typeof REMARKS[number]>('Degree');
@@ -544,7 +545,7 @@ export const Jubah: React.FC = () => {
     const fetchPaymentSettings = () => supabase
       .from('app_settings')
       .select('key, value')
-      .in('key', ['jubah_bank_name', 'jubah_bank_account_number', 'jubah_bank_account_holder', 'jubah_deposit_amount'])
+      .in('key', ['jubah_bank_name', 'jubah_bank_account_number', 'jubah_bank_account_holder', 'jubah_deposit_amount', 'jubah_deposit_open'])
       .then(({ data }) => {
         const name   = data?.find(r => r.key === 'jubah_bank_name')?.value;
         const account = data?.find(r => r.key === 'jubah_bank_account_number')?.value;
@@ -552,6 +553,13 @@ export const Jubah: React.FC = () => {
         const configuredDeposit = Number(data?.find(r => r.key === 'jubah_deposit_amount')?.value);
         if (name && account && holder) setBankDetails({ name, account, holder });
         if (Number.isFinite(configuredDeposit) && configuredDeposit > 0) setDepositAmount(configuredDeposit);
+        // Superadmin can close Deposit for new bookings (near collection
+        // day). Enforced server-side by an insert trigger; here it just
+        // hides the option and moves a restored/selected Deposit choice
+        // back to Full Payment.
+        const open = data?.find(r => r.key === 'jubah_deposit_open')?.value !== 'false';
+        setDepositOpen(open);
+        if (!open) setPaymentMode(m => (m === 'deposit' ? 'pickup' : m));
       });
     fetchPaymentSettings();
     const channel = supabase
@@ -823,6 +831,7 @@ export const Jubah: React.FC = () => {
     if (isPostageDelivery && !fullAddress) { alert('Please enter your delivery address.'); return; }
     if (!allFilesReady) { setFileError('Please upload all required documents.'); return; }
     if (!paymentProof) { setFileError('Please upload your proof of payment.'); return; }
+    if (paymentMode === 'deposit' && !depositOpen) { setFileError('Deposit is closed. Please choose Full Payment.'); return; }
 
     // crypto.getRandomValues, not Math.random — the 4-char Math.random suffix
     // gave ~1.3M combos/university/year with a non-cryptographic RNG, cheap
@@ -1254,7 +1263,8 @@ export const Jubah: React.FC = () => {
               <ClipboardList className="w-4 h-4 text-slate-400" /> Service Option
             </h3>
 
-            {/* Deposit */}
+            {/* Deposit — hidden while superadmin has it closed */}
+            {depositOpen && (
             <label className={`flex items-start gap-3 p-3.5 rounded-2xl border cursor-pointer transition ${paymentMode === 'deposit' ? 'border-slate-900' : 'border-slate-100 hover:bg-slate-50'}`}>
               <input type="radio" name="paymentMode" value="deposit" checked={paymentMode === 'deposit'} onChange={() => setPaymentMode('deposit')} className="mt-0.5 accent-slate-900 shrink-0" />
               <div className="flex-1">
@@ -1322,6 +1332,7 @@ export const Jubah: React.FC = () => {
                 )}
               </div>
             </label>
+            )}
 
             {/* Full Pickup */}
             <label className={`flex items-start gap-3 p-3.5 rounded-2xl border cursor-pointer transition ${paymentMode === 'pickup' ? 'border-slate-900' : 'border-slate-100 hover:bg-slate-50'}`}>

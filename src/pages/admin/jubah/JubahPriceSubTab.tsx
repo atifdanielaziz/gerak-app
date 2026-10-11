@@ -221,13 +221,39 @@ export function JubahPriceSubTab({ active, isSuperAdmin, showToast, jubahUnivers
   const [depositLocked, setDepositLocked] = useState(true);
   const [savingDeposit, setSavingDeposit] = useState(false);
 
+  // Whether customers can still choose Deposit for NEW bookings. Closed
+  // near collection day; existing deposit bookings can still pay their
+  // balance. Server-enforced by an insert trigger (set_jubah_deposit_open).
+  const [depositOpen, setDepositOpen] = useState(true);
+  const [savingDepositOpen, setSavingDepositOpen] = useState(false);
+
   const loadDeposit = useCallback(async () => {
-    const { data } = await supabase.from('app_settings').select('value').eq('key', 'jubah_deposit_amount').maybeSingle();
-    const value = data?.value ?? '25';
+    const { data } = await supabase.from('app_settings').select('key, value').in('key', ['jubah_deposit_amount', 'jubah_deposit_open']);
+    const value = data?.find(r => r.key === 'jubah_deposit_amount')?.value ?? '25';
     setDepositDraft(value);
     setDepositOriginal(value);
     setDepositLocked(true);
+    setDepositOpen(data?.find(r => r.key === 'jubah_deposit_open')?.value !== 'false');
   }, []);
+
+  const toggleDepositOpen = () => {
+    const next = !depositOpen;
+    showConfirmModal({
+      title: next ? 'Open Deposit?' : 'Close Deposit?',
+      message: next
+        ? 'Customers can choose Deposit again for new bookings.'
+        : 'New bookings must pay in full. Customers who already paid a deposit can still pay their balance as usual.',
+      confirmLabel: next ? 'OPEN DEPOSIT' : 'CLOSE DEPOSIT',
+      onConfirm: async () => {
+        setSavingDepositOpen(true);
+        const { data, error } = await supabase.rpc('set_jubah_deposit_open', { p_open: next });
+        setSavingDepositOpen(false);
+        if (error || !data?.success) { showToast(data?.error ?? 'Failed to update.'); return; }
+        setDepositOpen(next);
+        showToast(next ? 'Deposit is open for new bookings.' : 'Deposit closed — new bookings pay in full.');
+      },
+    });
+  };
 
   useLoadOnActive(active, loadDeposit);
 
@@ -411,6 +437,20 @@ export function JubahPriceSubTab({ active, isSuperAdmin, showToast, jubahUnivers
         <p className="text-xs text-slate-400 font-semibold -mt-1.5">
           One deposit amount shared across every university and Jubah service.
         </p>
+        <div className="flex items-center justify-between gap-3 bg-white border border-amber-100 rounded-xl px-3 py-2.5">
+          <div className="min-w-0">
+            <span className="block text-xs font-semibold text-slate-700">Deposit option for new bookings</span>
+            <span className={`block text-[11px] font-semibold ${depositOpen ? 'text-emerald-600' : 'text-red-500'}`}>
+              {depositOpen ? 'Open — customers can pay a deposit' : 'Closed — new bookings pay in full'}
+            </span>
+          </div>
+          {isSuperAdmin && (
+            <button type="button" disabled={savingDepositOpen} onClick={toggleDepositOpen}
+              className={`shrink-0 px-3 py-2 rounded-xl text-xs font-semibold border transition active:scale-95 disabled:opacity-50 ${depositOpen ? 'border-red-200 text-red-500 bg-white' : 'border-emerald-200 text-emerald-600 bg-white'}`}>
+              {savingDepositOpen ? 'Saving…' : depositOpen ? 'Close Deposit' : 'Open Deposit'}
+            </button>
+          )}
+        </div>
         {isSuperAdmin ? (
           <div className="flex gap-2 items-end">
             <div className="flex-1 flex flex-col gap-1.5">
