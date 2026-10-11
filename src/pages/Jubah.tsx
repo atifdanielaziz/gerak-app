@@ -1259,13 +1259,17 @@ export const Jubah: React.FC = () => {
               <ClipboardList className="w-4 h-4 text-slate-400" /> Service Option
             </h3>
 
-            {/* Deposit — hidden while superadmin has it closed */}
-            {depositOpen && (
-            <label className={`flex items-start gap-3 p-3.5 rounded-2xl border cursor-pointer transition ${paymentMode === 'deposit' ? 'border-slate-900' : 'border-slate-100 hover:bg-slate-50'}`}>
-              <input type="radio" name="paymentMode" value="deposit" checked={paymentMode === 'deposit'} onChange={() => setPaymentMode('deposit')} className="mt-0.5 accent-slate-900 shrink-0" />
+            {/* Deposit — faded and unselectable while superadmin has it closed */}
+            <label className={`flex items-start gap-3 p-3.5 rounded-2xl border transition ${
+              !depositOpen ? 'border-slate-100 opacity-50 cursor-not-allowed'
+              : paymentMode === 'deposit' ? 'border-slate-900 cursor-pointer' : 'border-slate-100 hover:bg-slate-50 cursor-pointer'}`}>
+              <input type="radio" name="paymentMode" value="deposit" checked={paymentMode === 'deposit'} disabled={!depositOpen} onChange={() => setPaymentMode('deposit')} className="mt-0.5 accent-slate-900 shrink-0" />
               <div className="flex-1">
                 <span className={`text-xs font-semibold block ${paymentMode === 'deposit' ? 'text-slate-900' : 'text-slate-700'}`}>
                   Deposit ({formatServicePrice(depositAmount)}) — Pay before robe Collection date
+                  {!depositOpen && (
+                    <span className="ml-1.5 inline-block align-middle bg-slate-200 text-slate-600 text-[10px] font-bold px-1.5 py-0.5 rounded">CLOSED</span>
+                  )}
                 </span>
                 <span className="text-xs text-slate-400 leading-relaxed block mt-0.5">
                   Pay a small deposit now to secure your booking. Pay the remaining balance <span className="font-bold text-slate-500">1 day before collection day</span> via Track My Order. <span className="bg-yellow-200 text-slate-800 font-semibold px-1 rounded">The deposit is non-refundable once paid — you can cancel for free before paying it, but not after.</span>
@@ -1328,7 +1332,6 @@ export const Jubah: React.FC = () => {
                 )}
               </div>
             </label>
-            )}
 
             {/* Full Pickup */}
             <label className={`flex items-start gap-3 p-3.5 rounded-2xl border cursor-pointer transition ${paymentMode === 'pickup' ? 'border-slate-900' : 'border-slate-100 hover:bg-slate-50'}`}>
