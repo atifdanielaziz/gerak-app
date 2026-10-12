@@ -18,6 +18,7 @@ type JubahRider = {
 type JubahAssignment = {
   id: string; rider_id: string; name: string; drop_point: string | null; method: string; campus: string;
   ic_number: string | null; phone: string | null;
+  no_order_limit?: boolean;
 };
 
 // Flattened for the "Add Assignment" campus picker — a rider can now be
@@ -389,6 +390,7 @@ export const JubahRiderSubTab = forwardRef<JubahRiderSubTabHandle, JubahRiderSub
   const [jubahRidersLoading, setJubahRidersLoading] = useState(false);
   const [jubahAssignments, setJubahAssignments] = useState<JubahAssignment[]>([]);
   const [dirSheet, setDirSheet] = useState<JubahAssignment | null>(null);
+  const [savingNoLimit, setSavingNoLimit] = useState(false);
   const [jubahSheetRider, setJubahSheetRider] = useState<JubahRider | null>(null);
   const [jubahMethodDraft, setJubahMethodDraft] = useState<'pickup' | 'postage' | ''>('');
   const [jubahDropPointDraft, setJubahDropPointDraft] = useState('');
@@ -483,14 +485,14 @@ export const JubahRiderSubTab = forwardRef<JubahRiderSubTabHandle, JubahRiderSub
     if (riderIds.length > 0) {
       const { data: assignData } = await supabase
         .from('jubah_rider_assignments')
-        .select('id, rider_id, drop_point, method, campus')
+        .select('id, rider_id, drop_point, method, campus, no_order_limit')
         .in('rider_id', riderIds)
         .in('campus', targetCampuses)
         .eq('is_active', true)
         .order('created_at');
       const profileMap = Object.fromEntries(scopedRiders.map((r: JubahRider) => [r.id, r]));
       setJubahAssignments(
-        (assignData ?? []).map((a: { id: string; rider_id: string; drop_point: string | null; method: string; campus: string }) => {
+        (assignData ?? []).map((a: { id: string; rider_id: string; drop_point: string | null; method: string; campus: string; no_order_limit: boolean }) => {
           const p = profileMap[a.rider_id] as JubahRider | undefined;
           return { ...a, name: p?.name ?? '—', ic_number: p?.ic_number ?? null, phone: p?.phone ?? null };
         })
@@ -611,7 +613,10 @@ export const JubahRiderSubTab = forwardRef<JubahRiderSubTabHandle, JubahRiderSub
                         <td className="py-2.5 pr-4 text-slate-600 font-semibold align-top whitespace-nowrap">
                           {a.method === 'pickup' ? 'Pickup Only' : a.method === 'postage' ? 'Pickup & Postage' : '—'}
                         </td>
-                        <td className="py-2.5 pr-4 font-semibold text-slate-800 align-top">{a.name}</td>
+                        <td className="py-2.5 pr-4 font-semibold text-slate-800 align-top">
+                          {a.name}
+                          {a.no_order_limit && <span className="ml-1.5 rounded-full bg-emerald-50 border border-emerald-100 px-1.5 py-0.5 text-[9px] font-semibold text-emerald-600 whitespace-nowrap">No limit</span>}
+                        </td>
                         <td className="py-2.5 pr-4 font-mono text-slate-700 align-top whitespace-nowrap">{a.ic_number || '—'}</td>
                         <td className="py-2.5 text-slate-700 font-semibold align-top whitespace-nowrap">
                           <div className="flex items-center gap-1.5">
@@ -679,6 +684,36 @@ export const JubahRiderSubTab = forwardRef<JubahRiderSubTabHandle, JubahRiderSub
                     </div>
                   </div>
                 </div>
+
+                {/* Special case: keep this rider bookable for this method
+                    after the order cap (e.g. Atif for UMPSA Pickup).
+                    Superadmin only — also enforced by a DB trigger. */}
+                {isSuperAdmin && (
+                  <div className="flex items-center justify-between gap-3 bg-white border border-slate-100 rounded-2xl px-4 py-3">
+                    <div className="min-w-0">
+                      <span className="block text-xs font-semibold text-slate-700">No order limit</span>
+                      <span className={`block text-[11px] font-semibold ${dirSheet.no_order_limit ? 'text-emerald-600' : 'text-slate-400'}`}>
+                        {dirSheet.no_order_limit
+                          ? `On — customers can still pick this rider for ${dirSheet.method === 'pickup' ? 'Pickup' : 'Postage'} after the cap`
+                          : 'Off — hidden from customers once the order cap is reached'}
+                      </span>
+                    </div>
+                    <button type="button" disabled={savingNoLimit}
+                      onClick={async () => {
+                        const next = !dirSheet.no_order_limit;
+                        setSavingNoLimit(true);
+                        const { data, error } = await supabase.rpc('set_jubah_rider_no_order_limit', { p_assignment_id: dirSheet.id, p_on: next });
+                        setSavingNoLimit(false);
+                        if (error || !data?.success) { showToast(data?.error ?? 'Failed to update.'); return; }
+                        setDirSheet({ ...dirSheet, no_order_limit: next });
+                        setJubahAssignments(prev => prev.map(a => (a.id === dirSheet.id ? { ...a, no_order_limit: next } : a)));
+                        showToast(next ? `${dirSheet.name}: no order limit.` : `${dirSheet.name}: order limit applies again.`);
+                      }}
+                      className={`shrink-0 px-3 py-2 rounded-xl text-xs font-semibold border transition active:scale-95 disabled:opacity-50 ${dirSheet.no_order_limit ? 'border-red-200 text-red-500 bg-white' : 'border-emerald-200 text-emerald-600 bg-white'}`}>
+                      {savingNoLimit ? 'Saving…' : dirSheet.no_order_limit ? 'Turn Off' : 'Turn On'}
+                    </button>
+                  </div>
+                )}
               </div>
             </div>
           </div>
