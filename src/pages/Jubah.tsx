@@ -425,10 +425,11 @@ export const Jubah: React.FC = () => {
   const pickupPrice       = pricing[remark]?.['pickup']  ?? 70;
   const postagePrice      = pricing[remark]?.['postage'] ?? 90;
   const isPostageDelivery = paymentMode === 'postage' || (paymentMode === 'deposit' && depositMethod === 'postage');
-  const ssCharge          = isPostageDelivery && postageZone === 'SS' ? 10 : 0;
+  // Sabah & Sarawak has its own price (postage_ss); old flat +RM10 if unset.
+  const ssPrice           = pricing[remark]?.['postage_ss'] ?? postagePrice + 10;
   const cost = paymentMode === 'deposit'
     ? depositAmount
-    : customQuote?.agreed_price ?? (paymentMode === 'postage' ? postagePrice + ssCharge : pickupPrice);
+    : customQuote?.agreed_price ?? (paymentMode === 'postage' ? (postageZone === 'SS' ? ssPrice : postagePrice) : pickupPrice);
   const formatServicePrice = (amount: number) => `RM${Number.isInteger(amount) ? amount : amount.toFixed(2)}`;
 
   const applyResolvedQuote = (data: { agreed_price: number; customer_phone?: string; rider_id?: string; rider_name?: string; campus?: string; payment_mode?: 'pickup' | 'postage'; expires_at: string }) => {
@@ -1322,7 +1323,7 @@ export const Jubah: React.FC = () => {
                             <span className="font-normal text-slate-400">
                               {zone === 'SM'
                                 ? formatServicePrice(postagePrice)
-                                : `${formatServicePrice(postagePrice)}+${formatServicePrice(10)}`}
+                                : formatServicePrice(ssPrice)}
                             </span>
                           </button>
                         ))}
@@ -1373,7 +1374,7 @@ export const Jubah: React.FC = () => {
                         <span className="font-normal text-slate-400">
                           {zone === 'SM'
                             ? formatServicePrice(postagePrice)
-                            : `${formatServicePrice(postagePrice)}+${formatServicePrice(10)}`}
+                            : formatServicePrice(ssPrice)}
                         </span>
                       </button>
                     ))}

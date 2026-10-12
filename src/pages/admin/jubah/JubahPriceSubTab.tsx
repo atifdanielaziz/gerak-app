@@ -74,7 +74,7 @@ export function JubahPriceSubTab({ active, isSuperAdmin, showToast, jubahUnivers
       const drafts: Record<string, string> = {};
       const locked: Record<string, boolean> = {};
       (pricesData as JubahPrice[]).forEach(p => {
-        const key = `${p.remark}_${p.payment_mode}_${p.university}`;
+        const key = `${p.remark}|${p.payment_mode}|${p.university}`;
         drafts[key] = String(p.price);
         locked[key] = true;
       });
@@ -98,7 +98,7 @@ export function JubahPriceSubTab({ active, isSuperAdmin, showToast, jubahUnivers
     if (dirtyKeys.length === 0) return;
     setSavingAllPrices(true);
     const results = await Promise.all(dirtyKeys.map(async key => {
-      const [remark, paymentMode, university] = key.split('_');
+      const [remark, paymentMode, university] = key.split('|'); // '|' since 'postage_ss' has an underscore
       const price = parseFloat(priceDrafts[key] ?? '0');
       if (isNaN(price) || price < 0) return { key, ok: false };
       const { error } = await supabase.rpc('set_jubah_price', {
@@ -629,13 +629,13 @@ export function JubahPriceSubTab({ active, isSuperAdmin, showToast, jubahUnivers
       {(['Master', 'PHD', 'Degree', 'Diploma'] as const).map(remark => (
         <div key={remark} className="border border-slate-100 rounded-2xl p-5 flex flex-col gap-4">
           <p className="text-xs font-black text-slate-700">{remark}</p>
-          <div className="grid grid-cols-2 gap-2">
-            {(['pickup', 'postage'] as const).map(mode => {
-              const key = `${remark}_${mode}_${jubahUniversity}`;
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+            {(['pickup', 'postage', 'postage_ss'] as const).map(mode => {
+              const key = `${remark}|${mode}|${jubahUniversity}`;
               return (
                 <div key={mode} className="flex flex-col gap-1.5">
                   <label className="text-xs font-normal text-slate-400">
-                    {mode === 'pickup' ? 'Pickup Only' : 'Pickup & Postage'}
+                    {mode === 'pickup' ? 'Pickup Only' : mode === 'postage' ? 'Postage — Semenanjung' : 'Postage — Sabah & Sarawak'}
                   </label>
                   <div className="flex items-center bg-slate-50 border border-slate-200 rounded-xl px-2 py-2 gap-1 focus-within:border-primary transition">
                     <span className="text-xs font-normal text-slate-400 shrink-0">RM</span>
