@@ -257,6 +257,37 @@ export function JubahPriceSubTab({ active, isSuperAdmin, showToast, jubahUnivers
 
   useLoadOnActive(active, loadDeposit);
 
+  // Whether customers can choose postage to Sabah & Sarawak. Global, like
+  // the deposit switch; create_jubah_booking refuses SS while it's closed.
+  const [ssOpen, setSsOpen] = useState(true);
+  const [savingSsOpen, setSavingSsOpen] = useState(false);
+
+  const loadSsOpen = useCallback(async () => {
+    const { data } = await supabase.from('app_settings').select('value').eq('key', 'jubah_ss_postage_open').maybeSingle();
+    setSsOpen(data?.value !== 'false');
+  }, []);
+
+  useLoadOnActive(active, loadSsOpen);
+
+  const toggleSsOpen = () => {
+    const next = !ssOpen;
+    showConfirmModal({
+      title: next ? 'Open Sabah & Sarawak?' : 'Close Sabah & Sarawak?',
+      message: next
+        ? 'Customers can choose postage to Sabah & Sarawak again.'
+        : 'New bookings can only post to Semenanjung. Existing Sabah & Sarawak bookings are not affected.',
+      confirmLabel: next ? 'OPEN SS' : 'CLOSE SS',
+      onConfirm: async () => {
+        setSavingSsOpen(true);
+        const { data, error } = await supabase.rpc('set_jubah_ss_postage_open', { p_open: next });
+        setSavingSsOpen(false);
+        if (error || !data?.success) { showToast(data?.error ?? 'Failed to update.'); return; }
+        setSsOpen(next);
+        showToast(next ? 'Sabah & Sarawak postage is open.' : 'Sabah & Sarawak postage closed.');
+      },
+    });
+  };
+
   const depositDirty = depositDraft !== depositOriginal;
   const handleSaveDeposit = async () => {
     const amount = Number(depositDraft);
@@ -625,6 +656,21 @@ export function JubahPriceSubTab({ active, isSuperAdmin, showToast, jubahUnivers
         <GraduationCap className="w-4 h-4" /> Jubah Pricing Matrix ({UNIVERSITY_MAP[jubahUniversity]?.shortLabel ?? 'UMPSA'})
       </h3>
       <p className="text-xs text-slate-400 font-semibold -mt-2">Set price per study level × service option, then tap Save Changes below.</p>
+
+      <div className="flex items-center justify-between gap-3 bg-white border border-slate-100 rounded-xl px-3 py-2.5">
+        <div className="min-w-0">
+          <span className="block text-xs font-semibold text-slate-700">Postage to Sabah &amp; Sarawak</span>
+          <span className={`block text-[11px] font-semibold ${ssOpen ? 'text-emerald-600' : 'text-red-500'}`}>
+            {ssOpen ? 'Open — customers can choose SS' : 'Closed — Semenanjung only'}
+          </span>
+        </div>
+        {isSuperAdmin && (
+          <button type="button" disabled={savingSsOpen} onClick={toggleSsOpen}
+            className={`shrink-0 px-3 py-2 rounded-xl text-xs font-semibold border transition active:scale-95 disabled:opacity-50 ${ssOpen ? 'border-red-200 text-red-500 bg-white' : 'border-emerald-200 text-emerald-600 bg-white'}`}>
+            {savingSsOpen ? 'Saving…' : ssOpen ? 'Close SS' : 'Open SS'}
+          </button>
+        )}
+      </div>
 
       {(['Master', 'PHD', 'Degree', 'Diploma'] as const).map(remark => (
         <div key={remark} className="border border-slate-100 rounded-2xl p-5 flex flex-col gap-4">

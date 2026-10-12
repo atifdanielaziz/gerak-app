@@ -135,6 +135,7 @@ export const Jubah: React.FC = () => {
   const [matricId, setMatricId]       = useState('');
   const [paymentMode, setPaymentMode]   = useState<'pickup' | 'postage' | 'deposit'>('pickup');
   const [depositOpen, setDepositOpen]   = useState(true);
+  const [ssOpen, setSsOpen]             = useState(true);
   const [postageZone, setPostageZone]   = useState<'SM' | 'SS'>('SM');
   const [depositMethod, setDepositMethod] = useState<'pickup' | 'postage'>('pickup');
   const [remark, setRemark]           = useState<typeof REMARKS[number]>('Degree');
@@ -542,7 +543,7 @@ export const Jubah: React.FC = () => {
     const fetchPaymentSettings = () => supabase
       .from('app_settings')
       .select('key, value')
-      .in('key', ['jubah_bank_name', 'jubah_bank_account_number', 'jubah_bank_account_holder', 'jubah_deposit_amount', 'jubah_deposit_open'])
+      .in('key', ['jubah_bank_name', 'jubah_bank_account_number', 'jubah_bank_account_holder', 'jubah_deposit_amount', 'jubah_deposit_open', 'jubah_ss_postage_open'])
       .then(({ data }) => {
         const name   = data?.find(r => r.key === 'jubah_bank_name')?.value;
         const account = data?.find(r => r.key === 'jubah_bank_account_number')?.value;
@@ -557,6 +558,10 @@ export const Jubah: React.FC = () => {
         const open = data?.find(r => r.key === 'jubah_deposit_open')?.value !== 'false';
         setDepositOpen(open);
         if (!open) setPaymentMode(m => (m === 'deposit' ? 'pickup' : m));
+        // Same for postage to Sabah & Sarawak (create_jubah_booking refuses it).
+        const ss = data?.find(r => r.key === 'jubah_ss_postage_open')?.value !== 'false';
+        setSsOpen(ss);
+        if (!ss) setPostageZone('SM');
       });
     fetchPaymentSettings();
     const channel = supabase
@@ -829,6 +834,7 @@ export const Jubah: React.FC = () => {
     if (!allFilesReady) { setFileError('Please upload all required documents.'); return; }
     if (!paymentProof) { setFileError('Please upload your proof of payment.'); return; }
     if (paymentMode === 'deposit' && !depositOpen) { setFileError('Deposit is closed. Please choose Full Payment.'); return; }
+    if (isPostageDelivery && postageZone === 'SS' && !ssOpen) { setFileError('Postage to Sabah & Sarawak is closed for now.'); return; }
 
     // crypto.getRandomValues, not Math.random — the 4-char Math.random suffix
     // gave ~1.3M combos/university/year with a non-cryptographic RNG, cheap
@@ -1312,14 +1318,18 @@ export const Jubah: React.FC = () => {
                           <button
                             key={zone}
                             type="button"
-                            onPointerDown={(e) => { e.preventDefault(); setPostageZone(zone); }}
-                            className={`w-full flex items-center justify-between px-3 py-2.5 rounded-2xl border text-xs font-semibold transition active:scale-[0.99] ${
+                            disabled={zone === 'SS' && !ssOpen}
+                            onPointerDown={(e) => { e.preventDefault(); if (zone === 'SS' && !ssOpen) return; setPostageZone(zone); }}
+                            className={`w-full flex items-center justify-between px-3 py-2.5 rounded-2xl border text-xs font-semibold transition active:scale-[0.99] disabled:opacity-50 disabled:cursor-not-allowed disabled:active:scale-100 ${
                               postageZone === zone
                                 ? 'border-slate-900 bg-white text-slate-900'
                                 : 'border-slate-100 bg-white text-slate-600'
                             }`}
                           >
-                            <span className="flex-1 text-left">{zone === 'SM' ? 'SM — Semenanjung Malaysia' : 'SS — Sabah & Sarawak'}</span>
+                            <span className="flex-1 text-left">{zone === 'SM' ? 'SM — Semenanjung Malaysia' : 'SS — Sabah & Sarawak'}
+                          {zone === 'SS' && !ssOpen && (
+                            <span className="ml-1.5 inline-block align-middle bg-slate-200 text-slate-600 text-[10px] font-bold px-1.5 py-0.5 rounded">CLOSED</span>
+                          )}</span>
                             <span className="font-normal text-slate-400">
                               {zone === 'SM'
                                 ? formatServicePrice(postagePrice)
@@ -1363,14 +1373,18 @@ export const Jubah: React.FC = () => {
                       <button
                         key={zone}
                         type="button"
-                        onPointerDown={(e) => { e.preventDefault(); setPostageZone(zone); }}
-                        className={`w-full flex items-center justify-between px-3 py-2.5 rounded-2xl border text-xs font-semibold transition active:scale-[0.99] ${
+                        disabled={zone === 'SS' && !ssOpen}
+                            onPointerDown={(e) => { e.preventDefault(); if (zone === 'SS' && !ssOpen) return; setPostageZone(zone); }}
+                        className={`w-full flex items-center justify-between px-3 py-2.5 rounded-2xl border text-xs font-semibold transition active:scale-[0.99] disabled:opacity-50 disabled:cursor-not-allowed disabled:active:scale-100 ${
                           postageZone === zone
                             ? 'border-slate-900 bg-white text-slate-900'
                             : 'border-slate-100 bg-white text-slate-600'
                         }`}
                       >
-                        <span className="flex-1 text-left">{zone === 'SM' ? 'SM — Semenanjung Malaysia' : 'SS — Sabah & Sarawak'}</span>
+                        <span className="flex-1 text-left">{zone === 'SM' ? 'SM — Semenanjung Malaysia' : 'SS — Sabah & Sarawak'}
+                          {zone === 'SS' && !ssOpen && (
+                            <span className="ml-1.5 inline-block align-middle bg-slate-200 text-slate-600 text-[10px] font-bold px-1.5 py-0.5 rounded">CLOSED</span>
+                          )}</span>
                         <span className="font-normal text-slate-400">
                           {zone === 'SM'
                             ? formatServicePrice(postagePrice)
