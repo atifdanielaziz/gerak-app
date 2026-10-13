@@ -591,7 +591,8 @@ export function JubahCustomerSubTab({
                     <th className="sticky top-0 bg-white py-2 pr-4 whitespace-nowrap">Robe Status</th>
                     <th className="sticky top-0 bg-white py-2 pr-4 whitespace-nowrap">Rider</th>
                     <th className="sticky top-0 bg-white py-2 pr-4 whitespace-nowrap">Confirm</th>
-                    <th className="sticky top-0 bg-white py-2 whitespace-nowrap">Receipt</th>
+                    <th className="sticky top-0 bg-white py-2 pr-4 whitespace-nowrap">Receipt</th>
+                    <th className="sticky top-0 bg-white py-2 whitespace-nowrap">Combined PDF</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -722,7 +723,7 @@ export function JubahCustomerSubTab({
                             );
                           })()}
                         </td>
-                        <td className="py-2.5 whitespace-nowrap">
+                        <td className="py-2.5 pr-4 whitespace-nowrap">
                           {(() => {
                             const buildDoc = () => buildJubahReceiptRows({
                               reference:    b.reference,
@@ -768,6 +769,32 @@ export function JubahCustomerSubTab({
                               </div>
                             );
                           })()}
+                        </td>
+                        {/* Combined PDF (OSCAR + SKPG + Konvo Slip + IC) — same
+                            signed-URL open as the job card's Documents list. */}
+                        <td className="py-2.5 align-top">
+                          <div className="flex items-center gap-1.5">
+                            {([false, true] as const).map(download => (
+                              <button
+                                key={String(download)}
+                                type="button"
+                                disabled={!b.docs_path}
+                                onClick={async (e) => {
+                                  e.stopPropagation();
+                                  const { url, error } = await getJubahDocSignedUrl(b.docs_path, download);
+                                  if (url) openInNewTab(url);
+                                  else showToast(error ? `Couldn't open Combined PDF: ${error}` : "Couldn't open Combined PDF.");
+                                }}
+                                title={!b.docs_path ? 'No Combined PDF yet' : download ? 'Download Combined PDF' : 'View Combined PDF'}
+                                className={`w-7 h-7 flex items-center justify-center rounded-lg border transition ${
+                                  !b.docs_path ? 'bg-white border-slate-100 text-slate-300 cursor-not-allowed'
+                                  : download ? 'bg-slate-800 border-slate-700 text-white hover:bg-slate-700 active:scale-95'
+                                  : 'bg-blue-50 border-blue-100 text-blue-600 hover:bg-blue-100 active:scale-95'}`}
+                              >
+                                {download ? <Download className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                              </button>
+                            ))}
+                          </div>
                         </td>
                       </tr>
                     );
