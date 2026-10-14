@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useState, type Dispatch, type SetStateAction
 import { supabase } from '../../../lib/supabase';
 import {
   Users, RefreshCw, AlertCircle, Copy, Check, Eye, Download, ChevronLeft,
-  ExternalLink, BadgeCheck, Trash2, Ban, X, XCircle, CheckCircle2, Clock,
+  ExternalLink, BadgeCheck, Trash2, Ban, X, XCircle, CheckCircle2, Clock, Mail,
 } from 'lucide-react';
 import { WaIcon, toWa } from '../../../lib/whatsapp';
 import { AdminSearchInput } from '../../../components/AdminSearchInput';
@@ -142,6 +142,7 @@ export function JubahCustomerSubTab({
 }: JubahCustomerSubTabProps) {
   const customerDirectoryScrollRef = useAxisLockedScroll<HTMLDivElement>();
   const { showConfirmModal } = useApp();
+  const [resendingEmail, setResendingEmail] = useState(false);
   const [jubahSearch, setJubahSearch] = useState('');
   const [jubahModeFilter, setJubahModeFilter] = useState('all');
   const [jubahTypeFilter, setJubahTypeFilter] = useState('all');
@@ -1164,6 +1165,30 @@ export function JubahCustomerSubTab({
               });
               return <ReceiptCard doc={doc} onSavePdf={() => generateReceiptPdf(doc)} />;
             })()}
+
+            {/* Resend the receipt email after a staff edit (name, address…).
+                Same edge function and stage as the confirm-payment email. */}
+            {canManageJubah && b.email && b.initial_paid && b.status !== 'cancelled' && (
+              <button
+                type="button"
+                disabled={resendingEmail}
+                onClick={() => showConfirmModal({
+                  title: 'Resend receipt email?',
+                  message: `Send the latest receipt to ${b.email}.`,
+                  confirmLabel: 'SEND EMAIL',
+                  onConfirm: async () => {
+                    const stage = b.payment_mode === 'deposit' ? (b.balance_paid ? 'balance' : 'deposit') : 'full';
+                    setResendingEmail(true);
+                    const { data, error } = await supabase.functions.invoke('send-jubah-receipt-email', { body: { bookingId: b.id, stage } });
+                    setResendingEmail(false);
+                    showToast(error || !data?.success ? 'Failed to send email.' : `Receipt emailed to ${b.email} ✓`);
+                  },
+                })}
+                className="w-full flex items-center justify-center gap-2 bg-white border border-slate-200 text-slate-700 font-semibold text-sm py-3 rounded-2xl hover:bg-slate-50 active:scale-[0.98] transition disabled:opacity-50">
+                <Mail className="w-4 h-4" />
+                {resendingEmail ? 'Sending…' : 'Resend Receipt Email'}
+              </button>
+            )}
 
             {/* ── UPLOAD DOCUMENTS & COMBINED DOCUMENT ── grid of compact
                 cards rather than full-width rows, so the label and its
