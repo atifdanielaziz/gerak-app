@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
-import { CheckCircle2, X, Upload, FileText, ShieldAlert, Download, User, Pencil, MapPin, Copy, Check, GraduationCap, FileUser, ClipboardList, Landmark, ReceiptText, ArrowDown } from 'lucide-react';
+import { CheckCircle2, X, Upload, FileText, ShieldAlert, Download, User, Pencil, MapPin, Copy, Check, GraduationCap, FileUser, ClipboardList, Landmark, ReceiptText, ArrowDown, AlertCircle } from 'lucide-react';
 import { submitJubahToSheets } from '../lib/sheetsService';
 import { JubahLanding } from '../components/JubahLanding';
 import { supabase } from '../lib/supabase';
@@ -505,6 +505,20 @@ export const Jubah: React.FC = () => {
     setCustomQuote(null);
     setIcNumber('');
   };
+
+  // True when no runner is left for this university on any campus or
+  // method (everyone at their order cap) — drives the "no longer accepting
+  // new orders" notice at the top of the form.
+  const [noRunnersAtAll, setNoRunnersAtAll] = useState(false);
+  useEffect(() => {
+    const campuses = UNIVERSITY_MAP[landingUniversity]?.campuses ?? [];
+    if (campuses.length === 0) { queueMicrotask(() => setNoRunnersAtAll(false)); return; }
+    let cancelled = false;
+    Promise.all(campuses.flatMap(c => (['pickup', 'postage'] as const).map(m =>
+      supabase.rpc('get_active_jubah_riders', { p_campus: c, p_method: m }).then(({ data, error }) => (error ? 1 : (data ?? []).length))
+    ))).then(counts => { if (!cancelled) setNoRunnersAtAll(counts.every(n => n === 0)); });
+    return () => { cancelled = true; };
+  }, [landingUniversity]);
 
   // Fetch active riders whenever campus or service option (Pickup/Postage) changes
   useEffect(() => {
@@ -1074,6 +1088,21 @@ export const Jubah: React.FC = () => {
           </div>
         )}
       </div>
+
+      {/* No runner left on any campus/method (all at their order cap) —
+          the form stays visible, but say up front that we're full. */}
+      {!jubahBooking && !customQuote && noRunnersAtAll && (
+        <div className="bg-amber-50 border border-amber-200 rounded-2xl px-4 py-3.5 flex items-start gap-3">
+          <AlertCircle className="w-5 h-5 text-amber-500 shrink-0 mt-0.5" />
+          <div className="flex flex-col gap-1">
+            <p className="text-sm font-semibold text-amber-800 m-0">We are no longer accepting new orders</p>
+            <p className="text-xs font-normal text-amber-700 m-0 leading-relaxed">
+              All runners for {landingUni?.shortLabel ?? 'this university'} are fully booked. Already booked?
+              Use <span className="font-semibold">Track My Order</span> to check your status or pay your balance.
+            </p>
+          </div>
+        </div>
+      )}
 
       {!jubahBooking ? (
         <form onSubmit={handleBook} className="flex flex-col gap-4">
