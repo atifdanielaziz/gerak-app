@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { QrCode, Upload, Trash2, X } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useApp } from '../context/AppContext';
@@ -35,7 +35,19 @@ export function JubahQrButton({ canManage = false, showToast, path = QR_PATH }: 
 
   const qrPath = path;
   const { data } = supabase.storage.from(QR_BUCKET).getPublicUrl(qrPath);
-  const url = refreshKey ? `${data.publicUrl}?t=${refreshKey}` : data.publicUrl;
+  // The file is replaced in place and served with a 1-year cache, so the
+  // bare URL kept showing customers the OLD QR. ?v= is the object's last
+  // update time, so the URL changes exactly when the QR does.
+  const [version, setVersion] = useState<number | null | undefined>(undefined);
+  useEffect(() => {
+    if (!open) return;
+    let cancelled = false;
+    supabase.rpc('get_jubah_qr_version', { p_path: qrPath }).then(({ data: v }) => {
+      if (!cancelled) setVersion(typeof v === 'number' ? v : null);
+    });
+    return () => { cancelled = true; };
+  }, [open, qrPath, refreshKey]);
+  const url = `${data.publicUrl}?v=${refreshKey || version || 0}`;
 
   const handleUpload = async (file: File) => {
     setUploading(true);
@@ -92,7 +104,9 @@ export function JubahQrButton({ canManage = false, showToast, path = QR_PATH }: 
 
             <div className="flex-1 p-5 flex flex-col gap-4">
               <div className="w-full aspect-square rounded-2xl overflow-hidden border border-slate-100 bg-slate-50 flex items-center justify-center">
-                {!imgError ? (
+                {version === undefined && !refreshKey ? (
+                  <span className="w-5 h-5 rounded-full border-2 border-slate-200 border-t-primary animate-spin" />
+                ) : !imgError ? (
                   <img
                     key={refreshKey}
                     src={url}
