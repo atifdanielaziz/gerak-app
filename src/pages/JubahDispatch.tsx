@@ -196,11 +196,11 @@ export default function JubahDispatch() {
   };
 
   if (loading && parcels.length === 0) {
-    return <div className="min-h-dvh flex items-center justify-center bg-slate-50"><span className="w-6 h-6 rounded-full border-2 border-slate-200 border-t-red-500 animate-spin" /></div>;
+    return <div className="fixed inset-0 flex items-center justify-center bg-slate-50"><span className="w-6 h-6 rounded-full border-2 border-slate-200 border-t-red-500 animate-spin" /></div>;
   }
   if (error) {
     return (
-      <div className="min-h-dvh flex items-center justify-center bg-slate-50 px-4">
+      <div className="fixed inset-0 flex items-center justify-center bg-slate-50 px-4">
         <div className="max-w-sm w-full bg-white border border-slate-200 rounded-2xl p-6 text-center flex flex-col gap-2">
           <p className="text-lg font-extrabold text-red-500 m-0">gerak</p>
           <p className="text-sm font-semibold text-slate-800 m-0">{error}</p>
@@ -210,7 +210,7 @@ export default function JubahDispatch() {
   }
 
   return (
-    <div className="min-h-dvh bg-slate-50 text-slate-800">
+    <div className="fixed inset-0 overflow-y-auto overscroll-contain bg-slate-50 text-slate-800">
       <div className="max-w-4xl mx-auto px-4 py-5 flex flex-col gap-4">
         <header className="flex flex-col gap-1">
           <div className="flex items-center gap-2 flex-wrap">

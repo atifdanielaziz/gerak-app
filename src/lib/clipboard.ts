@@ -17,9 +17,12 @@ export async function copyToClipboard(text: string): Promise<boolean> {
     const textarea = document.createElement('textarea');
     textarea.value = text;
     textarea.style.position = 'fixed';
+    textarea.style.top = '0';
     textarea.style.opacity = '0';
     document.body.appendChild(textarea);
-    textarea.focus();
+    // preventScroll: focusing the hidden textarea otherwise jumps a long
+    // page back to the top (the J&T dispatch page, mid-list).
+    textarea.focus({ preventScroll: true });
     textarea.select();
     const ok = document.execCommand('copy');
     document.body.removeChild(textarea);
