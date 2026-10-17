@@ -1,5 +1,5 @@
 import { useCallback, useState } from 'react';
-import { Truck, Pencil, Link2, Copy, Check, Ban } from 'lucide-react';
+import { Truck, Pencil, Link2, Copy, Check, Ban, RotateCcw } from 'lucide-react';
 import { supabase } from '../../../lib/supabase';
 import { useApp } from '../../../context/AppContext';
 import { useLoadOnActive } from '../../../hooks/useLoadOnActive';
@@ -92,6 +92,17 @@ export function JubahDispatchCard({ active, showToast, jubahUniversity }: {
       showToast('Link revoked.');
       setNewLink(null);
       void load();
+    },
+  });
+
+  const resetAll = () => showConfirmModal({
+    title: 'Reset all copy progress?',
+    message: `Clears every "Copied" and "Siap" mark on the ${uniLabel} J&T page, so all parcels show as not done. Tracking numbers already entered are kept.`,
+    confirmLabel: 'RESET',
+    onConfirm: async () => {
+      const { data, error } = await supabase.rpc('reset_jubah_dispatch', { p_university: jubahUniversity, p_include_tracking: false });
+      if (error || !data?.success) { showToast(data?.error ?? error?.message ?? 'Failed to reset.'); return; }
+      showToast(`Reset ${data.count} parcel${data.count === 1 ? '' : 's'} ✓`);
     },
   });
 
@@ -189,6 +200,11 @@ export function JubahDispatchCard({ active, showToast, jubahUniversity }: {
           </div>
         )}
       </div>
+
+      <button type="button" onClick={resetAll}
+        className="w-full flex items-center justify-center gap-2 border border-slate-200 text-slate-600 font-semibold text-xs py-2.5 rounded-2xl active:scale-[0.98] transition">
+        <RotateCcw className="w-3.5 h-3.5" /> Reset all copy progress
+      </button>
     </div>
   );
 }

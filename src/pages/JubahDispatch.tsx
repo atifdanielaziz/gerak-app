@@ -127,6 +127,12 @@ export default function JubahDispatch() {
     await save(p.id, { p_copied: copied, ...(done !== p.done ? { p_done: done } : {}) });
   };
 
+  // Clears this parcel's copied marks and Siap (tracking number is kept).
+  const resetParcel = async (p: Parcel) => {
+    setParcels(prev => prev.map(x => (x.id === p.id ? { ...x, copied: [], done: false } : x)));
+    if (await save(p.id, { p_copied: [], p_done: false })) flash(`No. ${p.order_no} di-reset`);
+  };
+
   const setDone = async (p: Parcel, done: boolean) => {
     setParcels(prev => prev.map(x => (x.id === p.id ? { ...x, done } : x)));
     if (await save(p.id, { p_done: done })) flash(done ? `No. ${p.order_no} siap` : `No. ${p.order_no} dibuka semula`);
@@ -301,6 +307,12 @@ export default function JubahDispatch() {
                   {p.done
                     ? <span className="text-xs font-bold text-emerald-400 flex items-center gap-1"><Check className="w-3.5 h-3.5" />SIAP</span>
                     : <span className="text-xs text-slate-500 tabular-nums">{nCopied}/{FIELDS.length} copied</span>}
+                  {(nCopied > 0 || p.done) && (
+                    <button type="button" onClick={() => void resetParcel(p)} title="Kosongkan tanda copy & siap untuk parcel ini"
+                      className={`flex items-center gap-1 text-[11px] font-bold rounded-md px-2 py-1 border ${p.done ? 'border-slate-700 text-slate-400 hover:bg-slate-800' : 'border-slate-300 text-slate-500 bg-white/70 hover:bg-white'}`}>
+                      <RotateCcw className="w-3 h-3" /> Reset
+                    </button>
+                  )}
                 </div>
 
                 {p.done ? (
