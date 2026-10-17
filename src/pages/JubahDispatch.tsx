@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { SheetData } from 'write-excel-file/browser';
-import { Check, Copy, Download, ExternalLink, RefreshCw, RotateCcw, Search } from 'lucide-react';
+import { Check, ChevronDown, Copy, Download, ExternalLink, RefreshCw, RotateCcw, Search } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { copyToClipboard } from '../lib/clipboard';
 import { parseJubahAddress } from '../lib/jubahAddress';
@@ -20,21 +20,21 @@ type ApiParcel = {
 type FieldKey = 'order_no' | 'name' | 'phone' | 'email' | 'address' | 'postcode' | 'city' | 'state';
 type Parcel = ApiParcel & { zone: 'SM' | 'SS'; fields: Record<FieldKey, string> };
 
-const FIELDS: { key: FieldKey; label: string; mono?: boolean; wide?: boolean }[] = [
+const FIELDS: { key: FieldKey; label: string; mono?: boolean; span?: string }[] = [
   { key: 'order_no', label: 'No. Order', mono: true },
   { key: 'name', label: 'Nama' },
   { key: 'phone', label: 'Telefon', mono: true },
-  { key: 'email', label: 'Emel' },
-  { key: 'address', label: 'Alamat', wide: true },
+  { key: 'email', label: 'Emel', span: 'xl:col-span-2' },
+  { key: 'address', label: 'Alamat', span: 'sm:col-span-2' },
   { key: 'postcode', label: 'Poskod', mono: true },
   { key: 'city', label: 'Bandar' },
   { key: 'state', label: 'Negeri' },
 ];
-const SENDER_FIELDS: { key: keyof Sender; label: string; mono?: boolean; wide?: boolean }[] = [
-  { key: 'name', label: 'Nama', wide: true },
+const SENDER_FIELDS: { key: keyof Sender; label: string; mono?: boolean; span?: string }[] = [
+  { key: 'name', label: 'Nama', span: 'sm:col-span-2' },
   { key: 'phone', label: 'Telefon', mono: true },
   { key: 'postcode', label: 'Poskod', mono: true },
-  { key: 'address', label: 'Alamat', wide: true },
+  { key: 'address', label: 'Alamat', span: 'sm:col-span-2' },
   { key: 'city', label: 'Bandar' },
   { key: 'state', label: 'Negeri' },
 ];
@@ -49,13 +49,13 @@ const JNT_TRACK = (no: string) => `https://www.jtexpress.my/tracking/${encodeURI
 const firstName = (n: string | null) => (n ?? '').split(' ').slice(0, 2).join(' ') || 'Runner';
 const cleanPhone = (p: string) => p.replace(/\D/g, '');
 
-function FieldBox({ label, value, mono, wide, copied, onCopy }: {
-  label: string; value: string; mono?: boolean; wide?: boolean; copied: boolean; onCopy: () => void;
+function FieldBox({ label, value, mono, span, compact, copied, onCopy }: {
+  label: string; value: string; mono?: boolean; span?: string; compact?: boolean; copied: boolean; onCopy: () => void;
 }) {
   return (
-    <div className={`flex items-stretch rounded-xl border overflow-hidden min-w-0 transition-colors ${wide ? 'sm:col-span-2' : ''} ${
+    <div className={`flex items-stretch rounded-xl border overflow-hidden min-w-0 transition-colors ${span ?? ''} ${
       copied ? 'bg-slate-800 border-slate-800' : 'bg-white border-slate-200'}`}>
-      <div className="flex-1 min-w-0 px-3 py-2 flex flex-col gap-0.5">
+      <div className={`flex-1 min-w-0 px-3 flex flex-col gap-0.5 ${compact ? 'py-1.5' : 'py-2'}`}>
         <span className={`text-[10.5px] font-bold uppercase tracking-wider ${copied ? 'text-slate-400' : 'text-slate-400'}`}>{label}</span>
         <span className={`text-sm font-semibold break-words ${mono ? 'font-mono' : ''} ${copied ? 'text-slate-300' : 'text-slate-800'}`}>{value || '—'}</span>
       </div>
@@ -76,6 +76,7 @@ export default function JubahDispatch() {
   const [expiresAt, setExpiresAt] = useState<string | null>(null);
   const [parcels, setParcels] = useState<Parcel[]>([]);
   const [senderCopied, setSenderCopied] = useState<Record<string, boolean>>({});
+  const [senderClosed, setSenderClosed] = useState<Record<string, boolean>>({});
   const [zone, setZone] = useState<'all' | 'SM' | 'SS'>('all');
   const [runner, setRunner] = useState('all');
   const [show, setShow] = useState<'todo' | 'all' | 'done'>('todo');
@@ -211,7 +212,7 @@ export default function JubahDispatch() {
 
   return (
     <div className="fixed inset-0 overflow-y-auto overscroll-contain bg-slate-50 text-slate-800">
-      <div className="max-w-4xl mx-auto px-4 py-5 flex flex-col gap-4">
+      <div className="max-w-[1600px] mx-auto px-4 lg:px-6 py-5 flex flex-col gap-4">
         <header className="flex flex-col gap-1">
           <div className="flex items-center gap-2 flex-wrap">
             <span className="text-2xl font-extrabold text-red-500 tracking-tight">gerak</span>
@@ -225,30 +226,38 @@ export default function JubahDispatch() {
           {expiresAt && <p className="text-xs text-slate-400 m-0">Link ini tamat pada {new Date(expiresAt).toLocaleString('en-MY', { dateStyle: 'medium', timeStyle: 'short' })}.</p>}
         </header>
 
-        {/* Sender per runner — same for all of that runner's parcels */}
-        <section className="bg-white border border-slate-200 rounded-2xl p-4 flex flex-col gap-4">
-          <h2 className="text-xs font-bold uppercase tracking-wider text-slate-500 m-0">Pengirim (Sender)</h2>
-          {runners.filter(r => runner === 'all' || r.name === runner).map(r => (
-            <div key={r.name} className="flex flex-col gap-2">
-              <span className="text-sm font-bold">{firstName(r.name)}</span>
-              {r.sender ? (
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                  {SENDER_FIELDS.map(f => {
-                    const k = `${r.name}:${f.key}`;
-                    const value = f.key === 'phone' ? cleanPhone(r.sender![f.key]) : r.sender![f.key];
-                    return <FieldBox key={k} label={f.label} value={value} mono={f.mono} wide={f.wide} copied={!!senderCopied[k]}
-                      onCopy={async () => { if (await copyToClipboard(value)) { setSenderCopied(s => ({ ...s, [k]: true })); flash(`Copied: ${value}`); } }} />;
-                  })}
-                </div>
-              ) : (
-                <p className="text-sm text-amber-700 bg-amber-50 border border-amber-200 rounded-xl px-3 py-2 m-0">Info pengirim untuk runner ini belum diisi. Hubungi Gerak.</p>
-              )}
-            </div>
-          ))}
-        </section>
-
-        {/* Progress + filters */}
+        {/* Sticky: senders side by side (each collapsible) + progress + filters,
+            so the sender stays in view while copying parcels below. */}
         <div className="sticky top-0 z-10 bg-white border border-slate-200 rounded-2xl p-3 flex flex-col gap-3 shadow-sm">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+            {runners.filter(r => runner === 'all' || r.name === runner).map(r => {
+              const open = !senderClosed[r.name];
+              return (
+                <section key={r.name} className="border border-slate-200 rounded-xl bg-slate-50/60">
+                  <button type="button" onClick={() => setSenderClosed(c => ({ ...c, [r.name]: open }))} aria-expanded={open}
+                    className="w-full flex items-center gap-2 px-3 py-2 text-left">
+                    <span className="text-[10.5px] font-bold uppercase tracking-wider text-slate-400">Pengirim</span>
+                    <span className="text-sm font-bold truncate">{firstName(r.name)}</span>
+                    {!open && r.sender && <span className="text-xs text-slate-500 truncate">· {cleanPhone(r.sender.phone)} · {r.sender.postcode} {r.sender.city}</span>}
+                    <span className="flex-1" />
+                    <ChevronDown className={`w-4 h-4 text-slate-400 transition-transform ${open ? 'rotate-180' : ''}`} />
+                  </button>
+                  {open && (r.sender ? (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 px-3 pb-3">
+                      {SENDER_FIELDS.map(f => {
+                        const k = `${r.name}:${f.key}`;
+                        const value = f.key === 'phone' ? cleanPhone(r.sender![f.key]) : r.sender![f.key];
+                        return <FieldBox key={k} label={f.label} value={value} mono={f.mono} span={f.span} compact copied={!!senderCopied[k]}
+                          onCopy={async () => { if (await copyToClipboard(value)) { setSenderCopied(c => ({ ...c, [k]: true })); flash(`Copied: ${value}`); } }} />;
+                      })}
+                    </div>
+                  ) : (
+                    <p className="text-sm text-amber-700 bg-amber-50 border border-amber-200 rounded-xl px-3 py-2 mx-3 mb-3 mt-0">Info pengirim untuk runner ini belum diisi. Hubungi Gerak.</p>
+                  ))}
+                </section>
+              );
+            })}
+          </div>
           <div className="flex items-center gap-3 flex-wrap">
             <strong className="text-sm tabular-nums whitespace-nowrap">{doneCount} / {parcels.length} siap</strong>
             <div className="flex-1 min-w-[120px] h-2 bg-slate-100 rounded-full overflow-hidden">
@@ -297,9 +306,9 @@ export default function JubahDispatch() {
                 {p.done ? (
                   <p className="text-sm text-slate-300 m-0">{p.fields.name} · {p.fields.postcode} {p.fields.city}</p>
                 ) : (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-5 gap-2">
                     {FIELDS.map(f => (
-                      <FieldBox key={f.key} label={f.label} value={p.fields[f.key]} mono={f.mono} wide={f.wide}
+                      <FieldBox key={f.key} label={f.label} value={p.fields[f.key]} mono={f.mono} span={f.span}
                         copied={p.copied.includes(f.key)} onCopy={() => void copyField(p, f.key)} />
                     ))}
                   </div>
