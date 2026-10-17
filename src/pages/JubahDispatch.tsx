@@ -77,6 +77,7 @@ export default function JubahDispatch() {
   const [parcels, setParcels] = useState<Parcel[]>([]);
   const [senderCopied, setSenderCopied] = useState<Record<string, boolean>>({});
   const [senderClosed, setSenderClosed] = useState<Record<string, boolean>>({});
+  const narrow = useMemo(() => window.matchMedia('(max-width: 1023px)').matches, []);
   const [zone, setZone] = useState<'all' | 'SM' | 'SS'>('all');
   const [runner, setRunner] = useState('all');
   const [show, setShow] = useState<'todo' | 'all' | 'done'>('todo');
@@ -234,10 +235,10 @@ export default function JubahDispatch() {
 
         {/* Sticky: senders side by side (each collapsible) + progress + filters,
             so the sender stays in view while copying parcels below. */}
-        <div className="sticky top-0 z-10 bg-white border border-slate-200 rounded-2xl p-3 flex flex-col gap-3 shadow-sm">
+        <div className="lg:sticky lg:top-0 z-10 bg-white border border-slate-200 rounded-2xl p-3 flex flex-col gap-3 shadow-sm">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
             {runners.filter(r => runner === 'all' || r.name === runner).map(r => {
-              const open = !senderClosed[r.name];
+              const open = !(senderClosed[r.name] ?? narrow);
               return (
                 <section key={r.name} className="border border-slate-200 rounded-xl bg-slate-50/60">
                   <button type="button" onClick={() => setSenderClosed(c => ({ ...c, [r.name]: open }))} aria-expanded={open}
@@ -249,7 +250,7 @@ export default function JubahDispatch() {
                     <ChevronDown className={`w-4 h-4 text-slate-400 transition-transform ${open ? 'rotate-180' : ''}`} />
                   </button>
                   {open && (r.sender ? (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-1.5 px-2.5 pb-2.5">
+                    <div className="grid grid-cols-2 xl:grid-cols-3 gap-1.5 px-2.5 pb-2.5">
                       {SENDER_FIELDS.map(f => {
                         const k = `${r.name}:${f.key}`;
                         const value = f.key === 'phone' ? cleanPhone(r.sender![f.key]) : r.sender![f.key];
