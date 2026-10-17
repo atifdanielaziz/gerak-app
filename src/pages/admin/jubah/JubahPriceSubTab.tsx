@@ -3,6 +3,7 @@ import { supabase } from '../../../lib/supabase';
 import { TrendingUp, GraduationCap, Landmark, CircleDollarSign, Users, RotateCcw, MessageCircle } from 'lucide-react';
 import { jubahWhatsappGroupKey } from '../../../lib/jubahWhatsappGroup';
 import { JubahPayeesCard } from './JubahPayeesCard';
+import { JubahDispatchCard } from './JubahDispatchCard';
 import { useLoadOnActive } from '../../../hooks/useLoadOnActive';
 import { JubahQrButton } from '../../../components/JubahQrButton';
 import { UNIVERSITY_MAP } from '../../../lib/universities';
@@ -458,6 +459,9 @@ export function JubahPriceSubTab({ active, isSuperAdmin, showToast, jubahUnivers
 
       {/* Owners paid straight into their own account — superadmin only. */}
       {isSuperAdmin && <JubahPayeesCard active={active} showToast={showToast} />}
+
+      {/* J&T counter page: runners' sender details + secret link — superadmin only. */}
+      {isSuperAdmin && <JubahDispatchCard active={active} showToast={showToast} jubahUniversity={jubahUniversity} />}
 
       {/* One global deposit shared by every university and service. The RPC
           and booking function enforce the same value server-side. */}

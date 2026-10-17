@@ -1,4 +1,4 @@
-import { StrictMode } from 'react'
+import { StrictMode, Suspense, lazy } from 'react'
 import { createRoot } from 'react-dom/client'
 import '@capacitor-community/safe-area'
 import './index.css'
@@ -58,10 +58,16 @@ window.addEventListener('vite:preloadError', () => {
   window.location.reload();
 });
 
+// gerakmy.com/jnt#<token> — the J&T counter page. Rendered on its own, outside
+// App (no splash, login, header or bottom nav): J&T staff have no account.
+// eslint-disable-next-line react-refresh/only-export-components -- entry file, not a component module
+const JubahDispatch = lazy(() => import('./pages/JubahDispatch.tsx'));
+const isJntDispatch = window.location.pathname.replace(/\/+$/, '') === '/jnt';
+
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <ErrorBoundary>
-      <App />
+      {isJntDispatch ? <Suspense fallback={null}><JubahDispatch /></Suspense> : <App />}
     </ErrorBoundary>
   </StrictMode>,
 )

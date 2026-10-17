@@ -78,6 +78,8 @@ export type JubahBookingRow = {
   docs_path: string | null; payment_path: string | null; oscar_path: string | null;
   skpg_path: string | null; konvo_path: string | null; ic_path: string | null;
   created_at: string;
+  // Permanent per-university order number (same "No" J&T staff see).
+  order_no?: number | null;
   needs_reconciliation: boolean; reconciliation_note: string | null;
 };
 
@@ -383,7 +385,7 @@ export function JubahCustomerSubTab({
       const byCreated = new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
       return byCreated || a.id.localeCompare(b.id);
     });
-    return new Map(chronological.map((booking, index) => [booking.id, offset + index + 1]));
+    return new Map(chronological.map((booking, index) => [booking.id, booking.order_no ?? offset + index + 1]));
   }, [bookings, bookingsTotalCount]);
 
   const exportRows = () => filteredBookings.map(b => {

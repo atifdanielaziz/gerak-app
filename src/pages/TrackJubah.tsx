@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useApp } from '../context/AppContext';
 import { supabase } from '../lib/supabase';
-import { PackageSearch, Search, GraduationCap, Eye, Download } from 'lucide-react';
+import { PackageSearch, Search, GraduationCap, Eye, Download, Copy, Check, ExternalLink } from 'lucide-react';
+import { copyToClipboard } from '../lib/clipboard';
 import { WaIcon, toWa } from '../lib/whatsapp';
 import { ReceiptCard } from '../components/Receipt';
 import { buildJubahReceiptRows } from '../lib/receiptRows';
@@ -38,6 +39,8 @@ interface JubahBookingResult {
   rider_changed_at?: string | null;
   // Rider whose own account this booking pays into; null = shared account.
   payee_rider_id?: string | null;
+  // J&T tracking number, set on the J&T dispatch page.
+  tracking_no?: string | null;
 }
 
 // Full receipt fields — only fetched once the last-4 IC gate passes, kept
@@ -131,6 +134,7 @@ export const TrackJubah: React.FC = () => {
   });
   const [icNumber, setIcNumber]   = useState('');
   const [searching, setSearching] = useState(false);
+  const [trackingCopied, setTrackingCopied] = useState<string | null>(null);
   const [searched, setSearched]   = useState(false);
   const [results, setResults]     = useState<JubahBookingResult[]>([]);
   const [error, setError]         = useState('');
@@ -422,6 +426,25 @@ export const TrackJubah: React.FC = () => {
                     </div>
                   )}
                 </div>
+
+                {/* J&T tracking number, entered by J&T staff on the dispatch page. */}
+                {b.tracking_no && b.status !== 'cancelled' && (
+                  <div className="bg-red-50 border border-red-100 rounded-2xl px-4 py-3 flex flex-col gap-2">
+                    <span className="text-xs font-normal text-red-400">J&amp;T Tracking Number</span>
+                    <div className="flex items-center gap-2">
+                      <span className="flex-1 min-w-0 font-mono text-sm font-semibold text-slate-800 break-all">{b.tracking_no}</span>
+                      <button type="button" onClick={async () => { if (await copyToClipboard(b.tracking_no!)) { setTrackingCopied(b.id); setTimeout(() => setTrackingCopied(c => (c === b.id ? null : c)), 2000); } }}
+                        className="h-9 px-3 flex items-center gap-1 rounded-lg bg-white border border-red-100 text-xs font-semibold text-slate-600 active:scale-95 transition shrink-0">
+                        {trackingCopied === b.id ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5" />}
+                        {trackingCopied === b.id ? 'Copied' : 'Copy'}
+                      </button>
+                    </div>
+                    <a href={`https://www.jtexpress.my/tracking/${encodeURIComponent(b.tracking_no)}`} target="_blank" rel="noopener noreferrer"
+                      className="w-full flex items-center justify-center gap-1.5 bg-red-600 text-white text-sm font-semibold py-2.5 rounded-xl active:scale-[0.98] transition">
+                      Track on J&amp;T <ExternalLink className="w-4 h-4" />
+                    </a>
+                  </div>
+                )}
 
                 {/* ── DEPOSIT SECTION — hidden once cancelled (nothing left to pay) or
                      before the deposit itself is confirmed (status='ordered', covered
