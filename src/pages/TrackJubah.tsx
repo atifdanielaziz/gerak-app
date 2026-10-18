@@ -3,6 +3,7 @@ import { useApp } from '../context/AppContext';
 import { supabase } from '../lib/supabase';
 import { PackageSearch, Search, GraduationCap, Eye, Download, Copy, Check, ExternalLink } from 'lucide-react';
 import { copyToClipboard } from '../lib/clipboard';
+import { JubahChangeToPostage } from '../components/JubahChangeToPostage';
 import { WaIcon, toWa } from '../lib/whatsapp';
 import { ReceiptCard } from '../components/Receipt';
 import { buildJubahReceiptRows } from '../lib/receiptRows';
@@ -471,6 +472,21 @@ export const TrackJubah: React.FC = () => {
                 {jubahDoc && receipt ? (
                   <>
                     <ReceiptCard doc={jubahDoc} onSavePdf={() => generateReceiptPdf(jubahDoc)} />
+
+                    {/* Pickup -> Postage, while the order can still be edited. */}
+                    {(receipt.status === 'ordered' || receipt.status === 'paid') &&
+                      (receipt.payment_mode === 'pickup' || (receipt.payment_mode === 'deposit' && !receipt.delivery_address)) && (
+                      <JubahChangeToPostage
+                        reference={b.reference}
+                        icLast4={verifiedIcLast4[b.id] ?? ''}
+                        onChanged={addr => {
+                          const mode = receipt.payment_mode === 'pickup' ? 'postage' : receipt.payment_mode;
+                          setReceiptData(prev => ({ ...prev, [b.id]: { ...prev[b.id], payment_mode: mode, delivery_address: addr } }));
+                          setResults(prev => prev.map(r => (r.id === b.id ? { ...r, payment_mode: mode } : r)));
+                          setReplaceMsg(prev => ({ ...prev, [b.id]: { ok: true, text: 'Changed to Postage ✓ Your robe will be posted to the address above.' } }));
+                        }}
+                      />
+                    )}
 
                     {/* Your Documents — view/download always available (same
                         as the rider/superadmin views), Replace only while
