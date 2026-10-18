@@ -1,5 +1,5 @@
 import { useCallback, useState } from 'react';
-import { Truck, Pencil, Link2, Copy, Check, Ban, RotateCcw } from 'lucide-react';
+import { Truck, Pencil, Link2, Copy, Check, Ban, RotateCcw, Mail } from 'lucide-react';
 import { supabase } from '../../../lib/supabase';
 import { useApp } from '../../../context/AppContext';
 import { useLoadOnActive } from '../../../hooks/useLoadOnActive';
@@ -33,16 +33,20 @@ export function JubahDispatchCard({ active, showToast, jubahUniversity }: {
   const [creating, setCreating] = useState(false);
   const [newLink, setNewLink] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+  const [trackInfo, setTrackInfo] = useState<{ pending: number; no_email: number; emailed: number } | null>(null);
+  const [sendingEmails, setSendingEmails] = useState(false);
   const uniLabel = UNIVERSITY_MAP[jubahUniversity]?.shortLabel ?? jubahUniversity.toUpperCase();
 
   const load = useCallback(async () => {
-    const [{ data: s, error: se }, { data: l, error: le }] = await Promise.all([
+    const [{ data: s, error: se }, { data: l, error: le }, { data: t }] = await Promise.all([
       supabase.rpc('get_jubah_dispatch_senders'),
       supabase.rpc('list_jubah_dispatch_links', { p_university: jubahUniversity }),
+      supabase.rpc('count_jubah_tracking_unsent', { p_university: jubahUniversity }),
     ]);
     if (se || le) { showToast((se ?? le)!.message); return; }
     setSenders((s as SenderRow[]) ?? []);
     setLinks((l as LinkRow[]) ?? []);
+    setTrackInfo(t?.success ? { pending: t.pending, no_email: t.no_email, emailed: t.emailed } : null);
   }, [jubahUniversity, showToast]);
   useLoadOnActive(active, load);
 
@@ -91,6 +95,22 @@ export function JubahDispatchCard({ active, showToast, jubahUniversity }: {
       if (error || !data?.success) { showToast(data?.error ?? error?.message ?? 'Failed to revoke.'); return; }
       showToast('Link revoked.');
       setNewLink(null);
+      void load();
+    },
+  });
+
+  // Batch send, after checking the numbers J&T staff entered. Each tracking
+  // number is emailed once (edge function send-jubah-tracking-emails).
+  const sendTrackingEmails = () => showConfirmModal({
+    title: 'Send tracking emails?',
+    message: `Emails ${trackInfo?.pending ?? 0} customer${trackInfo?.pending === 1 ? '' : 's'} their J&T tracking number with a link to track the parcel. Check the numbers on the J&T page first — each number is sent only once.`,
+    confirmLabel: 'SEND EMAILS',
+    onConfirm: async () => {
+      setSendingEmails(true);
+      const { data, error } = await supabase.functions.invoke('send-jubah-tracking-emails', { body: { universityKey: jubahUniversity } });
+      setSendingEmails(false);
+      if (error || !data?.success) { showToast(data?.error ?? 'Failed to send emails.'); return; }
+      showToast(data.failed?.length ? `Sent ${data.sent}, failed ${data.failed.length}: ${data.failed.join(', ')}` : `Sent ${data.sent} tracking email${data.sent === 1 ? '' : 's'} ✓`);
       void load();
     },
   });
@@ -199,6 +219,20 @@ export function JubahDispatchCard({ active, showToast, jubahUniversity }: {
             ))}
           </div>
         )}
+      </div>
+
+      {/* Tracking emails to customers */}
+      <div className="flex flex-col gap-2">
+        <p className="text-xs font-semibold text-slate-500">Tracking emails</p>
+        <p className="text-[11px] text-slate-500 m-0">
+          {trackInfo
+            ? <>{trackInfo.pending} waiting to send · {trackInfo.emailed} already emailed{trackInfo.no_email > 0 ? <> · {trackInfo.no_email} without an email address (skipped)</> : null}</>
+            : 'Loading…'}
+        </p>
+        <button type="button" onClick={sendTrackingEmails} disabled={sendingEmails || !trackInfo?.pending}
+          className="w-full flex items-center justify-center gap-2 bg-slate-800 text-white font-semibold text-sm py-3 rounded-2xl active:scale-[0.98] transition disabled:opacity-40">
+          <Mail className="w-4 h-4" /> {sendingEmails ? 'Sending… (about 1 second each)' : `Send tracking emails (${trackInfo?.pending ?? 0})`}
+        </button>
       </div>
 
       <button type="button" onClick={resetAll}
