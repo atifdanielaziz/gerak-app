@@ -753,7 +753,16 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       if (!authUser || cancelled) return;
       channel = supabase
         .channel('profiles_self')
-        .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'profiles', filter: `id=eq.${authUser.id}` }, () => { void loadProfile(authUser.id); })
+        .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'profiles', filter: `id=eq.${authUser.id}` }, (payload) => {
+          // touch_staff_presence() writes last_seen_at every minute for
+          // staff. Reloading the profile on that sent admins back to their
+          // home page every minute ("it always refreshes"). Only reload
+          // when a field the app actually loaded has changed.
+          const prev = profileSnapshotRef.current;
+          const next = (payload.new ?? {}) as Record<string, unknown>;
+          if (prev && Object.keys(prev).every(k => JSON.stringify(prev[k] ?? null) === JSON.stringify(next[k] ?? null))) return;
+          void loadProfile(authUser.id);
+        })
         .subscribe();
     })();
     return () => {
@@ -803,6 +812,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     );
   }
 
+  // Last profile row loadProfile() read, so the realtime listener can skip
+  // updates that only touched columns the app doesn't use (last_seen_at).
+  const profileSnapshotRef = useRef<Record<string, unknown> | null>(null);
+
   async function loadProfile(userId: string) {
     const [{ data }, { data: lead }, { data: leadUniversities }] = await Promise.all([
       supabase.from('profiles').select('id,name,matric_no,email,phone,university,campus,gender,gerak_id,role,status,vehicle,plate_number,fee_receipt_url,fee_receipt_verified,fee_receipt_amount,fee_receipt_date,fee_receipt_expiry,fee_receipt_reject_reason,can_drive,can_rent,can_transport,can_robe,ic_number,ic_url,license_url,docs_status,docs_reject_reason,receipt_gate_exempt,avatar_url').eq('id', userId).single(),
@@ -810,6 +823,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       supabase.from('jubah_lead_universities').select('university_key').eq('lead_id', userId),
     ]);
     if (data) {
+      profileSnapshotRef.current = data as Record<string, unknown>;
       const role = data.role ?? 'customer';
       const jubahLeadUniversities = lead?.is_active
         ? (leadUniversities ?? [])
