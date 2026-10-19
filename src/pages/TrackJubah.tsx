@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useApp } from '../context/AppContext';
 import { supabase } from '../lib/supabase';
-import { PackageSearch, Search, GraduationCap, Eye, Download, Copy, Check, ExternalLink } from 'lucide-react';
+import { PackageSearch, Search, GraduationCap, Eye, Download, Copy, Check, ExternalLink, CalendarDays } from 'lucide-react';
 import { copyToClipboard } from '../lib/clipboard';
 import { JubahChangeToPostage } from '../components/JubahChangeToPostage';
 import { WaIcon, toWa } from '../lib/whatsapp';
@@ -46,6 +46,9 @@ interface JubahBookingResult {
 
 // Full receipt fields — only fetched once the last-4 IC gate passes, kept
 // separate from JubahBookingResult so the plain search never returns them.
+// Collection-day notice for the 2026 season; stops showing after 31/10/2026.
+const SHOW_COLLECTION_NOTICE = Date.now() < new Date('2026-11-01T00:00:00+08:00').getTime();
+
 interface JubahReceiptData {
   id: string;
   reference: string;
@@ -265,6 +268,22 @@ export const TrackJubah: React.FC = () => {
           </p>
         </div>
       </div>
+
+      {/* Collection-day notice for this season. Hides itself after 31/10/2026. */}
+      {SHOW_COLLECTION_NOTICE && (
+        <div className="bg-amber-50 border border-amber-200 rounded-2xl px-4 py-3.5 flex items-start gap-3">
+          <CalendarDays className="w-5 h-5 text-amber-500 shrink-0 mt-0.5" />
+          <div className="flex flex-col gap-1">
+            <p className="text-sm font-semibold text-amber-800 m-0">Robe collection starts on 23/10/2026</p>
+            <p className="text-xs font-normal text-amber-700 m-0 leading-relaxed">
+              We will collect your robe and post it on the same day. Postage takes about 2–3 days (Semenanjung) or 2–5 days (Sabah &amp; Sarawak).
+            </p>
+            <p className="text-xs font-normal text-amber-700 m-0 leading-relaxed">
+              Pengambilan jubah bermula 23/10/2026. Kami akan ambil dan pos jubah anda pada hari yang sama.
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* Search form */}
       <form onSubmit={handleSearch} className="bg-white border border-slate-100 rounded-3xl p-5 flex flex-col gap-4">
