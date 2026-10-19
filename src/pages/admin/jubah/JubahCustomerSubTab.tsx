@@ -759,7 +759,7 @@ export function JubahCustomerSubTab({
                                 onClick={(e) => { e.stopPropagation(); void togglePrintStatus(b, field); }}
                                 title={`Tap to mark as ${field === 'printed' ? (on ? 'not printed' : 'printed') : (on ? 'not ready' : 'ready')}`}
                                 className={`text-xs font-semibold px-2.5 py-1 rounded-full border transition active:scale-95 disabled:opacity-50 ${
-                                  on ? 'bg-emerald-50 border-emerald-100 text-emerald-700' : 'bg-slate-50 border-slate-200 text-slate-400'}`}>
+                                  on ? 'bg-emerald-50 border-emerald-100 text-emerald-700' : 'bg-red-50 border-red-200 text-red-600'}`}>
                                 {label}
                               </button>
                             </td>
