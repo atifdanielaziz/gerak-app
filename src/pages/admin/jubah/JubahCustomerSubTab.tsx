@@ -80,6 +80,9 @@ export type JubahBookingRow = {
   created_at: string;
   // Permanent per-university order number (same "No" J&T staff see).
   order_no?: number | null;
+  // Staff checklist, moved in from the team's spreadsheet.
+  printed?: boolean;
+  doc_ready?: boolean;
   needs_reconciliation: boolean; reconciliation_note: string | null;
 };
 
@@ -409,11 +412,29 @@ export function JubahCustomerSubTab({
       b.status === 'cancelled' ? '—' : (JUBAH_STATUS_LABEL[b.status] ?? b.status),
       b.rider_name ?? '—',
       confirmState,
+      b.printed ? 'Y' : 'N',
+      b.doc_ready ? 'Ready' : 'Not Ready',
       'Available',
     ];
   });
 
-  const exportHeaders = ['No', 'Reference', 'Name', 'Remark', 'Mode', 'Type', 'Status', 'Robe Status', 'Rider', 'Confirm', 'Receipt'];
+  const exportHeaders = ['No', 'Reference', 'Name', 'Remark', 'Mode', 'Type', 'Status', 'Robe Status', 'Rider', 'Confirm', 'Printed', 'Doc Ready', 'Receipt'];
+
+  // Printed / Doc Ready toggles — optimistic, rolled back if the RPC refuses.
+  const [printSaving, setPrintSaving] = useState<string | null>(null);
+  const togglePrintStatus = async (b: JubahBookingRow, field: 'printed' | 'doc_ready') => {
+    const next = !b[field];
+    setPrintSaving(`${b.id}:${field}`);
+    setBookings(prev => prev.map(r => (r.id === b.id ? { ...r, [field]: next } : r)));
+    const { data, error } = await supabase.rpc('set_jubah_print_status', {
+      p_booking_id: b.id, [field === 'printed' ? 'p_printed' : 'p_doc_ready']: next,
+    });
+    setPrintSaving(null);
+    if (error || !data?.success) {
+      setBookings(prev => prev.map(r => (r.id === b.id ? { ...r, [field]: !next } : r)));
+      showToast(data?.error ?? 'Failed to update.');
+    }
+  };
   const exportFileBase = `jubah-customers-${universityLabel.toLowerCase().replace(/[^a-z0-9]+/g, '-')}-${new Date().toISOString().slice(0, 10)}`;
 
   const downloadExport = async (format: 'csv' | 'xlsx') => {
@@ -594,6 +615,8 @@ export function JubahCustomerSubTab({
                     <th className="sticky top-0 bg-white py-2 pr-4 whitespace-nowrap">Robe Status</th>
                     <th className="sticky top-0 bg-white py-2 pr-4 whitespace-nowrap">Rider</th>
                     <th className="sticky top-0 bg-white py-2 pr-4 whitespace-nowrap">Confirm</th>
+                    <th className="sticky top-0 bg-white py-2 pr-4 whitespace-nowrap">Printed</th>
+                    <th className="sticky top-0 bg-white py-2 pr-4 whitespace-nowrap">Doc Ready</th>
                     <th className="sticky top-0 bg-white py-2 pr-4 whitespace-nowrap">Receipt</th>
                     <th className="sticky top-0 bg-white py-2 whitespace-nowrap">Combined PDF</th>
                   </tr>
@@ -726,6 +749,22 @@ export function JubahCustomerSubTab({
                             );
                           })()}
                         </td>
+                        {/* Printed / Doc Ready — tap to toggle (set_jubah_print_status). */}
+                        {(['printed', 'doc_ready'] as const).map(field => {
+                          const on = !!b[field];
+                          const label = field === 'printed' ? (on ? 'Printed' : 'Not printed') : (on ? 'Ready' : 'Not ready');
+                          return (
+                            <td key={field} className="py-2.5 pr-4 align-top whitespace-nowrap">
+                              <button type="button" disabled={printSaving === `${b.id}:${field}`}
+                                onClick={(e) => { e.stopPropagation(); void togglePrintStatus(b, field); }}
+                                title={`Tap to mark as ${field === 'printed' ? (on ? 'not printed' : 'printed') : (on ? 'not ready' : 'ready')}`}
+                                className={`text-xs font-semibold px-2.5 py-1 rounded-full border transition active:scale-95 disabled:opacity-50 ${
+                                  on ? 'bg-emerald-50 border-emerald-100 text-emerald-700' : 'bg-slate-50 border-slate-200 text-slate-400'}`}>
+                                {label}
+                              </button>
+                            </td>
+                          );
+                        })}
                         <td className="py-2.5 pr-4 whitespace-nowrap">
                           {(() => {
                             const buildDoc = () => buildJubahReceiptRows({
