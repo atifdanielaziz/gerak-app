@@ -44,12 +44,22 @@ interface BeforeInstallPromptEvent extends Event {
 const isIos = () => /iphone|ipad|ipod/i.test(navigator.userAgent);
 const isStandalone = () =>
   window.matchMedia('(display-mode: standalone)').matches ||
-  (window.navigator as any).standalone === true;
+  (window.navigator as Navigator & { standalone?: boolean }).standalone === true;
+
+// "Not now" hides the install sheet for 30 days (it used to come back on
+// every load and every page, which staff found very annoying).
+const INSTALL_DISMISS_KEY = 'gerak_install_dismissed_at';
+const recentlyDismissed = () => {
+  try { return Date.now() - Number(localStorage.getItem(INSTALL_DISMISS_KEY) ?? 0) < 30 * 24 * 60 * 60 * 1000; }
+  catch { return false; }
+};
 
 const InstallPrompt: React.FC = () => {
+  // Only offered on the login page, never over the app itself.
+  const { currentPage } = useApp();
   const [installEvent, setInstallEvent] = useState<BeforeInstallPromptEvent | null>(null);
   const [show, setShow]         = useState(false);
-  const [dismissed, setDismissed] = useState(false);
+  const [dismissed, setDismissed] = useState(recentlyDismissed);
   const [step, setStep]         = useState<'prompt' | 'ios'>('prompt');
 
   useEffect(() => {
@@ -69,7 +79,10 @@ const InstallPrompt: React.FC = () => {
     return () => window.removeEventListener('beforeinstallprompt', handler);
   }, [dismissed]);
 
-  const dismiss = () => { setShow(false); setDismissed(true); };
+  const dismiss = () => {
+    setShow(false); setDismissed(true);
+    try { localStorage.setItem(INSTALL_DISMISS_KEY, String(Date.now())); } catch { /* storage blocked */ }
+  };
 
   const handleInstall = async () => {
     if (!installEvent) return;
@@ -78,7 +91,7 @@ const InstallPrompt: React.FC = () => {
     if (outcome === 'accepted') dismiss();
   };
 
-  if (!show || isStandalone()) return null;
+  if (!show || isStandalone() || dismissed || currentPage !== 'login') return null;
 
   return (
     <div
