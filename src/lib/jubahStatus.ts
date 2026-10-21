@@ -106,3 +106,17 @@ export const jubahWaMsg = (
   };
   return msgs[status] ?? `Assalamualaikum ${name} 🎓\n\nIni Gerak Jubah. Terima kasih atas tempahan anda.\n\nRujukan: ${ref}\n\nTerima kasih 🙏`;
 };
+
+// UMPSA 2026: the alumni centre replaced OSCAR with LinkMe, and the
+// souvenir counter at robe collection asks for the LinkMe "Official
+// Profile Verification Slip". Staff send this from the job card's
+// "Minta slip LinkMe" WhatsApp button.
+export const jubahLinkMeMsg = (name: string, ref: string): string =>
+  `Assalamualaikum & salam sejahtera ${name} 😊\n\n` +
+  `Ini daripada Gerak Jubah (No. order: ${ref}).\n\n` +
+  `Pusat Perhubungan Alumni UMPSA kini guna *LinkMe* untuk menggantikan OSCAR. Masa kami ambil jubah dan cenderamata konvokesyen anda nanti, kaunter cenderamata perlukan *Official Profile Verification Slip* LinkMe anda.\n\n` +
+  `Mohon:\n` +
+  `1. Daftar akaun LinkMe (kalau belum): https://link-me.com.my/alumni_umpsa.php\n` +
+  `2. Muat turun *Official Profile Verification Slip*\n` +
+  `3. Hantar slip tu di WhatsApp ini (PDF atau gambar yang jelas)\n\n` +
+  `Mohon hantar secepat mungkin supaya urusan di kaunter berjalan lancar. Terima kasih! 🙏`;

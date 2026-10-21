@@ -15,7 +15,7 @@ import { JubahStepper } from '../../../components/JubahStepper';
 import { buildJubahReceiptRows, type ReceiptDoc } from '../../../lib/receiptRows';
 import {
   JUBAH_STEP_LABEL as JUBAH_STATUS_LABEL, JUBAH_STATUS_STYLE,
-  JUBAH_NEXT_LABEL, getJubahProgress, jubahWaMsg,
+  JUBAH_NEXT_LABEL, getJubahProgress, jubahWaMsg, jubahLinkMeMsg,
 } from '../../../lib/jubahStatus';
 import { generateReceiptPdf } from '../../../lib/receiptPdf';
 import { jubahLocationLabel } from '../../../lib/universities';
@@ -915,6 +915,15 @@ export function JubahCustomerSubTab({
                   {b.payment_mode === 'deposit' ? (b.balance_paid ? 'Full Paid' : 'Deposit') : 'Full Paid'}
                 </span>
               </div>
+
+              {/* UMPSA: ask the customer for their LinkMe verification slip. */}
+              {b.university_key === 'umpsa' && (
+                <a href={`https://wa.me/${toWa(b.hp_number)}?text=${encodeURIComponent(jubahLinkMeMsg(b.full_name, b.reference))}`}
+                  target="_blank" rel="noopener noreferrer"
+                  className="w-full flex items-center justify-center gap-2 bg-white border border-emerald-200 text-emerald-700 text-xs font-semibold py-2.5 rounded-xl active:scale-[0.98] transition">
+                  <WaIcon className="w-4 h-4 text-[#25D366]" /> Minta slip LinkMe
+                </a>
+              )}
 
               {/* Progress stepper */}
               <JubahStepper steps={steps} curStep={curStep} labels={JUBAH_STATUS_LABEL} />
