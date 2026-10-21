@@ -63,11 +63,17 @@ window.addEventListener('vite:preloadError', () => {
 // eslint-disable-next-line react-refresh/only-export-components -- entry file, not a component module
 const JubahDispatch = lazy(() => import('./pages/JubahDispatch.tsx'));
 const isJntDispatch = window.location.pathname.replace(/\/+$/, '') === '/jnt';
+// gerakmy.com/jubah/linkme?ref=… — customer uploads only their LinkMe slip.
+// eslint-disable-next-line react-refresh/only-export-components -- entry file, not a component module
+const JubahLinkMe = lazy(() => import('./pages/JubahLinkMe.tsx'));
+const isJubahLinkMe = window.location.pathname.replace(/\/+$/, '') === '/jubah/linkme';
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <ErrorBoundary>
-      {isJntDispatch ? <Suspense fallback={null}><JubahDispatch /></Suspense> : <App />}
+      {isJntDispatch ? <Suspense fallback={null}><JubahDispatch /></Suspense>
+        : isJubahLinkMe ? <Suspense fallback={null}><JubahLinkMe /></Suspense>
+        : <App />}
     </ErrorBoundary>
   </StrictMode>,
 )

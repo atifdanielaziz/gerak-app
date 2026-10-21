@@ -100,7 +100,7 @@ export type JubahDocField = 'oscar' | 'skpg' | 'konvo' | 'ic';
 // the four fields above, not uploaded directly) — a separate, wider type
 // for the view-only path rather than loosening JubahDocField itself, so a
 // stray 'combined' can't typecheck its way into a replace call.
-export type JubahDocViewField = JubahDocField | 'combined';
+export type JubahDocViewField = JubahDocField | 'combined' | 'linkme';
 
 export interface ReplaceResult {
   success: boolean;
@@ -246,4 +246,28 @@ export function openInNewTab(url: string) {
   const opened = window.open(url, '_blank');
   if (opened) opened.opener = null;
   else window.location.assign(url);
+}
+
+// LinkMe Official Profile Verification Slip (UMPSA). Uploaded by the
+// customer from gerakmy.com/jubah/linkme; stored in the booking's own
+// folder as linkme_<timestamp>.<ext>, which customer_upload_jubah_linkme
+// checks before saving the path.
+export async function uploadJubahLinkMeSlip(reference: string, icLast4: string, original: File): Promise<ReplaceResult> {
+  if (!ACCEPTED_DOC_TYPES.includes(original.type)) {
+    return { success: false, error: 'Only PDF, JPG or PNG files are accepted.' };
+  }
+  const file = await compressImage(original);
+  if (file.size > 5 * 1024 * 1024) {
+    return { success: false, error: 'File is larger than 5 MB. Please upload a smaller file (e.g. a photo or a compressed PDF).' };
+  }
+  const ext = (file.type === 'application/pdf' ? 'pdf' : file.type === 'image/png' ? 'png' : file.type === 'image/webp' ? 'webp' : 'jpg');
+  const path = `${reference}/linkme_${Date.now()}.${ext}`;
+  const { error: upErr } = await supabase.storage.from('jubah-docs').upload(path, file, { contentType: file.type, upsert: false });
+  if (upErr) {
+    console.error('[GERAK] LinkMe slip upload failed:', upErr);
+    return { success: false, error: upErr.message || 'Upload failed. Please try again.' };
+  }
+  const { data, error } = await supabase.rpc('customer_upload_jubah_linkme', { p_reference: reference, p_ic_last4: icLast4, p_path: path });
+  if (error || !data?.success) return { success: false, error: data?.error ?? error?.message ?? 'Could not save your slip.' };
+  return { success: true, error: null };
 }

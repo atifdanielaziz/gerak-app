@@ -19,6 +19,9 @@ const FIELD_COLUMNS: Record<string, string> = {
   // (it's generated from the four above, not uploaded directly), so it's
   // valid here but deliberately absent from that function's field check.
   combined: 'docs_path',
+  // LinkMe Official Profile Verification Slip — uploaded through
+  // customer_upload_jubah_linkme, viewable here like the others.
+  linkme: 'linkme_path',
 }
 
 // Lets a customer preview/download their own currently-uploaded OSCAR/SKPG/

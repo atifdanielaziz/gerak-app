@@ -76,6 +76,7 @@ export type JubahBookingRow = {
   initial_paid: boolean; initial_paid_at: string | null;
   delivery_address: string | null;
   docs_path: string | null; payment_path: string | null; oscar_path: string | null;
+  linkme_path?: string | null; linkme_uploaded_at?: string | null;
   skpg_path: string | null; konvo_path: string | null; ic_path: string | null;
   created_at: string;
   // Permanent per-university order number (same "No" J&T staff see).
@@ -414,11 +415,12 @@ export function JubahCustomerSubTab({
       confirmState,
       b.printed ? 'Y' : 'N',
       b.doc_ready ? 'Ready' : 'Not Ready',
+      b.linkme_path ? 'Uploaded' : 'Missing',
       'Available',
     ];
   });
 
-  const exportHeaders = ['No', 'Reference', 'Name', 'Remark', 'Mode', 'Type', 'Status', 'Robe Status', 'Rider', 'Confirm', 'Printed', 'Doc Ready', 'Receipt'];
+  const exportHeaders = ['No', 'Reference', 'Name', 'Remark', 'Mode', 'Type', 'Status', 'Robe Status', 'Rider', 'Confirm', 'Printed', 'Doc Ready', 'LinkMe', 'Receipt'];
 
   // Printed / Doc Ready toggles — optimistic, rolled back if the RPC refuses.
   const [printSaving, setPrintSaving] = useState<string | null>(null);
@@ -617,6 +619,7 @@ export function JubahCustomerSubTab({
                     <th className="sticky top-0 bg-white py-2 pr-4 whitespace-nowrap">Confirm</th>
                     <th className="sticky top-0 bg-white py-2 pr-4 whitespace-nowrap">Printed</th>
                     <th className="sticky top-0 bg-white py-2 pr-4 whitespace-nowrap">Doc Ready</th>
+                    <th className="sticky top-0 bg-white py-2 pr-4 whitespace-nowrap">LinkMe</th>
                     <th className="sticky top-0 bg-white py-2 pr-4 whitespace-nowrap">Receipt</th>
                     <th className="sticky top-0 bg-white py-2 whitespace-nowrap">Combined PDF</th>
                   </tr>
@@ -765,6 +768,22 @@ export function JubahCustomerSubTab({
                             </td>
                           );
                         })}
+                        {/* LinkMe slip: tap Uploaded to open it. */}
+                        <td className="py-2.5 pr-4 align-top whitespace-nowrap">
+                          {b.linkme_path ? (
+                            <button type="button" title="Open LinkMe slip"
+                              onClick={async (e) => {
+                                e.stopPropagation();
+                                const { url, error } = await getJubahDocSignedUrl(b.linkme_path);
+                                if (url) openInNewTab(url); else showToast(error ? `Couldn't open LinkMe slip: ${error}` : "Couldn't open LinkMe slip.");
+                              }}
+                              className="text-xs font-semibold px-2.5 py-1 rounded-full border bg-emerald-50 border-emerald-100 text-emerald-700 active:scale-95 transition">
+                              Uploaded
+                            </button>
+                          ) : (
+                            <span className="text-xs font-semibold px-2.5 py-1 rounded-full border bg-red-50 border-red-200 text-red-600">Missing</span>
+                          )}
+                        </td>
                         <td className="py-2.5 pr-4 whitespace-nowrap">
                           {(() => {
                             const buildDoc = () => buildJubahReceiptRows({
@@ -1279,6 +1298,8 @@ export function JubahCustomerSubTab({
                 {/* Combined PDF is generated from the four docs above, not uploaded
                     directly — never editable here, see the migration's rationale. */}
                 <DocLinkRow label="Combined PDF" url={b.docs_path} showToast={showToast} />
+                {/* LinkMe slip — uploaded by the customer from /jubah/linkme. */}
+                <DocLinkRow label={b.linkme_path ? 'LinkMe Slip' : 'LinkMe Slip (Missing)'} url={b.linkme_path ?? null} showToast={showToast} />
               </div>
             </div>
 

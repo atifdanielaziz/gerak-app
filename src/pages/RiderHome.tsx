@@ -18,6 +18,7 @@ import {
   Copy, ClipboardCheck, Users,
 } from 'lucide-react';
 import { driverIsActive } from './Profile';
+import { JubahLinkMeGallery } from '../components/JubahLinkMeGallery';
 import { JubahStepper } from '../components/JubahStepper';
 import { ReceiptCard } from '../components/Receipt';
 import { buildJubahReceiptRows, type ReceiptDoc } from '../lib/receiptRows';
@@ -28,7 +29,7 @@ import { JubahCustomerDetailsSubTab } from './admin/jubah/JubahCustomerDetailsSu
 import { UNIVERSITY_MAP, universityKeyFromCampus } from '../lib/universities';
 
 type RiderTab    = 'daily' | 'jubah' | 'quote' | 'customers' | 'earnings';
-type JubahView   = 'list' | 'card' | 'details';
+type JubahView   = 'list' | 'card' | 'details' | 'linkme';
 
 // Structurally identical to admin/jubah/JubahCustomerSubTab's JubahBookingRow
 // (same fields JubahCustomerDetailsSubTab actually reads) — kept as its own
@@ -57,6 +58,9 @@ type JubahJobRow = {
   balance_proof_url: string | null;
   delivery_address: string | null;
   docs_path: string | null;
+  order_no?: number | null;
+  linkme_path?: string | null;
+  linkme_uploaded_at?: string | null;
   payment_path: string | null;
   oscar_path: string | null;
   skpg_path: string | null;
@@ -131,7 +135,7 @@ export const RiderHome: React.FC = () => {
     if (!authUser) { setJubahLoading(false); return; }
     const { data, error } = await supabase
       .from('jubah_bookings')
-      .select('id, reference, full_name, ic_number, hp_number, email, matric_id, university, university_key, campus, faculty, remark, payment_mode, cost, balance_due, balance_paid, balance_paid_at, initial_paid, initial_paid_at, balance_proof_url, delivery_address, docs_path, payment_path, oscar_path, skpg_path, konvo_path, ic_path, status, rider_id, rider_name, rider_phone, needs_reconciliation, reconciliation_note, created_at, payee_rider_id')
+      .select('id, order_no, reference, full_name, ic_number, hp_number, email, matric_id, university, university_key, campus, faculty, remark, payment_mode, cost, balance_due, balance_paid, balance_paid_at, initial_paid, initial_paid_at, balance_proof_url, delivery_address, docs_path, linkme_path, linkme_uploaded_at, payment_path, oscar_path, skpg_path, konvo_path, ic_path, status, rider_id, rider_name, rider_phone, needs_reconciliation, reconciliation_note, created_at, payee_rider_id')
       .eq('rider_id', authUser.id)
       .order('created_at', { ascending: false });
     if (error) console.error('[GERAK] jubah jobs load error:', error.message);
@@ -241,6 +245,7 @@ export const RiderHome: React.FC = () => {
     setJubahView(prev => {
       if (prev === 'details') return 'card';
       if (prev === 'card')   { setSelectedJob(null); return 'list'; }
+      if (prev === 'linkme') return 'list';
       return prev;
     });
   };
@@ -485,7 +490,7 @@ export const RiderHome: React.FC = () => {
                 <ChevronLeft className="w-4 h-4" />
             </button>
             <div>
-              <h2 className="text-xl font-semibold text-slate-800 m-0">{jubahView === 'card' ? 'Job Details' : 'Customer Info'}</h2>
+              <h2 className="text-xl font-semibold text-slate-800 m-0">{jubahView === 'card' ? 'Job Details' : jubahView === 'linkme' ? 'LinkMe Slips' : 'Customer Info'}</h2>
               <p className="text-xs text-slate-400 font-normal mt-0.5">
                 {activeTab === 'jubah' && jubahView === 'card' && selectedJob
                   ? `${selectedJob.reference} · ${selectedJob.full_name}`
@@ -566,6 +571,18 @@ export const RiderHome: React.FC = () => {
                   <span className="flex items-center gap-1.5"><GraduationCap className="w-4 h-4" /> My Assignments</span>
                   <span className="font-normal text-slate-300 normal-case tracking-normal">{visibleJubahJobs.length} jobs</span>
                 </h3>
+
+                {/* LinkMe slips gallery (UMPSA) — filter/sort by faculty. */}
+                {visibleJubahJobs.some(j => j.university_key === 'umpsa') && (
+                  <button type="button" onClick={() => setJubahView('linkme')}
+                    className="w-full flex items-center justify-between gap-2 bg-slate-50 border border-slate-100 rounded-2xl px-4 py-3 active:scale-[0.99] transition text-left">
+                    <span className="text-xs font-semibold text-slate-700">LinkMe slips</span>
+                    <span className="text-xs text-slate-400 tabular-nums">
+                      {visibleJubahJobs.filter(j => j.university_key === 'umpsa' && j.status !== 'cancelled' && j.linkme_path).length}/
+                      {visibleJubahJobs.filter(j => j.university_key === 'umpsa' && j.status !== 'cancelled').length} uploaded →
+                    </span>
+                  </button>
+                )}
 
                 {jubahLoading ? (
                   <div className="flex justify-center py-8">
@@ -784,6 +801,10 @@ export const RiderHome: React.FC = () => {
                   </div>
                 )}
               </div>
+            )}
+
+            {jubahView === 'linkme' && (
+              <JubahLinkMeGallery jobs={visibleJubahJobs.filter(j => j.university_key === 'umpsa')} showToast={showToast} />
             )}
 
             {/* PAGE 2 — Job Card with stepper */}
@@ -1038,6 +1059,7 @@ export const RiderHome: React.FC = () => {
                     { label: 'SKPG',            url: selectedJob.skpg_path,    field: 'skpg' },
                     { label: 'Konvo Slip',      url: selectedJob.konvo_path,   field: 'konvo' },
                     { label: 'IC Copy',         url: selectedJob.ic_path,      field: 'ic' },
+                    { label: selectedJob.linkme_path ? 'LinkMe Slip' : 'LinkMe Slip (Missing)', url: selectedJob.linkme_path ?? null, field: null },
                   ] as { label: string; url: string | null; field: JubahDocField | null }[]).map(({ label, url, field }) => (
                     <div key={label} className="flex items-center justify-between gap-3 border-b border-slate-100 pb-3 last:border-0 last:pb-0">
                       <span className="text-sm font-semibold text-slate-700">{label}</span>
