@@ -15,19 +15,27 @@ import { WaIcon, toWa } from '../lib/whatsapp';
 export type LinkMeGalleryJob = {
   id: string; reference: string; full_name: string; faculty: string | null; hp_number: string;
   order_no?: number | null; linkme_path?: string | null; linkme_uploaded_at?: string | null; status: string;
+  rider_name?: string | null;
 };
 
 type Sort = 'faculty' | 'name' | 'no' | 'recent';
 const isImage = (p: string) => /\.(jpe?g|png|webp)$/i.test(p);
 
-export function JubahLinkMeGallery({ jobs, showToast }: { jobs: LinkMeGalleryJob[]; showToast: (m: string) => void }) {
+// showRiderFilter: superadmin's Admin > Jubah > LinkMe tab, which lists every
+// rider's bookings.
+export function JubahLinkMeGallery({ jobs, showToast, showRiderFilter = false }: {
+  jobs: LinkMeGalleryJob[]; showToast: (m: string) => void; showRiderFilter?: boolean;
+}) {
   const [faculty, setFaculty] = useState('all');
+  const [rider, setRider] = useState('all');
   const [show, setShow] = useState<'all' | 'uploaded' | 'missing'>('all');
   const [sort, setSort] = useState<Sort>('faculty');
   const [thumbs, setThumbs] = useState<Record<string, string>>({});
   const requested = useRef(new Set<string>());
 
-  const live = useMemo(() => jobs.filter(j => j.status !== 'cancelled'), [jobs]);
+  const allLive = useMemo(() => jobs.filter(j => j.status !== 'cancelled'), [jobs]);
+  const riders = useMemo(() => [...new Set(allLive.map(j => j.rider_name ?? '—'))].sort(), [allLive]);
+  const live = useMemo(() => allLive.filter(j => rider === 'all' || (j.rider_name ?? '—') === rider), [allLive, rider]);
   const faculties = useMemo(() => [...new Set(live.map(j => (j.faculty ?? '').trim() || '—'))].sort(), [live]);
   const uploadedCount = live.filter(j => j.linkme_path).length;
 
@@ -69,6 +77,12 @@ export function JubahLinkMeGallery({ jobs, showToast }: { jobs: LinkMeGalleryJob
       </div>
 
       <div className="flex flex-wrap gap-2">
+        {showRiderFilter && (
+          <select value={rider} onChange={e => setRider(e.target.value)} aria-label="Rider" className={select}>
+            <option value="all">All riders</option>
+            {riders.map(r => <option key={r} value={r}>{r}</option>)}
+          </select>
+        )}
         <select value={faculty} onChange={e => setFaculty(e.target.value)} aria-label="Faculty" className={select}>
           <option value="all">All faculties</option>
           {faculties.map(f => <option key={f} value={f}>{f}</option>)}
@@ -113,6 +127,7 @@ export function JubahLinkMeGallery({ jobs, showToast }: { jobs: LinkMeGalleryJob
               <div className="px-2.5 py-2 flex flex-col gap-0.5 min-w-0">
                 <span className="text-[11px] font-semibold text-slate-800 leading-tight line-clamp-2">{j.full_name}</span>
                 <span className="text-[10px] text-slate-400 truncate">{j.order_no ? `No. ${j.order_no} · ` : ''}{(j.faculty ?? '').trim() || '—'}</span>
+                {showRiderFilter && <span className="text-[10px] text-slate-400 truncate">{(j.rider_name ?? '—').split(' ').slice(0, 2).join(' ')}</span>}
               </div>
             </div>
           ))}

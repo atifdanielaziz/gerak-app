@@ -28,6 +28,7 @@ import { EarningsTab, type EarningsTabHandle } from './admin/earnings/EarningsTa
 import { OrdersTab, type OrdersTabHandle } from './admin/orders/OrdersTab';
 import { JubahRiderSubTab, type JubahRiderSubTabHandle } from './admin/jubah/JubahRiderSubTab';
 import { JubahCustomerSubTab, type JubahBookingRow } from './admin/jubah/JubahCustomerSubTab';
+import { JubahLinkMeGallery } from '../components/JubahLinkMeGallery';
 import { JubahCustomerDetailsSubTab } from './admin/jubah/JubahCustomerDetailsSubTab';
 import { ActivityLogTab, type ActivityLogTabHandle } from './admin/activity/ActivityLogTab';
 import { SettingsTab } from './admin/settings/SettingsTab';
@@ -112,7 +113,7 @@ export const AdminHome: React.FC = () => {
   const [jubahBookingsTotalCount, setJubahBookingsTotalCount] = useState<number | null>(null);
   const [jubahAdminView,     setJubahAdminView]     = useState<'list' | 'card'>('list');
   const [jubahAdminSelected, setJubahAdminSelected] = useState<JubahBookingRow | null>(null);
-  const [jubahSubTab,        setJubahSubTab]        = useState<'customer' | 'customer_details' | 'rider' | 'custom' | 'price' | 'faculty' | 'banner'>('rider');
+  const [jubahSubTab,        setJubahSubTab]        = useState<'customer' | 'customer_details' | 'rider' | 'custom' | 'price' | 'linkme' | 'faculty' | 'banner'>('rider');
   const previousActiveRoleRef = useRef(activeRole);
   useEffect(() => {
     // AdminHome remains mounted while a superadmin switches roles. Keep its
@@ -131,7 +132,7 @@ export const AdminHome: React.FC = () => {
   // selected rather than silently rendering nothing. A derived value
   // (not a useEffect writing back to jubahSubTab) avoids a pointless
   // extra render on every tab switch.
-  const effectiveJubahSubTab = jubahSubTab === 'price' && !isSuperAdmin ? 'rider' : jubahSubTab;
+  const effectiveJubahSubTab = (jubahSubTab === 'price' || jubahSubTab === 'linkme') && !isSuperAdmin ? 'rider' : jubahSubTab;
   // Reported up by JubahCustomerSubTab's own receipt-preview modal.
   const [jubahCustomerModalOpen, setJubahCustomerModalOpen] = useState(false);
   // Which university's Jubah data the panel shows — superadmin can switch
@@ -440,6 +441,7 @@ export const AdminHome: React.FC = () => {
     { id: 'customer_details', label: 'Customer Details', superadminOnly: false },
     { id: 'custom', label: 'Custom', superadminOnly: false },
     { id: 'price', label: 'Price', superadminOnly: true },
+    { id: 'linkme', label: 'LinkMe', superadminOnly: true },
     { id: 'faculty', label: 'Faculty', superadminOnly: false },
     { id: 'banner', label: 'Banner', superadminOnly: false },
   ] as const).filter(t => (!t.superadminOnly || isSuperAdmin)
@@ -949,6 +951,7 @@ export const AdminHome: React.FC = () => {
                 { id: 'customer_details', label: 'Customer Details', superadminOnly: false },
                 { id: 'custom',   label: 'Custom',   superadminOnly: false },
                 { id: 'price',    label: 'Price',    superadminOnly: true },
+                { id: 'linkme',   label: 'LinkMe',   superadminOnly: true },
                 { id: 'faculty',  label: 'Faculty',  superadminOnly: false },
                 { id: 'banner',   label: 'Banner',   superadminOnly: false },
               ] as const)
@@ -984,6 +987,11 @@ export const AdminHome: React.FC = () => {
               showToast={showToast}
               onModalOpenChange={setJubahRiderModalOpen}
             />
+          )}
+
+          {/* -- LINKME sub-tab (superadmin): every booking's LinkMe slip -- */}
+          {effectiveJubahSubTab === 'linkme' && (
+            <JubahLinkMeGallery jobs={jubahBookings} showToast={showToast} showRiderFilter />
           )}
 
           {/* -- CUSTOMER sub-tab -- */}
