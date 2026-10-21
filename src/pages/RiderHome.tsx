@@ -129,8 +129,14 @@ export const RiderHome: React.FC = () => {
   }, [adminUniversityKey]);
 
   // ── Load jubah assignments ────────────────────────────────────────────────
+  // Spinner only for the first load (and after switching university).
+  // Background refreshes — the 20s poll and every realtime change, which are
+  // frequent now (J&T copy marks, LinkMe uploads, Printed/Ready toggles) —
+  // swap the data in silently instead of blanking the list each time.
+  const jubahLoadedRef = useRef(false);
+  useEffect(() => { jubahLoadedRef.current = false; }, [bookingMatchesUniversity]);
   const loadJubahJobs = useCallback(async () => {
-    setJubahLoading(true);
+    if (!jubahLoadedRef.current) setJubahLoading(true);
     const { data: { user: authUser } } = await supabase.auth.getUser();
     if (!authUser) { setJubahLoading(false); return; }
     const { data, error } = await supabase
@@ -145,6 +151,7 @@ export const RiderHome: React.FC = () => {
     // it too, or a customer's document replacement (or any other change)
     // never shows there until the rider leaves and reopens the job.
     if (!error) setSelectedJob(prev => (prev ? rows.find(r => r.id === prev.id) ?? prev : prev));
+    jubahLoadedRef.current = true;
     setJubahLoading(false);
   }, [bookingMatchesUniversity]);
 
@@ -164,6 +171,7 @@ export const RiderHome: React.FC = () => {
     let channel: ReturnType<typeof supabase.channel> | null = null;
     let pollId: ReturnType<typeof setInterval> | null = null;
     let onVisible: (() => void) | null = null;
+    let debounceId: ReturnType<typeof setTimeout> | null = null;
     let cancelled = false;
 
     (async () => {
@@ -172,7 +180,12 @@ export const RiderHome: React.FC = () => {
 
       channel = supabase
         .channel('jubah_bookings_rider')
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'jubah_bookings', filter: `rider_id=eq.${authUser.id}` }, () => loadJubahJobs())
+        // Debounced: a burst of changes (e.g. J&T staff marking many
+        // parcels) triggers one reload, not one per row.
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'jubah_bookings', filter: `rider_id=eq.${authUser.id}` }, () => {
+          if (debounceId) clearTimeout(debounceId);
+          debounceId = setTimeout(() => loadJubahJobs(), 1500);
+        })
         .subscribe();
 
       pollId = setInterval(() => loadJubahJobs(), 20_000);
@@ -184,6 +197,7 @@ export const RiderHome: React.FC = () => {
       cancelled = true;
       if (channel) supabase.removeChannel(channel);
       if (pollId) clearInterval(pollId);
+      if (debounceId) clearTimeout(debounceId);
       if (onVisible) document.removeEventListener('visibilitychange', onVisible);
     };
   }, [activeTab, loadJubahJobs]);
