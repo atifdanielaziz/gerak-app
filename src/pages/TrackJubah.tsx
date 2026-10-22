@@ -452,9 +452,9 @@ export const TrackJubah: React.FC = () => {
 
                 {/* Held: shown as not posted yet until the balance is paid (owner's wording). */}
                 {b.tracking_held && b.status !== 'cancelled' && (
-                  <div className="bg-amber-50 border border-amber-200 rounded-2xl px-4 py-3 flex flex-col gap-1">
-                    <p className="text-sm font-semibold text-amber-800 m-0">Jubah anda ditahan 📦</p>
-                    <p className="text-xs text-amber-700 m-0 leading-relaxed">
+                  <div className="bg-red-50 border border-red-200 rounded-2xl px-4 py-3 flex flex-col gap-1">
+                    <p className="text-sm font-semibold text-red-700 m-0">Jubah anda ditahan 📦</p>
+                    <p className="text-xs text-red-600 m-0 leading-relaxed">
                       Parcel anda akan dipos selepas baki RM{Number(b.balance_due).toFixed(2)} dibayar.
                     </p>
                   </div>
