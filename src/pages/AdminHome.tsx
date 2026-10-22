@@ -441,7 +441,7 @@ export const AdminHome: React.FC = () => {
     { id: 'customer_details', label: 'Customer Details', superadminOnly: false },
     { id: 'custom', label: 'Custom', superadminOnly: false },
     { id: 'price', label: 'Price', superadminOnly: true },
-    { id: 'linkme', label: 'LinkMe', superadminOnly: true },
+    { id: 'linkme', label: 'Gallery', superadminOnly: true },
     { id: 'faculty', label: 'Faculty', superadminOnly: false },
     { id: 'banner', label: 'Banner', superadminOnly: false },
   ] as const).filter(t => (!t.superadminOnly || isSuperAdmin)
@@ -951,7 +951,7 @@ export const AdminHome: React.FC = () => {
                 { id: 'customer_details', label: 'Customer Details', superadminOnly: false },
                 { id: 'custom',   label: 'Custom',   superadminOnly: false },
                 { id: 'price',    label: 'Price',    superadminOnly: true },
-                { id: 'linkme',   label: 'LinkMe',   superadminOnly: true },
+                { id: 'linkme',   label: 'Gallery',  superadminOnly: true },
                 { id: 'faculty',  label: 'Faculty',  superadminOnly: false },
                 { id: 'banner',   label: 'Banner',   superadminOnly: false },
               ] as const)
@@ -989,7 +989,7 @@ export const AdminHome: React.FC = () => {
             />
           )}
 
-          {/* -- LINKME sub-tab (superadmin): every booking's LinkMe slip -- */}
+          {/* -- GALLERY sub-tab (superadmin): every booking's LinkMe slip / Konvo Slip -- */}
           {effectiveJubahSubTab === 'linkme' && (
             <JubahLinkMeGallery jobs={jubahBookings} showToast={showToast} showRiderFilter />
           )}

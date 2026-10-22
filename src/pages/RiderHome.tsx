@@ -520,7 +520,7 @@ export const RiderHome: React.FC = () => {
                 <ChevronLeft className="w-4 h-4" />
             </button>
             <div>
-              <h2 className="text-xl font-semibold text-slate-800 m-0">{jubahView === 'card' ? 'Job Details' : jubahView === 'linkme' ? 'LinkMe Slips' : 'Customer Info'}</h2>
+              <h2 className="text-xl font-semibold text-slate-800 m-0">{jubahView === 'card' ? 'Job Details' : jubahView === 'linkme' ? 'Document Gallery' : 'Customer Info'}</h2>
               <p className="text-xs text-slate-400 font-normal mt-0.5">
                 {activeTab === 'jubah' && jubahView === 'card' && selectedJob
                   ? `${selectedJob.reference} · ${selectedJob.full_name}`
@@ -631,11 +631,11 @@ export const RiderHome: React.FC = () => {
                   </div>
                 )}
 
-                {/* LinkMe slips gallery (UMPSA) — filter/sort by faculty. */}
+                {/* Document gallery (UMPSA): LinkMe slip and Konvo Slip tabs, filter/sort by faculty. */}
                 {visibleJubahJobs.some(j => j.university_key === 'umpsa') && (
                   <button type="button" onClick={() => setJubahView('linkme')}
                     className="w-full flex items-center justify-between gap-2 bg-slate-50 border border-slate-100 rounded-2xl px-4 py-3 active:scale-[0.99] transition text-left">
-                    <span className="text-xs font-semibold text-slate-700">LinkMe slips</span>
+                    <span className="text-xs font-semibold text-slate-700">Document gallery · LinkMe &amp; Konvo Slip</span>
                     <span className="text-xs text-slate-400 tabular-nums">
                       {visibleJubahJobs.filter(j => j.university_key === 'umpsa' && j.status !== 'cancelled' && j.linkme_path).length}/
                       {visibleJubahJobs.filter(j => j.university_key === 'umpsa' && j.status !== 'cancelled').length} uploaded →
