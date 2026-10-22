@@ -15,7 +15,7 @@ import {
   ShoppingBasket, GraduationCap, TrendingUp,
   Upload, FileImage, ShieldCheck, ShieldAlert,
   ChevronLeft, Download, ExternalLink, CheckCircle2, XCircle, Eye, X, Clock,
-  Copy, ClipboardCheck, Users,
+  Copy, ClipboardCheck, Users, Mail,
 } from 'lucide-react';
 import { driverIsActive } from './Profile';
 import { JubahLinkMeGallery } from '../components/JubahLinkMeGallery';
@@ -81,7 +81,17 @@ const getNextStatus = (job: JubahJobRow): string | null =>
   getJubahProgress(job.status, job.payment_mode).nextStatus;
 
 export const RiderHome: React.FC = () => {
-  const { user, refreshUserData, receiptGateActive, setLeaveGuard, adminUniversityKey } = useApp();
+  const { user, refreshUserData, receiptGateActive, setLeaveGuard, adminUniversityKey, showConfirmModal } = useApp();
+
+  // J&T tracking emails for this rider's own parcels (owner's option 2).
+  // Same edge function as superadmin's send-all, scoped server-side to
+  // bookings where this user is the rider; sent bookings move to Collected.
+  const [trackInfo, setTrackInfo] = useState<{ pending: number; no_email: number; emailed: number } | null>(null);
+  const [sendingTracking, setSendingTracking] = useState(false);
+  const loadTrackInfo = useCallback(async () => {
+    const { data } = await supabase.rpc('count_jubah_tracking_unsent', { p_university: adminUniversityKey });
+    setTrackInfo(data?.success ? { pending: data.pending, no_email: data.no_email, emailed: data.emailed } : null);
+  }, [adminUniversityKey]);
   const jubahJobsScrollRef = useAxisLockedScroll<HTMLDivElement>();
 
   const [activeTab,     setActiveTab]     = useState<RiderTab>('daily');
@@ -156,6 +166,7 @@ export const RiderHome: React.FC = () => {
   }, [bookingMatchesUniversity]);
 
   useLoadOnActive(activeTab === 'jubah' || activeTab === 'customers', loadJubahJobs);
+  useLoadOnActive(activeTab === 'jubah', loadTrackInfo);
 
   const visibleJubahJobs = jubahJobs;
 
@@ -585,6 +596,35 @@ export const RiderHome: React.FC = () => {
                   <span className="flex items-center gap-1.5"><GraduationCap className="w-4 h-4" /> My Assignments</span>
                   <span className="font-normal text-slate-300 normal-case tracking-normal">{visibleJubahJobs.length} jobs</span>
                 </h3>
+
+                {/* Tracking emails — only once J&T has entered numbers for this rider's parcels. */}
+                {trackInfo && (trackInfo.pending + trackInfo.emailed + trackInfo.no_email) > 0 && (
+                  <div className="bg-slate-50 border border-slate-100 rounded-2xl px-4 py-3 flex items-center gap-3">
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs font-semibold text-slate-700 m-0">J&amp;T tracking emails</p>
+                      <p className="text-[11px] text-slate-400 m-0">
+                        {trackInfo.pending} waiting · {trackInfo.emailed} sent{trackInfo.no_email > 0 ? ` · ${trackInfo.no_email} no email` : ''}
+                      </p>
+                    </div>
+                    <button type="button" disabled={sendingTracking || trackInfo.pending === 0}
+                      onClick={() => showConfirmModal({
+                        title: 'Send tracking emails?',
+                        message: `Emails ${trackInfo.pending} of your customer${trackInfo.pending === 1 ? '' : 's'} their J&T tracking number and moves those bookings to Collected. Check the numbers first — each number is sent only once.`,
+                        confirmLabel: 'SEND EMAILS',
+                        onConfirm: async () => {
+                          setSendingTracking(true);
+                          const { data, error } = await supabase.functions.invoke('send-jubah-tracking-emails', { body: { universityKey: adminUniversityKey } });
+                          setSendingTracking(false);
+                          if (error || !data?.success) { showToast(data?.error ?? 'Failed to send emails.'); return; }
+                          showToast(data.failed?.length ? `Sent ${data.sent}, failed ${data.failed.length}` : `Sent ${data.sent} email${data.sent === 1 ? '' : 's'} ✓ · ${data.collected ?? 0} moved to Collected`);
+                          void loadTrackInfo(); void loadJubahJobs();
+                        },
+                      })}
+                      className="shrink-0 flex items-center gap-1.5 bg-slate-800 text-white text-xs font-semibold px-3 py-2 rounded-xl active:scale-95 transition disabled:opacity-40">
+                      <Mail className="w-3.5 h-3.5" /> {sendingTracking ? 'Sending…' : `Send (${trackInfo.pending})`}
+                    </button>
+                  </div>
+                )}
 
                 {/* LinkMe slips gallery (UMPSA) — filter/sort by faculty. */}
                 {visibleJubahJobs.some(j => j.university_key === 'umpsa') && (

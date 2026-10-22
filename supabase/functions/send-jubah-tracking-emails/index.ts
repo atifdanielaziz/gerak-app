@@ -2,7 +2,8 @@ import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
 // Superadmin presses "Send tracking emails" in Admin > Jubah > Settings >
-// J&T Postage after checking the numbers J&T staff entered. Emails every
+// J&T Postage (all parcels), or a rider presses it in Rider Hub > Jubah Job
+// (their own parcels only), after checking the numbers J&T staff entered. Emails every
 // postage parcel of that university whose tracking_no hasn't been emailed
 // yet (tracking_no <> tracking_emailed_no), then records what was sent so
 // the same number never goes out twice. Same Resend sender as the receipt
@@ -42,7 +43,9 @@ serve(async (req) => {
 
     const admin = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!)
     const { data: profile } = await admin.from('profiles').select('role, name').eq('id', user.id).single()
-    if (profile?.role !== 'superadmin') return json({ success: false, error: 'Superadmin only.' }, 403)
+    // Superadmin sends for the whole university; anyone else (a rider)
+    // only for bookings where they are the assigned rider.
+    const isSuperadmin = profile?.role === 'superadmin'
 
     const { universityKey } = await req.json().catch(() => ({}))
     if (!universityKey || typeof universityKey !== 'string') return json({ success: false, error: 'Missing university.' }, 400)
@@ -51,12 +54,14 @@ serve(async (req) => {
     const from = Deno.env.get('RESEND_FROM_EMAIL')
     if (!apiKey || !from) return json({ success: false, error: 'Email is not configured.' }, 500)
 
-    const { data: rows, error } = await admin
+    let query = admin
       .from('jubah_bookings')
       .select('id, reference, full_name, email, delivery_address, tracking_no, tracking_emailed_no, status')
       .eq('university_key', universityKey)
       .neq('status', 'cancelled')
       .not('tracking_no', 'is', null)
+    if (!isSuperadmin) query = query.eq('rider_id', user.id)
+    const { data: rows, error } = await query
     if (error) return json({ success: false, error: error.message }, 500)
 
     const pending = (rows ?? []).filter(r => r.tracking_no !== r.tracking_emailed_no && (r.email ?? '').trim()) as Row[]
@@ -84,7 +89,7 @@ serve(async (req) => {
     }
 
     await admin.from('admin_activity_log').insert({
-      actor_id: user.id, actor_name: profile?.name ?? 'Superadmin', actor_role: 'superadmin', table_name: 'jubah_bookings',
+      actor_id: user.id, actor_name: profile?.name ?? 'Staff', actor_role: profile?.role ?? null, table_name: 'jubah_bookings',
       record_id: universityKey, action: 'send_tracking_emails',
       changes: { sent, collected, failed },
     })
