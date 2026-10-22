@@ -59,6 +59,7 @@ export function JubahCustomerDetailsSubTab({
   const { showConfirmModal } = useApp();
   const tableScrollRef = useAxisLockedScroll<HTMLDivElement>();
   const [search, setSearch] = useState('');
+  const [faculty, setFaculty] = useState('all');
   const [docFields, setDocFields] = useState<DocField[]>(FALLBACK_FIELDS[universityKey] ?? FALLBACK_FIELDS.default);
   const [exportMenuOpen, setExportMenuOpen] = useState(false);
   const [exporting, setExporting] = useState<'csv' | 'xlsx' | null>(null);
@@ -104,14 +105,20 @@ export function JubahCustomerDetailsSubTab({
     return () => { cancelled = true; };
   }, [active, universityKey]);
 
+  const faculties = useMemo(
+    () => [...new Set(bookings.map(b => (b.faculty ?? '').trim()).filter(Boolean))].sort((a, b) => a.localeCompare(b)),
+    [bookings],
+  );
+
   const filtered = useMemo(() => {
     const query = search.trim().toLowerCase();
-    if (!query) return bookings;
-    return bookings.filter(booking => [
+    const byFaculty = faculty === 'all' ? bookings : bookings.filter(b => (b.faculty ?? '').trim() === faculty);
+    if (!query) return byFaculty;
+    return byFaculty.filter(booking => [
       booking.reference, booking.full_name, booking.ic_number, booking.hp_number,
       booking.email ?? '', booking.matric_id, booking.faculty, booking.campus,
     ].some(value => value.toLowerCase().includes(query)));
-  }, [bookings, search]);
+  }, [bookings, search, faculty]);
 
   const bookingSequenceById = useMemo(() => {
     const offset = Math.max(0, (bookingsTotalCount ?? bookings.length) - bookings.length);
@@ -123,20 +130,20 @@ export function JubahCustomerDetailsSubTab({
   }, [bookings, bookingsTotalCount]);
 
   const headers = useMemo(() => [
-    'No', 'Reference', 'Full Name', 'IC Number', 'Phone', 'Email', 'Matric ID',
+    'No', 'Reference', 'Matric ID', 'Full Name', 'IC Number', 'Phone', 'Email',
     'University', 'Campus', 'Faculty', 'Remark', 'Payment Mode', 'Amount (RM)',
     'Balance Due (RM)', 'Delivery Address', 'Rider', 'Status', 'Created At',
     ...docFields.map(field => field.label), 'Combined PDF', 'Payment Proof', 'Balance Proof',
   ], [docFields]);
 
   const detailRows = useMemo(() => filtered.map(booking => [
-    String(bookingSequenceById.get(booking.id) ?? ''),
+    String(booking.order_no ?? bookingSequenceById.get(booking.id) ?? ''),
     booking.reference,
+    booking.matric_id,
     booking.full_name,
     booking.ic_number,
     booking.hp_number,
     booking.email ?? '',
-    booking.matric_id,
     booking.university,
     booking.campus,
     booking.faculty,
@@ -183,7 +190,7 @@ export function JubahCustomerDetailsSubTab({
         ];
         const workbook = writeXlsxFile(sheet, {
           columns: headers.map((header, index) => ({
-            width: [2, 8, 14].includes(index) ? 30 : Math.max(10, Math.min(24, header.length + 3)),
+            width: [3, 7, 14].includes(index) ? 30 : Math.max(10, Math.min(24, header.length + 3)),
           })),
         });
         await workbook.toFile(`${fileBase}.xlsx`);
@@ -201,6 +208,11 @@ export function JubahCustomerDetailsSubTab({
     <div className="flex flex-col gap-4">
         <div className="bg-white border border-slate-100 rounded-2xl p-3.5 flex gap-2">
           <AdminSearchInput value={search} onChange={setSearch} placeholder="Search customer details…" className="flex-1" />
+          <select value={faculty} onChange={e => setFaculty(e.target.value)} aria-label="Filter by faculty"
+            className="h-10 max-w-[45%] bg-white border border-slate-100 rounded-xl px-2.5 text-xs font-semibold text-slate-600 focus:outline-none">
+            <option value="all">All faculties</option>
+            {faculties.map(f => <option key={f} value={f}>{f}</option>)}
+          </select>
           <button type="button" onPointerDown={event => { event.preventDefault(); reload(); }} aria-label="Refresh customer details"
             className="w-10 h-10 flex items-center justify-center rounded-xl bg-white border border-slate-100 text-slate-400 active:scale-90 transition-transform transform-gpu">
           <RefreshCw className="w-4 h-4" />
@@ -259,7 +271,7 @@ export function JubahCustomerDetailsSubTab({
                       return <td key={`${booking.id}-${headers[index]}`} className="py-2.5 pr-5 whitespace-nowrap font-normal text-slate-600">
                         {isDocument
                           ? value === '✓' ? <CheckCircle2 className="w-4 h-4 text-emerald-500" /> : <XCircle className="w-4 h-4 text-red-500" />
-                          : <span className={index === 1 ? 'font-mono font-semibold text-primary' : index === 2 ? 'font-semibold text-slate-800' : ''}>{value || '—'}</span>}
+                          : <span className={index === 1 ? 'font-mono font-semibold text-primary' : index === 2 ? 'font-mono text-slate-700' : index === 3 ? 'font-semibold text-slate-800' : ''}>{value || '—'}</span>}
                       </td>;
                     })}
                     {isSuperAdmin && (
