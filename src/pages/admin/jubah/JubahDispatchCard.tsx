@@ -33,7 +33,7 @@ export function JubahDispatchCard({ active, showToast, jubahUniversity }: {
   const [creating, setCreating] = useState(false);
   const [newLink, setNewLink] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
-  const [trackInfo, setTrackInfo] = useState<{ pending: number; no_email: number; emailed: number } | null>(null);
+  const [trackInfo, setTrackInfo] = useState<{ pending: number; no_email: number; emailed: number; held: number } | null>(null);
   const [sendingEmails, setSendingEmails] = useState(false);
   const uniLabel = UNIVERSITY_MAP[jubahUniversity]?.shortLabel ?? jubahUniversity.toUpperCase();
 
@@ -46,7 +46,7 @@ export function JubahDispatchCard({ active, showToast, jubahUniversity }: {
     if (se || le) { showToast((se ?? le)!.message); return; }
     setSenders((s as SenderRow[]) ?? []);
     setLinks((l as LinkRow[]) ?? []);
-    setTrackInfo(t?.success ? { pending: t.pending, no_email: t.no_email, emailed: t.emailed } : null);
+    setTrackInfo(t?.success ? { pending: t.pending, no_email: t.no_email, emailed: t.emailed, held: t.held ?? 0 } : null);
   }, [jubahUniversity, showToast]);
   useLoadOnActive(active, load);
 
@@ -226,7 +226,7 @@ export function JubahDispatchCard({ active, showToast, jubahUniversity }: {
         <p className="text-xs font-semibold text-slate-500">Tracking emails</p>
         <p className="text-[11px] text-slate-500 m-0">
           {trackInfo
-            ? <>{trackInfo.pending} waiting to send · {trackInfo.emailed} already emailed{trackInfo.no_email > 0 ? <> · {trackInfo.no_email} without an email address (skipped)</> : null}</>
+            ? <>{trackInfo.pending} waiting to send · {trackInfo.emailed} already emailed{trackInfo.held > 0 ? <> · {trackInfo.held} held (balance unpaid — sent automatically once confirmed)</> : null}{trackInfo.no_email > 0 ? <> · {trackInfo.no_email} without an email address (skipped)</> : null}</>
             : 'Loading…'}
         </p>
         <button type="button" onClick={sendTrackingEmails} disabled={sendingEmails || !trackInfo?.pending}

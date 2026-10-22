@@ -47,7 +47,9 @@ serve(async (req) => {
     // only for bookings where they are the assigned rider.
     const isSuperadmin = profile?.role === 'superadmin'
 
-    const { universityKey } = await req.json().catch(() => ({}))
+    // bookingId: send just that booking — used right after its deposit
+    // balance is confirmed, so a held tracking email goes out automatically.
+    const { universityKey, bookingId } = await req.json().catch(() => ({}))
     if (!universityKey || typeof universityKey !== 'string') return json({ success: false, error: 'Missing university.' }, 400)
 
     const apiKey = Deno.env.get('RESEND_API_KEY')
@@ -56,15 +58,21 @@ serve(async (req) => {
 
     let query = admin
       .from('jubah_bookings')
-      .select('id, reference, full_name, email, delivery_address, tracking_no, tracking_emailed_no, status')
+      .select('id, reference, full_name, email, delivery_address, tracking_no, tracking_emailed_no, status, payment_mode, balance_paid')
       .eq('university_key', universityKey)
       .neq('status', 'cancelled')
       .not('tracking_no', 'is', null)
     if (!isSuperadmin) query = query.eq('rider_id', user.id)
+    if (bookingId && typeof bookingId === 'string') query = query.eq('id', bookingId)
     const { data: rows, error } = await query
     if (error) return json({ success: false, error: error.message }, 500)
 
-    const pending = (rows ?? []).filter(r => r.tracking_no !== r.tracking_emailed_no && (r.email ?? '').trim()) as Row[]
+    // A deposit with its balance still unpaid is held: no tracking email
+    // until the balance is confirmed (Track My Order hides the number too).
+    const isHeld = (r: { payment_mode: string; balance_paid: boolean | null }) => r.payment_mode === 'deposit' && !r.balance_paid
+    const unsent = (rows ?? []).filter(r => r.tracking_no !== r.tracking_emailed_no)
+    const held = unsent.filter(isHeld).length
+    const pending = unsent.filter(r => !isHeld(r) && (r.email ?? '').trim()) as Row[]
     let sent = 0
     let collected = 0
     const failed: string[] = []
@@ -88,13 +96,13 @@ serve(async (req) => {
       await sleep(600)
     }
 
-    await admin.from('admin_activity_log').insert({
+    if (sent > 0 || failed.length > 0) await admin.from('admin_activity_log').insert({
       actor_id: user.id, actor_name: profile?.name ?? 'Staff', actor_role: profile?.role ?? null, table_name: 'jubah_bookings',
       record_id: universityKey, action: 'send_tracking_emails',
-      changes: { sent, collected, failed },
+      changes: { sent, collected, held, failed, bookingId: bookingId ?? null },
     })
 
-    return json({ success: true, sent, collected, failed })
+    return json({ success: true, sent, collected, held, failed })
   } catch (err) {
     console.error('send-jubah-tracking-emails unhandled error:', err)
     return json({ success: false, error: 'Server error.' }, 500)

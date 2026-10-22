@@ -42,6 +42,9 @@ interface JubahBookingResult {
   payee_rider_id?: string | null;
   // J&T tracking number, set on the J&T dispatch page.
   tracking_no?: string | null;
+  // Posted, but the number is withheld until the deposit balance is paid
+  // (track_jubah_booking returns tracking_no null in that case).
+  tracking_held?: boolean;
 }
 
 // Full receipt fields — only fetched once the last-4 IC gate passes, kept
@@ -446,6 +449,16 @@ export const TrackJubah: React.FC = () => {
                     </div>
                   )}
                 </div>
+
+                {/* Held: shown as not posted yet until the balance is paid (owner's wording). */}
+                {b.tracking_held && b.status !== 'cancelled' && (
+                  <div className="bg-amber-50 border border-amber-200 rounded-2xl px-4 py-3 flex flex-col gap-1">
+                    <p className="text-sm font-semibold text-amber-800 m-0">Jubah anda ditahan 📦</p>
+                    <p className="text-xs text-amber-700 m-0 leading-relaxed">
+                      Parcel anda akan dipos selepas baki RM{Number(b.balance_due).toFixed(2)} dibayar.
+                    </p>
+                  </div>
+                )}
 
                 {/* J&T tracking number, entered by J&T staff on the dispatch page. */}
                 {b.tracking_no && b.status !== 'cancelled' && (

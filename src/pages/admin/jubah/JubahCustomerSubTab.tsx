@@ -287,6 +287,11 @@ export function JubahCustomerSubTab({
         setSelected(prev => prev?.id === b.id ? updated : prev);
         showToast('Balance confirmed ✓');
         sendReceiptEmail(b.id, 'balance');
+        // A held tracking email (posted before the balance was paid) goes
+        // out now, and the booking moves to Collected. No-op if J&T hasn't
+        // entered a tracking number yet or it was already emailed.
+        void supabase.functions.invoke('send-jubah-tracking-emails', { body: { universityKey: b.university_key, bookingId: b.id } })
+          .then(({ data: t }) => { if (t?.sent) showToast('Balance confirmed ✓ · tracking emailed to customer'); });
       } else {
         showToast('Failed to confirm balance.');
       }

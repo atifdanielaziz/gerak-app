@@ -86,11 +86,11 @@ export const RiderHome: React.FC = () => {
   // J&T tracking emails for this rider's own parcels (owner's option 2).
   // Same edge function as superadmin's send-all, scoped server-side to
   // bookings where this user is the rider; sent bookings move to Collected.
-  const [trackInfo, setTrackInfo] = useState<{ pending: number; no_email: number; emailed: number } | null>(null);
+  const [trackInfo, setTrackInfo] = useState<{ pending: number; no_email: number; emailed: number; held: number } | null>(null);
   const [sendingTracking, setSendingTracking] = useState(false);
   const loadTrackInfo = useCallback(async () => {
     const { data } = await supabase.rpc('count_jubah_tracking_unsent', { p_university: adminUniversityKey });
-    setTrackInfo(data?.success ? { pending: data.pending, no_email: data.no_email, emailed: data.emailed } : null);
+    setTrackInfo(data?.success ? { pending: data.pending, no_email: data.no_email, emailed: data.emailed, held: data.held ?? 0 } : null);
   }, [adminUniversityKey]);
   const jubahJobsScrollRef = useAxisLockedScroll<HTMLDivElement>();
 
@@ -335,6 +335,11 @@ export const RiderHome: React.FC = () => {
         setJubahJobs(prev => prev.map(r => (r.id === j.id ? updated : r)));
         showToast('Balance confirmed ✓');
         sendReceiptEmail(j.id, 'balance');
+        // A held tracking email (posted before the balance was paid) goes
+        // out now, and the booking moves to Collected. No-op if J&T hasn't
+        // entered a tracking number yet or it was already emailed.
+        void supabase.functions.invoke('send-jubah-tracking-emails', { body: { universityKey: j.university_key, bookingId: j.id } })
+          .then(({ data: t }) => { if (t?.sent) showToast('Balance confirmed ✓ · tracking emailed to customer'); });
       } else {
         showToast(data?.error ?? 'Failed to confirm balance.');
       }
@@ -598,12 +603,12 @@ export const RiderHome: React.FC = () => {
                 </h3>
 
                 {/* Tracking emails — only once J&T has entered numbers for this rider's parcels. */}
-                {trackInfo && (trackInfo.pending + trackInfo.emailed + trackInfo.no_email) > 0 && (
+                {trackInfo && (trackInfo.pending + trackInfo.emailed + trackInfo.no_email + trackInfo.held) > 0 && (
                   <div className="bg-slate-50 border border-slate-100 rounded-2xl px-4 py-3 flex items-center gap-3">
                     <div className="flex-1 min-w-0">
                       <p className="text-xs font-semibold text-slate-700 m-0">J&amp;T tracking emails</p>
                       <p className="text-[11px] text-slate-400 m-0">
-                        {trackInfo.pending} waiting · {trackInfo.emailed} sent{trackInfo.no_email > 0 ? ` · ${trackInfo.no_email} no email` : ''}
+                        {trackInfo.pending} waiting · {trackInfo.emailed} sent{trackInfo.held > 0 ? ` · ${trackInfo.held} held (balance unpaid)` : ''}{trackInfo.no_email > 0 ? ` · ${trackInfo.no_email} no email` : ''}
                       </p>
                     </div>
                     <button type="button" disabled={sendingTracking || trackInfo.pending === 0}
