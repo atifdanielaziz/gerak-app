@@ -61,6 +61,7 @@ serve(async (req) => {
 
     const pending = (rows ?? []).filter(r => r.tracking_no !== r.tracking_emailed_no && (r.email ?? '').trim()) as Row[]
     let sent = 0
+    let collected = 0
     const failed: string[] = []
 
     for (const b of pending) {
@@ -70,6 +71,11 @@ serve(async (req) => {
         await admin.from('jubah_bookings')
           .update({ tracking_emailed_no: b.tracking_no, tracking_emailed_at: new Date().toISOString() })
           .eq('id', b.id)
+        // Posted with a tracking number = collected (owner's choice). Moves
+        // Paid/Processing to Collected and stamps the rider commission if it
+        // wasn't yet; leaves later statuses alone.
+        const { data: moved } = await admin.rpc('jubah_mark_collected_after_tracking', { p_booking_id: b.id })
+        if (moved?.changed) collected++
       } else {
         failed.push(b.reference)
       }
@@ -80,10 +86,10 @@ serve(async (req) => {
     await admin.from('admin_activity_log').insert({
       actor_id: user.id, actor_name: profile?.name ?? 'Superadmin', actor_role: 'superadmin', table_name: 'jubah_bookings',
       record_id: universityKey, action: 'send_tracking_emails',
-      changes: { sent, failed },
+      changes: { sent, collected, failed },
     })
 
-    return json({ success: true, sent, failed })
+    return json({ success: true, sent, collected, failed })
   } catch (err) {
     console.error('send-jubah-tracking-emails unhandled error:', err)
     return json({ success: false, error: 'Server error.' }, 500)

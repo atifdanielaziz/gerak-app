@@ -103,14 +103,14 @@ export function JubahDispatchCard({ active, showToast, jubahUniversity }: {
   // number is emailed once (edge function send-jubah-tracking-emails).
   const sendTrackingEmails = () => showConfirmModal({
     title: 'Send tracking emails?',
-    message: `Emails ${trackInfo?.pending ?? 0} customer${trackInfo?.pending === 1 ? '' : 's'} their J&T tracking number with a link to track the parcel. Check the numbers on the J&T page first — each number is sent only once.`,
+    message: `Emails ${trackInfo?.pending ?? 0} customer${trackInfo?.pending === 1 ? '' : 's'} their J&T tracking number with a link to track the parcel, and moves those bookings to Collected. Check the numbers on the J&T page first — each number is sent only once.`,
     confirmLabel: 'SEND EMAILS',
     onConfirm: async () => {
       setSendingEmails(true);
       const { data, error } = await supabase.functions.invoke('send-jubah-tracking-emails', { body: { universityKey: jubahUniversity } });
       setSendingEmails(false);
       if (error || !data?.success) { showToast(data?.error ?? 'Failed to send emails.'); return; }
-      showToast(data.failed?.length ? `Sent ${data.sent}, failed ${data.failed.length}: ${data.failed.join(', ')}` : `Sent ${data.sent} tracking email${data.sent === 1 ? '' : 's'} ✓`);
+      showToast(data.failed?.length ? `Sent ${data.sent}, failed ${data.failed.length}: ${data.failed.join(', ')}` : `Sent ${data.sent} tracking email${data.sent === 1 ? '' : 's'} ✓ · ${data.collected ?? 0} moved to Collected`);
       void load();
     },
   });
