@@ -82,6 +82,7 @@ export default function JubahDispatch() {
   const [runner, setRunner] = useState('all');
   const [show, setShow] = useState<'todo' | 'all' | 'done'>('todo');
   const [q, setQ] = useState('');
+  const [qTrack, setQTrack] = useState('');
   const [toast, setToast] = useState<string | null>(null);
   const [trackDraft, setTrackDraft] = useState<Record<string, string>>({});
 
@@ -160,10 +161,11 @@ export default function JubahDispatch() {
     (zone === 'all' || p.zone === zone) &&
     (runner === 'all' || p.rider_name === runner) &&
     (show === 'all' || (show === 'done' ? p.done : !p.done)) &&
-    // Search: order no. (exact), name, or J&T tracking number — not the
-    // JUB-… reference, whose digits kept matching order-number searches.
-    (!q.trim() || String(p.order_no) === q.trim() || p.name.toLowerCase().includes(q.trim().toLowerCase())
-      || (p.tracking_no ?? '').toLowerCase().includes(q.replace(/s/g, '').toLowerCase())));
+    // Two separate searches: order no. (exact) or name, and J&T tracking
+    // number. Not the JUB-… reference, whose digits kept matching
+    // order-number searches.
+    (!q.trim() || String(p.order_no) === q.trim() || p.name.toLowerCase().includes(q.trim().toLowerCase())) &&
+    (!qTrack.trim() || (p.tracking_no ?? '').toLowerCase().includes(qTrack.replace(/s/g, '').toLowerCase())));
 
   const doneCount = parcels.filter(p => p.done).length;
 
@@ -290,7 +292,11 @@ export default function JubahDispatch() {
             </select>
             <label className="flex-1 min-w-[160px] flex items-center gap-2 bg-slate-50 border border-slate-200 rounded-lg px-2.5">
               <Search className="w-4 h-4 text-slate-400 shrink-0" />
-              <input value={q} onChange={e => setQ(e.target.value)} placeholder="Cari no. order / nama / no. tracking" className="flex-1 min-w-0 bg-transparent py-2 text-sm focus:outline-none" />
+              <input value={q} onChange={e => setQ(e.target.value)} placeholder="No. order / nama" aria-label="Search by order number or name" className="flex-1 min-w-0 bg-transparent py-2 text-sm focus:outline-none" />
+            </label>
+            <label className="flex-1 min-w-[160px] flex items-center gap-2 bg-slate-50 border border-slate-200 rounded-lg px-2.5">
+              <Search className="w-4 h-4 text-slate-400 shrink-0" />
+              <input value={qTrack} onChange={e => setQTrack(e.target.value)} placeholder="No. tracking J&T" aria-label="Search by J&T tracking number" className="flex-1 min-w-0 bg-transparent py-2 text-sm font-mono focus:outline-none" />
             </label>
           </div>
         </div>
