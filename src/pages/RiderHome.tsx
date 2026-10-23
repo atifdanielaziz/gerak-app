@@ -59,6 +59,7 @@ type JubahJobRow = {
   delivery_address: string | null;
   docs_path: string | null;
   order_no?: number | null;
+  tracking_no?: string | null;
   linkme_path?: string | null;
   linkme_uploaded_at?: string | null;
   payment_path: string | null;
@@ -151,7 +152,7 @@ export const RiderHome: React.FC = () => {
     if (!authUser) { setJubahLoading(false); return; }
     const { data, error } = await supabase
       .from('jubah_bookings')
-      .select('id, order_no, reference, full_name, ic_number, hp_number, email, matric_id, university, university_key, campus, faculty, remark, payment_mode, cost, balance_due, balance_paid, balance_paid_at, initial_paid, initial_paid_at, balance_proof_url, delivery_address, docs_path, linkme_path, linkme_uploaded_at, payment_path, oscar_path, skpg_path, konvo_path, ic_path, status, rider_id, rider_name, rider_phone, needs_reconciliation, reconciliation_note, created_at, payee_rider_id')
+      .select('id, order_no, reference, full_name, ic_number, hp_number, email, matric_id, university, university_key, campus, faculty, remark, payment_mode, cost, balance_due, balance_paid, balance_paid_at, initial_paid, initial_paid_at, balance_proof_url, delivery_address, docs_path, linkme_path, linkme_uploaded_at, tracking_no, payment_path, oscar_path, skpg_path, konvo_path, ic_path, status, rider_id, rider_name, rider_phone, needs_reconciliation, reconciliation_note, created_at, payee_rider_id')
       .eq('rider_id', authUser.id)
       .order('created_at', { ascending: false });
     if (error) console.error('[GERAK] jubah jobs load error:', error.message);
@@ -678,6 +679,7 @@ export const RiderHome: React.FC = () => {
                           <th className="py-2 pr-4 whitespace-nowrap">Type</th>
                           <th className="py-2 pr-4 whitespace-nowrap">Status</th>
                           <th className="py-2 pr-4 whitespace-nowrap">Robe Status</th>
+                          <th className="py-2 pr-4 whitespace-nowrap">J&amp;T Tracking</th>
                           <th className="py-2 pr-4 whitespace-nowrap">Confirm</th>
                           <th className="py-2 pr-4 whitespace-nowrap">Receipt</th>
                           <th className="py-2 whitespace-nowrap">Combined PDF</th>
@@ -718,7 +720,7 @@ export const RiderHome: React.FC = () => {
                           return (
                           <tr key={job.id}
                             onClick={() => goToCard(job)}
-                            className="border-b border-slate-50 text-xs hover:bg-slate-50 active:bg-slate-100 transition cursor-pointer">
+                            className={`border-b border-slate-50 text-xs active:bg-slate-100 transition cursor-pointer ${job.status === 'collected' ? 'bg-emerald-50 hover:bg-emerald-100' : 'hover:bg-slate-50'}`}>
                             <td className="py-2.5 pr-4 font-mono font-bold text-primary whitespace-nowrap">
                               <button
                                 type="button"
@@ -772,6 +774,16 @@ export const RiderHome: React.FC = () => {
                                   {STATUS_LABEL[job.status] ?? job.status}
                                 </span>
                               )}
+                            </td>
+                            {/* J&T tracking number (entered on the J&T page) — tap to track. */}
+                            <td className="py-2.5 pr-4 whitespace-nowrap">
+                              {job.tracking_no ? (
+                                <a href={`https://www.jtexpress.my/tracking/${encodeURIComponent(job.tracking_no)}`} target="_blank" rel="noopener noreferrer"
+                                  onClick={e => e.stopPropagation()} title="Track on J&T"
+                                  className="inline-flex items-center gap-1 font-mono text-xs font-semibold text-red-600 hover:underline">
+                                  {job.tracking_no}<ExternalLink className="w-3 h-3" />
+                                </a>
+                              ) : <span className="text-slate-300 text-xs">—</span>}
                             </td>
                             <td className="py-2.5 pr-4 whitespace-nowrap">
                               {(() => {
