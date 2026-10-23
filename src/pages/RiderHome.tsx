@@ -720,7 +720,7 @@ export const RiderHome: React.FC = () => {
                           return (
                           <tr key={job.id}
                             onClick={() => goToCard(job)}
-                            className={`border-b border-slate-50 text-xs active:bg-slate-100 transition cursor-pointer ${job.status === 'collected' ? 'bg-emerald-50 hover:bg-emerald-100' : 'hover:bg-slate-50'}`}>
+                            className={`border-b border-slate-50 text-xs active:bg-slate-100 transition cursor-pointer ${job.status === 'collected' ? 'bg-emerald-200 hover:bg-emerald-300' : 'hover:bg-slate-50'}`}>
                             <td className="py-2.5 pr-4 font-mono font-bold text-primary whitespace-nowrap">
                               <button
                                 type="button"
