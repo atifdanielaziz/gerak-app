@@ -160,7 +160,10 @@ export default function JubahDispatch() {
     (zone === 'all' || p.zone === zone) &&
     (runner === 'all' || p.rider_name === runner) &&
     (show === 'all' || (show === 'done' ? p.done : !p.done)) &&
-    (!q || p.name.toLowerCase().includes(q.toLowerCase()) || String(p.order_no) === q.trim() || p.reference.toLowerCase().includes(q.toLowerCase())));
+    // Search: order no. (exact), name, or J&T tracking number — not the
+    // JUB-… reference, whose digits kept matching order-number searches.
+    (!q.trim() || String(p.order_no) === q.trim() || p.name.toLowerCase().includes(q.trim().toLowerCase())
+      || (p.tracking_no ?? '').toLowerCase().includes(q.replace(/s/g, '').toLowerCase())));
 
   const doneCount = parcels.filter(p => p.done).length;
 
@@ -287,7 +290,7 @@ export default function JubahDispatch() {
             </select>
             <label className="flex-1 min-w-[160px] flex items-center gap-2 bg-slate-50 border border-slate-200 rounded-lg px-2.5">
               <Search className="w-4 h-4 text-slate-400 shrink-0" />
-              <input value={q} onChange={e => setQ(e.target.value)} placeholder="Cari nama / no. order" className="flex-1 min-w-0 bg-transparent py-2 text-sm focus:outline-none" />
+              <input value={q} onChange={e => setQ(e.target.value)} placeholder="Cari no. order / nama / no. tracking" className="flex-1 min-w-0 bg-transparent py-2 text-sm focus:outline-none" />
             </label>
           </div>
         </div>
