@@ -264,7 +264,7 @@ export function JubahCustomerDetailsSubTab({
                 </tr></thead>
                 <tbody>{filtered.map((booking, rowIndex) => {
                   const values = detailRows[rowIndex];
-                  return <tr key={booking.id} className={`border-b border-slate-100 text-xs ${booking.status === 'collected' ? 'bg-emerald-200' : ''}`}>
+                  return <tr key={booking.id} className={`border-b border-slate-100 text-xs ${booking.status === 'collected' ? 'bg-emerald-200' : booking.status === 'delivered' ? 'bg-blue-200' : ''}`}>
                     {values.map((value, index) => {
                       const documentStart = headers.length - docFields.length - 3;
                       const isDocument = index >= documentStart;
