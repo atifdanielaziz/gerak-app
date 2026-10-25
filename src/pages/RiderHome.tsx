@@ -234,15 +234,20 @@ export const RiderHome: React.FC = () => {
   const [jubahEarningsLoading, setJubahEarningsLoading] = useState(false);
   const [jubahEstimated,       setJubahEstimated]       = useState<JubahEstimatedEarningRow[]>([]);
 
+  // Owner riders (paid directly — Adib, Atif) earn the full amount paid,
+  // counted once payment is confirmed; others earn the flat commission.
+  const [isOwnerRider, setIsOwnerRider] = useState(false);
   const loadJubahEarnings = useCallback(async () => {
     setJubahEarningsLoading(true);
     const { data: { user: authUser } } = await supabase.auth.getUser();
     if (!authUser) { setJubahEarnings([]); setJubahEstimated([]); setJubahEarningsLoading(false); return; }
-    const [{ data, error }, { data: estimatedData, error: estimatedError }, { data: scopedBookings, error: bookingsError }] = await Promise.all([
+    const [{ data, error }, { data: estimatedData, error: estimatedError }, { data: scopedBookings, error: bookingsError }, { data: owner }] = await Promise.all([
       supabase.rpc('get_rider_jubah_earnings'),
       supabase.rpc('get_rider_jubah_estimated_earnings'),
       supabase.from('jubah_bookings').select('reference, university, campus').eq('rider_id', authUser.id),
+      supabase.rpc('jubah_is_owner_rider', { p_rider_id: authUser.id }),
     ]);
+    setIsOwnerRider(owner === true);
     if (error) console.error('[GERAK] jubah earnings load error:', error.message);
     if (estimatedError) console.error('[GERAK] jubah estimated earnings load error:', estimatedError.message);
     if (bookingsError) console.error('[GERAK] jubah earning scope load error:', bookingsError.message);
@@ -1244,7 +1249,7 @@ export const RiderHome: React.FC = () => {
                   <div className="bg-emerald-50 border border-emerald-100 rounded-3xl p-5 flex flex-col items-center gap-1">
                     <span className="text-[10px] font-semibold text-emerald-500 uppercase tracking-wider">Total Earned</span>
                     <span className="text-2xl font-black text-emerald-700">RM{totalJubahEarnings.toFixed(2)}</span>
-                    <span className="text-xs font-semibold text-emerald-600 mt-0.5">{jubahEarnings.length} {jubahEarnings.length === 1 ? 'order' : 'orders'} in Processing+</span>
+                    <span className="text-xs font-semibold text-emerald-600 mt-0.5">{jubahEarnings.length} {jubahEarnings.length === 1 ? 'order' : 'orders'} {isOwnerRider ? '· full amount paid' : 'in Processing+'}</span>
                   </div>
                 )}
 
@@ -1253,7 +1258,7 @@ export const RiderHome: React.FC = () => {
                     <span className="text-[10px] font-semibold text-amber-600 uppercase tracking-wider">Estimated Earnings</span>
                     <span className="text-2xl font-black text-amber-700">RM{totalJubahEstimated.toFixed(2)}</span>
                     <span className="text-xs font-semibold text-amber-600 mt-0.5">
-                      {jubahEstimated.length} {jubahEstimated.length === 1 ? 'order' : 'orders'} not yet Processing — not confirmed
+                      {jubahEstimated.length} {jubahEstimated.length === 1 ? 'order' : 'orders'} {isOwnerRider ? '— payment or balance not yet confirmed' : 'not yet Processing — not confirmed'}
                     </span>
                   </div>
                 )}
@@ -1294,7 +1299,7 @@ export const RiderHome: React.FC = () => {
 
                 {jubahEstimated.length > 0 && (
                   <div className="bg-white border border-slate-100 rounded-3xl p-5 flex flex-col gap-3">
-                    <h3 className="text-sm font-semibold text-slate-700">Pending Orders (Not Yet Confirmed)</h3>
+                    <h3 className="text-sm font-semibold text-slate-700">{isOwnerRider ? 'Still to Collect' : 'Pending Orders (Not Yet Confirmed)'}</h3>
                     <div className="flex flex-col divide-y divide-slate-100">
                       {jubahEstimated.map(e => (
                         <div key={e.reference} className="flex items-center justify-between gap-3 py-3 first:pt-0 last:pb-0">
