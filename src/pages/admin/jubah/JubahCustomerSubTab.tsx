@@ -545,7 +545,14 @@ export function JubahCustomerSubTab({
         <div className="bg-white border border-slate-100 rounded-3xl p-5 flex flex-col gap-4">
           <div className="relative text-sm font-semibold text-slate-700 flex items-center justify-between gap-3">
             <span className="flex items-center gap-1.5"><Users className="w-4 h-4" /> Customer Directory ({universityLabel})</span>
-            <span className="flex items-center gap-2 shrink-0">
+            <span className="flex items-center gap-2 shrink-0 flex-wrap justify-end">
+              {/* Counts follow every filter above (rider, mode, robe status, search). */}
+              <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-emerald-200 text-emerald-900 tabular-nums">
+                Collected {filteredBookings.filter(r => r.status === 'collected').length}
+              </span>
+              <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-blue-200 text-blue-900 tabular-nums">
+                Delivered {filteredBookings.filter(r => r.status === 'delivered').length}
+              </span>
               <span className="font-normal text-slate-300 normal-case tracking-normal">
                 {filteredBookings.length} bookings
               </span>

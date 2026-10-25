@@ -600,7 +600,11 @@ export const RiderHome: React.FC = () => {
               <div className="bg-white border border-slate-100 rounded-3xl p-5 flex flex-col gap-4">
                 <h3 className="text-sm font-semibold text-slate-700 flex items-center justify-between">
                   <span className="flex items-center gap-1.5"><GraduationCap className="w-4 h-4" /> My Assignments</span>
-                  <span className="font-normal text-slate-300 normal-case tracking-normal">{visibleJubahJobs.length} jobs</span>
+                  <span className="flex items-center gap-1.5 flex-wrap justify-end">
+                    <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-emerald-200 text-emerald-900 tabular-nums">Collected {visibleJubahJobs.filter(j => j.status === 'collected').length}</span>
+                    <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-blue-200 text-blue-900 tabular-nums">Delivered {visibleJubahJobs.filter(j => j.status === 'delivered').length}</span>
+                    <span className="font-normal text-slate-300 normal-case tracking-normal">{visibleJubahJobs.length} jobs</span>
+                  </span>
                 </h3>
 
                 {/* Tracking emails — only once J&T has entered numbers for this rider's parcels. */}
