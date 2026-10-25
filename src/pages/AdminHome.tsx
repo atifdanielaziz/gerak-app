@@ -149,11 +149,19 @@ export const AdminHome: React.FC = () => {
   ]?.shortLabel ?? 'UMPSA';
   const [jubahOverviewCollapsed, setJubahOverviewCollapsed] = useState(true);
 
+  // Overview can be narrowed to one rider (all figures follow it).
+  const [overviewRider, setOverviewRider] = useState('all');
+  const overviewRiders = useMemo(
+    () => [...new Set(jubahBookings.map(b => b.rider_name).filter((n): n is string => !!n))].sort(),
+    [jubahBookings],
+  );
+
   const jubahStats = useMemo(() => {
     // jubahBookings is already scoped to one university/campus by
-    // loadJubahData's query — no further filtering needed here.
-    const active    = jubahBookings.filter(b => b.status !== 'cancelled');
-    const cancelled = jubahBookings.length - active.length;
+    // loadJubahData's query; the only extra filter is the rider picker.
+    const scoped    = overviewRider === 'all' ? jubahBookings : jubahBookings.filter(b => b.rider_name === overviewRider);
+    const active    = scoped.filter(b => b.status !== 'cancelled');
+    const cancelled = scoped.length - active.length;
 
     let collected = 0;
     let outstanding = 0;
@@ -183,7 +191,7 @@ export const AdminHome: React.FC = () => {
     });
 
     return { total: active.length, cancelled, collected, outstanding, statusCounts, modeCounts };
-  }, [jubahBookings]);
+  }, [jubahBookings, overviewRider]);
 
   const jubahNeedsReconciliation = useMemo(
     () => jubahBookings.filter(b => b.needs_reconciliation),
@@ -861,6 +869,14 @@ export const AdminHome: React.FC = () => {
               </button>
 
               {!jubahOverviewCollapsed && (<>
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-semibold text-slate-400">Rider</span>
+                <select value={overviewRider} onChange={e => setOverviewRider(e.target.value)} aria-label="Overview rider"
+                  className="text-xs font-semibold bg-white border border-slate-200 rounded-xl px-2.5 py-2 text-slate-700 focus:outline-none">
+                  <option value="all">All riders</option>
+                  {overviewRiders.map(r => <option key={r} value={r}>{r}</option>)}
+                </select>
+              </div>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                 <div className="border border-slate-100 rounded-2xl p-3.5 flex flex-col gap-1.5">
                   <div className="w-7 h-7 rounded-lg bg-blue-50 flex items-center justify-center">
