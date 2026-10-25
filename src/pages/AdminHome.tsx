@@ -869,10 +869,11 @@ export const AdminHome: React.FC = () => {
               </button>
 
               {!jubahOverviewCollapsed && (<>
-              <div className="flex items-center gap-2">
-                <span className="text-xs font-semibold text-slate-400">Rider</span>
+              {/* Phones force selects to 16px; flex-1 + min-w-0 keeps it inside the card. */}
+              <div className="flex items-center gap-2 min-w-0">
+                <span className="text-xs font-semibold text-slate-400 shrink-0">Rider</span>
                 <select value={overviewRider} onChange={e => setOverviewRider(e.target.value)} aria-label="Overview rider"
-                  className="text-xs font-semibold bg-white border border-slate-200 rounded-xl px-2.5 py-2 text-slate-700 focus:outline-none">
+                  className="flex-1 min-w-0 sm:flex-none sm:w-auto text-xs font-semibold bg-white border border-slate-200 rounded-xl px-2.5 py-2 text-slate-700 focus:outline-none">
                   <option value="all">All riders</option>
                   {overviewRiders.map(r => <option key={r} value={r}>{r}</option>)}
                 </select>
@@ -931,7 +932,7 @@ export const AdminHome: React.FC = () => {
                         <div className="flex-1 h-1.5 rounded-full bg-slate-100 overflow-hidden">
                           <div className={`h-full rounded-full ${row.color}`} style={{ width: `${pct}%` }} />
                         </div>
-                        <span className="w-5 shrink-0 text-right text-xs font-black text-slate-700">{count}</span>
+                        <span className="min-w-[1.5rem] shrink-0 text-right text-xs font-black text-slate-700 tabular-nums">{count}</span>
                       </div>
                     );
                   })}
