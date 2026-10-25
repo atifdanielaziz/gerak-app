@@ -122,3 +122,19 @@ export const jubahLinkMeMsg = (name: string, ref: string): string =>
   `3. Upload slip tu di sini (masukkan 4 digit terakhir IC):\n` +
   `https://www.gerakmy.com/jubah/linkme?ref=${encodeURIComponent(ref)}\n\n` +
   `Mohon upload secepat mungkin supaya urusan di kaunter berjalan lancar. Terima kasih! 🙏`;
+
+// "Jum, 23/10" — the day a booking became Collected (collected_at), in
+// Malaysia time, so staff can tell Friday's batch from Saturday's.
+export const jubahCollectedDay = (iso: string | null | undefined): string =>
+  iso ? new Date(iso).toLocaleDateString('ms-MY', { timeZone: 'Asia/Kuala_Lumpur', weekday: 'short', day: '2-digit', month: '2-digit' }) : '';
+
+// Collected per day, oldest first: [["Jum, 23/10", 41], ["Sab, 24/10", 50], …].
+export const jubahCollectedByDay = (rows: { collected_at?: string | null; status: string }[]): [string, number][] => {
+  const counts = new Map<string, { n: number; t: number }>();
+  rows.filter(r => r.collected_at && (r.status === 'collected' || r.status === 'delivered')).forEach(r => {
+    const k = jubahCollectedDay(r.collected_at);
+    const cur = counts.get(k) ?? { n: 0, t: new Date(r.collected_at!).getTime() };
+    counts.set(k, { n: cur.n + 1, t: Math.min(cur.t, new Date(r.collected_at!).getTime()) });
+  });
+  return [...counts.entries()].sort((a, b) => a[1].t - b[1].t).map(([k, v]) => [k, v.n]);
+};

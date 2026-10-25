@@ -9,7 +9,7 @@ import { stampWatermark } from '../lib/watermark';
 import { useLoadOnActive } from '../hooks/useLoadOnActive';
 import {
   JUBAH_STEP_LABEL as STATUS_LABEL, JUBAH_STATUS_STYLE as STATUS_STYLE,
-  JUBAH_NEXT_LABEL as NEXT_LABEL, getJubahProgress, jubahWaMsg, jubahLinkMeMsg,
+  JUBAH_NEXT_LABEL as NEXT_LABEL, getJubahProgress, jubahWaMsg, jubahLinkMeMsg, jubahCollectedDay, jubahCollectedByDay,
 } from '../lib/jubahStatus';
 import {
   ShoppingBasket, GraduationCap, TrendingUp,
@@ -60,6 +60,7 @@ type JubahJobRow = {
   docs_path: string | null;
   order_no?: number | null;
   tracking_no?: string | null;
+  collected_at?: string | null;
   linkme_path?: string | null;
   linkme_uploaded_at?: string | null;
   payment_path: string | null;
@@ -152,7 +153,7 @@ export const RiderHome: React.FC = () => {
     if (!authUser) { setJubahLoading(false); return; }
     const { data, error } = await supabase
       .from('jubah_bookings')
-      .select('id, order_no, reference, full_name, ic_number, hp_number, email, matric_id, university, university_key, campus, faculty, remark, payment_mode, cost, balance_due, balance_paid, balance_paid_at, initial_paid, initial_paid_at, balance_proof_url, delivery_address, docs_path, linkme_path, linkme_uploaded_at, tracking_no, payment_path, oscar_path, skpg_path, konvo_path, ic_path, status, rider_id, rider_name, rider_phone, needs_reconciliation, reconciliation_note, created_at, payee_rider_id')
+      .select('id, order_no, reference, full_name, ic_number, hp_number, email, matric_id, university, university_key, campus, faculty, remark, payment_mode, cost, balance_due, balance_paid, balance_paid_at, initial_paid, initial_paid_at, balance_proof_url, delivery_address, docs_path, linkme_path, linkme_uploaded_at, tracking_no, collected_at, payment_path, oscar_path, skpg_path, konvo_path, ic_path, status, rider_id, rider_name, rider_phone, needs_reconciliation, reconciliation_note, created_at, payee_rider_id')
       .eq('rider_id', authUser.id)
       .order('created_at', { ascending: false });
     if (error) console.error('[GERAK] jubah jobs load error:', error.message);
@@ -603,6 +604,9 @@ export const RiderHome: React.FC = () => {
                   <span className="flex items-center gap-1.5 flex-wrap justify-end">
                     <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-emerald-200 text-emerald-900 tabular-nums">Collected {visibleJubahJobs.filter(j => j.status === 'collected').length}</span>
                     <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-blue-200 text-blue-900 tabular-nums">Delivered {visibleJubahJobs.filter(j => j.status === 'delivered').length}</span>
+                    {jubahCollectedByDay(visibleJubahJobs).map(([day, n]) => (
+                      <span key={day} className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 tabular-nums">{day}: {n}</span>
+                    ))}
                     <span className="font-normal text-slate-300 normal-case tracking-normal">{visibleJubahJobs.length} jobs</span>
                   </span>
                 </h3>
@@ -683,6 +687,7 @@ export const RiderHome: React.FC = () => {
                           <th className="py-2 pr-4 whitespace-nowrap">Type</th>
                           <th className="py-2 pr-4 whitespace-nowrap">Status</th>
                           <th className="py-2 pr-4 whitespace-nowrap">Robe Status</th>
+                          <th className="py-2 pr-4 whitespace-nowrap">Collected</th>
                           <th className="py-2 pr-4 whitespace-nowrap">J&amp;T Tracking</th>
                           <th className="py-2 pr-4 whitespace-nowrap">Confirm</th>
                           <th className="py-2 pr-4 whitespace-nowrap">Receipt</th>
@@ -779,6 +784,8 @@ export const RiderHome: React.FC = () => {
                                 </span>
                               )}
                             </td>
+                            {/* Day it became Collected (Friday vs Saturday batch). */}
+                            <td className="py-2.5 pr-4 whitespace-nowrap text-xs font-semibold text-slate-600">{jubahCollectedDay(job.collected_at) || <span className="text-slate-300">—</span>}</td>
                             {/* J&T tracking number (entered on the J&T page) — tap to track. */}
                             <td className="py-2.5 pr-4 whitespace-nowrap">
                               {job.tracking_no ? (

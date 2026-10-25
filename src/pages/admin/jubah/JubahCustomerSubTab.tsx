@@ -15,7 +15,7 @@ import { JubahStepper } from '../../../components/JubahStepper';
 import { buildJubahReceiptRows, type ReceiptDoc } from '../../../lib/receiptRows';
 import {
   JUBAH_STEP_LABEL as JUBAH_STATUS_LABEL, JUBAH_STATUS_STYLE,
-  JUBAH_NEXT_LABEL, getJubahProgress, jubahWaMsg, jubahLinkMeMsg,
+  JUBAH_NEXT_LABEL, getJubahProgress, jubahWaMsg, jubahLinkMeMsg, jubahCollectedDay, jubahCollectedByDay,
 } from '../../../lib/jubahStatus';
 import { generateReceiptPdf } from '../../../lib/receiptPdf';
 import { jubahLocationLabel } from '../../../lib/universities';
@@ -82,6 +82,7 @@ export type JubahBookingRow = {
   // Permanent per-university order number (same "No" J&T staff see).
   order_no?: number | null;
   tracking_no?: string | null;
+  collected_at?: string | null;
   // Staff checklist, moved in from the team's spreadsheet.
   printed?: boolean;
   doc_ready?: boolean;
@@ -417,6 +418,7 @@ export function JubahCustomerSubTab({
       typeLabel(b),
       b.status === 'cancelled' ? 'Cancelled' : !isPaid ? 'Booked' : 'Full Paid',
       b.status === 'cancelled' ? '—' : (JUBAH_STATUS_LABEL[b.status] ?? b.status),
+      jubahCollectedDay(b.collected_at),
       b.tracking_no ?? '',
       b.rider_name ?? '—',
       confirmState,
@@ -427,7 +429,7 @@ export function JubahCustomerSubTab({
     ];
   });
 
-  const exportHeaders = ['No', 'Reference', 'Name', 'Remark', 'Mode', 'Type', 'Status', 'Robe Status', 'J&T Tracking', 'Rider', 'Confirm', 'Printed', 'Doc Ready', 'LinkMe', 'Receipt'];
+  const exportHeaders = ['No', 'Reference', 'Name', 'Remark', 'Mode', 'Type', 'Status', 'Robe Status', 'Collected', 'J&T Tracking', 'Rider', 'Confirm', 'Printed', 'Doc Ready', 'LinkMe', 'Receipt'];
 
   // Printed / Doc Ready toggles — optimistic, rolled back if the RPC refuses.
   const [printSaving, setPrintSaving] = useState<string | null>(null);
@@ -473,7 +475,7 @@ export function JubahCustomerSubTab({
         const dataRows = rows.map(row => row.map(value => ({ value, type: String })));
         const sheetData: SheetData = [headerRow, ...dataRows];
         const workbook = writeXlsxFile(sheetData, {
-          columns: exportHeaders.map((header, index) => ({ width: index === 2 || index === 9 ? 30 : Math.max(10, header.length + 3) })),
+          columns: exportHeaders.map((header, index) => ({ width: index === 2 || index === 10 ? 30 : Math.max(10, header.length + 3) })),
         });
         await workbook.toFile(`${exportFileBase}.xlsx`);
       }
@@ -553,6 +555,9 @@ export function JubahCustomerSubTab({
               <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-blue-200 text-blue-900 tabular-nums">
                 Delivered {filteredBookings.filter(r => r.status === 'delivered').length}
               </span>
+              {jubahCollectedByDay(filteredBookings).map(([day, n]) => (
+                <span key={day} className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 tabular-nums">{day}: {n}</span>
+              ))}
               <span className="font-normal text-slate-300 normal-case tracking-normal">
                 {filteredBookings.length} bookings
               </span>
@@ -629,6 +634,7 @@ export function JubahCustomerSubTab({
                     <th className="sticky top-0 bg-white py-2 pr-4 whitespace-nowrap">Type</th>
                     <th className="sticky top-0 bg-white py-2 pr-4 whitespace-nowrap">Status</th>
                     <th className="sticky top-0 bg-white py-2 pr-4 whitespace-nowrap">Robe Status</th>
+                    <th className="sticky top-0 bg-white py-2 pr-4 whitespace-nowrap">Collected</th>
                     <th className="sticky top-0 bg-white py-2 pr-4 whitespace-nowrap">J&amp;T Tracking</th>
                     <th className="sticky top-0 bg-white py-2 pr-4 whitespace-nowrap">Rider</th>
                     <th className="sticky top-0 bg-white py-2 pr-4 whitespace-nowrap">Confirm</th>
@@ -703,6 +709,8 @@ export function JubahCustomerSubTab({
                             </span>
                           )}
                         </td>
+                        {/* Day it became Collected (Friday vs Saturday batch). */}
+                        <td className="py-2.5 pr-4 whitespace-nowrap text-xs font-semibold text-slate-600">{jubahCollectedDay(b.collected_at) || <span className="text-slate-300">—</span>}</td>
                         {/* J&T tracking number (entered on the J&T page) — tap to track. */}
                         <td className="py-2.5 pr-4 whitespace-nowrap">
                           {b.tracking_no ? (
