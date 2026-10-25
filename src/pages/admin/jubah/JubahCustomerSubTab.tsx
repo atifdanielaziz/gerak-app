@@ -369,7 +369,9 @@ export function JubahCustomerSubTab({
   // rows) on every render with no memoization — invisible at the current
   // row count, but every keystroke into the search box would re-filter the
   // full bookings array twice, synchronously, as that array grows.
-  const filteredBookings = useMemo(() => {
+  // Day chips above the table filter by the day a booking became Collected.
+  const [collectedDay, setCollectedDay] = useState<string | null>(null);
+  const baseFilteredBookings = useMemo(() => {
     const q = jubahSearch.trim().toLowerCase();
     return bookings.filter(b => {
       // payment_mode !== 'deposit' alone is NOT "paid" — it just means
@@ -385,6 +387,10 @@ export function JubahCustomerSubTab({
       return matchMode && matchType && matchRobeStatus && matchRider && matchSearch;
     });
   }, [bookings, jubahModeFilter, jubahTypeFilter, jubahRobeStatusFilter, jubahRiderFilter, jubahSearch]);
+  const filteredBookings = useMemo(
+    () => (collectedDay ? baseFilteredBookings.filter(b => jubahCollectedDay(b.collected_at) === collectedDay) : baseFilteredBookings),
+    [baseFilteredBookings, collectedDay],
+  );
 
   // Stable university-wide chronological sequence. The directory remains
   // newest-first, so its first row carries the largest number. Filters and
@@ -555,8 +561,12 @@ export function JubahCustomerSubTab({
               <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-blue-200 text-blue-900 tabular-nums">
                 Delivered {filteredBookings.filter(r => r.status === 'delivered').length}
               </span>
-              {jubahCollectedByDay(filteredBookings).map(([day, n]) => (
-                <span key={day} className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 tabular-nums">{day}: {n}</span>
+              {jubahCollectedByDay(baseFilteredBookings).map(([day, n]) => (
+                <button key={day} type="button" onClick={(e) => { e.stopPropagation(); setCollectedDay(d => (d === day ? null : day)); }}
+                  title={collectedDay === day ? 'Show all days' : `Show only bookings collected ${day}`}
+                  className={`text-[11px] font-semibold px-2 py-0.5 rounded-full tabular-nums transition ${collectedDay === day ? 'bg-slate-800 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}>
+                  {day}: {n}{collectedDay === day ? ' ✕' : ''}
+                </button>
               ))}
               <span className="font-normal text-slate-300 normal-case tracking-normal">
                 {filteredBookings.length} bookings

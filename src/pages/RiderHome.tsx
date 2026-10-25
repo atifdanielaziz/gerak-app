@@ -170,7 +170,10 @@ export const RiderHome: React.FC = () => {
   useLoadOnActive(activeTab === 'jubah' || activeTab === 'customers', loadJubahJobs);
   useLoadOnActive(activeTab === 'jubah', loadTrackInfo);
 
+  // Day chips in My Assignments filter the table by the day a booking became Collected.
+  const [collectedDay, setCollectedDay] = useState<string | null>(null);
   const visibleJubahJobs = jubahJobs;
+  const tableJubahJobs = collectedDay ? jubahJobs.filter(j => jubahCollectedDay(j.collected_at) === collectedDay) : jubahJobs;
 
   // Realtime + polling safety net, same pattern already proven in
   // DriverHome.tsx for ride_orders. Without this, a status/balance change
@@ -610,7 +613,11 @@ export const RiderHome: React.FC = () => {
                     <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-emerald-200 text-emerald-900 tabular-nums">Collected {visibleJubahJobs.filter(j => j.status === 'collected').length}</span>
                     <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-blue-200 text-blue-900 tabular-nums">Delivered {visibleJubahJobs.filter(j => j.status === 'delivered').length}</span>
                     {jubahCollectedByDay(visibleJubahJobs).map(([day, n]) => (
-                      <span key={day} className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 tabular-nums">{day}: {n}</span>
+                      <button key={day} type="button" onClick={(e) => { e.stopPropagation(); setCollectedDay(d => (d === day ? null : day)); }}
+                        title={collectedDay === day ? 'Show all days' : `Show only bookings collected ${day}`}
+                        className={`text-[11px] font-semibold px-2 py-0.5 rounded-full tabular-nums transition ${collectedDay === day ? 'bg-slate-800 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}>
+                        {day}: {n}{collectedDay === day ? ' ✕' : ''}
+                      </button>
                     ))}
                     <span className="font-normal text-slate-300 normal-case tracking-normal">{visibleJubahJobs.length} jobs</span>
                   </span>
@@ -700,7 +707,7 @@ export const RiderHome: React.FC = () => {
                         </tr>
                       </thead>
                       <tbody>
-                        {visibleJubahJobs.map(job => {
+                        {tableJubahJobs.map(job => {
                           // Was `status !== 'ordered'` for non-deposit modes, which is also
                           // true for 'cancelled' — showing a green "confirmed" check for a
                           // cancelled, unpaid job. Same fix as AdminHome's matching table,
