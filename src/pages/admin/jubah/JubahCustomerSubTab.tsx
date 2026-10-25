@@ -15,8 +15,9 @@ import { JubahStepper } from '../../../components/JubahStepper';
 import { buildJubahReceiptRows, type ReceiptDoc } from '../../../lib/receiptRows';
 import {
   JUBAH_STEP_LABEL as JUBAH_STATUS_LABEL, JUBAH_STATUS_STYLE,
-  JUBAH_NEXT_LABEL, getJubahProgress, jubahWaMsg, jubahLinkMeMsg, jubahCollectedDay, jubahCollectedByDay,
+  JUBAH_NEXT_LABEL, getJubahProgress, jubahWaMsg, jubahLinkMeMsg, jubahCollectedDay, jubahFilterDone, type JubahDoneStatus,
 } from '../../../lib/jubahStatus';
+import { JubahDoneChips } from '../../../components/JubahDoneChips';
 import { generateReceiptPdf } from '../../../lib/receiptPdf';
 import { jubahLocationLabel } from '../../../lib/universities';
 import { useAxisLockedScroll } from '../../../hooks/useAxisLockedScroll';
@@ -369,8 +370,9 @@ export function JubahCustomerSubTab({
   // rows) on every render with no memoization — invisible at the current
   // row count, but every keystroke into the search box would re-filter the
   // full bookings array twice, synchronously, as that array grows.
-  // Day chips above the table filter by the day a booking became Collected.
+  // Chips above the table filter by Collected/Delivered and by the day a booking became Collected.
   const [collectedDay, setCollectedDay] = useState<string | null>(null);
+  const [doneStatus, setDoneStatus] = useState<JubahDoneStatus | null>(null);
   const baseFilteredBookings = useMemo(() => {
     const q = jubahSearch.trim().toLowerCase();
     return bookings.filter(b => {
@@ -388,8 +390,8 @@ export function JubahCustomerSubTab({
     });
   }, [bookings, jubahModeFilter, jubahTypeFilter, jubahRobeStatusFilter, jubahRiderFilter, jubahSearch]);
   const filteredBookings = useMemo(
-    () => (collectedDay ? baseFilteredBookings.filter(b => jubahCollectedDay(b.collected_at) === collectedDay) : baseFilteredBookings),
-    [baseFilteredBookings, collectedDay],
+    () => jubahFilterDone(baseFilteredBookings, doneStatus, collectedDay),
+    [baseFilteredBookings, doneStatus, collectedDay],
   );
 
   // Stable university-wide chronological sequence. The directory remains
@@ -551,23 +553,13 @@ export function JubahCustomerSubTab({
 
         {/* Customer bookings table */}
         <div className="bg-white border border-slate-100 rounded-3xl p-5 flex flex-col gap-4">
-          <div className="relative text-sm font-semibold text-slate-700 flex items-center justify-between gap-3">
-            <span className="flex items-center gap-1.5"><Users className="w-4 h-4" /> Customer Directory ({universityLabel})</span>
-            <span className="flex items-center gap-2 shrink-0 flex-wrap justify-end">
-              {/* Counts follow every filter above (rider, mode, robe status, search). */}
-              <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-emerald-200 text-emerald-900 tabular-nums">
-                Collected {filteredBookings.filter(r => r.status === 'collected').length}
-              </span>
-              <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-blue-200 text-blue-900 tabular-nums">
-                Delivered {filteredBookings.filter(r => r.status === 'delivered').length}
-              </span>
-              {jubahCollectedByDay(baseFilteredBookings).map(([day, n]) => (
-                <button key={day} type="button" onClick={(e) => { e.stopPropagation(); setCollectedDay(d => (d === day ? null : day)); }}
-                  title={collectedDay === day ? 'Show all days' : `Show only bookings collected ${day}`}
-                  className={`text-[11px] font-semibold px-2 py-0.5 rounded-full tabular-nums transition ${collectedDay === day ? 'bg-slate-800 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}>
-                  {day}: {n}{collectedDay === day ? ' ✕' : ''}
-                </button>
-              ))}
+          {/* Phone: title + count/download on row 1, chips wrap on row 2. Desktop: one row. */}
+          <div className="relative text-sm font-semibold text-slate-700 flex flex-wrap items-center gap-x-3 gap-y-2">
+            <span className="flex items-center gap-1.5 flex-1 min-w-0 sm:flex-none"><Users className="w-4 h-4 shrink-0" /> <span className="truncate">Customer Directory ({universityLabel})</span></span>
+            {/* Counts follow every filter above (rider, mode, robe status, search). */}
+            <JubahDoneChips rows={baseFilteredBookings} status={doneStatus} onStatus={setDoneStatus} day={collectedDay} onDay={setCollectedDay}
+              className="order-3 w-full sm:order-none sm:w-auto sm:flex-1 sm:justify-end" />
+            <span className="flex items-center gap-2 shrink-0">
               <span className="font-normal text-slate-300 normal-case tracking-normal">
                 {filteredBookings.length} bookings
               </span>

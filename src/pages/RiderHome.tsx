@@ -9,8 +9,9 @@ import { stampWatermark } from '../lib/watermark';
 import { useLoadOnActive } from '../hooks/useLoadOnActive';
 import {
   JUBAH_STEP_LABEL as STATUS_LABEL, JUBAH_STATUS_STYLE as STATUS_STYLE,
-  JUBAH_NEXT_LABEL as NEXT_LABEL, getJubahProgress, jubahWaMsg, jubahLinkMeMsg, jubahCollectedDay, jubahCollectedByDay,
+  JUBAH_NEXT_LABEL as NEXT_LABEL, getJubahProgress, jubahWaMsg, jubahLinkMeMsg, jubahCollectedDay, jubahFilterDone, type JubahDoneStatus,
 } from '../lib/jubahStatus';
+import { JubahDoneChips } from '../components/JubahDoneChips';
 import {
   ShoppingBasket, GraduationCap, TrendingUp,
   Upload, FileImage, ShieldCheck, ShieldAlert,
@@ -170,10 +171,11 @@ export const RiderHome: React.FC = () => {
   useLoadOnActive(activeTab === 'jubah' || activeTab === 'customers', loadJubahJobs);
   useLoadOnActive(activeTab === 'jubah', loadTrackInfo);
 
-  // Day chips in My Assignments filter the table by the day a booking became Collected.
+  // Chips in My Assignments filter the table by Collected/Delivered and by the day a booking became Collected.
   const [collectedDay, setCollectedDay] = useState<string | null>(null);
+  const [doneStatus, setDoneStatus] = useState<JubahDoneStatus | null>(null);
   const visibleJubahJobs = jubahJobs;
-  const tableJubahJobs = collectedDay ? jubahJobs.filter(j => jubahCollectedDay(j.collected_at) === collectedDay) : jubahJobs;
+  const tableJubahJobs = jubahFilterDone(jubahJobs, doneStatus, collectedDay);
 
   // Realtime + polling safety net, same pattern already proven in
   // DriverHome.tsx for ride_orders. Without this, a status/balance change
@@ -607,20 +609,12 @@ export const RiderHome: React.FC = () => {
             {/* PAGE 1 — Assignment List */}
             {jubahView === 'list' && (
               <div className="bg-white border border-slate-100 rounded-3xl p-5 flex flex-col gap-4">
-                <h3 className="text-sm font-semibold text-slate-700 flex items-center justify-between">
-                  <span className="flex items-center gap-1.5"><GraduationCap className="w-4 h-4" /> My Assignments</span>
-                  <span className="flex items-center gap-1.5 flex-wrap justify-end">
-                    <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-emerald-200 text-emerald-900 tabular-nums">Collected {visibleJubahJobs.filter(j => j.status === 'collected').length}</span>
-                    <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-blue-200 text-blue-900 tabular-nums">Delivered {visibleJubahJobs.filter(j => j.status === 'delivered').length}</span>
-                    {jubahCollectedByDay(visibleJubahJobs).map(([day, n]) => (
-                      <button key={day} type="button" onClick={(e) => { e.stopPropagation(); setCollectedDay(d => (d === day ? null : day)); }}
-                        title={collectedDay === day ? 'Show all days' : `Show only bookings collected ${day}`}
-                        className={`text-[11px] font-semibold px-2 py-0.5 rounded-full tabular-nums transition ${collectedDay === day ? 'bg-slate-800 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}>
-                        {day}: {n}{collectedDay === day ? ' ✕' : ''}
-                      </button>
-                    ))}
-                    <span className="font-normal text-slate-300 normal-case tracking-normal">{visibleJubahJobs.length} jobs</span>
-                  </span>
+                {/* Phone: title + job count on row 1, chips wrap on row 2. Desktop: one row. */}
+                <h3 className="text-sm font-semibold text-slate-700 flex flex-wrap items-center gap-x-3 gap-y-2">
+                  <span className="flex items-center gap-1.5 flex-1 sm:flex-none"><GraduationCap className="w-4 h-4" /> My Assignments</span>
+                  <JubahDoneChips rows={visibleJubahJobs} status={doneStatus} onStatus={setDoneStatus} day={collectedDay} onDay={setCollectedDay}
+                    className="order-3 w-full sm:order-none sm:w-auto sm:flex-1 sm:justify-end" />
+                  <span className="font-normal text-slate-300 normal-case tracking-normal shrink-0">{tableJubahJobs.length} jobs</span>
                 </h3>
 
                 {/* Tracking emails — only once J&T has entered numbers for this rider's parcels. */}

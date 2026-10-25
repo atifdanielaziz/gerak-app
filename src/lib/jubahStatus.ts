@@ -138,3 +138,9 @@ export const jubahCollectedByDay = (rows: { collected_at?: string | null; status
   });
   return [...counts.entries()].sort((a, b) => a[1].t - b[1].t).map(([k, v]) => [k, v.n]);
 };
+
+// Collected / Delivered chip filter, combined with the collected-day chip.
+export type JubahDoneStatus = 'collected' | 'delivered';
+export const jubahFilterDone = <T extends { collected_at?: string | null; status: string }>(
+  rows: T[], status: JubahDoneStatus | null, day: string | null,
+): T[] => rows.filter(r => (!status || r.status === status) && (!day || jubahCollectedDay(r.collected_at) === day));
